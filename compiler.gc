@@ -1438,6 +1438,7 @@ method compileif(o) {
     out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
+    var startblock := bblock
     if o.elseblock.length > 0 then {
         out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
             ++ ", label %TrueBranch" ++ myc)
@@ -1469,7 +1470,7 @@ method compileif(o) {
             ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
     } else {
         out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
-            ++ tblock ++ "], [" ++ cond ++ ", %BeginIf" ++ myc ++ "]")
+            ++ tblock ++ "], [" ++ cond ++ ", " ++ startblock ++ "]")
     }
     o.register := "%if" ++ myc
 }
@@ -1862,9 +1863,9 @@ for output each { x ->
 }
 // To do:
 // - Blocks
+// - GC
+// - Efficient strings
+// - Tuples
+// - Classes
+// - Types
 
-// Reason for error:
-// calling methods on self (i.e. top-level here) from a for
-// block looks it up on the trivial object{method apply()}
-// 
-// nb. vardec alloca not necessarily safe in presence of closure
