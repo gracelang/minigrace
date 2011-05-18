@@ -60,6 +60,13 @@ struct Object *FLOAT64_TWO = NULL;
 
 struct Object *Float64_Interned[FLOAT64_INTERN_SIZE];
 
+struct Method **Float64_Methods = NULL;
+int Float64_NumMethods = 0;
+struct Method **String_Methods = NULL;
+int String_NumMethods = 0;
+struct Method **Array_Methods = NULL;
+int Array_NumMethods = 0;
+
 int heapsize;
 
 int objectcount = 0;
@@ -303,14 +310,21 @@ struct Object *alloc_Array() {
     int *d = o->bdata[1];
     *d = 8;
     o->data = glmalloc(sizeof(struct Object*) * 8);
-    addmethod(o, "asString", &Array_asString);
-    addmethod(o, "[]", &Array_index);
-    addmethod(o, "[]:=", &Array_indexAssign);
-    addmethod(o, "push", &Array_push);
-    addmethod(o, "pop", &Array_pop);
-    addmethod(o, "length", &Array_length);
-    addmethod(o, "iter", &Array_iter);
-    addmethod(o, "contains", &Array_contains);
+    if (Array_Methods == NULL) {
+        addmethod(o, "asString", &Array_asString);
+        addmethod(o, "[]", &Array_index);
+        addmethod(o, "[]:=", &Array_indexAssign);
+        addmethod(o, "push", &Array_push);
+        addmethod(o, "pop", &Array_pop);
+        addmethod(o, "length", &Array_length);
+        addmethod(o, "iter", &Array_iter);
+        addmethod(o, "contains", &Array_contains);
+        Array_Methods = o->methods;
+        Array_NumMethods = o->nummethods;
+    } else {
+        o->methods = Array_Methods;
+        o->nummethods = Array_NumMethods;
+    }
     int *t = o->bdata[0];
     int r = *t;
     return o;
@@ -324,12 +338,19 @@ struct Object *alloc_String(char *data) {
     o->bdata[0] = glmalloc(strlen(data) + 1);
     char *d = o->bdata[0];
     strcpy(d, data);
-    addmethod(o, "asString", &identity_function);
-    addmethod(o, "++", &String_concat);
-    addmethod(o, "[]", &String_index);
-    addmethod(o, "==", &String_Equals);
-    addmethod(o, "_escape", &String__escape);
-    addmethod(o, "length", &String_length);
+    if (String_Methods == NULL) {
+        addmethod(o, "asString", &identity_function);
+        addmethod(o, "++", &String_concat);
+        addmethod(o, "[]", &String_index);
+        addmethod(o, "==", &String_Equals);
+        addmethod(o, "_escape", &String__escape);
+        addmethod(o, "length", &String_length);
+        String_Methods = o->methods;
+        String_NumMethods = o->nummethods;
+    } else {
+        o->methods = String_Methods;
+        o->nummethods = String_NumMethods;
+    }
     return o;
 }
 struct Object *String__escape(struct Object *self, unsigned int nparams,
@@ -492,18 +513,25 @@ struct Object *alloc_Float64(double num) {
         s[l--] = '\0';
     if (s[l] == '.')
         s[l] = '\0';
-    addmethod(o, "+", &Float64_Add);
-    addmethod(o, "*", &Float64_Mul);
-    addmethod(o, "-", &Float64_Sub);
-    addmethod(o, "/", &Float64_Div);
-    addmethod(o, "%", &Float64_Mod);
-    addmethod(o, "==", &Float64_Equals);
-    addmethod(o, "<", &Float64_LessThan);
-    addmethod(o, ">", &Float64_GreaterThan);
-    addmethod(o, "<=", &Float64_LessOrEqual);
-    addmethod(o, ">=", &Float64_GreaterOrEqual);
-    addmethod(o, "..", &Float64_Range);
-    addmethod(o, "asString", &Float64_asString);
+    if (Float64_Methods == NULL) {
+        addmethod(o, "+", &Float64_Add);
+        addmethod(o, "*", &Float64_Mul);
+        addmethod(o, "-", &Float64_Sub);
+        addmethod(o, "/", &Float64_Div);
+        addmethod(o, "%", &Float64_Mod);
+        addmethod(o, "==", &Float64_Equals);
+        addmethod(o, "<", &Float64_LessThan);
+        addmethod(o, ">", &Float64_GreaterThan);
+        addmethod(o, "<=", &Float64_LessOrEqual);
+        addmethod(o, ">=", &Float64_GreaterOrEqual);
+        addmethod(o, "..", &Float64_Range);
+        addmethod(o, "asString", &Float64_asString);
+        Float64_Methods = o->methods;
+        Float64_NumMethods = o->nummethods;
+    } else {
+        o->methods = Float64_Methods;
+        o->nummethods = Float64_NumMethods;
+    }
     if (ival == num && ival >= FLOAT64_INTERN_MIN
             && ival < FLOAT64_INTERN_MAX)
         Float64_Interned[ival+FLOAT64_INTERN_MIN] = o;
