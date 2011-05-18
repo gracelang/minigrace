@@ -1,0 +1,7 @@
+*.s
+*.o
+*.bc
+*.ll
+current
+selfhost
+minigrace_known-good
