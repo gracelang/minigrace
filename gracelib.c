@@ -50,6 +50,10 @@ struct Object *alloc_Boolean(int val);
 
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
+struct Object *FLOAT64_ZERO = NULL;
+struct Object *FLOAT64_ONE = NULL;
+struct Object *FLOAT64_TWO = NULL;
+
 
 int heapsize;
 
@@ -458,6 +462,12 @@ struct Object *Float64_GreaterOrEqual(struct Object *self, unsigned int nparams,
     return alloc_Boolean(a >= b);
 }
 struct Object *alloc_Float64(double num) {
+    if (num == 0 && FLOAT64_ZERO != NULL)
+        return FLOAT64_ZERO;
+    if (num == 1 && FLOAT64_ONE != NULL)
+        return FLOAT64_ONE;
+    if (num == 2 && FLOAT64_TWO != NULL)
+        return FLOAT64_TWO;
     struct Object *o = alloc_obj();
     strcpy(o->type, "Float64");
     o->bdata = glmalloc(2*sizeof(void*));
@@ -484,6 +494,12 @@ struct Object *alloc_Float64(double num) {
     addmethod(o, ">=", &Float64_GreaterOrEqual);
     addmethod(o, "..", &Float64_Range);
     addmethod(o, "asString", &Float64_asString);
+    if (num == 0)
+        FLOAT64_ZERO = o;
+    if (num == 1)
+        FLOAT64_ONE = o;
+    if (num == 2)
+        FLOAT64_TWO = o;
     return o;
 }
 struct Object *Float64_asString(struct Object *self, unsigned int nparams,
