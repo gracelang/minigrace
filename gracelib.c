@@ -527,8 +527,8 @@ struct Object *alloc_Float64(double num) {
     int ival = num;
     if (ival == num && ival >= FLOAT64_INTERN_MIN
             && ival < FLOAT64_INTERN_MAX
-            && Float64_Interned[ival+FLOAT64_INTERN_MIN] != NULL)
-        return Float64_Interned[ival+FLOAT64_INTERN_MIN];
+            && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
+        return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     struct Object *o = alloc_obj();
     strcpy(o->type, "Float64");
     o->bdata = glmalloc(2*sizeof(void*));
@@ -543,7 +543,7 @@ struct Object *alloc_Float64(double num) {
         s[l--] = '\0';
     if (s[l] == '.')
         s[l] = '\0';
-    if (Float64_Methods == NULL) {
+    if (1 || Float64_Methods == NULL) {
         addmethod(o, "+", &Float64_Add);
         addmethod(o, "*", &Float64_Mul);
         addmethod(o, "-", &Float64_Sub);
@@ -564,7 +564,7 @@ struct Object *alloc_Float64(double num) {
     }
     if (ival == num && ival >= FLOAT64_INTERN_MIN
             && ival < FLOAT64_INTERN_MAX)
-        Float64_Interned[ival+FLOAT64_INTERN_MIN] = o;
+        Float64_Interned[ival-FLOAT64_INTERN_MIN] = o;
     if (num == 0)
         FLOAT64_ZERO = o;
     if (num == 1)
