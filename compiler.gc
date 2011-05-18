@@ -1826,6 +1826,7 @@ out("  %self = call %object* @alloc_obj()")
 for values each { o ->
     compilenode(o)
 }
+out("  call void @gracelib_stats()")
 out("  ret i32 0")
 out("}")
 out("define i32 @out(i8* %s) {")
@@ -1850,6 +1851,7 @@ out("declare %object* @gracelib_readall(%object*, i32, %object**)")
 out("declare %object* @gracelib_length(%object*)")
 out("declare %object** @alloc_var()")
 out("declare i1 @istrue(%object*)")
+out("declare void @gracelib_stats()")
 out("declare %object*** @createclosure(i32)")
 out("declare void @addtoclosure(%object***, %object**)")
 out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,

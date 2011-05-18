@@ -629,6 +629,13 @@ struct Object *gracelib_length(struct Object *self) {
 struct Object **alloc_var() {
     return glmalloc(sizeof(struct Object*));
 }
+void gracelib_stats() {
+    fprintf(stderr, "Total objects allocated: %i\n", objectcount);
+    fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
+    fprintf(stderr, "                      %iKiB\n", heapsize/1024);
+    fprintf(stderr, "                      %iMiB\n", heapsize/1024/1024);
+    fprintf(stderr, "                      %iGiB\n", heapsize/1024/1024/1024);
+}
 void setdatum(struct Object *o, struct Object**params, int idx) {
     o->data[idx] = params[0];
 }
