@@ -54,6 +54,11 @@ struct Object *FLOAT64_ZERO = NULL;
 struct Object *FLOAT64_ONE = NULL;
 struct Object *FLOAT64_TWO = NULL;
 
+#define FLOAT64_INTERN_MIN -10
+#define FLOAT64_INTERN_MAX 10000
+#define FLOAT64_INTERN_SIZE FLOAT64_INTERN_MAX-FLOAT64_INTERN_MIN
+
+struct Object *Float64_Interned[FLOAT64_INTERN_SIZE];
 
 int heapsize;
 
@@ -468,6 +473,11 @@ struct Object *alloc_Float64(double num) {
         return FLOAT64_ONE;
     if (num == 2 && FLOAT64_TWO != NULL)
         return FLOAT64_TWO;
+    int ival = num;
+    if (ival == num && ival >= FLOAT64_INTERN_MIN
+            && ival < FLOAT64_INTERN_MAX
+            && Float64_Interned[ival+FLOAT64_INTERN_MIN] != NULL)
+        return Float64_Interned[ival+FLOAT64_INTERN_MIN];
     struct Object *o = alloc_obj();
     strcpy(o->type, "Float64");
     o->bdata = glmalloc(2*sizeof(void*));
@@ -494,6 +504,9 @@ struct Object *alloc_Float64(double num) {
     addmethod(o, ">=", &Float64_GreaterOrEqual);
     addmethod(o, "..", &Float64_Range);
     addmethod(o, "asString", &Float64_asString);
+    if (ival == num && ival >= FLOAT64_INTERN_MIN
+            && ival < FLOAT64_INTERN_MAX)
+        Float64_Interned[ival+FLOAT64_INTERN_MIN] = o;
     if (num == 0)
         FLOAT64_ZERO = o;
     if (num == 1)
