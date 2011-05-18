@@ -48,6 +48,8 @@ struct Object *callmethod(struct Object *receiver, const char *name,
         unsigned int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
 
+struct Object *undefined = NULL;
+
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
 struct Object *FLOAT64_ZERO = NULL;
@@ -646,6 +648,14 @@ struct Object* alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
+struct Object * alloc_Undefined() {
+    if (undefined != NULL)
+        return undefined;
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "Undefined");
+    undefined = o;
+    return o;
+}
 struct Object *callmethod(struct Object *receiver, const char *name,
         unsigned int nparams, struct Object **args) {
     int i;
@@ -677,7 +687,7 @@ struct Object *gracelib_print(struct Object *receiver, unsigned int nparams,
         printf("%s ", s);
     }
     puts("");
-    return NULL;
+    return alloc_Undefined();
 }
 
 struct Object*** createclosure(int size) {

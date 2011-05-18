@@ -1152,7 +1152,7 @@ method compilemember(o) {
     o.register := r
 }
 method compileobjvardec(o, selfr, pos) {
-    var val := 'null' // XXXTODO
+    var val := '%undefined'
     if o.value then {
         val := compilenode(o.value)
     }
@@ -1296,7 +1296,8 @@ method compilemethod(o, selfobj) {
         declaredvars.push(pn)
         i := i + 1
     }
-    var ret := 'null'
+    out("  %undefined = load %object** @undefined")
+    var ret := '%undefined'
     for o.body each { l ->
         ret := compilenode(l)
     }
@@ -1443,12 +1444,13 @@ method compileif(o) {
         out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     } else {
+        out("  %undefined" ++ myc ++ " = load %object** @undefined")
         out("br i1 " ++ creg ++ ", label %EndIf" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     }
     beginblock("TrueBranch" ++ myc)
-    var tret := 'null'
-    var fret := 'null'
+    var tret := '%undefined'
+    var fret := '%undefined'
     var tblock := 'ERROR'
     var fblock := 'ERROR'
     for o.thenblock each { l->
@@ -1470,7 +1472,7 @@ method compileif(o) {
             ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
     } else {
         out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
-            ++ tblock ++ "], [" ++ cond ++ ", " ++ startblock ++ "]")
+            ++ tblock ++ "], [%undefined" ++ myc ++ ", " ++ startblock ++ "]")
     }
     o.register := "%if" ++ myc
 }
@@ -1815,6 +1817,7 @@ out('@.str._apply = private unnamed_addr constant [6 x i8] c"apply\00"')
 out('@.str._havemore = private unnamed_addr constant [9 x i8] c"havemore\00"')
 out('@.str._next = private unnamed_addr constant [5 x i8] c"next\00"')
 out('@.str.asString = private unnamed_addr constant [9 x i8] c"asString\00"')
+out("@undefined = private global %object* null")
 print('
 %method = type { i8*, %object*(%object *, i32, %object**)*,
     %object***, %object*(%object *, i32, %object**,
@@ -1832,6 +1835,8 @@ for 0..10 each { i ->
     out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
 }
 out("  %self = call %object* @alloc_obj()")
+out("  %undefined = call %object* @alloc_Undefined()")
+out("  store %object* %undefined, %object** @undefined")
 for values each { o ->
     compilenode(o)
 }
@@ -1853,6 +1858,7 @@ out("declare %object* @alloc_Array()")
 out("declare %object* @alloc_Float64(double)")
 out("declare %object* @alloc_String(i8*)")
 out("declare %object* @alloc_Boolean(i32)")
+out("declare %object* @alloc_Undefined()")
 out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
 out("declare void @addmethod(%object*, i8*, %object*(%object *, i32, %object**)*)")
 out("declare %object* @gracelib_print(%object*, i32, %object**)")
@@ -1879,4 +1885,6 @@ for output each { x ->
 // - Tuples
 // - Classes
 // - Types
+// - REPL
+// - File access
 
