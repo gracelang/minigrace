@@ -51,27 +51,37 @@ struct Object *alloc_Boolean(int val);
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
 
+int heapsize;
+
+int objectcount = 0;
+
+void *glmalloc(size_t s) {
+    heapsize += s;
+    return malloc(s);
+}
+
 int istrue(struct Object *o) {
     return o != NULL && o != BOOLEAN_FALSE;
 }
 struct Object* alloc_obj() {
-    struct Object *x = malloc(sizeof(struct Object));
+    struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
     x->nummethods = 0;
     x->bdata = NULL;
     x->data = NULL;
-    x->methods = malloc(4 * sizeof(struct Method*));
+    x->methods = glmalloc(4 * sizeof(struct Method*));
     x->methodspace = 4;
     addmethod(x, "asString", &Object_asString);
     addmethod(x, "++", &Object_concat);
     addmethod(x, "==", &Object_Equals);
     addmethod(x, "/=", &Object_NotEquals);
+    objectcount++;
     return x;
 }
 
 struct Method* alloc_meth(char *name) {
-    struct Method *x = malloc(sizeof(struct Method));
-    x->name = malloc(strlen(name) + 1);
+    struct Method *x = glmalloc(sizeof(struct Method));
+    x->name = glmalloc(strlen(name) + 1);
     strcpy(x->name, name);
     x->func = NULL;
     x->closure = NULL;
@@ -84,7 +94,7 @@ void addmethod(struct Object *o, char *name,
     int i;
     struct Method **meths;
     if (o->nummethods + 1 == o->methodspace) {
-        meths = malloc(o->methodspace * 2
+        meths = glmalloc(o->methodspace * 2
                     * sizeof(struct Method*));
         for (i=0; i<o->nummethods; i++)
             meths[i] = o->methods[i];
@@ -180,11 +190,11 @@ struct Object *ArrayIter_havemore(struct Object *self, unsigned int nparams,
 }
 struct Object *alloc_ArrayIter(struct Object *array) {
     struct Object *o = alloc_obj();
-    o->data = malloc(sizeof(struct Object*));
+    o->data = glmalloc(sizeof(struct Object*));
     o->data[0] = array;
     strcpy(o->type, "ArrayIter");
-    o->bdata = malloc(sizeof(void*));
-    o->bdata[0] = malloc(sizeof(int));
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = glmalloc(sizeof(int));
     int *pos = o->bdata[0];
     *pos = 0;
     addmethod(o, "havemore", &ArrayIter_havemore);
@@ -203,7 +213,7 @@ struct Object *Array_push(struct Object *self, unsigned int nparams,
     int *pos = self->bdata[0];
     int *size = self->bdata[1];
     if (*pos == *size) {
-        struct Object **dt = malloc(sizeof(struct Object*) * *size * 2);
+        struct Object **dt = glmalloc(sizeof(struct Object*) * *size * 2);
         *size = *size * 2;
         int i;
         for (i=0; i<*pos; i++)
@@ -276,14 +286,14 @@ struct Object *Array_asString(struct Object *self, unsigned int nparams,
 struct Object *alloc_Array() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Array");
-    o->bdata = malloc(sizeof(void*)*2);
-    o->bdata[0] = malloc(sizeof(int));
+    o->bdata = glmalloc(sizeof(void*)*2);
+    o->bdata[0] = glmalloc(sizeof(int));
     int *c = o->bdata[0];
     *c = 0;
-    o->bdata[1] = malloc(sizeof(int));
+    o->bdata[1] = glmalloc(sizeof(int));
     int *d = o->bdata[1];
     *d = 8;
-    o->data = malloc(sizeof(struct Object*) * 8);
+    o->data = glmalloc(sizeof(struct Object*) * 8);
     addmethod(o, "asString", &Array_asString);
     addmethod(o, "[]", &Array_index);
     addmethod(o, "[]:=", &Array_indexAssign);
@@ -301,8 +311,8 @@ struct Object *String_length(struct Object*, unsigned int, struct Object**);
 struct Object *alloc_String(char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
-    o->bdata = malloc(sizeof(void*));
-    o->bdata[0] = malloc(strlen(data) + 1);
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = glmalloc(strlen(data) + 1);
     char *d = o->bdata[0];
     strcpy(d, data);
     addmethod(o, "asString", &identity_function);
@@ -447,14 +457,14 @@ struct Object *Float64_GreaterOrEqual(struct Object *self, unsigned int nparams,
     double b = *((double*)other->bdata[0]);
     return alloc_Boolean(a >= b);
 }
-struct Object* alloc_Float64(double num) {
+struct Object *alloc_Float64(double num) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Float64");
-    o->bdata = malloc(2*sizeof(void*));
-    o->bdata[0] = malloc(8);
+    o->bdata = glmalloc(2*sizeof(void*));
+    o->bdata[0] = glmalloc(8);
     double *d = o->bdata[0];
     *d = num;
-    o->bdata[1] = malloc(32);
+    o->bdata[1] = glmalloc(32);
     char *s = o->bdata[1];
     sprintf(s, "%f", num);
     int l = strlen(s) - 1;
@@ -523,8 +533,8 @@ struct Object* alloc_Boolean(int val) {
         return BOOLEAN_FALSE;
     struct Object *o = alloc_obj();
     strcpy(o->type, "Boolean");
-    o->bdata = malloc(sizeof(void*));
-    o->bdata[0] = malloc(sizeof(int));
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = glmalloc(sizeof(int));
     int *d = o->bdata[0];
     *d = val;
     addmethod(o, "asString", &Boolean_asString);
@@ -572,7 +582,7 @@ struct Object *gracelib_print(struct Object *receiver, unsigned int nparams,
 }
 
 struct Object*** createclosure(int size) {
-    struct Object*** cvb = malloc(sizeof(struct Object **)
+    struct Object*** cvb = glmalloc(sizeof(struct Object **)
             * (size + 1));
     int i;
     for (i=0; i<=size; i++)
@@ -588,7 +598,7 @@ struct Object **getfromclosure(struct Object ***closure, int idx) {
     return closure[idx];
 }
 void adddatum(struct Object *obj, struct Object *datum, int index) {
-    struct Object **newdata = malloc((index+2) * sizeof(struct Object*));
+    struct Object **newdata = glmalloc((index+2) * sizeof(struct Object*));
     int i = 0;
     if (obj->data != NULL) {
         while (obj->data[i] != NULL) {
@@ -603,7 +613,7 @@ void adddatum(struct Object *obj, struct Object *datum, int index) {
 }
 struct Object *gracelib_readall(struct Object *self, unsigned int nparams,
         struct Object **args) {
-    char *ptr = malloc(100000);
+    char *ptr = glmalloc(100000);
     int l = fread(ptr, 1, 100000, stdin);
     ptr[l] = 0;
     return alloc_String(ptr);
@@ -617,11 +627,7 @@ struct Object *gracelib_length(struct Object *self) {
     }
 }
 struct Object **alloc_var() {
-    return malloc(sizeof(struct Object*));
-}
-void foo() {
-    struct Object *o = alloc_obj();
-    struct Object *p = o->data[0];
+    return glmalloc(sizeof(struct Object*));
 }
 void setdatum(struct Object *o, struct Object**params, int idx) {
     o->data[idx] = params[0];
