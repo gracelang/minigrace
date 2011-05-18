@@ -25,5 +25,6 @@ selfhost-stats: selfhost
 
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
+	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
 
 .PHONY: all clean selfhost-stats
