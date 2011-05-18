@@ -67,6 +67,12 @@ int String_NumMethods = 0;
 struct Method **Array_Methods = NULL;
 int Array_NumMethods = 0;
 
+struct Method *ObjectMethod_asString = NULL;
+struct Method *ObjectMethod_concat = NULL;
+struct Method *ObjectMethod_Equals = NULL;
+struct Method *ObjectMethod_NotEquals = NULL;
+
+
 int heapsize;
 
 int objectcount = 0;
@@ -87,10 +93,34 @@ struct Object* alloc_obj() {
     x->data = NULL;
     x->methods = glmalloc(4 * sizeof(struct Method*));
     x->methodspace = 4;
-    addmethod(x, "asString", &Object_asString);
-    addmethod(x, "++", &Object_concat);
-    addmethod(x, "==", &Object_Equals);
-    addmethod(x, "/=", &Object_NotEquals);
+    if (ObjectMethod_asString == NULL) {
+        addmethod(x, "asString", &Object_asString);
+        ObjectMethod_asString = x->methods[0];
+    } else {
+        x->methods[0] = ObjectMethod_asString;
+        x->nummethods++;
+    }
+    if (ObjectMethod_concat == NULL) {
+        addmethod(x, "++", &Object_concat);
+        ObjectMethod_concat = x->methods[1];
+    } else {
+        x->methods[1] = ObjectMethod_concat;
+        x->nummethods++;
+    }
+    if (ObjectMethod_Equals == NULL) {
+        addmethod(x, "==", &Object_Equals);
+        ObjectMethod_Equals = x->methods[2];
+    } else {
+        x->methods[2] = ObjectMethod_Equals;
+        x->nummethods++;
+    }
+    if (ObjectMethod_NotEquals == NULL) {
+        addmethod(x, "/=", &Object_NotEquals);
+        ObjectMethod_NotEquals = x->methods[3];
+    } else {
+        x->methods[3] = ObjectMethod_NotEquals;
+        x->nummethods++;
+    }
     objectcount++;
     return x;
 }
@@ -109,7 +139,7 @@ void addmethod(struct Object *o, char *name,
         struct Object* (*func)(struct Object*, unsigned int, struct Object**)) {
     int i;
     struct Method **meths;
-    if (o->nummethods + 1 == o->methodspace) {
+    if (o->nummethods == o->methodspace) {
         meths = glmalloc(o->methodspace * 2
                     * sizeof(struct Method*));
         for (i=0; i<o->nummethods; i++)
