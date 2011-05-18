@@ -277,6 +277,12 @@ struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
     struct Object *val = args[1];
     idx = callmethod(idx, "asString", 0, NULL);
     int index = atoi(idx->bdata[0]);
+    int *len = self->bdata[0];
+    if (index >= *len) {
+        fprintf(stderr, "Error: array index out of bounds: %i/%i\n",
+                index, *len);
+        exit(1);
+    }
     self->data[index] = val;
     return val;
 }
@@ -299,6 +305,12 @@ struct Object *Array_index(struct Object *self, unsigned int nparams,
     struct Object *other = args[0];
     other = callmethod(other, "asString", 0, NULL);
     int index = atoi(other->bdata[0]);
+    int *len = self->bdata[0];
+    if (index >= *len) {
+        fprintf(stderr, "Error: array index out of bounds: %i/%i\n",
+                index, *len);
+        exit(1);
+    }
     return self->data[index];
 }
 struct Object *Array_iter(struct Object *self, unsigned int nparams,
