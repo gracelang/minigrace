@@ -1646,25 +1646,34 @@ method compilenode(o) {
         l := length(o.value)
         l := l + 1
         o.value := escapestring(o.value)
-        //if o.value == '"' then {
-        //    o.value := '\22'
-        //}
-        //if length(o.value) > 0 then {
-        //    if o.value[length(o.value)-1] == '"' then {
-        //        var astring := ''
-        //        for 0..(length(o.value)-2) each { i ->
-        //            if (i >= 0) & (i < length(o.value)) then {
-        //                astring := astring ++ o.value[i]
-        //            }
-        //        }
-        //        astring := astring ++ '\22'
-        //        o.value := astring
-        //    }
-        //}
+        out("  %tmp" ++ auto_count ++ " = load %object** @.strlit"
+            ++ auto_count)
+        out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
+            ++ auto_count ++ ", null")
+        out("  br i1 %cmp" ++ auto_count ++ ", label %strlit"
+            ++ auto_count ++ ".already, label %strlit"
+            ++ auto_count ++ ".define")
+        beginblock("strlit" ++ auto_count ++ ".already")
+        out("  %alreadystring" ++ auto_count ++ " = load %object** @.strlit"
+            ++ auto_count)
+        out("  br label %strlit" ++ auto_count ++ ".end")
+        beginblock("strlit" ++ auto_count ++ ".define")
         out("  %str" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.str" ++ constants.length ++ ", i32 0, i32 0")
-        out("  %string" ++ auto_count ++ " = call %object* @alloc_String(i8* "
+        out("  %defstring" ++ auto_count ++ " = call %object* "
+            ++ "@alloc_String(i8* "
               ++ "%str" ++ auto_count ++ ")")
+        out("  store %object* %defstring" ++ auto_count ++ ", %object** "
+            ++ "@.strlit" ++ auto_count)
+        out("br label %strlit" ++ auto_count ++ ".end")
+        beginblock("strlit" ++ auto_count ++ ".end")
+        out(" %string" ++ auto_count ++ " = phi %object* [%alreadystring"
+            ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
+            ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
+            ++ ".define]")
         var con := '@.str' ++ constants.length ++ ' = private unnamed_addr constant [' ++ l ++ ' x i8] c"' ++ o.value ++ '\00"'
+        constants.push(con)
+        con := ('@.strlit' ++ auto_count
+            ++ ' = private global %object* null')
         constants.push(con)
         o.register := "%string" ++ auto_count
         auto_count := auto_count + 1
