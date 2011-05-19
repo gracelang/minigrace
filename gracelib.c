@@ -85,8 +85,21 @@ int calldepth = 0;
 void backtrace() {
     int i;
     for (i=0; i<calldepth; i++) {
-        printf("  Called %s\n", callstack[i]);
+        fprintf(stderr, "  Called %s\n", callstack[i]);
     }
+}
+void die(char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    fprintf(stderr, "Error around line %i: ", linenumber);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
+    backtrace();
+    fprintf(stderr, "Error around line %i: ", linenumber);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
+    va_end(args);
+    exit(1);
 }
 
 void *glmalloc(size_t s) {
@@ -291,9 +304,8 @@ struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
     int index = atoi(idx->bdata[0]);
     int *len = self->bdata[0];
     if (index >= *len) {
-        fprintf(stderr, "Error: array index out of bounds: %i/%i\n",
+        die("Error: array index out of bounds: %i/%i",
                 index, *len);
-        exit(1);
     }
     self->data[index] = val;
     return val;
@@ -681,9 +693,7 @@ struct Object *callmethod(struct Object *receiver, const char *name,
             linenumber);
     calldepth++;
     if (calldepth == 128) {
-        fprintf(stderr, "Maximum call stack depth exceeded.\n");
-        backtrace();
-        exit(1);
+        die("Maximum call stack depth exceeded.");
     }
     if (m != NULL) {
         if (m->closure != NULL) {
@@ -696,9 +706,8 @@ struct Object *callmethod(struct Object *receiver, const char *name,
             return o;
         }
     }
-    printf("Method lookup error: no %s in %s around line %i.\n",
-            name, receiver->type, linenumber);
-    backtrace();
+    die("Method lookup error: no %s in %s.",
+            name, receiver->type);
     exit(1);
 }
 
@@ -754,7 +763,7 @@ struct Object *gracelib_readall(struct Object *self, unsigned int nparams,
 }
 struct Object *gracelib_length(struct Object *self) {
     if (self == NULL) {
-        printf("ERROR: null passed to gracelib_length()\n");
+        die("null passed to gracelib_length()");
         exit(1);
     } else {
         return callmethod(self, "length", 0, NULL);
