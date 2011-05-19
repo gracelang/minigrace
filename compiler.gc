@@ -203,6 +203,7 @@ var mode := 'n'
 var newmode := mode
 var instr := false
 var accum := ''
+var escaped := false
 for 0..length(input)-1 each { i ->
     var c := input[i]
     var ct := ''
@@ -215,11 +216,11 @@ for 0..length(input)-1 each { i ->
             }
             if (c == "'") then {
                 newmode := "'"
-                instr := 1
+                instr := true
             }
             if (c == '"') then {
                 newmode := '"'
-                instr := 1
+                instr := true
             }
             ct := ichars.contains(c)
             if (ct) then {
@@ -247,11 +248,11 @@ for 0..length(input)-1 each { i ->
             }
         }
     }
-    if ((mode == '"') & (c == '"')) then {
+    if ((mode == '"') & (c == '"') & (escaped.not)) then {
         newmode := 'n'
         instr := false
     }
-    if ((mode == "'") & (c == "'")) then {
+    if ((mode == "'") & (c == "'") & (escaped.not)) then {
         newmode := 'n'
         instr := false
     }
@@ -272,7 +273,16 @@ for 0..length(input)-1 each { i ->
         }
     } else {
         if (instr) then {
-            accum := accum ++ c
+            if escaped then {
+                accum := accum ++ c
+                escaped := false
+            } else {
+                if c == "\" then {
+                    escaped := true
+                } else {
+                    accum := accum ++ c
+                }
+            }
         } else {
             if (c == "
 ") then {
