@@ -191,7 +191,6 @@ method modechange(tokens, mode, accum) {
         }
     }
 }
-print("Reading...")
 var input := readall()
 
 var ichars := ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
@@ -202,15 +201,11 @@ var ochars := ['+', '-', '/', '*', '=', ':', '<', '>', '%', '&', '|']
 var false := 0
 var true := 1
 var tokens := []
-print("Tokenizing", length(input), "characters...")
 var mode := 'n'
 var newmode := mode
 var instr := false
 var accum := ''
 for 0..length(input)-1 each { i ->
-    if (((i % 2500) == 0) & (i > 0)) then {
-        print("Tokenizing character", i)
-    }
     var c := input[i]
     var ct := ''
     if (c == '
@@ -303,24 +298,13 @@ for 0..length(input)-1 each { i ->
 }
 modechange(tokens, mode, accum)
 
-//print("")
-//print("")
-//print("Resulting tokens:")
-//for tokens each { tok ->
-//    print(" ", tok.type, tok.value)
-//}
-
 var values := []
 var sym := object {
     var sym := tokens[0]
 }
 method next() {
-    //print("had sym of", sym.sym.type, sym.sym.value)
     if (tokens.length > 0) then {
         sym.sym := tokens.pop()
-        if (0 == (tokens.length % 500)) then {
-            print(tokens.length, "remaining...")
-        }
         if ((sym.sym.type == 'line') & (tokens.length > 0)) then {
             var l := sym.sym.value
             if l /= linenum then {
@@ -331,7 +315,6 @@ method next() {
     } else {
         sym.sym := object { var type := 'eof' }
     }
-    //print("have sym of", sym.sym.type, sym.sym.value)
 }
 
 method astfor(over, variable, body) {
@@ -1066,17 +1049,14 @@ method statement() {
     }
 }
 
-print("Reversing tokens...")
 var otoks := tokens
 tokens := []
 for 0..(otoks.length-1) each { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
-print("Parsing", tokens.length, "tokens...")
 linenum := 1
 next()
-//tokens.shift()
 var oldlength := tokens.length + 0
 if tokens.length == 0 then {
     // Single token is ignored otherwise
@@ -1090,15 +1070,6 @@ while {tokens.length > 0} do {
         throw("Syntax error.")
     }
     oldlength := tokens.length + 0
-}
-//print("")
-//print("Tokens:", tokens)
-print("")
-print("")
-print("Nodes:")
-for values each { o ->
-    //print("Have", o)
-    print(o.pretty(0))
 }
 print(";-------------LLVM IR------------")
 var auto_count := 0
