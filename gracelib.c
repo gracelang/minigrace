@@ -739,6 +739,8 @@ struct Object **alloc_var() {
     return glmalloc(sizeof(struct Object*));
 }
 void gracelib_stats() {
+    if (getenv("GRACE_STATS") == NULL)
+        return;
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
     fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
