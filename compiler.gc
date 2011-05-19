@@ -1,6 +1,3 @@
-// (object { method f(x,y,z) { i -> 1 + 1 } }).f("test",a,3)
-// (object { method f(x,y,z) { for 0..z each { i-> print(f, a, i) } } }).f("test",a,3)
-// a.b(1,2, x.y()) q.w()
 
 var tmp := 0
 var linenum := 1
@@ -187,7 +184,8 @@ method modechange(tokens, mode, accum) {
         if (done) then {
             //print(mode, accum, tokens)
         } else {
-            print("Lex error: no handler for mode", mode, "with accum", accum)
+            print("Lex error: no handler for mode " ++ mode ++
+                " with accum " ++ accum)
         }
     }
 }
@@ -640,8 +638,6 @@ method astvardec(name, val) {
     }
 }
 method accept(t) {
-    //print("Trying", t, "against real", sym.sym.type, "with tr",
-        //tokens.length)
     sym.sym.type == t
 }
 method pushnum() {
@@ -1011,12 +1007,12 @@ method methoddec() {
                     if accept('rbrace') then {
                         next()
                     } else {
-                        print("Error: No statement but not end of", meth.value)
-                        print("Have token", sym.sym)
+                        print("Error: No statement but not end of "++meth.value)
+                        print("Have token " ++ sym.sym)
                     }
                 } else {
-                    print("Error: no body in method declaration for",
-                          meth.value)
+                    print("Error: no body in method declaration for"
+                          ++ meth.value)
                 }
                 var o := astmethod(meth, params, body)
                 values.push(o)
@@ -1065,8 +1061,9 @@ if tokens.length == 0 then {
 while {tokens.length > 0} do {
     statement()
     if tokens.length == oldlength then {
-        print("Syntax error around line", linenum, "with remaining:", tokens)
-        print("Around line", linenum)
+        print("Syntax error around line " ++ linenum ++ " with remaining: "
+            ++ tokens)
+        print("Around line " ++ linenum)
         throw("Syntax error.")
     }
     oldlength := tokens.length + 0
@@ -1702,22 +1699,6 @@ method compilenode(o) {
             for o.with each { prm ->
                 var r := compilenode(prm)
                 args.push(r)
-    //            var makerstring := ("  " ++ r ++ "_asString = call %object* "
-    //                                ++ "@callmethod(%object* "
-    //                                ++ r
-    //                                ++ ", i8* getelementptr([9 x i8]* "
-    //                                ++ "@.str.asString, i32 0, "
-    //                                ++ "i32 0), i32 0, %object** %params)")
-    //            out(makerstring)
-    //            out("  " ++ r ++ "_asString_c_p = getelementptr %object* "
-    //                  ++ r ++ "_asString, i32 0, i32 3")
-    //            out("  " ++ r ++ "_asString_c_pp = load i8*** "
-    //                  ++ r ++ "_asString_c_p")
-    //            out("  " ++ r ++ "_asString_c_ppp = getelementptr i8** "
-    //                  ++ r ++ "_asString_c_pp, i32 0")
-    //            out("  " ++ r ++ "_asString_c = load i8** "
-    //                  ++ r ++ "_asString_c_ppp")
-    //            out("  call i32 @out(i8* " ++ r ++ "_asString_c)")
             }
             for 0..(args.length-1) each { i ->
                 out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
