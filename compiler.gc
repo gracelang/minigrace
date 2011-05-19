@@ -1505,18 +1505,13 @@ method compilevardec(o) {
     if val then {
         val := compilenode(val)
     } else {
-        val := compilenode(object {
-            var type := 'identifier'
-            var value := 'false'
-            var register := ''
-        })
+        val := '%undefined'
     }
     //scopes[scopes.length-1].push([nm, val])
     out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
-    out("  %var_" ++ nm ++ "_dec = getelementptr %object* " ++ val
-        ++ ", i32 0")
-    out("  store %object* %var_" ++ nm ++ "_dec, %object** %var_"
+    out("  store %object* " ++ val ++ ", %object** %var_"
         ++ nm)
+    o.register := val
 }
 method compileindex(o) {
     var of := compilenode(o.value)
@@ -1859,4 +1854,5 @@ for output each { x ->
 // - Types
 // - REPL
 // - File access
-
+// - ' is not string literal
+// - String escapes
