@@ -74,10 +74,20 @@ struct Method *ObjectMethod_concat = NULL;
 struct Method *ObjectMethod_Equals = NULL;
 struct Method *ObjectMethod_NotEquals = NULL;
 
+int linenumber = 0;
 
 int heapsize;
 
 int objectcount = 0;
+
+char callstack[128][128];
+int calldepth = 0;
+void backtrace() {
+    int i;
+    for (i=0; i<calldepth; i++) {
+        printf("  Called %s\n", callstack[i]);
+    }
+}
 
 void *glmalloc(size_t s) {
     heapsize += s;
@@ -85,7 +95,7 @@ void *glmalloc(size_t s) {
 }
 
 int istrue(struct Object *o) {
-    return o != NULL && o != BOOLEAN_FALSE;
+    return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
@@ -660,20 +670,35 @@ struct Object *callmethod(struct Object *receiver, const char *name,
         unsigned int nparams, struct Object **args) {
     int i;
     struct Method *m;
+    struct Object *o;
     for (i=0; i<receiver->nummethods; i++) {
         m = receiver->methods[i];
         if (strcmp(m->name, name) == 0)
             break;
         m = NULL;
     }
+    sprintf(callstack[calldepth], "%s.%s (%i)", receiver->type, name,
+            linenumber);
+    calldepth++;
+    if (calldepth == 128) {
+        fprintf(stderr, "Maximum call stack depth exceeded.\n");
+        backtrace();
+        exit(1);
+    }
     if (m != NULL) {
         if (m->closure != NULL) {
-            return m->cfunc(receiver, nparams, args, m->closure);
+            o = m->cfunc(receiver, nparams, args, m->closure);
+            calldepth--;
+            return o;
         } else {
-            return m->func(receiver, nparams, args);
+            o = m->func(receiver, nparams, args);
+            calldepth--;
+            return o;
         }
     }
-    printf("Method lookup error: no %s in %s.\n", name, receiver->type);
+    printf("Method lookup error: no %s in %s around line %i.\n",
+            name, receiver->type, linenumber);
+    backtrace();
     exit(1);
 }
 
@@ -749,4 +774,7 @@ void gracelib_stats() {
 }
 void setdatum(struct Object *o, struct Object**params, int idx) {
     o->data[idx] = params[0];
+}
+void setline(int l) {
+    linenumber = l;
 }
