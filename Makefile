@@ -23,8 +23,13 @@ selfhost: current compiler.gc gracelib.o
 selfhost-stats: selfhost
 	./selfhost < compiler.gc >/dev/null
 
+selfhost-rec: selfhost
+	./selfhost < compiler.gc > selfhost-rec.ll
+	@diff -q selfhost.ll selfhost-rec.ll
+	@echo PASS
+
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
 
-.PHONY: all clean selfhost-stats
+.PHONY: all clean selfhost-stats selfhost-rec
