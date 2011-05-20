@@ -8,8 +8,8 @@ gracelib.o: gracelib.c
 current.bc: current.ll known-good/$(ARCH)/gracelib-$(STABLE).o
 	llvm-link -o current.bc known-good/$(ARCH)/gracelib-$(STABLE).o current.ll
 
-current.ll: compiler.gc known-good/$(ARCH)/known-good-$(STABLE)
-	./known-good/$(ARCH)/known-good-$(STABLE) < compiler.gc >current.ll
+current.ll: compiler.gc known-good/$(ARCH)/minigrace-$(STABLE)
+	./known-good/$(ARCH)/minigrace-$(STABLE) < compiler.gc >current.ll
 
 current.s: current.bc
 	llc -o current.s current.bc
@@ -36,9 +36,5 @@ clean:
 
 known-good/%:
 	make -C known-good $*
-
-minigrace-known-good: known-good/$(ARCH)/known-good
-	cp known-good/known-good minigrace-known-good
-	cp known-good/known-good-gracelib.o known-good-gracelib.o
 
 .PHONY: all clean selfhost-stats selfhost-rec

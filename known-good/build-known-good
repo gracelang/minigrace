@@ -5,9 +5,9 @@ set -e
 ARCH=$(uname -s)-$(uname -m)
 
 OUT=$1
-VER="${OUT#$ARCH/known-good-}"
+VER="${OUT#$ARCH/minigrace-}"
 PRED=$2
-PVER="${PRED#$ARCH/known-good-}"
+PVER="${PRED#$ARCH/minigrace-}"
 FILTER=$3
 
 echo Building $VER using $PVER for $ARCH...
@@ -19,12 +19,12 @@ git show $VER:gracelib.c > gracelib-$VER.c
 if [ "$FILTER" = "sed" ]
 then
     FILTER="sed -n '/^;---/,"'$'"p'"
-    ./$PRED < compiler-$VER.gc | sed -n '/^;---/,$p'>$OUT.ll
+    ./$PRED < compiler-$VER.gc | sed -n '/^;---/,$p'>independent/minigrace-$VER.ll
 else
-    ./$PRED < compiler-$VER.gc >$OUT.ll
+    ./$PRED < compiler-$VER.gc >independent/minigrace-$VER.ll
 fi
 clang -emit-llvm -c -o $ARCH/gracelib-$VER.o gracelib-$VER.c
-llvm-link -o $OUT.bc $ARCH/gracelib-$PVER.o $OUT.ll
+llvm-link -o $OUT.bc $ARCH/gracelib-$PVER.o independent/minigrace-$VER.ll
 llc -o $OUT.s $OUT.bc
 gcc -o $OUT $OUT.s
 rm -f compiler-$VER.gc
