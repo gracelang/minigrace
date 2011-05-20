@@ -1,13 +1,15 @@
+ARCH=$(shell uname -s)-$(shell uname -m)
+STABLE=8fc2c4db63edb9751c1b138cedd15c9771196589
 all: current
 
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c
 
-current.bc: current.ll gracelib-kg.o
-	llvm-link -o current.bc gracelib-kg.o current.ll
+current.bc: current.ll known-good/$(ARCH)/gracelib-$(STABLE).o
+	llvm-link -o current.bc known-good/$(ARCH)/gracelib-$(STABLE).o current.ll
 
-current.ll: compiler.gc
-	./minigrace_known-good < compiler.gc >current.ll
+current.ll: compiler.gc known-good/$(ARCH)/known-good-$(STABLE)
+	./known-good/$(ARCH)/known-good-$(STABLE) < compiler.gc >current.ll
 
 current.s: current.bc
 	llc -o current.s current.bc
@@ -31,5 +33,12 @@ selfhost-rec: selfhost
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
+
+known-good/%:
+	make -C known-good $*
+
+minigrace-known-good: known-good/$(ARCH)/known-good
+	cp known-good/known-good minigrace-known-good
+	cp known-good/known-good-gracelib.o known-good-gracelib.o
 
 .PHONY: all clean selfhost-stats selfhost-rec

@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+ARCH=$(uname -s)-$(uname -m)
+
+OUT=$1
+VER="${OUT#$ARCH/known-good-}"
+PRED=$2
+PVER="${PRED#$ARCH/known-good-}"
+FILTER=$3
+
+echo Building $VER using $PVER for $ARCH...
+
+mkdir -p $ARCH
+
+git show $VER:compiler.gc > compiler-$VER.gc
+git show $VER:gracelib.c > gracelib-$VER.c
+if [ "$FILTER" = "sed" ]
+then
+    FILTER="sed -n '/^;---/,"'$'"p'"
+    ./$PRED < compiler-$VER.gc | sed -n '/^;---/,$p'>$OUT.ll
+else
+    ./$PRED < compiler-$VER.gc >$OUT.ll
+fi
+clang -emit-llvm -c -o $ARCH/gracelib-$VER.o gracelib-$VER.c
+llvm-link -o $OUT.bc $ARCH/gracelib-$PVER.o $OUT.ll
+llc -o $OUT.s $OUT.bc
+gcc -o $OUT $OUT.s
+rm -f compiler-$VER.gc
+rm -f gracelib-$VER.c
+rm -f $OUT.s $OUT.bc
