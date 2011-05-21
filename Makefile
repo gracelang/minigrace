@@ -35,6 +35,6 @@ clean:
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
 
 known-good/%:
-	make -C known-good $*
+	cd known-good && $(MAKE) $*
 
 .PHONY: all clean selfhost-stats selfhost-rec

@@ -16,6 +16,11 @@ mkdir -p $ARCH
 
 git show $VER:compiler.gc > compiler-$VER.gc
 git show $VER:gracelib.c > gracelib-$VER.c
+if ! grep -q "stdarg.h" gracelib-$VER.c
+then
+    mv gracelib-$VER.c gracelib-$VER-tmp.c
+    { echo "#include <stdarg.h>" ; cat gracelib-$VER-tmp.c ; } > gracelib-$VER.c
+fi
 if [ "$FILTER" = "sed" ]
 then
     FILTER="sed -n '/^;---/,"'$'"p'"
