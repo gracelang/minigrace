@@ -23,7 +23,7 @@ selfhost: current compiler.gc gracelib.o
 	gcc -o selfhost selfhost.s
 
 selfhost-stats: selfhost
-	./selfhost < compiler.gc >/dev/null
+	GRACE_STATS=1 ./selfhost < compiler.gc >/dev/null
 
 selfhost-rec: selfhost
 	./selfhost < compiler.gc > selfhost-rec.ll
