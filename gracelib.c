@@ -402,6 +402,11 @@ int getutf8charlen(char *s) {
     int i;
     if ((s[0] & 128) == 0)
         return 1;
+    if ((s[0] & 64) == 0) {
+        // Unexpected continuation byte, error
+        die("Unexpected continuation byte starting character: %x",
+                s[0]);
+    }
     if ((s[0] & 32) == 0)
         return 2;
     if ((s[0] & 16) == 0)
@@ -410,6 +415,26 @@ int getutf8charlen(char *s) {
         return 4;
     return -1;
 }
+int getutf8char(char *s, char buf[5]) {
+    int i;
+    int charlen = getutf8charlen(s);
+    for (i=0; i<5; i++) {
+        if (i < charlen) {
+            int c = s[i] & 255;
+            buf[i] = c;
+            if ((c == 192) || (c == 193) || (c > 244)) {
+                die("Invalid byte in UTF-8 sequence: %x at position %i",
+                        c, i);
+            }
+            if ((i > 0) && ((c & 192) != 128)) {
+                die("Invalid byte in UTF-8 sequence, expected continuation "
+                        "byte: %x at position %i", c, i);
+            }
+        } else
+            buf[i] = 0;
+    }
+    return 0;
+}
 struct Object *StringIter_next(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
@@ -417,14 +442,10 @@ struct Object *StringIter_next(struct Object *self, unsigned int nparams,
     char *cstr = str->bdata[0];
     int rpos = *pos;
     int charlen = getutf8charlen(cstr + rpos);
-    char buf[4];
+    char buf[5];
     int i;
-    for (i=0; i<4; i++)
-        if (i < charlen)
-            buf[i] = cstr[rpos + i];
-        else
-            buf[i] = 0;
     *pos  = *pos + charlen;
+    getutf8char(cstr + rpos, buf);
     return alloc_String(buf);
 }
 struct Object *StringIter_havemore(struct Object *self, unsigned int nparams,
