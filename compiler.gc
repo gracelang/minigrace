@@ -3,13 +3,13 @@ var tmp := 0
 var linenum := 1
 method identifiertok(s) {
     object {
-        var type := 'identifier'
+        var type := "identifier"
         var value := s
     }
 }
 method stringtok(s) {
     object {
-        var type := 'string'
+        var type := "string"
         var value := s
     }
 }
@@ -21,80 +21,80 @@ method octetstok(s) {
 }
 method lbracetok() {
     object {
-        var type := 'lbrace'
-        var value := '{'
+        var type := "lbrace"
+        var value := "{"
     }
 }
 method rbracetok() {
     object {
-        var type := 'rbrace'
-        var value := '}'
+        var type := "rbrace"
+        var value := "}"
     }
 }
 method lparentok() {
     object {
-        var type := 'lparen'
-        var value := '('
+        var type := "lparen"
+        var value := "("
     }
 }
 method rparentok() {
     object {
-        var type := 'rparen'
-        var value := ')'
+        var type := "rparen"
+        var value := ")"
     }
 }
 method lsquaretok() {
     object {
-        var type := 'lsquare'
-        var value := '['
+        var type := "lsquare"
+        var value := "["
     }
 }
 method rsquaretok() {
     object {
-        var type := 'rsquare'
-        var value := ']'
+        var type := "rsquare"
+        var value := "]"
     }
 }
 method commatok() {
     object {
-        var type := 'comma'
-        var value := ','
+        var type := "comma"
+        var value := ","
     }
 }
 method dottok() {
     object {
-        var type := 'dot'
-        var value := '.'
+        var type := "dot"
+        var value := "."
     }
 }
 method numtok(v) {
     object {
-        var type := 'num'
+        var type := "num"
         var value := v
     }
 }
 method keywordtok(v) {
     object {
-        var type := 'keyword'
+        var type := "keyword"
         var value := v
     }
 }
 method optok(v) {
     object {
-        var type := 'op'
+        var type := "op"
         var value := v
     }
 }
 method arrowtok() {
     object {
-        var type := 'arrow'
-        var value := '->'
+        var type := "arrow"
+        var value := "->"
     }
 }
 method bindtok() {
     object {
-        var type := 'bind'
-        var value := ':='
+        var type := "bind"
+        var value := ":="
     }
 }
 
@@ -102,15 +102,15 @@ method bindtok() {
 method modechange(tokens, mode, accum) {
     var done := false
     var tok := 0
-    if ((mode /= 'n') | (length(accum) > 0)) then {
-        if (mode == 'i') then {
+    if ((mode /= "n") | (length(accum) > 0)) then {
+        if (mode == "i") then {
             tok := identifiertok(accum)
-            if ((accum == 'object') | (accum == 'method')
-                | (accum == 'var')) then {
+            if ((accum == "object") | (accum == "method")
+                | (accum == "var")) then {
                 tok := keywordtok(accum)
             }
-            if (accum == 'and') then {
-                tok := optok('&')
+            if (accum == "and") then {
+                tok := optok("&")
             }
             tokens.push(tok)
             done := 1
@@ -120,7 +120,7 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := 1
         }
-        if (mode == '"') then {
+        if (mode == "\"") then {
             tok := stringtok(accum)
             tokens.push(tok)
             done := 1
@@ -130,66 +130,66 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := 1
         }
-        if (mode == ',') then {
+        if (mode == ",") then {
             tok := commatok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == '.') then {
+        if (mode == ".") then {
             tok := dottok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == '{') then {
+        if (mode == "{") then {
             tok := lbracetok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == '}') then {
+        if (mode == "}") then {
             tok := rbracetok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == '(') then {
+        if (mode == "(") then {
             tok := lparentok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == ')') then {
+        if (mode == ")") then {
             tok := rparentok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == '[') then {
+        if (mode == "[") then {
             tok := lsquaretok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == ']') then {
+        if (mode == "]") then {
             tok := rsquaretok()
             tokens.push(tok)
             done := 1
         }
-        if (mode == 'm') then {
+        if (mode == "m") then {
             tok := numtok(accum)
             tokens.push(tok)
             done := 1
         }
-        if (mode == 'o') then {
+        if (mode == "o") then {
             tok := optok(accum)
-            if (accum == '->') then {
+            if (accum == "->") then {
                 tok := arrowtok()
             }
-            if (accum == ':=') then {
+            if (accum == ":=") then {
                 tok := bindtok()
             }
             tokens.push(tok)
             done := 1
         }
-        if (mode == 'n') then {
+        if (mode == "n") then {
             done := 1
         }
-        if mode == 'c' then {
+        if mode == "c" then {
             done := 1
         }
         if (done) then {
@@ -202,99 +202,99 @@ method modechange(tokens, mode, accum) {
 }
 var input := readall()
 
-var ichars := ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-var mchars := ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-var ochars := ['+', '-', '/', '*', '=', ':', '<', '>', '%', '&', '|']
+var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+            "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+var mchars := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+var ochars := ["+", "-", "/", "*", "=", ":", "<", ">", "%", "&", "|"]
 
 var false := 0
 var true := 1
 var tokens := []
-var mode := 'n'
+var mode := "n"
 var newmode := mode
 var instr := false
-var accum := ''
+var accum := ""
 var escaped := false
 var prev := ""
 for 0..length(input)-1 each { i ->
     var c := input[i]
-    var ct := ''
+    var ct := ""
     if (instr) then {
 
     } else {
-        if (mode /= 'c') then {
-            if (c == ' ') then {
-                newmode := 'n'
+        if (mode /= "c") then {
+            if (c == " ") then {
+                newmode := "n"
             }
             if (c == "'") then {
                 newmode := "'"
                 instr := true
             }
-            if (c == '"') then {
-                newmode := '"'
+            if (c == "\"") then {
+                newmode := "\""
                 instr := true
                 if prev == "x" then {
                     newmode := "x"
-                    mode := 'n'
+                    mode := "n"
                 }
             }
             ct := ichars.contains(c)
             if (ct) then {
-                newmode := 'i'
+                newmode := "i"
             }
             ct := mchars.contains(c)
-            if (ct & (mode /= 'i')) then {
-                newmode := 'm'
+            if (ct & (mode /= "i")) then {
+                newmode := "m"
             }
             ct := ochars.contains(c)
             if (ct) then {
-                newmode := 'o'
+                newmode := "o"
             }
-            if ((c == '(') | (c == ')') | (c == ',') | (c == '.')
-                | (c == '{') | (c == '}') | (c == '[') | (c == ']')) then {
+            if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
+                | (c == "{") | (c == "}") | (c == "[") | (c == "]")) then {
                 newmode := c
             }
-            if ((c == '.') & (accum == '.')) then {
-                mode := 'o'
+            if ((c == ".") & (accum == ".")) then {
+                mode := "o"
                 newmode := mode
             }
-            if ((c == '/') & (accum == '/')) then {
-                mode := 'c'
+            if ((c == "/") & (accum == "/")) then {
+                mode := "c"
                 newmode := mode
             }
         }
     }
-    if ((mode == "x") & (c == '"') & (escaped.not)) then {
-        newmode := 'n'
+    if ((mode == "x") & (c == "\"") & (escaped.not)) then {
+        newmode := "n"
         instr := false
     }
-    if ((mode == '"') & (c == '"') & (escaped.not)) then {
-        newmode := 'n'
+    if ((mode == "\"") & (c == "\"") & (escaped.not)) then {
+        newmode := "n"
         instr := false
     }
     if ((mode == "'") & (c == "'") & (escaped.not)) then {
-        newmode := 'n'
+        newmode := "n"
         instr := false
     }
     if newmode /= mode then {
         modechange(tokens, mode, accum)
         mode := newmode
         if (instr) then {
-            accum := ''
+            accum := ""
         } else {
             accum := c
         }
-        if ((mode == '(') | (mode == ')') | (mode == '[')
-            | (mode == ']')) then {
+        if ((mode == "(") | (mode == ")") | (mode == "[")
+            | (mode == "]")) then {
             modechange(tokens, mode, accum)
-            mode := 'n'
-            newmode := 'n'
-            accum := ''
+            mode := "n"
+            newmode := "n"
+            accum := ""
         }
     } else {
         if (instr) then {
             if escaped then {
-                if ((c == "l") | (c == 'n')) then {
+                if ((c == "l") | (c == "n")) then {
                     accum := accum ++ "
 "
                 } else {
@@ -312,19 +312,19 @@ for 0..length(input)-1 each { i ->
             if (c == "
 ") then {
                 modechange(tokens, mode, accum)
-                mode := 'n'
-                newmode := 'n'
-                accum := ''
+                mode := "n"
+                newmode := "n"
+                accum := ""
             } else {
                 accum := accum ++ c
             }
         }
     }
-    if (c == '
-') then {
+    if (c == "
+") then {
         linenum := linenum + 1
         tokens.push(object {
-            var type := 'line'
+            var type := "line"
             var value := linenum + 0
         })
     }
@@ -339,7 +339,7 @@ var sym := object {
 method next() {
     if (tokens.length > 0) then {
         sym.sym := tokens.pop()
-        if ((sym.sym.type == 'line') & (tokens.length > 0)) then {
+        if ((sym.sym.type == "line") & (tokens.length > 0)) then {
             var l := sym.sym.value
             if l /= linenum then {
                 linenum := l
@@ -347,32 +347,32 @@ method next() {
             }
         }
     } else {
-        sym.sym := object { var type := 'eof' }
+        sym.sym := object { var type := "eof" }
     }
 }
 
 method astfor(over, variable, body) {
     object {
-        var type := 'for'
+        var type := "for"
         var value := over
         var variable := variable
         var body := body
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'For(' ++ self.variable.value ++ ')
-'
+            var s := "For(" ++ self.variable.value ++ ")
+"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Each:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Each:"
             for self.body each { x ->
-                s := s ++ '
-  '++ spc ++ x.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -380,25 +380,25 @@ method astfor(over, variable, body) {
 }
 method astwhile(cond, body) {
     object {
-        var type := 'while'
+        var type := "while"
         var value := cond
         var body := body
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'While
-'
+            var s := "While
+"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Do:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Do:"
             for self.body each { x ->
-                s := s ++ '
-  '++ spc ++ x.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -406,33 +406,33 @@ method astwhile(cond, body) {
 }
 method astif(cond, thenblock, elseblock) {
     object {
-        var type := 'if'
+        var type := "if"
         var value := cond
         var thenblock := thenblock
         var elseblock := elseblock
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'If
-'
+            var s := "If
+"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Then:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Then:"
             for self.thenblock each { ix ->
-                s := s ++ '
-  '++ spc ++ ix.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ ix.pretty(depth+2)
             }
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Else:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Else:"
             for self.elseblock each { ix ->
-                s := s ++ '
-  '++ spc ++ ix.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ ix.pretty(depth+2)
             }
             s
         }
@@ -440,34 +440,34 @@ method astif(cond, thenblock, elseblock) {
 }
 method astmethod(name, params, body) {
     object {
-        var type := 'method'
+        var type := "method"
         var value := name
         var params := params
         var body := body
         var selfclosure := false
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Method
-'
+            var s := "Method
+"
             s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Parameters:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Parameters:"
             for self.params each { mx ->
-                s := s ++ '
-  '++ spc ++ mx.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ mx.pretty(depth+2)
             }
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Body:'
+            s := s ++ "
+"
+            s := s ++ spc ++ "Body:"
             for self.body each { mx ->
-                s := s ++ '
-  '++ spc ++ mx.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ mx.pretty(depth+2)
             }
             s
         }
@@ -475,27 +475,27 @@ method astmethod(name, params, body) {
 }
 method astcall(what, with) {
     object {
-        var type := 'call'
+        var type := "call"
         var value := what
         var with := with
         var line := 0 + linenum
-        var register := ''
+        var register := ""
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Call
-'
-            s := s ++ spc ++ 'Method:
-'
-            s := s ++ '  ' ++ spc ++ self.value.pretty(depth+2)
-            s := s ++ '
-'
-            s := s ++ spc ++ 'Parameters:'
+            var s := "Call
+"
+            s := s ++ spc ++ "Method:
+"
+            s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
+            s := s ++ "
+"
+            s := s ++ spc ++ "Parameters:"
             for self.with each { x ->
-                s := s ++ '
-  '++ spc ++ x.pretty(depth+2)
+                s := s ++ "
+  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -503,19 +503,19 @@ method astcall(what, with) {
 }
 method astobject(body) {
     object {
-        var type := 'object'
+        var type := "object"
         var value := body
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Object'
+            var s := "Object"
             for self.value each { x ->
-                s := s ++ '
-'++ spc ++ x.pretty(depth+1)
+                s := s ++ "
+"++ spc ++ x.pretty(depth+1)
             }
             s
         }
@@ -523,19 +523,19 @@ method astobject(body) {
 }
 method astarray(values) {
     object {
-        var type := 'array'
+        var type := "array"
         var value := values
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { ai ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Array'
+            var s := "Array"
             for self.value each { ax ->
-                s := s ++ '
-'++ spc ++ ax.pretty(depth+1)
+                s := s ++ "
+"++ spc ++ ax.pretty(depth+1)
             }
             s
         }
@@ -543,30 +543,30 @@ method astarray(values) {
 }
 method astmember(what, in) {
     object {
-        var type := 'member'
+        var type := "member"
         var value := what
         var in := in
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Member(' ++ self.value ++ ')
-'
+            var s := "Member(" ++ self.value ++ ")
+"
             s := s ++ spc ++ self.in.pretty(depth+1)
         }
     }
 }
 method astidentifier(n) {
     object {
-        var type := 'identifier'
+        var type := "identifier"
         var value := n
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            'Identifier(' ++ self.value ++ ')'
+            "Identifier(" ++ self.value ++ ")"
         }
     }
 }
@@ -583,40 +583,40 @@ method astoctets(n) {
 }
 method aststring(n) {
     object {
-        var type := 'string'
+        var type := "string"
         var value := n
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            'String(' ++ self.value ++ ')'
+            "String(" ++ self.value ++ ")"
         }
     }
 }
 method astnum(n) {
     object {
-        var type := 'num'
+        var type := "num"
         var value := n
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            'Num(' ++ self.value ++ ')'
+            "Num(" ++ self.value ++ ")"
         }
     }
 }
 method astop(op, l, r) {
     object {
-        var type := 'op'
+        var type := "op"
         var value := op
         var left := l
         var right := r
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Op(' ++ self.value ++ ')'
+            var s := "Op(" ++ self.value ++ ")"
             s := s ++ "
 "
             s := s ++ spc ++ self.left.pretty(depth + 1)
@@ -629,17 +629,17 @@ method astop(op, l, r) {
 }
 method astindex(expr, index) {
     object {
-        var type := 'index'
+        var type := "index"
         var value := expr
         var index := index
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Index'
+            var s := "Index"
             s := s ++ "
 "
             s := s ++ spc ++ self.value.pretty(depth + 1)
@@ -652,17 +652,17 @@ method astindex(expr, index) {
 }
 method astbind(dest, val) {
     object {
-        var type := 'bind'
+        var type := "bind"
         var dest := dest
         var value := val
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'Bind'
+            var s := "Bind"
             s := s ++ "
 "
             s := s ++ spc ++ self.dest.pretty(depth + 1)
@@ -675,17 +675,17 @@ method astbind(dest, val) {
 }
 method astvardec(name, val) {
     object {
-        var type := 'vardec'
+        var type := "vardec"
         var name := name
         var value := val
-        var register := ''
+        var register := ""
         var line := linenum
         method pretty(depth) {
-            var spc := ''
+            var spc := ""
             for 0..depth each { i ->
-                spc := spc ++ '  '
+                spc := spc ++ "  "
             }
-            var s := 'VarDec'
+            var s := "VarDec"
             s := s ++ "
 "
             s := s ++ spc ++ self.name.pretty(depth + 1)
@@ -722,29 +722,29 @@ method pushidentifier() {
     next()
 }
 method doif() {
-    if (accept('identifier') & (sym.sym.value == 'if')) then {
+    if (accept("identifier") & (sym.sym.value == "if")) then {
         next()
         expression()
         var cond := values.pop()
         var body := []
         var elseblock := []
         var v
-        if (accept('identifier') & (sym.sym.value == 'then')) then {
+        if (accept("identifier") & (sym.sym.value == "then")) then {
             next()
-            if accept('lbrace') then {
+            if accept("lbrace") then {
                 next()
-                while {not(accept('rbrace'))} do {
+                while {not(accept("rbrace"))} do {
                     statement()
                     v := values.pop()
                     body.push(v)
                 }
                 next()
             }
-            if (accept('identifier') & (sym.sym.value == 'else')) then {
+            if (accept("identifier") & (sym.sym.value == "else")) then {
                 next()
-                if accept('lbrace') then {
+                if accept("lbrace") then {
                     next()
-                    while {not(accept('rbrace'))} do {
+                    while {not(accept("rbrace"))} do {
                         statement()
                         v := values.pop()
                         elseblock.push(v)
@@ -758,22 +758,22 @@ method doif() {
     }
 }
 method dofor() {
-    if (accept('identifier') & (sym.sym.value == 'for')) then {
+    if (accept("identifier") & (sym.sym.value == "for")) then {
         next()
         var over
         expression()
         over := values.pop()
         var body := []
         var variable
-        if (accept('identifier') & (sym.sym.value == 'each')) then {
+        if (accept("identifier") & (sym.sym.value == "each")) then {
             next()
-            if accept('lbrace') then {
+            if accept("lbrace") then {
                 next()
                 identifier()
                 variable := values.pop()
-                if accept('arrow') then {
+                if accept("arrow") then {
                     next()
-                    while {not(accept('rbrace'))} do {
+                    while {not(accept("rbrace"))} do {
                         statement()
                         var v := values.pop()
                         body.push(v)
@@ -787,23 +787,23 @@ method dofor() {
     }
 }
 method dowhile() {
-    if (accept('identifier') & (sym.sym.value == 'while')) then {
+    if (accept("identifier") & (sym.sym.value == "while")) then {
         next()
         var cond
-        if accept('lbrace') then {
+        if accept("lbrace") then {
             next()
             expression()
             cond := values.pop()
-            if accept('rbrace') then {
+            if accept("rbrace") then {
                 next()
             }
         }
         var body := []
-        if (accept('identifier') & (sym.sym.value == 'do')) then {
+        if (accept("identifier") & (sym.sym.value == "do")) then {
             next()
-            if accept('lbrace') then {
+            if accept("lbrace") then {
                 next()
-                while {not(accept('rbrace'))} do {
+                while {not(accept("rbrace"))} do {
                     statement()
                     var v := values.pop()
                     body.push(v)
@@ -816,14 +816,14 @@ method dowhile() {
     }
 }
 method identifier() {
-    if accept('identifier') then {
-        if sym.sym.value == 'if' then {
+    if accept("identifier") then {
+        if sym.sym.value == "if" then {
             doif()
         } else {
-            if sym.sym.value == 'while' then {
+            if sym.sym.value == "while" then {
                 dowhile()
             } else {
-                if sym.sym.value == 'for' then {
+                if sym.sym.value == "for" then {
                     dofor()
                 } else {
                     pushidentifier()
@@ -833,29 +833,29 @@ method identifier() {
     }
 }
 method expression() {
-    if accept('lparen') then {
+    if accept("lparen") then {
         next()
         expression()
-        if accept('rparen') then {
+        if accept("rparen") then {
             next()
         }
     } else {
-        if accept('num') then {
+        if accept("num") then {
             pushnum()
         } else{
-            if accept('string') then {
+            if accept("string") then {
                 pushstring()
             } else {
                 if accept("octets") then {
                     pushoctets()
                 } else {
-                    if accept('identifier') then {
+                    if accept("identifier") then {
                         identifier()
                     } else {
-                        if (accept('keyword') & (sym.sym.value == 'object')) then {
+                        if (accept("keyword") & (sym.sym.value == "object")) then {
                             doobject()
                         } else {
-                            if accept('lsquare') then {
+                            if accept("lsquare") then {
                                 doarray()
                             }
                         }
@@ -868,24 +868,24 @@ method expression() {
     postfixsquare()
     callrest()
     expressionrest()
-//    if accept('dot') then {
+//    if accept("dot") then {
 //        dotrest()
 //    } else {
-//        if accept('lparen') then {
+//        if accept("lparen") then {
 //            callrest()
 //        }
 //    }
-//    if accept('op') then {
+//    if accept("op") then {
 //        expressionrest()
 //    }
 }
 method postfixsquare() {
-    if accept('lsquare') then {
+    if accept("lsquare") then {
         next()
         var expr := values.pop()
         expression()
         var index := values.pop()
-        if accept('rsquare') then {
+        if accept("rsquare") then {
             next()
             var o := astindex(expr, index)
             values.push(o)
@@ -894,7 +894,7 @@ method postfixsquare() {
     }
 }
 method expressionrest() {
-    if accept('op') then {
+    if accept("op") then {
         var a := values.pop()
         var ero := astop(sym.sym.value, a, 0)
         next()
@@ -904,17 +904,17 @@ method expressionrest() {
     }
 }
 method dotrest() {
-    if accept('dot') then {
+    if accept("dot") then {
         var lookuptarget := values.pop()
         next()
-        if accept('identifier') then {
+        if accept("identifier") then {
             var dro := astmember(sym.sym.value, lookuptarget)
             values.push(dro)
             next()
-            if accept('dot') then {
+            if accept("dot") then {
                 dotrest()
             } else {
-                if accept('lparen') then {
+                if accept("lparen") then {
                     callrest()
                 }
             }
@@ -922,22 +922,22 @@ method dotrest() {
     }
 }
 method callrest() {
-    if accept('lparen') then {
+    if accept("lparen") then {
         var meth := values.pop()
         next()
         values.push(object {
-            var type := 'lparen'
-            var register := ''
+            var type := "lparen"
+            var register := ""
         })
         expression()
-        while {accept('comma')} do {
+        while {accept("comma")} do {
             next()
             expression()
         }
-        if accept('rparen') then {
+        if accept("rparen") then {
             var tmpparams := []
             var n := values.pop()
-            while {n.type /= 'lparen'} do {
+            while {n.type /= "lparen"} do {
                 tmpparams.push(n)
                 n := values.pop()
             }
@@ -953,12 +953,12 @@ method callrest() {
     }
 }
 method vardec() {
-    if (accept('keyword') & (sym.sym.value == 'var')) then {
+    if (accept("keyword") & (sym.sym.value == "var")) then {
         next()
         pushidentifier()
         var val
         var name := values.pop()
-        if accept('bind') then {
+        if accept("bind") then {
             next()
             expression()
             val := values.pop()
@@ -968,21 +968,21 @@ method vardec() {
     }
 }
 method doarray() {
-    if accept('lsquare') then {
+    if accept("lsquare") then {
         next()
         values.push(object {
-            var type := 'lsquare'
-            var register := ''
+            var type := "lsquare"
+            var register := ""
         })
         expression()
-        while {accept('comma')} do {
+        while {accept("comma")} do {
             next()
             expression()
         }
-        if accept('rsquare') then {
+        if accept("rsquare") then {
             var tmpparams := []
             var n := values.pop()
-            while {n.type /= 'lsquare'} do {
+            while {n.type /= "lsquare"} do {
                 tmpparams.push(n)
                 n := values.pop()
             }
@@ -1001,22 +1001,22 @@ method doarray() {
 }
 method doobject() {
     // doobject because "object" is a keyword
-    if (accept('keyword') & (sym.sym.value == 'object')) then {
+    if (accept("keyword") & (sym.sym.value == "object")) then {
         next()
-        if accept('lbrace') then {
+        if accept("lbrace") then {
             values.push(object {
-                var type := 'lbrace'
-                var register := ''
+                var type := "lbrace"
+                var register := ""
             })
             next()
-            while {not(accept('rbrace'))} do {
+            while {not(accept("rbrace"))} do {
                 vardec()
                 methoddec()
             }
             next()
             var rbody := []
             var n := values.pop()
-            while {n.type /= 'lbrace'} do {
+            while {n.type /= "lbrace"} do {
                 rbody.push(n)
                 n := values.pop()
             }
@@ -1031,27 +1031,27 @@ method doobject() {
     }
 }
 method methoddec() {
-    if (accept('keyword') & (sym.sym.value == 'method')) then {
+    if (accept("keyword") & (sym.sym.value == "method")) then {
         next()
         pushidentifier()
         var meth := values.pop()
         var rparams := []
-        if accept('lparen') then {
+        if accept("lparen") then {
             next()
             values.push(object {
-                var type := 'lparen'
-                var register := ''
+                var type := "lparen"
+                var register := ""
             })
             identifier()
-            while {accept('comma')} do {
+            while {accept("comma")} do {
                 next()
                 identifier()
             }
-            if accept('rparen') then {
+            if accept("rparen") then {
                 next()
                 var tmpparams := []
                 var n := values.pop()
-                while {n.type /= 'lparen'} do {
+                while {n.type /= "lparen"} do {
                     tmpparams.push(n)
                     n := values.pop()
                 }
@@ -1061,20 +1061,20 @@ method methoddec() {
                     params.push(p)
                 }
                 var body := []
-                if accept('lbrace') then {
+                if accept("lbrace") then {
                     next()
                     values.push(object {
-                        var type := 'lbrace'
-                        var register := ''
+                        var type := "lbrace"
+                        var register := ""
                     })
                     statement()
                     var s := values.pop()
-                    while {s.type /= 'lbrace'} do {
+                    while {s.type /= "lbrace"} do {
                         body.push(s)
                         statement()
                         s := values.pop()
                     }
-                    if accept('rbrace') then {
+                    if accept("rbrace") then {
                         next()
                     } else {
                         print("Error: No statement but not end of "++meth.value)
@@ -1092,11 +1092,11 @@ method methoddec() {
 }
 
 method statement() {
-    if accept('keyword') then {
-        if sym.sym.value == 'var' then {
+    if accept("keyword") then {
+        if sym.sym.value == "var" then {
             vardec()
         } else {
-            if sym.sym.value == 'method' then {
+            if sym.sym.value == "method" then {
                 methoddec()
             } else {
                 expression()
@@ -1104,7 +1104,7 @@ method statement() {
         }
     } else {
         expression()
-        if (accept('bind')) then {
+        if (accept("bind")) then {
             var dest := values.pop()
             next()
             expression()
@@ -1144,14 +1144,14 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
-var bblock := 'entry'
+var bblock := "entry"
 method out(s) {
     output.push(s)
 }
 //scopes = [[]]
 //method findvar(v) {
 //    var i := scopes.length - 1
-//    var result := 'ERROR'
+//    var result := "ERROR"
 //    while {i >= 0} do {
 //        var scope := scopes[i]
 //        for scope each { binding ->
@@ -1165,7 +1165,7 @@ method out(s) {
 //    result
 //}
 method beginblock(s) {
-    bblock := '%' ++ s
+    bblock := "%" ++ s
     out(s ++ ":")
 }
 method compilearray(o) {
@@ -1190,7 +1190,7 @@ method compilemember(o) {
     o.register := r
 }
 method compileobjvardec(o, selfr, pos) {
-    var val := '%undefined'
+    var val := "%undefined"
     if o.value then {
         val := compilenode(o.value)
     }
@@ -1198,8 +1198,8 @@ method compileobjvardec(o, selfr, pos) {
     auto_count := auto_count + 1
     var nm := o.name.value
     var len := length(nm) + 1
-    var con := '@.str.methname' ++ myc ++ ' = private unnamed_addr '
-        ++ 'constant [' ++ len ++ ' x i8] c"' ++ nm ++ '\\00"'
+    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
     constants.push(con)
     out("; OBJECT VAR DEC " ++ nm)
     out("  call void @adddatum(%object* " ++ selfr
@@ -1220,8 +1220,8 @@ method compileobjvardec(o, selfr, pos) {
         ++ "(%object*, i32, %object**)* @reader_" ++ nm ++ "_" ++ myc ++ "))")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
-    con := '@.str.methnamew' ++ myc ++ ' = private unnamed_addr '
-        ++ 'constant [' ++ len ++ ' x i8] c"' ++ nmw ++ '\\00"'
+    con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
     print("define %object* @writer_" ++ nm ++ "_" ++ myc
         ++ "(%object* %self, i32 %nparams, "
@@ -1243,14 +1243,14 @@ method compileobjvardec(o, selfr, pos) {
 method compileobject(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    var selfr := '%obj' ++ myc
+    var selfr := "%obj" ++ myc
     out("  " ++ selfr ++ " = call %object* @alloc_obj()")
     var pos := 0
     for o.value each { e ->
-        if e.type == 'method' then {
+        if e.type == "method" then {
             compilemethod(e, selfr)
         }
-        if e.type == 'vardec' then {
+        if e.type == "vardec" then {
             compileobjvardec(e, selfr, pos)
             pos := pos + 1
         }
@@ -1277,15 +1277,15 @@ method compilefor(o) {
         ++ myc
         ++ ", i8* getelementptr([9 x i8]* @.str._havemore"
         ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    var creg := '%cond' ++ myc
+    var creg := "%cond" ++ myc
     out("  " ++ creg ++ "_valp = call i1 @istrue(%object* %condobj"
         ++ myc ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     out("br i1 " ++ creg ++ ", label %EndFor" ++ myc
         ++ ", label %ForBody" ++ myc)
     beginblock("ForBody" ++ myc)
-    var tret := 'null'
-    var tblock := 'ERROR'
+    var tret := "null"
+    var tblock := "ERROR"
     out(" %forval" ++ myc ++ " = call %object* @callmethod(%object* %iter"
         ++ myc
         ++ ", i8* getelementptr([5 x i8]* @.str._next"
@@ -1335,7 +1335,7 @@ method compilemethod(o, selfobj) {
         i := i + 1
     }
     out("  %undefined = load %object** @undefined")
-    var ret := '%undefined'
+    var ret := "%undefined"
     for o.body each { l ->
         ret := compilenode(l)
     }
@@ -1368,7 +1368,7 @@ method compilemethod(o, selfobj) {
         }
     }
     if o.selfclosure then {
-        closurevars.push('self')
+        closurevars.push("self")
     }
     print(";;;; METHOD DEFINITION: " ++ name)
     if closurevars.length > 0 then {
@@ -1387,7 +1387,7 @@ method compilemethod(o, selfobj) {
     beginblock("entry")
     var j := 0
     for closurevars each { cv ->
-        if cv == 'self' then {
+        if cv == "self" then {
             out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
             out("  %self2 = load %object*** %varc_" ++ cv)
             out("  %self = load %object** %self2")
@@ -1409,8 +1409,8 @@ method compilemethod(o, selfobj) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     var len := length(name) + 1
-    var con := '@.str.methname' ++ myc ++ ' = private unnamed_addr '
-        ++ 'constant [' ++ len ++ ' x i8] c"' ++ name ++ '\\00"'
+    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
     constants.push(con)
     if closurevars.length == 0 then {
         out("  call void @addmethod(%object* " ++ selfobj
@@ -1422,7 +1422,7 @@ method compilemethod(o, selfobj) {
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
             ++ closurevars.length ++ ")")
         for closurevars each { v ->
-            if v == 'self' then {
+            if v == "self" then {
                 out("  %selfpp" ++ auto_count ++ " = "
                     ++ "call %object** @alloc_var()")
                 out("  store %object* %self, %object** %selfpp" ++ auto_count)
@@ -1448,15 +1448,15 @@ method compilewhile(o) {
     out("  br label %BeginWhile" ++ myc)
     beginblock("BeginWhile" ++ myc)
     var cond := compilenode(o.value)
-    var creg := '%cond' ++ myc
+    var creg := "%cond" ++ myc
     out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     out("br i1 " ++ creg ++ ", label %EndWhile" ++ myc
         ++ ", label %WhileBody" ++ myc)
     beginblock("WhileBody" ++ myc)
-    var tret := 'null'
-    var tblock := 'ERROR'
+    var tret := "null"
+    var tblock := "ERROR"
     for o.body each { l->
         tret := compilenode(l)
     }
@@ -1473,7 +1473,7 @@ method compileif(o) {
     out("  br label %BeginIf" ++ myc)
     beginblock("BeginIf" ++ myc)
     var cond := compilenode(o.value)
-    var creg := '%cond' ++ myc
+    var creg := "%cond" ++ myc
     out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
@@ -1487,10 +1487,10 @@ method compileif(o) {
             ++ ", label %TrueBranch" ++ myc)
     }
     beginblock("TrueBranch" ++ myc)
-    var tret := '%undefined'
-    var fret := '%undefined'
-    var tblock := 'ERROR'
-    var fblock := 'ERROR'
+    var tret := "%undefined"
+    var fret := "%undefined"
+    var tblock := "ERROR"
+    var fblock := "ERROR"
     for o.thenblock each { l->
         tret := compilenode(l)
     }
@@ -1516,8 +1516,8 @@ method compileif(o) {
 }
 method compileidentifier(o) {
     var name := o.value
-    if name == 'self' then {
-        o.register := '%self'
+    if name == "self" then {
+        o.register := "%self"
     } else {
         usedvars.push(name)
         out("  %var_val_" ++ name ++ auto_count ++ " = load %object** "
@@ -1528,10 +1528,10 @@ method compileidentifier(o) {
 }
 method compilebind(o) {
     var dest := o.dest
-    var val := ''
-    var c := ''
-    var r := ''
-    if dest.type == 'identifier' then {
+    var val := ""
+    var c := ""
+    var r := ""
+    if dest.type == "identifier" then {
         val := o.value
         val := compilenode(val)
         var nm := dest.value
@@ -1539,14 +1539,14 @@ method compilebind(o) {
         out("  store %object* " ++ val ++ ", %object** %var_" ++ nm)
         o.register := val
     } else {
-        if dest.type == 'member' then {
+        if dest.type == "member" then {
             out("; WARNING: non-local assigns not yet fully supported")
             dest.value := dest.value ++ ":="
             c := astcall(dest, [o.value])
             r := compilenode(c)
             o.register := r
         }
-        if dest.type == 'index' then {
+        if dest.type == "index" then {
             var imem := astmember("[]:=", dest.value)
             c := astcall(imem, [dest.index, o.value])
             r := compilenode(c)
@@ -1561,7 +1561,7 @@ method compilevardec(o) {
     if val then {
         val := compilenode(val)
     } else {
-        val := '%undefined'
+        val := "%undefined"
     }
     //scopes[scopes.length-1].push([nm, val])
     out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
@@ -1582,27 +1582,27 @@ method compileindex(o) {
 method compileop(o) {
     var left := compilenode(o.left)
     var right := compilenode(o.right)
-    // Sometimes they don't? Or something.
+    // Sometimes they don"t? Or something.
     auto_count := auto_count + 1
-    if ((o.value == '+') | (o.value == '*') | (o.value == '/') |
-        (o.value == '-') | (o.value == '%')) then {
-        var rnm := 'sum'
-        var opnm := 'plus'
-        if (o.value == '*') then {
-            rnm := 'prod'
-            opnm := 'asterisk'
+    if ((o.value == "+") | (o.value == "*") | (o.value == "/") |
+        (o.value == "-") | (o.value == "%")) then {
+        var rnm := "sum"
+        var opnm := "plus"
+        if (o.value == "*") then {
+            rnm := "prod"
+            opnm := "asterisk"
         }
-        if (o.value == '/') then {
-            rnm := 'quotient'
-            opnm := 'slash'
+        if (o.value == "/") then {
+            rnm := "quotient"
+            opnm := "slash"
         }
-        if (o.value == '-') then {
-            rnm := 'diff'
-            opnm := 'minus'
+        if (o.value == "-") then {
+            rnm := "diff"
+            opnm := "minus"
         }
-        if (o.value == '%') then {
-            rnm := 'modulus'
-            opnm := 'percent'
+        if (o.value == "%") then {
+            rnm := "modulus"
+            opnm := "percent"
         }
         out("  store %object* " ++ right ++ ", %object** %params_0")
         out("  %" ++ rnm ++ auto_count ++ " = call %object* @callmethod(%object* "
@@ -1612,8 +1612,8 @@ method compileop(o) {
         auto_count := auto_count + 1
     } else {
         var len := length(o.value) + 1
-        var con := '@.str' ++ constants.length ++ ' = private unnamed_addr '
-            ++ 'constant [' ++ len ++ ' x i8] c"' ++ o.value ++ '\\00"'
+        var con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value ++ "\\00\""
         out("  store %object* " ++ right ++ ", %object** %params_0")
         out("  %opresult" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ left
@@ -1626,9 +1626,9 @@ method compileop(o) {
 }
 method compilecall(o) {
     var args := []
-    var obj := ''
+    var obj := ""
     var len := 0
-    var con := ''
+    var con := ""
     for o.with each { p ->
         var r := compilenode(p)
         args.push(r)
@@ -1636,14 +1636,14 @@ method compilecall(o) {
     for 0..(args.length-1) each { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
-    if (o.value.type == 'member') then {
+    if (o.value.type == "member") then {
         print("; handling member")
         obj := compilenode(o.value.in)
         print("; compiled in to " ++ obj)
         len := length(o.value.value) + 1
         print("; got len " ++ len)
-        con := '@.str' ++ constants.length ++ ' = private unnamed_addr '
-            ++ 'constant [' ++ len ++ ' x i8] c"' ++ o.value.value ++ '\\00"'
+        con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
         print("; created con")
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
@@ -1654,10 +1654,10 @@ method compilecall(o) {
         constants.push(con)
     } else {
         out("; WARNING: non-member calls not fully supported yet")
-        obj := '%self'
+        obj := "%self"
         len := length(o.value.value) + 1
-        con := '@.str' ++ constants.length ++ ' = private unnamed_addr '
-            ++ 'constant [' ++ len ++ ' x i8] c"' ++ o.value.value ++ '\\00"'
+        con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
@@ -1681,7 +1681,7 @@ method hexdecchar(c) {
     ret
 }
 method compileoctets(o) {
-    var escval := ''
+    var escval := ""
     var l := length(o.value) / 2
     var i := 0
     for o.value each {c->
@@ -1715,11 +1715,11 @@ method compileoctets(o) {
         ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
         ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
         ++ ".define]")
-    var con := '@.oct' ++ constants.length ++ ' = private unnamed_addr constant
-        [' ++ l ++ ' x i8] c"' ++ escval ++ '"'
+    var con := "@.oct" ++ constants.length ++ " = private unnamed_addr constant
+        [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
     constants.push(con)
-    con := ('@.octlit' ++ auto_count
-        ++ ' = private global %object* null')
+    con := ("@.octlit" ++ auto_count
+        ++ " = private global %object* null")
     constants.push(con)
     o.register := "%octets" ++ auto_count
     auto_count := auto_count + 1
@@ -1730,14 +1730,14 @@ method compilenode(o) {
         out("; Begin line " ++ linenum)
         out("  call void @setline(i32 " ++ linenum ++ ")")
     }
-    if (o.type == 'num') then {
+    if (o.type == "num") then {
         out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
             ++ o.value ++ ".0)")
         o.register := "%num" ++ auto_count
         auto_count := auto_count + 1
     }
-    var l := ''
-    if (o.type == 'string') then {
+    var l := ""
+    if (o.type == "string") then {
         l := length(o.value)
         l := l + 1
         o.value := escapestring(o.value)
@@ -1765,24 +1765,25 @@ method compilenode(o) {
             ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
             ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
             ++ ".define]")
-        var con := '@.str' ++ constants.length ++ ' = private unnamed_addr constant [' ++ l ++ ' x i8] c"' ++ o.value ++ '\\00"'
+        var con := "@.str" ++ constants.length ++ " = private unnamed_addr
+            constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
         constants.push(con)
-        con := ('@.strlit' ++ auto_count
-            ++ ' = private global %object* null')
+        con := ("@.strlit" ++ auto_count
+            ++ " = private global %object* null")
         constants.push(con)
         o.register := "%string" ++ auto_count
         auto_count := auto_count + 1
     }
-    if (o.type == 'index') then {
+    if (o.type == "index") then {
         compileindex(o)
     }
     if (o.type == "octets") then {
         compileoctets(o)
     }
-    if ((o.type == 'identifier')
-        & ((o.value == 'true') | (o.value == 'false'))) then {
+    if ((o.type == "identifier")
+        & ((o.value == "true") | (o.value == "false"))) then {
         var val := 0
-        if (o.value == 'true') then {
+        if (o.value == "true") then {
             val := 1
         }
         out("  %bool" ++ auto_count ++ " = call %object* "
@@ -1790,39 +1791,39 @@ method compilenode(o) {
         o.register := "%bool" ++ auto_count
         auto_count := auto_count + 1
     } else {
-        if (o.type == 'identifier') then {
+        if (o.type == "identifier") then {
             compileidentifier(o)
         }
     }
-    if (o.type == 'vardec') then {
+    if (o.type == "vardec") then {
         compilevardec(o)
     }
-    if (o.type == 'method') then {
-        compilemethod(o, '%self')
+    if (o.type == "method") then {
+        compilemethod(o, "%self")
     }
-    if (o.type == 'array') then {
+    if (o.type == "array") then {
         compilearray(o)
     }
-    if (o.type == 'bind') then {
+    if (o.type == "bind") then {
         compilebind(o)
     }
-    if (o.type == 'while') then {
+    if (o.type == "while") then {
         compilewhile(o)
     }
-    if (o.type == 'if') then {
+    if (o.type == "if") then {
         compileif(o)
     }
-    if (o.type == 'object') then {
+    if (o.type == "object") then {
         compileobject(o)
     }
-    if (o.type == 'member') then {
+    if (o.type == "member") then {
         compilemember(o)
     }
-    if (o.type == 'for') then {
+    if (o.type == "for") then {
         compilefor(o)
     }
-    if ((o.type == 'call')) then {
-        if (o.value.value == 'print') then {
+    if ((o.type == "call")) then {
+        if (o.value.value == "print") then {
             var args := []
             for o.with each { prm ->
                 var r := compilenode(prm)
@@ -1836,19 +1837,19 @@ method compilenode(o) {
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } else {
-            if (o.value.value == 'readall') then {
+            if (o.value.value == "readall") then {
                 out("  %call" ++ auto_count ++ " = call %object* "
                     ++ "@gracelib_readall(%object* null, i32 0, "
                     ++ "%object** null)")
-                o.register := '%call' ++ auto_count
+                o.register := "%call" ++ auto_count
                 auto_count := auto_count + 1
             } else {
-                if ((o.value.type == 'identifier')
-                    & (o.value.value == 'length')) then {
+                if ((o.value.type == "identifier")
+                    & (o.value.value == "length")) then {
                     if o.with.length == 0 then {
                         out("; PP FOLLOWS")
                         out(o.pretty(0))
-                        tmp := 'null'
+                        tmp := "null"
                     } else {
                         tmp := compilenode(o.with[0])
                     }
@@ -1857,15 +1858,15 @@ method compilenode(o) {
                     o.register := "%call" ++ auto_count
                     auto_count := auto_count + 1
                 } else {
-                    if ((o.value.type == 'identifier')
-                        & (o.value.value == 'escapestring')) then {
+                    if ((o.value.type == "identifier")
+                        & (o.value.value == "escapestring")) then {
                         tmp := o.with[0]
                         tmp := astmember("_escape", tmp)
                         tmp := astcall(tmp, [])
                         o.register := compilenode(tmp)
                     } else {
-                        if ((o.value.type == 'identifier')
-                            & (o.value.value == 'not')) then {
+                        if ((o.value.type == "identifier")
+                            & (o.value.value == "not")) then {
                             tmp := o.with[0]
                             tmp := astmember("not", tmp)
                             tmp := astcall(tmp, [])
@@ -1878,32 +1879,32 @@ method compilenode(o) {
             }
         }
     }
-    if (o.type == 'op') then {
+    if (o.type == "op") then {
         compileop(o)
     }
     out("; compilenode returning " ++ o.register)
     o.register
 }
-out('@.str = private unnamed_addr constant [6 x i8] c"Hello\\00"')
-out('@.str._plus = private unnamed_addr constant [2 x i8] c"+\\00"')
-out('@.str._minus = private unnamed_addr constant [2 x i8] c"-\\00"')
-out('@.str._asterisk = private unnamed_addr constant [2 x i8] c"*\\00"')
-out('@.str._slash = private unnamed_addr constant [2 x i8] c"/\\00"')
-out('@.str._percent = private unnamed_addr constant [2 x i8] c"%\\00"')
-out('@.str._index = private unnamed_addr constant [3 x i8] c"[]\\00"')
-out('@.str._push = private unnamed_addr constant [5 x i8] c"push\\00"')
-out('@.str._iter = private unnamed_addr constant [5 x i8] c"iter\\00"')
-out('@.str._apply = private unnamed_addr constant [6 x i8] c"apply\\00"')
-out('@.str._havemore = private unnamed_addr constant [9 x i8] c"havemore\\00"')
-out('@.str._next = private unnamed_addr constant [5 x i8] c"next\\00"')
-out('@.str.asString = private unnamed_addr constant [9 x i8] c"asString\\00"')
+out("@.str = private unnamed_addr constant [6 x i8] c\"Hello\\00\"")
+out("@.str._plus = private unnamed_addr constant [2 x i8] c\"+\\00\"")
+out("@.str._minus = private unnamed_addr constant [2 x i8] c\"-\\00\"")
+out("@.str._asterisk = private unnamed_addr constant [2 x i8] c\"*\\00\"")
+out("@.str._slash = private unnamed_addr constant [2 x i8] c\"/\\00\"")
+out("@.str._percent = private unnamed_addr constant [2 x i8] c\"%\\00\"")
+out("@.str._index = private unnamed_addr constant [3 x i8] c\"[]\\00\"")
+out("@.str._push = private unnamed_addr constant [5 x i8] c\"push\\00\"")
+out("@.str._iter = private unnamed_addr constant [5 x i8] c\"iter\\00\"")
+out("@.str._apply = private unnamed_addr constant [6 x i8] c\"apply\\00\"")
+out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\"")
+out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
+out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
 out("@undefined = private global %object* null")
-print('
+print("
 %method = type { i8*, %object*(%object *, i32, %object**)*,
     %object***, %object*(%object *, i32, %object**,
         %object***)*}
 %object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }
-')
+")
 out("define i32 @main(i32 %argc, i8** %argv) {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
@@ -1993,8 +1994,8 @@ for output each { x ->
 // - Types
 // - REPL
 // - File access
-// - ' is not string literal
 // - String escapes
 // - Octet type
 // - return
 // - Operator associativity
+// - import
