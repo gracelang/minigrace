@@ -405,7 +405,7 @@ int getutf8charlen(char *s) {
     if ((s[0] & 64) == 0) {
         // Unexpected continuation byte, error
         die("Unexpected continuation byte starting character: %x",
-                s[0]);
+                (int)(s[0] & 255));
     }
     if ((s[0] & 32) == 0)
         return 2;
@@ -476,6 +476,21 @@ struct Object *String_iter(struct Object *receiver, unsigned int nparams,
         struct Object** args) {
     return alloc_StringIter(receiver);
 }
+struct Object *String_at(struct Object *receiver, unsigned int nparams,
+        struct Object **args) {
+    struct Object *idxobj = args[0];
+    struct Object *as = callmethod(idxobj, "asString", 0, NULL);
+    int idx = atoi(as->bdata[0]);
+    int i = 0;
+    char *ptr = receiver->bdata[0];
+    while (i < idx){
+        ptr += getutf8charlen(ptr);
+        i++;
+    }
+    char buf[5];
+    getutf8char(ptr, buf);
+    return alloc_String(buf);
+}
 struct Object *alloc_String(char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
@@ -486,7 +501,7 @@ struct Object *alloc_String(char *data) {
     if (String_Methods == NULL) {
         addmethod(o, "asString", &identity_function);
         addmethod(o, "++", &String_concat);
-        addmethod(o, "at", &String_index);
+        addmethod(o, "at", &String_at);
         addmethod(o, "[]", &String_index);
         addmethod(o, "==", &String_Equals);
         addmethod(o, "_escape", &String__escape);
