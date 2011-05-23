@@ -274,7 +274,12 @@ for 0..length(input)-1 each { i ->
     } else {
         if (instr) then {
             if escaped then {
-                accum := accum ++ c
+                if ((c == "l") | (c == 'n')) then {
+                    accum := accum ++ "
+"
+                } else {
+                    accum := accum ++ c
+                }
                 escaped := false
             } else {
                 if c == "\\" then {
