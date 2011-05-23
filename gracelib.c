@@ -379,11 +379,13 @@ struct Object *alloc_Array() {
     o->data = glmalloc(sizeof(struct Object*) * 8);
     if (Array_Methods == NULL) {
         addmethod(o, "asString", &Array_asString);
+        addmethod(o, "at", &Array_index);
         addmethod(o, "[]", &Array_index);
         addmethod(o, "[]:=", &Array_indexAssign);
         addmethod(o, "push", &Array_push);
         addmethod(o, "pop", &Array_pop);
         addmethod(o, "length", &Array_length);
+        addmethod(o, "size", &Array_length);
         addmethod(o, "iter", &Array_iter);
         addmethod(o, "contains", &Array_contains);
         Array_Methods = o->methods;
@@ -408,10 +410,12 @@ struct Object *alloc_String(char *data) {
     if (String_Methods == NULL) {
         addmethod(o, "asString", &identity_function);
         addmethod(o, "++", &String_concat);
+        addmethod(o, "at", &String_index);
         addmethod(o, "[]", &String_index);
         addmethod(o, "==", &String_Equals);
         addmethod(o, "_escape", &String__escape);
         addmethod(o, "length", &String_length);
+        addmethod(o, "size", &String_length);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
