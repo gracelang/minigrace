@@ -491,6 +491,27 @@ struct Object *String_at(struct Object *receiver, unsigned int nparams,
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
+struct Object *String_ord(struct Object *receiver, unsigned int nparams,
+        struct Object **args) {
+    char buf[5];
+    int i;
+    unsigned int codepoint = 0;
+    getutf8char(receiver->bdata[0], buf);
+    if (buf[1] == 0)
+        return alloc_Float64((int)buf[0]&127);
+    if (buf[2] == 0)
+        codepoint = buf[0] & 31;
+    else if (buf[3] == 0)
+        codepoint = buf[0] & 15;
+    else
+        codepoint = buf[0] & 7;
+    for (i=1; buf[i] != 0; i++) {
+        int more = buf[i] & 63;
+        codepoint = codepoint << 6;
+        codepoint = codepoint | more;
+    }
+    return alloc_Float64(codepoint);
+}
 struct Object *String_size(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
     // In the long run, this should be calculated on string allocation
@@ -530,6 +551,7 @@ struct Object *alloc_String(char *data) {
         addmethod(o, "length", &String_length);
         addmethod(o, "size", &String_size);
         addmethod(o, "iter", &String_iter);
+        addmethod(o, "ord", &String_ord);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
