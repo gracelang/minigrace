@@ -491,12 +491,34 @@ struct Object *String_at(struct Object *receiver, unsigned int nparams,
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
+struct Object *String_size(struct Object *receiver, unsigned int nparams,
+        struct Object **args) {
+    // In the long run, this should be calculated on string allocation
+    // (during strcpy), but it can't do that until the compiler is
+    // fully Unicode-aware.
+    char *s = receiver->bdata[0];
+    int *z = receiver->bdata[1];
+    int i;
+    int size = 0;
+    if (*z == -1) {
+        for (i=0; s[i] != 0; ) {
+            int l = getutf8charlen(s + i);
+            i += l;
+            size = size + 1;
+        }
+        *z = size;
+    }
+    return alloc_Float64(*z);
+}
 struct Object *alloc_String(char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
-    o->bdata = glmalloc(sizeof(void*));
+    o->bdata = glmalloc(sizeof(void*) * 2);
     o->bdata[0] = glmalloc(strlen(data) + 1);
+    o->bdata[1] = glmalloc(sizeof(int));
     char *d = o->bdata[0];
+    int *size = o->bdata[1];
+    *size = -1;
     strcpy(d, data);
     if (String_Methods == NULL) {
         addmethod(o, "asString", &identity_function);
@@ -506,7 +528,7 @@ struct Object *alloc_String(char *data) {
         addmethod(o, "==", &String_Equals);
         addmethod(o, "_escape", &String__escape);
         addmethod(o, "length", &String_length);
-        addmethod(o, "size", &String_length);
+        addmethod(o, "size", &String_size);
         addmethod(o, "iter", &String_iter);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
