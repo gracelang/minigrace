@@ -13,6 +13,12 @@ method stringtok(s) {
         var value := s
     }
 }
+method octetstok(s) {
+    object {
+        var type := "octets"
+        var value := s
+    }
+}
 method lbracetok() {
     object {
         var type := 'lbrace'
@@ -119,6 +125,11 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := 1
         }
+        if (mode == "x") then {
+            tok := octetstok(accum)
+            tokens.push(tok)
+            done := 1
+        }
         if (mode == ',') then {
             tok := commatok()
             tokens.push(tok)
@@ -204,6 +215,7 @@ var newmode := mode
 var instr := false
 var accum := ''
 var escaped := false
+var prev := ""
 for 0..length(input)-1 each { i ->
     var c := input[i]
     var ct := ''
@@ -221,6 +233,10 @@ for 0..length(input)-1 each { i ->
             if (c == '"') then {
                 newmode := '"'
                 instr := true
+                if prev == "x" then {
+                    newmode := "x"
+                    mode := 'n'
+                }
             }
             ct := ichars.contains(c)
             if (ct) then {
@@ -247,6 +263,10 @@ for 0..length(input)-1 each { i ->
                 newmode := mode
             }
         }
+    }
+    if ((mode == "x") & (c == '"') & (escaped.not)) then {
+        newmode := 'n'
+        instr := false
     }
     if ((mode == '"') & (c == '"') & (escaped.not)) then {
         newmode := 'n'
@@ -308,6 +328,7 @@ for 0..length(input)-1 each { i ->
             var value := linenum + 0
         })
     }
+    prev := c
 }
 modechange(tokens, mode, accum)
 
@@ -549,6 +570,17 @@ method astidentifier(n) {
         }
     }
 }
+method astoctets(n) {
+    object {
+        var type := "octets"
+        var value := n
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            "Octets(" ++ self.value ++ ")"
+        }
+    }
+}
 method aststring(n) {
     object {
         var type := 'string'
@@ -671,6 +703,11 @@ method accept(t) {
 }
 method pushnum() {
     var o := astnum(sym.sym.value)
+    values.push(o)
+    next()
+}
+method pushoctets() {
+    var o := astoctets(sym.sym.value)
     values.push(o)
     next()
 }
@@ -809,14 +846,18 @@ method expression() {
             if accept('string') then {
                 pushstring()
             } else {
-                if accept('identifier') then {
-                    identifier()
+                if accept("octets") then {
+                    pushoctets()
                 } else {
-                    if (accept('keyword') & (sym.sym.value == 'object')) then {
-                        doobject()
+                    if accept('identifier') then {
+                        identifier()
                     } else {
-                        if accept('lsquare') then {
-                            doarray()
+                        if (accept('keyword') & (sym.sym.value == 'object')) then {
+                            doobject()
+                        } else {
+                            if accept('lsquare') then {
+                                doarray()
+                            }
                         }
                     }
                 }
@@ -1628,6 +1669,61 @@ method compilecall(o) {
     out("; compilecall giving return register " ++ o.register)
     auto_count := auto_count + 1
 }
+method hexdecchar(c) {
+    var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
+                 "9", "a", "b", "c", "d", "e", "f"]
+    var ret := 0
+    for 0..15 each {i->
+        if chars.at(i) == c then {
+            ret := i
+        }
+    }
+    ret
+}
+method compileoctets(o) {
+    var escval := ''
+    var l := length(o.value) / 2
+    var i := 0
+    for o.value each {c->
+        if (i % 2) == 0 then {
+            escval := escval ++ "\\"
+        }
+        escval := escval ++ c
+        i := i + 1
+    }
+    out("  %tmp" ++ auto_count ++ " = load %object** @.octlit"
+        ++ auto_count)
+    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
+        ++ auto_count ++ ", null")
+    out("  br i1 %cmp" ++ auto_count ++ ", label %octlit"
+        ++ auto_count ++ ".already, label %octlit"
+        ++ auto_count ++ ".define")
+    beginblock("octlit" ++ auto_count ++ ".already")
+    out("  %alreadyoctets" ++ auto_count ++ " = load %object** @.octlit"
+        ++ auto_count)
+    out("  br label %octlit" ++ auto_count ++ ".end")
+    beginblock("octlit" ++ auto_count ++ ".define")
+    out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.length ++ ", i32 0, i32 0")
+    out("  %defoctets" ++ auto_count ++ " = call %object* "
+        ++ "@alloc_Octets(i8* "
+          ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
+    out("  store %object* %defoctets" ++ auto_count ++ ", %object** "
+        ++ "@.octlit" ++ auto_count)
+    out("br label %octlit" ++ auto_count ++ ".end")
+    beginblock("octlit" ++ auto_count ++ ".end")
+    out(" %octets" ++ auto_count ++ " = phi %object* [%alreadyoctets"
+        ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
+        ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
+        ++ ".define]")
+    var con := '@.oct' ++ constants.length ++ ' = private unnamed_addr constant
+        [' ++ l ++ ' x i8] c"' ++ escval ++ '"'
+    constants.push(con)
+    con := ('@.octlit' ++ auto_count
+        ++ ' = private global %object* null')
+    constants.push(con)
+    o.register := "%octets" ++ auto_count
+    auto_count := auto_count + 1
+}
 method compilenode(o) {
     if linenum /= o.line then {
         linenum := o.line
@@ -1679,6 +1775,9 @@ method compilenode(o) {
     }
     if (o.type == 'index') then {
         compileindex(o)
+    }
+    if (o.type == "octets") then {
+        compileoctets(o)
     }
     if ((o.type == 'identifier')
         & ((o.value == 'true') | (o.value == 'false'))) then {
@@ -1862,6 +1961,7 @@ out("declare %object* @alloc_obj()")
 out("declare %object* @alloc_Array()")
 out("declare %object* @alloc_Float64(double)")
 out("declare %object* @alloc_String(i8*)")
+out("declare %object* @alloc_Octets(i8*, i32)")
 out("declare %object* @alloc_Boolean(i32)")
 out("declare %object* @alloc_Undefined()")
 out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
