@@ -398,8 +398,63 @@ struct Object *alloc_Array() {
     int r = *t;
     return o;
 }
+int getutf8charlen(char *s) {
+    int i;
+    if ((s[0] & 128) == 0)
+        return 1;
+    if ((s[0] & 32) == 0)
+        return 2;
+    if ((s[0] & 16) == 0)
+        return 3;
+    if ((s[0] & 8) == 0)
+        return 4;
+    return -1;
+}
+struct Object *StringIter_next(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int *pos = self->bdata[0];
+    struct Object *str = self->data[0];
+    char *cstr = str->bdata[0];
+    int rpos = *pos;
+    int charlen = getutf8charlen(cstr + rpos);
+    char buf[4];
+    int i;
+    for (i=0; i<4; i++)
+        if (i < charlen)
+            buf[i] = cstr[rpos + i];
+        else
+            buf[i] = 0;
+    *pos  = *pos + charlen;
+    return alloc_String(buf);
+}
+struct Object *StringIter_havemore(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int *pos = self->bdata[0];
+    struct Object *str = self->data[0];
+    int len = strlen(str->bdata[0]);
+    if (*pos < len)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+struct Object *alloc_StringIter(struct Object *string) {
+    struct Object *o = alloc_obj();
+    o->data = glmalloc(sizeof(struct Object*));
+    o->data[0] = string;
+    strcpy(o->type, "StringIter");
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = glmalloc(sizeof(int));
+    int *pos = o->bdata[0];
+    *pos = 0;
+    addmethod(o, "havemore", &StringIter_havemore);
+    addmethod(o, "next", &StringIter_next);
+    return o;
+}
 struct Object *String__escape(struct Object*, unsigned int, struct Object**);
 struct Object *String_length(struct Object*, unsigned int, struct Object**);
+struct Object *String_iter(struct Object *receiver, unsigned int nparams,
+        struct Object** args) {
+    return alloc_StringIter(receiver);
+}
 struct Object *alloc_String(char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
@@ -416,6 +471,7 @@ struct Object *alloc_String(char *data) {
         addmethod(o, "_escape", &String__escape);
         addmethod(o, "length", &String_length);
         addmethod(o, "size", &String_length);
+        addmethod(o, "iter", &String_iter);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
