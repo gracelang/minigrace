@@ -1777,7 +1777,7 @@ method compileimport(o) {
     var con := "@.module." ++ nm ++ " = private global %object* null"
     modules.push(nm)
     constants.push(con)
-    con := "declare %object* @foo_init()"
+    con := "declare %object* @" ++ nm ++ "_init()"
     constants.push(con)
     o.register := "%undefined"
 }
@@ -2055,7 +2055,6 @@ for output each { x ->
 // - REPL
 // - File access
 // - String escapes
-// - Octet type
 // - return
 // - Operator associativity
 // - import
