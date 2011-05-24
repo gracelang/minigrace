@@ -210,7 +210,7 @@ method modechange(tokens, mode, accum) {
         }
     }
 }
-var input := readall()
+var input := io.input.read()
 
 var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
             "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
@@ -1859,43 +1859,35 @@ method compilenode(o) {
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } else {
-            if (o.value.value == "readall") then {
+            if ((o.value.type == "identifier")
+                & (o.value.value == "length")) then {
+                if o.with.length == 0 then {
+                    out("; PP FOLLOWS")
+                    out(o.pretty(0))
+                    tmp := "null"
+                } else {
+                    tmp := compilenode(o.with[0])
+                }
                 out("  %call" ++ auto_count ++ " = call %object* "
-                    ++ "@gracelib_readall(%object* null, i32 0, "
-                    ++ "%object** null)")
+                    ++ "@gracelib_length(%object* " ++ tmp ++ ")")
                 o.register := "%call" ++ auto_count
                 auto_count := auto_count + 1
             } else {
                 if ((o.value.type == "identifier")
-                    & (o.value.value == "length")) then {
-                    if o.with.length == 0 then {
-                        out("; PP FOLLOWS")
-                        out(o.pretty(0))
-                        tmp := "null"
-                    } else {
-                        tmp := compilenode(o.with[0])
-                    }
-                    out("  %call" ++ auto_count ++ " = call %object* "
-                        ++ "@gracelib_length(%object* " ++ tmp ++ ")")
-                    o.register := "%call" ++ auto_count
-                    auto_count := auto_count + 1
+                    & (o.value.value == "escapestring")) then {
+                    tmp := o.with[0]
+                    tmp := astmember("_escape", tmp)
+                    tmp := astcall(tmp, [])
+                    o.register := compilenode(tmp)
                 } else {
                     if ((o.value.type == "identifier")
-                        & (o.value.value == "escapestring")) then {
+                        & (o.value.value == "not")) then {
                         tmp := o.with[0]
-                        tmp := astmember("_escape", tmp)
+                        tmp := astmember("not", tmp)
                         tmp := astcall(tmp, [])
                         o.register := compilenode(tmp)
                     } else {
-                        if ((o.value.type == "identifier")
-                            & (o.value.value == "not")) then {
-                            tmp := o.with[0]
-                            tmp := astmember("not", tmp)
-                            tmp := astcall(tmp, [])
-                            o.register := compilenode(tmp)
-                        } else {
-                            compilecall(o)
-                        }
+                        compilecall(o)
                     }
                 }
             }
