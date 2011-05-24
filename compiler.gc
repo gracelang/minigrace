@@ -297,8 +297,7 @@ for 0..length(input)-1 each { i ->
         if (instr) then {
             if escaped then {
                 if ((c == "l") | (c == "n")) then {
-                    accum := accum ++ "
-"
+                    accum := accum ++ "\n"
                 } else {
                     accum := accum ++ c
                 }
@@ -311,8 +310,7 @@ for 0..length(input)-1 each { i ->
                 }
             }
         } else {
-            if (c == "
-") then {
+            if (c == "\n") then {
                 modechange(tokens, mode, accum)
                 mode := "n"
                 newmode := "n"
@@ -322,8 +320,7 @@ for 0..length(input)-1 each { i ->
             }
         }
     }
-    if (c == "
-") then {
+    if (c == "\n") then {
         linenum := linenum + 1
         tokens.push(object {
             var type := "line"
@@ -366,15 +363,12 @@ method astfor(over, variable, body) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "For(" ++ self.variable.value ++ ")
-"
+            var s := "For(" ++ self.variable.value ++ ")\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Each:"
             for self.body each { x ->
-                s := s ++ "
-  "++ spc ++ x.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -392,15 +386,12 @@ method astwhile(cond, body) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "While
-"
+            var s := "While\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Do:"
             for self.body each { x ->
-                s := s ++ "
-  "++ spc ++ x.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -419,22 +410,17 @@ method astif(cond, thenblock, elseblock) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "If
-"
+            var s := "If\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Then:"
             for self.thenblock each { ix ->
-                s := s ++ "
-  "++ spc ++ ix.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Else:"
             for self.elseblock each { ix ->
-                s := s ++ "
-  "++ spc ++ ix.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
             s
         }
@@ -454,22 +440,17 @@ method astmethod(name, params, body) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "Method
-"
+            var s := "Method\n"
             s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
             for self.params each { mx ->
-                s := s ++ "
-  "++ spc ++ mx.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Body:"
             for self.body each { mx ->
-                s := s ++ "
-  "++ spc ++ mx.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s
         }
@@ -487,17 +468,13 @@ method astcall(what, with) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "Call
-"
-            s := s ++ spc ++ "Method:
-"
+            var s := "Call\n"
+            s := s ++ spc ++ "Method:\n"
             s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
             for self.with each { x ->
-                s := s ++ "
-  "++ spc ++ x.pretty(depth+2)
+                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
         }
@@ -516,8 +493,7 @@ method astobject(body) {
             }
             var s := "Object"
             for self.value each { x ->
-                s := s ++ "
-"++ spc ++ x.pretty(depth+1)
+                s := s ++ "\n"++ spc ++ x.pretty(depth+1)
             }
             s
         }
@@ -536,8 +512,7 @@ method astarray(values) {
             }
             var s := "Array"
             for self.value each { ax ->
-                s := s ++ "
-"++ spc ++ ax.pretty(depth+1)
+                s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
             }
             s
         }
@@ -555,8 +530,7 @@ method astmember(what, in) {
             for 0..depth each { i ->
                 spc := spc ++ "  "
             }
-            var s := "Member(" ++ self.value ++ ")
-"
+            var s := "Member(" ++ self.value ++ ")\n"
             s := s ++ spc ++ self.in.pretty(depth+1)
         }
     }
@@ -619,11 +593,9 @@ method astop(op, l, r) {
                 spc := spc ++ "  "
             }
             var s := "Op(" ++ self.value ++ ")"
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.left.pretty(depth + 1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.right.pretty(depth + 1)
             s
         }
@@ -642,11 +614,9 @@ method astindex(expr, index) {
                 spc := spc ++ "  "
             }
             var s := "Index"
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.index.pretty(depth + 1)
             s
         }
@@ -665,11 +635,9 @@ method astbind(dest, val) {
                 spc := spc ++ "  "
             }
             var s := "Bind"
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.dest.pretty(depth + 1)
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
             s
         }
@@ -688,12 +656,10 @@ method astvardec(name, val) {
                 spc := spc ++ "  "
             }
             var s := "VarDec"
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
             if self.value then {
-                s := s ++ "
-    "
+                s := s ++ "\n    "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
             s
@@ -712,8 +678,7 @@ method astimport(name) {
                 spc := spc ++ "  "
             }
             var s := "Import"
-            s := s ++ "
-"
+            s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
             s
         }
@@ -1758,8 +1723,8 @@ method compileoctets(o) {
         ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
         ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
         ++ ".define]")
-    var con := "@.oct" ++ constants.length ++ " = private unnamed_addr constant
-        [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
+    var con := "@.oct" ++ constants.length ++ " = private unnamed_addr "
+        ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
     constants.push(con)
     con := ("@.octlit" ++ auto_count
         ++ " = private global %object* null")
@@ -1823,8 +1788,8 @@ method compilenode(o) {
             ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
             ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
             ++ ".define]")
-        var con := "@.str" ++ constants.length ++ " = private unnamed_addr
-            constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
+        var con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+            ++ "constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
         constants.push(con)
         con := ("@.strlit" ++ auto_count
             ++ " = private global %object* null")
@@ -1960,12 +1925,10 @@ out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\""
 out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
 out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
 out("@undefined = private global %object* null")
-print("
-%method = type { i8*, %object*(%object *, i32, %object**)*,
-    %object***, %object*(%object *, i32, %object**,
-        %object***)*}
-%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }
-")
+print("%method = type { i8*, %object*(%object *, i32, %object**)*,")
+print("    %object***, %object*(%object *, i32, %object**,")
+print("        %object***)*}")
+print("%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }")
 out("define i32 @main(i32 %argc, i8** %argv) {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
@@ -1984,9 +1947,9 @@ out("  %argv_i = alloca i32")
 out("  store i32 0, i32* %argv_i")
 out("  br label %argv.cond")
 beginblock("argv.cond")
-out("  %argv_tmp1 = load i32* %argv_i, align 4
-  %argv_cmp = icmp slt i32 %argv_tmp1, %argc
-  br i1 %argv_cmp, label %argv.body, label %argv.end")
+out("  %argv_tmp1 = load i32* %argv_i, align 4")
+out("  %argv_cmp = icmp slt i32 %argv_tmp1, %argc")
+out("  br i1 %argv_cmp, label %argv.body, label %argv.end")
 beginblock("argv.body")
 out("  %argv_iv = load i32* %argv_i")
 out("  %argv_idx = getelementptr i8** %argv, i32 %argv_iv")
@@ -2036,8 +1999,8 @@ out("declare i1 @istrue(%object*)")
 out("declare void @gracelib_stats()")
 out("declare %object*** @createclosure(i32)")
 out("declare void @addtoclosure(%object***, %object**)")
-out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,
-    i32, %object**, %object***)*, %object***)")
+out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
+out("    i32, %object**, %object***)*, %object***)")
 out("declare void @adddatum(%object*, %object*, i32)")
 out("declare void @setline(i32)")
 out("; libc functions")
