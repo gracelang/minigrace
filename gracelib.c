@@ -925,6 +925,19 @@ struct Object* alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
+struct Object *File_write(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    FILE **fileP = self->bdata[0];
+    FILE *file = *fileP;
+    char *data = cstringfromString(args[0]);
+    int len = strlen(data);
+    int wrote = fwrite(data, sizeof(char), len, file);
+    if (wrote != len) {
+        perror("Error writing to file");
+        die("Error writing to file.");
+    }
+    return alloc_Boolean(1);
+}
 struct Object *File_read(struct Object *self, unsigned int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
@@ -949,6 +962,7 @@ struct Object *alloc_File_from_stream(FILE *stream) {
     FILE **fileP = o->bdata[0];
     *fileP = stream;
     addmethod(o, "read", &File_read);
+    addmethod(o, "write", &File_write);
     return o;
 }
 struct Object *alloc_File(const char *filename, const char *mode) {
