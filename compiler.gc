@@ -303,6 +303,9 @@ for 0..length(input)-1 each { i ->
         }
     } else {
         if (instr) then {
+            if c == "\n" then {
+                syntax_error("Newlines not permitted in string literals")
+            }
             if escaped then {
                 if ((c == "l") | (c == "n")) then {
                     accum := accum ++ "\n"
