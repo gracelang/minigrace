@@ -1770,14 +1770,15 @@ method compileoctets(o) {
 method compileimport(o) {
     out("; Import of " ++ o.value.value)
     var nm := o.value.value
-    out("  %tmp_mod_" ++ nm ++ " = call %object* @" ++ nm ++ "_init()")
+    out("  %tmp_mod_" ++ nm ++ " = call %object* @module_"
+        ++ nm ++ "_init()")
     out("  store %object* %tmp_mod_" ++ nm ++ ", %object** @.module." ++ nm)
     out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
     out("  store %object* %tmp_mod_" ++ nm ++ ", %object** %var_" ++ nm)
     var con := "@.module." ++ nm ++ " = private global %object* null"
     modules.push(nm)
     constants.push(con)
-    con := "declare %object* @" ++ nm ++ "_init()"
+    con := "declare %object* @module_" ++ nm ++ "_init()"
     constants.push(con)
     o.register := "%undefined"
 }
@@ -2053,7 +2054,6 @@ for output each { x ->
 // - Classes
 // - Types
 // - REPL
-// - File access
 // - String escapes
 // - return
 // - Operator associativity

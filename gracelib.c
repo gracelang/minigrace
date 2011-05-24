@@ -997,7 +997,7 @@ struct Object *io_open(struct Object *self, unsigned int nparams,
     free(mode);
     return ret;
 }
-struct Object *io_init() {
+struct Object *module_io_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<io>");
     o->data = glmalloc(sizeof(struct Object*)*3);
