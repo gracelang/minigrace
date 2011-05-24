@@ -114,6 +114,11 @@ void *glmalloc(size_t s) {
 int istrue(struct Object *o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
+char *cstringfromString(struct Object *s) {
+    char *c = glmalloc(strlen(s->bdata[0]) + 1);
+    strcpy(c, s->bdata[0]);
+    return c;
+}
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
