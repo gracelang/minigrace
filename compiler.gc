@@ -205,7 +205,7 @@ method modechange(tokens, mode, accum) {
         if (done) then {
             //print(mode, accum, tokens)
         } else {
-            print("Lex error: no handler for mode " ++ mode ++
+            syntax_error("Lexing error: no handler for mode " ++ mode ++
                 " with accum " ++ accum)
         }
     }
@@ -895,9 +895,7 @@ method expressionrest() {
         var a := values.pop()
         var ero := astop(sym.sym.value, a, 0)
         if sym.sym.value == "=" then {
-            print("Syntax error around line " ++ linenum ++
-                ": No such operator '='.")
-            raise("Syntax error around line " ++ linenum)
+            syntax_error("No such operator '='.")
         }
         next()
         expression()
@@ -997,7 +995,7 @@ method doarray() {
             values.push(o)
             next()
         } else {
-            throw("Syntax error; expected rsquare, got " ++ sym.sym.type)
+            syntax_error("expected rsquare, got " ++ sym.sym.type)
         }
     }
 }
@@ -1079,12 +1077,12 @@ method methoddec() {
                     if accept("rbrace") then {
                         next()
                     } else {
-                        print("Error: No statement but not end of "++meth.value)
-                        print("Have token " ++ sym.sym)
+                        syntax_error("No statement but not end of "
+                            ++ meth.value ++ ". Have " ++ sym.sym.type ++ ".")
                     }
                 } else {
-                    print("Error: no body in method declaration for"
-                          ++ meth.value)
+                    syntax_error("No body in method declaration for " ++
+                        meth.value)
                 }
                 var o := astmethod(meth, params, body)
                 values.push(o)
@@ -1145,10 +1143,13 @@ if tokens.length == 0 then {
 while {tokens.length > 0} do {
     statement()
     if tokens.length == oldlength then {
-        print("Syntax error around line " ++ linenum ++ " with remaining: "
-            ++ tokens)
-        print("Around line " ++ linenum)
-        throw("Syntax error.")
+        var next := []
+        for 0..5 each {i->
+            if i < tokens.length then {
+                next.push(tokens.at(i))
+            }
+        }
+        syntax_error("No token consumed. Next tokens: " ++ next)
     }
     oldlength := tokens.length + 0
 }
@@ -1162,22 +1163,6 @@ var bblock := "entry"
 method out(s) {
     output.push(s)
 }
-//scopes = [[]]
-//method findvar(v) {
-//    var i := scopes.length - 1
-//    var result := "ERROR"
-//    while {i >= 0} do {
-//        var scope := scopes[i]
-//        for scope each { binding ->
-//            if (binding[0] == v) then {
-//                result := binding[1]
-//                i := -1
-//            }
-//        }
-//        i := i - 1
-//    }
-//    result
-//}
 method beginblock(s) {
     bblock := "%" ++ s
     out(s ++ ":")
