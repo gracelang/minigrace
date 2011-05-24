@@ -1,6 +1,8 @@
 
 var tmp := 0
 var linenum := 1
+var modules := []
+
 method identifiertok(s) {
     object {
         var type := "identifier"
@@ -106,7 +108,7 @@ method modechange(tokens, mode, accum) {
         if (mode == "i") then {
             tok := identifiertok(accum)
             if ((accum == "object") | (accum == "method")
-                | (accum == "var")) then {
+                | (accum == "var") | (accum == "import")) then {
                 tok := keywordtok(accum)
             }
             if (accum == "and") then {
@@ -698,6 +700,25 @@ method astvardec(name, val) {
         }
     }
 }
+method astimport(name) {
+    object {
+        var type := "import"
+        var value := name
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            var spc := ""
+            for 0..depth each { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Import"
+            s := s ++ "
+"
+            s := s ++ spc ++ self.name.pretty(depth + 1)
+            s
+        }
+    }
+}
 method accept(t) {
     sym.sym.type == t
 }
@@ -1090,7 +1111,15 @@ method methoddec() {
         }
     }
 }
-
+method doimport() {
+    if accept('keyword') & (sym.sym.value == "import") then {
+        next()
+        identifier()
+        var p := values.pop()
+        var o := astimport(p)
+        values.push(o)
+    }
+}
 method statement() {
     if accept("keyword") then {
         if sym.sym.value == "var" then {
@@ -1099,7 +1128,11 @@ method statement() {
             if sym.sym.value == "method" then {
                 methoddec()
             } else {
-                expression()
+                if sym.sym.value == "import" then {
+                    doimport()
+                } else {
+                    expression()
+                }
             }
         }
     } else {
@@ -1519,9 +1552,14 @@ method compileidentifier(o) {
     if name == "self" then {
         o.register := "%self"
     } else {
-        usedvars.push(name)
-        out("  %var_val_" ++ name ++ auto_count ++ " = load %object** "
-            ++ "%var_" ++ name)
+        if modules.contains(name) then {
+            out("  %var_val_" ++ name ++ auto_count ++
+                " = load %object** @.module." ++ name)
+        } else {
+            usedvars.push(name)
+            out("  %var_val_" ++ name ++ auto_count ++ " = load %object** "
+                ++ "%var_" ++ name)
+        }
         o.register := "%var_val_" ++ name ++ auto_count
         auto_count := auto_count + 1
     }
@@ -1724,6 +1762,20 @@ method compileoctets(o) {
     o.register := "%octets" ++ auto_count
     auto_count := auto_count + 1
 }
+method compileimport(o) {
+    out("; Import of " ++ o.value.value)
+    var nm := o.value.value
+    out("  %tmp_mod_" ++ nm ++ " = call %object* @" ++ nm ++ "_init()")
+    out("  store %object* %tmp_mod_" ++ nm ++ ", %object** @.module." ++ nm)
+    out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
+    out("  store %object* %tmp_mod_" ++ nm ++ ", %object** %var_" ++ nm)
+    var con := "@.module." ++ nm ++ " = private global %object* null"
+    modules.push(nm)
+    constants.push(con)
+    con := "declare %object* @foo_init()"
+    constants.push(con)
+    o.register := "%undefined"
+}
 method compilenode(o) {
     if linenum /= o.line then {
         linenum := o.line
@@ -1779,6 +1831,9 @@ method compilenode(o) {
     }
     if (o.type == "octets") then {
         compileoctets(o)
+    }
+    if (o.type == "import") then {
+        compileimport(o)
     }
     if ((o.type == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
