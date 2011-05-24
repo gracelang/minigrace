@@ -1,7 +1,15 @@
+import io
 
 var tmp := 0
 var linenum := 1
 var modules := []
+
+method syntax_error(s) {
+    io.error.write("Syntax error around line " ++ linenum ++ ": ")
+    io.error.write(s)
+    io.error.write("\l")
+    raise("Syntax error: "++ s)
+}
 
 method identifiertok(s) {
     object {
