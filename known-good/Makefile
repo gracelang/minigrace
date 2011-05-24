@@ -19,3 +19,5 @@ $(ARCH)/minigrace-56314ba296c054c6f6db4158e1150143f1a27aeb: $(ARCH)/minigrace-53
 $(ARCH)/minigrace-8fc2c4db63edb9751c1b138cedd15c9771196589: $(ARCH)/minigrace-56314ba296c054c6f6db4158e1150143f1a27aeb
 	./build-known-good $@ $<
 
+$(ARCH)/minigrace-60d2ccdee420878edf7c0374b5a09517befce821: $(ARCH)/minigrace-8fc2c4db63edb9751c1b138cedd15c9771196589
+	./build-known-good $@ $<
