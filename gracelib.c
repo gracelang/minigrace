@@ -978,6 +978,14 @@ struct Object *io_input(struct Object *self, unsigned int nparams,
         struct Object **args) {
     return self->data[0];
 }
+struct Object *io_output(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    return self->data[1];
+}
+struct Object *io_error(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    return self->data[2];
+}
 struct Object *io_open(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *fnstr = args[0];
@@ -992,9 +1000,13 @@ struct Object *io_open(struct Object *self, unsigned int nparams,
 struct Object *io_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<io>");
-    o->data = glmalloc(sizeof(struct Object*)*2);
+    o->data = glmalloc(sizeof(struct Object*)*3);
     o->data[0] = alloc_File_from_stream(stdin);
+    o->data[1] = alloc_File_from_stream(stdout);
+    o->data[2] = alloc_File_from_stream(stderr);
     addmethod(o, "input", &io_input);
+    addmethod(o, "output", &io_output);
+    addmethod(o, "error", &io_error);
     addmethod(o, "open", &io_open);
     return o;
 }
