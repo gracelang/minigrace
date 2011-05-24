@@ -920,6 +920,53 @@ struct Object* alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
+struct Object *File_read(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    FILE **fileP = self->bdata[0];
+    FILE *file = *fileP;
+    int bsize = 128;
+    int pos = 0;
+    char *buf = glmalloc(bsize);
+    pos += fread(buf, sizeof(char), bsize, file);
+    while (!feof(file)) {
+        bsize *= 2;
+        buf = realloc(buf, bsize);
+        pos += fread(buf+pos, sizeof(char), bsize-pos-1, file);
+    }
+    buf[pos] = 0;
+    return alloc_String(buf);
+}
+struct Object *alloc_File_from_stream(FILE *stream) {
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "File");
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = glmalloc(sizeof(FILE*));
+    FILE **fileP = o->bdata[0];
+    *fileP = stream;
+    addmethod(o, "read", &File_read);
+    return o;
+}
+struct Object *alloc_File(const char *filename, const char *mode) {
+    FILE *file = fopen(filename, mode);
+    if (file == NULL) {
+        perror("File access failed");
+        die("File access failed: could not open %s for %s.",
+                filename, mode);
+    }
+    return alloc_File_from_stream(file);
+}
+struct Object *io_input(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    return self->data[0];
+}
+struct Object *io_init() {
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "Module");
+    o->data = glmalloc(sizeof(struct Object*)*2);
+    o->data[0] = alloc_File_from_stream(stdin);
+    addmethod(o, "input", &io_input);
+    return o;
+}
 struct Object * alloc_Undefined() {
     if (undefined != NULL)
         return undefined;
