@@ -964,12 +964,24 @@ struct Object *io_input(struct Object *self, unsigned int nparams,
         struct Object **args) {
     return self->data[0];
 }
+struct Object *io_open(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *fnstr = args[0];
+    struct Object *modestr = args[1];
+    char *fn = cstringfromString(fnstr);
+    char *mode = cstringfromString(modestr);
+    struct Object *ret = alloc_File(fn, mode);
+    free(fn);
+    free(mode);
+    return ret;
+}
 struct Object *io_init() {
     struct Object *o = alloc_obj();
-    strcpy(o->type, "Module");
+    strcpy(o->type, "Module<io>");
     o->data = glmalloc(sizeof(struct Object*)*2);
     o->data[0] = alloc_File_from_stream(stdin);
     addmethod(o, "input", &io_input);
+    addmethod(o, "open", &io_open);
     return o;
 }
 struct Object * alloc_Undefined() {
