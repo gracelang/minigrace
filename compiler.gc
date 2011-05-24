@@ -918,6 +918,11 @@ method expressionrest() {
     if accept("op") then {
         var a := values.pop()
         var ero := astop(sym.sym.value, a, 0)
+        if sym.sym.value == "=" then {
+            print("Syntax error around line " ++ linenum ++
+                ": No such operator '='.")
+            raise("Syntax error around line " ++ linenum)
+        }
         next()
         expression()
         ero.right := values.pop()
@@ -2054,3 +2059,4 @@ for output each { x ->
 // - return
 // - Operator associativity
 // - import
+// - Numeric literals
