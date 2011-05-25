@@ -35,17 +35,23 @@ if argv.length > 1 then {
             if arg == "--native" then {
                 buildtype := "native"
             }
+            if arg == "--module" then {
+                ai := ai + 1
+                modname := argv[ai]
+            }
         } else {
             var filename := arg
             infile := io.open(filename, "r")
-            modname := ""
-            var seendot := false
-            for filename each { c->
-                if c == "." then {
-                    seendot := true
-                }
-                if seendot.not then {
-                    modname := modname ++ c
+            if modname == "main" then {
+                modname := ""
+                var seendot := false
+                for filename each { c->
+                    if c == "." then {
+                        seendot := true
+                    }
+                    if seendot.not then {
+                        modname := modname ++ c
+                    }
                 }
             }
             if outfile == io.output then {
