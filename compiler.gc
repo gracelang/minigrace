@@ -4,6 +4,24 @@ var tmp := 0
 var linenum := 1
 var modules := []
 
+var infile := io.input
+var modname := "main"
+
+if argv.length > 1 then {
+    var filename := argv[1]
+    infile := io.open(filename, "r")
+    modname := ""
+    var seendot := false
+    for filename each { c->
+        if c == "." then {
+            seendot := true
+        }
+        if seendot.not then {
+            modname := modname ++ c
+        }
+    }
+}
+
 method syntax_error(s) {
     io.error.write("Syntax error around line " ++ linenum ++ ": ")
     io.error.write(s)
@@ -210,7 +228,7 @@ method modechange(tokens, mode, accum) {
         }
     }
 }
-var input := io.input.read()
+var input := infile.read()
 
 var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
             "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
