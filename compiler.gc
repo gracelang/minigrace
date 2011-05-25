@@ -28,6 +28,10 @@ if argv.length > 1 then {
             if arg == "--make" then {
                 runmode := "make"
             }
+            if arg == "--run" then {
+                buildtype := "run"
+                runmode := "make"
+            }
             if arg == "--native" then {
                 buildtype := "native"
             }
@@ -2113,6 +2117,10 @@ if runmode == "make" then {
     if buildtype == "native" then {
         log_verbose("compiling to native.")
         cmd := "llvm-ld -o " ++ modname ++ " -native " ++ modname ++ ".bc"
+        io.system(cmd)
+    }
+    if buildtype == "run" then {
+        cmd := "lli " ++ modname ++ ".bc"
         io.system(cmd)
     }
 }
