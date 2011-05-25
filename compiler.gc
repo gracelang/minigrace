@@ -5,6 +5,7 @@ var linenum := 1
 var modules := []
 
 var infile := io.input
+var outfile := io.output
 var modname := "main"
 
 if argv.length > 1 then {
@@ -22,6 +23,10 @@ if argv.length > 1 then {
     }
 }
 
+method outprint(s) {
+    outfile.write(s)
+    outfile.write("\n")
+}
 method syntax_error(s) {
     io.error.write("Syntax error around line " ++ linenum ++ ": ")
     io.error.write(s)
@@ -1168,7 +1173,7 @@ while {tokens.length > 0} do {
     }
     oldlength := tokens.length + 0
 }
-print(";-------------LLVM IR------------")
+outprint(";-------------LLVM IR------------")
 var auto_count := 0
 var constants := []
 var output := []
@@ -1218,15 +1223,15 @@ method compileobjvardec(o, selfr, pos) {
     out("; OBJECT VAR DEC " ++ nm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    print("define %object* @reader_" ++ nm ++ "_" ++ myc
+    outprint("define %object* @reader_" ++ nm ++ "_" ++ myc
         ++ "(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
-    print("  %dt = getelementptr %object* %self, i32 0, i32 2")
-    print("  %tmp1 = load %object*** %dt")
-    print("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    print("  %tmp2 = load %object** %arrayidx")
-    print("  ret %object* %tmp2")
-    print("}")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %tmp1 = load %object*** %dt")
+    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
+    outprint("  %tmp2 = load %object** %arrayidx")
+    outprint("  ret %object* %tmp2")
+    outprint("}")
     out("  call void @addmethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
@@ -1237,17 +1242,17 @@ method compileobjvardec(o, selfr, pos) {
     con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
-    print("define %object* @writer_" ++ nm ++ "_" ++ myc
+    outprint("define %object* @writer_" ++ nm ++ "_" ++ myc
         ++ "(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
-    print("  %params = getelementptr %object** %args, i32 0")
-    print("  %par0 = load %object** %params")
-    print("  %dt = getelementptr %object* %self, i32 0, i32 2")
-    print("  %tmp1 = load %object*** %dt")
-    print("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    print("  store %object* %par0, %object** %arrayidx")
-    print("  ret %object* %par0")
-    print("}")
+    outprint("  %params = getelementptr %object** %args, i32 0")
+    outprint("  %par0 = load %object** %params")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %tmp1 = load %object*** %dt")
+    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
+    outprint("  store %object* %par0, %object** %arrayidx")
+    outprint("  ret %object* %par0")
+    outprint("}")
     out("  call void @addmethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
@@ -1384,7 +1389,7 @@ method compilemethod(o, selfobj) {
     if o.selfclosure then {
         closurevars.push("self")
     }
-    print(";;;; METHOD DEFINITION: " ++ name)
+    outprint(";;;; METHOD DEFINITION: " ++ name)
     if closurevars.length > 0 then {
         out("; have closure method: " ++ closurevars.length)
         if o.selfclosure then {
@@ -1416,7 +1421,7 @@ method compilemethod(o, selfobj) {
     }
     out(";;;; ENDS")
     for output each {l ->
-        print(l)
+        outprint(l)
     }
     output := oldout
     bblock := oldbblock
@@ -1656,20 +1661,20 @@ method compilecall(o) {
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
     if (o.value.type == "member") then {
-        print("; handling member")
+        outprint("; handling member")
         obj := compilenode(o.value.in)
-        print("; compiled in to " ++ obj)
+        outprint("; compiled in to " ++ obj)
         len := length(o.value.value) + 1
-        print("; got len " ++ len)
+        outprint("; got len " ++ len)
         con := "@.str" ++ constants.length ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
-        print("; created con")
+        outprint("; created con")
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
             ++ constants.length ++ ",i32 0,i32 0), i32 "
             ++ args.length ++ ", %object** %params)")
-        print("; pushed statement")
+        outprint("; pushed statement")
         constants.push(con)
     } else {
         out("; WARNING: non-member calls not fully supported yet")
@@ -1920,10 +1925,10 @@ out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\""
 out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
 out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
 out("@undefined = private global %object* null")
-print("%method = type { i8*, %object*(%object *, i32, %object**)*,")
-print("    %object***, %object*(%object *, i32, %object**,")
-print("        %object***)*}")
-print("%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }")
+outprint("%method = type { i8*, %object*(%object *, i32, %object**)*,")
+outprint("    %object***, %object*(%object *, i32, %object**,")
+outprint("        %object***)*}")
+outprint("%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }")
 out("define i32 @main(i32 %argc, i8** %argv) {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
@@ -2002,7 +2007,7 @@ out("; libc functions")
 out("declare i32 @puts(i8*)")
 out("declare i8* @malloc(i32)")
 for output each { x ->
-    print(x)
+    outprint(x)
 }
 // To do:
 // - Blocks
