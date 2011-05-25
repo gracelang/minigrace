@@ -730,7 +730,7 @@ method doif() {
             next()
             if accept("lbrace") then {
                 next()
-                while {not(accept("rbrace"))} do {
+                while {(accept("rbrace")).not} do {
                     statement()
                     v := values.pop()
                     body.push(v)
@@ -741,7 +741,7 @@ method doif() {
                 next()
                 if accept("lbrace") then {
                     next()
-                    while {not(accept("rbrace"))} do {
+                    while {(accept("rbrace")).not} do {
                         statement()
                         v := values.pop()
                         elseblock.push(v)
@@ -770,7 +770,7 @@ method dofor() {
                 variable := values.pop()
                 if accept("arrow") then {
                     next()
-                    while {not(accept("rbrace"))} do {
+                    while {(accept("rbrace")).not} do {
                         statement()
                         var v := values.pop()
                         body.push(v)
@@ -800,7 +800,7 @@ method dowhile() {
             next()
             if accept("lbrace") then {
                 next()
-                while {not(accept("rbrace"))} do {
+                while {(accept("rbrace")).not} do {
                     statement()
                     var v := values.pop()
                     body.push(v)
@@ -1009,7 +1009,7 @@ method doobject() {
                 var register := ""
             })
             next()
-            while {not(accept("rbrace"))} do {
+            while {(accept("rbrace")).not} do {
                 vardec()
                 methoddec()
             }
@@ -1880,15 +1880,7 @@ method compilenode(o) {
                     tmp := astcall(tmp, [])
                     o.register := compilenode(tmp)
                 } else {
-                    if ((o.value.type == "identifier")
-                        & (o.value.value == "not")) then {
-                        tmp := o.with[0]
-                        tmp := astmember("not", tmp)
-                        tmp := astcall(tmp, [])
-                        o.register := compilenode(tmp)
-                    } else {
-                        compilecall(o)
-                    }
+                    compilecall(o)
                 }
             }
         }
