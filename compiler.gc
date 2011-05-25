@@ -123,67 +123,67 @@ method modechange(tokens, mode, accum) {
                 tok := optok("&")
             }
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "'") then {
             tok := stringtok(accum)
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "\"") then {
             tok := stringtok(accum)
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "x") then {
             tok := octetstok(accum)
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == ",") then {
             tok := commatok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == ".") then {
             tok := dottok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "{") then {
             tok := lbracetok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "}") then {
             tok := rbracetok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "(") then {
             tok := lparentok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == ")") then {
             tok := rparentok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "[") then {
             tok := lsquaretok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "]") then {
             tok := rsquaretok()
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "m") then {
             tok := numtok(accum)
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "o") then {
             tok := optok(accum)
@@ -194,13 +194,13 @@ method modechange(tokens, mode, accum) {
                 tok := bindtok()
             }
             tokens.push(tok)
-            done := 1
+            done := true
         }
         if (mode == "n") then {
-            done := 1
+            done := true
         }
         if mode == "c" then {
-            done := 1
+            done := true
         }
         if (done) then {
             //print(mode, accum, tokens)
@@ -217,8 +217,6 @@ var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
 var mchars := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 var ochars := ["+", "-", "/", "*", "=", ":", "<", ">", "%", "&", "|"]
 
-var false := 0
-var true := 1
 var tokens := []
 var mode := "n"
 var newmode := mode
@@ -1262,7 +1260,7 @@ method compilefor(o) {
     var over := compilenode(o.value)
     var applymeth := astmethod(astidentifier("apply"),
         [o.variable], o.body)
-    applymeth.selfclosure := 1
+    applymeth.selfclosure := true
     var objbody := astobject([applymeth])
     var obj := compilenode(objbody)
     out("  store %object* " ++ over ++ ", %object** %params_0")
@@ -1347,7 +1345,7 @@ method compilemethod(o, selfobj) {
         var decl := false
         for declaredvars each { d->
             if d == u then {
-                decl := 1
+                decl := true
             }
         }
         if decl then {
@@ -1356,7 +1354,7 @@ method compilemethod(o, selfobj) {
             var found := false
             for closurevars each { v ->
                 if v == u then {
-                    found := 1
+                    found := true
                 }
             }
             if found then {
