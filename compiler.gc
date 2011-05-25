@@ -8,6 +8,7 @@ var infile := io.input
 var outfile := io.output
 var modname := "main"
 var runmode := "build"
+var buildtype := "bc"
 
 var verbosity := 30
 
@@ -26,6 +27,9 @@ if argv.length > 1 then {
             }
             if arg == "--make" then {
                 runmode := "make"
+            }
+            if arg == "--native" then {
+                buildtype := "native"
             }
         } else {
             var filename := arg
@@ -1218,10 +1222,10 @@ if runmode == "make" then {
         if v.type == "import" then {
             var nm := v.value.value
             var exists := false
-            if io.system("[ -e " ++ nm ++ ".ll ]") then {
-                if io.system("[ " ++ nm ++ ".ll -nt " ++ nm ++ ".gc ]") then {
+            if io.system("[ -e " ++ nm ++ ".gco ]") then {
+                if io.system("[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]") then {
                     exists := true
-                    linkfiles.push(nm ++ ".ll")
+                    linkfiles.push(nm ++ ".gco")
                 }
             }
             if exists.not then {
@@ -1231,7 +1235,7 @@ if runmode == "make" then {
                         syntax_error("failed processing import of " ++nm ++".")
                     }
                     exists := true
-                    linkfiles.push(nm ++ ".ll")
+                    linkfiles.push(nm ++ ".gco")
                 }
             }
             if ((nm == "sys") | (nm == "io")) then {
@@ -2097,13 +2101,20 @@ for output each { x ->
 
 if runmode == "make" then {
     outfile.close()
+    var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
+    io.system(cmd)
     log_verbose("linking.")
-    var cmd := "llvm-link -o " ++ modname ++ ".bc gracelib.o "
-    cmd := cmd ++ modname ++ ".ll"
+    cmd := "llvm-link -o " ++ modname ++ ".bc gracelib.o "
+    cmd := cmd ++ modname ++ ".gco"
     for linkfiles each { fn ->
         cmd := cmd ++ " " ++ fn
     }
     io.system(cmd)
+    if buildtype == "native" then {
+        log_verbose("compiling to native.")
+        cmd := "llvm-ld -o " ++ modname ++ " -native " ++ modname ++ ".bc"
+        io.system(cmd)
+    }
 }
 // To do:
 // - Blocks
