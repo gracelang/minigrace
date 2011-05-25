@@ -17,7 +17,7 @@ current.s: current.bc
 current: current.s gracelib.o
 	gcc -o current current.s
 selfhost: current compiler.gc gracelib.o
-	./current <compiler.gc>selfhost.ll
+	./current -o selfhost.ll compiler.gc
 	llvm-link -o selfhost.bc gracelib.o selfhost.ll
 	llc -o selfhost.s selfhost.bc
 	gcc -o selfhost selfhost.s
@@ -26,7 +26,7 @@ selfhost-stats: selfhost
 	GRACE_STATS=1 ./selfhost < compiler.gc >/dev/null
 
 selfhost-rec: selfhost
-	./selfhost < compiler.gc > selfhost-rec.ll
+	./selfhost -o selfhost-rec.ll compiler.gc
 	@diff -q selfhost.ll selfhost-rec.ll
 	@echo PASS
 

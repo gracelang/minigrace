@@ -9,17 +9,31 @@ var outfile := io.output
 var modname := "main"
 
 if argv.length > 1 then {
-    var filename := argv[1]
-    infile := io.open(filename, "r")
-    modname := ""
-    var seendot := false
-    for filename each { c->
-        if c == "." then {
-            seendot := true
+    var ai := 1
+    var arg
+    while {ai < argv.length} do {
+        arg := argv[ai]
+        if arg == "-o" then {
+            ai := ai + 1
+            outfile := io.open(argv[ai], "w")
+        } else {
+            var filename := arg
+            infile := io.open(filename, "r")
+            modname := ""
+            var seendot := false
+            for filename each { c->
+                if c == "." then {
+                    seendot := true
+                }
+                if seendot.not then {
+                    modname := modname ++ c
+                }
+            }
+            if outfile == io.output then {
+                outfile := io.open(modname ++ ".ll", "w")
+            }
         }
-        if seendot.not then {
-            modname := modname ++ c
-        }
+        ai := ai + 1
     }
 }
 
