@@ -802,6 +802,8 @@ method doif() {
             }
             var o := astif(cond, body, elseblock)
             values.push(o)
+        } else {
+            syntax_error("if with no then")
         }
     }
 }
