@@ -997,6 +997,16 @@ struct Object *io_open(struct Object *self, unsigned int nparams,
     free(mode);
     return ret;
 }
+struct Object *io_system(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *cmdstr = args[0];
+    char *cmd = cstringfromString(cmdstr);
+    int rv = system(cmd);
+    struct Object *ret = alloc_Boolean(0);
+    if (rv == 0)
+        ret = alloc_Boolean(1);
+    return ret;
+}
 struct Object *module_io_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<io>");
@@ -1008,6 +1018,7 @@ struct Object *module_io_init() {
     addmethod(o, "output", &io_output);
     addmethod(o, "error", &io_error);
     addmethod(o, "open", &io_open);
+    addmethod(o, "system", &io_system);
     return o;
 }
 struct Object *sys_argv(struct Object *self, unsigned int nparams,
