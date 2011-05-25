@@ -1939,11 +1939,12 @@ out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\""
 out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
 out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
 out("@undefined = private global %object* null")
+out("@argv = private global %object* null")
 outprint("%method = type { i8*, %object*(%object *, i32, %object**)*,")
 outprint("    %object***, %object*(%object *, i32, %object**,")
 outprint("        %object***)*}")
 outprint("%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }")
-out("define i32 @main(i32 %argc, i8** %argv) {")
+out("define %object* @module_" ++ modname ++ "_init() {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
 out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
@@ -1954,6 +1955,23 @@ for 0..10 each { i ->
     out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
 }
 out("  %self = call %object* @alloc_obj()")
+out("  %undefined = load %object** @undefined")
+out("  %var_argv = call %object** @alloc_var()")
+out("  %tmp_argv = load %object** @argv")
+out("  store %object* %tmp_argv, %object** %var_argv")
+for values each { o ->
+    compilenode(o)
+}
+out("  ret %object* %self")
+out("}")
+out("define linkonce i32 @main(i32 %argc, i8** %argv) {")
+out("entry:")
+out("  %ptrsize_p = getelementptr %object** null, i32 1")
+out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
+out("  %paramssize = mul i32 %ptrsize, 16")
+out("  %paramsu = call i8* @malloc(i32 %paramssize)")
+out("  %params = bitcast i8* %paramsu to %object**")
+out("  %params_0 = getelementptr %object** %params, i32 0")
 out("  %undefined = call %object* @alloc_Undefined()")
 out("  store %object* %undefined, %object** @undefined")
 out("  %tmp_argv = call %object* @alloc_Array()")
@@ -1981,15 +1999,9 @@ beginblock("argv.end")
 out("  call void @module_sys_init_argv(%object* %tmp_argv)")
 out("  %var_argv = call %object** @alloc_var()")
 out("  store %object* %tmp_argv, %object** %var_argv")
-for values each { o ->
-    compilenode(o)
-}
+out("  store %object* %tmp_argv, %object** @argv")
+out("  call %object* @module_" ++ modname ++ "_init()")
 out("  call void @gracelib_stats()")
-out("  ret i32 0")
-out("}")
-out("define i32 @out(i8* %s) {")
-out("entry:")
-out("  call i32 @puts(i8* %s)")
 out("  ret i32 0")
 out("}")
 out("; constant definitions")
@@ -2036,5 +2048,4 @@ for output each { x ->
 // - String escapes
 // - return
 // - Operator associativity
-// - import
 // - Numeric literals
