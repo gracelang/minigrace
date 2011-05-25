@@ -833,7 +833,8 @@ method dofor() {
         over := values.pop()
         var body := []
         var variable
-        if (accept("identifier") & (sym.sym.value == "each")) then {
+        if (accept("identifier") & ((sym.sym.value == "each")
+            | (sym.sym.value == "do"))) then {
             next()
             if accept("lbrace") then {
                 next()
