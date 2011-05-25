@@ -2021,7 +2021,7 @@ for values each { o ->
 }
 out("  ret %object* %self")
 out("}")
-out("define linkonce i32 @main(i32 %argc, i8** %argv) {")
+out("define weak i32 @main(i32 %argc, i8** %argv) {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
 out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
