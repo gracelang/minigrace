@@ -224,8 +224,7 @@ var instr := false
 var accum := ""
 var escaped := false
 var prev := ""
-for 0..length(input)-1 each { i ->
-    var c := input[i]
+for input each { c ->
     var ct := ""
     if (instr) then {
 
