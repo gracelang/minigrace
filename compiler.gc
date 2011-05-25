@@ -8,14 +8,21 @@ var infile := io.input
 var outfile := io.output
 var modname := "main"
 
+var verbosity := 30
+
 if argv.length > 1 then {
     var ai := 1
     var arg
     while {ai < argv.length} do {
         arg := argv[ai]
-        if arg == "-o" then {
-            ai := ai + 1
-            outfile := io.open(argv[ai], "w")
+        if arg.at(0) == "-" then {
+            if arg == "-o" then {
+                ai := ai + 1
+                outfile := io.open(argv[ai], "w")
+            }
+            if arg == "--verbose" then {
+                verbosity := 40
+            }
         } else {
             var filename := arg
             infile := io.open(filename, "r")
@@ -34,6 +41,14 @@ if argv.length > 1 then {
             }
         }
         ai := ai + 1
+    }
+}
+
+method log_verbose(s) {
+    if verbosity >= 40 then {
+        io.error.write("minigrace: ")
+        io.error.write(s)
+        io.error.write("\n")
     }
 }
 
@@ -247,6 +262,7 @@ method modechange(tokens, mode, accum) {
         }
     }
 }
+log_verbose("reading source.")
 var input := infile.read()
 
 var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
@@ -261,6 +277,7 @@ var instr := false
 var accum := ""
 var escaped := false
 var prev := ""
+log_verbose("lexing.")
 for input each { c ->
     var ct := ""
     if (instr) then {
@@ -1160,13 +1177,14 @@ method statement() {
         }
     }
 }
-
+log_verbose("processing tokens.")
 var otoks := tokens
 tokens := []
 for 0..(otoks.length-1) each { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
+log_verbose("parsing.")
 linenum := 1
 next()
 var oldlength := tokens.length + 0
@@ -1187,6 +1205,7 @@ while {tokens.length > 0} do {
     }
     oldlength := tokens.length + 0
 }
+log_verbose("compiling.")
 outprint(";-------------LLVM IR------------")
 var auto_count := 0
 var constants := []
