@@ -1010,6 +1010,22 @@ struct Object *module_io_init() {
     addmethod(o, "open", &io_open);
     return o;
 }
+struct Object *sys_argv(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    return self->data[0];
+}
+struct Object *argv_Array = NULL;
+void module_sys_init_argv(struct Object *argv) {
+    argv_Array = argv;
+}
+struct Object *module_sys_init() {
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "Module<sys>");
+    o->data = glmalloc(sizeof(struct Object*)*1);
+    o->data[0] = argv_Array;
+    addmethod(o, "argv", &sys_argv);
+    return o;
+}
 struct Object * alloc_Undefined() {
     if (undefined != NULL)
         return undefined;
