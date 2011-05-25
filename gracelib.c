@@ -925,6 +925,13 @@ struct Object* alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
+struct Object *File_close(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    FILE **fileP = self->bdata[0];
+    FILE *file = *fileP;
+    int rv = fclose(file);
+    return alloc_Boolean(1);
+}
 struct Object *File_write(struct Object *self, unsigned int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
@@ -963,6 +970,7 @@ struct Object *alloc_File_from_stream(FILE *stream) {
     *fileP = stream;
     addmethod(o, "read", &File_read);
     addmethod(o, "write", &File_write);
+    addmethod(o, "close", &File_close);
     return o;
 }
 struct Object *alloc_File(const char *filename, const char *mode) {
