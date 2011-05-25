@@ -7,6 +7,7 @@ var modules := []
 var infile := io.input
 var outfile := io.output
 var modname := "main"
+var runmode := "build"
 
 var verbosity := 30
 
@@ -22,6 +23,9 @@ if argv.length > 1 then {
             }
             if arg == "--verbose" then {
                 verbosity := 40
+            }
+            if arg == "--make" then {
+                runmode := "make"
             }
         } else {
             var filename := arg
@@ -1207,6 +1211,38 @@ while {tokens.length > 0} do {
     }
     oldlength := tokens.length + 0
 }
+var linkfiles := []
+if runmode == "make" then {
+    log_verbose("checking imports.")
+    for values each { v ->
+        if v.type == "import" then {
+            var nm := v.value.value
+            var exists := false
+            if io.system("[ -e " ++ nm ++ ".ll ]") then {
+                if io.system("[ " ++ nm ++ ".ll -nt " ++ nm ++ ".gc ]") then {
+                    exists := true
+                    linkfiles.push(nm ++ ".ll")
+                }
+            }
+            if exists.not then {
+                if (io.system("[ -e " ++ nm ++ ".gc ]")) then {
+                    if (io.system("./selfhost --make " ++ nm ++ ".gc")).not
+                        then {
+                        syntax_error("failed processing import of " ++nm ++".")
+                    }
+                    exists := true
+                    linkfiles.push(nm ++ ".ll")
+                }
+            }
+            if ((nm == "sys") | (nm == "io")) then {
+                exists := true
+            }
+            if exists.not then {
+                syntax_error("failed finding import of " ++ nm ++ ".")
+            }
+        }
+    }
+}
 log_verbose("compiling.")
 outprint(";-------------LLVM IR------------")
 var auto_count := 0
@@ -2057,6 +2093,17 @@ out("declare i32 @puts(i8*)")
 out("declare i8* @malloc(i32)")
 for output each { x ->
     outprint(x)
+}
+
+if runmode == "make" then {
+    outfile.close()
+    log_verbose("linking.")
+    var cmd := "llvm-link -o " ++ modname ++ ".bc gracelib.o "
+    cmd := cmd ++ modname ++ ".ll"
+    for linkfiles each { fn ->
+        cmd := cmd ++ " " ++ fn
+    }
+    io.system(cmd)
 }
 // To do:
 // - Blocks
