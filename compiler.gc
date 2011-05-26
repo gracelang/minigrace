@@ -1241,7 +1241,7 @@ if runmode == "make" then {
             }
             if exists.not then {
                 if (io.system("[ -e " ++ nm ++ ".gc ]")) then {
-                    if (io.system("./selfhost --make " ++ nm ++ ".gc")).not
+                    if (io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
                         then {
                         syntax_error("failed processing import of " ++nm ++".")
                     }
@@ -2127,7 +2127,7 @@ if runmode == "make" then {
         io.system(cmd)
     }
     if buildtype == "run" then {
-        cmd := "lli " ++ modname ++ ".bc"
+        cmd := "lli ./" ++ modname ++ ".bc"
         io.system(cmd)
     }
 }
