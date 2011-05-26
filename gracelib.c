@@ -959,6 +959,18 @@ struct Object *File_write(struct Object *self, unsigned int nparams,
     }
     return alloc_Boolean(1);
 }
+struct Object *File_readline(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    FILE **fileP = self->bdata[0];
+    FILE *file = *fileP;
+    int bsize = 1024;
+    char *buf = glmalloc(bsize);
+    buf[0] = 0;
+    char *cv = fgets(buf, bsize, file);
+    struct Object *ret = alloc_String(buf);
+    free(buf);
+    return ret;
+}
 struct Object *File_read(struct Object *self, unsigned int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
