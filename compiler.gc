@@ -309,9 +309,19 @@ var escaped := false
 var prev := ""
 var unichars := 0
 var codepoint := 0
+var unicat
 log_verbose("lexing.")
 for input each { c ->
     var ct := ""
+    unicat := unicode.category(c)
+    if (((unicat.at(0) == "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
+        (c.ord == 9)) then {
+        syntax_error("illegal whitespace in input: " ++ c.ord ++ ", "
+            ++ unicode.name(c))
+    }
+    if ((unicat.at(0) == "C") & (c.ord /= 10) & (c.ord /= 13)) then {
+        syntax_error("illegal control character in input: #" ++ c.ord)
+    }
     if (instr) then {
 
     } else {
