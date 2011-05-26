@@ -1527,18 +1527,19 @@ method compilemethod(o, selfobj) {
     if o.selfclosure then {
         closurevars.push("self")
     }
+    var litname := "@\"meth_" ++ escapestring(nm) ++ "\""
     outprint(";;;; METHOD DEFINITION: " ++ name)
     if closurevars.size > 0 then {
         out("; have closure method: " ++ closurevars.size)
         if o.selfclosure then {
-            out("define %object* @meth_" ++ nm ++ "(%object* %realself, i32 %nparams, "
+            out("define %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
         } else {
-            out("define %object* @meth_" ++ nm ++ "(%object* %self, i32 %nparams, "
+            out("define %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
         }
     } else {
-        out("define %object* @meth_" ++ nm ++ "(%object* %self, i32 %nparams, "
+        out("define %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
             ++ "%object** %args) {")
     }
     beginblock("entry")
@@ -1574,7 +1575,7 @@ method compilemethod(o, selfobj) {
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
             ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**)* @meth_" ++ nm ++ "))")
+            ++ "(%object*, i32, %object**)* " ++ litname ++ "))")
     } else {
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
             ++ closurevars.size ++ ")")
@@ -1595,7 +1596,7 @@ method compilemethod(o, selfobj) {
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
             ++ "%object*(%object*, i32, %object**, %object***)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**, %object***)* @meth_" ++ nm
+            ++ "(%object*, i32, %object**, %object***)* " ++ litname
             ++ "), %object*** %closure" ++ myc ++ ")")
     }
 }
