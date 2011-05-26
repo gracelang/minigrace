@@ -303,8 +303,19 @@ method isidentifierchar(c) {
         false
     }
 }
+method isoperatorchar(c) {
+    var ret := false
+    if ((c == "-") | (c == "&") | (c == "|") | (c == ":") | (c == "%")
+        | (c == "*") | (c == "/")) then {
+        ret := true
+    } else {
+        if unicode.iscategory(c, "Sm") then {
+            ret := true
+        }
+    }
+    ret
+}
 var mchars := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-var ochars := ["+", "-", "/", "*", "=", ":", "<", ">", "%", "&", "|"]
 
 var tokens := []
 var mode := "n"
@@ -353,8 +364,7 @@ for input each { c ->
             if (ct & (mode /= "i")) then {
                 newmode := "m"
             }
-            ct := ochars.contains(c)
-            if (ct) then {
+            if (isoperatorchar(c)) then {
                 newmode := "o"
             }
             if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
