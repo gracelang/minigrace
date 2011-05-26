@@ -295,8 +295,14 @@ method modechange(tokens, mode, accum) {
 log_verbose("reading source.")
 var input := infile.read()
 
-var ichars := ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
-            "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"]
+method isidentifierchar(c) {
+    if (unicode.iscategory(c, "L") | unicode.iscategory(c, "N")
+        | (c == "_")) then {
+        true
+    } else {
+        false
+    }
+}
 var mchars := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 var ochars := ["+", "-", "/", "*", "=", ":", "<", ">", "%", "&", "|"]
 
@@ -309,17 +315,15 @@ var escaped := false
 var prev := ""
 var unichars := 0
 var codepoint := 0
-var unicat
 log_verbose("lexing.")
 for input each { c ->
     var ct := ""
-    unicat := unicode.category(c)
-    if (((unicat.at(0) == "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
+    if ((unicode.iscategory(c, "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
         (c.ord == 9)) then {
         syntax_error("illegal whitespace in input: " ++ c.ord ++ ", "
             ++ unicode.name(c))
     }
-    if ((unicat.at(0) == "C") & (c.ord /= 10) & (c.ord /= 13)) then {
+    if ((unicode.iscategory(c, "C") & (c.ord /= 10) & (c.ord /= 13)) then {
         syntax_error("illegal control character in input: #" ++ c.ord)
     }
     if (instr) then {
@@ -341,7 +345,7 @@ for input each { c ->
                     mode := "n"
                 }
             }
-            ct := ichars.contains(c)
+            ct := isidentifierchar(c)
             if (ct) then {
                 newmode := "i"
             }

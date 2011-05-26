@@ -5,7 +5,7 @@ all: current
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c
 
-current.bc: current.ll known-good/$(ARCH)/gracelib-$(STABLE).o
+current.bc: current.ll known-good/$(ARCH)/gracelib-$(STABLE).o unicode.gco
 	llvm-link -o current.bc known-good/$(ARCH)/gracelib-$(STABLE).o current.ll unicode.gco
 
 current.ll: compiler.gc known-good/$(ARCH)/minigrace-$(STABLE)
@@ -16,7 +16,7 @@ current.s: current.bc
 
 current: current.s gracelib.o
 	gcc -o current current.s
-selfhost: current compiler.gc gracelib.o
+selfhost: current compiler.gc gracelib.o unicode.gco
 	./current -o selfhost.ll compiler.gc
 	llvm-link -o selfhost.bc gracelib.o selfhost.ll unicode.gco
 	llc -o selfhost.s selfhost.bc

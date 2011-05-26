@@ -1,4 +1,6 @@
 #include "unicodedata.h"
+#include <string.h>
+#include <stdlib.h>
 
 struct Method {
     char *name;
@@ -43,7 +45,7 @@ struct Object *callmethod(struct Object *receiver, const char *name,
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_obj();
-
+char *cstringfromString(struct Object*);
 
 struct Object *unicode_name(struct Object *self, unsigned int nparams,
          struct Object **args) {
@@ -60,6 +62,25 @@ struct Object *unicode_category(struct Object *self, unsigned int nparams,
     int v = *d;
     int cindex = UnicodeRecords[v].category;
     return alloc_String(Unicode_Categories[cindex]);
+}
+struct Object *unicode_iscategory(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = callmethod(args[0], "ord", 0, 0);
+    struct Object *co = args[1];
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    char *dt = cstringfromString(co);
+    struct Object *ret = alloc_Boolean(0);
+    if (strlen(dt) == 1) {
+        if (cat[0] == dt[0])
+            ret = alloc_Boolean(1);
+    }
+    if (strcmp(cat, dt) == 0)
+        ret = alloc_Boolean(1);
+    free(dt);
+    return ret;
 }
 struct Object *unicode_create(struct Object *self, unsigned int nparams,
          struct Object **args) {
@@ -117,5 +138,6 @@ struct Object *module_unicode_init() {
     addmethod(o, "category", &unicode_category);
     addmethod(o, "name", &unicode_name);
     addmethod(o, "create", &unicode_create);
+    addmethod(o, "iscategory", &unicode_iscategory);
     return o;
 }
