@@ -588,8 +588,22 @@ struct Object *String__escape(struct Object *self, unsigned int nparams,
         } else if (p[ip] == '\\') {
             buf[op++] = '\\';
             buf[op] = '\\';
+        } else if (p[ip] >= 32 && p[ip] <= 126) {
+            buf[op] = p[ip]; 
         } else {
-            buf[op] = p[ip];
+            buf[op++] = '\\';
+            char b2[3];
+            b2[0] = 0;
+            b2[1] = 0;
+            b2[2] = 0;
+            sprintf(b2, "%x", (unsigned int)p[ip]&255);
+            if (b2[1] == 0) {
+                buf[op++] = '0';
+                buf[op] = b2[0];
+            } else {
+                buf[op++] = b2[0];
+                buf[op] = b2[1];
+            }
         }
     }
     buf[op] = 0;
