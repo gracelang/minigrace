@@ -1,4 +1,5 @@
 import io
+import unicode
 
 var tmp := 0
 var linenum := 1
@@ -79,6 +80,17 @@ method syntax_error(s) {
     io.error.write(s)
     io.error.write("\l")
     raise("Syntax error: "++ s)
+}
+method hexdecchar(c) {
+    var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
+                 "9", "a", "b", "c", "d", "e", "f"]
+    var ret := 0
+    for 0..15 each {i->
+        if chars.at(i) == c then {
+            ret := i
+        }
+    }
+    ret
 }
 
 method identifiertok(s) {
@@ -295,6 +307,8 @@ var instr := false
 var accum := ""
 var escaped := false
 var prev := ""
+var unichars := 0
+var codepoint := 0
 log_verbose("lexing.")
 for input each { c ->
     var ct := ""
@@ -379,14 +393,28 @@ for input each { c ->
                 if ((c == "l") | (c == "n")) then {
                     accum := accum ++ "\n"
                 } else {
-                    accum := accum ++ c
+                    if c == "u" then {
+                        unichars := 4
+                        codepoint := 0
+                    } else {
+                        accum := accum ++ c
+                    }
                 }
                 escaped := false
             } else {
                 if c == "\\" then {
                     escaped := true
                 } else {
-                    accum := accum ++ c
+                    if unichars > 0 then {
+                        unichars := unichars - 1
+                        codepoint := codepoint * 16
+                        codepoint := codepoint + hexdecchar(c)
+                        if unichars == 0 then {
+                            accum := accum ++ unicode.create(codepoint)
+                        }
+                    } else {
+                        accum := accum ++ c
+                    }
                 }
             }
         } else {
@@ -1778,17 +1806,6 @@ method compilecall(o) {
     o.register := "%call" ++ auto_count
     out("; compilecall giving return register " ++ o.register)
     auto_count := auto_count + 1
-}
-method hexdecchar(c) {
-    var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
-                 "9", "a", "b", "c", "d", "e", "f"]
-    var ret := 0
-    for 0..15 each {i->
-        if chars.at(i) == c then {
-            ret := i
-        }
-    }
-    ret
 }
 method compileoctets(o) {
     var escval := ""
