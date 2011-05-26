@@ -12,10 +12,10 @@ var buildtype := "bc"
 
 var verbosity := 30
 
-if argv.length > 1 then {
+if argv.size > 1 then {
     var ai := 1
     var arg
-    while {ai < argv.length} do {
+    while {ai < argv.size} do {
         arg := argv[ai]
         if arg.at(0) == "-" then {
             if arg == "-o" then {
@@ -182,7 +182,7 @@ method bindtok() {
 method modechange(tokens, mode, accum) {
     var done := false
     var tok := 0
-    if ((mode /= "n") | (length(accum) > 0)) then {
+    if ((mode /= "n") | (accum.size > 0)) then {
         if (mode == "i") then {
             tok := identifiertok(accum)
             if ((accum == "object") | (accum == "method")
@@ -416,9 +416,9 @@ var sym := object {
     var sym := tokens[0]
 }
 method next() {
-    if (tokens.length > 0) then {
+    if (tokens.size > 0) then {
         sym.sym := tokens.pop()
-        if ((sym.sym.type == "line") & (tokens.length > 0)) then {
+        if ((sym.sym.type == "line") & (tokens.size > 0)) then {
             var l := sym.sym.value
             if l /= linenum then {
                 linenum := l
@@ -1014,7 +1014,7 @@ method callrest() {
                 n := values.pop()
             }
             var params := []
-            for 0..tmpparams.length-1 each { x ->
+            for 0..tmpparams.size-1 each { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
@@ -1059,7 +1059,7 @@ method doarray() {
                 n := values.pop()
             }
             var params := []
-            for 0..tmpparams.length-1 each { x ->
+            for 0..tmpparams.size-1 each { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
@@ -1093,7 +1093,7 @@ method doobject() {
                 n := values.pop()
             }
             var body := []
-            for 0..rbody.length-1 each { x ->
+            for 0..rbody.size-1 each { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1128,7 +1128,7 @@ method methoddec() {
                     n := values.pop()
                 }
                 var params := []
-                for 0..tmpparams.length-1 each { x ->
+                for 0..tmpparams.size-1 each { x ->
                     var p := tmpparams.pop()
                     params.push(p)
                 }
@@ -1201,30 +1201,30 @@ method statement() {
 log_verbose("processing tokens.")
 var otoks := tokens
 tokens := []
-for 0..(otoks.length-1) each { i ->
+for 0..(otoks.size-1) each { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
 log_verbose("parsing.")
 linenum := 1
 next()
-var oldlength := tokens.length + 0
-if tokens.length == 0 then {
+var oldlength := tokens.size + 0
+if tokens.size == 0 then {
     // Single token is ignored otherwise
     statement()
 }
-while {tokens.length > 0} do {
+while {tokens.size > 0} do {
     statement()
-    if tokens.length == oldlength then {
+    if tokens.size == oldlength then {
         var next := []
         for 0..5 each {i->
-            if i < tokens.length then {
+            if i < tokens.size then {
                 next.push(tokens.at(i))
             }
         }
         syntax_error("No token consumed. Next tokens: " ++ next)
     }
-    oldlength := tokens.length + 0
+    oldlength := tokens.size + 0
 }
 var linkfiles := []
 if runmode == "make" then {
@@ -1476,8 +1476,8 @@ method compilemethod(o, selfobj) {
         closurevars.push("self")
     }
     outprint(";;;; METHOD DEFINITION: " ++ name)
-    if closurevars.length > 0 then {
-        out("; have closure method: " ++ closurevars.length)
+    if closurevars.size > 0 then {
+        out("; have closure method: " ++ closurevars.size)
         if o.selfclosure then {
             out("define %object* @meth_" ++ nm ++ "(%object* %realself, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
@@ -1517,7 +1517,7 @@ method compilemethod(o, selfobj) {
     var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
     constants.push(con)
-    if closurevars.length == 0 then {
+    if closurevars.size == 0 then {
         out("  call void @addmethod(%object* " ++ selfobj
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
@@ -1525,7 +1525,7 @@ method compilemethod(o, selfobj) {
             ++ "(%object*, i32, %object**)* @meth_" ++ nm ++ "))")
     } else {
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
-            ++ closurevars.length ++ ")")
+            ++ closurevars.size ++ ")")
         for closurevars each { v ->
             if v == "self" then {
                 out("  %selfpp" ++ auto_count ++ " = "
@@ -1583,7 +1583,7 @@ method compileif(o) {
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     var startblock := bblock
-    if o.elseblock.length > 0 then {
+    if o.elseblock.size > 0 then {
         out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     } else {
@@ -1601,7 +1601,7 @@ method compileif(o) {
     }
     tblock := bblock
     out("  br label %EndIf" ++ myc)
-    if o.elseblock.length > 0 then {
+    if o.elseblock.size > 0 then {
         beginblock("FalseBranch" ++ myc)
         for o.elseblock each { l->
             fret := compilenode(l)
@@ -1610,7 +1610,7 @@ method compileif(o) {
         fblock := bblock
     }
     beginblock("EndIf" ++ myc)
-    if o.elseblock.length > 0 then {
+    if o.elseblock.size > 0 then {
         out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
             ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
     } else {
@@ -1673,7 +1673,7 @@ method compilevardec(o) {
     } else {
         val := "%undefined"
     }
-    //scopes[scopes.length-1].push([nm, val])
+    //scopes[scopes.size-1].push([nm, val])
     out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
     out("  store %object* " ++ val ++ ", %object** %var_"
         ++ nm)
@@ -1722,13 +1722,13 @@ method compileop(o) {
         auto_count := auto_count + 1
     } else {
         var len := length(o.value) + 1
-        var con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+        var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value ++ "\\00\""
         out("  store %object* " ++ right ++ ", %object** %params_0")
         out("  %opresult" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ left
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.length ++ ",i32 0,i32 0), i32 1, %object** %params)")
+            ++ constants.size ++ ",i32 0,i32 0), i32 1, %object** %params)")
         constants.push(con)
         o.register := "%opresult" ++ auto_count
         auto_count := auto_count + 1
@@ -1743,7 +1743,7 @@ method compilecall(o) {
         var r := compilenode(p)
         args.push(r)
     }
-    for 0..(args.length-1) each { i ->
+    for 0..(args.size-1) each { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
     if (o.value.type == "member") then {
@@ -1752,27 +1752,27 @@ method compilecall(o) {
         outprint("; compiled in to " ++ obj)
         len := length(o.value.value) + 1
         outprint("; got len " ++ len)
-        con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+        con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
         outprint("; created con")
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.length ++ ",i32 0,i32 0), i32 "
-            ++ args.length ++ ", %object** %params)")
+            ++ constants.size ++ ",i32 0,i32 0), i32 "
+            ++ args.size ++ ", %object** %params)")
         outprint("; pushed statement")
         constants.push(con)
     } else {
         out("; WARNING: non-member calls not fully supported yet")
         obj := "%self"
         len := length(o.value.value) + 1
-        con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+        con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.length ++ ",i32 0,i32 0), i32 "
-            ++ args.length ++ ", %object** %params)")
+            ++ constants.size ++ ",i32 0,i32 0), i32 "
+            ++ args.size ++ ", %object** %params)")
         constants.push(con)
     }
     o.register := "%call" ++ auto_count
@@ -1813,7 +1813,7 @@ method compileoctets(o) {
         ++ auto_count)
     out("  br label %octlit" ++ auto_count ++ ".end")
     beginblock("octlit" ++ auto_count ++ ".define")
-    out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.length ++ ", i32 0, i32 0")
+    out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.size ++ ", i32 0, i32 0")
     out("  %defoctets" ++ auto_count ++ " = call %object* "
         ++ "@alloc_Octets(i8* "
           ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
@@ -1825,7 +1825,7 @@ method compileoctets(o) {
         ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
         ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
         ++ ".define]")
-    var con := "@.oct" ++ constants.length ++ " = private unnamed_addr "
+    var con := "@.oct" ++ constants.size ++ " = private unnamed_addr "
         ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
     constants.push(con)
     con := ("@.octlit" ++ auto_count
@@ -1878,7 +1878,7 @@ method compilenode(o) {
             ++ auto_count)
         out("  br label %strlit" ++ auto_count ++ ".end")
         beginblock("strlit" ++ auto_count ++ ".define")
-        out("  %str" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.str" ++ constants.length ++ ", i32 0, i32 0")
+        out("  %str" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.str" ++ constants.size ++ ", i32 0, i32 0")
         out("  %defstring" ++ auto_count ++ " = call %object* "
             ++ "@alloc_String(i8* "
               ++ "%str" ++ auto_count ++ ")")
@@ -1890,7 +1890,7 @@ method compilenode(o) {
             ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
             ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
             ++ ".define]")
-        var con := "@.str" ++ constants.length ++ " = private unnamed_addr "
+        var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
         constants.push(con)
         con := ("@.strlit" ++ auto_count
@@ -1957,17 +1957,17 @@ method compilenode(o) {
                 var r := compilenode(prm)
                 args.push(r)
             }
-            for 0..(args.length-1) each { i ->
+            for 0..(args.size-1) each { i ->
                 out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
             }
             out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
-                  ++ args.length ++ ", %object** %params)")
+                  ++ args.size ++ ", %object** %params)")
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } else {
             if ((o.value.type == "identifier")
                 & (o.value.value == "length")) then {
-                if o.with.length == 0 then {
+                if o.with.size == 0 then {
                     out("; PP FOLLOWS")
                     out(o.pretty(0))
                     tmp := "null"
