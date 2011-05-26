@@ -198,7 +198,8 @@ method modechange(tokens, mode, accum) {
         if (mode == "i") then {
             tok := identifiertok(accum)
             if ((accum == "object") | (accum == "method")
-                | (accum == "var") | (accum == "import")) then {
+                | (accum == "var") | (accum == "const")
+                | (accum == "import")) then {
                 tok := keywordtok(accum)
             }
             if (accum == "and") then {
@@ -775,6 +776,29 @@ method astbind(dest, val) {
         }
     }
 }
+method astconstdec(name, val) {
+    object {
+        var type := "constdec"
+        var name := name
+        var value := val
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            var spc := ""
+            for 0..depth each { i ->
+                spc := spc ++ "  "
+            }
+            var s := "ConstDec"
+            s := s ++ "\n"
+            s := s ++ spc ++ self.name.pretty(depth + 1)
+            if self.value then {
+                s := s ++ "\n    "
+                s := s ++ spc ++ self.value.pretty(depth + 1)
+            }
+            s
+        }
+    }
+}
 method astvardec(name, val) {
     object {
         var type := "vardec"
@@ -1076,6 +1100,23 @@ method callrest() {
         }
     }
 }
+method constdec() {
+    if (accept("keyword") & (sym.sym.value == "const")) then {
+        next()
+        pushidentifier()
+        var val
+        var name := values.pop()
+        if accept("bind") then {
+            next()
+            expression()
+            val := values.pop()
+        } else {
+            syntax_error("const declaration requires value")
+        }
+        var o := astconstdec(name, val)
+        values.push(o)
+    }
+}
 method vardec() {
     if (accept("keyword") & (sym.sym.value == "var")) then {
         next()
@@ -1136,6 +1177,7 @@ method doobject() {
             while {(accept("rbrace")).not} do {
                 vardec()
                 methoddec()
+                constdec()
             }
             next()
             var rbody := []
@@ -1346,6 +1388,36 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
+method compileobjconstdec(o, selfr, pos) {
+    var val := "%undefined"
+    if o.value then {
+        val := compilenode(o.value)
+    }
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.name.value
+    var len := length(nm) + 1
+    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
+    constants.push(con)
+    out("; OBJECT CONST DEC " ++ nm)
+    out("  call void @adddatum(%object* " ++ selfr
+        ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
+    outprint("define %object* @reader_" ++ nm ++ "_" ++ myc
+        ++ "(%object* %self, i32 %nparams, "
+        ++ "%object** %args) {")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %tmp1 = load %object*** %dt")
+    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
+    outprint("  %tmp2 = load %object** %arrayidx")
+    outprint("  ret %object* %tmp2")
+    outprint("}")
+    out("  call void @addmethod(%object* " ++ selfr
+        ++ ", i8* getelementptr(["
+        ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
+        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* "
+        ++ "(%object*, i32, %object**)* @reader_" ++ nm ++ "_" ++ myc ++ "))")
+}
 method compileobjvardec(o, selfr, pos) {
     var val := "%undefined"
     if o.value then {
@@ -1409,6 +1481,10 @@ method compileobject(o) {
         }
         if e.type == "vardec" then {
             compileobjvardec(e, selfr, pos)
+            pos := pos + 1
+        }
+        if e.type == "constdec" then {
+            compileobjconstdec(e, selfr, pos)
             pos := pos + 1
         }
     }
