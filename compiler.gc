@@ -1174,10 +1174,16 @@ method doobject() {
                 var register := ""
             })
             next()
+            var sz := values.size()
             while {(accept("rbrace")).not} do {
                 vardec()
                 methoddec()
                 constdec()
+                if values.size == sz then {
+                    syntax_error("did not consume anything in "
+                        ++ "object declaration.")
+                }
+                sz := values.size
             }
             next()
             var rbody := []
