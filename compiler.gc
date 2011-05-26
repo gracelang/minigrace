@@ -1400,11 +1400,12 @@ method compileobjconstdec(o, selfr, pos) {
     var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
     constants.push(con)
-    out("; OBJECT CONST DEC " ++ nm)
+    var enm := escapestring(nm)
+    out("; OBJECT CONST DEC " ++ enm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define %object* @reader_" ++ nm ++ "_" ++ myc
-        ++ "(%object* %self, i32 %nparams, "
+    outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
     outprint("  %tmp1 = load %object*** %dt")
@@ -1416,7 +1417,8 @@ method compileobjconstdec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* "
-        ++ "(%object*, i32, %object**)* @reader_" ++ nm ++ "_" ++ myc ++ "))")
+        ++ "(%object*, i32, %object**)* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "\"))")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "%undefined"
@@ -1431,10 +1433,11 @@ method compileobjvardec(o, selfr, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
     constants.push(con)
     out("; OBJECT VAR DEC " ++ nm)
+    var enm := escapestring(nm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define %object* @reader_" ++ nm ++ "_" ++ myc
-        ++ "(%object* %self, i32 %nparams, "
+    outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
     outprint("  %tmp1 = load %object*** %dt")
@@ -1446,14 +1449,15 @@ method compileobjvardec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @reader_" ++ nm ++ "_" ++ myc ++ "))")
+        ++ "(%object*, i32, %object**)* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "\"))")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
-    outprint("define %object* @writer_" ++ nm ++ "_" ++ myc
-        ++ "(%object* %self, i32 %nparams, "
+    outprint("define %object* @\"writer_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %params = getelementptr %object** %args, i32 0")
     outprint("  %par0 = load %object** %params")
@@ -1467,7 +1471,8 @@ method compileobjvardec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @writer_" ++ nm ++ "_" ++ myc ++ "))")
+        ++ "(%object*, i32, %object**)* @\"writer_" ++ enm ++ "_" ++ myc
+        ++ "\"))")
 }
 method compileobject(o) {
     var myc := auto_count
