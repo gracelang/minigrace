@@ -1485,9 +1485,9 @@ method compilemethod(o, selfobj) {
     }
     var i := 0
     for o.params each { p ->
-        out("  %var_" ++ p.value ++ " = getelementptr %object** %args, "
+        var pn := escapestring(p.value)
+        out("  %\"var_" ++ pn ++ "\" = getelementptr %object** %args, "
             ++ "i32 " ++ i)
-        var pn := p.value
         declaredvars.push(pn)
         i := i + 1
     }
@@ -1550,8 +1550,9 @@ method compilemethod(o, selfobj) {
             out("  %self2 = load %object*** %varc_" ++ cv)
             out("  %self = load %object** %self2")
         } else {
-            out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
-            out("  %var_" ++ cv ++ " = load %object*** %varc_" ++ cv)
+            out("  %\"varc_" ++ cv ++ "\" = getelementptr %object*** %closure, i32 " ++ j)
+            out("  %\"var_" ++ cv ++ "\" = load %object*** %\"varc_" ++ cv
+                ++ "\"")
         }
         j := j + 1
     }
@@ -1589,7 +1590,7 @@ method compilemethod(o, selfobj) {
                 auto_count := auto_count + 1
             } else {
                 out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
-                    ++ "%object** %var_" ++ v ++ ")")
+                    ++ "%object** %\"var_" ++ v ++ "\")")
             }
         }
         out("  call void @addclosuremethod(%object* " ++ selfobj
@@ -1677,15 +1678,16 @@ method compileidentifier(o) {
     if name == "self" then {
         o.register := "%self"
     } else {
+        name := escapestring(name)
         if modules.contains(name) then {
-            out("  %var_val_" ++ name ++ auto_count ++
-                " = load %object** @.module." ++ name)
+            out("  %\"var_val_" ++ name ++ auto_count
+                ++ "\" = load %object** @.module." ++ name)
         } else {
             usedvars.push(name)
-            out("  %var_val_" ++ name ++ auto_count ++ " = load %object** "
-                ++ "%var_" ++ name)
+            out("  %\"var_val_" ++ name ++ auto_count ++ "\" = load %object** "
+                ++ "%\"var_" ++ name ++ "\"")
         }
-        o.register := "%var_val_" ++ name ++ auto_count
+        o.register := "%\"var_val_" ++ name ++ auto_count ++ "\""
         auto_count := auto_count + 1
     }
 }
@@ -1697,9 +1699,9 @@ method compilebind(o) {
     if dest.type == "identifier" then {
         val := o.value
         val := compilenode(val)
-        var nm := dest.value
+        var nm := escapestring(dest.value)
         usedvars.push(nm)
-        out("  store %object* " ++ val ++ ", %object** %var_" ++ nm)
+        out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
         o.register := val
     } else {
         if dest.type == "member" then {
@@ -1718,7 +1720,7 @@ method compilebind(o) {
     }
 }
 method compilevardec(o) {
-    var nm := o.name.value
+    var nm := escapestring(o.name.value)
     declaredvars.push(nm)
     var val := o.value
     if val then {
@@ -1727,9 +1729,9 @@ method compilevardec(o) {
         val := "%undefined"
     }
     //scopes[scopes.size-1].push([nm, val])
-    out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
-    out("  store %object* " ++ val ++ ", %object** %var_"
-        ++ nm)
+    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
+    out("  store %object* " ++ val ++ ", %object** %\"var_"
+        ++ nm ++ "\"")
     o.register := val
 }
 method compileindex(o) {
@@ -1878,16 +1880,18 @@ method compileoctets(o) {
 }
 method compileimport(o) {
     out("; Import of " ++ o.value.value)
-    var nm := o.value.value
-    out("  %tmp_mod_" ++ nm ++ " = call %object* @module_"
+    var nm := escapestring(o.value.value)
+    out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
         ++ nm ++ "_init()")
-    out("  store %object* %tmp_mod_" ++ nm ++ ", %object** @.module." ++ nm)
-    out("  %var_" ++ nm ++ " = call %object** @alloc_var()")
-    out("  store %object* %tmp_mod_" ++ nm ++ ", %object** %var_" ++ nm)
-    var con := "@.module." ++ nm ++ " = private global %object* null"
+    out("  store %object* %\"tmp_mod_" ++ nm
+        ++ "\", %object** @\".module." ++ nm ++ "\"")
+    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
+    out("  store %object* %\"tmp_mod_" ++ nm
+        ++ "\", %object** %\"var_" ++ nm ++ "\"")
+    var con := "@\".module." ++ nm ++ "\" = private global %object* null"
     modules.push(nm)
     constants.push(con)
-    con := "declare %object* @module_" ++ nm ++ "_init()"
+    con := "declare %object* @\"module_" ++ nm ++ "_init\"()"
     constants.push(con)
     o.register := "%undefined"
 }
