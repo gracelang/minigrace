@@ -30,6 +30,9 @@ selfhost-rec: selfhost
 	@diff -q selfhost.ll selfhost-rec.ll
 	@echo PASS
 
+unicode.gco: unicode.c unicodedata.h
+	clang -emit-llvm -c -o unicode.gco unicode.c
+
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
