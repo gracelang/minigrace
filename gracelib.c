@@ -40,7 +40,7 @@ struct Object *Object_NotEquals(struct Object*, unsigned int,
         struct Object**);
 struct Object *Object_Equals(struct Object*, unsigned int,
         struct Object**);
-struct Object* alloc_String(char*);
+struct Object* alloc_String(const char*);
 struct Object *String_concat(struct Object*, unsigned int nparams,
         struct Object**);
 struct Object *String_index(struct Object*, unsigned int nparams,
@@ -48,7 +48,7 @@ struct Object *String_index(struct Object*, unsigned int nparams,
 struct Object *callmethod(struct Object *receiver, const char *name,
         unsigned int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
-struct Object *alloc_Octets(char *data, int len);
+struct Object *alloc_Octets(const char *data, int len);
 
 struct Object *undefined = NULL;
 
@@ -543,7 +543,7 @@ struct Object *String_encode(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
     return alloc_Octets(receiver->bdata[0], strlen(receiver->bdata[0]));
 }
-struct Object *alloc_String(char *data) {
+struct Object *alloc_String(const char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
     o->bdata = glmalloc(sizeof(void*) * 2);
@@ -711,7 +711,7 @@ struct Object *Octets_decode(struct Object *receiver, unsigned int nparams,
     free(newdata);
     return ret;
 }
-struct Object *alloc_Octets(char *data, int len) {
+struct Object *alloc_Octets(const char *data, int len) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Octets");
     o->bdata = glmalloc(sizeof(void*) * 2);
