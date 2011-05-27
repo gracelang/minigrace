@@ -1284,6 +1284,28 @@ method doclass() {
         }
     }
 }
+method parsempmndecrest(meth, params) {
+    var methname := meth.value
+    var nxt
+    while {accept("identifier")} do {
+        methname := methname ++ "()"
+        pushidentifier()
+        nxt := values.pop
+        methname := methname ++ nxt.value
+        if (accept("lparen")).not then {
+            syntax_error("multi-part method name parameters require ().")
+        }
+        next()
+        pushidentifier()
+        nxt := values.pop()
+        params.push(nxt)
+        if (accept("rparen")).not then {
+            syntax_error("multi-part method name parameters must be single.")
+        }
+        next()
+    }
+    astidentifier(methname)
+}
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
         next()
@@ -1313,6 +1335,9 @@ method methoddec() {
                 for 0..tmpparams.size-1 each { x ->
                     var p := tmpparams.pop()
                     params.push(p)
+                }
+                if accept("identifier") then {
+                    meth := parsempmndecrest(meth, params)
                 }
                 var body := []
                 if accept("lbrace") then {
