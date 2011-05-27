@@ -63,6 +63,30 @@ struct Object *unicode_category(struct Object *self, unsigned int nparams,
     int cindex = UnicodeRecords[v].category;
     return alloc_String(Unicode_Categories[cindex]);
 }
+struct Object *unicode_combining(struct Object *self, unsigned int nparams,
+         struct Object **args) {
+    struct Object *o = callmethod(args[0], "ord", 0, 0);
+    double *d = o->bdata[0];
+    int v = *d;
+    int cval = UnicodeRecords[v].combining;
+    return alloc_Float64(cval);
+}
+struct Object *unicode_mirrored(struct Object *self, unsigned int nparams,
+         struct Object **args) {
+    struct Object *o = callmethod(args[0], "ord", 0, 0);
+    double *d = o->bdata[0];
+    int v = *d;
+    int cval = UnicodeRecords[v].mirrored;
+    return alloc_Boolean(cval == 'Y');
+}
+struct Object *unicode_bidirectional(struct Object *self, unsigned int nparams,
+         struct Object **args) {
+    struct Object *o = callmethod(args[0], "ord", 0, 0);
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].bidirectional;
+    return alloc_String(Unicode_Bidirectionals[cindex]);
+}
 struct Object *unicode_iscategory(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
@@ -136,6 +160,9 @@ struct Object *unicode_create(struct Object *self, unsigned int nparams,
 struct Object *module_unicode_init() {
     struct Object *o = alloc_obj();
     addmethod(o, "category", &unicode_category);
+    addmethod(o, "bidirectional", &unicode_bidirectional);
+    addmethod(o, "combining", &unicode_combining);
+    addmethod(o, "mirrored", &unicode_mirrored);
     addmethod(o, "name", &unicode_name);
     addmethod(o, "create", &unicode_create);
     addmethod(o, "iscategory", &unicode_iscategory);
