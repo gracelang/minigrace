@@ -199,7 +199,7 @@ method modechange(tokens, mode, accum) {
             tok := identifiertok(accum)
             if ((accum == "object") | (accum == "method")
                 | (accum == "var") | (accum == "const")
-                | (accum == "import")) then {
+                | (accum == "import") | (accum == "class")) then {
                 tok := keywordtok(accum)
             }
             if (accum == "and") then {
@@ -613,6 +613,32 @@ method astcall(what, with) {
         }
     }
 }
+method astclass(name, params, body) {
+    object {
+        var type := "class"
+        var value := body
+        var name := name
+        var params := params
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            var spc := ""
+            for 0..depth each { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Class(" ++ self.name ++ ")"
+            s := s ++ "\n" ++ spc ++ "Parameters:"
+            for self.params each {x->
+                s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
+            }
+            s := s ++ "\n" ++ spc ++ "Body:"
+            for self.value each { x ->
+                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
+            }
+            s
+        }
+    }
+}
 method astobject(body) {
     object {
         var type := "object"
@@ -790,9 +816,9 @@ method astconstdec(name, val) {
             }
             var s := "ConstDec"
             s := s ++ "\n"
-            s := s ++ spc ++ self.name.pretty(depth + 1)
+            s := s ++ spc ++ self.name.pretty(depth)
             if self.value then {
-                s := s ++ "\n    "
+                s := s ++ "\n  "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
             s
@@ -1202,6 +1228,62 @@ method doobject() {
         }
     }
 }
+method doclass() {
+    if (accept("keyword") & (sym.sym.value == "class")) then {
+        next()
+        pushidentifier()
+        var cname := values.pop()
+        if accept("lbrace") then {
+            values.push(object {
+                var type := "lbrace"
+                var register := ""
+            })
+            next()
+            var params := []
+            if accept("identifier") then {
+                pushidentifier()
+                var pid := values.pop()
+                params.push(pid)
+                while {accept("comma")} do {
+                    next()
+                    pushidentifier()
+                    pid := values.pop()
+                    params.push(pid)
+                }
+                if accept("arrow") then {
+                    next()
+                } else {
+                    syntax_error("expected ->.")
+                }
+            }
+            var sz := values.size()
+            while {(accept("rbrace")).not} do {
+                vardec()
+                methoddec()
+                constdec()
+                if values.size == sz then {
+                    syntax_error("did not consume anything in "
+                        ++ "class declaration.")
+                }
+                sz := values.size
+            }
+            next()
+            var rbody := []
+            var n := values.pop()
+            while {n.type /= "lbrace"} do {
+                rbody.push(n)
+                n := values.pop()
+            }
+            var body := []
+            for 0..rbody.size-1 each { x ->
+                var p := rbody.pop()
+                body.push(p)
+            }
+            var o := astclass(cname, params, body)
+            values.push(o)
+        }
+    }
+}
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
         next()
@@ -1282,7 +1364,11 @@ method statement() {
                 if sym.sym.value == "import" then {
                     doimport()
                 } else {
-                    expression()
+                    if sym.sym.value == "class" then {
+                        doclass()
+                    } else {
+                        expression()
+                    }
                 }
             }
         }
@@ -1479,6 +1565,15 @@ method compileobjvardec(o, selfr, pos) {
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
         ++ "(%object*, i32, %object**)* @\"writer_" ++ enm ++ "_" ++ myc
         ++ "\"))")
+}
+method compileclass(o) {
+    var params := o.params
+    var mbody := [astobject(o.value)]
+    var newmeth := astmethod(astidentifier("new"), params, mbody)
+    var obody := [newmeth]
+    var cobj := astobject(obody)
+    var con := astconstdec(o.name, cobj)
+    o.register := compilenode(con)
 }
 method compileobject(o) {
     var myc := auto_count
@@ -2090,6 +2185,9 @@ method compilenode(o) {
     }
     if (o.type == "if") then {
         compileif(o)
+    }
+    if (o.type == "class") then {
+        compileclass(o)
     }
     if (o.type == "object") then {
         compileobject(o)
