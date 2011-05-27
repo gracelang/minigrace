@@ -1806,6 +1806,20 @@ method compilebind(o) {
         }
     }
 }
+method compileconstdec(o) {
+    var nm := escapestring(o.name.value)
+    declaredvars.push(nm)
+    var val := o.value
+    if val then {
+        val := compilenode(val)
+    } else {
+        syntax_error("const must have value bound.")
+    }
+    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
+    out("  store %object* " ++ val ++ ", %object** %\"var_"
+        ++ nm ++ "\"")
+    o.register := val
+}
 method compilevardec(o) {
     var nm := escapestring(o.name.value)
     declaredvars.push(nm)
@@ -2055,6 +2069,9 @@ method compilenode(o) {
         if (o.type == "identifier") then {
             compileidentifier(o)
         }
+    }
+    if (o.type == "constdec") then {
+        compileconstdec(o)
     }
     if (o.type == "vardec") then {
         compilevardec(o)
