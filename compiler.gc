@@ -1098,6 +1098,7 @@ method dotrest() {
 method callrest() {
     if accept("lparen") then {
         var meth := values.pop()
+        var methn := meth.value
         next()
         values.push(object {
             var type := "lparen"
@@ -1120,11 +1121,43 @@ method callrest() {
                 var p := tmpparams.pop()
                 params.push(p)
             }
+            var ln := linenum
+            next()
+            if (linenum == ln) & accept("identifier") & (sym.sym.value /=
+                "then") then {
+                methn := callmprest(astidentifier(methn), params)
+                if meth.type == "member" then {
+                    meth := astmember(methn.value, meth.in)
+                } else {
+                    meth := methn
+                }
+            }
             var o := astcall(meth, params)
             values.push(o)
-            next()
         }
     }
+}
+method callmprest(meth, params) {
+    var methname := meth.value
+    var nxt
+    while {accept("identifier")} do {
+        methname := methname ++ "()"
+        pushidentifier()
+        nxt := values.pop
+        methname := methname ++ nxt.value
+        if (accept("lparen")).not then {
+            syntax_error("multi-part method name parameters require ().")
+        }
+        next()
+        expression()
+        nxt := values.pop()
+        params.push(nxt)
+        if (accept("rparen")).not then {
+            syntax_error("multi-part method name parameters must be single.")
+        }
+        next()
+    }
+    astidentifier(methname)
 }
 method constdec() {
     if (accept("keyword") & (sym.sym.value == "const")) then {
