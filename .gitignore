@@ -2,5 +2,6 @@
 *.o
 *.bc
 *.ll
+*.gco
 current
 selfhost
