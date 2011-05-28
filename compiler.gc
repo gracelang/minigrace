@@ -51,7 +51,7 @@ if (argv.size > 1) then {
             if modname == "main" then {
                 modname := ""
                 var seendot := false
-                for (filename) each { c->
+                for (filename) do { c->
                     if (c == ".") then {
                         seendot := true
                     }
@@ -90,7 +90,7 @@ method hexdecchar(c) {
     var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
                  "9", "a", "b", "c", "d", "e", "f"]
     var ret := 0
-    for (0..15) each {i->
+    for (0..15) do {i->
         if (chars.at(i) == c) then {
             ret := i
         }
@@ -333,7 +333,7 @@ var prev := ""
 var unichars := 0
 var codepoint := 0
 log_verbose("lexing.")
-for (input) each { c ->
+for (input) do { c ->
     var ct := ""
     if ((unicode.iscategory(c, "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
         (c.ord == 9)) then {
@@ -502,14 +502,14 @@ method astfor(over, variable, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "For(" ++ self.variable.value ++ ")\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Each:"
-            for (self.body) each { x ->
+            for (self.body) do { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -525,14 +525,14 @@ method astwhile(cond, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "While\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Do:"
-            for (self.body) each { x ->
+            for (self.body) do { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -549,19 +549,19 @@ method astif(cond, thenblock, elseblock) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "If\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Then:"
-            for (self.thenblock) each { ix ->
+            for (self.thenblock) do { ix ->
                 s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Else:"
-            for (self.elseblock) each { ix ->
+            for (self.elseblock) do { ix ->
                 s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
             s
@@ -579,17 +579,17 @@ method astblock(params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Block\n"
             s := s ++ spc ++ "Parameters:"
-            for (self.params) each { mx ->
+            for (self.params) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Body:"
-            for (self.body) each { mx ->
+            for (self.body) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s
@@ -607,19 +607,19 @@ method astmethod(name, params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Method\n"
             s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
-            for (self.params) each { mx ->
+            for (self.params) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Body:"
-            for (self.body) each { mx ->
+            for (self.body) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s
@@ -635,7 +635,7 @@ method astcall(what, with) {
         var register := ""
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Call\n"
@@ -643,7 +643,7 @@ method astcall(what, with) {
             s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
             s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
-            for (self.with) each { x ->
+            for (self.with) do { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -660,16 +660,16 @@ method astclass(name, params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Class(" ++ self.name ++ ")"
             s := s ++ "\n" ++ spc ++ "Parameters:"
-            for (self.params) each {x->
+            for (self.params) do {x->
                 s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
             }
             s := s ++ "\n" ++ spc ++ "Body:"
-            for (self.value) each { x ->
+            for (self.value) do { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -684,11 +684,11 @@ method astobject(body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Object"
-            for (self.value) each { x ->
+            for (self.value) do { x ->
                 s := s ++ "\n"++ spc ++ x.pretty(depth+1)
             }
             s
@@ -703,11 +703,11 @@ method astarray(values) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { ai ->
+            for (0..depth) do { ai ->
                 spc := spc ++ "  "
             }
             var s := "Array"
-            for (self.value) each { ax ->
+            for (self.value) do { ax ->
                 s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
             }
             s
@@ -723,7 +723,7 @@ method astmember(what, in) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Member(" ++ self.value ++ ")\n"
@@ -785,7 +785,7 @@ method astop(op, l, r) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Op(" ++ self.value ++ ")"
@@ -806,7 +806,7 @@ method astindex(expr, index) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Index"
@@ -827,7 +827,7 @@ method astbind(dest, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Bind"
@@ -848,7 +848,7 @@ method astconstdec(name, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "ConstDec"
@@ -871,7 +871,7 @@ method astvardec(name, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for ((0..depth)) each { i ->
+            for ((0..depth)) do { i ->
                 spc := spc ++ "  "
             }
             var s := "VarDec"
@@ -893,7 +893,7 @@ method astimport(name) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for (0..depth) each { i ->
+            for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Import"
@@ -939,7 +939,7 @@ method block() {
         var i := 0
         var toks := tokens
         // TODO This is a massive hack.
-        for (0..15) each { i->
+        for (0..15) do { i->
             if (i < (toks.size-1)) then {
                 var t := toks.at((toks.size - i) - 1)
                 if ((t.type /= "identifier") & (t.type /= "comma")
@@ -1231,7 +1231,7 @@ method callrest() {
                 n := values.pop()
             }
             var params := []
-            for (0..tmpparams.size-1) each { x ->
+            for (0..tmpparams.size-1) do { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
@@ -1333,7 +1333,7 @@ method doarray() {
                 n := values.pop()
             }
             var params := []
-            for (0..tmpparams.size-1) each { x ->
+            for (0..tmpparams.size-1) do { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
@@ -1374,7 +1374,7 @@ method doobject() {
                 n := values.pop()
             }
             var body := []
-            for (0..rbody.size-1) each { x ->
+            for (0..rbody.size-1) do { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1430,7 +1430,7 @@ method doclass() {
                 n := values.pop()
             }
             var body := []
-            for (0..rbody.size-1) each { x ->
+            for (0..rbody.size-1) do { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1487,7 +1487,7 @@ method methoddec() {
                     n := values.pop()
                 }
                 var params := []
-                for (0..tmpparams.size-1) each { x ->
+                for (0..tmpparams.size-1) do { x ->
                     var p := tmpparams.pop()
                     params.push(p)
                 }
@@ -1567,7 +1567,7 @@ method statement() {
 log_verbose("processing tokens.")
 var otoks := tokens
 tokens := []
-for (0..(otoks.size-1)) each { i ->
+for (0..(otoks.size-1)) do { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
@@ -1583,7 +1583,7 @@ while {tokens.size > 0} do {
     statement()
     if (tokens.size == oldlength) then {
         var next := []
-        for (0..5) each {i->
+        for (0..5) do {i->
             if (i < tokens.size) then {
                 next.push(tokens.at(i))
             }
@@ -1595,7 +1595,7 @@ while {tokens.size > 0} do {
 var linkfiles := []
 if (runmode == "make") then {
     log_verbose("checking imports.")
-    for (values) each { v ->
+    for (values) do { v ->
         if (v.type == "import") then {
             var nm := v.value.value
             var exists := false
@@ -1644,7 +1644,7 @@ method compilearray(o) {
     auto_count := auto_count + 1
     var r
     out("  %array" ++ myc ++ " = call %object* @alloc_Array()")
-    for (o.value) each {a ->
+    for (o.value) do {a ->
         r := compilenode(a)
         out("  store %object* " ++ r ++ ", %object** %params_0")
         out("  call %object* @callmethod(%object* %array"
@@ -1761,7 +1761,7 @@ method compileobject(o) {
     var selfr := "%obj" ++ myc
     out("  " ++ selfr ++ " = call %object* @alloc_obj()")
     var pos := 0
-    for (o.value) each { e ->
+    for (o.value) do { e ->
         if (e.type == "method") then {
             compilemethod(e, selfr)
         }
@@ -1851,12 +1851,12 @@ method compilemethod(o, selfobj) {
     out("  %paramssize = mul i32 %ptrsize, 16")
     out("  %paramsu = call i8* @malloc(i32 %paramssize)")
     out("  %params = bitcast i8* %paramsu to %object**")
-    for (0..10) each { i ->
+    for (0..10) do { i ->
         out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
             ++ i)
     }
     var i := 0
-    for (o.params) each { p ->
+    for (o.params) do { p ->
         var pn := escapestring(p.value)
         out("  %\"var_" ++ pn ++ "\" = getelementptr %object** %args, "
             ++ "i32 " ++ i)
@@ -1865,7 +1865,7 @@ method compilemethod(o, selfobj) {
     }
     out("  %undefined = load %object** @undefined")
     var ret := "%undefined"
-    for (o.body) each { l ->
+    for (o.body) do { l ->
         ret := compilenode(l)
     }
     out("  ret %object* " ++ ret)
@@ -1873,9 +1873,9 @@ method compilemethod(o, selfobj) {
     var body := output
     output := []
     var closurevars := []
-    for (usedvars) each { u ->
+    for (usedvars) do { u ->
         var decl := false
-        for (declaredvars) each { d->
+        for (declaredvars) do { d->
             if (d == u) then {
                 decl := true
             }
@@ -1884,7 +1884,7 @@ method compilemethod(o, selfobj) {
             decl := decl
         } else {
             var found := false
-            for (closurevars) each { v ->
+            for (closurevars) do { v ->
                 if (v == u) then {
                     found := true
                 }
@@ -1916,7 +1916,7 @@ method compilemethod(o, selfobj) {
     }
     beginblock("entry")
     var j := 0
-    for (closurevars) each { cv ->
+    for (closurevars) do { cv ->
         if (cv == "self") then {
             out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
             out("  %self2 = load %object*** %varc_" ++ cv)
@@ -1928,11 +1928,11 @@ method compilemethod(o, selfobj) {
         }
         j := j + 1
     }
-    for (body) each { l->
+    for (body) do { l->
         out(l)
     }
     out(";;;; ENDS")
-    for (output) each {l ->
+    for (output) do {l ->
         outprint(l)
     }
     output := oldout
@@ -1952,7 +1952,7 @@ method compilemethod(o, selfobj) {
     } else {
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
             ++ closurevars.size ++ ")")
-        for (closurevars) each { v ->
+        for (closurevars) do { v ->
             if (v == "self") then {
                 out("  %selfpp" ++ auto_count ++ " = "
                     ++ "call %object** @alloc_var()")
@@ -1988,7 +1988,7 @@ method compilewhile(o) {
     beginblock("WhileBody" ++ myc)
     var tret := "null"
     var tblock := "ERROR"
-    for (o.body) each { l->
+    for (o.body) do { l->
         tret := compilenode(l)
     }
     tblock := bblock
@@ -2022,14 +2022,14 @@ method compileif(o) {
     var fret := "%undefined"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    for (o.thenblock) each { l->
+    for (o.thenblock) do { l->
         tret := compilenode(l)
     }
     tblock := bblock
     out("  br label %EndIf" ++ myc)
     if (o.elseblock.size > 0) then {
         beginblock("FalseBranch" ++ myc)
-        for (o.elseblock) each { l->
+        for (o.elseblock) do { l->
             fret := compilenode(l)
         }
         out("  br label %EndIf" ++ myc)
@@ -2180,11 +2180,11 @@ method compilecall(o) {
     var obj := ""
     var len := 0
     var con := ""
-    for (o.with) each { p ->
+    for (o.with) do { p ->
         var r := compilenode(p)
         args.push(r)
     }
-    for (0..(args.size-1)) each { i ->
+    for (0..(args.size-1)) do { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
     if (o.value.type == "member") then {
@@ -2224,7 +2224,7 @@ method compileoctets(o) {
     var escval := ""
     var l := length(o.value) / 2
     var i := 0
-    for (o.value) each {c->
+    for (o.value) do {c->
         if ((i % 2) == 0) then {
             escval := escval ++ "\\"
         }
@@ -2394,11 +2394,11 @@ method compilenode(o) {
     if ((o.type == "call")) then {
         if (o.value.value == "print") then {
             var args := []
-            for (o.with) each { prm ->
+            for (o.with) do { prm ->
                 var r := compilenode(prm)
                 args.push(r)
             }
-            for (0..(args.size-1)) each { i ->
+            for (0..(args.size-1)) do { i ->
                 out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
             }
             out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
@@ -2464,7 +2464,7 @@ out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
 out("  %paramssize = mul i32 %ptrsize, 16")
 out("  %paramsu = call i8* @malloc(i32 %paramssize)")
 out("  %params = bitcast i8* %paramsu to %object**")
-for (0..10) each { i ->
+for (0..10) do { i ->
     out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
 }
 out("  %self = call %object* @alloc_obj()")
@@ -2472,7 +2472,7 @@ out("  %undefined = load %object** @undefined")
 out("  %var_argv = call %object** @alloc_var()")
 out("  %tmp_argv = load %object** @argv")
 out("  store %object* %tmp_argv, %object** %var_argv")
-for (values) each { o ->
+for (values) do { o ->
     compilenode(o)
 }
 out("  ret %object* %self")
@@ -2518,7 +2518,7 @@ out("  call void @gracelib_stats()")
 out("  ret i32 0")
 out("}")
 out("; constant definitions")
-for (constants) each { c ->
+for (constants) do { c ->
     out(c)
 }
 out("; gracelib")
@@ -2547,7 +2547,7 @@ out("declare void @setline(i32)")
 out("; libc functions")
 out("declare i32 @puts(i8*)")
 out("declare i8* @malloc(i32)")
-for (output) each { x ->
+for (output) do { x ->
     outprint(x)
 }
 
@@ -2558,7 +2558,7 @@ if (runmode == "make") then {
     log_verbose("linking.")
     cmd := "llvm-link -o " ++ modname ++ ".bc " ++ gracelibPath ++ " "
     cmd := cmd ++ modname ++ ".gco"
-    for (linkfiles) each { fn ->
+    for (linkfiles) do { fn ->
         cmd := cmd ++ " " ++ fn
     }
     io.system(cmd)
