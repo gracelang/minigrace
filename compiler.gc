@@ -13,30 +13,30 @@ var buildtype := "bc"
 
 var verbosity := 30
 
-if argv.size > 1 then {
+if (argv.size > 1) then {
     var ai := 1
     var arg
     while {ai < argv.size} do {
         arg := argv[ai]
-        if arg.at(0) == "-" then {
-            if arg == "-o" then {
+        if (arg.at(0) == "-") then {
+            if (arg == "-o") then {
                 ai := ai + 1
                 outfile := io.open(argv[ai], "w")
             }
-            if arg == "--verbose" then {
+            if (arg == "--verbose") then {
                 verbosity := 40
             }
-            if arg == "--make" then {
+            if (arg == "--make") then {
                 runmode := "make"
             }
-            if arg == "--run" then {
+            if (arg == "--run") then {
                 buildtype := "run"
                 runmode := "make"
             }
-            if arg == "--native" then {
+            if (arg == "--native") then {
                 buildtype := "native"
             }
-            if arg == "--module" then {
+            if (arg == "--module") then {
                 ai := ai + 1
                 modname := argv[ai]
             }
@@ -46,16 +46,16 @@ if argv.size > 1 then {
             if modname == "main" then {
                 modname := ""
                 var seendot := false
-                for filename each { c->
-                    if c == "." then {
+                for (filename) each { c->
+                    if (c == ".") then {
                         seendot := true
                     }
-                    if seendot.not then {
+                    if (seendot.not) then {
                         modname := modname ++ c
                     }
                 }
             }
-            if outfile == io.output then {
+            if (outfile == io.output) then {
                 outfile := io.open(modname ++ ".ll", "w")
             }
         }
@@ -64,7 +64,7 @@ if argv.size > 1 then {
 }
 
 method log_verbose(s) {
-    if verbosity >= 40 then {
+    if (verbosity >= 40) then {
         io.error.write("minigrace: ")
         io.error.write(s)
         io.error.write("\n")
@@ -85,8 +85,8 @@ method hexdecchar(c) {
     var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
                  "9", "a", "b", "c", "d", "e", "f"]
     var ret := 0
-    for 0..15 each {i->
-        if chars.at(i) == c then {
+    for (0..15) each {i->
+        if (chars.at(i) == c) then {
             ret := i
         }
     }
@@ -282,7 +282,7 @@ method modechange(tokens, mode, accum) {
         if (mode == "n") then {
             done := true
         }
-        if mode == "c" then {
+        if (mode == "c") then {
             done := true
         }
         if (done) then {
@@ -310,7 +310,7 @@ method isoperatorchar(c) {
         | (c == "*") | (c == "/")) then {
         ret := true
     } else {
-        if unicode.iscategory(c, "Sm") then {
+        if (unicode.iscategory(c, "Sm")) then {
             ret := true
         }
     }
@@ -328,7 +328,7 @@ var prev := ""
 var unichars := 0
 var codepoint := 0
 log_verbose("lexing.")
-for input each { c ->
+for (input) each { c ->
     var ct := ""
     if ((unicode.iscategory(c, "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
         (c.ord == 9)) then {
@@ -394,7 +394,7 @@ for input each { c ->
         newmode := "n"
         instr := false
     }
-    if newmode /= mode then {
+    if (newmode /= mode) then {
         modechange(tokens, mode, accum)
         mode := newmode
         if (instr) then {
@@ -414,11 +414,11 @@ for input each { c ->
             if c == "\n" then {
                 syntax_error("Newlines not permitted in string literals")
             }
-            if escaped then {
+            if (escaped) then {
                 if ((c == "l") | (c == "n")) then {
                     accum := accum ++ "\n"
                 } else {
-                    if c == "u" then {
+                    if (c == "u") then {
                         unichars := 4
                         codepoint := 0
                     } else {
@@ -427,14 +427,14 @@ for input each { c ->
                 }
                 escaped := false
             } else {
-                if c == "\\" then {
+                if (c == "\\") then {
                     escaped := true
                 } else {
-                    if unichars > 0 then {
+                    if (unichars > 0) then {
                         unichars := unichars - 1
                         codepoint := codepoint * 16
                         codepoint := codepoint + hexdecchar(c)
-                        if unichars == 0 then {
+                        if (unichars == 0) then {
                             accum := accum ++ unicode.create(codepoint)
                         }
                     } else {
@@ -493,14 +493,14 @@ method astfor(over, variable, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "For(" ++ self.variable.value ++ ")\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Each:"
-            for self.body each { x ->
+            for (self.body) each { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -516,14 +516,14 @@ method astwhile(cond, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "While\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Do:"
-            for self.body each { x ->
+            for (self.body) each { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -540,19 +540,19 @@ method astif(cond, thenblock, elseblock) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "If\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Then:"
-            for self.thenblock each { ix ->
+            for (self.thenblock) each { ix ->
                 s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Else:"
-            for self.elseblock each { ix ->
+            for (self.elseblock) each { ix ->
                 s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
             }
             s
@@ -570,17 +570,17 @@ method astblock(params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Block\n"
             s := s ++ spc ++ "Parameters:"
-            for self.params each { mx ->
+            for (self.params) each { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Body:"
-            for self.body each { mx ->
+            for (self.body) each { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s
@@ -598,19 +598,19 @@ method astmethod(name, params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Method\n"
             s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
-            for self.params each { mx ->
+            for (self.params) each { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Body:"
-            for self.body each { mx ->
+            for (self.body) each { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             s
@@ -626,7 +626,7 @@ method astcall(what, with) {
         var register := ""
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Call\n"
@@ -634,7 +634,7 @@ method astcall(what, with) {
             s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
             s := s ++ "\n"
             s := s ++ spc ++ "Parameters:"
-            for self.with each { x ->
+            for (self.with) each { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -651,16 +651,16 @@ method astclass(name, params, body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Class(" ++ self.name ++ ")"
             s := s ++ "\n" ++ spc ++ "Parameters:"
-            for self.params each {x->
+            for (self.params) each {x->
                 s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
             }
             s := s ++ "\n" ++ spc ++ "Body:"
-            for self.value each { x ->
+            for (self.value) each { x ->
                 s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
             }
             s
@@ -675,11 +675,11 @@ method astobject(body) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Object"
-            for self.value each { x ->
+            for (self.value) each { x ->
                 s := s ++ "\n"++ spc ++ x.pretty(depth+1)
             }
             s
@@ -694,11 +694,11 @@ method astarray(values) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { ai ->
+            for (0..depth) each { ai ->
                 spc := spc ++ "  "
             }
             var s := "Array"
-            for self.value each { ax ->
+            for (self.value) each { ax ->
                 s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
             }
             s
@@ -714,7 +714,7 @@ method astmember(what, in) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Member(" ++ self.value ++ ")\n"
@@ -776,7 +776,7 @@ method astop(op, l, r) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Op(" ++ self.value ++ ")"
@@ -797,7 +797,7 @@ method astindex(expr, index) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Index"
@@ -818,7 +818,7 @@ method astbind(dest, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Bind"
@@ -839,13 +839,13 @@ method astconstdec(name, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "ConstDec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
-            if self.value then {
+            if (self.value) then {
                 s := s ++ "\n  "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
@@ -862,13 +862,13 @@ method astvardec(name, val) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for ((0..depth)) each { i ->
                 spc := spc ++ "  "
             }
             var s := "VarDec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
-            if self.value then {
+            if (self.value) then {
                 s := s ++ "\n    "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
@@ -884,7 +884,7 @@ method astimport(name) {
         var line := linenum
         method pretty(depth) {
             var spc := ""
-            for 0..depth each { i ->
+            for (0..depth) each { i ->
                 spc := spc ++ "  "
             }
             var s := "Import"
@@ -918,7 +918,7 @@ method pushidentifier() {
     next()
 }
 method block() {
-    if accept("lbrace") then {
+    if (accept("lbrace")) then {
         next()
         var ident1
         var s := sym.sym
@@ -930,19 +930,19 @@ method block() {
         var i := 0
         var toks := tokens
         // TODO This is a massive hack.
-        for 0..15 each { i->
-            if i < (toks.size-1) then {
+        for (0..15) each { i->
+            if (i < (toks.size-1)) then {
                 var t := toks.at((toks.size - i) - 1)
                 if ((t.type /= "identifier") & (t.type /= "comma")
                     & (t.type /= "arrow") & found.not) then {
                     havearrow := false
                 }
-                if t.type == "arrow" then {
+                if (t.type == "arrow") then {
                     found := true
                 }
             }
         }
-        if havearrow & accept("identifier") then {
+        if (havearrow & accept("identifier")) then {
             pushidentifier()
             ident1 := values.pop()
             if (accept("comma") | accept("arrow")) then {
@@ -954,19 +954,19 @@ method block() {
                     ident1 := values.pop()
                     params.push(ident1)
                 }
-                if (accept("arrow")).not then {
+                if ((accept("arrow")).not) then {
                     syntax_error("block parameter list not terminated ->.")
                 }
                 next()
             }
         }
-        if accept("arrow") then {
+        if (accept("arrow")) then {
             next()
         }
         var ln := values.size
         while {(accept("rbrace")).not} do {
             statement()
-            if ln == values.size then {
+            if (ln == values.size) then {
                 syntax_error("expected statement, have " ++ sym.sym.type)
             }
             tmp := values.pop()
@@ -987,7 +987,7 @@ method doif() {
         var v
         if (accept("identifier") & (sym.sym.value == "then")) then {
             next()
-            if accept("lbrace") then {
+            if (accept("lbrace")) then {
                 next()
                 while {(accept("rbrace")).not} do {
                     statement()
@@ -998,7 +998,7 @@ method doif() {
             }
             if (accept("identifier") & (sym.sym.value == "else")) then {
                 next()
-                if accept("lbrace") then {
+                if (accept("lbrace")) then {
                     next()
                     while {(accept("rbrace")).not} do {
                         statement()
@@ -1026,11 +1026,11 @@ method dofor() {
         if (accept("identifier") & ((sym.sym.value == "each")
             | (sym.sym.value == "do"))) then {
             next()
-            if accept("lbrace") then {
+            if (accept("lbrace")) then {
                 next()
                 identifier()
                 variable := values.pop()
-                if accept("arrow") then {
+                if (accept("arrow")) then {
                     next()
                     while {(accept("rbrace")).not} do {
                         statement()
@@ -1049,18 +1049,18 @@ method dowhile() {
     if (accept("identifier") & (sym.sym.value == "while")) then {
         next()
         var cond
-        if accept("lbrace") then {
+        if (accept("lbrace")) then {
             next()
             expression()
             cond := values.pop()
-            if accept("rbrace") then {
+            if (accept("rbrace")) then {
                 next()
             }
         }
         var body := []
         if (accept("identifier") & (sym.sym.value == "do")) then {
             next()
-            if accept("lbrace") then {
+            if (accept("lbrace")) then {
                 next()
                 while {(accept("rbrace")).not} do {
                     statement()
@@ -1075,14 +1075,14 @@ method dowhile() {
     }
 }
 method identifier() {
-    if accept("identifier") then {
-        if sym.sym.value == "if" then {
+    if (accept("identifier")) then {
+        if (sym.sym.value == "if") then {
             doif()
         } else {
-            if sym.sym.value == "while" then {
+            if (sym.sym.value == "while") then {
                 dowhile()
             } else {
-                if sym.sym.value == "for" then {
+                if (sym.sym.value == "for") then {
                     dofor()
                 } else {
                     pushidentifier()
@@ -1092,32 +1092,32 @@ method identifier() {
     }
 }
 method expression() {
-    if accept("lparen") then {
+    if (accept("lparen")) then {
         next()
         expression()
-        if accept("rparen") then {
+        if (accept("rparen")) then {
             next()
         }
     } else {
-        if accept("num") then {
+        if (accept("num")) then {
             pushnum()
         } else{
-            if accept("string") then {
+            if (accept("string")) then {
                 pushstring()
             } else {
-                if accept("octets") then {
+                if (accept("octets")) then {
                     pushoctets()
                 } else {
-                    if accept("identifier") then {
+                    if (accept("identifier")) then {
                         identifier()
                     } else {
                         if (accept("keyword") & (sym.sym.value == "object")) then {
                             doobject()
                         } else {
-                            if accept("lbrace") then {
+                            if (accept("lbrace")) then {
                                 block()
                             } else {
-                                if accept("lsquare") then {
+                                if (accept("lsquare")) then {
                                     doarray()
                                 }
                             }
@@ -1143,12 +1143,12 @@ method expression() {
 //    }
 }
 method postfixsquare() {
-    if accept("lsquare") then {
+    if (accept("lsquare")) then {
         next()
         var expr := values.pop()
         expression()
         var index := values.pop()
-        if accept("rsquare") then {
+        if (accept("rsquare")) then {
             next()
             var o := astindex(expr, index)
             values.push(o)
@@ -1157,10 +1157,10 @@ method postfixsquare() {
     }
 }
 method expressionrest() {
-    if accept("op") then {
+    if (accept("op")) then {
         var a := values.pop()
         var ero := astop(sym.sym.value, a, 0)
-        if sym.sym.value == "=" then {
+        if (sym.sym.value == "=") then {
             syntax_error("No such operator '='.")
         }
         next()
@@ -1170,17 +1170,17 @@ method expressionrest() {
     }
 }
 method dotrest() {
-    if accept("dot") then {
+    if (accept("dot")) then {
         var lookuptarget := values.pop()
         next()
-        if accept("identifier") then {
+        if (accept("identifier")) then {
             var dro := astmember(sym.sym.value, lookuptarget)
             values.push(dro)
             next()
-            if accept("dot") then {
+            if (accept("dot")) then {
                 dotrest()
             } else {
-                if accept("lparen") then {
+                if (accept("lparen")) then {
                     callrest()
                 }
             }
@@ -1188,7 +1188,7 @@ method dotrest() {
     }
 }
 method callrest() {
-    if accept("lparen") then {
+    if (accept("lparen")) then {
         var meth := values.pop()
         var methn := meth.value
         next()
@@ -1201,7 +1201,7 @@ method callrest() {
             next()
             expression()
         }
-        if accept("rparen") then {
+        if (accept("rparen")) then {
             var tmpparams := []
             var n := values.pop()
             while {n.type /= "lparen"} do {
@@ -1209,16 +1209,15 @@ method callrest() {
                 n := values.pop()
             }
             var params := []
-            for 0..tmpparams.size-1 each { x ->
+            for (0..tmpparams.size-1) each { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
             var ln := linenum
             next()
-            if (linenum == ln) & accept("identifier") & (sym.sym.value /=
-                "then") then {
+            if ((linenum == ln) & accept("identifier")) then {
                 methn := callmprest(astidentifier(methn), params)
-                if meth.type == "member" then {
+                if (meth.type == "member") then {
                     meth := astmember(methn.value, meth.in)
                 } else {
                     meth := methn
@@ -1237,14 +1236,14 @@ method callmprest(meth, params) {
         pushidentifier()
         nxt := values.pop
         methname := methname ++ nxt.value
-        if (accept("lparen")).not then {
+        if ((accept("lparen")).not) then {
             syntax_error("multi-part method name parameters require ().")
         }
         next()
         expression()
         nxt := values.pop()
         params.push(nxt)
-        if (accept("rparen")).not then {
+        if ((accept("rparen")).not) then {
             syntax_error("multi-part method name parameters must be single.")
         }
         next()
@@ -1257,7 +1256,7 @@ method constdec() {
         pushidentifier()
         var val
         var name := values.pop()
-        if accept("bind") then {
+        if (accept("bind")) then {
             next()
             expression()
             val := values.pop()
@@ -1274,7 +1273,7 @@ method vardec() {
         pushidentifier()
         var val
         var name := values.pop()
-        if accept("bind") then {
+        if (accept("bind")) then {
             next()
             expression()
             val := values.pop()
@@ -1284,7 +1283,7 @@ method vardec() {
     }
 }
 method doarray() {
-    if accept("lsquare") then {
+    if (accept("lsquare")) then {
         next()
         values.push(object {
             var type := "lsquare"
@@ -1295,7 +1294,7 @@ method doarray() {
             next()
             expression()
         }
-        if accept("rsquare") then {
+        if (accept("rsquare")) then {
             var tmpparams := []
             var n := values.pop()
             while {n.type /= "lsquare"} do {
@@ -1303,7 +1302,7 @@ method doarray() {
                 n := values.pop()
             }
             var params := []
-            for 0..tmpparams.size-1 each { x ->
+            for (0..tmpparams.size-1) each { x ->
                 var p := tmpparams.pop()
                 params.push(p)
             }
@@ -1319,7 +1318,7 @@ method doobject() {
     // doobject because "object" is a keyword
     if (accept("keyword") & (sym.sym.value == "object")) then {
         next()
-        if accept("lbrace") then {
+        if (accept("lbrace")) then {
             values.push(object {
                 var type := "lbrace"
                 var register := ""
@@ -1330,7 +1329,7 @@ method doobject() {
                 vardec()
                 methoddec()
                 constdec()
-                if values.size == sz then {
+                if (values.size == sz) then {
                     syntax_error("did not consume anything in "
                         ++ "object declaration.")
                 }
@@ -1344,7 +1343,7 @@ method doobject() {
                 n := values.pop()
             }
             var body := []
-            for 0..rbody.size-1 each { x ->
+            for (0..rbody.size-1) each { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1358,14 +1357,14 @@ method doclass() {
         next()
         pushidentifier()
         var cname := values.pop()
-        if accept("lbrace") then {
+        if (accept("lbrace")) then {
             values.push(object {
                 var type := "lbrace"
                 var register := ""
             })
             next()
             var params := []
-            if accept("identifier") then {
+            if (accept("identifier")) then {
                 pushidentifier()
                 var pid := values.pop()
                 params.push(pid)
@@ -1375,7 +1374,7 @@ method doclass() {
                     pid := values.pop()
                     params.push(pid)
                 }
-                if accept("arrow") then {
+                if (accept("arrow")) then {
                     next()
                 } else {
                     syntax_error("expected ->.")
@@ -1386,7 +1385,7 @@ method doclass() {
                 vardec()
                 methoddec()
                 constdec()
-                if values.size == sz then {
+                if (values.size == sz) then {
                     syntax_error("did not consume anything in "
                         ++ "class declaration.")
                 }
@@ -1400,7 +1399,7 @@ method doclass() {
                 n := values.pop()
             }
             var body := []
-            for 0..rbody.size-1 each { x ->
+            for (0..rbody.size-1) each { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1417,14 +1416,14 @@ method parsempmndecrest(meth, params) {
         pushidentifier()
         nxt := values.pop
         methname := methname ++ nxt.value
-        if (accept("lparen")).not then {
+        if ((accept("lparen")).not) then {
             syntax_error("multi-part method name parameters require ().")
         }
         next()
         pushidentifier()
         nxt := values.pop()
         params.push(nxt)
-        if (accept("rparen")).not then {
+        if ((accept("rparen")).not) then {
             syntax_error("multi-part method name parameters must be single.")
         }
         next()
@@ -1437,7 +1436,7 @@ method methoddec() {
         pushidentifier()
         var meth := values.pop()
         var rparams := []
-        if accept("lparen") then {
+        if (accept("lparen")) then {
             next()
             values.push(object {
                 var type := "lparen"
@@ -1448,7 +1447,7 @@ method methoddec() {
                 next()
                 identifier()
             }
-            if accept("rparen") then {
+            if (accept("rparen")) then {
                 next()
                 var tmpparams := []
                 var n := values.pop()
@@ -1457,15 +1456,15 @@ method methoddec() {
                     n := values.pop()
                 }
                 var params := []
-                for 0..tmpparams.size-1 each { x ->
+                for (0..tmpparams.size-1) each { x ->
                     var p := tmpparams.pop()
                     params.push(p)
                 }
-                if accept("identifier") then {
+                if (accept("identifier")) then {
                     meth := parsempmndecrest(meth, params)
                 }
                 var body := []
-                if accept("lbrace") then {
+                if (accept("lbrace")) then {
                     next()
                     values.push(object {
                         var type := "lbrace"
@@ -1478,7 +1477,7 @@ method methoddec() {
                         statement()
                         s := values.pop()
                     }
-                    if accept("rbrace") then {
+                    if (accept("rbrace")) then {
                         next()
                     } else {
                         syntax_error("No statement but not end of "
@@ -1495,7 +1494,7 @@ method methoddec() {
     }
 }
 method doimport() {
-    if accept('keyword') & (sym.sym.value == "import") then {
+    if (accept('keyword') & (sym.sym.value == "import")) then {
         next()
         identifier()
         var p := values.pop()
@@ -1504,17 +1503,17 @@ method doimport() {
     }
 }
 method statement() {
-    if accept("keyword") then {
-        if sym.sym.value == "var" then {
+    if (accept("keyword")) then {
+        if (sym.sym.value == "var") then {
             vardec()
         } else {
-            if sym.sym.value == "method" then {
+            if (sym.sym.value == "method") then {
                 methoddec()
             } else {
-                if sym.sym.value == "import" then {
+                if (sym.sym.value == "import") then {
                     doimport()
                 } else {
-                    if sym.sym.value == "class" then {
+                    if (sym.sym.value == "class") then {
                         doclass()
                     } else {
                         expression()
@@ -1537,7 +1536,7 @@ method statement() {
 log_verbose("processing tokens.")
 var otoks := tokens
 tokens := []
-for 0..(otoks.size-1) each { i ->
+for (0..(otoks.size-1)) each { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
@@ -1545,16 +1544,16 @@ log_verbose("parsing.")
 linenum := 1
 next()
 var oldlength := tokens.size + 0
-if tokens.size == 0 then {
+if (tokens.size == 0) then {
     // Single token is ignored otherwise
     statement()
 }
 while {tokens.size > 0} do {
     statement()
-    if tokens.size == oldlength then {
+    if (tokens.size == oldlength) then {
         var next := []
-        for 0..5 each {i->
-            if i < tokens.size then {
+        for (0..5) each {i->
+            if (i < tokens.size) then {
                 next.push(tokens.at(i))
             }
         }
@@ -1563,22 +1562,22 @@ while {tokens.size > 0} do {
     oldlength := tokens.size + 0
 }
 var linkfiles := []
-if runmode == "make" then {
+if (runmode == "make") then {
     log_verbose("checking imports.")
-    for values each { v ->
-        if v.type == "import" then {
+    for (values) each { v ->
+        if (v.type == "import") then {
             var nm := v.value.value
             var exists := false
-            if io.system("[ -e " ++ nm ++ ".gco ]") then {
-                if io.system("[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]") then {
+            if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
+                if (io.system("[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]")) then {
                     exists := true
                     linkfiles.push(nm ++ ".gco")
                 }
             }
-            if exists.not then {
+            if (exists.not) then {
                 if (io.system("[ -e " ++ nm ++ ".gc ]")) then {
-                    if (io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
-                        then {
+                    if ((io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
+                       ) then {
                         syntax_error("failed processing import of " ++nm ++".")
                     }
                     exists := true
@@ -1588,7 +1587,7 @@ if runmode == "make" then {
             if ((nm == "sys") | (nm == "io")) then {
                 exists := true
             }
-            if exists.not then {
+            if (exists.not) then {
                 syntax_error("failed finding import of " ++ nm ++ ".")
             }
         }
@@ -1614,7 +1613,7 @@ method compilearray(o) {
     auto_count := auto_count + 1
     var r
     out("  %array" ++ myc ++ " = call %object* @alloc_Array()")
-    for o.value each {a ->
+    for (o.value) each {a ->
         r := compilenode(a)
         out("  store %object* " ++ r ++ ", %object** %params_0")
         out("  call %object* @callmethod(%object* %array"
@@ -1632,7 +1631,7 @@ method compilemember(o) {
 }
 method compileobjconstdec(o, selfr, pos) {
     var val := "%undefined"
-    if o.value then {
+    if (o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count
@@ -1664,7 +1663,7 @@ method compileobjconstdec(o, selfr, pos) {
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "%undefined"
-    if o.value then {
+    if (o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count
@@ -1731,15 +1730,15 @@ method compileobject(o) {
     var selfr := "%obj" ++ myc
     out("  " ++ selfr ++ " = call %object* @alloc_obj()")
     var pos := 0
-    for o.value each { e ->
-        if e.type == "method" then {
+    for (o.value) each { e ->
+        if (e.type == "method") then {
             compilemethod(e, selfr)
         }
-        if e.type == "vardec" then {
+        if (e.type == "vardec") then {
             compileobjvardec(e, selfr, pos)
             pos := pos + 1
         }
-        if e.type == "constdec" then {
+        if (e.type == "constdec") then {
             compileobjconstdec(e, selfr, pos)
             pos := pos + 1
         }
@@ -1821,12 +1820,12 @@ method compilemethod(o, selfobj) {
     out("  %paramssize = mul i32 %ptrsize, 16")
     out("  %paramsu = call i8* @malloc(i32 %paramssize)")
     out("  %params = bitcast i8* %paramsu to %object**")
-    for 0..10 each { i ->
+    for (0..10) each { i ->
         out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
             ++ i)
     }
     var i := 0
-    for o.params each { p ->
+    for (o.params) each { p ->
         var pn := escapestring(p.value)
         out("  %\"var_" ++ pn ++ "\" = getelementptr %object** %args, "
             ++ "i32 " ++ i)
@@ -1835,7 +1834,7 @@ method compilemethod(o, selfobj) {
     }
     out("  %undefined = load %object** @undefined")
     var ret := "%undefined"
-    for o.body each { l ->
+    for (o.body) each { l ->
         ret := compilenode(l)
     }
     out("  ret %object* " ++ ret)
@@ -1843,37 +1842,37 @@ method compilemethod(o, selfobj) {
     var body := output
     output := []
     var closurevars := []
-    for usedvars each { u ->
+    for (usedvars) each { u ->
         var decl := false
-        for declaredvars each { d->
-            if d == u then {
+        for (declaredvars) each { d->
+            if (d == u) then {
                 decl := true
             }
         }
-        if decl then {
+        if (decl) then {
             decl := decl
         } else {
             var found := false
-            for closurevars each { v ->
-                if v == u then {
+            for (closurevars) each { v ->
+                if (v == u) then {
                     found := true
                 }
             }
-            if found then {
+            if (found) then {
                 found := found
             } else {
                 closurevars.push(u)
             }
         }
     }
-    if o.selfclosure then {
+    if (o.selfclosure) then {
         closurevars.push("self")
     }
     var litname := "@\"meth_" ++ escapestring(nm) ++ "\""
     outprint(";;;; METHOD DEFINITION: " ++ name)
-    if closurevars.size > 0 then {
+    if (closurevars.size > 0) then {
         out("; have closure method: " ++ closurevars.size)
-        if o.selfclosure then {
+        if (o.selfclosure) then {
             out("define %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
         } else {
@@ -1886,8 +1885,8 @@ method compilemethod(o, selfobj) {
     }
     beginblock("entry")
     var j := 0
-    for closurevars each { cv ->
-        if cv == "self" then {
+    for (closurevars) each { cv ->
+        if (cv == "self") then {
             out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
             out("  %self2 = load %object*** %varc_" ++ cv)
             out("  %self = load %object** %self2")
@@ -1898,11 +1897,11 @@ method compilemethod(o, selfobj) {
         }
         j := j + 1
     }
-    for body each { l->
+    for (body) each { l->
         out(l)
     }
     out(";;;; ENDS")
-    for output each {l ->
+    for (output) each {l ->
         outprint(l)
     }
     output := oldout
@@ -1913,7 +1912,7 @@ method compilemethod(o, selfobj) {
     var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
     constants.push(con)
-    if closurevars.size == 0 then {
+    if (closurevars.size == 0) then {
         out("  call void @addmethod(%object* " ++ selfobj
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
@@ -1922,8 +1921,8 @@ method compilemethod(o, selfobj) {
     } else {
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
             ++ closurevars.size ++ ")")
-        for closurevars each { v ->
-            if v == "self" then {
+        for (closurevars) each { v ->
+            if (v == "self") then {
                 out("  %selfpp" ++ auto_count ++ " = "
                     ++ "call %object** @alloc_var()")
                 out("  store %object* %self, %object** %selfpp" ++ auto_count)
@@ -1958,7 +1957,7 @@ method compilewhile(o) {
     beginblock("WhileBody" ++ myc)
     var tret := "null"
     var tblock := "ERROR"
-    for o.body each { l->
+    for (o.body) each { l->
         tret := compilenode(l)
     }
     tblock := bblock
@@ -1979,7 +1978,7 @@ method compileif(o) {
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     var startblock := bblock
-    if o.elseblock.size > 0 then {
+    if (o.elseblock.size > 0) then {
         out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     } else {
@@ -1992,21 +1991,21 @@ method compileif(o) {
     var fret := "%undefined"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    for o.thenblock each { l->
+    for (o.thenblock) each { l->
         tret := compilenode(l)
     }
     tblock := bblock
     out("  br label %EndIf" ++ myc)
-    if o.elseblock.size > 0 then {
+    if (o.elseblock.size > 0) then {
         beginblock("FalseBranch" ++ myc)
-        for o.elseblock each { l->
+        for (o.elseblock) each { l->
             fret := compilenode(l)
         }
         out("  br label %EndIf" ++ myc)
         fblock := bblock
     }
     beginblock("EndIf" ++ myc)
-    if o.elseblock.size > 0 then {
+    if (o.elseblock.size > 0) then {
         out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
             ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
     } else {
@@ -2017,11 +2016,11 @@ method compileif(o) {
 }
 method compileidentifier(o) {
     var name := o.value
-    if name == "self" then {
+    if (name == "self") then {
         o.register := "%self"
     } else {
         name := escapestring(name)
-        if modules.contains(name) then {
+        if (modules.contains(name)) then {
             out("  %\"var_val_" ++ name ++ auto_count
                 ++ "\" = load %object** @.module." ++ name)
         } else {
@@ -2038,7 +2037,7 @@ method compilebind(o) {
     var val := ""
     var c := ""
     var r := ""
-    if dest.type == "identifier" then {
+    if (dest.type == "identifier") then {
         val := o.value
         val := compilenode(val)
         var nm := escapestring(dest.value)
@@ -2046,14 +2045,14 @@ method compilebind(o) {
         out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
         o.register := val
     } else {
-        if dest.type == "member" then {
+        if (dest.type == "member") then {
             out("; WARNING: non-local assigns not yet fully supported")
             dest.value := dest.value ++ ":="
             c := astcall(dest, [o.value])
             r := compilenode(c)
             o.register := r
         }
-        if dest.type == "index" then {
+        if (dest.type == "index") then {
             var imem := astmember("[]:=", dest.value)
             c := astcall(imem, [dest.index, o.value])
             r := compilenode(c)
@@ -2065,7 +2064,7 @@ method compileconstdec(o) {
     var nm := escapestring(o.name.value)
     declaredvars.push(nm)
     var val := o.value
-    if val then {
+    if (val) then {
         val := compilenode(val)
     } else {
         syntax_error("const must have value bound.")
@@ -2079,7 +2078,7 @@ method compilevardec(o) {
     var nm := escapestring(o.name.value)
     declaredvars.push(nm)
     var val := o.value
-    if val then {
+    if (val) then {
         val := compilenode(val)
     } else {
         val := "%undefined"
@@ -2150,11 +2149,11 @@ method compilecall(o) {
     var obj := ""
     var len := 0
     var con := ""
-    for o.with each { p ->
+    for (o.with) each { p ->
         var r := compilenode(p)
         args.push(r)
     }
-    for 0..(args.size-1) each { i ->
+    for (0..(args.size-1)) each { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
     if (o.value.type == "member") then {
@@ -2194,8 +2193,8 @@ method compileoctets(o) {
     var escval := ""
     var l := length(o.value) / 2
     var i := 0
-    for o.value each {c->
-        if (i % 2) == 0 then {
+    for (o.value) each {c->
+        if ((i % 2) == 0) then {
             escval := escval ++ "\\"
         }
         escval := escval ++ c
@@ -2252,7 +2251,7 @@ method compileimport(o) {
     o.register := "%undefined"
 }
 method compilenode(o) {
-    if linenum /= o.line then {
+    if (linenum /= o.line) then {
         linenum := o.line
         out("; Begin line " ++ linenum)
         out("  call void @setline(i32 " ++ linenum ++ ")")
@@ -2364,11 +2363,11 @@ method compilenode(o) {
     if ((o.type == "call")) then {
         if (o.value.value == "print") then {
             var args := []
-            for o.with each { prm ->
+            for (o.with) each { prm ->
                 var r := compilenode(prm)
                 args.push(r)
             }
-            for 0..(args.size-1) each { i ->
+            for (0..(args.size-1)) each { i ->
                 out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
             }
             out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
@@ -2378,7 +2377,7 @@ method compilenode(o) {
         } else {
             if ((o.value.type == "identifier")
                 & (o.value.value == "length")) then {
-                if o.with.size == 0 then {
+                if (o.with.size == 0) then {
                     out("; PP FOLLOWS")
                     out(o.pretty(0))
                     tmp := "null"
@@ -2434,7 +2433,7 @@ out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
 out("  %paramssize = mul i32 %ptrsize, 16")
 out("  %paramsu = call i8* @malloc(i32 %paramssize)")
 out("  %params = bitcast i8* %paramsu to %object**")
-for 0..10 each { i ->
+for (0..10) each { i ->
     out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
 }
 out("  %self = call %object* @alloc_obj()")
@@ -2442,7 +2441,7 @@ out("  %undefined = load %object** @undefined")
 out("  %var_argv = call %object** @alloc_var()")
 out("  %tmp_argv = load %object** @argv")
 out("  store %object* %tmp_argv, %object** %var_argv")
-for values each { o ->
+for (values) each { o ->
     compilenode(o)
 }
 out("  ret %object* %self")
@@ -2488,7 +2487,7 @@ out("  call void @gracelib_stats()")
 out("  ret i32 0")
 out("}")
 out("; constant definitions")
-for constants each { c ->
+for (constants) each { c ->
     out(c)
 }
 out("; gracelib")
@@ -2517,27 +2516,27 @@ out("declare void @setline(i32)")
 out("; libc functions")
 out("declare i32 @puts(i8*)")
 out("declare i8* @malloc(i32)")
-for output each { x ->
+for (output) each { x ->
     outprint(x)
 }
 
-if runmode == "make" then {
+if (runmode == "make") then {
     outfile.close()
     var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
     io.system(cmd)
     log_verbose("linking.")
     cmd := "llvm-link -o " ++ modname ++ ".bc gracelib.o "
     cmd := cmd ++ modname ++ ".gco"
-    for linkfiles each { fn ->
+    for (linkfiles) each { fn ->
         cmd := cmd ++ " " ++ fn
     }
     io.system(cmd)
-    if buildtype == "native" then {
+    if (buildtype == "native") then {
         log_verbose("compiling to native.")
         cmd := "llvm-ld -o " ++ modname ++ " -native " ++ modname ++ ".bc"
         io.system(cmd)
     }
-    if buildtype == "run" then {
+    if (buildtype == "run") then {
         cmd := "lli ./" ++ modname ++ ".bc"
         io.system(cmd)
     }
