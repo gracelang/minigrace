@@ -909,6 +909,16 @@ struct Object* Boolean_Or(struct Object *self, unsigned int nparams,
         return alloc_Boolean(0);
     }
 }
+struct Object* Boolean_ifTrue(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int *myval = self->bdata[0];
+    struct Object *block = args[0];
+    if (*myval) {
+        return callmethod(block, "apply", 0, NULL);
+    } else {
+        return self;
+    }
+}
 struct Object *Boolean_not(struct Object *self, unsigned int nparams,
         struct Object **args) {
     if (self == BOOLEAN_TRUE)
@@ -930,6 +940,7 @@ struct Object* alloc_Boolean(int val) {
     addmethod(o, "&", &Boolean_And);
     addmethod(o, "|", &Boolean_Or);
     addmethod(o, "not", &Boolean_not);
+    addmethod(o, "ifTrue", &Boolean_ifTrue);
     if (val)
         BOOLEAN_TRUE = o;
     else
