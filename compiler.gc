@@ -559,6 +559,34 @@ method astif(cond, thenblock, elseblock) {
         }
     }
 }
+method astblock(params, body) {
+    object {
+        var type := "block"
+        var value := "block"
+        var params := params
+        var body := body
+        var selfclosure := true
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            var spc := ""
+            for 0..depth each { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Block\n"
+            s := s ++ spc ++ "Parameters:"
+            for self.params each { mx ->
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            }
+            s := s ++ "\n"
+            s := s ++ spc ++ "Body:"
+            for self.body each { mx ->
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            }
+            s
+        }
+    }
+}
 method astmethod(name, params, body) {
     object {
         var type := "method"
@@ -889,6 +917,66 @@ method pushidentifier() {
     values.push(o)
     next()
 }
+method block() {
+    if accept("lbrace") then {
+        next()
+        var ident1
+        var s := sym.sym
+        var tmp
+        var params := []
+        var body := []
+        var havearrow := true
+        var found := false
+        var i := 0
+        var toks := tokens
+        // TODO This is a massive hack.
+        for 0..15 each { i->
+            if i < (toks.size-1) then {
+                var t := toks.at((toks.size - i) - 1)
+                if ((t.type /= "identifier") & (t.type /= "comma")
+                    & (t.type /= "arrow") & found.not) then {
+                    havearrow := false
+                }
+                if t.type == "arrow" then {
+                    found := true
+                }
+            }
+        }
+        if havearrow & accept("identifier") then {
+            pushidentifier()
+            ident1 := values.pop()
+            if (accept("comma") | accept("arrow")) then {
+                // It's a parameterised block
+                params.push(ident1)
+                while {accept("comma")} do {
+                    next()
+                    pushidentifier()
+                    ident1 := values.pop()
+                    params.push(ident1)
+                }
+                if (accept("arrow")).not then {
+                    syntax_error("block parameter list not terminated ->.")
+                }
+                next()
+            }
+        }
+        if accept("arrow") then {
+            next()
+        }
+        var ln := values.size
+        while {(accept("rbrace")).not} do {
+            statement()
+            if ln == values.size then {
+                syntax_error("expected statement, have " ++ sym.sym.type)
+            }
+            tmp := values.pop()
+            body.push(tmp)
+        }
+        next()
+        var o := astblock(params, body)
+        values.push(o)
+    }
+}
 method doif() {
     if (accept("identifier") & (sym.sym.value == "if")) then {
         next()
@@ -1026,8 +1114,12 @@ method expression() {
                         if (accept("keyword") & (sym.sym.value == "object")) then {
                             doobject()
                         } else {
-                            if accept("lsquare") then {
-                                doarray()
+                            if accept("lbrace") then {
+                                block()
+                            } else {
+                                if accept("lsquare") then {
+                                    doarray()
+                                }
                             }
                         }
                     }
@@ -1654,6 +1746,16 @@ method compileobject(o) {
     }
     o.register := selfr
 }
+method compileblock(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var applymeth := astmethod(astidentifier("apply"),
+        o.params, o.body)
+    applymeth.selfclosure := true
+    var objbody := astobject([applymeth])
+    var obj := compilenode(objbody)
+    o.register := obj
+}
 method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
@@ -2228,6 +2330,9 @@ method compilenode(o) {
     }
     if (o.type == "vardec") then {
         compilevardec(o)
+    }
+    if (o.type == "block") then {
+        compileblock(o)
     }
     if (o.type == "method") then {
         compilemethod(o, "%self")
