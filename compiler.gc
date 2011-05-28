@@ -469,12 +469,16 @@ for (input) each { c ->
 }
 modechange(tokens, mode, accum)
 
+var lastline := 0
 var values := []
 var sym := object {
     var sym := tokens[0]
 }
 method next() {
     if (tokens.size > 0) then {
+        if (sym.sym.type /= "line") then {
+            lastline := linenum
+        }
         sym.sym := tokens.pop()
         if ((sym.sym.type == "line") & (tokens.size > 0)) then {
             var l := sym.sym.value
@@ -1187,9 +1191,22 @@ method dotrest() {
             } else {
                 if (accept("lparen")) then {
                     callrest()
+                } else {
+                    if (accept("lbrace")) then {
+                        callblockrest()
+                    }
                 }
             }
         }
+    }
+}
+method callblockrest() {
+    if (accept("lbrace")) then {
+        var meth := values.pop()
+        expression()
+        var arg := values.pop()
+        var o := astcall(meth, [arg])
+        values.push(o)
     }
 }
 method callrest() {
@@ -1236,7 +1253,8 @@ method callrest() {
 method callmprest(meth, params) {
     var methname := meth.value
     var nxt
-    while {accept("identifier")} do {
+    var ln := linenum
+    while {accept("identifier") & (ln == linenum)} do {
         methname := methname ++ "()"
         pushidentifier()
         nxt := values.pop
@@ -1256,7 +1274,10 @@ method callmprest(meth, params) {
         if ((accept("rparen")).not & isblock.not) then {
             syntax_error("multi-part method name parameters must be single.")
         }
-        next()
+        ln := lastline
+        if (accept("rparen")) then {
+            next()
+        }
     }
     astidentifier(methname)
 }
@@ -2552,14 +2573,12 @@ if (runmode == "make") then {
     }
 }
 // To do:
-// - Blocks
 // - GC
 // - Efficient strings
 // - Tuples
-// - Classes
+// - Classes - half-way
 // - Types
 // - REPL
-// - String escapes
 // - return
 // - Operator associativity
 // - Numeric literals
