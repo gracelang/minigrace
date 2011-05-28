@@ -1,32 +1,21 @@
 ARCH=$(shell uname -s)-$(shell uname -m)
-STABLE=60d2ccdee420878edf7c0374b5a09517befce821
+STABLE=ced7ea4cf6fcc96a16ba5ddc69a398178a0caecb
 all: current
 
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c
 
-current.bc: current.ll known-good/$(ARCH)/gracelib-$(STABLE).o unicode.gco
-	llvm-link -o current.bc known-good/$(ARCH)/gracelib-$(STABLE).o current.ll unicode.gco
+current: known-good/$(ARCH)/minigrace-$(STABLE) compiler.gc unicode.gco
+	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
 
-current.ll: compiler.gc known-good/$(ARCH)/minigrace-$(STABLE)
-	./known-good/$(ARCH)/minigrace-$(STABLE) < compiler.gc >current.ll
-
-current.s: current.bc
-	llc -o current.s current.bc
-
-current: current.s gracelib.o
-	gcc -o current current.s
 selfhost: current compiler.gc gracelib.o unicode.gco
-	./current -o selfhost.ll compiler.gc
-	llvm-link -o selfhost.bc gracelib.o selfhost.ll unicode.gco
-	llc -o selfhost.s selfhost.bc
-	gcc -o selfhost selfhost.s
+	./current --verbose --make --native --module selfhost compiler.gc
 
 selfhost-stats: selfhost
-	GRACE_STATS=1 ./selfhost < compiler.gc >/dev/null
+	GRACE_STATS=1 ./selfhost selfhost < compiler.gc >/dev/null
 
 selfhost-rec: selfhost
-	./selfhost -o selfhost-rec.ll compiler.gc
+	./selfhost -o selfhost-rec.ll --module selfhost compiler.gc
 	@diff -q selfhost.ll selfhost-rec.ll
 	@echo PASS
 
