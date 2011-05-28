@@ -10,6 +10,7 @@ var outfile := io.output
 var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
+var gracelibPath := "gracelib.o"
 
 var verbosity := 30
 
@@ -39,6 +40,10 @@ if (argv.size > 1) then {
             if (arg == "--module") then {
                 ai := ai + 1
                 modname := argv[ai]
+            }
+            if (arg == "--gracelib") then {
+                ai := ai + 1
+                gracelibPath := argv[ai]
             }
         } else {
             var filename := arg
@@ -2530,7 +2535,7 @@ if (runmode == "make") then {
     var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
     io.system(cmd)
     log_verbose("linking.")
-    cmd := "llvm-link -o " ++ modname ++ ".bc gracelib.o "
+    cmd := "llvm-link -o " ++ modname ++ ".bc " ++ gracelibPath ++ " "
     cmd := cmd ++ modname ++ ".gco"
     for (linkfiles) each { fn ->
         cmd := cmd ++ " " ++ fn
