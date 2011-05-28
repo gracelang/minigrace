@@ -1600,7 +1600,7 @@ if (runmode == "make") then {
             var nm := v.value.value
             var exists := false
             if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
-                if (io.system("[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]")) then {
+                if (io.system("bash -c '[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]'")) then {
                     exists := true
                     linkfiles.push(nm ++ ".gco")
                 }
