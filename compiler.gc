@@ -1236,14 +1236,19 @@ method callmprest(meth, params) {
         pushidentifier()
         nxt := values.pop
         methname := methname ++ nxt.value
-        if ((accept("lparen")).not) then {
+        var isblock := false
+        if ((accept("lparen")).not & (accept("lbrace")).not) then {
             syntax_error("multi-part method name parameters require ().")
         }
-        next()
+        if (accept("lbrace")) then {
+            isblock := true
+        } else {
+            next()
+        }
         expression()
         nxt := values.pop()
         params.push(nxt)
-        if ((accept("rparen")).not) then {
+        if ((accept("rparen")).not & isblock.not) then {
             syntax_error("multi-part method name parameters must be single.")
         }
         next()
