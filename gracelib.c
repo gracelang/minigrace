@@ -99,9 +99,6 @@ void die(char *msg, ...) {
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
     backtrace();
-    fprintf(stderr, "Error around line %i: ", linenumber);
-    vfprintf(stderr, msg, args);
-    fprintf(stderr, "\n");
     va_end(args);
     exit(1);
 }
