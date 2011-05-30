@@ -427,7 +427,12 @@ for (input) do { c ->
                         unichars := 4
                         codepoint := 0
                     } else {
-                        accum := accum ++ c
+                        if (c == "U") then {
+                            unichars := 8
+                            codepoint := 0
+                        } else {
+                            accum := accum ++ c
+                        }
                     }
                 }
                 escaped := false

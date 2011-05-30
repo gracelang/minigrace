@@ -138,7 +138,7 @@ struct Object *unicode_create(struct Object *self, unsigned int nparams,
         buf[1] |= tmp;
         tmp = cp & 0x3f;
         buf[2] |= tmp;
-    } else if (cp < 0x20000) {
+    } else if (cp < 0x10FFFF) {
         buf[0] = 0xf0;
         buf[1] = 0x80;
         buf[2] = 0x80;
