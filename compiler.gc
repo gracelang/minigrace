@@ -100,97 +100,97 @@ method hexdecchar(c) {
 
 method identifiertok(s) {
     object {
-        var type := "identifier"
+        var kind := "identifier"
         var value := s
     }
 }
 method stringtok(s) {
     object {
-        var type := "string"
+        var kind := "string"
         var value := s
     }
 }
 method octetstok(s) {
     object {
-        var type := "octets"
+        var kind := "octets"
         var value := s
     }
 }
 method lbracetok() {
     object {
-        var type := "lbrace"
+        var kind := "lbrace"
         var value := "{"
     }
 }
 method rbracetok() {
     object {
-        var type := "rbrace"
+        var kind := "rbrace"
         var value := "}"
     }
 }
 method lparentok() {
     object {
-        var type := "lparen"
+        var kind := "lparen"
         var value := "("
     }
 }
 method rparentok() {
     object {
-        var type := "rparen"
+        var kind := "rparen"
         var value := ")"
     }
 }
 method lsquaretok() {
     object {
-        var type := "lsquare"
+        var kind := "lsquare"
         var value := "["
     }
 }
 method rsquaretok() {
     object {
-        var type := "rsquare"
+        var kind := "rsquare"
         var value := "]"
     }
 }
 method commatok() {
     object {
-        var type := "comma"
+        var kind := "comma"
         var value := ","
     }
 }
 method dottok() {
     object {
-        var type := "dot"
+        var kind := "dot"
         var value := "."
     }
 }
 method numtok(v) {
     object {
-        var type := "num"
+        var kind := "num"
         var value := v
     }
 }
 method keywordtok(v) {
     object {
-        var type := "keyword"
+        var kind := "keyword"
         var value := v
     }
 }
 method optok(v) {
     object {
-        var type := "op"
+        var kind := "op"
         var value := v
     }
 }
 method arrowtok() {
     object {
-        var type := "arrow"
+        var kind := "arrow"
         var value := "->"
     }
 }
 method bindtok() {
     object {
-        var type := "bind"
+        var kind := "bind"
         var value := ":="
     }
 }
@@ -467,7 +467,7 @@ for (input) do { c ->
     if (c == "\n") then {
         linenum := linenum + 1
         tokens.push(object {
-            var type := "line"
+            var kind := "line"
             var value := linenum + 0
         })
     }
@@ -482,11 +482,11 @@ var sym := object {
 }
 method next() {
     if (tokens.size > 0) then {
-        if (sym.sym.type /= "line") then {
+        if (sym.sym.kind /= "line") then {
             lastline := linenum
         }
         sym.sym := tokens.pop()
-        if ((sym.sym.type == "line") & (tokens.size > 0)) then {
+        if ((sym.sym.kind == "line") & (tokens.size > 0)) then {
             var l := sym.sym.value
             if l /= linenum then {
                 linenum := l
@@ -494,13 +494,13 @@ method next() {
             }
         }
     } else {
-        sym.sym := object { var type := "eof" }
+        sym.sym := object { var kind := "eof" }
     }
 }
 
 method astfor(over, variable, body) {
     object {
-        var type := "for"
+        var kind := "for"
         var value := over
         var variable := variable
         var body := body
@@ -524,7 +524,7 @@ method astfor(over, variable, body) {
 }
 method astwhile(cond, body) {
     object {
-        var type := "while"
+        var kind := "while"
         var value := cond
         var body := body
         var register := ""
@@ -547,7 +547,7 @@ method astwhile(cond, body) {
 }
 method astif(cond, thenblock, elseblock) {
     object {
-        var type := "if"
+        var kind := "if"
         var value := cond
         var thenblock := thenblock
         var elseblock := elseblock
@@ -576,7 +576,7 @@ method astif(cond, thenblock, elseblock) {
 }
 method astblock(params, body) {
     object {
-        var type := "block"
+        var kind := "block"
         var value := "block"
         var params := params
         var body := body
@@ -604,7 +604,7 @@ method astblock(params, body) {
 }
 method astmethod(name, params, body) {
     object {
-        var type := "method"
+        var kind := "method"
         var value := name
         var params := params
         var body := body
@@ -634,7 +634,7 @@ method astmethod(name, params, body) {
 }
 method astcall(what, with) {
     object {
-        var type := "call"
+        var kind := "call"
         var value := what
         var with := with
         var line := 0 + linenum
@@ -658,7 +658,7 @@ method astcall(what, with) {
 }
 method astclass(name, params, body) {
     object {
-        var type := "class"
+        var kind := "class"
         var value := body
         var name := name
         var params := params
@@ -684,7 +684,7 @@ method astclass(name, params, body) {
 }
 method astobject(body) {
     object {
-        var type := "object"
+        var kind := "object"
         var value := body
         var register := ""
         var line := linenum
@@ -703,7 +703,7 @@ method astobject(body) {
 }
 method astarray(values) {
     object {
-        var type := "array"
+        var kind := "array"
         var value := values
         var register := ""
         var line := linenum
@@ -722,7 +722,7 @@ method astarray(values) {
 }
 method astmember(what, in) {
     object {
-        var type := "member"
+        var kind := "member"
         var value := what
         var in := in
         var register := ""
@@ -739,7 +739,7 @@ method astmember(what, in) {
 }
 method astidentifier(n) {
     object {
-        var type := "identifier"
+        var kind := "identifier"
         var value := n
         var register := ""
         var line := linenum
@@ -750,7 +750,7 @@ method astidentifier(n) {
 }
 method astoctets(n) {
     object {
-        var type := "octets"
+        var kind := "octets"
         var value := n
         var register := ""
         var line := linenum
@@ -761,7 +761,7 @@ method astoctets(n) {
 }
 method aststring(n) {
     object {
-        var type := "string"
+        var kind := "string"
         var value := n
         var register := ""
         var line := linenum
@@ -772,7 +772,7 @@ method aststring(n) {
 }
 method astnum(n) {
     object {
-        var type := "num"
+        var kind := "num"
         var value := n
         var register := ""
         var line := linenum
@@ -783,7 +783,7 @@ method astnum(n) {
 }
 method astop(op, l, r) {
     object {
-        var type := "op"
+        var kind := "op"
         var value := op
         var left := l
         var right := r
@@ -805,7 +805,7 @@ method astop(op, l, r) {
 }
 method astindex(expr, index) {
     object {
-        var type := "index"
+        var kind := "index"
         var value := expr
         var index := index
         var register := ""
@@ -826,7 +826,7 @@ method astindex(expr, index) {
 }
 method astbind(dest, val) {
     object {
-        var type := "bind"
+        var kind := "bind"
         var dest := dest
         var value := val
         var register := ""
@@ -847,7 +847,7 @@ method astbind(dest, val) {
 }
 method astconstdec(name, val) {
     object {
-        var type := "constdec"
+        var kind := "constdec"
         var name := name
         var value := val
         var register := ""
@@ -870,7 +870,7 @@ method astconstdec(name, val) {
 }
 method astvardec(name, val) {
     object {
-        var type := "vardec"
+        var kind := "vardec"
         var name := name
         var value := val
         var register := ""
@@ -893,7 +893,7 @@ method astvardec(name, val) {
 }
 method astimport(name) {
     object {
-        var type := "import"
+        var kind := "import"
         var value := name
         var register := ""
         var line := linenum
@@ -911,7 +911,7 @@ method astimport(name) {
 }
 method astreturn(expr) {
     object {
-        var type := "return"
+        var kind := "return"
         var value := expr
         var register := ""
         var line := linenum
@@ -928,7 +928,7 @@ method astreturn(expr) {
     }
 }
 method accept(t) {
-    sym.sym.type == t
+    sym.sym.kind == t
 }
 method pushnum() {
     var o := astnum(sym.sym.value)
@@ -966,11 +966,11 @@ method block() {
         for (0..15) do { i->
             if (i < (toks.size-1)) then {
                 var t := toks.at((toks.size - i) - 1)
-                if ((t.type /= "identifier") & (t.type /= "comma")
-                    & (t.type /= "arrow") & found.not) then {
+                if ((t.kind /= "identifier") & (t.kind /= "comma")
+                    & (t.kind /= "arrow") & found.not) then {
                     havearrow := false
                 }
-                if (t.type == "arrow") then {
+                if (t.kind == "arrow") then {
                     found := true
                 }
             }
@@ -1000,7 +1000,7 @@ method block() {
         while {(accept("rbrace")).not} do {
             statement()
             if (ln == values.size) then {
-                syntax_error("expected statement, have " ++ sym.sym.type)
+                syntax_error("expected statement, have " ++ sym.sym.kind)
             }
             tmp := values.pop()
             body.push(tmp)
@@ -1239,7 +1239,7 @@ method callrest() {
         var methn := meth.value
         next()
         values.push(object {
-            var type := "lparen"
+            var kind := "lparen"
             var register := ""
         })
         expression()
@@ -1250,7 +1250,7 @@ method callrest() {
         if (accept("rparen")) then {
             var tmpparams := []
             var n := values.pop()
-            while {n.type /= "lparen"} do {
+            while {n.kind /= "lparen"} do {
                 tmpparams.push(n)
                 n := values.pop()
             }
@@ -1263,7 +1263,7 @@ method callrest() {
             next()
             if ((linenum == ln) & accept("identifier")) then {
                 methn := callmprest(astidentifier(methn), params)
-                if (meth.type == "member") then {
+                if (meth.kind == "member") then {
                     meth := astmember(methn.value, meth.in)
                 } else {
                     meth := methn
@@ -1341,7 +1341,7 @@ method doarray() {
     if (accept("lsquare")) then {
         next()
         values.push(object {
-            var type := "lsquare"
+            var kind := "lsquare"
             var register := ""
         })
         expression()
@@ -1352,7 +1352,7 @@ method doarray() {
         if (accept("rsquare")) then {
             var tmpparams := []
             var n := values.pop()
-            while {n.type /= "lsquare"} do {
+            while {n.kind /= "lsquare"} do {
                 tmpparams.push(n)
                 n := values.pop()
             }
@@ -1365,7 +1365,7 @@ method doarray() {
             values.push(o)
             next()
         } else {
-            syntax_error("expected rsquare, got " ++ sym.sym.type)
+            syntax_error("expected rsquare, got " ++ sym.sym.kind)
         }
     }
 }
@@ -1375,7 +1375,7 @@ method doobject() {
         next()
         if (accept("lbrace")) then {
             values.push(object {
-                var type := "lbrace"
+                var kind := "lbrace"
                 var register := ""
             })
             next()
@@ -1393,7 +1393,7 @@ method doobject() {
             next()
             var rbody := []
             var n := values.pop()
-            while {n.type /= "lbrace"} do {
+            while {n.kind /= "lbrace"} do {
                 rbody.push(n)
                 n := values.pop()
             }
@@ -1414,7 +1414,7 @@ method doclass() {
         var cname := values.pop()
         if (accept("lbrace")) then {
             values.push(object {
-                var type := "lbrace"
+                var kind := "lbrace"
                 var register := ""
             })
             next()
@@ -1449,7 +1449,7 @@ method doclass() {
             next()
             var rbody := []
             var n := values.pop()
-            while {n.type /= "lbrace"} do {
+            while {n.kind /= "lbrace"} do {
                 rbody.push(n)
                 n := values.pop()
             }
@@ -1494,7 +1494,7 @@ method methoddec() {
         if (accept("lparen")) then {
             next()
             values.push(object {
-                var type := "lparen"
+                var kind := "lparen"
                 var register := ""
             })
             identifier()
@@ -1506,7 +1506,7 @@ method methoddec() {
                 next()
                 var tmpparams := []
                 var n := values.pop()
-                while {n.type /= "lparen"} do {
+                while {n.kind /= "lparen"} do {
                     tmpparams.push(n)
                     n := values.pop()
                 }
@@ -1522,12 +1522,12 @@ method methoddec() {
                 if (accept("lbrace")) then {
                     next()
                     values.push(object {
-                        var type := "lbrace"
+                        var kind := "lbrace"
                         var register := ""
                     })
                     statement()
                     var s := values.pop()
-                    while {s.type /= "lbrace"} do {
+                    while {s.kind /= "lbrace"} do {
                         body.push(s)
                         statement()
                         s := values.pop()
@@ -1536,7 +1536,7 @@ method methoddec() {
                         next()
                     } else {
                         syntax_error("No statement but not end of "
-                            ++ meth.value ++ ". Have " ++ sym.sym.type ++ ".")
+                            ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
                     }
                 } else {
                     syntax_error("No body in method declaration for " ++
@@ -1632,7 +1632,7 @@ var linkfiles := []
 if (runmode == "make") then {
     log_verbose("checking imports.")
     for (values) do { v ->
-        if (v.type == "import") then {
+        if (v.kind == "import") then {
             var nm := v.value.value
             var exists := false
             if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
@@ -1798,14 +1798,14 @@ method compileobject(o) {
     out("  " ++ selfr ++ " = call %object* @alloc_obj()")
     var pos := 0
     for (o.value) do { e ->
-        if (e.type == "method") then {
+        if (e.kind == "method") then {
             compilemethod(e, selfr)
         }
-        if (e.type == "vardec") then {
+        if (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
             pos := pos + 1
         }
-        if (e.type == "constdec") then {
+        if (e.kind == "constdec") then {
             compileobjconstdec(e, selfr, pos)
             pos := pos + 1
         }
@@ -2104,7 +2104,7 @@ method compilebind(o) {
     var val := ""
     var c := ""
     var r := ""
-    if (dest.type == "identifier") then {
+    if (dest.kind == "identifier") then {
         val := o.value
         val := compilenode(val)
         var nm := escapestring(dest.value)
@@ -2112,14 +2112,14 @@ method compilebind(o) {
         out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
         o.register := val
     } else {
-        if (dest.type == "member") then {
+        if (dest.kind == "member") then {
             out("; WARNING: non-local assigns not yet fully supported")
             dest.value := dest.value ++ ":="
             c := astcall(dest, [o.value])
             r := compilenode(c)
             o.register := r
         }
-        if (dest.type == "index") then {
+        if (dest.kind == "index") then {
             var imem := astmember("[]:=", dest.value)
             c := astcall(imem, [dest.index, o.value])
             r := compilenode(c)
@@ -2223,7 +2223,7 @@ method compilecall(o) {
     for (0..(args.size-1)) do { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
-    if (o.value.type == "member") then {
+    if (o.value.kind == "member") then {
         outprint("; handling member")
         obj := compilenode(o.value.in)
         outprint("; compiled in to " ++ obj)
@@ -2329,14 +2329,14 @@ method compilenode(o) {
         out("; Begin line " ++ linenum)
         out("  call void @setline(i32 " ++ linenum ++ ")")
     }
-    if (o.type == "num") then {
+    if (o.kind == "num") then {
         out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
             ++ o.value ++ ".0)")
         o.register := "%num" ++ auto_count
         auto_count := auto_count + 1
     }
     var l := ""
-    if (o.type == "string") then {
+    if (o.kind == "string") then {
         l := length(o.value)
         l := l + 1
         o.value := escapestring(o.value)
@@ -2373,19 +2373,19 @@ method compilenode(o) {
         o.register := "%string" ++ auto_count
         auto_count := auto_count + 1
     }
-    if (o.type == "index") then {
+    if (o.kind == "index") then {
         compileindex(o)
     }
-    if (o.type == "octets") then {
+    if (o.kind == "octets") then {
         compileoctets(o)
     }
-    if (o.type == "import") then {
+    if (o.kind == "import") then {
         compileimport(o)
     }
-    if (o.type == "return") then {
+    if (o.kind == "return") then {
         compilereturn(o)
     }
-    if ((o.type == "identifier")
+    if ((o.kind == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
         var val := 0
         if (o.value == "true") then {
@@ -2396,47 +2396,47 @@ method compilenode(o) {
         o.register := "%bool" ++ auto_count
         auto_count := auto_count + 1
     } else {
-        if (o.type == "identifier") then {
+        if (o.kind == "identifier") then {
             compileidentifier(o)
         }
     }
-    if (o.type == "constdec") then {
+    if (o.kind == "constdec") then {
         compileconstdec(o)
     }
-    if (o.type == "vardec") then {
+    if (o.kind == "vardec") then {
         compilevardec(o)
     }
-    if (o.type == "block") then {
+    if (o.kind == "block") then {
         compileblock(o)
     }
-    if (o.type == "method") then {
+    if (o.kind == "method") then {
         compilemethod(o, "%self")
     }
-    if (o.type == "array") then {
+    if (o.kind == "array") then {
         compilearray(o)
     }
-    if (o.type == "bind") then {
+    if (o.kind == "bind") then {
         compilebind(o)
     }
-    if (o.type == "while") then {
+    if (o.kind == "while") then {
         compilewhile(o)
     }
-    if (o.type == "if") then {
+    if (o.kind == "if") then {
         compileif(o)
     }
-    if (o.type == "class") then {
+    if (o.kind == "class") then {
         compileclass(o)
     }
-    if (o.type == "object") then {
+    if (o.kind == "object") then {
         compileobject(o)
     }
-    if (o.type == "member") then {
+    if (o.kind == "member") then {
         compilemember(o)
     }
-    if (o.type == "for") then {
+    if (o.kind == "for") then {
         compilefor(o)
     }
-    if ((o.type == "call")) then {
+    if ((o.kind == "call")) then {
         if (o.value.value == "print") then {
             var args := []
             for (o.with) do { prm ->
@@ -2451,7 +2451,7 @@ method compilenode(o) {
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } else {
-            if ((o.value.type == "identifier")
+            if ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
                 if (o.with.size == 0) then {
                     out("; PP FOLLOWS")
@@ -2465,7 +2465,7 @@ method compilenode(o) {
                 o.register := "%call" ++ auto_count
                 auto_count := auto_count + 1
             } else {
-                if ((o.value.type == "identifier")
+                if ((o.value.kind == "identifier")
                     & (o.value.value == "escapestring")) then {
                     tmp := o.with[0]
                     tmp := astmember("_escape", tmp)
@@ -2477,7 +2477,7 @@ method compilenode(o) {
             }
         }
     }
-    if (o.type == "op") then {
+    if (o.kind == "op") then {
         compileop(o)
     }
     out("; compilenode returning " ++ o.register)
