@@ -854,11 +854,12 @@ method astbind(dest, val) {
         }
     }
 }
-method astconstdec(name, val) {
+method astconstdec(name, val, type) {
     object {
         var kind := "constdec"
         var name := name
         var value := val
+        var type := type
         var register := ""
         var line := linenum
         method pretty(depth) {
@@ -869,6 +870,9 @@ method astconstdec(name, val) {
             var s := "ConstDec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
+            if (self.type) then {
+                s := s ++ " : " ++ self.type.pretty(0)
+            }
             if (self.value) then {
                 s := s ++ "\n  "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
@@ -1323,7 +1327,13 @@ method constdec() {
         next()
         pushidentifier()
         var val
+        var type
         var name := values.pop()
+        if (accept("colon")) then {
+            next()
+            identifier()
+            type := values.pop()
+        }
         if (accept("bind")) then {
             next()
             expression()
@@ -1331,7 +1341,7 @@ method constdec() {
         } else {
             syntax_error("const declaration requires value")
         }
-        var o := astconstdec(name, val)
+        var o := astconstdec(name, val, type)
         values.push(o)
     }
 }
