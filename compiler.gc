@@ -158,6 +158,12 @@ method commatok() {
         var value := ","
     }
 }
+method colontok() {
+    object {
+        var kind := "colon"
+        var value := ":"
+    }
+}
 method dottok() {
     object {
         var kind := "dot"
@@ -281,6 +287,9 @@ method modechange(tokens, mode, accum) {
             }
             if (accum == ":=") then {
                 tok := bindtok()
+            }
+            if (accum == ":") then {
+                tok := colontok()
             }
             tokens.push(tok)
             done := true
@@ -868,11 +877,12 @@ method astconstdec(name, val) {
         }
     }
 }
-method astvardec(name, val) {
+method astvardec(name, val, type) {
     object {
         var kind := "vardec"
         var name := name
         var value := val
+        var type := type
         var register := ""
         var line := linenum
         method pretty(depth) {
@@ -883,6 +893,9 @@ method astvardec(name, val) {
             var s := "VarDec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
+            if (self.type) then {
+                s := s ++ " : " ++ self.kind.pretty(0)
+            }
             if (self.value) then {
                 s := s ++ "\n    "
                 s := s ++ spc ++ self.value.pretty(depth + 1)
@@ -1327,13 +1340,19 @@ method vardec() {
         next()
         pushidentifier()
         var val
+        var type
         var name := values.pop()
+        if (accept("colon")) then {
+            next()
+            identifier()
+            type := values.pop()
+        }
         if (accept("bind")) then {
             next()
             expression()
             val := values.pop()
         }
-        var o := astvardec(name, val)
+        var o := astvardec(name, val, type)
         values.push(o)
     }
 }
