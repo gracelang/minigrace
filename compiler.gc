@@ -204,7 +204,8 @@ method modechange(tokens, mode, accum) {
             tok := identifiertok(accum)
             if ((accum == "object") | (accum == "method")
                 | (accum == "var") | (accum == "const")
-                | (accum == "import") | (accum == "class")) then {
+                | (accum == "import") | (accum == "class")
+                | (accum == "return")) then {
                 tok := keywordtok(accum)
             }
             if (accum == "and") then {
@@ -903,7 +904,25 @@ method astimport(name) {
             }
             var s := "Import"
             s := s ++ "\n"
-            s := s ++ spc ++ self.name.pretty(depth + 1)
+            s := s ++ spc ++ self.value.pretty(depth + 1)
+            s
+        }
+    }
+}
+method astreturn(expr) {
+    object {
+        var type := "return"
+        var value := expr
+        var register := ""
+        var line := linenum
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Return"
+            s := s ++ "\n"
+            s := s ++ spc ++ self.value.pretty(depth + 1)
             s
         }
     }
@@ -1538,6 +1557,15 @@ method doimport() {
         values.push(o)
     }
 }
+method doreturn() {
+    if (accept('keyword') & (sym.sym.value == "return")) then {
+        next()
+        expression()
+        var p := values.pop()
+        var o := astreturn(p)
+        values.push(o)
+    }
+}
 method statement() {
     if (accept("keyword")) then {
         if (sym.sym.value == "var") then {
@@ -1552,6 +1580,9 @@ method statement() {
                     if (sym.sym.value == "class") then {
                         doclass()
                     } else {
+                        if (sym.sym.value == "return") then {
+                            doreturn()
+                        }
                         expression()
                     }
                 }
@@ -2286,6 +2317,12 @@ method compileimport(o) {
     constants.push(con)
     o.register := "%undefined"
 }
+method compilereturn(o) {
+    var reg := compilenode(o.value)
+    out(  "ret %object* " ++ reg)
+    beginblock("postret" ++ auto_count)
+    o.register := "%undefined"
+}
 method compilenode(o) {
     if (linenum /= o.line) then {
         linenum := o.line
@@ -2344,6 +2381,9 @@ method compilenode(o) {
     }
     if (o.type == "import") then {
         compileimport(o)
+    }
+    if (o.type == "return") then {
+        compilereturn(o)
     }
     if ((o.type == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
