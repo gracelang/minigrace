@@ -429,7 +429,7 @@ for (input) do { c ->
                         codepoint := 0
                     } else {
                         if (c == "U") then {
-                            unichars := 8
+                            unichars := 6
                             codepoint := 0
                         } else {
                             accum := accum ++ c
