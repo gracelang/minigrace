@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -1180,6 +1181,18 @@ struct Object *gracelib_length(struct Object *self) {
 }
 struct Object **alloc_var() {
     return glmalloc(sizeof(struct Object*));
+}
+struct Object *dlmodule(const char *name) {
+    char *buf = glmalloc(strlen(name) + 13);
+    strcpy(buf, "./");
+    strcat(buf, name);
+    strcat(buf, ".gso");
+    void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
+    strcpy(buf, "module_");
+    strcat(buf, name);
+    strcat(buf, "_init");
+    struct Object *(*init)() = dlsym(handle, buf);
+    return init();
 }
 void gracelib_stats() {
     if (getenv("GRACE_STATS") == NULL)

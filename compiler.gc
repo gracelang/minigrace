@@ -4,6 +4,7 @@ import unicode
 var tmp := 0
 var linenum := 1
 var modules := []
+var staticmodules := []
 
 var infile := io.input
 var outfile := io.output
@@ -1711,10 +1712,16 @@ if (runmode == "make") then {
         if (v.kind == "import") then {
             var nm := v.value.value
             var exists := false
-            if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
-                if (io.system("bash -c '[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]'")) then {
-                    exists := true
-                    linkfiles.push(nm ++ ".gco")
+            if (io.system("[ -e " ++ nm ++ ".gso ]")) then {
+                exists := true
+            }
+            if (exists.not) then {
+                if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
+                    if (io.system("bash -c '[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]'")) then {
+                        exists := true
+                        linkfiles.push(nm ++ ".gco")
+                        staticmodules.push(nm)
+                    }
                 }
             }
             if (exists.not) then {
@@ -1725,10 +1732,12 @@ if (runmode == "make") then {
                     }
                     exists := true
                     linkfiles.push(nm ++ ".gco")
+                    staticmodules.push(nm)
                 }
             }
             if ((nm == "sys") | (nm == "io")) then {
                 exists := true
+                staticmodules.push(nm)
             }
             if (exists.not) then {
                 syntax_error("failed finding import of " ++ nm ++ ".")
@@ -2379,15 +2388,26 @@ method compileoctets(o) {
 }
 method compileimport(o) {
     out("; Import of " ++ o.value.value)
+    var con
     var nm := escapestring(o.value.value)
-    out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
-        ++ nm ++ "_init()")
+    if (staticmodules.contains(nm)) then {
+        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
+            ++ nm ++ "_init()")
+    } else {
+        var mn := "@\".str.module." ++ nm ++ "\""
+        var l := (nm.encode("utf-8")).size() + 1
+        con := mn ++ " = private unnamed_addr constant [" ++ l ++ " x i8] "
+            ++ " c\"" ++ escapestring(nm) ++ "\\00\""
+            constants.push(con)
+        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @dlmodule(i8 *"
+            ++ " getelementptr([" ++ l ++ " x i8]* " ++ mn ++ ",i32 0,i32 0))")
+    }
     out("  store %object* %\"tmp_mod_" ++ nm
         ++ "\", %object** @\".module." ++ nm ++ "\"")
     out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
     out("  store %object* %\"tmp_mod_" ++ nm
         ++ "\", %object** %\"var_" ++ nm ++ "\"")
-    var con := "@\".module." ++ nm ++ "\" = private global %object* null"
+    con := "@\".module." ++ nm ++ "\" = private global %object* null"
     modules.push(nm)
     constants.push(con)
     con := "declare %object* @\"module_" ++ nm ++ "_init\"()"
@@ -2656,6 +2676,7 @@ out("declare void @addmethod(%object*, i8*, %object*(%object *, i32, %object**)*
 out("declare %object* @gracelib_print(%object*, i32, %object**)")
 out("declare %object* @gracelib_readall(%object*, i32, %object**)")
 out("declare %object* @gracelib_length(%object*)")
+out("declare %object* @dlmodule(i8*)")
 out("declare %object** @alloc_var()")
 out("declare void @module_sys_init_argv(%object*)")
 out("declare i1 @istrue(%object*)")
@@ -2676,18 +2697,35 @@ for (output) do { x ->
 if (runmode == "make") then {
     outfile.close()
     var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
-    io.system(cmd)
+    if ((io.system(cmd)).not) then {
+        io.error.write("Failed LLVM assembling")
+        raise("Fatal.")
+    }
     log_verbose("linking.")
     cmd := "llvm-link -o " ++ modname ++ ".bc " ++ gracelibPath ++ " "
     cmd := cmd ++ modname ++ ".gco"
     for (linkfiles) do { fn ->
         cmd := cmd ++ " " ++ fn
     }
-    io.system(cmd)
+    if ((io.system(cmd)).not) then {
+        io.error.write("Failed LLVM linking")
+        raise("Fatal.")
+    }
     if (buildtype == "native") then {
         log_verbose("compiling to native.")
-        cmd := "llvm-ld -o " ++ modname ++ " -native " ++ modname ++ ".bc"
-        io.system(cmd)
+        cmd := "llvm-ld -ldl -export-dynamic -o " ++ modname ++ " -native " ++ modname ++ ".bc"
+        cmd := "llc -o " ++ modname ++ ".s -relocation-model=pic " ++ modname
+            ++ ".bc"
+        if ((io.system(cmd)).not) then {
+            io.error.write("failed native assembly compilation")
+            raise("fatal.")
+        }
+        cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
+            ++ modname ++ ".s"
+        if ((io.system(cmd)).not) then {
+            io.error.write("failed native assembly compilation")
+            raise("fatal.")
+        }
     }
     if (buildtype == "run") then {
         cmd := "lli ./" ++ modname ++ ".bc"
