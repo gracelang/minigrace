@@ -611,12 +611,13 @@ method astblock(params, body) {
         }
     }
 }
-method astmethod(name, params, body) {
+method astmethod(name, params, body, type) {
     object {
         var kind := "method"
         var value := name
         var params := params
         var body := body
+        var type := type
         var selfclosure := false
         var register := ""
         var line := linenum
@@ -1586,6 +1587,13 @@ method methoddec() {
                 if (accept("identifier")) then {
                     meth := parsempmndecrest(meth, params)
                 }
+                if (accept("arrow")) then {
+                    next()
+                    pushidentifier()
+                    type := values.pop()
+                } else {
+                    type := false
+                }
                 var body := []
                 if (accept("lbrace")) then {
                     next()
@@ -1610,7 +1618,7 @@ method methoddec() {
                     syntax_error("No body in method declaration for " ++
                         meth.value)
                 }
-                var o := astmethod(meth, params, body)
+                var o := astmethod(meth, params, body, type)
                 values.push(o)
             }
         }
@@ -1853,7 +1861,8 @@ method compileobjvardec(o, selfr, pos) {
 method compileclass(o) {
     var params := o.params
     var mbody := [astobject(o.value)]
-    var newmeth := astmethod(astidentifier("new", false), params, mbody)
+    var newmeth := astmethod(astidentifier("new", false), params, mbody,
+        false)
     var obody := [newmeth]
     var cobj := astobject(obody)
     var con := astconstdec(o.name, cobj)
@@ -1884,7 +1893,7 @@ method compileblock(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var applymeth := astmethod(astidentifier("apply", false),
-        o.params, o.body)
+        o.params, o.body, false)
     applymeth.selfclosure := true
     var objbody := astobject([applymeth])
     var obj := compilenode(objbody)
@@ -1895,7 +1904,7 @@ method compilefor(o) {
     auto_count := auto_count + 1
     var over := compilenode(o.value)
     var applymeth := astmethod(astidentifier("apply", false),
-        [o.variable], o.body)
+        [o.variable], o.body, false)
     applymeth.selfclosure := true
     var objbody := astobject([applymeth])
     var obj := compilenode(objbody)
