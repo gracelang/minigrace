@@ -12,7 +12,7 @@ selfhost: current compiler.gc gracelib.o unicode.gco
 	./current --verbose --make --native --module selfhost compiler.gc
 
 selfhost-stats: selfhost
-	GRACE_STATS=1 ./selfhost selfhost < compiler.gc >/dev/null
+	GRACE_STATS=1 ./selfhost < compiler.gc >/dev/null
 
 selfhost-rec: selfhost
 	./selfhost -o selfhost-rec.ll --module selfhost compiler.gc
@@ -25,6 +25,7 @@ unicode.gco: unicode.c unicodedata.h
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
+	rm -f unicode.gco
 
 known-good/%:
 	cd known-good && $(MAKE) $*
