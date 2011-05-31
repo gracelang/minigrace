@@ -5,10 +5,13 @@ all: current
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c
 
+unicode.gso: unicode.c unicodedata.h
+	gcc -fPIC -shared -o unicode.gso unicode.c
+
 current: known-good/$(ARCH)/minigrace-$(STABLE) compiler.gc unicode.gco
 	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
 
-selfhost: current compiler.gc gracelib.o unicode.gco
+selfhost: current compiler.gc gracelib.o unicode.gso
 	./current --verbose --make --native --module selfhost compiler.gc
 
 selfhost-stats: selfhost
