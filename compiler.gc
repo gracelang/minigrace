@@ -746,10 +746,11 @@ method astmember(what, in) {
         }
     }
 }
-method astidentifier(n) {
+method astidentifier(n, type) {
     object {
         var kind := "identifier"
         var value := n
+        var type := type
         var register := ""
         var line := linenum
         method pretty(depth) {
@@ -963,7 +964,7 @@ method pushstring() {
     next()
 }
 method pushidentifier() {
-    var o := astidentifier(sym.sym.value)
+    var o := astidentifier(sym.sym.value, false)
     values.push(o)
     next()
 }
@@ -980,11 +981,12 @@ method block() {
         var i := 0
         var toks := tokens
         // TODO This is a massive hack.
-        for (0..15) do { i->
+        for (0..30) do { i->
             if (i < (toks.size-1)) then {
                 var t := toks.at((toks.size - i) - 1)
                 if ((t.kind /= "identifier") & (t.kind /= "comma")
-                    & (t.kind /= "arrow") & found.not) then {
+                    & (t.kind /= "arrow") & (t.kind /= "colon")
+                    & found.not) then {
                     havearrow := false
                 }
                 if (t.kind == "arrow") then {
@@ -995,13 +997,23 @@ method block() {
         if (havearrow & accept("identifier")) then {
             pushidentifier()
             ident1 := values.pop()
-            if (accept("comma") | accept("arrow")) then {
+            if (accept("comma") | accept("arrow") | accept("colon")) then {
                 // It's a parameterised block
+                if (accept("colon")) then {
+                    next()
+                    pushidentifier()
+                    ident1.type := values.pop()
+                }
                 params.push(ident1)
                 while {accept("comma")} do {
                     next()
                     pushidentifier()
                     ident1 := values.pop()
+                    if (accept("colon")) then {
+                        next()
+                        pushidentifier()
+                        ident1.type := values.pop()
+                    }
                     params.push(ident1)
                 }
                 if ((accept("arrow")).not) then {
@@ -1080,6 +1092,11 @@ method dofor() {
                 next()
                 identifier()
                 variable := values.pop()
+                if (accept("colon")) then {
+                    next()
+                    pushidentifier()
+                    variable.type := values.pop()
+                }
                 if (accept("arrow")) then {
                     next()
                     while {(accept("rbrace")).not} do {
@@ -1279,7 +1296,7 @@ method callrest() {
             var ln := linenum
             next()
             if ((linenum == ln) & accept("identifier")) then {
-                methn := callmprest(astidentifier(methn), params)
+                methn := callmprest(astidentifier(methn, false), params)
                 if (meth.kind == "member") then {
                     meth := astmember(methn.value, meth.in)
                 } else {
@@ -1320,7 +1337,7 @@ method callmprest(meth, params) {
             next()
         }
     }
-    astidentifier(methname)
+    astidentifier(methname, false)
 }
 method constdec() {
     if (accept("keyword") & (sym.sym.value == "const")) then {
@@ -1451,11 +1468,21 @@ method doclass() {
             if (accept("identifier")) then {
                 pushidentifier()
                 var pid := values.pop()
+                if (accept("colon")) then {
+                    next()
+                    pushidentifier()
+                    pid.type := values.pop()
+                }
                 params.push(pid)
                 while {accept("comma")} do {
                     next()
                     pushidentifier()
                     pid := values.pop()
+                    if (accept("colon")) then {
+                        next()
+                        pushidentifier()
+                        pid.type := values.pop()
+                    }
                     params.push(pid)
                 }
                 if (accept("arrow")) then {
@@ -1506,13 +1533,19 @@ method parsempmndecrest(meth, params) {
         next()
         pushidentifier()
         nxt := values.pop()
+        if (accept("colon")) then {
+            next()
+            pushidentifier()
+            var tp := values.pop()
+            nxt.type := tp
+        }
         params.push(nxt)
         if ((accept("rparen")).not) then {
             syntax_error("multi-part method name parameters must be single.")
         }
         next()
     }
-    astidentifier(methname)
+    astidentifier(methname, false)
 }
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
@@ -1522,28 +1555,34 @@ method methoddec() {
         var rparams := []
         if (accept("lparen")) then {
             next()
-            values.push(object {
-                var kind := "lparen"
-                var register := ""
-            })
-            identifier()
-            while {accept("comma")} do {
-                next()
-                identifier()
+            var params := []
+            var id
+            var type
+            while {accept("identifier")} do {
+                pushidentifier()
+                id := values.pop()
+                type := false
+                if (accept("colon")) then {
+                    next()
+                    if (accept("identifier")) then {
+                        pushidentifier()
+                        type := values.pop()
+                    } else {
+                        syntax_error("expected type after :.")
+                    }
+                }
+                id.type := type
+                params.push(id)
+                if (accept("comma")) then {
+                    next()
+                } else {
+                    if ((accept("rparen")).not) then {
+                        syntax_error("expected comma or rparen.")
+                    }
+                }
             }
             if (accept("rparen")) then {
                 next()
-                var tmpparams := []
-                var n := values.pop()
-                while {n.kind /= "lparen"} do {
-                    tmpparams.push(n)
-                    n := values.pop()
-                }
-                var params := []
-                for (0..tmpparams.size-1) do { x ->
-                    var p := tmpparams.pop()
-                    params.push(p)
-                }
                 if (accept("identifier")) then {
                     meth := parsempmndecrest(meth, params)
                 }
@@ -1814,7 +1853,7 @@ method compileobjvardec(o, selfr, pos) {
 method compileclass(o) {
     var params := o.params
     var mbody := [astobject(o.value)]
-    var newmeth := astmethod(astidentifier("new"), params, mbody)
+    var newmeth := astmethod(astidentifier("new", false), params, mbody)
     var obody := [newmeth]
     var cobj := astobject(obody)
     var con := astconstdec(o.name, cobj)
@@ -1844,7 +1883,7 @@ method compileobject(o) {
 method compileblock(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    var applymeth := astmethod(astidentifier("apply"),
+    var applymeth := astmethod(astidentifier("apply", false),
         o.params, o.body)
     applymeth.selfclosure := true
     var objbody := astobject([applymeth])
@@ -1855,7 +1894,7 @@ method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var over := compilenode(o.value)
-    var applymeth := astmethod(astidentifier("apply"),
+    var applymeth := astmethod(astidentifier("apply", false),
         [o.variable], o.body)
     applymeth.selfclosure := true
     var objbody := astobject([applymeth])
