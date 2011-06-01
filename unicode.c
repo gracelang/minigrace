@@ -106,6 +106,66 @@ struct Object *unicode_iscategory(struct Object *self, unsigned int nparams,
     free(dt);
     return ret;
 }
+struct Object *unicode_isSeparator(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = args[0];
+    if (strcmp(args[0]->type, "String") == 0) {
+        o = callmethod(args[0], "ord", 0, 0);
+    }
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    return alloc_Boolean(cat[0] == 'Z');
+}
+struct Object *unicode_isControl(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = args[0];
+    if (strcmp(args[0]->type, "String") == 0) {
+        o = callmethod(args[0], "ord", 0, 0);
+    }
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    return alloc_Boolean(cat[0] == 'C');
+}
+struct Object *unicode_isLetter(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = args[0];
+    if (strcmp(args[0]->type, "String") == 0) {
+        o = callmethod(args[0], "ord", 0, 0);
+    }
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    return alloc_Boolean(cat[0] == 'L');
+}
+struct Object *unicode_isNumber(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = args[0];
+    if (strcmp(args[0]->type, "String") == 0) {
+        o = callmethod(args[0], "ord", 0, 0);
+    }
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    return alloc_Boolean(cat[0] == 'N');
+}
+struct Object *unicode_isSymbolMathematical(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = args[0];
+    if (strcmp(args[0]->type, "String") == 0) {
+        o = callmethod(args[0], "ord", 0, 0);
+    }
+    double *d = o->bdata[0];
+    int v = *d;
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    return alloc_Boolean(strcmp(cat, "Sm") == 0);
+}
 struct Object *unicode_create(struct Object *self, unsigned int nparams,
          struct Object **args) {
     struct Object *o = args[0];
@@ -166,5 +226,10 @@ struct Object *module_unicode_init() {
     addmethod(o, "name", &unicode_name);
     addmethod(o, "create", &unicode_create);
     addmethod(o, "iscategory", &unicode_iscategory);
+    addmethod(o, "isSeparator", &unicode_isSeparator);
+    addmethod(o, "isControl", &unicode_isControl);
+    addmethod(o, "isLetter", &unicode_isLetter);
+    addmethod(o, "isNumber", &unicode_isNumber);
+    addmethod(o, "isSymbolMathematical", &unicode_isSymbolMathematical);
     return o;
 }

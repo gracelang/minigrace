@@ -278,27 +278,27 @@ method modechange(tokens, mode, accum) {
 log_verbose("reading source.")
 var input := infile.read()
 
-method isidentifierchar(c) {
-    if (unicode.iscategory(c, "L") | unicode.iscategory(c, "N")
-        | (c == "_")) then {
+method isidentifierchar(ov) {
+    if (unicode.isLetter(ov) | unicode.isNumber(ov)
+        | (ov == 95)) then {
+        // 95 is _
         true
     } else {
         false
     }
 }
-method isoperatorchar(c) {
+method isoperatorchar(c, ordval) {
     var ret := false
     if ((c == "-") | (c == "&") | (c == "|") | (c == ":") | (c == "%")
         | (c == "*") | (c == "/")) then {
         ret := true
     } else {
-        if (unicode.iscategory(c, "Sm")) then {
+        if (unicode.isSymbolMathematical(ordval)) then {
             ret := true
         }
     }
     ret
 }
-var mchars := ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 var tokens := []
 var mode := "n"
@@ -312,13 +312,14 @@ var codepoint := 0
 log_verbose("lexing.")
 for (input) do { c ->
     var ct := ""
-    if ((unicode.iscategory(c, "Z") & (c.ord /= 32) & (c.ord /= 8232)) |
-        (c.ord == 9)) then {
-        syntax_error("illegal whitespace in input: " ++ c.ord ++ ", "
+    var ordval := c.ord
+    if ((unicode.isSeparator(ordval) & (ordval /= 32) & (ordval /= 8232)) |
+        (ordval == 9)) then {
+        syntax_error("illegal whitespace in input: " ++ ordval ++ ", "
             ++ unicode.name(c))
     }
-    if ((unicode.iscategory(c, "C") & (c.ord /= 10) & (c.ord /= 13)) then {
-        syntax_error("illegal control character in input: #" ++ c.ord)
+    if ((unicode.isControl(ordval) & (ordval /= 10) & (ordval /= 13)) then {
+        syntax_error("illegal control character in input: #" ++ ordval)
     }
     if (instr) then {
 
@@ -339,15 +340,15 @@ for (input) do { c ->
                     mode := "n"
                 }
             }
-            ct := isidentifierchar(c)
+            ct := isidentifierchar(ordval)
             if (ct) then {
                 newmode := "i"
             }
-            ct := mchars.contains(c)
+            ct := ((ordval >= 48) & (ordval <=57))
             if (ct & (mode /= "i")) then {
                 newmode := "m"
             }
-            if (isoperatorchar(c)) then {
+            if (isoperatorchar(c, ordval)) then {
                 newmode := "o"
             }
             if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
