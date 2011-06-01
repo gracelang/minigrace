@@ -1679,7 +1679,8 @@ if (runmode == "make") then {
         if (v.kind == "import") then {
             var nm := v.value.value
             var exists := false
-            if (io.system("[ -e " ++ nm ++ ".gso ]")) then {
+            if ((buildtype == "native") &
+                io.system("[ -e " ++ nm ++ ".gso ]")) then {
                 exists := true
             }
             if (exists.not) then {
