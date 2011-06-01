@@ -99,107 +99,73 @@ method hexdecchar(c) {
     ret
 }
 
-method identifiertok(s) {
-    object {
-        var kind := "identifier"
-        var value := s
-    }
+class IdentifierToken { s ->
+    var kind := "identifier"
+    var value := s
 }
-method stringtok(s) {
-    object {
-        var kind := "string"
-        var value := s
-    }
+class StringToken { s ->
+    var kind := "string"
+    var value := s
 }
-method octetstok(s) {
-    object {
-        var kind := "octets"
-        var value := s
-    }
+class OctetsToken { s ->
+    var kind := "octets"
+    var value := s
 }
-method lbracetok() {
-    object {
-        var kind := "lbrace"
-        var value := "{"
-    }
+class LBraceToken {
+    var kind := "lbrace"
+    var value := "{"
 }
-method rbracetok() {
-    object {
-        var kind := "rbrace"
-        var value := "}"
-    }
+class RBraceToken {
+    var kind := "rbrace"
+    var value := "}"
 }
-method lparentok() {
-    object {
-        var kind := "lparen"
-        var value := "("
-    }
+class LParenToken {
+    var kind := "lparen"
+    var value := "("
 }
-method rparentok() {
-    object {
-        var kind := "rparen"
-        var value := ")"
-    }
+class RParenToken {
+    var kind := "rparen"
+    var value := ")"
 }
-method lsquaretok() {
-    object {
-        var kind := "lsquare"
-        var value := "["
-    }
+class LSquareToken {
+    var kind := "lsquare"
+    var value := "["
 }
-method rsquaretok() {
-    object {
-        var kind := "rsquare"
-        var value := "]"
-    }
+class RSquareToken {
+    var kind := "rsquare"
+    var value := "]"
 }
-method commatok() {
-    object {
-        var kind := "comma"
-        var value := ","
-    }
+class CommaToken {
+    var kind := "comma"
+    var value := ","
 }
-method colontok() {
-    object {
-        var kind := "colon"
-        var value := ":"
-    }
+class ColonToken {
+    var kind := "colon"
+    var value := ":"
 }
-method dottok() {
-    object {
-        var kind := "dot"
-        var value := "."
-    }
+class DotToken {
+    var kind := "dot"
+    var value := "."
 }
-method numtok(v) {
-    object {
-        var kind := "num"
-        var value := v
-    }
+class NumToken { v ->
+    var kind := "num"
+    var value := v
 }
-method keywordtok(v) {
-    object {
-        var kind := "keyword"
-        var value := v
-    }
+class KeywordToken { v ->
+    var kind := "keyword"
+    var value := v
 }
-method optok(v) {
-    object {
-        var kind := "op"
-        var value := v
-    }
+class OpToken { v ->
+    var kind := "op"
+    var value := v
 }
-method arrowtok() {
-    object {
-        var kind := "arrow"
-        var value := "->"
-    }
+class ArrowToken {
+    var kind := "arrow"
+    var value := "->"
 }
-method bindtok() {
-    object {
-        var kind := "bind"
-        var value := ":="
-    }
+class BindToken {
+    var kind := "bind"
+    var value := ":="
 }
 
 
@@ -208,12 +174,12 @@ method modechange(tokens, mode, accum) {
     var tok := 0
     if ((mode /= "n") | (accum.size > 0)) then {
         if (mode == "i") then {
-            tok := identifiertok(accum)
+            tok := IdentifierToken.new(accum)
             if ((accum == "object") | (accum == "method")
                 | (accum == "var") | (accum == "const")
                 | (accum == "import") | (accum == "class")
                 | (accum == "return")) then {
-                tok := keywordtok(accum)
+                tok := KeywordToken.new(accum)
             }
             if (accum == "and") then {
                 tok := optok("&")
@@ -222,75 +188,75 @@ method modechange(tokens, mode, accum) {
             done := true
         }
         if (mode == "'") then {
-            tok := stringtok(accum)
+            tok := StringToken.new(accum)
             tokens.push(tok)
             done := true
         }
         if (mode == "\"") then {
-            tok := stringtok(accum)
+            tok := StringToken.new(accum)
             tokens.push(tok)
             done := true
         }
         if (mode == "x") then {
-            tok := octetstok(accum)
+            tok := OctetsToken.new(accum)
             tokens.push(tok)
             done := true
         }
         if (mode == ",") then {
-            tok := commatok()
+            tok := CommaToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == ".") then {
-            tok := dottok()
+            tok := DotToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "{") then {
-            tok := lbracetok()
+            tok := LBraceToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "}") then {
-            tok := rbracetok()
+            tok := RBraceToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "(") then {
-            tok := lparentok()
+            tok := LParenToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == ")") then {
-            tok := rparentok()
+            tok := RParenToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "[") then {
-            tok := lsquaretok()
+            tok := LSquareToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "]") then {
-            tok := rsquaretok()
+            tok := RSquareToken.new()
             tokens.push(tok)
             done := true
         }
         if (mode == "m") then {
-            tok := numtok(accum)
+            tok := NumToken.new(accum)
             tokens.push(tok)
             done := true
         }
         if (mode == "o") then {
-            tok := optok(accum)
+            tok := OpToken.new(accum)
             if (accum == "->") then {
-                tok := arrowtok()
+                tok := ArrowToken.new()
             }
             if (accum == ":=") then {
-                tok := bindtok()
+                tok := BindToken.new()
             }
             if (accum == ":") then {
-                tok := colontok()
+                tok := ColonToken.new()
             }
             tokens.push(tok)
             done := true
