@@ -121,38 +121,47 @@ class LBraceToken {
     var kind := "lbrace"
     var value := "{"
 }
+var LBraceTokenV := LBraceToken.new
 class RBraceToken {
     var kind := "rbrace"
     var value := "}"
 }
+var RBraceTokenV := RBraceToken.new
 class LParenToken {
     var kind := "lparen"
     var value := "("
 }
+var LParenTokenV := LParenToken.new
 class RParenToken {
     var kind := "rparen"
     var value := ")"
 }
+var RParenTokenV := RParenToken.new
 class LSquareToken {
     var kind := "lsquare"
     var value := "["
 }
+var LSquareTokenV := LSquareToken.new
 class RSquareToken {
     var kind := "rsquare"
     var value := "]"
 }
+var RSquareTokenV := RSquareToken.new
 class CommaToken {
     var kind := "comma"
     var value := ","
 }
+var CommaTokenV := CommaToken.new
 class ColonToken {
     var kind := "colon"
     var value := ":"
 }
+var ColonTokenV := ColonToken.new
 class DotToken {
     var kind := "dot"
     var value := "."
 }
+var DotTokenV := DotToken.new
 class NumToken { v ->
     var kind := "num"
     var value := v
@@ -169,10 +178,12 @@ class ArrowToken {
     var kind := "arrow"
     var value := "->"
 }
+var ArrowTokenV := ArrowToken.new
 class BindToken {
     var kind := "bind"
     var value := ":="
 }
+var BindTokenV := BindToken.new
 
 
 method modechange(tokens, mode, accum) {
@@ -209,42 +220,42 @@ method modechange(tokens, mode, accum) {
             done := true
         }
         if (mode == ",") then {
-            tok := CommaToken.new()
+            tok := CommaTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == ".") then {
-            tok := DotToken.new()
+            tok := DotTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == "{") then {
-            tok := LBraceToken.new()
+            tok := LBraceTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == "}") then {
-            tok := RBraceToken.new()
+            tok := RBraceTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == "(") then {
-            tok := LParenToken.new()
+            tok := LParenTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == ")") then {
-            tok := RParenToken.new()
+            tok := RParenTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == "[") then {
-            tok := LSquareToken.new()
+            tok := LSquareTokenV
             tokens.push(tok)
             done := true
         }
         if (mode == "]") then {
-            tok := RSquareToken.new()
+            tok := RSquareTokenV
             tokens.push(tok)
             done := true
         }
@@ -256,13 +267,13 @@ method modechange(tokens, mode, accum) {
         if (mode == "o") then {
             tok := OpToken.new(accum)
             if (accum == "->") then {
-                tok := ArrowToken.new()
+                tok := ArrowTokenV
             }
             if (accum == ":=") then {
-                tok := BindToken.new()
+                tok := BindTokenV
             }
             if (accum == ":") then {
-                tok := ColonToken.new()
+                tok := ColonTokenV
             }
             tokens.push(tok)
             done := true
