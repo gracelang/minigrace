@@ -424,7 +424,7 @@ struct Object *alloc_Array() {
     int r = *t;
     return o;
 }
-int getutf8charlen(char *s) {
+int getutf8charlen(const char *s) {
     int i;
     if ((s[0] & 128) == 0)
         return 1;
@@ -441,7 +441,7 @@ int getutf8charlen(char *s) {
         return 4;
     return -1;
 }
-int getutf8char(char *s, char buf[5]) {
+int getutf8char(const char *s, char buf[5]) {
     int i;
     int charlen = getutf8charlen(s);
     for (i=0; i<5; i++) {
@@ -539,21 +539,7 @@ struct Object *String_ord(struct Object *receiver, unsigned int nparams,
 }
 struct Object *String_size(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
-    // In the long run, this should be calculated on string allocation
-    // (during strcpy), but it can't do that until the compiler is
-    // fully Unicode-aware.
-    char *s = receiver->bdata[0];
     int *z = receiver->bdata[1];
-    int i;
-    int size = 0;
-    if (*z == -1) {
-        for (i=0; s[i] != 0; ) {
-            int l = getutf8charlen(s + i);
-            i += l;
-            size = size + 1;
-        }
-        *z = size;
-    }
     return alloc_Float64(*z);
 }
 struct Object *String_encode(struct Object *receiver, unsigned int nparams,
@@ -563,13 +549,25 @@ struct Object *String_encode(struct Object *receiver, unsigned int nparams,
 struct Object *alloc_String(const char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
-    o->bdata = glmalloc(sizeof(void*) * 2);
+    o->bdata = glmalloc(sizeof(void*) * 3);
     o->bdata[0] = glmalloc(strlen(data) + 1);
     o->bdata[1] = glmalloc(sizeof(int));
+    o->bdata[2] = glmalloc(sizeof(int));
+    int *blen = o->bdata[2];
+    *blen = strlen(data);
     char *d = o->bdata[0];
     int *size = o->bdata[1];
-    *size = -1;
-    strcpy(d, data);
+    *size = 0;
+    int i;
+    for (i=0; i<*blen; ) {
+        int l = getutf8charlen(data + i);
+        int j = i + l;
+        for (; i<j; i++) {
+            d[i] = data[i];
+        }
+        *size = *size + 1;
+    }
+    d[i] = 0;
     if (String_Methods == NULL) {
         addmethod(o, "asString", &identity_function);
         addmethod(o, "++", &String_concat);
