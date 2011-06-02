@@ -274,10 +274,11 @@ struct Object *Object_Equals(struct Object* receiver, unsigned int nparams,
 struct Object *String_Equals(struct Object *receiver, unsigned int nparams,
         struct Object **params) {
     struct Object *other = params[0];
-    if (strcmp(other->type, "String"))
+    if (strcmp(other->type, "String") && strcmp(other->type, "ConcatString"))
         return alloc_Boolean(0);
+    int *otl = other->bdata[2];
+    char *theirs = cstringfromString(other);
     char *mine = receiver->bdata[0];
-    char *theirs = other->bdata[0];
     if (strcmp(mine, theirs)) {
         return alloc_Boolean(0);
     }
@@ -765,11 +766,7 @@ struct Object *String_concat(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     other = callmethod(other, "asString", 0, NULL);
-    int len = strlen(self->bdata[0]) + strlen(other->bdata[0]) + 1;
-    char buf[len];
-    strcpy(buf, self->bdata[0]);
-    strcat(buf, other->bdata[0]);
-    return alloc_String(buf);
+    return alloc_ConcatString(self, other);
 }
 struct Object *Octets_size(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
