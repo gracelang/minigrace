@@ -858,6 +858,8 @@ struct Object *alloc_Float64(double num) {
         s[l--] = '\0';
     if (s[l] == '.')
         s[l] = '\0';
+    o->data = glmalloc(1 * sizeof(struct Object *));
+    o->data[0] = NULL;
     if (Float64_Methods == NULL) {
         addmethod(o, "+", &Float64_Add);
         addmethod(o, "*", &Float64_Mul);
@@ -890,8 +892,11 @@ struct Object *alloc_Float64(double num) {
 }
 struct Object *Float64_asString(struct Object *self, unsigned int nparams,
         struct Object **args) {
+    if (self->data[0] != NULL)
+        return self->data[0];
     char *a = self->bdata[1];
-    return alloc_String(a);
+    self->data[0] = alloc_String(a);
+    return self->data[0];
 }
 struct Object* Boolean_asString(struct Object *self, unsigned int nparams,
         struct Object **args) {
