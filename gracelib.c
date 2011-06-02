@@ -858,7 +858,7 @@ struct Object *alloc_Float64(double num) {
         s[l--] = '\0';
     if (s[l] == '.')
         s[l] = '\0';
-    if (1 || Float64_Methods == NULL) {
+    if (Float64_Methods == NULL) {
         addmethod(o, "+", &Float64_Add);
         addmethod(o, "*", &Float64_Mul);
         addmethod(o, "-", &Float64_Sub);
