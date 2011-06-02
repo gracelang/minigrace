@@ -589,9 +589,7 @@ struct Object *alloc_String(const char *data) {
     Strings_allocated++;
     return o;
 }
-struct Object *String__escape(struct Object *self, unsigned int nparams,
-        struct Object **args) {
-    char *p = self->bdata[0];
+struct Object *makeEscapedString(char *p) {
     int len = strlen(p);
     char buf[len * 3 + 1];
     int op;
@@ -624,6 +622,11 @@ struct Object *String__escape(struct Object *self, unsigned int nparams,
     }
     buf[op] = 0;
     return alloc_String(buf);
+}
+struct Object *String__escape(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    char *p = self->bdata[0];
+    return makeEscapedString(p);
 }
 struct Object *String_length(struct Object *self, unsigned int nparams,
         struct Object **args) {
