@@ -128,6 +128,18 @@ char *cstringfromString(struct Object *s) {
     strcpy(c, s->bdata[0]);
     return c;
 }
+int integerfromAny(struct Object *o) {
+    if (strcmp(o->type, "Float64") == 0) {
+        double *d = o->bdata[0];
+        int i = *d;
+        return i;
+    }
+    o = callmethod(o, "asString", 0, NULL);
+    char *c = cstringfromString(o);
+    int i = atoi(c);
+    free(c);
+    return i;
+}
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
@@ -318,8 +330,7 @@ struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *idx = args[0];
     struct Object *val = args[1];
-    idx = callmethod(idx, "asString", 0, NULL);
-    int index = atoi(idx->bdata[0]);
+    int index = integerfromAny(idx);
     int *len = self->bdata[0];
     if (index >= *len) {
         die("Error: array index out of bounds: %i/%i",
@@ -344,9 +355,7 @@ struct Object *Array_contains(struct Object *self, unsigned int nparams,
 }
 struct Object *Array_index(struct Object *self, unsigned int nparams,
         struct Object **args) {
-    struct Object *other = args[0];
-    other = callmethod(other, "asString", 0, NULL);
-    int index = atoi(other->bdata[0]);
+    int index = integerfromAny(args[0]);
     int *len = self->bdata[0];
     if (index >= *len) {
         fprintf(stderr, "Error: array index out of bounds: %i/%i\n",
@@ -496,8 +505,7 @@ struct Object *String_iter(struct Object *receiver, unsigned int nparams,
 struct Object *String_at(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
     struct Object *idxobj = args[0];
-    struct Object *as = callmethod(idxobj, "asString", 0, NULL);
-    int idx = atoi(as->bdata[0]);
+    int idx = integerfromAny(idxobj);
     int i = 0;
     char *ptr = receiver->bdata[0];
     while (i < idx){
@@ -626,9 +634,7 @@ struct Object *String_length(struct Object *self, unsigned int nparams,
 }
 struct Object *String_index(struct Object *self, unsigned int nparams,
         struct Object **args) {
-    struct Object *other = args[0];
-    other = callmethod(other, "asString", 0, NULL);
-    int index = atoi(other->bdata[0]);
+    int index = integerfromAny(args[0]);
     char buf[2];
     char *c = self->bdata[0];
     buf[0] = c[index];
@@ -671,8 +677,7 @@ struct Object *Octets_at(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
-    struct Object *s = callmethod(args[0], "asString", 0, NULL);
-    int i = atoi(s->bdata[0]);
+    int i = integerfromAny(args[0]);
     if (i >= *size)
         die("Octets index out of bounds: %i/%i", i, *size);
     return alloc_Float64((unsigned int)data[i]&255);
@@ -1161,8 +1166,9 @@ struct Object *gracelib_print(struct Object *receiver, unsigned int nparams,
     for (i=0; i<nparams; i++) {
         struct Object *o = args[i];
         o = callmethod(o, "asString", 0, NULL);
-        char *s = o->bdata[0];
+        char *s = cstringfromString(o);
         printf("%s ", s);
+        free(s);
     }
     puts("");
     return alloc_Undefined();
