@@ -572,6 +572,13 @@ struct Object *ConcatString_length(struct Object *self, unsigned int nparams,
     int *bl = self->bdata[2];
     return alloc_Float64(*bl);
 }
+struct Object *ConcatString_iter(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    char *c = cstringfromString(self);
+    struct Object *o = alloc_String(c);
+    free(c);
+    return callmethod(o, "iter", 0, NULL);
+}
 struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "ConcatString");
@@ -599,6 +606,7 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
         addmethod(o, "==", &ConcatString_Equals);
         addmethod(o, "_escape", &ConcatString__escape);
         addmethod(o, "length", &ConcatString_length);
+        addmethod(o, "iter", &ConcatString_iter);
         ConcatString_methods = o->methods;
         ConcatString_nummethods = o->nummethods;
     } else {
