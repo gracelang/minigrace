@@ -52,6 +52,11 @@ struct Object *callmethod(struct Object *receiver, const char *name,
         unsigned int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
+struct Object *alloc_ConcatString(struct Object *, struct Object *);
+
+struct Object *String_size(struct Object *, unsigned int, struct Object **);
+struct Object *makeEscapedString(char *);
+void ConcatString__FillBuffer(struct Object *s, char *c);
 
 struct Object *undefined = NULL;
 
@@ -75,6 +80,8 @@ struct Method **Array_Methods = NULL;
 int Array_NumMethods = 0;
 struct Method **Octets_Methods = NULL;
 int Octets_NumMethods;
+struct Method** ConcatString_methods = NULL;
+int ConcatString_nummethods = 0;
 
 struct Method *ObjectMethod_asString = NULL;
 struct Method *ObjectMethod_concat = NULL;
@@ -124,8 +131,13 @@ int istrue(struct Object *o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
 char *cstringfromString(struct Object *s) {
-    char *c = glmalloc(strlen(s->bdata[0]) + 1);
-    strcpy(c, s->bdata[0]);
+    int *z = s->bdata[2];
+    char *c = glmalloc(*z + 1);
+    if (strcmp(s->type, "ConcatString")) {
+        strcpy(c, s->bdata[0]);
+        return c;
+    }
+    ConcatString__FillBuffer(s, c);
     return c;
 }
 int integerfromAny(struct Object *o) {
@@ -494,6 +506,105 @@ struct Object *alloc_StringIter(struct Object *string) {
     *pos = 0;
     addmethod(o, "havemore", &StringIter_havemore);
     addmethod(o, "next", &StringIter_next);
+    return o;
+}
+
+void ConcatString__FillBuffer(struct Object *self, char *buf) {
+    struct Object *left = self->data[0];
+    struct Object *right = self->data[1];
+    if (strcmp(left->type, "String") == 0)
+        strcpy(buf, left->bdata[0]);
+    else {
+        ConcatString__FillBuffer(left, buf);
+    }
+    int *ls = left->bdata[2];
+    buf += *ls;
+    if (strcmp(right->type, "String") == 0)
+        strcpy(buf, right->bdata[0]);
+    else {
+        ConcatString__FillBuffer(right, buf);
+    }
+}
+struct Object *ConcatString_Equals(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    if (self == args[0])
+        return alloc_Boolean(1);
+    int *ms = self->bdata[1];
+    int *os = args[0]->bdata[1];
+    if (*ms != *os)
+        return alloc_Boolean(0);
+    int *mbs = self->bdata[2];
+    int *obs = args[0]->bdata[2];
+    if (*mbs != *obs)
+        return alloc_Boolean(0);
+    char *a = cstringfromString(self);
+    char *b = cstringfromString(args[0]);
+    return alloc_Boolean(strcmp(a,b) == 0);
+}
+struct Object *ConcatString_Concat(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *o = callmethod(args[0], "asString", 0, NULL);
+    return alloc_ConcatString(self, o);
+}
+struct Object *ConcatString__escape(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    char *c = cstringfromString(self);
+    struct Object *o = makeEscapedString(c);
+    free(c);
+    return o;
+}
+struct Object *ConcatString_at(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int p = integerfromAny(args[0]);
+    int *ms = self->bdata[1];
+    if (*ms == 1 && p == 0)
+        return self;
+    int *ls = self->data[0]->bdata[1];
+    if (p < *ls)
+        return callmethod(self->data[0], "at", 1, args);
+    struct Object *d = args[0];
+    struct Object *lso = alloc_Float64(*ls);
+    d = callmethod(d, "-", 1, &lso);
+    return callmethod(self->data[1], "at", 1, &d);
+}
+struct Object *ConcatString_length(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int *bl = self->bdata[2];
+    return alloc_Float64(*bl);
+}
+struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "ConcatString");
+    o->data = glmalloc(2 * sizeof(struct Object*));
+    o->data[0] = left;
+    o->data[1] = right;
+    o->bdata = glmalloc(3 * sizeof(void*));
+    o->bdata[1] = glmalloc(sizeof(int));
+    o->bdata[2] = glmalloc(sizeof(int));
+    int *lbs = left->bdata[2];
+    int *rbs = right->bdata[2];
+    int *mybs = o->bdata[2];
+    *mybs = *lbs + *rbs;
+    callmethod(left, "size", 0, NULL);
+    callmethod(right, "size", 0, NULL);
+    int *mys = o->bdata[1];
+    int *ls = left->bdata[1];
+    int *rs = right->bdata[1];
+    *mys = *ls + *rs;
+    if (ConcatString_methods == NULL) {
+        addmethod(o, "asString", &identity_function);
+        addmethod(o, "++", &ConcatString_Concat);
+        addmethod(o, "size", &String_size);
+        addmethod(o, "at", &ConcatString_at);
+        addmethod(o, "==", &ConcatString_Equals);
+        addmethod(o, "_escape", &ConcatString__escape);
+        addmethod(o, "length", &ConcatString_length);
+        ConcatString_methods = o->methods;
+        ConcatString_nummethods = o->nummethods;
+    } else {
+        o->methods = ConcatString_methods;
+        o->nummethods = ConcatString_nummethods;
+    }
     return o;
 }
 struct Object *String__escape(struct Object*, unsigned int, struct Object**);
