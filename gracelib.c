@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dlfcn.h>
+#include <time.h>
+#include <sys/time.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -85,6 +87,9 @@ int heapsize;
 
 int objectcount = 0;
 
+int start_clocks = 0;
+double start_time = 0;
+
 char callstack[128][128];
 int calldepth = 0;
 void backtrace() {
@@ -108,7 +113,12 @@ void *glmalloc(size_t s) {
     heapsize += s;
     return malloc(s);
 }
-
+void initprofiling() {
+    start_clocks = clock();
+    struct timeval ar;
+    gettimeofday(&ar, NULL);
+    start_time = ar.tv_sec + (double)ar.tv_usec / 1000000;
+}
 int istrue(struct Object *o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
@@ -1072,12 +1082,29 @@ struct Object *argv_Array = NULL;
 void module_sys_init_argv(struct Object *argv) {
     argv_Array = argv;
 }
+struct Object *sys_cputime(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int i = clock() - start_clocks;
+    double d = i;
+    d /= CLOCKS_PER_SEC;
+    return alloc_Float64(d);
+}
+struct Object *sys_elapsed(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct timeval ar;
+    gettimeofday(&ar, NULL);
+    double now = ar.tv_sec + (double)ar.tv_usec / 1000000;
+    double d = now - start_time;
+    return alloc_Float64(d);
+}
 struct Object *module_sys_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<sys>");
     o->data = glmalloc(sizeof(struct Object*)*1);
     o->data[0] = argv_Array;
     addmethod(o, "argv", &sys_argv);
+    addmethod(o, "cputime", &sys_cputime);
+    addmethod(o, "elapsed", &sys_elapsed);
     return o;
 }
 struct Object * alloc_Undefined() {
@@ -1202,6 +1229,15 @@ void gracelib_stats() {
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
     fprintf(stderr, "                      %iMiB\n", heapsize/1024/1024);
     fprintf(stderr, "                      %iGiB\n", heapsize/1024/1024/1024);
+    int nowclocks = (clock() - start_clocks);
+    float clocks = nowclocks;
+    clocks /= CLOCKS_PER_SEC;
+    struct timeval ar;
+    gettimeofday(&ar, NULL);
+    double etime = ar.tv_sec + (double)ar.tv_usec / 1000000;
+    etime -= start_time;
+    fprintf(stderr, "CPU time: %f\n", clocks);
+    fprintf(stderr, "Elapsed time: %f\n", etime);
 }
 void setdatum(struct Object *o, struct Object**params, int idx) {
     o->data[idx] = params[0];

@@ -1,5 +1,6 @@
 import io
 import unicode
+import sys
 
 var tmp := 0
 var linenum := 1
@@ -72,6 +73,11 @@ if (argv.size > 1) then {
 method log_verbose(s) {
     if (verbosity >= 40) then {
         io.error.write("minigrace: ")
+        // TODO
+        //io.error.write(sys.cputime.asString)
+        //io.error.write("/")
+        //io.error.write(sys.elapsed.asString)
+        //io.error.write(": ")
         io.error.write(s)
         io.error.write("\n")
     }
@@ -2589,6 +2595,7 @@ out("  ret %object* %self")
 out("}")
 out("define weak i32 @main(i32 %argc, i8** %argv) {")
 out("entry:")
+out("  call void @initprofiling()")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")
 out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
 out("  %paramssize = mul i32 %ptrsize, 16")
@@ -2649,6 +2656,7 @@ out("declare %object** @alloc_var()")
 out("declare void @module_sys_init_argv(%object*)")
 out("declare i1 @istrue(%object*)")
 out("declare void @gracelib_stats()")
+out("declare void @initprofiling()")
 out("declare %object*** @createclosure(i32)")
 out("declare void @addtoclosure(%object***, %object**)")
 out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
@@ -2658,6 +2666,7 @@ out("declare void @setline(i32)")
 out("; libc functions")
 out("declare i32 @puts(i8*)")
 out("declare i8* @malloc(i32)")
+log_verbose("writing file.")
 for (output) do { x ->
     outprint(x)
 }
@@ -2695,6 +2704,7 @@ if (runmode == "make") then {
             raise("fatal.")
         }
     }
+    log_verbose("done.")
     if (buildtype == "run") then {
         cmd := "lli ./" ++ modname ++ ".bc"
         io.system(cmd)
