@@ -86,6 +86,7 @@ int linenumber = 0;
 int heapsize;
 
 int objectcount = 0;
+int Strings_allocated = 0;
 
 int start_clocks = 0;
 double start_time = 0;
@@ -579,6 +580,7 @@ struct Object *alloc_String(const char *data) {
         o->methods = String_Methods;
         o->nummethods = String_NumMethods;
     }
+    Strings_allocated++;
     return o;
 }
 struct Object *String__escape(struct Object *self, unsigned int nparams,
@@ -1225,6 +1227,7 @@ void gracelib_stats() {
     if (getenv("GRACE_STATS") == NULL)
         return;
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
+    fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
     fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
     fprintf(stderr, "                      %iMiB\n", heapsize/1024/1024);
