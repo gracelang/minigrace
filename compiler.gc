@@ -1032,6 +1032,7 @@ method doif() {
         var cond := values.pop()
         var body := []
         var elseblock := []
+        var curelse := elseblock
         var v
         if (accept("identifier") & (sym.sym.value == "then")) then {
             next()
@@ -1044,6 +1045,35 @@ method doif() {
                 }
                 next()
             }
+            var econd
+            var eif
+            var newelse
+            var ebody
+            while {accept("identifier") & (sym.sym.value == "elseif")} do {
+                next()
+                expression()
+                econd := values.pop()
+                if ((accept("identifier") &
+                    (sym.sym.value == "then")).not) then {
+                    syntax_error("elseif with no then.")
+                }
+                next()
+                ebody := []
+                if ((accept("lbrace")).not) then {
+                    syntax_error("expected {.")
+                }
+                next()
+                while {(accept("rbrace")).not} do {
+                    statement()
+                    v := values.pop()
+                    ebody.push(v)
+                }
+                next()
+                newelse := []
+                eif := astif(econd, ebody, newelse)
+                curelse.push(eif)
+                curelse := newelse
+            }
             if (accept("identifier") & (sym.sym.value == "else")) then {
                 next()
                 if (accept("lbrace")) then {
@@ -1051,7 +1081,7 @@ method doif() {
                     while {(accept("rbrace")).not} do {
                         statement()
                         v := values.pop()
-                        elseblock.push(v)
+                        curelse.push(v)
                     }
                     next()
                 }
