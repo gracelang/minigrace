@@ -140,6 +140,14 @@ char *cstringfromString(struct Object *s) {
     ConcatString__FillBuffer(s, c, *z);
     return c;
 }
+void bufferfromString(struct Object *s, char *c) {
+    if (strcmp(s->type, "ConcatString")) {
+        strcpy(c, s->bdata[0]);
+        return;
+    }
+    int *z = s->bdata[2];
+    ConcatString__FillBuffer(s, c, *z);
+}
 int integerfromAny(struct Object *o) {
     if (strcmp(o->type, "Float64") == 0) {
         double *d = o->bdata[0];
@@ -277,7 +285,8 @@ struct Object *String_Equals(struct Object *receiver, unsigned int nparams,
     if (strcmp(other->type, "String") && strcmp(other->type, "ConcatString"))
         return alloc_Boolean(0);
     int *otl = other->bdata[2];
-    char *theirs = cstringfromString(other);
+    char theirs[*otl + 1];
+    bufferfromString(other, theirs);
     char *mine = receiver->bdata[0];
     if (strcmp(mine, theirs)) {
         return alloc_Boolean(0);
