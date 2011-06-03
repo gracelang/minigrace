@@ -47,6 +47,8 @@ struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_obj();
 char *cstringfromString(struct Object*);
 
+struct Object *unicode_module = NULL;
+
 struct Object *unicode_name(struct Object *self, unsigned int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
@@ -218,6 +220,8 @@ struct Object *unicode_create(struct Object *self, unsigned int nparams,
     return alloc_String((char*)buf);
 }
 struct Object *module_unicode_init() {
+    if (unicode_module != NULL)
+        return unicode_module;
     struct Object *o = alloc_obj();
     addmethod(o, "category", &unicode_category);
     addmethod(o, "bidirectional", &unicode_bidirectional);
@@ -231,5 +235,6 @@ struct Object *module_unicode_init() {
     addmethod(o, "isLetter", &unicode_isLetter);
     addmethod(o, "isNumber", &unicode_isNumber);
     addmethod(o, "isSymbolMathematical", &unicode_isSymbolMathematical);
+    unicode_module = o;
     return o;
 }
