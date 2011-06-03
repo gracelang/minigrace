@@ -198,9 +198,6 @@ method modechange(tokens, mode, accum) {
                 | (accum == "return")) then {
                 tok := KeywordToken.new(accum)
             }
-            if (accum == "and") then {
-                tok := optok("&")
-            }
             tokens.push(tok)
             done := true
         }
