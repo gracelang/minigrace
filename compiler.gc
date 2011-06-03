@@ -2742,13 +2742,4 @@ if (runmode == "make") then {
         io.system(cmd)
     }
 }
-// To do:
-// - GC
-// - Efficient strings
-// - Tuples
-// - Classes - half-way
-// - Types
-// - REPL
-// - return
-// - Operator associativity
-// - Numeric literals
+

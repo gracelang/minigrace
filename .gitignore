@@ -3,5 +3,9 @@
 *.bc
 *.ll
 *.gco
+*.gso
 current
 selfhost
+UnicodeData.txt
+unicodegen.py
+misc
