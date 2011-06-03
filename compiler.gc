@@ -2063,6 +2063,13 @@ method compilemethod(o, selfobj) {
     bblock := oldbblock
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
+    for (closurevars) do { cv ->
+        if (cv /= "self") then {
+            if ((usedvars.contains(cv)).not) then {
+                usedvars.push(cv)
+            }
+        }
+    }
     var len := length(name) + 1
     var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
