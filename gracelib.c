@@ -56,7 +56,7 @@ struct Object *alloc_ConcatString(struct Object *, struct Object *);
 
 struct Object *String_size(struct Object *, unsigned int, struct Object **);
 struct Object *makeEscapedString(char *);
-void ConcatString__FillBuffer(struct Object *s, char *c);
+void ConcatString__FillBuffer(struct Object *s, char *c, int len);
 
 struct Object *undefined = NULL;
 
@@ -137,7 +137,7 @@ char *cstringfromString(struct Object *s) {
         strcpy(c, s->bdata[0]);
         return c;
     }
-    ConcatString__FillBuffer(s, c);
+    ConcatString__FillBuffer(s, c, *z);
     return c;
 }
 int integerfromAny(struct Object *o) {
@@ -510,21 +510,23 @@ struct Object *alloc_StringIter(struct Object *string) {
     return o;
 }
 
-void ConcatString__FillBuffer(struct Object *self, char *buf) {
+void ConcatString__FillBuffer(struct Object *self, char *buf, int len) {
     struct Object *left = self->data[0];
     struct Object *right = self->data[1];
     if (strcmp(left->type, "String") == 0)
-        strcpy(buf, left->bdata[0]);
+        strncpy(buf, left->bdata[0], len);
     else {
-        ConcatString__FillBuffer(left, buf);
+        ConcatString__FillBuffer(left, buf, len);
     }
     int *ls = left->bdata[2];
     buf += *ls;
+    len -= *ls;
     if (strcmp(right->type, "String") == 0)
-        strcpy(buf, right->bdata[0]);
+        strncpy(buf, right->bdata[0], len);
     else {
-        ConcatString__FillBuffer(right, buf);
+        ConcatString__FillBuffer(right, buf, len);
     }
+    buf[len] = 0;
 }
 struct Object *ConcatString_Equals(struct Object *self, unsigned int nparams,
         struct Object **args) {
@@ -580,6 +582,33 @@ struct Object *ConcatString_iter(struct Object *self, unsigned int nparams,
     free(c);
     return callmethod(o, "iter", 0, NULL);
 }
+struct Object *ConcatString_substringFrom_to(struct Object *self,
+        unsigned int nparams, struct Object **args) {
+    int st = integerfromAny(args[0]);
+    int en = integerfromAny(args[1]);
+    int cl = en - st;
+    int *myblen = self->bdata[2];
+    char buf[cl * 4 + 1];
+    char *bufp = buf;
+    char value[*myblen + 1];
+    ConcatString__FillBuffer(self, value, *myblen);
+    buf[0] = 0;
+    int i;
+    char *pos = value;
+    for (i=0; i<st; i++) {
+        pos += getutf8charlen(pos);
+    }
+    char cp[5];
+    for (i=0; i<cl; i++) {
+        getutf8char(pos, cp);
+        strcpy(bufp, cp);
+        while (bufp[0] != 0) {
+            pos++;
+            bufp++;
+        }
+    }
+    return alloc_String(buf);
+}
 struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "ConcatString");
@@ -608,6 +637,7 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
         addmethod(o, "_escape", &ConcatString__escape);
         addmethod(o, "length", &ConcatString_length);
         addmethod(o, "iter", &ConcatString_iter);
+        addmethod(o, "substringFrom()to", &ConcatString_substringFrom_to);
         ConcatString_methods = o->methods;
         ConcatString_nummethods = o->nummethods;
     } else {
@@ -666,6 +696,30 @@ struct Object *String_encode(struct Object *receiver, unsigned int nparams,
         struct Object **args) {
     return alloc_Octets(receiver->bdata[0], strlen(receiver->bdata[0]));
 }
+struct Object *String_substringFrom_to(struct Object *self,
+        unsigned int nparams, struct Object **args) {
+    int st = integerfromAny(args[0]);
+    int en = integerfromAny(args[1]);
+    int cl = en - st;
+    char buf[cl * 4 + 1];
+    char *bufp = buf;
+    buf[0] = 0;
+    int i;
+    char *pos = self->bdata[0];
+    for (i=0; i<st; i++) {
+        pos += getutf8charlen(pos);
+    }
+    char cp[5];
+    for (i=0; i<cl; i++) {
+        getutf8char(pos, cp);
+        strcpy(bufp, cp);
+        while (bufp[0] != 0) {
+            pos++;
+            bufp++;
+        }
+    }
+    return alloc_String(buf);
+}
 struct Object *alloc_String(const char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
@@ -700,6 +754,7 @@ struct Object *alloc_String(const char *data) {
         addmethod(o, "iter", &String_iter);
         addmethod(o, "ord", &String_ord);
         addmethod(o, "encode", &String_encode);
+        addmethod(o, "substringFrom()to", &String_substringFrom_to);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
