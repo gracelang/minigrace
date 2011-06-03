@@ -204,11 +204,6 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := true
         }
-        if (mode == "'") then {
-            tok := StringToken.new(accum)
-            tokens.push(tok)
-            done := true
-        }
         if (mode == "\"") then {
             tok := StringToken.new(accum)
             tokens.push(tok)
@@ -297,8 +292,8 @@ var input := infile.read()
 
 method isidentifierchar(ov) {
     if (unicode.isLetter(ov) | unicode.isNumber(ov)
-        | (ov == 95)) then {
-        // 95 is _
+        | (ov == 95) | (ov == 39)) then {
+        // 95 is _, 39 is '
         true
     } else {
         false
@@ -345,10 +340,6 @@ for (input) do { c ->
             if (c == " ") then {
                 newmode := "n"
             }
-            if (c == "'") then {
-                newmode := "'"
-                instr := true
-            }
             if (c == "\"") then {
                 newmode := "\""
                 instr := true
@@ -387,10 +378,6 @@ for (input) do { c ->
         instr := false
     }
     if ((mode == "\"") & (c == "\"") & (escaped.not)) then {
-        newmode := "n"
-        instr := false
-    }
-    if ((mode == "'") & (c == "'") & (escaped.not)) then {
         newmode := "n"
         instr := false
     }
@@ -1640,7 +1627,7 @@ method methoddec() {
     }
 }
 method doimport() {
-    if (accept('keyword') & (sym.sym.value == "import")) then {
+    if (accept("keyword") & (sym.sym.value == "import")) then {
         next()
         identifier()
         var p := values.pop()
@@ -1649,7 +1636,7 @@ method doimport() {
     }
 }
 method doreturn() {
-    if (accept('keyword') & (sym.sym.value == "return")) then {
+    if (accept("keyword") & (sym.sym.value == "return")) then {
         next()
         expression()
         var p := values.pop()
