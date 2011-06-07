@@ -1320,6 +1320,12 @@ struct Object *sys_elapsed(struct Object *self, unsigned int nparams,
     double d = now - start_time;
     return alloc_Float64(d);
 }
+struct Object *sys_exit(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int i = integerfromAny(args[0]);
+    exit(i);
+    return NULL;
+}
 struct Object *module_sys_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<sys>");
@@ -1328,6 +1334,7 @@ struct Object *module_sys_init() {
     addmethod(o, "argv", &sys_argv);
     addmethod(o, "cputime", &sys_cputime);
     addmethod(o, "elapsed", &sys_elapsed);
+    addmethod(o, "exit", &sys_exit);
     return o;
 }
 struct Object * alloc_Undefined() {
