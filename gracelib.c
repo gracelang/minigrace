@@ -54,6 +54,7 @@ struct Object *callmethod(struct Object *receiver, const char *name,
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_ConcatString(struct Object *, struct Object *);
+struct Object *alloc_Undefined();
 
 struct Object *String_size(struct Object *, unsigned int, struct Object **);
 struct Object *makeEscapedString(char *);
@@ -445,6 +446,44 @@ struct Object *alloc_List() {
     }
     int *t = o->bdata[0];
     int r = *t;
+    return o;
+}
+struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int idx = integerfromAny(args[0]);
+    int size = (int)self->bdata[0];
+    if (idx >= size || idx < 0)
+        die("array index out of bounds: %i/%i", idx, size);
+    self->data[idx] = args[1];
+    return args[1];
+}
+struct Object *Array_index(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int idx = integerfromAny(args[0]);
+    int size = (int)self->bdata[0];
+    if (idx >= size || idx < 0)
+        die("array index out of bounds: %i/%i", idx, size);
+    return self->data[idx];
+}
+struct Object *Array_size(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int size = (int)self->bdata[0];
+    return alloc_Float64(size);
+}
+struct Object *alloc_Array(int size) {
+    struct Object *o = alloc_obj();
+    strcpy(o->type, "Array");
+    o->bdata = glmalloc(sizeof(void*));
+    o->bdata[0] = (void*)size;
+    o->data = glmalloc(sizeof(struct Object*) * size);
+    struct Object *u = alloc_Undefined();
+    int i;
+    for (i=0; i<size; i++)
+        o->data[i] = u;
+    addmethod(o, "at", &Array_index);
+    addmethod(o, "size", &Array_size);
+    addmethod(o, "[]", &Array_index);
+    addmethod(o, "[]:=", &Array_indexAssign);
     return o;
 }
 int getutf8charlen(const char *s) {
@@ -1326,6 +1365,20 @@ struct Object *sys_exit(struct Object *self, unsigned int nparams,
     exit(i);
     return NULL;
 }
+struct Object *Array_new(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    int size = integerfromAny(args[0]);
+    return alloc_Array(size);
+}
+struct Object *sys_Array_val = NULL;
+struct Object *sys_Array(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    if (sys_Array_val != NULL)
+        return sys_Array_val;
+    sys_Array_val = alloc_obj();
+    addmethod(sys_Array_val, "new", &Array_new);
+    return sys_Array_val;
+}
 struct Object *module_sys_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<sys>");
@@ -1335,6 +1388,7 @@ struct Object *module_sys_init() {
     addmethod(o, "cputime", &sys_cputime);
     addmethod(o, "elapsed", &sys_elapsed);
     addmethod(o, "exit", &sys_exit);
+    addmethod(o, "Array", &sys_Array);
     return o;
 }
 struct Object * alloc_Undefined() {
