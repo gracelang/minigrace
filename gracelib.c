@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -1253,6 +1254,33 @@ struct Object *io_system(struct Object *self, unsigned int nparams,
         ret = alloc_Boolean(1);
     return ret;
 }
+struct Object *io_newer(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *sa = args[0];
+    struct Object *sb = args[1];
+    int *sal = sa->bdata[2];
+    char ba[*sal + 1];
+    bufferfromString(sa, ba);
+    int *sbl = sb->bdata[2];
+    char bb[*sbl + 1];
+    bufferfromString(sb, bb);
+    struct stat sta;
+    struct stat stb;
+    if (stat(ba, &sta) != 0)
+        return alloc_Boolean(0);
+    if (stat(bb, &stb) != 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(sta.st_mtime > stb.st_mtime);
+}
+struct Object *io_exists(struct Object *self, unsigned int nparams,
+        struct Object **args) {
+    struct Object *so = args[0];
+    int *sbl = so->bdata[2];
+    char buf[*sbl + 1];
+    bufferfromString(so, buf);
+    struct stat st;
+    return alloc_Boolean(stat(buf, &st) == 0);
+}
 struct Object *module_io_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<io>");
@@ -1265,6 +1293,8 @@ struct Object *module_io_init() {
     addmethod(o, "error", &io_error);
     addmethod(o, "open", &io_open);
     addmethod(o, "system", &io_system);
+    addmethod(o, "exists", &io_exists);
+    addmethod(o, "newer", &io_newer);
     return o;
 }
 struct Object *sys_argv(struct Object *self, unsigned int nparams,
