@@ -77,8 +77,8 @@ struct Method **Float64_Methods = NULL;
 int Float64_NumMethods = 0;
 struct Method **String_Methods = NULL;
 int String_NumMethods = 0;
-struct Method **Array_Methods = NULL;
-int Array_NumMethods = 0;
+struct Method **List_Methods = NULL;
+int List_NumMethods = 0;
 struct Method **Octets_Methods = NULL;
 int Octets_NumMethods;
 struct Method** ConcatString_methods = NULL;
@@ -294,7 +294,7 @@ struct Object *String_Equals(struct Object *receiver, unsigned int nparams,
     }
     return alloc_Boolean(1);
 }
-struct Object *ArrayIter_next(struct Object *self, unsigned int nparams,
+struct Object *ListIter_next(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *arr = self->data[0];
@@ -303,7 +303,7 @@ struct Object *ArrayIter_next(struct Object *self, unsigned int nparams,
     *pos  = *pos + 1;
     return arr->data[rpos];
 }
-struct Object *ArrayIter_havemore(struct Object *self, unsigned int nparams,
+struct Object *ListIter_havemore(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *arr = self->data[0];
@@ -312,26 +312,26 @@ struct Object *ArrayIter_havemore(struct Object *self, unsigned int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
-struct Object *alloc_ArrayIter(struct Object *array) {
+struct Object *alloc_ListIter(struct Object *array) {
     struct Object *o = alloc_obj();
     o->data = glmalloc(sizeof(struct Object*));
     o->data[0] = array;
-    strcpy(o->type, "ArrayIter");
+    strcpy(o->type, "ListIter");
     o->bdata = glmalloc(sizeof(void*));
     o->bdata[0] = glmalloc(sizeof(int));
     int *pos = o->bdata[0];
     *pos = 0;
-    addmethod(o, "havemore", &ArrayIter_havemore);
-    addmethod(o, "next", &ArrayIter_next);
+    addmethod(o, "havemore", &ListIter_havemore);
+    addmethod(o, "next", &ListIter_next);
     return o;
 }
-struct Object *Array_pop(struct Object *self, unsigned int nparams,
+struct Object *List_pop(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     *pos = *pos - 1;
     return self->data[*pos];
 }
-struct Object *Array_push(struct Object *self, unsigned int nparams,
+struct Object *List_push(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     int *pos = self->bdata[0];
@@ -349,20 +349,20 @@ struct Object *Array_push(struct Object *self, unsigned int nparams,
     *pos = *pos + 1;
     return alloc_Boolean(1);
 }
-struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
+struct Object *List_indexAssign(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *idx = args[0];
     struct Object *val = args[1];
     int index = integerfromAny(idx);
     int *len = self->bdata[0];
     if (index >= *len) {
-        die("Error: array index out of bounds: %i/%i",
+        die("Error: list index out of bounds: %i/%i",
                 index, *len);
     }
     self->data[index] = val;
     return val;
 }
-struct Object *Array_contains(struct Object *self, unsigned int nparams,
+struct Object *List_contains(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     struct Object *my, *b;
@@ -376,27 +376,27 @@ struct Object *Array_contains(struct Object *self, unsigned int nparams,
     }
     return alloc_Boolean(0);
 }
-struct Object *Array_index(struct Object *self, unsigned int nparams,
+struct Object *List_index(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int index = integerfromAny(args[0]);
     int *len = self->bdata[0];
     if (index >= *len) {
-        fprintf(stderr, "Error: array index out of bounds: %i/%i\n",
+        fprintf(stderr, "Error: list index out of bounds: %i/%i\n",
                 index, *len);
         exit(1);
     }
     return self->data[index];
 }
-struct Object *Array_iter(struct Object *self, unsigned int nparams,
+struct Object *List_iter(struct Object *self, unsigned int nparams,
         struct Object **args) {
-    return alloc_ArrayIter(self);
+    return alloc_ListIter(self);
 }
-struct Object *Array_length(struct Object *self, unsigned int nparams,
+struct Object *List_length(struct Object *self, unsigned int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     return alloc_Float64(*pos);
 }
-struct Object *Array_asString(struct Object *self, unsigned int nparams,
+struct Object *List_asString(struct Object *self, unsigned int nparams,
         struct Object **args) {
     struct Object *other;
     int *lenp = self->bdata[0];
@@ -415,9 +415,9 @@ struct Object *Array_asString(struct Object *self, unsigned int nparams,
     free(cb);
     return s;
 }
-struct Object *alloc_Array() {
+struct Object *alloc_List() {
     struct Object *o = alloc_obj();
-    strcpy(o->type, "Array");
+    strcpy(o->type, "List");
     o->bdata = glmalloc(sizeof(void*)*2);
     o->bdata[0] = glmalloc(sizeof(int));
     int *c = o->bdata[0];
@@ -426,22 +426,22 @@ struct Object *alloc_Array() {
     int *d = o->bdata[1];
     *d = 8;
     o->data = glmalloc(sizeof(struct Object*) * 8);
-    if (Array_Methods == NULL) {
-        addmethod(o, "asString", &Array_asString);
-        addmethod(o, "at", &Array_index);
-        addmethod(o, "[]", &Array_index);
-        addmethod(o, "[]:=", &Array_indexAssign);
-        addmethod(o, "push", &Array_push);
-        addmethod(o, "pop", &Array_pop);
-        addmethod(o, "length", &Array_length);
-        addmethod(o, "size", &Array_length);
-        addmethod(o, "iter", &Array_iter);
-        addmethod(o, "contains", &Array_contains);
-        Array_Methods = o->methods;
-        Array_NumMethods = o->nummethods;
+    if (List_Methods == NULL) {
+        addmethod(o, "asString", &List_asString);
+        addmethod(o, "at", &List_index);
+        addmethod(o, "[]", &List_index);
+        addmethod(o, "[]:=", &List_indexAssign);
+        addmethod(o, "push", &List_push);
+        addmethod(o, "pop", &List_pop);
+        addmethod(o, "length", &List_length);
+        addmethod(o, "size", &List_length);
+        addmethod(o, "iter", &List_iter);
+        addmethod(o, "contains", &List_contains);
+        List_Methods = o->methods;
+        List_NumMethods = o->nummethods;
     } else {
-        o->methods = Array_Methods;
-        o->nummethods = Array_NumMethods;
+        o->methods = List_Methods;
+        o->nummethods = List_NumMethods;
     }
     int *t = o->bdata[0];
     int r = *t;
@@ -940,10 +940,10 @@ struct Object *Float64_Range(struct Object *self, unsigned int nparams,
     double b = *((double*)other->bdata[0]);
     int i = a;
     int j = b;
-    struct Object* arr = alloc_Array();
+    struct Object* arr = alloc_List();
     for (; i<=b; i++) {
         struct Object *v = alloc_Float64(i);
-        Array_push(arr, 1, &v);
+        List_push(arr, 1, &v);
     }
     return arr;
 }
@@ -1301,9 +1301,9 @@ struct Object *sys_argv(struct Object *self, unsigned int nparams,
         struct Object **args) {
     return self->data[0];
 }
-struct Object *argv_Array = NULL;
+struct Object *argv_List = NULL;
 void module_sys_init_argv(struct Object *argv) {
-    argv_Array = argv;
+    argv_List = argv;
 }
 struct Object *sys_cputime(struct Object *self, unsigned int nparams,
         struct Object **args) {
@@ -1330,7 +1330,7 @@ struct Object *module_sys_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<sys>");
     o->data = glmalloc(sizeof(struct Object*)*1);
-    o->data[0] = argv_Array;
+    o->data[0] = argv_List;
     addmethod(o, "argv", &sys_argv);
     addmethod(o, "cputime", &sys_cputime);
     addmethod(o, "elapsed", &sys_elapsed);

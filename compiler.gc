@@ -1763,7 +1763,7 @@ method compilearray(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var r
-    out("  %array" ++ myc ++ " = call %object* @alloc_Array()")
+    out("  %array" ++ myc ++ " = call %object* @alloc_List()")
     for (o.value) do {a ->
         r := compilenode(a)
         out("  store %object* " ++ r ++ ", %object** %params_0")
@@ -2636,7 +2636,7 @@ out("  %params = bitcast i8* %paramsu to %object**")
 out("  %params_0 = getelementptr %object** %params, i32 0")
 out("  %undefined = call %object* @alloc_Undefined()")
 out("  store %object* %undefined, %object** @undefined")
-out("  %tmp_argv = call %object* @alloc_Array()")
+out("  %tmp_argv = call %object* @alloc_List()")
 out("  %argv_i = alloca i32")
 out("  store i32 0, i32* %argv_i")
 out("  br label %argv.cond")
@@ -2672,7 +2672,7 @@ for (constants) do { c ->
 }
 out("; gracelib")
 out("declare %object* @alloc_obj()")
-out("declare %object* @alloc_Array()")
+out("declare %object* @alloc_List()")
 out("declare %object* @alloc_Float64(double)")
 out("declare %object* @alloc_String(i8*)")
 out("declare %object* @alloc_Octets(i8*, i32)")
