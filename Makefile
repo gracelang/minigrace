@@ -9,6 +9,7 @@ unicode.gso: unicode.c unicodedata.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
 current: known-good/$(ARCH)/minigrace-$(STABLE) compiler.gc unicode.gco
+	rm -f unicode.gso
 	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
 
 selfhost: current compiler.gc gracelib.o unicode.gso
@@ -23,7 +24,7 @@ selfhost-rec: selfhost
 	@echo PASS
 
 unicode.gco: unicode.c unicodedata.h
-	clang -emit-llvm -c -o unicode.gco unicode.c
+	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
 
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current

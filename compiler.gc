@@ -1799,7 +1799,7 @@ method compileobjconstdec(o, selfr, pos) {
     outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
     outprint("  %tmp1 = load %object*** %dt")
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  %tmp2 = load %object** %arrayidx")
@@ -1831,7 +1831,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
     outprint("  %tmp1 = load %object*** %dt")
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  %tmp2 = load %object** %arrayidx")
@@ -1853,7 +1853,7 @@ method compileobjvardec(o, selfr, pos) {
         ++ "%object** %args) {")
     outprint("  %params = getelementptr %object** %args, i32 0")
     outprint("  %par0 = load %object** %params")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 2")
+    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
     outprint("  %tmp1 = load %object*** %dt")
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  store %object* %par0, %object** %arrayidx")
@@ -2604,7 +2604,7 @@ out("@argv = private global %object* null")
 outprint("%method = type { i8*, %object*(%object *, i32, %object**)*,")
 outprint("    %object***, %object*(%object *, i32, %object**,")
 outprint("        %object***)*}")
-outprint("%object = type { [32 x i8], %method**, %object**, i8**, i32, i32 }")
+outprint("%object = type { i32, [32 x i8], %method**, %object**, i8**, i32, i32 }")
 out("define %object* @module_" ++ modname ++ "_init() {")
 out("entry:")
 out("  %ptrsize_p = getelementptr %object** null, i32 1")

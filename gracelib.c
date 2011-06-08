@@ -6,6 +6,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <stdint.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -21,6 +22,7 @@ struct Method {
 };
 
 struct Object {
+    int32_t flags;
     char type[32];
     struct Method **methods;
     struct Object **data;
@@ -165,6 +167,7 @@ int integerfromAny(struct Object *o) {
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
+    x->flags = 0;
     x->nummethods = 0;
     x->bdata = NULL;
     x->data = NULL;

@@ -1,6 +1,7 @@
 #include "unicodedata.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 struct Method {
     char *name;
@@ -12,6 +13,9 @@ struct Method {
 };
 
 struct Object {
+#ifndef NO_FLAGS
+    int32_t flags;
+#endif
     char type[32];
     struct Method **methods;
     struct Object **data;
