@@ -1710,12 +1710,12 @@ if (runmode == "make") then {
             var nm := v.value.value
             var exists := false
             if ((buildtype == "native") &
-                io.system("[ -e " ++ nm ++ ".gso ]")) then {
+                io.exists(nm ++ ".gso")) then {
                 exists := true
             }
             if (exists.not) then {
-                if (io.system("[ -e " ++ nm ++ ".gco ]")) then {
-                    if (io.system("bash -c '[ " ++ nm ++ ".gco -nt " ++ nm ++ ".gc ]'")) then {
+                if (io.exists(nm ++ ".gco")) then {
+                    if (io.newer(nm ++ ".gco", nm ++ ".gc")) then {
                         exists := true
                         linkfiles.push(nm ++ ".gco")
                         staticmodules.push(nm)
@@ -1723,7 +1723,7 @@ if (runmode == "make") then {
                 }
             }
             if (exists.not) then {
-                if (io.system("[ -e " ++ nm ++ ".gc ]")) then {
+                if (io.exists(nm ++ ".gc")) then {
                     if ((io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
                        ) then {
                         syntax_error("failed processing import of " ++nm ++".")
