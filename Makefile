@@ -1,5 +1,5 @@
 ARCH=$(shell uname -s)-$(shell uname -m)
-STABLE=ced7ea4cf6fcc96a16ba5ddc69a398178a0caecb
+STABLE=0094a44c8b6617114d0dacdbf2084444eeaab26f
 all: current
 
 gracelib.o: gracelib.c
@@ -8,8 +8,7 @@ gracelib.o: gracelib.c
 unicode.gso: unicode.c unicodedata.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
-current: known-good/$(ARCH)/minigrace-$(STABLE) compiler.gc unicode.gco
-	rm -f unicode.gso
+current: known-good/$(ARCH)/minigrace-$(STABLE) compiler.gc unicode.gso
 	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
 
 selfhost: current compiler.gc gracelib.o unicode.gso
@@ -29,7 +28,7 @@ unicode.gco: unicode.c unicodedata.h
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
-	rm -f unicode.gco
+	rm -f unicode.gco unicode.gso
 
 known-good/%:
 	cd known-good && $(MAKE) $*
