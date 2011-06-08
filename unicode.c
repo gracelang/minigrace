@@ -5,10 +5,10 @@
 
 struct Method {
     char *name;
-    struct Object* (*func)(struct Object*, unsigned int,
+    struct Object* (*func)(struct Object*, int,
             struct Object**);
     struct Object*** closure;
-    struct Object* (*cfunc)(struct Object*, unsigned int,
+    struct Object* (*cfunc)(struct Object*, int,
             struct Object**, struct Object ***closure);
 };
 
@@ -25,27 +25,27 @@ struct Object {
 };
 
 void addmethod(struct Object*, char*,
-        struct Object* (*)(struct Object*, unsigned int, struct Object**));
-struct Object *Float64_asString(struct Object*, unsigned int nparams,
+        struct Object* (*)(struct Object*, int, struct Object**));
+struct Object *Float64_asString(struct Object*, int nparams,
         struct Object**);
 struct Object *alloc_Float64(double);
-struct Object *Float64_Add(struct Object*, unsigned int nparams,
+struct Object *Float64_Add(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_asString(struct Object*, unsigned int nparams,
+struct Object *Object_asString(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_concat(struct Object*, unsigned int nparams,
+struct Object *Object_concat(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_NotEquals(struct Object*, unsigned int,
+struct Object *Object_NotEquals(struct Object*, int,
         struct Object**);
-struct Object *Object_Equals(struct Object*, unsigned int,
+struct Object *Object_Equals(struct Object*, int,
         struct Object**);
 struct Object* alloc_String(const char*);
-struct Object *String_concat(struct Object*, unsigned int nparams,
+struct Object *String_concat(struct Object*, int nparams,
         struct Object**);
-struct Object *String_index(struct Object*, unsigned int nparams,
+struct Object *String_index(struct Object*, int nparams,
         struct Object**);
 struct Object *callmethod(struct Object *receiver, const char *name,
-        unsigned int nparams, struct Object **args);
+        int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_obj();
@@ -53,7 +53,7 @@ char *cstringfromString(struct Object*);
 
 struct Object *unicode_module = NULL;
 
-struct Object *unicode_name(struct Object *self, unsigned int nparams,
+struct Object *unicode_name(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     double *d = o->bdata[0];
@@ -61,7 +61,7 @@ struct Object *unicode_name(struct Object *self, unsigned int nparams,
     const char *name = Unicode_Names[v];
     return alloc_String(name);
 }
-struct Object *unicode_category(struct Object *self, unsigned int nparams,
+struct Object *unicode_category(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     double *d = o->bdata[0];
@@ -69,7 +69,7 @@ struct Object *unicode_category(struct Object *self, unsigned int nparams,
     int cindex = UnicodeRecords[v].category;
     return alloc_String(Unicode_Categories[cindex]);
 }
-struct Object *unicode_combining(struct Object *self, unsigned int nparams,
+struct Object *unicode_combining(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     double *d = o->bdata[0];
@@ -77,7 +77,7 @@ struct Object *unicode_combining(struct Object *self, unsigned int nparams,
     int cval = UnicodeRecords[v].combining;
     return alloc_Float64(cval);
 }
-struct Object *unicode_mirrored(struct Object *self, unsigned int nparams,
+struct Object *unicode_mirrored(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     double *d = o->bdata[0];
@@ -85,7 +85,7 @@ struct Object *unicode_mirrored(struct Object *self, unsigned int nparams,
     int cval = UnicodeRecords[v].mirrored;
     return alloc_Boolean(cval == 'Y');
 }
-struct Object *unicode_bidirectional(struct Object *self, unsigned int nparams,
+struct Object *unicode_bidirectional(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     double *d = o->bdata[0];
@@ -93,7 +93,7 @@ struct Object *unicode_bidirectional(struct Object *self, unsigned int nparams,
     int cindex = UnicodeRecords[v].bidirectional;
     return alloc_String(Unicode_Bidirectionals[cindex]);
 }
-struct Object *unicode_iscategory(struct Object *self, unsigned int nparams,
+struct Object *unicode_iscategory(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     struct Object *co = args[1];
@@ -112,7 +112,7 @@ struct Object *unicode_iscategory(struct Object *self, unsigned int nparams,
     free(dt);
     return ret;
 }
-struct Object *unicode_isSeparator(struct Object *self, unsigned int nparams,
+struct Object *unicode_isSeparator(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = args[0];
     if (strcmp(args[0]->type, "String") == 0) {
@@ -124,7 +124,7 @@ struct Object *unicode_isSeparator(struct Object *self, unsigned int nparams,
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'Z');
 }
-struct Object *unicode_isControl(struct Object *self, unsigned int nparams,
+struct Object *unicode_isControl(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = args[0];
     if (strcmp(args[0]->type, "String") == 0) {
@@ -136,7 +136,7 @@ struct Object *unicode_isControl(struct Object *self, unsigned int nparams,
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'C');
 }
-struct Object *unicode_isLetter(struct Object *self, unsigned int nparams,
+struct Object *unicode_isLetter(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = args[0];
     if (strcmp(args[0]->type, "String") == 0) {
@@ -148,7 +148,7 @@ struct Object *unicode_isLetter(struct Object *self, unsigned int nparams,
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'L');
 }
-struct Object *unicode_isNumber(struct Object *self, unsigned int nparams,
+struct Object *unicode_isNumber(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = args[0];
     if (strcmp(args[0]->type, "String") == 0) {
@@ -160,7 +160,7 @@ struct Object *unicode_isNumber(struct Object *self, unsigned int nparams,
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'N');
 }
-struct Object *unicode_isSymbolMathematical(struct Object *self, unsigned int nparams,
+struct Object *unicode_isSymbolMathematical(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = args[0];
     if (strcmp(args[0]->type, "String") == 0) {
@@ -172,12 +172,12 @@ struct Object *unicode_isSymbolMathematical(struct Object *self, unsigned int np
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(strcmp(cat, "Sm") == 0);
 }
-struct Object *unicode_create(struct Object *self, unsigned int nparams,
+struct Object *unicode_create(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = args[0];
     double *d = o->bdata[0];
     int cp = *d;
-    unsigned char buf[5];
+    char buf[5];
     int i;
     int tmp;
     for (i=0; i<5; i++)

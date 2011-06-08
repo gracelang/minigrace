@@ -14,10 +14,10 @@ struct ClosureVarBinding {
 };
 struct Method {
     char *name;
-    struct Object* (*func)(struct Object*, unsigned int,
+    struct Object* (*func)(struct Object*, int,
             struct Object**);
     struct Object*** closure;
-    struct Object* (*cfunc)(struct Object*, unsigned int,
+    struct Object* (*cfunc)(struct Object*, int,
             struct Object**, struct Object ***closure);
 };
 
@@ -32,33 +32,33 @@ struct Object {
 };
 
 void addmethod(struct Object*, char*,
-        struct Object* (*)(struct Object*, unsigned int, struct Object**));
-struct Object *Float64_asString(struct Object*, unsigned int nparams,
+        struct Object* (*)(struct Object*, int, struct Object**));
+struct Object *Float64_asString(struct Object*, int nparams,
         struct Object**);
 struct Object *alloc_Float64(double);
-struct Object *Float64_Add(struct Object*, unsigned int nparams,
+struct Object *Float64_Add(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_asString(struct Object*, unsigned int nparams,
+struct Object *Object_asString(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_concat(struct Object*, unsigned int nparams,
+struct Object *Object_concat(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_NotEquals(struct Object*, unsigned int,
+struct Object *Object_NotEquals(struct Object*, int,
         struct Object**);
-struct Object *Object_Equals(struct Object*, unsigned int,
+struct Object *Object_Equals(struct Object*, int,
         struct Object**);
 struct Object* alloc_String(const char*);
-struct Object *String_concat(struct Object*, unsigned int nparams,
+struct Object *String_concat(struct Object*, int nparams,
         struct Object**);
-struct Object *String_index(struct Object*, unsigned int nparams,
+struct Object *String_index(struct Object*, int nparams,
         struct Object**);
 struct Object *callmethod(struct Object *receiver, const char *name,
-        unsigned int nparams, struct Object **args);
+        int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_ConcatString(struct Object *, struct Object *);
 struct Object *alloc_Undefined();
 
-struct Object *String_size(struct Object *, unsigned int, struct Object **);
+struct Object *String_size(struct Object *, int, struct Object **);
 struct Object *makeEscapedString(char *);
 void ConcatString__FillBuffer(struct Object *s, char *c, int len);
 
@@ -216,7 +216,7 @@ struct Method* alloc_meth(char *name) {
 }
 
 void addmethod(struct Object *o, char *name,
-        struct Object* (*func)(struct Object*, unsigned int, struct Object**)) {
+        struct Object* (*func)(struct Object*, int, struct Object**)) {
     int i;
     struct Method **meths;
     if (o->nummethods == o->methodspace) {
@@ -244,7 +244,7 @@ void addmethod(struct Object *o, char *name,
     o->nummethods++;
 }
 void addclosuremethod(struct Object *o, char *name,
-        struct Object* (*cfunc)(struct Object*, unsigned int, struct Object**,
+        struct Object* (*cfunc)(struct Object*, int, struct Object**,
             struct Object***), struct Object ***closure) {
     addmethod(o, name, NULL);
     int i;
@@ -258,11 +258,11 @@ void addclosuremethod(struct Object *o, char *name,
     m->cfunc = cfunc;
     m->closure = closure;
 }
-struct Object* identity_function(struct Object* receiver, unsigned int nparams,
+struct Object* identity_function(struct Object* receiver, int nparams,
         struct Object** params) {
     return receiver;
 }
-struct Object *Object_asString(struct Object* receiver, unsigned int nparams,
+struct Object *Object_asString(struct Object* receiver, int nparams,
         struct Object** params) {
     int i = (int)&receiver;
     char buf[40];
@@ -270,21 +270,21 @@ struct Object *Object_asString(struct Object* receiver, unsigned int nparams,
     return alloc_String(buf);
 }
 
-struct Object *Object_concat(struct Object* receiver, unsigned int nparams,
+struct Object *Object_concat(struct Object* receiver, int nparams,
         struct Object** params) {
     struct Object *a = callmethod(receiver, "asString", 0, NULL);
     return callmethod(a, "++", nparams, params);
 }
-struct Object *Object_NotEquals(struct Object* receiver, unsigned int nparams,
+struct Object *Object_NotEquals(struct Object* receiver, int nparams,
         struct Object** params) {
     struct Object* b = callmethod(receiver, "==", nparams, params);
     return callmethod(b, "not", 0, NULL);
 }
-struct Object *Object_Equals(struct Object* receiver, unsigned int nparams,
+struct Object *Object_Equals(struct Object* receiver, int nparams,
         struct Object** params) {
     return alloc_Boolean(receiver == params[0]);
 }
-struct Object *String_Equals(struct Object *receiver, unsigned int nparams,
+struct Object *String_Equals(struct Object *receiver, int nparams,
         struct Object **params) {
     struct Object *other = params[0];
     if (strcmp(other->type, "String") && strcmp(other->type, "ConcatString"))
@@ -298,7 +298,7 @@ struct Object *String_Equals(struct Object *receiver, unsigned int nparams,
     }
     return alloc_Boolean(1);
 }
-struct Object *ListIter_next(struct Object *self, unsigned int nparams,
+struct Object *ListIter_next(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *arr = self->data[0];
@@ -307,7 +307,7 @@ struct Object *ListIter_next(struct Object *self, unsigned int nparams,
     *pos  = *pos + 1;
     return arr->data[rpos];
 }
-struct Object *ListIter_havemore(struct Object *self, unsigned int nparams,
+struct Object *ListIter_havemore(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *arr = self->data[0];
@@ -329,13 +329,13 @@ struct Object *alloc_ListIter(struct Object *array) {
     addmethod(o, "next", &ListIter_next);
     return o;
 }
-struct Object *List_pop(struct Object *self, unsigned int nparams,
+struct Object *List_pop(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     *pos = *pos - 1;
     return self->data[*pos];
 }
-struct Object *List_push(struct Object *self, unsigned int nparams,
+struct Object *List_push(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     int *pos = self->bdata[0];
@@ -353,7 +353,7 @@ struct Object *List_push(struct Object *self, unsigned int nparams,
     *pos = *pos + 1;
     return alloc_Boolean(1);
 }
-struct Object *List_indexAssign(struct Object *self, unsigned int nparams,
+struct Object *List_indexAssign(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *idx = args[0];
     struct Object *val = args[1];
@@ -366,7 +366,7 @@ struct Object *List_indexAssign(struct Object *self, unsigned int nparams,
     self->data[index] = val;
     return val;
 }
-struct Object *List_contains(struct Object *self, unsigned int nparams,
+struct Object *List_contains(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     struct Object *my, *b;
@@ -380,7 +380,7 @@ struct Object *List_contains(struct Object *self, unsigned int nparams,
     }
     return alloc_Boolean(0);
 }
-struct Object *List_index(struct Object *self, unsigned int nparams,
+struct Object *List_index(struct Object *self, int nparams,
         struct Object **args) {
     int index = integerfromAny(args[0]);
     int *len = self->bdata[0];
@@ -391,16 +391,16 @@ struct Object *List_index(struct Object *self, unsigned int nparams,
     }
     return self->data[index];
 }
-struct Object *List_iter(struct Object *self, unsigned int nparams,
+struct Object *List_iter(struct Object *self, int nparams,
         struct Object **args) {
     return alloc_ListIter(self);
 }
-struct Object *List_length(struct Object *self, unsigned int nparams,
+struct Object *List_length(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     return alloc_Float64(*pos);
 }
-struct Object *List_asString(struct Object *self, unsigned int nparams,
+struct Object *List_asString(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other;
     int *lenp = self->bdata[0];
@@ -451,7 +451,7 @@ struct Object *alloc_List() {
     int r = *t;
     return o;
 }
-struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
+struct Object *Array_indexAssign(struct Object *self, int nparams,
         struct Object **args) {
     int idx = integerfromAny(args[0]);
     int size = (int)self->bdata[0];
@@ -460,7 +460,7 @@ struct Object *Array_indexAssign(struct Object *self, unsigned int nparams,
     self->data[idx] = args[1];
     return args[1];
 }
-struct Object *Array_index(struct Object *self, unsigned int nparams,
+struct Object *Array_index(struct Object *self, int nparams,
         struct Object **args) {
     int idx = integerfromAny(args[0]);
     int size = (int)self->bdata[0];
@@ -468,7 +468,7 @@ struct Object *Array_index(struct Object *self, unsigned int nparams,
         die("array index out of bounds: %i/%i", idx, size);
     return self->data[idx];
 }
-struct Object *Array_size(struct Object *self, unsigned int nparams,
+struct Object *Array_size(struct Object *self, int nparams,
         struct Object **args) {
     int size = (int)self->bdata[0];
     return alloc_Float64(size);
@@ -526,7 +526,7 @@ int getutf8char(const char *s, char buf[5]) {
     }
     return 0;
 }
-struct Object *StringIter_next(struct Object *self, unsigned int nparams,
+struct Object *StringIter_next(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *str = self->data[0];
@@ -539,7 +539,7 @@ struct Object *StringIter_next(struct Object *self, unsigned int nparams,
     getutf8char(cstr + rpos, buf);
     return alloc_String(buf);
 }
-struct Object *StringIter_havemore(struct Object *self, unsigned int nparams,
+struct Object *StringIter_havemore(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *str = self->data[0];
@@ -580,7 +580,7 @@ void ConcatString__FillBuffer(struct Object *self, char *buf, int len) {
     }
     buf[len] = 0;
 }
-struct Object *ConcatString_Equals(struct Object *self, unsigned int nparams,
+struct Object *ConcatString_Equals(struct Object *self, int nparams,
         struct Object **args) {
     if (self == args[0])
         return alloc_Boolean(1);
@@ -596,19 +596,19 @@ struct Object *ConcatString_Equals(struct Object *self, unsigned int nparams,
     char *b = cstringfromString(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
-struct Object *ConcatString_Concat(struct Object *self, unsigned int nparams,
+struct Object *ConcatString_Concat(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = callmethod(args[0], "asString", 0, NULL);
     return alloc_ConcatString(self, o);
 }
-struct Object *ConcatString__escape(struct Object *self, unsigned int nparams,
+struct Object *ConcatString__escape(struct Object *self, int nparams,
         struct Object **args) {
     char *c = cstringfromString(self);
     struct Object *o = makeEscapedString(c);
     free(c);
     return o;
 }
-struct Object *ConcatString_at(struct Object *self, unsigned int nparams,
+struct Object *ConcatString_at(struct Object *self, int nparams,
         struct Object **args) {
     int p = integerfromAny(args[0]);
     int *ms = self->bdata[1];
@@ -622,12 +622,12 @@ struct Object *ConcatString_at(struct Object *self, unsigned int nparams,
     d = callmethod(d, "-", 1, &lso);
     return callmethod(self->data[1], "at", 1, &d);
 }
-struct Object *ConcatString_length(struct Object *self, unsigned int nparams,
+struct Object *ConcatString_length(struct Object *self, int nparams,
         struct Object **args) {
     int *bl = self->bdata[2];
     return alloc_Float64(*bl);
 }
-struct Object *ConcatString_iter(struct Object *self, unsigned int nparams,
+struct Object *ConcatString_iter(struct Object *self, int nparams,
         struct Object **args) {
     char *c = cstringfromString(self);
     struct Object *o = alloc_String(c);
@@ -635,7 +635,7 @@ struct Object *ConcatString_iter(struct Object *self, unsigned int nparams,
     return callmethod(o, "iter", 0, NULL);
 }
 struct Object *ConcatString_substringFrom_to(struct Object *self,
-        unsigned int nparams, struct Object **args) {
+        int nparams, struct Object **args) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
     int cl = en - st;
@@ -698,13 +698,13 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     }
     return o;
 }
-struct Object *String__escape(struct Object*, unsigned int, struct Object**);
-struct Object *String_length(struct Object*, unsigned int, struct Object**);
-struct Object *String_iter(struct Object *receiver, unsigned int nparams,
+struct Object *String__escape(struct Object*, int, struct Object**);
+struct Object *String_length(struct Object*, int, struct Object**);
+struct Object *String_iter(struct Object *receiver, int nparams,
         struct Object** args) {
     return alloc_StringIter(receiver);
 }
-struct Object *String_at(struct Object *receiver, unsigned int nparams,
+struct Object *String_at(struct Object *receiver, int nparams,
         struct Object **args) {
     struct Object *idxobj = args[0];
     int idx = integerfromAny(idxobj);
@@ -718,11 +718,11 @@ struct Object *String_at(struct Object *receiver, unsigned int nparams,
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
-struct Object *String_ord(struct Object *receiver, unsigned int nparams,
+struct Object *String_ord(struct Object *receiver, int nparams,
         struct Object **args) {
     char buf[5];
     int i;
-    unsigned int codepoint = 0;
+    int codepoint = 0;
     getutf8char(receiver->bdata[0], buf);
     if (buf[1] == 0)
         return alloc_Float64((int)buf[0]&127);
@@ -739,17 +739,17 @@ struct Object *String_ord(struct Object *receiver, unsigned int nparams,
     }
     return alloc_Float64(codepoint);
 }
-struct Object *String_size(struct Object *receiver, unsigned int nparams,
+struct Object *String_size(struct Object *receiver, int nparams,
         struct Object **args) {
     int *z = receiver->bdata[1];
     return alloc_Float64(*z);
 }
-struct Object *String_encode(struct Object *receiver, unsigned int nparams,
+struct Object *String_encode(struct Object *receiver, int nparams,
         struct Object **args) {
     return alloc_Octets(receiver->bdata[0], strlen(receiver->bdata[0]));
 }
 struct Object *String_substringFrom_to(struct Object *self,
-        unsigned int nparams, struct Object **args) {
+        int nparams, struct Object **args) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
     int cl = en - st;
@@ -837,7 +837,7 @@ struct Object *makeEscapedString(char *p) {
             b2[0] = 0;
             b2[1] = 0;
             b2[2] = 0;
-            sprintf(b2, "%x", (unsigned int)p[ip]&255);
+            sprintf(b2, "%x", (int)p[ip]&255);
             if (b2[1] == 0) {
                 buf[op++] = '0';
                 buf[op] = b2[0];
@@ -850,17 +850,17 @@ struct Object *makeEscapedString(char *p) {
     buf[op] = 0;
     return alloc_String(buf);
 }
-struct Object *String__escape(struct Object *self, unsigned int nparams,
+struct Object *String__escape(struct Object *self, int nparams,
         struct Object **args) {
     char *p = self->bdata[0];
     return makeEscapedString(p);
 }
-struct Object *String_length(struct Object *self, unsigned int nparams,
+struct Object *String_length(struct Object *self, int nparams,
         struct Object **args) {
     char *c = self->bdata[0];
     return alloc_Float64(strlen(c));
 }
-struct Object *String_index(struct Object *self, unsigned int nparams,
+struct Object *String_index(struct Object *self, int nparams,
         struct Object **args) {
     int index = integerfromAny(args[0]);
     char buf[2];
@@ -869,18 +869,18 @@ struct Object *String_index(struct Object *self, unsigned int nparams,
     buf[1] = '\0';
     return alloc_String(buf);
 }
-struct Object *String_concat(struct Object *self, unsigned int nparams,
+struct Object *String_concat(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     other = callmethod(other, "asString", 0, NULL);
     return alloc_ConcatString(self, other);
 }
-struct Object *Octets_size(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_size(struct Object *receiver, int nparams,
         struct Object **args) {
     int *size = receiver->bdata[1];
     return alloc_Float64(*size);
 }
-struct Object *Octets_asString(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_asString(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
@@ -897,16 +897,16 @@ struct Object *Octets_asString(struct Object *receiver, unsigned int nparams,
     free(dt);
     return ret;
 }
-struct Object *Octets_at(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_at(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
     int i = integerfromAny(args[0]);
     if (i >= *size)
         die("Octets index out of bounds: %i/%i", i, *size);
-    return alloc_Float64((unsigned int)data[i]&255);
+    return alloc_Float64((int)data[i]&255);
 }
-struct Object *Octets_Equals(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_Equals(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
@@ -921,7 +921,7 @@ struct Object *Octets_Equals(struct Object *receiver, unsigned int nparams,
             return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-struct Object *Octets_Concat(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_Concat(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
@@ -937,7 +937,7 @@ struct Object *Octets_Concat(struct Object *receiver, unsigned int nparams,
     free(newdata);
     return ret;
 }
-struct Object *Octets_decode(struct Object *receiver, unsigned int nparams,
+struct Object *Octets_decode(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
@@ -975,7 +975,7 @@ struct Object *alloc_Octets(const char *data, int len) {
     }
     return o;
 }
-struct Object *Float64_Range(struct Object *self, unsigned int nparams,
+struct Object *Float64_Range(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -989,35 +989,35 @@ struct Object *Float64_Range(struct Object *self, unsigned int nparams,
     }
     return arr;
 }
-struct Object *Float64_Add(struct Object *self, unsigned int nparams,
+struct Object *Float64_Add(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Float64(a+b);
 }
-struct Object *Float64_Sub(struct Object *self, unsigned int nparams,
+struct Object *Float64_Sub(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Float64(a-b);
 }
-struct Object *Float64_Mul(struct Object *self, unsigned int nparams,
+struct Object *Float64_Mul(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Float64(a*b);
 }
-struct Object *Float64_Div(struct Object *self, unsigned int nparams,
+struct Object *Float64_Div(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Float64(a/b);
 }
-struct Object *Float64_Mod(struct Object *self, unsigned int nparams,
+struct Object *Float64_Mod(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1026,35 +1026,35 @@ struct Object *Float64_Mod(struct Object *self, unsigned int nparams,
     int j = (int)b;
     return alloc_Float64(i % j);
 }
-struct Object *Float64_Equals(struct Object *self, unsigned int nparams,
+struct Object *Float64_Equals(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Boolean(a == b);
 }
-struct Object *Float64_LessThan(struct Object *self, unsigned int nparams,
+struct Object *Float64_LessThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Boolean(a < b);
 }
-struct Object *Float64_GreaterThan(struct Object *self, unsigned int nparams,
+struct Object *Float64_GreaterThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Boolean(a > b);
 }
-struct Object *Float64_LessOrEqual(struct Object *self, unsigned int nparams,
+struct Object *Float64_LessOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
     double b = *((double*)other->bdata[0]);
     return alloc_Boolean(a <= b);
 }
-struct Object *Float64_GreaterOrEqual(struct Object *self, unsigned int nparams,
+struct Object *Float64_GreaterOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1119,7 +1119,7 @@ struct Object *alloc_Float64(double num) {
         FLOAT64_TWO = o;
     return o;
 }
-struct Object *Float64_asString(struct Object *self, unsigned int nparams,
+struct Object *Float64_asString(struct Object *self, int nparams,
         struct Object **args) {
     if (self->data[0] != NULL)
         return self->data[0];
@@ -1127,7 +1127,7 @@ struct Object *Float64_asString(struct Object *self, unsigned int nparams,
     self->data[0] = alloc_String(a);
     return self->data[0];
 }
-struct Object* Boolean_asString(struct Object *self, unsigned int nparams,
+struct Object* Boolean_asString(struct Object *self, int nparams,
         struct Object **args) {
     int *myval = self->bdata[0];
     if (*myval) {
@@ -1136,7 +1136,7 @@ struct Object* Boolean_asString(struct Object *self, unsigned int nparams,
         return alloc_String("false");
     }
 }
-struct Object* Boolean_And(struct Object *self, unsigned int nparams,
+struct Object* Boolean_And(struct Object *self, int nparams,
         struct Object **args) {
     int *myval = self->bdata[0];
     int *otherval = args[0]->bdata[0];
@@ -1146,7 +1146,7 @@ struct Object* Boolean_And(struct Object *self, unsigned int nparams,
         return alloc_Boolean(0);
     }
 }
-struct Object* Boolean_Or(struct Object *self, unsigned int nparams,
+struct Object* Boolean_Or(struct Object *self, int nparams,
         struct Object **args) {
     int *myval = self->bdata[0];
     int *otherval = args[0]->bdata[0];
@@ -1156,7 +1156,7 @@ struct Object* Boolean_Or(struct Object *self, unsigned int nparams,
         return alloc_Boolean(0);
     }
 }
-struct Object* Boolean_ifTrue(struct Object *self, unsigned int nparams,
+struct Object* Boolean_ifTrue(struct Object *self, int nparams,
         struct Object **args) {
     int *myval = self->bdata[0];
     struct Object *block = args[0];
@@ -1166,7 +1166,7 @@ struct Object* Boolean_ifTrue(struct Object *self, unsigned int nparams,
         return self;
     }
 }
-struct Object *Boolean_not(struct Object *self, unsigned int nparams,
+struct Object *Boolean_not(struct Object *self, int nparams,
         struct Object **args) {
     if (self == BOOLEAN_TRUE)
         return alloc_Boolean(0);
@@ -1194,14 +1194,14 @@ struct Object* alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
-struct Object *File_close(struct Object *self, unsigned int nparams,
+struct Object *File_close(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
     int rv = fclose(file);
     return alloc_Boolean(1);
 }
-struct Object *File_write(struct Object *self, unsigned int nparams,
+struct Object *File_write(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
@@ -1214,7 +1214,7 @@ struct Object *File_write(struct Object *self, unsigned int nparams,
     }
     return alloc_Boolean(1);
 }
-struct Object *File_readline(struct Object *self, unsigned int nparams,
+struct Object *File_readline(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
@@ -1226,7 +1226,7 @@ struct Object *File_readline(struct Object *self, unsigned int nparams,
     free(buf);
     return ret;
 }
-struct Object *File_read(struct Object *self, unsigned int nparams,
+struct Object *File_read(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
@@ -1263,19 +1263,19 @@ struct Object *alloc_File(const char *filename, const char *mode) {
     }
     return alloc_File_from_stream(file);
 }
-struct Object *io_input(struct Object *self, unsigned int nparams,
+struct Object *io_input(struct Object *self, int nparams,
         struct Object **args) {
     return self->data[0];
 }
-struct Object *io_output(struct Object *self, unsigned int nparams,
+struct Object *io_output(struct Object *self, int nparams,
         struct Object **args) {
     return self->data[1];
 }
-struct Object *io_error(struct Object *self, unsigned int nparams,
+struct Object *io_error(struct Object *self, int nparams,
         struct Object **args) {
     return self->data[2];
 }
-struct Object *io_open(struct Object *self, unsigned int nparams,
+struct Object *io_open(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *fnstr = args[0];
     struct Object *modestr = args[1];
@@ -1286,7 +1286,7 @@ struct Object *io_open(struct Object *self, unsigned int nparams,
     free(mode);
     return ret;
 }
-struct Object *io_system(struct Object *self, unsigned int nparams,
+struct Object *io_system(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *cmdstr = args[0];
     char *cmd = cstringfromString(cmdstr);
@@ -1296,7 +1296,7 @@ struct Object *io_system(struct Object *self, unsigned int nparams,
         ret = alloc_Boolean(1);
     return ret;
 }
-struct Object *io_newer(struct Object *self, unsigned int nparams,
+struct Object *io_newer(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *sa = args[0];
     struct Object *sb = args[1];
@@ -1314,7 +1314,7 @@ struct Object *io_newer(struct Object *self, unsigned int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(sta.st_mtime > stb.st_mtime);
 }
-struct Object *io_exists(struct Object *self, unsigned int nparams,
+struct Object *io_exists(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *so = args[0];
     int *sbl = so->bdata[2];
@@ -1339,7 +1339,7 @@ struct Object *module_io_init() {
     addmethod(o, "newer", &io_newer);
     return o;
 }
-struct Object *sys_argv(struct Object *self, unsigned int nparams,
+struct Object *sys_argv(struct Object *self, int nparams,
         struct Object **args) {
     return self->data[0];
 }
@@ -1347,14 +1347,14 @@ struct Object *argv_List = NULL;
 void module_sys_init_argv(struct Object *argv) {
     argv_List = argv;
 }
-struct Object *sys_cputime(struct Object *self, unsigned int nparams,
+struct Object *sys_cputime(struct Object *self, int nparams,
         struct Object **args) {
     int i = clock() - start_clocks;
     double d = i;
     d /= CLOCKS_PER_SEC;
     return alloc_Float64(d);
 }
-struct Object *sys_elapsed(struct Object *self, unsigned int nparams,
+struct Object *sys_elapsed(struct Object *self, int nparams,
         struct Object **args) {
     struct timeval ar;
     gettimeofday(&ar, NULL);
@@ -1362,19 +1362,19 @@ struct Object *sys_elapsed(struct Object *self, unsigned int nparams,
     double d = now - start_time;
     return alloc_Float64(d);
 }
-struct Object *sys_exit(struct Object *self, unsigned int nparams,
+struct Object *sys_exit(struct Object *self, int nparams,
         struct Object **args) {
     int i = integerfromAny(args[0]);
     exit(i);
     return NULL;
 }
-struct Object *Array_new(struct Object *self, unsigned int nparams,
+struct Object *Array_new(struct Object *self, int nparams,
         struct Object **args) {
     int size = integerfromAny(args[0]);
     return alloc_Array(size);
 }
 struct Object *sys_Array_val = NULL;
-struct Object *sys_Array(struct Object *self, unsigned int nparams,
+struct Object *sys_Array(struct Object *self, int nparams,
         struct Object **args) {
     if (sys_Array_val != NULL)
         return sys_Array_val;
@@ -1403,7 +1403,7 @@ struct Object * alloc_Undefined() {
     return o;
 }
 struct Object *callmethod(struct Object *receiver, const char *name,
-        unsigned int nparams, struct Object **args) {
+        int nparams, struct Object **args) {
     int i;
     struct Method *m;
     struct Object *o;
@@ -1435,7 +1435,7 @@ struct Object *callmethod(struct Object *receiver, const char *name,
     exit(1);
 }
 
-struct Object *gracelib_print(struct Object *receiver, unsigned int nparams,
+struct Object *gracelib_print(struct Object *receiver, int nparams,
         struct Object **args) {
     int i;
     for (i=0; i<nparams; i++) {
@@ -1479,7 +1479,7 @@ void adddatum(struct Object *obj, struct Object *datum, int index) {
     free(obj->data);
     obj->data = newdata;
 }
-struct Object *gracelib_readall(struct Object *self, unsigned int nparams,
+struct Object *gracelib_readall(struct Object *self, int nparams,
         struct Object **args) {
     char *ptr = glmalloc(100000);
     int l = fread(ptr, 1, 100000, stdin);
