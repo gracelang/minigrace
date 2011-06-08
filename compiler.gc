@@ -73,11 +73,10 @@ if (argv.size > 1) then {
 method log_verbose(s) {
     if (verbosity >= 40) then {
         io.error.write("minigrace: ")
-        // TODO
-        //io.error.write(sys.cputime.asString)
-        //io.error.write("/")
-        //io.error.write(sys.elapsed.asString)
-        //io.error.write(": ")
+        io.error.write(sys.cputime.asString)
+        io.error.write("/")
+        io.error.write(sys.elapsed.asString)
+        io.error.write(": ")
         io.error.write(s)
         io.error.write("\n")
     }
