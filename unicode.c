@@ -50,46 +50,42 @@ struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_obj();
 char *cstringfromString(struct Object*);
+int integerfromAny(struct Object*);
 
 struct Object *unicode_module = NULL;
 
 struct Object *unicode_name(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     const char *name = Unicode_Names[v];
     return alloc_String(name);
 }
 struct Object *unicode_category(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     return alloc_String(Unicode_Categories[cindex]);
 }
 struct Object *unicode_combining(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cval = UnicodeRecords[v].combining;
     return alloc_Float64(cval);
 }
 struct Object *unicode_mirrored(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cval = UnicodeRecords[v].mirrored;
     return alloc_Boolean(cval == 'Y');
 }
 struct Object *unicode_bidirectional(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].bidirectional;
     return alloc_String(Unicode_Bidirectionals[cindex]);
 }
@@ -97,8 +93,7 @@ struct Object *unicode_iscategory(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *o = callmethod(args[0], "ord", 0, 0);
     struct Object *co = args[1];
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     char *dt = cstringfromString(co);
@@ -118,8 +113,7 @@ struct Object *unicode_isSeparator(struct Object *self, int nparams,
     if (strcmp(args[0]->type, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'Z');
@@ -130,8 +124,7 @@ struct Object *unicode_isControl(struct Object *self, int nparams,
     if (strcmp(args[0]->type, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'C');
@@ -142,8 +135,7 @@ struct Object *unicode_isLetter(struct Object *self, int nparams,
     if (strcmp(args[0]->type, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'L');
@@ -154,8 +146,7 @@ struct Object *unicode_isNumber(struct Object *self, int nparams,
     if (strcmp(args[0]->type, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(cat[0] == 'N');
@@ -166,8 +157,7 @@ struct Object *unicode_isSymbolMathematical(struct Object *self, int nparams,
     if (strcmp(args[0]->type, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
-    double *d = o->bdata[0];
-    int v = *d;
+    int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
     return alloc_Boolean(strcmp(cat, "Sm") == 0);
@@ -175,8 +165,7 @@ struct Object *unicode_isSymbolMathematical(struct Object *self, int nparams,
 struct Object *unicode_create(struct Object *self, int nparams,
          struct Object **args) {
     struct Object *o = args[0];
-    double *d = o->bdata[0];
-    int cp = *d;
+    int cp = integerfromAny(o);
     char buf[5];
     int i;
     int tmp;
