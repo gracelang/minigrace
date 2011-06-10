@@ -2728,8 +2728,15 @@ if (runmode == "make") then {
             io.error.write("failed native assembly compilation")
             raise("fatal.")
         }
-        cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
-            ++ modname ++ ".s"
+        // Some systems (NetBSD) have dlsym() in libc and no libdl
+        cmd := "ld -ldl 2>/dev/null"
+        if (io.system(cmd)) then {
+            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
+                ++ modname ++ ".s"
+        } else {
+            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname
+                ++ modname ++ ".s"
+        }
         if ((io.system(cmd)).not) then {
             io.error.write("failed native assembly compilation")
             raise("fatal.")
