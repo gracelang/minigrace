@@ -1140,14 +1140,8 @@ method identifier() {
         }
     }
 }
-method expression() {
-    if (accept("lparen")) then {
-        next()
-        expression()
-        if (accept("rparen")) then {
-            next()
-        }
-    } elseif (accept("num")) then {
+method term() {
+    if (accept("num")) then {
         pushnum()
     } elseif (accept("string")) then {
         pushstring()
@@ -1161,6 +1155,20 @@ method expression() {
         block()
     } elseif (accept("lsquare")) then {
         doarray()
+    }
+}
+method expression() {
+    if (accept("lparen")) then {
+        next()
+        expression()
+        if (accept("rparen")) then {
+            next()
+        } else {
+            syntax_error("expected rparen, have " ++ sym.sym.kind
+                ++ "(" ++ sym.sym.value ++ ")")
+        }
+    } else {
+        term()
     }
     dotrest()
     postfixsquare()
@@ -1188,9 +1196,17 @@ method expressionrest() {
             syntax_error("No such operator '='.")
         }
         next()
-        expression()
+        if (accept("lparen")) then {
+            expression()
+        } else {
+            term()
+            dotrest()
+            postfixsquare()
+            callrest()
+        }
         ero.right := values.pop()
         values.push(ero)
+        expressionrest()
     }
 }
 method dotrest() {
