@@ -47,6 +47,9 @@ if (argv.size > 1) then {
                 ai := ai + 1
                 gracelibPath := argv[ai]
             }
+            if (arg == "--parse") then {
+                buildtype := "parse"
+            }
         } else {
             var filename := arg
             infile := io.open(filename, "r")
@@ -852,7 +855,7 @@ method astvardec(name, val, type) {
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
             if (self.type) then {
-                s := s ++ " : " ++ self.kind.pretty(0)
+                s := s ++ " : " ++ self.type.pretty(0)
             }
             if (self.value) then {
                 s := s ++ "\n    "
@@ -1163,16 +1166,6 @@ method expression() {
     postfixsquare()
     callrest()
     expressionrest()
-//    if accept("dot") then {
-//        dotrest()
-//    } else {
-//        if accept("lparen") then {
-//            callrest()
-//        }
-//    }
-//    if accept("op") then {
-//        expressionrest()
-//    }
 }
 method postfixsquare() {
     if (accept("lsquare")) then {
@@ -1653,6 +1646,12 @@ while {tokens.size > 0} do {
         syntax_error("No token consumed. Next tokens: " ++ next)
     }
     oldlength := tokens.size + 0
+}
+if (buildtype == "parse") then {
+    for (values) do { v->
+        print(v.pretty(0))
+    }
+    sys.exit(0)
 }
 var linkfiles := []
 if (runmode == "make") then {
