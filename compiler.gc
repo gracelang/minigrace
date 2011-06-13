@@ -300,10 +300,8 @@ method isoperatorchar(c, ordval) {
     if ((c == "-") | (c == "&") | (c == "|") | (c == ":") | (c == "%")
         | (c == "*") | (c == "/")) then {
         ret := true
-    } else {
-        if (unicode.isSymbolMathematical(ordval)) then {
-            ret := true
-        }
+    } elseif (unicode.isSymbolMathematical(ordval)) then {
+        ret := true
     }
     ret
 }
@@ -331,42 +329,40 @@ for (input) do { c ->
     }
     if (instr) then {
 
-    } else {
-        if (mode /= "c") then {
-            if (c == " ") then {
-                newmode := "n"
+    } elseif (mode /= "c") then {
+        if (c == " ") then {
+            newmode := "n"
+        }
+        if (c == "\"") then {
+            newmode := "\""
+            instr := true
+            if prev == "x" then {
+                newmode := "x"
+                mode := "n"
             }
-            if (c == "\"") then {
-                newmode := "\""
-                instr := true
-                if prev == "x" then {
-                    newmode := "x"
-                    mode := "n"
-                }
-            }
-            ct := isidentifierchar(ordval)
-            if (ct) then {
-                newmode := "i"
-            }
-            ct := ((ordval >= 48) & (ordval <=57))
-            if (ct & (mode /= "i")) then {
-                newmode := "m"
-            }
-            if (isoperatorchar(c, ordval)) then {
-                newmode := "o"
-            }
-            if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
-                | (c == "{") | (c == "}") | (c == "[") | (c == "]")) then {
-                newmode := c
-            }
-            if ((c == ".") & (accum == ".")) then {
-                mode := "o"
-                newmode := mode
-            }
-            if ((c == "/") & (accum == "/")) then {
-                mode := "c"
-                newmode := mode
-            }
+        }
+        ct := isidentifierchar(ordval)
+        if (ct) then {
+            newmode := "i"
+        }
+        ct := ((ordval >= 48) & (ordval <=57))
+        if (ct & (mode /= "i")) then {
+            newmode := "m"
+        }
+        if (isoperatorchar(c, ordval)) then {
+            newmode := "o"
+        }
+        if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
+            | (c == "{") | (c == "}") | (c == "[") | (c == "]")) then {
+            newmode := c
+        }
+        if ((c == ".") & (accum == ".")) then {
+            mode := "o"
+            newmode := mode
+        }
+        if ((c == "/") & (accum == "/")) then {
+            mode := "c"
+            newmode := mode
         }
     }
     if ((mode == "x") & (c == "\"") & (escaped.not)) then {
@@ -392,54 +388,42 @@ for (input) do { c ->
             newmode := "n"
             accum := ""
         }
-    } else {
-        if (instr) then {
-            if c == "\n" then {
-                syntax_error("Newlines not permitted in string literals")
-            }
-            if (escaped) then {
-                if ((c == "l") | (c == "n")) then {
-                    accum := accum ++ "\n"
-                } else {
-                    if (c == "u") then {
-                        unichars := 4
-                        codepoint := 0
-                    } else {
-                        if (c == "U") then {
-                            unichars := 6
-                            codepoint := 0
-                        } else {
-                            accum := accum ++ c
-                        }
-                    }
-                }
-                escaped := false
-            } else {
-                if (c == "\\") then {
-                    escaped := true
-                } else {
-                    if (unichars > 0) then {
-                        unichars := unichars - 1
-                        codepoint := codepoint * 16
-                        codepoint := codepoint + hexdecchar(c)
-                        if (unichars == 0) then {
-                            accum := accum ++ unicode.create(codepoint)
-                        }
-                    } else {
-                        accum := accum ++ c
-                    }
-                }
-            }
-        } else {
-            if (c == "\n") then {
-                modechange(tokens, mode, accum)
-                mode := "n"
-                newmode := "n"
-                accum := ""
+    } elseif (instr) then {
+        if c == "\n" then {
+            syntax_error("Newlines not permitted in string literals")
+        }
+        if (escaped) then {
+            if ((c == "l") | (c == "n")) then {
+                accum := accum ++ "\n"
+            } elseif (c == "u") then {
+                unichars := 4
+                codepoint := 0
+            } elseif (c == "U") then {
+                unichars := 6
+                codepoint := 0
             } else {
                 accum := accum ++ c
             }
+            escaped := false
+        } elseif (c == "\\") then {
+            escaped := true
+        } elseif (unichars > 0) then {
+            unichars := unichars - 1
+            codepoint := codepoint * 16
+            codepoint := codepoint + hexdecchar(c)
+            if (unichars == 0) then {
+                accum := accum ++ unicode.create(codepoint)
+            }
+        } else {
+            accum := accum ++ c
         }
+    } elseif (c == "\n") then {
+        modechange(tokens, mode, accum)
+        mode := "n"
+        newmode := "n"
+        accum := ""
+    } else {
+        accum := accum ++ c
     }
     if (c == "\n") then {
         linenum := linenum + 1
@@ -1144,16 +1128,12 @@ method identifier() {
     if (accept("identifier")) then {
         if (sym.sym.value == "if") then {
             doif()
-        } else {
-            if (sym.sym.value == "while") then {
+        } elseif (sym.sym.value == "while") then {
                 dowhile()
-            } else {
-                if (sym.sym.value == "for") then {
-                    dofor()
-                } else {
-                    pushidentifier()
-                }
-            }
+        } elseif (sym.sym.value == "for") then {
+            dofor()
+        } else {
+            pushidentifier()
         }
     }
 }
@@ -1164,34 +1144,20 @@ method expression() {
         if (accept("rparen")) then {
             next()
         }
-    } else {
-        if (accept("num")) then {
-            pushnum()
-        } else{
-            if (accept("string")) then {
-                pushstring()
-            } else {
-                if (accept("octets")) then {
-                    pushoctets()
-                } else {
-                    if (accept("identifier")) then {
-                        identifier()
-                    } else {
-                        if (accept("keyword") & (sym.sym.value == "object")) then {
-                            doobject()
-                        } else {
-                            if (accept("lbrace")) then {
-                                block()
-                            } else {
-                                if (accept("lsquare")) then {
-                                    doarray()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    } elseif (accept("num")) then {
+        pushnum()
+    } elseif (accept("string")) then {
+        pushstring()
+    } elseif (accept("octets")) then {
+        pushoctets()
+    } elseif (accept("identifier")) then {
+        identifier()
+    } elseif (accept("keyword") & (sym.sym.value == "object")) then {
+        doobject()
+    } elseif (accept("lbrace")) then {
+        block()
+    } elseif (accept("lsquare")) then {
+        doarray()
     }
     dotrest()
     postfixsquare()
@@ -1218,7 +1184,6 @@ method postfixsquare() {
             next()
             var o := astindex(expr, index)
             values.push(o)
-        } else {
         }
     }
 }
@@ -1245,14 +1210,10 @@ method dotrest() {
             next()
             if (accept("dot")) then {
                 dotrest()
-            } else {
-                if (accept("lparen")) then {
-                    callrest()
-                } else {
-                    if (accept("lbrace")) then {
-                        callblockrest()
-                    }
-                }
+            } elseif (accept("lparen")) then {
+                callrest()
+            } elseif (accept("lbrace")) then {
+                callblockrest()
             }
         }
     }
@@ -1574,10 +1535,8 @@ method methoddec() {
                 params.push(id)
                 if (accept("comma")) then {
                     next()
-                } else {
-                    if ((accept("rparen")).not) then {
-                        syntax_error("expected comma or rparen.")
-                    }
+                } elseif ((accept("rparen")).not) then {
+                    syntax_error("expected comma or rparen.")
                 }
             }
             if (accept("rparen")) then {
@@ -1644,23 +1603,16 @@ method statement() {
     if (accept("keyword")) then {
         if (sym.sym.value == "var") then {
             vardec()
+        } elseif (sym.sym.value == "method") then {
+            methoddec()
+        } elseif (sym.sym.value == "import") then {
+            doimport()
+        } elseif (sym.sym.value == "class") then {
+            doclass()
+        } elseif (sym.sym.value == "return") then {
+            doreturn()
         } else {
-            if (sym.sym.value == "method") then {
-                methoddec()
-            } else {
-                if (sym.sym.value == "import") then {
-                    doimport()
-                } else {
-                    if (sym.sym.value == "class") then {
-                        doclass()
-                    } else {
-                        if (sym.sym.value == "return") then {
-                            doreturn()
-                        }
-                        expression()
-                    }
-                }
-            }
+            expression()
         }
     } else {
         expression()
@@ -2202,20 +2154,17 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
         o.register := val
-    } else {
-        if (dest.kind == "member") then {
-            out("; WARNING: non-local assigns not yet fully supported")
-            dest.value := dest.value ++ ":="
-            c := astcall(dest, [o.value])
-            r := compilenode(c)
-            o.register := r
-        }
-        if (dest.kind == "index") then {
-            var imem := astmember("[]:=", dest.value)
-            c := astcall(imem, [dest.index, o.value])
-            r := compilenode(c)
-            o.register := r
-        }
+    } elseif (dest.kind == "member") then {
+        out("; WARNING: non-local assigns not yet fully supported")
+        dest.value := dest.value ++ ":="
+        c := astcall(dest, [o.value])
+        r := compilenode(c)
+        o.register := r
+    } elseif (dest.kind == "index") then {
+        var imem := astmember("[]:=", dest.value)
+        c := astcall(imem, [dest.index, o.value])
+        r := compilenode(c)
+        o.register := r
     }
 }
 method compileconstdec(o) {
@@ -2497,10 +2446,8 @@ method compilenode(o) {
               ++ "@alloc_Boolean(i32 " ++ val ++ ")")
         o.register := "%bool" ++ auto_count
         auto_count := auto_count + 1
-    } else {
-        if (o.kind == "identifier") then {
-            compileidentifier(o)
-        }
+    } elseif (o.kind == "identifier") then {
+        compileidentifier(o)
     }
     if (o.kind == "constdec") then {
         compileconstdec(o)
@@ -2552,31 +2499,27 @@ method compilenode(o) {
                   ++ args.size ++ ", %object** %params)")
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
-        } else {
-            if ((o.value.kind == "identifier")
+        } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
-                if (o.with.size == 0) then {
-                    out("; PP FOLLOWS")
-                    out(o.pretty(0))
-                    tmp := "null"
-                } else {
-                    tmp := compilenode(o.with[0])
-                }
-                out("  %call" ++ auto_count ++ " = call %object* "
-                    ++ "@gracelib_length(%object* " ++ tmp ++ ")")
-                o.register := "%call" ++ auto_count
-                auto_count := auto_count + 1
+            if (o.with.size == 0) then {
+                out("; PP FOLLOWS")
+                out(o.pretty(0))
+                tmp := "null"
             } else {
-                if ((o.value.kind == "identifier")
-                    & (o.value.value == "escapestring")) then {
-                    tmp := o.with[0]
-                    tmp := astmember("_escape", tmp)
-                    tmp := astcall(tmp, [])
-                    o.register := compilenode(tmp)
-                } else {
-                    compilecall(o)
-                }
+                tmp := compilenode(o.with[0])
             }
+            out("  %call" ++ auto_count ++ " = call %object* "
+                ++ "@gracelib_length(%object* " ++ tmp ++ ")")
+            o.register := "%call" ++ auto_count
+            auto_count := auto_count + 1
+        } elseif ((o.value.kind == "identifier")
+                & (o.value.value == "escapestring")) then {
+            tmp := o.with[0]
+            tmp := astmember("_escape", tmp)
+            tmp := astcall(tmp, [])
+            o.register := compilenode(tmp)
+        } else {
+            compilecall(o)
         }
     }
     if (o.kind == "op") then {
