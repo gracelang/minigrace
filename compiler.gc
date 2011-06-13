@@ -1260,6 +1260,7 @@ method callrest() {
             values.push(o)
         }
     }
+    dotrest()
 }
 method callmprest(meth, params) {
     var methname := meth.value
