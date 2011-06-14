@@ -1215,10 +1215,22 @@ method expressionrest() {
         var tmp := values.pop()
         terms.push(tmp)
         var prec
+        var allarith := true
+        var opcount := 0
+        var optype := ""
         while {accept("op")} do {
+            opcount := opcount + 1
             o := sym.sym.value
             next()
             prec := oprec(o)
+            if ((o /= "*") & (o /= "/") & (o /= "+") & (o /= "-")) then {
+                allarith := false
+            }
+            if ((optype /= "") & (optype /= o) & (allarith.not)) then {
+                syntax_error("mixed operators without parentheses: "
+                    ++ optype ++ " and " ++ o)
+            }
+            optype := o
             while {(ops.size > 0) & (prec <= toprec(ops))} do {
                 o2 := ops.pop()
                 tmp2 := terms.pop()
