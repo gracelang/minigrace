@@ -1188,25 +1188,68 @@ method postfixsquare() {
         }
     }
 }
+method oprec(o) {
+    if (o == "*") then {
+        return 10
+    } elseif (o == "/") then {
+        return 10
+    }
+    return 5
+}
+method toprec(ops) {
+    if (ops.size > 0) then {
+        var o := ops.at(ops.size - 1)
+        return oprec(o)
+    }
+    0
+}
+
+// Shunting-yard algorithm
 method expressionrest() {
     if (accept("op")) then {
-        var a := values.pop()
-        var ero := astop(sym.sym.value, a, 0)
-        if (sym.sym.value == "=") then {
-            syntax_error("No such operator '='.")
+        var terms := []
+        var ops := []
+        var o
+        var o2
+        var tmp2
+        var tmp := values.pop()
+        terms.push(tmp)
+        var prec
+        while {accept("op")} do {
+            o := sym.sym.value
+            next()
+            prec := oprec(o)
+            while {(ops.size > 0) & (prec <= toprec(ops))} do {
+                o2 := ops.pop()
+                tmp2 := terms.pop()
+                tmp := terms.pop()
+                tmp := astop(o2, tmp, tmp2)
+                terms.push(tmp)
+            }
+            ops.push(o)
+            if (accept("lparen")) then {
+                expression()
+            } else {
+                term()
+                dotrest()
+                postfixsquare()
+                callrest()
+            }
+            tmp := values.pop()
+            terms.push(tmp)
         }
-        next()
-        if (accept("lparen")) then {
-            expression()
-        } else {
-            term()
-            dotrest()
-            postfixsquare()
-            callrest()
+        while {ops.size > 0} do {
+            o := ops.pop()
+            tmp2 := terms.pop
+            tmp := terms.pop
+            tmp := astop(o, tmp, tmp2)
+            terms.push(tmp)
         }
-        ero.right := values.pop()
-        values.push(ero)
-        expressionrest()
+        tmp := terms.pop()
+        values.push(tmp)
+        if (terms.size > 0) then {
+            syntax_error("values left on term stack")
+        }
     }
 }
 method dotrest() {
