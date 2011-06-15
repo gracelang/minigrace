@@ -10,7 +10,7 @@ gracelib.o: gracelib.c
 unicode.gso: unicode.c unicodedata.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
-current: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso
+current: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.o
 	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
 
 selfhost: current $(SOURCEFILES) gracelib.o unicode.gso
@@ -30,6 +30,7 @@ unicode.gco: unicode.c unicodedata.h
 clean:
 	rm -f compiler.ll gracelib.o current.bc current.s current
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
+	rm -f minigrace lexer.gco parser.gco util.gco ast.gco genllvm.gco
 	rm -f unicode.gco unicode.gso
 
 known-good/%:
