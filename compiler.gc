@@ -2752,7 +2752,7 @@ if (runmode == "make") then {
             cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
                 ++ modname ++ ".s"
         } else {
-            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname
+            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " "
                 ++ modname ++ ".s"
         }
         if ((io.system(cmd)).not) then {
