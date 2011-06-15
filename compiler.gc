@@ -1,6 +1,9 @@
 import io
 import unicode
 import sys
+import ast
+import genllvm
+genllvm.setast(ast)
 
 var tmp := 0
 var linenum := 1
@@ -72,6 +75,7 @@ if (argv.size > 1) then {
         ai := ai + 1
     }
 }
+genllvm.setverbosity(verbosity)
 
 method log_verbose(s) {
     if (verbosity >= 40) then {
@@ -462,465 +466,26 @@ method next() {
     }
 }
 
-method astfor(over, variable, body) {
-    object {
-        var kind := "for"
-        var value := over
-        var variable := variable
-        var body := body
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "For(" ++ self.variable.value ++ ")\n"
-            s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "\n"
-            s := s ++ spc ++ "Each:"
-            for (self.body) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astwhile(cond, body) {
-    object {
-        var kind := "while"
-        var value := cond
-        var body := body
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "While\n"
-            s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "\n"
-            s := s ++ spc ++ "Do:"
-            for (self.body) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astif(cond, thenblock, elseblock) {
-    object {
-        var kind := "if"
-        var value := cond
-        var thenblock := thenblock
-        var elseblock := elseblock
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "If\n"
-            s := s ++ spc ++ self.value.pretty(depth+1)
-            s := s ++ "\n"
-            s := s ++ spc ++ "Then:"
-            for (self.thenblock) do { ix ->
-                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
-            }
-            s := s ++ "\n"
-            s := s ++ spc ++ "Else:"
-            for (self.elseblock) do { ix ->
-                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astblock(params, body) {
-    object {
-        var kind := "block"
-        var value := "block"
-        var params := params
-        var body := body
-        var selfclosure := true
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Block\n"
-            s := s ++ spc ++ "Parameters:"
-            for (self.params) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-            }
-            s := s ++ "\n"
-            s := s ++ spc ++ "Body:"
-            for (self.body) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astmethod(name, params, body, type) {
-    object {
-        var kind := "method"
-        var value := name
-        var params := params
-        var body := body
-        var type := type
-        var selfclosure := false
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Method\n"
-            s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
-            s := s ++ "\n"
-            s := s ++ spc ++ "Parameters:"
-            for (self.params) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-            }
-            s := s ++ "\n"
-            s := s ++ spc ++ "Body:"
-            for (self.body) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astcall(what, with) {
-    object {
-        var kind := "call"
-        var value := what
-        var with := with
-        var line := 0 + linenum
-        var register := ""
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Call\n"
-            s := s ++ spc ++ "Method:\n"
-            s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
-            s := s ++ "\n"
-            s := s ++ spc ++ "Parameters:"
-            for (self.with) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astclass(name, params, body) {
-    object {
-        var kind := "class"
-        var value := body
-        var name := name
-        var params := params
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Class(" ++ self.name ++ ")"
-            s := s ++ "\n" ++ spc ++ "Parameters:"
-            for (self.params) do {x->
-                s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
-            }
-            s := s ++ "\n" ++ spc ++ "Body:"
-            for (self.value) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
-            s
-        }
-    }
-}
-method astobject(body) {
-    object {
-        var kind := "object"
-        var value := body
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Object"
-            for (self.value) do { x ->
-                s := s ++ "\n"++ spc ++ x.pretty(depth+1)
-            }
-            s
-        }
-    }
-}
-method astarray(values) {
-    object {
-        var kind := "array"
-        var value := values
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { ai ->
-                spc := spc ++ "  "
-            }
-            var s := "Array"
-            for (self.value) do { ax ->
-                s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
-            }
-            s
-        }
-    }
-}
-method astmember(what, in) {
-    object {
-        var kind := "member"
-        var value := what
-        var in := in
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Member(" ++ self.value ++ ")\n"
-            s := s ++ spc ++ self.in.pretty(depth+1)
-        }
-    }
-}
-method astidentifier(n, type) {
-    object {
-        var kind := "identifier"
-        var value := n
-        var type := type
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            "Identifier(" ++ self.value ++ ")"
-        }
-    }
-}
-method astoctets(n) {
-    object {
-        var kind := "octets"
-        var value := n
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            "Octets(" ++ self.value ++ ")"
-        }
-    }
-}
-method aststring(n) {
-    object {
-        var kind := "string"
-        var value := n
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            "String(" ++ self.value ++ ")"
-        }
-    }
-}
-method astnum(n) {
-    object {
-        var kind := "num"
-        var value := n
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            "Num(" ++ self.value ++ ")"
-        }
-    }
-}
-method astop(op, l, r) {
-    object {
-        var kind := "op"
-        var value := op
-        var left := l
-        var right := r
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Op(" ++ self.value ++ ")"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.left.pretty(depth + 1)
-            s := s ++ "\n"
-            s := s ++ spc ++ self.right.pretty(depth + 1)
-            s
-        }
-    }
-}
-method astindex(expr, index) {
-    object {
-        var kind := "index"
-        var value := expr
-        var index := index
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Index"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
-            s := s ++ "\n"
-            s := s ++ spc ++ self.index.pretty(depth + 1)
-            s
-        }
-    }
-}
-method astbind(dest, val) {
-    object {
-        var kind := "bind"
-        var dest := dest
-        var value := val
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Bind"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.dest.pretty(depth + 1)
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
-            s
-        }
-    }
-}
-method astconstdec(name, val, type) {
-    object {
-        var kind := "constdec"
-        var name := name
-        var value := val
-        var type := type
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "ConstDec"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.name.pretty(depth)
-            if (self.type) then {
-                s := s ++ " : " ++ self.type.pretty(0)
-            }
-            if (self.value) then {
-                s := s ++ "\n  "
-                s := s ++ spc ++ self.value.pretty(depth + 1)
-            }
-            s
-        }
-    }
-}
-method astvardec(name, val, type) {
-    object {
-        var kind := "vardec"
-        var name := name
-        var value := val
-        var type := type
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for ((0..depth)) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "VarDec"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.name.pretty(depth + 1)
-            if (self.type) then {
-                s := s ++ " : " ++ self.type.pretty(0)
-            }
-            if (self.value) then {
-                s := s ++ "\n    "
-                s := s ++ spc ++ self.value.pretty(depth + 1)
-            }
-            s
-        }
-    }
-}
-method astimport(name) {
-    object {
-        var kind := "import"
-        var value := name
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Import"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
-            s
-        }
-    }
-}
-method astreturn(expr) {
-    object {
-        var kind := "return"
-        var value := expr
-        var register := ""
-        var line := linenum
-        method pretty(depth) {
-            var spc := ""
-            for (0..depth) do { i ->
-                spc := spc ++ "  "
-            }
-            var s := "Return"
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
-            s
-        }
-    }
-}
 method accept(t) {
     sym.sym.kind == t
 }
 method pushnum() {
-    var o := astnum(sym.sym.value)
+    var o := ast.astnum(sym.sym.value)
     values.push(o)
     next()
 }
 method pushoctets() {
-    var o := astoctets(sym.sym.value)
+    var o := ast.astoctets(sym.sym.value)
     values.push(o)
     next()
 }
 method pushstring() {
-    var o := aststring(sym.sym.value)
+    var o := ast.aststring(sym.sym.value)
     values.push(o)
     next()
 }
 method pushidentifier() {
-    var o := astidentifier(sym.sym.value, false)
+    var o := ast.astidentifier(sym.sym.value, false)
     values.push(o)
     next()
 }
@@ -991,7 +556,7 @@ method block() {
             body.push(tmp)
         }
         next()
-        var o := astblock(params, body)
+        var o := ast.astblock(params, body)
         values.push(o)
     }
 }
@@ -1040,7 +605,7 @@ method doif() {
                 }
                 next()
                 newelse := []
-                eif := astif(econd, ebody, newelse)
+                eif := ast.astif(econd, ebody, newelse)
                 curelse.push(eif)
                 curelse := newelse
             }
@@ -1056,7 +621,7 @@ method doif() {
                     next()
                 }
             }
-            var o := astif(cond, body, elseblock)
+            var o := ast.astif(cond, body, elseblock)
             values.push(o)
         } else {
             syntax_error("if with no then")
@@ -1093,7 +658,7 @@ method dofor() {
                     next()
                 }
             }
-            var o := astfor(over, variable, body)
+            var o := ast.astfor(over, variable, body)
             values.push(o)
         }
     }
@@ -1122,7 +687,7 @@ method dowhile() {
                 }
                 next()
             }
-            var o := astwhile(cond, body)
+            var o := ast.astwhile(cond, body)
             values.push(o)
         }
     }
@@ -1183,7 +748,7 @@ method postfixsquare() {
         var index := values.pop()
         if (accept("rsquare")) then {
             next()
-            var o := astindex(expr, index)
+            var o := ast.astindex(expr, index)
             values.push(o)
         }
     }
@@ -1235,7 +800,7 @@ method expressionrest() {
                 o2 := ops.pop()
                 tmp2 := terms.pop()
                 tmp := terms.pop()
-                tmp := astop(o2, tmp, tmp2)
+                tmp := ast.astop(o2, tmp, tmp2)
                 terms.push(tmp)
             }
             ops.push(o)
@@ -1254,7 +819,7 @@ method expressionrest() {
             o := ops.pop()
             tmp2 := terms.pop
             tmp := terms.pop
-            tmp := astop(o, tmp, tmp2)
+            tmp := ast.astop(o, tmp, tmp2)
             terms.push(tmp)
         }
         tmp := terms.pop()
@@ -1269,7 +834,7 @@ method dotrest() {
         var lookuptarget := values.pop()
         next()
         if (accept("identifier")) then {
-            var dro := astmember(sym.sym.value, lookuptarget)
+            var dro := ast.astmember(sym.sym.value, lookuptarget)
             values.push(dro)
             next()
             if (accept("dot")) then {
@@ -1287,7 +852,7 @@ method callblockrest() {
         var meth := values.pop()
         expression()
         var arg := values.pop()
-        var o := astcall(meth, [arg])
+        var o := ast.astcall(meth, [arg])
         values.push(o)
     }
 }
@@ -1320,14 +885,14 @@ method callrest() {
             var ln := linenum
             next()
             if ((linenum == ln) & accept("identifier")) then {
-                methn := callmprest(astidentifier(methn, false), params)
+                methn := callmprest(ast.astidentifier(methn, false), params)
                 if (meth.kind == "member") then {
-                    meth := astmember(methn.value, meth.in)
+                    meth := ast.astmember(methn.value, meth.in)
                 } else {
                     meth := methn
                 }
             }
-            var o := astcall(meth, params)
+            var o := ast.astcall(meth, params)
             values.push(o)
         }
     }
@@ -1362,7 +927,7 @@ method callmprest(meth, params) {
             next()
         }
     }
-    astidentifier(methname, false)
+    ast.astidentifier(methname, false)
 }
 method constdec() {
     if (accept("keyword") & (sym.sym.value == "const")) then {
@@ -1383,7 +948,7 @@ method constdec() {
         } else {
             syntax_error("const declaration requires value")
         }
-        var o := astconstdec(name, val, type)
+        var o := ast.astconstdec(name, val, type)
         values.push(o)
     }
 }
@@ -1404,7 +969,7 @@ method vardec() {
             expression()
             val := values.pop()
         }
-        var o := astvardec(name, val, type)
+        var o := ast.astvardec(name, val, type)
         values.push(o)
     }
 }
@@ -1432,7 +997,7 @@ method doarray() {
                 var p := tmpparams.pop()
                 params.push(p)
             }
-            var o := astarray(params)
+            var o := ast.astarray(params)
             values.push(o)
             next()
         } else {
@@ -1473,7 +1038,7 @@ method doobject() {
                 var p := rbody.pop()
                 body.push(p)
             }
-            var o := astobject(body)
+            var o := ast.astobject(body)
             values.push(o)
         }
     }
@@ -1539,7 +1104,7 @@ method doclass() {
                 var p := rbody.pop()
                 body.push(p)
             }
-            var o := astclass(cname, params, body)
+            var o := ast.astclass(cname, params, body)
             values.push(o)
         }
     }
@@ -1570,7 +1135,7 @@ method parsempmndecrest(meth, params) {
         }
         next()
     }
-    astidentifier(methname, false)
+    ast.astidentifier(methname, false)
 }
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
@@ -1640,7 +1205,7 @@ method methoddec() {
                     syntax_error("No body in method declaration for " ++
                         meth.value)
                 }
-                var o := astmethod(meth, params, body, type)
+                var o := ast.astmethod(meth, params, body, type)
                 values.push(o)
             }
         }
@@ -1651,7 +1216,7 @@ method doimport() {
         next()
         identifier()
         var p := values.pop()
-        var o := astimport(p)
+        var o := ast.astimport(p)
         values.push(o)
     }
 }
@@ -1660,7 +1225,7 @@ method doreturn() {
         next()
         expression()
         var p := values.pop()
-        var o := astreturn(p)
+        var o := ast.astreturn(p)
         values.push(o)
     }
 }
@@ -1686,7 +1251,7 @@ method statement() {
             next()
             expression()
             var val := values.pop()
-            var o := astbind(dest, val)
+            var o := ast.astbind(dest, val)
             values.push(o)
         }
     }
@@ -1725,1045 +1290,7 @@ if (buildtype == "parse") then {
     }
     sys.exit(0)
 }
-var linkfiles := []
-if (runmode == "make") then {
-    log_verbose("checking imports.")
-    for (values) do { v ->
-        if (v.kind == "import") then {
-            var nm := v.value.value
-            var exists := false
-            if ((buildtype == "native") &
-                io.exists(nm ++ ".gso")) then {
-                exists := true
-            }
-            if (exists.not) then {
-                if (io.exists(nm ++ ".gco")) then {
-                    if (io.newer(nm ++ ".gco", nm ++ ".gc")) then {
-                        exists := true
-                        linkfiles.push(nm ++ ".gco")
-                        staticmodules.push(nm)
-                    }
-                }
-            }
-            if (exists.not) then {
-                if (io.exists(nm ++ ".gc")) then {
-                    if ((io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
-                       ) then {
-                        syntax_error("failed processing import of " ++nm ++".")
-                    }
-                    exists := true
-                    linkfiles.push(nm ++ ".gco")
-                    staticmodules.push(nm)
-                }
-            }
-            if ((nm == "sys") | (nm == "io")) then {
-                exists := true
-                staticmodules.push(nm)
-            }
-            if (exists.not) then {
-                syntax_error("failed finding import of " ++ nm ++ ".")
-            }
-        }
-    }
-}
 log_verbose("compiling.")
-outprint(";-------------LLVM IR------------")
-var auto_count := 0
-var constants := []
-var output := []
-var usedvars := []
-var declaredvars := []
-var bblock := "entry"
-method out(s) {
-    output.push(s)
-}
-method beginblock(s) {
-    bblock := "%" ++ s
-    out(s ++ ":")
-}
-method compilearray(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var r
-    out("  %array" ++ myc ++ " = call %object* @alloc_List()")
-    for (o.value) do {a ->
-        r := compilenode(a)
-        out("  store %object* " ++ r ++ ", %object** %params_0")
-        out("  call %object* @callmethod(%object* %array"
-            ++ myc ++ ", i8* getelementptr([5 x i8]* @.str._push"
-            ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    }
-    o.register := "%array" ++ myc
-}
-method compilemember(o) {
-    // Member in value position is actually a nullary method call.
-    var l := []
-    var c := astcall(o, l)
-    var r := compilenode(c)
-    o.register := r
-}
-method compileobjconstdec(o, selfr, pos) {
-    var val := "%undefined"
-    if (o.value) then {
-        val := compilenode(o.value)
-    }
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var nm := o.name.value
-    var len := length(nm) + 1
-    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
-    constants.push(con)
-    var enm := escapestring(nm)
-    out("; OBJECT CONST DEC " ++ enm)
-    out("  call void @adddatum(%object* " ++ selfr
-        ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm
-        ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  %tmp2 = load %object** %arrayidx")
-    outprint("  ret %object* %tmp2")
-    outprint("}")
-    out("  call void @addmethod(%object* " ++ selfr
-        ++ ", i8* getelementptr(["
-        ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* "
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
-        ++ "_" ++ myc
-        ++ "\"))")
-}
-method compileobjvardec(o, selfr, pos) {
-    var val := "%undefined"
-    if (o.value) then {
-        val := compilenode(o.value)
-    }
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var nm := o.name.value
-    var len := length(nm) + 1
-    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
-    constants.push(con)
-    out("; OBJECT VAR DEC " ++ nm)
-    var enm := escapestring(nm)
-    out("  call void @adddatum(%object* " ++ selfr
-        ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  %tmp2 = load %object** %arrayidx")
-    outprint("  ret %object* %tmp2")
-    outprint("}")
-    out("  call void @addmethod(%object* " ++ selfr
-        ++ ", i8* getelementptr(["
-        ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
-        ++ "_" ++ myc
-        ++ "\"))")
-    var nmw := nm ++ ":="
-    len := length(nmw) + 1
-    con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
-    constants.push(con)
-    outprint("define private %object* @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
-    outprint("  %params = getelementptr %object** %args, i32 0")
-    outprint("  %par0 = load %object** %params")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  store %object* %par0, %object** %arrayidx")
-    outprint("  ret %object* %par0")
-    outprint("}")
-    out("  call void @addmethod(%object* " ++ selfr
-        ++ ", i8* getelementptr(["
-        ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"writer_" ++ modname ++ "_"
-        ++ enm ++ "_" ++ myc
-        ++ "\"))")
-}
-method compileclass(o) {
-    var params := o.params
-    var mbody := [astobject(o.value)]
-    var newmeth := astmethod(astidentifier("new", false), params, mbody,
-        false)
-    var obody := [newmeth]
-    var cobj := astobject(obody)
-    var con := astconstdec(o.name, cobj)
-    o.register := compilenode(con)
-}
-method compileobject(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var selfr := "%obj" ++ myc
-    out("  " ++ selfr ++ " = call %object* @alloc_obj()")
-    var pos := 0
-    for (o.value) do { e ->
-        if (e.kind == "method") then {
-            compilemethod(e, selfr)
-        }
-        if (e.kind == "vardec") then {
-            compileobjvardec(e, selfr, pos)
-            pos := pos + 1
-        }
-        if (e.kind == "constdec") then {
-            compileobjconstdec(e, selfr, pos)
-            pos := pos + 1
-        }
-    }
-    o.register := selfr
-}
-method compileblock(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var applymeth := astmethod(astidentifier("apply", false),
-        o.params, o.body, false)
-    applymeth.selfclosure := true
-    var objbody := astobject([applymeth])
-    var obj := compilenode(objbody)
-    o.register := obj
-}
-method compilefor(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var over := compilenode(o.value)
-    var applymeth := astmethod(astidentifier("apply", false),
-        [o.variable], o.body, false)
-    applymeth.selfclosure := true
-    var objbody := astobject([applymeth])
-    var obj := compilenode(objbody)
-    out("  store %object* " ++ over ++ ", %object** %params_0")
-    out("  %iter" ++ myc ++ " = call %object* @callmethod(%object* " ++ over
-        ++ ", i8* getelementptr([5 x i8]* @.str._iter"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    
-    out("  br label %BeginFor" ++ myc)
-    beginblock("BeginFor" ++ myc)
-    out("  %condobj" ++ myc ++ " = call %object* @callmethod(%object* %iter"
-        ++ myc
-        ++ ", i8* getelementptr([9 x i8]* @.str._havemore"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* %condobj"
-        ++ myc ++ ")")
-    out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
-    out("br i1 " ++ creg ++ ", label %EndFor" ++ myc
-        ++ ", label %ForBody" ++ myc)
-    beginblock("ForBody" ++ myc)
-    var tret := "null"
-    var tblock := "ERROR"
-    out(" %forval" ++ myc ++ " = call %object* @callmethod(%object* %iter"
-        ++ myc
-        ++ ", i8* getelementptr([5 x i8]* @.str._next"
-        ++ ",i32 0,i32 0), i32 0, %object** %params)")
-    out("  store %object* %forval" ++ myc ++ ", %object** %params_0")
-    out("  call %object* @callmethod(%object* " ++ obj
-        ++ ", i8* getelementptr([6 x i8]* @.str._apply"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    tblock := bblock
-    out("  br label %BeginFor" ++ myc)
-    beginblock("EndFor" ++ myc)
-    o.register := over // "%while" ++ myc
-}
-method compilemethod(o, selfobj) {
-    // How to deal with closures:
-    // Calculate body, find difference of usedvars/declaredvars, if closure
-    // then build as such. At top of method body bind %var_x as usual, but
-    // set to pointer from the additional closure parameter.
-    var oldout := output
-    var oldbblock := bblock
-    var oldusedvars := usedvars
-    var olddeclaredvars := declaredvars
-    output := []
-    usedvars := []
-    declaredvars := []
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var name := o.value.value
-    var nm := name ++ myc
-    beginblock("entry")
-    output.pop()
-    out("  %ptrsize_p = getelementptr %object** null, i32 1")
-    out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-    out("  %paramssize = mul i32 %ptrsize, 16")
-    out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-    out("  %params = bitcast i8* %paramsu to %object**")
-    for (0..10) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
-            ++ i)
-    }
-    var i := 0
-    for (o.params) do { p ->
-        var pn := escapestring(p.value)
-        out("  %\"var_" ++ pn ++ "\" = getelementptr %object** %args, "
-            ++ "i32 " ++ i)
-        declaredvars.push(pn)
-        i := i + 1
-    }
-    out("  %undefined = load %object** @undefined")
-    var ret := "%undefined"
-    for (o.body) do { l ->
-        ret := compilenode(l)
-    }
-    out("  ret %object* " ++ ret)
-    out("}")
-    var body := output
-    output := []
-    var closurevars := []
-    for (usedvars) do { u ->
-        var decl := false
-        for (declaredvars) do { d->
-            if (d == u) then {
-                decl := true
-            }
-        }
-        if (decl) then {
-            decl := decl
-        } else {
-            var found := false
-            for (closurevars) do { v ->
-                if (v == u) then {
-                    found := true
-                }
-            }
-            if (found) then {
-                found := found
-            } else {
-                closurevars.push(u)
-            }
-        }
-    }
-    if (o.selfclosure) then {
-        closurevars.push("self")
-    }
-    var litname := "@\"meth_" ++ modname ++ "_" ++ escapestring(nm) ++ "\""
-    outprint(";;;; METHOD DEFINITION: " ++ name)
-    if (closurevars.size > 0) then {
-        out("; have closure method: " ++ closurevars.size)
-        if (o.selfclosure) then {
-            out("define private %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
-                ++ "%object** %args, %object*** %closure) {")
-        } else {
-            out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-                ++ "%object** %args, %object*** %closure) {")
-        }
-    } else {
-        out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-            ++ "%object** %args) {")
-    }
-    beginblock("entry")
-    var j := 0
-    for (closurevars) do { cv ->
-        if (cv == "self") then {
-            out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
-            out("  %self2 = load %object*** %varc_" ++ cv)
-            out("  %self = load %object** %self2")
-        } else {
-            out("  %\"varc_" ++ cv ++ "\" = getelementptr %object*** %closure, i32 " ++ j)
-            out("  %\"var_" ++ cv ++ "\" = load %object*** %\"varc_" ++ cv
-                ++ "\"")
-        }
-        j := j + 1
-    }
-    for (body) do { l->
-        out(l)
-    }
-    out(";;;; ENDS")
-    for (output) do {l ->
-        outprint(l)
-    }
-    output := oldout
-    bblock := oldbblock
-    usedvars := oldusedvars
-    declaredvars := olddeclaredvars
-    for (closurevars) do { cv ->
-        if (cv /= "self") then {
-            if ((usedvars.contains(cv)).not) then {
-                usedvars.push(cv)
-            }
-        }
-    }
-    var len := length(name) + 1
-    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
-    constants.push(con)
-    if (closurevars.size == 0) then {
-        out("  call void @addmethod(%object* " ++ selfobj
-            ++ ", i8* getelementptr(["
-            ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-            ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**)* " ++ litname ++ "))")
-    } else {
-        out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
-            ++ closurevars.size ++ ")")
-        for (closurevars) do { v ->
-            if (v == "self") then {
-                out("  %selfpp" ++ auto_count ++ " = "
-                    ++ "call %object** @alloc_var()")
-                out("  store %object* %self, %object** %selfpp" ++ auto_count)
-                out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
-                    ++ "%object** %selfpp" ++ auto_count ++ ")")
-                auto_count := auto_count + 1
-            } else {
-                out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
-                    ++ "%object** %\"var_" ++ v ++ "\")")
-            }
-        }
-        out("  call void @addclosuremethod(%object* " ++ selfobj
-            ++ ", i8* getelementptr(["
-            ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-            ++ "%object*(%object*, i32, %object**, %object***)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**, %object***)* " ++ litname
-            ++ "), %object*** %closure" ++ myc ++ ")")
-    }
-}
-method compilewhile(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    out("  br label %BeginWhile" ++ myc)
-    beginblock("BeginWhile" ++ myc)
-    var cond := compilenode(o.value)
-    var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
-        ++ cond ++ ")")
-    out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
-    out("br i1 " ++ creg ++ ", label %EndWhile" ++ myc
-        ++ ", label %WhileBody" ++ myc)
-    beginblock("WhileBody" ++ myc)
-    var tret := "null"
-    var tblock := "ERROR"
-    for (o.body) do { l->
-        tret := compilenode(l)
-    }
-    tblock := bblock
-    out("  br label %BeginWhile" ++ myc)
-    beginblock("EndWhile" ++ myc)
-    //out("  %while" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
-    //    ++ tblock ++ "], [" ++ cond ++ ", %BeginIf" ++ myc ++ "]")
-    o.register := cond // "%while" ++ myc
-}
-method compileif(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    out("  br label %BeginIf" ++ myc)
-    beginblock("BeginIf" ++ myc)
-    var cond := compilenode(o.value)
-    var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
-        ++ cond ++ ")")
-    out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
-    var startblock := bblock
-    if (o.elseblock.size > 0) then {
-        out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
-            ++ ", label %TrueBranch" ++ myc)
-    } else {
-        out("  %undefined" ++ myc ++ " = load %object** @undefined")
-        out("br i1 " ++ creg ++ ", label %EndIf" ++ myc
-            ++ ", label %TrueBranch" ++ myc)
-    }
-    beginblock("TrueBranch" ++ myc)
-    var tret := "%undefined"
-    var fret := "%undefined"
-    var tblock := "ERROR"
-    var fblock := "ERROR"
-    for (o.thenblock) do { l->
-        tret := compilenode(l)
-    }
-    tblock := bblock
-    out("  br label %EndIf" ++ myc)
-    if (o.elseblock.size > 0) then {
-        beginblock("FalseBranch" ++ myc)
-        for (o.elseblock) do { l->
-            fret := compilenode(l)
-        }
-        out("  br label %EndIf" ++ myc)
-        fblock := bblock
-    }
-    beginblock("EndIf" ++ myc)
-    if (o.elseblock.size > 0) then {
-        out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
-            ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
-    } else {
-        out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
-            ++ tblock ++ "], [%undefined" ++ myc ++ ", " ++ startblock ++ "]")
-    }
-    o.register := "%if" ++ myc
-}
-method compileidentifier(o) {
-    var name := o.value
-    if (name == "self") then {
-        o.register := "%self"
-    } else {
-        name := escapestring(name)
-        if (modules.contains(name)) then {
-            out("  %\"var_val_" ++ name ++ auto_count
-                ++ "\" = load %object** @.module." ++ name)
-        } else {
-            usedvars.push(name)
-            out("  %\"var_val_" ++ name ++ auto_count ++ "\" = load %object** "
-                ++ "%\"var_" ++ name ++ "\"")
-        }
-        o.register := "%\"var_val_" ++ name ++ auto_count ++ "\""
-        auto_count := auto_count + 1
-    }
-}
-method compilebind(o) {
-    var dest := o.dest
-    var val := ""
-    var c := ""
-    var r := ""
-    if (dest.kind == "identifier") then {
-        val := o.value
-        val := compilenode(val)
-        var nm := escapestring(dest.value)
-        usedvars.push(nm)
-        out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
-        o.register := val
-    } elseif (dest.kind == "member") then {
-        out("; WARNING: non-local assigns not yet fully supported")
-        dest.value := dest.value ++ ":="
-        c := astcall(dest, [o.value])
-        r := compilenode(c)
-        o.register := r
-    } elseif (dest.kind == "index") then {
-        var imem := astmember("[]:=", dest.value)
-        c := astcall(imem, [dest.index, o.value])
-        r := compilenode(c)
-        o.register := r
-    }
-}
-method compileconstdec(o) {
-    var nm := escapestring(o.name.value)
-    declaredvars.push(nm)
-    var val := o.value
-    if (val) then {
-        val := compilenode(val)
-    } else {
-        syntax_error("const must have value bound.")
-    }
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* " ++ val ++ ", %object** %\"var_"
-        ++ nm ++ "\"")
-    o.register := val
-}
-method compilevardec(o) {
-    var nm := escapestring(o.name.value)
-    declaredvars.push(nm)
-    var val := o.value
-    if (val) then {
-        val := compilenode(val)
-    } else {
-        val := "%undefined"
-    }
-    //scopes[scopes.size-1].push([nm, val])
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* " ++ val ++ ", %object** %\"var_"
-        ++ nm ++ "\"")
-    o.register := val
-}
-method compileindex(o) {
-    var of := compilenode(o.value)
-    var index := compilenode(o.index)
-    out("  store %object* " ++ index ++ ", %object** %params_0")
-    out("  %idxres" ++ auto_count ++ " = call %object* @callmethod(%object* "
-        ++ of ++ ", i8* getelementptr([3 x i8]* @.str._index"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
-    o.register := "%idxres" ++ auto_count
-    auto_count := auto_count + 1
-}
-method compileop(o) {
-    var left := compilenode(o.left)
-    var right := compilenode(o.right)
-    // Sometimes they don"t? Or something.
-    auto_count := auto_count + 1
-    if ((o.value == "+") | (o.value == "*") | (o.value == "/") |
-        (o.value == "-") | (o.value == "%")) then {
-        var rnm := "sum"
-        var opnm := "plus"
-        if (o.value == "*") then {
-            rnm := "prod"
-            opnm := "asterisk"
-        }
-        if (o.value == "/") then {
-            rnm := "quotient"
-            opnm := "slash"
-        }
-        if (o.value == "-") then {
-            rnm := "diff"
-            opnm := "minus"
-        }
-        if (o.value == "%") then {
-            rnm := "modulus"
-            opnm := "percent"
-        }
-        out("  store %object* " ++ right ++ ", %object** %params_0")
-        out("  %" ++ rnm ++ auto_count ++ " = call %object* @callmethod(%object* "
-            ++ left ++ ", i8* getelementptr([2 x i8]* @.str._" ++ opnm
-            ++ ",i32 0,i32 0), i32 1, %object** %params)")
-        o.register := "%" ++ rnm ++ auto_count
-        auto_count := auto_count + 1
-    } else {
-        var len := length(o.value) + 1
-        var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value ++ "\\00\""
-        out("  store %object* " ++ right ++ ", %object** %params_0")
-        out("  %opresult" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ left
-            ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.size ++ ",i32 0,i32 0), i32 1, %object** %params)")
-        constants.push(con)
-        o.register := "%opresult" ++ auto_count
-        auto_count := auto_count + 1
-    }
-}
-method compilecall(o) {
-    var args := []
-    var obj := ""
-    var len := 0
-    var con := ""
-    for (o.with) do { p ->
-        var r := compilenode(p)
-        args.push(r)
-    }
-    for (0..(args.size-1)) do { i ->
-        out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
-    }
-    if (o.value.kind == "member") then {
-        outprint("; handling member")
-        obj := compilenode(o.value.in)
-        outprint("; compiled in to " ++ obj)
-        len := length(o.value.value) + 1
-        outprint("; got len " ++ len)
-        con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
-        outprint("; created con")
-        out("  %call" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ obj
-            ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.size ++ ",i32 0,i32 0), i32 "
-            ++ args.size ++ ", %object** %params)")
-        outprint("; pushed statement")
-        constants.push(con)
-    } else {
-        out("; WARNING: non-member calls not fully supported yet")
-        obj := "%self"
-        len := length(o.value.value) + 1
-        con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
-        out("  %call" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ obj
-            ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.size ++ ",i32 0,i32 0), i32 "
-            ++ args.size ++ ", %object** %params)")
-        constants.push(con)
-    }
-    o.register := "%call" ++ auto_count
-    out("; compilecall giving return register " ++ o.register)
-    auto_count := auto_count + 1
-}
-method compileoctets(o) {
-    var escval := ""
-    var l := length(o.value) / 2
-    var i := 0
-    for (o.value) do {c->
-        if ((i % 2) == 0) then {
-            escval := escval ++ "\\"
-        }
-        escval := escval ++ c
-        i := i + 1
-    }
-    out("  %tmp" ++ auto_count ++ " = load %object** @.octlit"
-        ++ auto_count)
-    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
-        ++ auto_count ++ ", null")
-    out("  br i1 %cmp" ++ auto_count ++ ", label %octlit"
-        ++ auto_count ++ ".already, label %octlit"
-        ++ auto_count ++ ".define")
-    beginblock("octlit" ++ auto_count ++ ".already")
-    out("  %alreadyoctets" ++ auto_count ++ " = load %object** @.octlit"
-        ++ auto_count)
-    out("  br label %octlit" ++ auto_count ++ ".end")
-    beginblock("octlit" ++ auto_count ++ ".define")
-    out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.size ++ ", i32 0, i32 0")
-    out("  %defoctets" ++ auto_count ++ " = call %object* "
-        ++ "@alloc_Octets(i8* "
-          ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
-    out("  store %object* %defoctets" ++ auto_count ++ ", %object** "
-        ++ "@.octlit" ++ auto_count)
-    out("br label %octlit" ++ auto_count ++ ".end")
-    beginblock("octlit" ++ auto_count ++ ".end")
-    out(" %octets" ++ auto_count ++ " = phi %object* [%alreadyoctets"
-        ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
-        ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
-        ++ ".define]")
-    var con := "@.oct" ++ constants.size ++ " = private unnamed_addr "
-        ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
-    constants.push(con)
-    con := ("@.octlit" ++ auto_count
-        ++ " = private global %object* null")
-    constants.push(con)
-    o.register := "%octets" ++ auto_count
-    auto_count := auto_count + 1
-}
-method compileimport(o) {
-    out("; Import of " ++ o.value.value)
-    var con
-    var nm := escapestring(o.value.value)
-    if (staticmodules.contains(nm)) then {
-        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
-            ++ nm ++ "_init()")
-    } else {
-        var mn := "@\".str.module." ++ nm ++ "\""
-        var l := (nm.encode("utf-8")).size() + 1
-        con := mn ++ " = private unnamed_addr constant [" ++ l ++ " x i8] "
-            ++ " c\"" ++ escapestring(nm) ++ "\\00\""
-            constants.push(con)
-        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @dlmodule(i8 *"
-            ++ " getelementptr([" ++ l ++ " x i8]* " ++ mn ++ ",i32 0,i32 0))")
-    }
-    out("  store %object* %\"tmp_mod_" ++ nm
-        ++ "\", %object** @\".module." ++ nm ++ "\"")
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* %\"tmp_mod_" ++ nm
-        ++ "\", %object** %\"var_" ++ nm ++ "\"")
-    con := "@\".module." ++ nm ++ "\" = private global %object* null"
-    modules.push(nm)
-    constants.push(con)
-    con := "declare %object* @\"module_" ++ nm ++ "_init\"()"
-    constants.push(con)
-    o.register := "%undefined"
-}
-method compilereturn(o) {
-    var reg := compilenode(o.value)
-    out(  "ret %object* " ++ reg)
-    beginblock("postret" ++ auto_count)
-    o.register := "%undefined"
-}
-method compilenode(o) {
-    if (linenum /= o.line) then {
-        linenum := o.line
-        out("; Begin line " ++ linenum)
-        out("  call void @setline(i32 " ++ linenum ++ ")")
-    }
-    if (o.kind == "num") then {
-        out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
-            ++ o.value ++ ".0)")
-        o.register := "%num" ++ auto_count
-        auto_count := auto_count + 1
-    }
-    var l := ""
-    if (o.kind == "string") then {
-        l := length(o.value)
-        l := l + 1
-        o.value := escapestring(o.value)
-        out("  %tmp" ++ auto_count ++ " = load %object** @.strlit"
-            ++ auto_count)
-        out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
-            ++ auto_count ++ ", null")
-        out("  br i1 %cmp" ++ auto_count ++ ", label %strlit"
-            ++ auto_count ++ ".already, label %strlit"
-            ++ auto_count ++ ".define")
-        beginblock("strlit" ++ auto_count ++ ".already")
-        out("  %alreadystring" ++ auto_count ++ " = load %object** @.strlit"
-            ++ auto_count)
-        out("  br label %strlit" ++ auto_count ++ ".end")
-        beginblock("strlit" ++ auto_count ++ ".define")
-        out("  %str" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.str" ++ constants.size ++ ", i32 0, i32 0")
-        out("  %defstring" ++ auto_count ++ " = call %object* "
-            ++ "@alloc_String(i8* "
-              ++ "%str" ++ auto_count ++ ")")
-        out("  store %object* %defstring" ++ auto_count ++ ", %object** "
-            ++ "@.strlit" ++ auto_count)
-        out("br label %strlit" ++ auto_count ++ ".end")
-        beginblock("strlit" ++ auto_count ++ ".end")
-        out(" %string" ++ auto_count ++ " = phi %object* [%alreadystring"
-            ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
-            ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
-            ++ ".define]")
-        var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
-        constants.push(con)
-        con := ("@.strlit" ++ auto_count
-            ++ " = private global %object* null")
-        constants.push(con)
-        o.register := "%string" ++ auto_count
-        auto_count := auto_count + 1
-    }
-    if (o.kind == "index") then {
-        compileindex(o)
-    }
-    if (o.kind == "octets") then {
-        compileoctets(o)
-    }
-    if (o.kind == "import") then {
-        compileimport(o)
-    }
-    if (o.kind == "return") then {
-        compilereturn(o)
-    }
-    if ((o.kind == "identifier")
-        & ((o.value == "true") | (o.value == "false"))) then {
-        var val := 0
-        if (o.value == "true") then {
-            val := 1
-        }
-        out("  %bool" ++ auto_count ++ " = call %object* "
-              ++ "@alloc_Boolean(i32 " ++ val ++ ")")
-        o.register := "%bool" ++ auto_count
-        auto_count := auto_count + 1
-    } elseif (o.kind == "identifier") then {
-        compileidentifier(o)
-    }
-    if (o.kind == "constdec") then {
-        compileconstdec(o)
-    }
-    if (o.kind == "vardec") then {
-        compilevardec(o)
-    }
-    if (o.kind == "block") then {
-        compileblock(o)
-    }
-    if (o.kind == "method") then {
-        compilemethod(o, "%self")
-    }
-    if (o.kind == "array") then {
-        compilearray(o)
-    }
-    if (o.kind == "bind") then {
-        compilebind(o)
-    }
-    if (o.kind == "while") then {
-        compilewhile(o)
-    }
-    if (o.kind == "if") then {
-        compileif(o)
-    }
-    if (o.kind == "class") then {
-        compileclass(o)
-    }
-    if (o.kind == "object") then {
-        compileobject(o)
-    }
-    if (o.kind == "member") then {
-        compilemember(o)
-    }
-    if (o.kind == "for") then {
-        compilefor(o)
-    }
-    if ((o.kind == "call")) then {
-        if (o.value.value == "print") then {
-            var args := []
-            for (o.with) do { prm ->
-                var r := compilenode(prm)
-                args.push(r)
-            }
-            for (0..(args.size-1)) do { i ->
-                out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
-            }
-            out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
-                  ++ args.size ++ ", %object** %params)")
-            o.register := "%call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "length")) then {
-            if (o.with.size == 0) then {
-                out("; PP FOLLOWS")
-                out(o.pretty(0))
-                tmp := "null"
-            } else {
-                tmp := compilenode(o.with[0])
-            }
-            out("  %call" ++ auto_count ++ " = call %object* "
-                ++ "@gracelib_length(%object* " ++ tmp ++ ")")
-            o.register := "%call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "escapestring")) then {
-            tmp := o.with[0]
-            tmp := astmember("_escape", tmp)
-            tmp := astcall(tmp, [])
-            o.register := compilenode(tmp)
-        } else {
-            compilecall(o)
-        }
-    }
-    if (o.kind == "op") then {
-        compileop(o)
-    }
-    out("; compilenode returning " ++ o.register)
-    o.register
-}
-out("@.str = private unnamed_addr constant [6 x i8] c\"Hello\\00\"")
-out("@.str._plus = private unnamed_addr constant [2 x i8] c\"+\\00\"")
-out("@.str._minus = private unnamed_addr constant [2 x i8] c\"-\\00\"")
-out("@.str._asterisk = private unnamed_addr constant [2 x i8] c\"*\\00\"")
-out("@.str._slash = private unnamed_addr constant [2 x i8] c\"/\\00\"")
-out("@.str._percent = private unnamed_addr constant [2 x i8] c\"%\\00\"")
-out("@.str._index = private unnamed_addr constant [3 x i8] c\"[]\\00\"")
-out("@.str._push = private unnamed_addr constant [5 x i8] c\"push\\00\"")
-out("@.str._iter = private unnamed_addr constant [5 x i8] c\"iter\\00\"")
-out("@.str._apply = private unnamed_addr constant [6 x i8] c\"apply\\00\"")
-out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\"")
-out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
-out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
-out("@undefined = private global %object* null")
-out("@argv = private global %object* null")
-outprint("%method = type { i8*, %object*(%object *, i32, %object**)*,")
-outprint("    %object***, %object*(%object *, i32, %object**,")
-outprint("        %object***)*}")
-outprint("%object = type { i32, [32 x i8], %method**, %object**, i8**, i32, i32 }")
-out("define %object* @module_" ++ modname ++ "_init() {")
-out("entry:")
-out("  %ptrsize_p = getelementptr %object** null, i32 1")
-out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-out("  %paramssize = mul i32 %ptrsize, 16")
-out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-out("  %params = bitcast i8* %paramsu to %object**")
-for (0..10) do { i ->
-    out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
-}
-out("  %self = call %object* @alloc_obj()")
-out("  %undefined = load %object** @undefined")
-out("  %var_argv = call %object** @alloc_var()")
-out("  %tmp_argv = load %object** @argv")
-out("  store %object* %tmp_argv, %object** %var_argv")
-for (values) do { o ->
-    compilenode(o)
-}
-out("  ret %object* %self")
-out("}")
-out("define weak i32 @main(i32 %argc, i8** %argv) {")
-out("entry:")
-out("  call void @initprofiling()")
-out("  %ptrsize_p = getelementptr %object** null, i32 1")
-out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-out("  %paramssize = mul i32 %ptrsize, 16")
-out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-out("  %params = bitcast i8* %paramsu to %object**")
-out("  %params_0 = getelementptr %object** %params, i32 0")
-out("  %undefined = call %object* @alloc_Undefined()")
-out("  store %object* %undefined, %object** @undefined")
-out("  %tmp_argv = call %object* @alloc_List()")
-out("  %argv_i = alloca i32")
-out("  store i32 0, i32* %argv_i")
-out("  br label %argv.cond")
-beginblock("argv.cond")
-out("  %argv_tmp1 = load i32* %argv_i, align 4")
-out("  %argv_cmp = icmp slt i32 %argv_tmp1, %argc")
-out("  br i1 %argv_cmp, label %argv.body, label %argv.end")
-beginblock("argv.body")
-out("  %argv_iv = load i32* %argv_i")
-out("  %argv_idx = getelementptr i8** %argv, i32 %argv_iv")
-out("  %argv_val = load i8** %argv_idx")
-out("  %argv_tmp3 = call %object* @alloc_String(i8* %argv_val)")
-out("  store %object* %argv_tmp3, %object** %params_0")
-out("  call %object* @callmethod(%object* %tmp_argv, "
-    ++ "i8* getelementptr([5 x i8]* @.str._push"
-    ++ ",i32 0,i32 0), "
-    ++ "i32 0, %object** %params)")
-out("  %argv_inc = add i32 %argv_iv, 1")
-out("  store i32 %argv_inc, i32* %argv_i")
-out("  br label %argv.cond")
-beginblock("argv.end")
-out("  call void @module_sys_init_argv(%object* %tmp_argv)")
-out("  %var_argv = call %object** @alloc_var()")
-out("  store %object* %tmp_argv, %object** %var_argv")
-out("  store %object* %tmp_argv, %object** @argv")
-out("  call %object* @module_" ++ modname ++ "_init()")
-out("  call void @gracelib_stats()")
-out("  ret i32 0")
-out("}")
-out("; constant definitions")
-for (constants) do { c ->
-    out(c)
-}
-out("; gracelib")
-out("declare %object* @alloc_obj()")
-out("declare %object* @alloc_List()")
-out("declare %object* @alloc_Float64(double)")
-out("declare %object* @alloc_String(i8*)")
-out("declare %object* @alloc_Octets(i8*, i32)")
-out("declare %object* @alloc_Boolean(i32)")
-out("declare %object* @alloc_Undefined()")
-out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
-out("declare void @addmethod(%object*, i8*, %object*(%object *, i32, %object**)*)")
-out("declare %object* @gracelib_print(%object*, i32, %object**)")
-out("declare %object* @gracelib_readall(%object*, i32, %object**)")
-out("declare %object* @gracelib_length(%object*)")
-out("declare %object* @dlmodule(i8*)")
-out("declare %object** @alloc_var()")
-out("declare void @module_sys_init_argv(%object*)")
-out("declare i1 @istrue(%object*)")
-out("declare void @gracelib_stats()")
-out("declare void @initprofiling()")
-out("declare %object*** @createclosure(i32)")
-out("declare void @addtoclosure(%object***, %object**)")
-out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
-out("    i32, %object**, %object***)*, %object***)")
-out("declare void @adddatum(%object*, %object*, i32)")
-out("declare void @setline(i32)")
-out("; libc functions")
-out("declare i32 @puts(i8*)")
-out("declare i8* @malloc(i32)")
-log_verbose("writing file.")
-for (output) do { x ->
-    outprint(x)
-}
 
-if (runmode == "make") then {
-    outfile.close()
-    var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
-    if ((io.system(cmd)).not) then {
-        io.error.write("Failed LLVM assembling")
-        raise("Fatal.")
-    }
-    log_verbose("linking.")
-    cmd := "llvm-link -o " ++ modname ++ ".bc " ++ gracelibPath ++ " "
-    cmd := cmd ++ modname ++ ".gco"
-    for (linkfiles) do { fn ->
-        cmd := cmd ++ " " ++ fn
-    }
-    if ((io.system(cmd)).not) then {
-        io.error.write("Failed LLVM linking")
-        raise("Fatal.")
-    }
-    if (buildtype == "native") then {
-        log_verbose("compiling to native.")
-        cmd := "llvm-ld -ldl -export-dynamic -o " ++ modname ++ " -native " ++ modname ++ ".bc"
-        cmd := "llc -o " ++ modname ++ ".s -relocation-model=pic " ++ modname
-            ++ ".bc"
-        if ((io.system(cmd)).not) then {
-            io.error.write("failed native assembly compilation")
-            raise("fatal.")
-        }
-        // Some systems (NetBSD) have dlsym() in libc and no libdl
-        cmd := "ld -ldl 2>/dev/null"
-        if (io.system(cmd)) then {
-            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
-                ++ modname ++ ".s"
-        } else {
-            cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " "
-                ++ modname ++ ".s"
-        }
-        if ((io.system(cmd)).not) then {
-            io.error.write("failed native assembly compilation")
-            raise("fatal.")
-        }
-    }
-    log_verbose("done.")
-    if (buildtype == "run") then {
-        cmd := "lli ./" ++ modname ++ ".bc"
-        io.system(cmd)
-    }
-}
-
+genllvm.compile(values, outfile, modname, runmode, buildtype, gracelibPath)
+log_verbose("done")
