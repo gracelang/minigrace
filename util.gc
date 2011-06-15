@@ -73,6 +73,8 @@ method parseargs() {
 method log_verbose(s) {
     if (verbosityv >= 40) then {
         io.error.write("minigrace: ")
+        io.error.write(modnamev)
+        io.error.write(": ")
         io.error.write(sys.cputime.asString)
         io.error.write("/")
         io.error.write(sys.elapsed.asString)
