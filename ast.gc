@@ -1,13 +1,8 @@
-var linenum := 0
 var kwyj1 := 1
 var kwyj2 := 2
 var util
-
 method setutil(u) {
     util := u
-}
-method setline(n) {
-    linenum := n
 }
 method astfor(over, variable, body) {
     object {
@@ -16,7 +11,7 @@ method astfor(over, variable, body) {
         var variable := variable
         var body := body
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -39,7 +34,7 @@ method astwhile(cond, body) {
         var value := cond
         var body := body
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -63,7 +58,7 @@ method astif(cond, thenblock, elseblock) {
         var thenblock := thenblock
         var elseblock := elseblock
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -93,7 +88,7 @@ method astblock(params, body) {
         var body := body
         var selfclosure := true
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -122,7 +117,7 @@ method astmethod(name, params, body, type) {
         var type := type
         var selfclosure := false
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -149,7 +144,7 @@ method astcall(what, with) {
         var kind := "call"
         var value := what
         var with := with
-        var line := 0 + linenum
+        var line := 0 + util.linenum
         var register := ""
         method pretty(depth) {
             var spc := ""
@@ -175,7 +170,7 @@ method astclass(name, params, body) {
         var name := name
         var params := params
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -199,7 +194,7 @@ method astobject(body) {
         var kind := "object"
         var value := body
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -218,7 +213,7 @@ method astarray(values) {
         var kind := "array"
         var value := values
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { ai ->
@@ -238,7 +233,7 @@ method astmember(what, in) {
         var value := what
         var in := in
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -255,7 +250,7 @@ method astidentifier(n, type) {
         var value := n
         var type := type
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             "Identifier(" ++ self.value ++ ")"
         }
@@ -266,7 +261,7 @@ method astoctets(n) {
         var kind := "octets"
         var value := n
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             "Octets(" ++ self.value ++ ")"
         }
@@ -277,7 +272,7 @@ method aststring(n) {
         var kind := "string"
         var value := n
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             "String(" ++ self.value ++ ")"
         }
@@ -288,7 +283,7 @@ method astnum(n) {
         var kind := "num"
         var value := n
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             "Num(" ++ self.value ++ ")"
         }
@@ -301,7 +296,7 @@ method astop(op, l, r) {
         var left := l
         var right := r
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -322,7 +317,7 @@ method astindex(expr, index) {
         var value := expr
         var index := index
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -343,7 +338,7 @@ method astbind(dest, val) {
         var dest := dest
         var value := val
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -365,7 +360,7 @@ method astconstdec(name, val, type) {
         var value := val
         var type := type
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -392,7 +387,7 @@ method astvardec(name, val, type) {
         var value := val
         var type := type
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for ((0..depth)) do { i ->
@@ -417,7 +412,7 @@ method astimport(name) {
         var kind := "import"
         var value := name
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
@@ -435,7 +430,7 @@ method astreturn(expr) {
         var kind := "return"
         var value := expr
         var register := ""
-        var line := linenum
+        var line := util.linenum
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->

@@ -508,7 +508,7 @@ method compileconstdec(o) {
     if (val) then {
         val := compilenode(val)
     } else {
-        syntax_error("const must have value bound.")
+        util.syntax_error("const must have value bound.")
     }
     out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
     out("  store %object* " ++ val ++ ", %object** %\"var_"
@@ -894,7 +894,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                     if (io.exists(nm ++ ".gc")) then {
                         if ((io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
                            ) then {
-                            syntax_error("failed processing import of " ++nm ++".")
+                            util.syntax_error("failed processing import of " ++nm ++".")
                         }
                         exists := true
                         linkfiles.push(nm ++ ".gco")
@@ -906,7 +906,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                     staticmodules.push(nm)
                 }
                 if (exists.not) then {
-                    syntax_error("failed finding import of " ++ nm ++ ".")
+                    util.syntax_error("failed finding import of " ++ nm ++ ".")
                 }
             }
         }

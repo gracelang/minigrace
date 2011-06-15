@@ -6,6 +6,7 @@
 *.gso
 current
 selfhost
+minigrace
 UnicodeData.txt
 unicodegen.py
 misc

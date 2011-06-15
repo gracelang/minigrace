@@ -8,7 +8,7 @@ var modnamev := "main"
 var runmodev := "build"
 var buildtypev := "bc"
 var gracelibPathv := "gracelib.o"
-var linenum := 1
+var linenumv := 1
 
 method parseargs() {
     var argv := sys.argv
@@ -87,7 +87,7 @@ method outprint(s) {
     outfilev.write("\n")
 }
 method syntax_error(s) {
-    io.error.write("Syntax error around line " ++ linenum ++ ": ")
+    io.error.write("Syntax error around line " ++ linenumv ++ ": ")
     io.error.write(s)
     io.error.write("\l")
     raise("Syntax error: "++ s)
@@ -115,5 +115,8 @@ method gracelibPath() {
     gracelibPathv
 }
 method setline(l) {
-    linenum := l
+    linenumv := l
+}
+method linenum() {
+    linenumv
 }
