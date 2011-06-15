@@ -73,3 +73,40 @@ $(ARCH)/minigrace-0094a44c8b6617114d0dacdbf2084444eeaab26f: $(ARCH)/minigrace-ce
 	rm -f out.*
 	rm -f compiler.gc gracelib.c
 	rm -f unicode.gso unicode.c unicodedata.h unicode.gco
+
+$(ARCH)/minigrace-f26b7f1f999067bfa44608cb282e26c28b49eaf8: $(ARCH)/minigrace-0094a44c8b6617114d0dacdbf2084444eeaab26f
+	mkdir -p $(ARCH)
+	git show f26b7f1f999067bfa44608cb282e26c28b49eaf8:compiler.gc > compiler.gc
+	git show f26b7f1f999067bfa44608cb282e26c28b49eaf8:gracelib.c > gracelib.c
+	git show 0094a44c8b6617114d0dacdbf2084444eeaab26f:unicode.c > unicode.c
+	git show 0094a44c8b6617114d0dacdbf2084444eeaab26f:unicodedata.h > unicodedata.h
+	clang -emit-llvm -c -o unicode.gco unicode.c
+	gcc -fPIC -shared -o unicode.gso unicode.c
+	clang -emit-llvm -c -o $(ARCH)/gracelib-f26b7f1f999067bfa44608cb282e26c28b49eaf8.o gracelib.c
+	cp $(ARCH)/gracelib-f26b7f1f999067bfa44608cb282e26c28b49eaf8.o $(ARCH)/gracelib.o
+	if ld -ldl 2>/dev/null ; then \
+	    ./$(ARCH)/minigrace-0094a44c8b6617114d0dacdbf2084444eeaab26f --make --native --verbose --module minigrace --gracelib ./$(ARCH)/gracelib-0094a44c8b6617114d0dacdbf2084444eeaab26f.o compiler.gc ; \
+	    cp minigrace.ll independent/minigrace-f26b7f1f999067bfa44608cb282e26c28b49eaf8.ll ; \
+	    cp minigrace out ; \
+	else  \
+	    ./$(ARCH)/minigrace-0094a44c8b6617114d0dacdbf2084444eeaab26f --make --verbose --module minigrace --gracelib ./$(ARCH)/gracelib-0094a44c8b6617114d0dacdbf2084444eeaab26f.o compiler.gc ; \
+	    llc -o out.s minigrace.bc ; \
+	    gcc -o out out.s ; \
+	fi
+	git show f26b7f1f999067bfa44608cb282e26c28b49eaf8:unicode.c > unicode.c
+	git show f26b7f1f999067bfa44608cb282e26c28b49eaf8:unicodedata.h > unicodedata.h
+	if ld -ldl 2>/dev/null ; then \
+	    gcc -fPIC -shared -o unicode.gso unicode.c ; \
+	    ./out --module minigrace --gracelib $(ARCH)/gracelib-f26b7f1f999067bfa44608cb282e26c28b49eaf8.o --make --native --verbose compiler.gc ; \
+	else\
+	    rm -f unicode.gso ; \
+	    clang -emit-llvm -c -o unicode.gco unicode.c ; \
+	    ./out --module minigrace --gracelib $(ARCH)/gracelib-f26b7f1f999067bfa44608cb282e26c28b49eaf8.o --make --verbose compiler.gc ; \
+	    llc -o out.s minigrace.bc ; \
+	    gcc -o minigrace out.s ; \
+	fi
+	mv minigrace $(ARCH)/minigrace-f26b7f1f999067bfa44608cb282e26c28b49eaf8
+	rm -f minigrace.*
+	rm -f out.*
+	rm -f compiler.gc gracelib.c
+	rm -f unicode.gso unicode.c unicodedata.h unicode.gco

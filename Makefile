@@ -1,5 +1,5 @@
 ARCH=$(shell uname -s)-$(shell uname -m)
-STABLE=0094a44c8b6617114d0dacdbf2084444eeaab26f
+STABLE=f26b7f1f999067bfa44608cb282e26c28b49eaf8
 all: current
 
 gracelib.o: gracelib.c
