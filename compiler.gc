@@ -1818,7 +1818,8 @@ method compileobjconstdec(o, selfr, pos) {
     out("; OBJECT CONST DEC " ++ enm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
+    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm
+        ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
@@ -1831,7 +1832,8 @@ method compileobjconstdec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* "
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
+        ++ "_" ++ myc
         ++ "\"))")
 }
 method compileobjvardec(o, selfr, pos) {
@@ -1850,7 +1852,7 @@ method compileobjvardec(o, selfr, pos) {
     var enm := escapestring(nm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
-    outprint("define %object* @\"reader_" ++ enm ++ "_" ++ myc
+    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
@@ -1863,14 +1865,15 @@ method compileobjvardec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ enm ++ "_" ++ myc
+        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
+        ++ "_" ++ myc
         ++ "\"))")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
-    outprint("define %object* @\"writer_" ++ enm ++ "_" ++ myc
+    outprint("define private %object* @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
         ++ "%object** %args) {")
     outprint("  %params = getelementptr %object** %args, i32 0")
@@ -1885,7 +1888,8 @@ method compileobjvardec(o, selfr, pos) {
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
         ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"writer_" ++ enm ++ "_" ++ myc
+        ++ "(%object*, i32, %object**)* @\"writer_" ++ modname ++ "_"
+        ++ enm ++ "_" ++ myc
         ++ "\"))")
 }
 method compileclass(o) {
@@ -2042,19 +2046,19 @@ method compilemethod(o, selfobj) {
     if (o.selfclosure) then {
         closurevars.push("self")
     }
-    var litname := "@\"meth_" ++ escapestring(nm) ++ "\""
+    var litname := "@\"meth_" ++ modname ++ "_" ++ escapestring(nm) ++ "\""
     outprint(";;;; METHOD DEFINITION: " ++ name)
     if (closurevars.size > 0) then {
         out("; have closure method: " ++ closurevars.size)
         if (o.selfclosure) then {
-            out("define %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
+            out("define private %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
         } else {
-            out("define %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
+            out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) {")
         }
     } else {
-        out("define %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
+        out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
             ++ "%object** %args) {")
     }
     beginblock("entry")
