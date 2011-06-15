@@ -1,0 +1,119 @@
+import io
+import sys
+
+var verbosityv := 30
+var outfilev := io.output
+var infilev := io.input
+var modnamev := "main"
+var runmodev := "build"
+var buildtypev := "bc"
+var gracelibPathv := "gracelib.o"
+var linenum := 1
+
+method parseargs() {
+    var argv := sys.argv
+    if (argv.size > 1) then {
+        var ai := 1
+        var arg
+        while {ai < argv.size} do {
+            arg := argv[ai]
+            if (arg.at(0) == "-") then {
+                if (arg == "-o") then {
+                    ai := ai + 1
+                    outfilev := io.open(argv[ai], "w")
+                }
+                if (arg == "--verbose") then {
+                    verbosityv := 40
+                }
+                if (arg == "--make") then {
+                    runmodev := "make"
+                }
+                if (arg == "--run") then {
+                    buildtypev := "run"
+                    runmodev := "make"
+                }
+                if (arg == "--native") then {
+                    buildtypev := "native"
+                }
+                if (arg == "--module") then {
+                    ai := ai + 1
+                    modnamev := argv[ai]
+                }
+                if (arg == "--gracelib") then {
+                    ai := ai + 1
+                    gracelibPathv := argv[ai]
+                }
+                if (arg == "--parse") then {
+                    buildtypev := "parse"
+                }
+            } else {
+                var filename := arg
+                infilev := io.open(filename, "r")
+                if modnamev == "main" then {
+                    modnamev := ""
+                    var seendot := false
+                    for (filename) do { c->
+                        if (c == ".") then {
+                            seendot := true
+                        }
+                        if (seendot.not) then {
+                            modnamev := modnamev ++ c
+                        }
+                    }
+                }
+                if (outfilev == io.output) then {
+                    outfilev := io.open(modnamev ++ ".ll", "w")
+                }
+            }
+            ai := ai + 1
+        }
+    }
+}
+
+method log_verbose(s) {
+    if (verbosityv >= 40) then {
+        io.error.write("minigrace: ")
+        io.error.write(sys.cputime.asString)
+        io.error.write("/")
+        io.error.write(sys.elapsed.asString)
+        io.error.write(": ")
+        io.error.write(s)
+        io.error.write("\n")
+    }
+}
+
+method outprint(s) {
+    outfilev.write(s)
+    outfilev.write("\n")
+}
+method syntax_error(s) {
+    io.error.write("Syntax error around line " ++ linenum ++ ": ")
+    io.error.write(s)
+    io.error.write("\l")
+    raise("Syntax error: "++ s)
+}
+
+method verbosity() {
+    verbosityv
+}
+method outfile() {
+    outfilev
+}
+method infile() {
+    infilev
+}
+method modname() {
+    modnamev
+}
+method runmode() {
+    runmodev
+}
+method buildtype() {
+    buildtypev
+}
+method gracelibPath() {
+    gracelibPathv
+}
+method setline(l) {
+    linenum := l
+}

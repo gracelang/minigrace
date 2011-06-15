@@ -1,7 +1,11 @@
 var linenum := 0
 var kwyj1 := 1
 var kwyj2 := 2
+var util
 
+method setutil(u) {
+    util := u
+}
 method setline(n) {
     linenum := n
 }

@@ -1,104 +1,19 @@
 import io
 import unicode
 import sys
+import util
 import ast
 import genllvm
 genllvm.setast(ast)
 
+util.parseargs()
+ast.setutil(util)
+genllvm.setutil(util)
 var tmp := 0
 var linenum := 1
 var modules := []
 var staticmodules := []
 
-var infile := io.input
-var outfile := io.output
-var modname := "main"
-var runmode := "build"
-var buildtype := "bc"
-var gracelibPath := "gracelib.o"
-
-var verbosity := 30
-
-if (argv.size > 1) then {
-    var ai := 1
-    var arg
-    while {ai < argv.size} do {
-        arg := argv[ai]
-        if (arg.at(0) == "-") then {
-            if (arg == "-o") then {
-                ai := ai + 1
-                outfile := io.open(argv[ai], "w")
-            }
-            if (arg == "--verbose") then {
-                verbosity := 40
-            }
-            if (arg == "--make") then {
-                runmode := "make"
-            }
-            if (arg == "--run") then {
-                buildtype := "run"
-                runmode := "make"
-            }
-            if (arg == "--native") then {
-                buildtype := "native"
-            }
-            if (arg == "--module") then {
-                ai := ai + 1
-                modname := argv[ai]
-            }
-            if (arg == "--gracelib") then {
-                ai := ai + 1
-                gracelibPath := argv[ai]
-            }
-            if (arg == "--parse") then {
-                buildtype := "parse"
-            }
-        } else {
-            var filename := arg
-            infile := io.open(filename, "r")
-            if modname == "main" then {
-                modname := ""
-                var seendot := false
-                for (filename) do { c->
-                    if (c == ".") then {
-                        seendot := true
-                    }
-                    if (seendot.not) then {
-                        modname := modname ++ c
-                    }
-                }
-            }
-            if (outfile == io.output) then {
-                outfile := io.open(modname ++ ".ll", "w")
-            }
-        }
-        ai := ai + 1
-    }
-}
-genllvm.setverbosity(verbosity)
-
-method log_verbose(s) {
-    if (verbosity >= 40) then {
-        io.error.write("minigrace: ")
-        io.error.write(sys.cputime.asString)
-        io.error.write("/")
-        io.error.write(sys.elapsed.asString)
-        io.error.write(": ")
-        io.error.write(s)
-        io.error.write("\n")
-    }
-}
-
-method outprint(s) {
-    outfile.write(s)
-    outfile.write("\n")
-}
-method syntax_error(s) {
-    io.error.write("Syntax error around line " ++ linenum ++ ": ")
-    io.error.write(s)
-    io.error.write("\l")
-    raise("Syntax error: "++ s)
-}
 method hexdecchar(c) {
     var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
                  "9", "a", "b", "c", "d", "e", "f"]
@@ -290,8 +205,8 @@ method modechange(tokens, mode, accum) {
         }
     }
 }
-log_verbose("reading source.")
-var input := infile.read()
+util.log_verbose("reading source.")
+var input := util.infile.read()
 
 method isidentifierchar(ov) {
     if (unicode.isLetter(ov) | unicode.isNumber(ov)
@@ -322,7 +237,7 @@ var escaped := false
 var prev := ""
 var unichars := 0
 var codepoint := 0
-log_verbose("lexing.")
+util.log_verbose("lexing.")
 for (input) do { c ->
     var ct := ""
     var ordval := c.ord
@@ -1256,14 +1171,14 @@ method statement() {
         }
     }
 }
-log_verbose("processing tokens.")
+util.log_verbose("processing tokens.")
 var otoks := tokens
 tokens := []
 for (0..(otoks.size-1)) do { i ->
     var o := otoks.pop()
     tokens.push(o)
 }
-log_verbose("parsing.")
+util.log_verbose("parsing.")
 linenum := 1
 next()
 var oldlength := tokens.size + 0
@@ -1284,13 +1199,14 @@ while {tokens.size > 0} do {
     }
     oldlength := tokens.size + 0
 }
-if (buildtype == "parse") then {
+if (util.buildtype == "parse") then {
     for (values) do { v->
         print(v.pretty(0))
     }
     sys.exit(0)
 }
-log_verbose("compiling.")
+util.log_verbose("compiling.")
 
-genllvm.compile(values, outfile, modname, runmode, buildtype, gracelibPath)
-log_verbose("done")
+genllvm.compile(values, util.outfile, util.modname, util.runmode,
+util.buildtype, util.gracelibPath)
+util.log_verbose("done")
