@@ -2,7 +2,7 @@ ARCH=$(shell uname -s)-$(shell uname -m)
 STABLE=f26b7f1f999067bfa44608cb282e26c28b49eaf8
 all: minigrace
 
-SOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc
+SOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc
 
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c
@@ -17,7 +17,7 @@ selfhost: current $(SOURCEFILES) gracelib.o unicode.gso
 	./current --verbose --make --native --module selfhost compiler.gc
 
 selfhost-stats: selfhost
-	cat compiler.gc util.gc ast.gc genllvm.gc > tmp.gc
+	cat compiler.gc util.gc ast.gc parser.gc genllvm.gc > tmp.gc
 	GRACE_STATS=1 ./selfhost < tmp.gc >/dev/null
 	rm -f tmp.gc
 
@@ -32,6 +32,9 @@ clean:
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
 	rm -f minigrace lexer.gco parser.gco util.gco ast.gco genllvm.gco
 	rm -f unicode.gco unicode.gso
+
+semiclean:
+	rm -f lexer.gco parser.gco util.gco ast.gco genllvm.gco
 
 known-good/%:
 	cd known-good && $(MAKE) $*
