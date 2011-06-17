@@ -10,6 +10,7 @@ var buildtypev := "bc"
 var gracelibPathv := "gracelib.o"
 var linenumv := 1
 var vtagv := false
+var noexecv := false
 
 method parseargs() {
     var argv := sys.argv
@@ -39,6 +40,9 @@ method parseargs() {
                 }
                 if (arg == "--native") then {
                     buildtypev := "native"
+                }
+                if (arg == "--noexec") then {
+                    noexecv := true
                 }
                 if (arg == "--module") then {
                     ai := ai + 1
@@ -133,4 +137,7 @@ method linenum() {
 }
 method vtag() {
     vtagv
+}
+method noexec() {
+    noexecv
 }

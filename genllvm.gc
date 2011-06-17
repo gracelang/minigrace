@@ -920,7 +920,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                             cmd := cmd ++ " --vtag " ++ util.vtag
                         }
                         if (buildtype == "native") then {
-                            cmd := cmd ++ " --native"
+                            cmd := cmd ++ " --native --noexec"
                         }
                         if (io.system(cmd).not) then {
                             util.syntax_error("failed processing import of " ++nm ++".")
@@ -1074,9 +1074,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
             io.error.write("Failed LLVM linking")
             raise("Fatal.")
         }
-        if (buildtype == "native") then {
+        if ((buildtype == "native") & util.noexec.not) then {
             log_verbose("compiling to native.")
-            cmd := "llvm-ld -ldl -export-dynamic -o " ++ modname ++ " -native " ++ modname ++ ".bc"
             cmd := "llc -o " ++ modname ++ ".s -relocation-model=pic " ++ modname
                 ++ ".bc"
             if ((io.system(cmd)).not) then {
