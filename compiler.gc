@@ -21,4 +21,3 @@ var values := parser.parse(tokens)
 
 genllvm.compile(values, util.outfile, util.modname, util.runmode,
 util.buildtype, util.gracelibPath)
-util.log_verbose("done")
