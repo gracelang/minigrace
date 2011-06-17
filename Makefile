@@ -10,19 +10,19 @@ gracelib.o: gracelib.c
 unicode.gso: unicode.c unicodedata.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
-current: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.o
-	./known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module current --gracelib known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc
+l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.o
+	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; ../known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/gracelib-$(STABLE).o compiler.gc )
 
-selfhost: current $(SOURCEFILES) gracelib.o unicode.gso
-	./current --verbose --make --native --module selfhost compiler.gc
+l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o
+	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.gc )
 
-selfhost-stats: selfhost
+selfhost-stats: minigrace
 	cat compiler.gc util.gc ast.gc parser.gc genllvm.gc > tmp.gc
-	GRACE_STATS=1 ./selfhost < tmp.gc >/dev/null
+	GRACE_STATS=1 ./minigrace < tmp.gc >/dev/null
 	rm -f tmp.gc
 
-minigrace: selfhost $(SOURCEFILES)
-	./selfhost --make --native --module minigrace --verbose compiler.gc
+minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
+	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.gc
 
 unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
@@ -32,6 +32,7 @@ clean:
 	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
 	rm -f minigrace lexer.gco parser.gco util.gco ast.gco genllvm.gco
 	rm -f unicode.gco unicode.gso
+	rm -rf l1 l2
 
 semiclean:
 	rm -f lexer.gco parser.gco util.gco ast.gco genllvm.gco
