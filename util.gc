@@ -9,6 +9,7 @@ var runmodev := "build"
 var buildtypev := "bc"
 var gracelibPathv := "gracelib.o"
 var linenumv := 1
+var vtagv := false
 
 method parseargs() {
     var argv := sys.argv
@@ -24,6 +25,10 @@ method parseargs() {
                 }
                 if (arg == "--verbose") then {
                     verbosityv := 40
+                }
+                if (arg == "--vtag") then {
+                    ai := ai + 1
+                    vtagv := argv.at(ai)
                 }
                 if (arg == "--make") then {
                     runmodev := "make"
@@ -72,7 +77,11 @@ method parseargs() {
 
 method log_verbose(s) {
     if (verbosityv >= 40) then {
-        io.error.write("minigrace: ")
+        io.error.write("minigrace")
+        if (vtagv) then {
+            io.error.write("[" ++ vtagv ++ "]")
+        }
+        io.error.write(": ")
         io.error.write(modnamev)
         io.error.write(": ")
         io.error.write(sys.cputime.asString)
@@ -121,4 +130,7 @@ method setline(l) {
 }
 method linenum() {
     linenumv
+}
+method vtag() {
+    vtagv
 }

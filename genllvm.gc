@@ -897,6 +897,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
+                        if (util.vtag) then {
+                            cmd := cmd ++ " --vtag " ++ util.vtag
+                        }
                         if (io.system(cmd).not) then {
                             util.syntax_error("failed processing import of " ++nm ++".")
                         }
