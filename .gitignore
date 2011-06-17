@@ -4,8 +4,8 @@
 *.ll
 *.gco
 *.gso
-current
-selfhost
+l1
+l2
 minigrace
 UnicodeData.txt
 unicodegen.py
