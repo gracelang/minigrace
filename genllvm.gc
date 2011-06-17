@@ -678,6 +678,17 @@ method compileimport(o) {
     out("; Import of " ++ o.value.value)
     var con
     var nm := escapestring(o.value.value)
+    var modg := "@\".module." ++ nm ++ "\""
+    var sblock := bblock
+    out("  %tmp" ++ auto_count ++ " = load %object** " ++ modg)
+    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp" ++ auto_count
+        ++ ", null")
+    out("  br i1 %cmp" ++ auto_count ++ ", label %\"import." ++ nm
+        ++ ".already\", label %\"import." ++ nm ++ ".define\"")
+    beginblock("import." ++ nm ++ ".already")
+    out("  %alreadymod" ++ auto_count ++ " = load %object** " ++ modg)
+    out("  br label %\"import." ++ nm ++ ".end\"")
+    beginblock("import." ++ nm ++ ".define")
     if (staticmodules.contains(nm)) then {
         out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
             ++ nm ++ "_init()")
@@ -692,14 +703,22 @@ method compileimport(o) {
     }
     out("  store %object* %\"tmp_mod_" ++ nm
         ++ "\", %object** @\".module." ++ nm ++ "\"")
+    out("  store %object* %\"tmp_mod_" ++ nm ++ "\", %object** @\".module."
+        ++ nm ++ "\"")
+    out("  br label %\"import." ++ nm ++ ".end\"")
+    beginblock("import." ++ nm ++ ".end")
+    out("  %\"tmp_modv_" ++ nm ++ "\" = phi %object* [%alreadymod"
+        ++ auto_count ++ ", %\"import." ++ nm ++ ".already\"], "
+        ++ "[%\"tmp_mod_" ++ nm ++ "\", %\"import." ++ nm ++ ".define\"]")
     out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* %\"tmp_mod_" ++ nm
+    out("  store %object* %\"tmp_modv_" ++ nm
         ++ "\", %object** %\"var_" ++ nm ++ "\"")
-    con := "@\".module." ++ nm ++ "\" = private global %object* null"
+    con := "@\".module." ++ nm ++ "\" = weak global %object* null"
     modules.push(nm)
     constants.push(con)
     con := "declare %object* @\"module_" ++ nm ++ "_init\"()"
     constants.push(con)
+    auto_count := auto_count + 1
     o.register := "%undefined"
 }
 method compilereturn(o) {

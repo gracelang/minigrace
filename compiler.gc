@@ -15,10 +15,6 @@ parser.setutil(util)
 genllvm.setutil(util)
 lexer.setutil(util)
 lexer.setunicode(unicode)
-var tmp := 0
-var linenum := 1
-var modules := []
-var staticmodules := []
 
 var tokens := lexer.lexinput()
 var values := parser.parse(tokens)
