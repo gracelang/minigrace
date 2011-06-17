@@ -21,6 +21,12 @@ selfhost-stats: minigrace
 	GRACE_STATS=1 ./minigrace < tmp.gc >/dev/null
 	rm -f tmp.gc
 
+selfhost-rec: minigrace
+	@( cd l2 ; llvm-dis -o l2.ll minigrace.bc )
+	@llvm-dis -o l3.ll minigrace.bc
+	@diff -q l2/l2.ll l3.ll
+	@rm -f l2/l2.ll l3.ll
+
 minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.gc
 
