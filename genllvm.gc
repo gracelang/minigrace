@@ -158,7 +158,7 @@ method compileclass(o) {
         false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody)
-    var con := ast.astconstdec(o.name, cobj)
+    var con := ast.astconstdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
 method compileobject(o) {

@@ -800,6 +800,8 @@ method statement() {
     if (accept("keyword")) then {
         if (sym.sym.value == "var") then {
             vardec()
+        } elseif (sym.sym.value == "const") then {
+            constdec()
         } elseif (sym.sym.value == "method") then {
             methoddec()
         } elseif (sym.sym.value == "import") then {
