@@ -1062,7 +1062,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                 raise("fatal.")
             }
             // Some systems (NetBSD) have dlsym() in libc and no libdl
-            cmd := "ld -ldl 2>/dev/null"
+            cmd := "ld -ldl -o /dev/null 2>/dev/null"
             if (io.system(cmd)) then {
                 cmd := "gcc -fPIC -Wl,--export-dynamic -o " ++ modname ++ " -ldl "
                     ++ modname ++ ".s"
