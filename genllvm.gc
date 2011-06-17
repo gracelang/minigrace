@@ -864,6 +864,7 @@ method compilenode(o) {
 }
 method compile(vl, of, mn, rm, bt, glpath) {
     var argv := sys.argv
+    var cmd
     values := vl
     outfile := of
     modname := mn
@@ -892,8 +893,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
                 }
                 if (exists.not) then {
                     if (io.exists(nm ++ ".gc")) then {
-                        if ((io.system(argv[0] ++ " --make " ++ nm ++ ".gc")).not
-                           ) then {
+                        cmd := argv[0] ++ " --make " ++ nm ++ ".gc"
+                        if (util.verbosity > 30) then {
+                            cmd := cmd ++ " --verbose"
+                        }
+                        if (io.system(cmd).not) then {
                             util.syntax_error("failed processing import of " ++nm ++".")
                         }
                         exists := true
@@ -1030,7 +1034,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
 
     if (runmode == "make") then {
         outfile.close()
-        var cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
+        cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
         if ((io.system(cmd)).not) then {
             io.error.write("Failed LLVM assembling")
             raise("Fatal.")
