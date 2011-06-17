@@ -34,11 +34,15 @@ unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
 
 clean:
-	rm -f compiler.ll gracelib.o current.bc current.s current
-	rm -f selfhost selfhost.s selfhost.bc selfhost.ll
-	rm -f minigrace lexer.gco parser.gco util.gco ast.gco genllvm.gco
+	rm -f gracelib.o
 	rm -f unicode.gco unicode.gso
 	rm -rf l1 l2
+	rm -f $(patsubst %.gc,%.ll,$(SOURCEFILES))
+	rm -f $(patsubst %.gc,%.s,$(SOURCEFILES))
+	rm -f $(patsubst %.gc,%.gco,$(SOURCEFILES))
+	rm -f $(patsubst %.gc,%.bc,$(SOURCEFILES))
+	rm -f $(patsubst %.gc,%,$(SOURCEFILES))
+	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
 
 semiclean:
 	rm -f lexer.gco parser.gco util.gco ast.gco genllvm.gco
