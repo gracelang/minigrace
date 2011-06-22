@@ -372,13 +372,20 @@ method expressionrest() {
             }
             ops.push(o)
             if (accept("lparen")) then {
+                next()
                 expression()
+                if (accept("rparen")) then {
+                    next()
+                } else {
+                    util.syntax_error("expected rparen, have " ++ sym.sym.kind
+                        ++ "(" ++ sym.sym.value ++ ")")
+                }
             } else {
                 term()
-                dotrest()
-                postfixsquare()
-                callrest()
             }
+            dotrest()
+            postfixsquare()
+            callrest()
             tmp := values.pop()
             terms.push(tmp)
         }
