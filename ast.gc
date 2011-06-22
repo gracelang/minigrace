@@ -1,9 +1,28 @@
 var kwyj1 := 1
 var kwyj2 := 2
+// Workaround for known-good import limitation
 var util
 method setutil(u) {
     util := u
 }
+
+// This module contains pseudo-classes for all the AST nodes used
+// in the parser. The module predates the existence of classes in the
+// implementation, so they are written as object literals inside methods.
+// Each node has a different signature according to its function, but the
+// common interface is:
+// type ASTNode {
+//   kind -> String // Used for pseudo-instanceof tests.
+//   register -> String // Used later on to hold the LLVM register of
+//                      // the resulting object.
+//   line -> Number // The source line the node came from.
+//   pretty(n:Number) -> String // Pretty-print of node at depth n,
+// }
+// Most also contain "value", with varied types, holding the main value
+// in the node. Some contain other fields for their specific use: while has
+// both a value (the condition) and a "body", for example. None of the nodes
+// are particularly notable in any way.
+
 method astfor(over, variable, body) {
     object {
         var kind := "for"
