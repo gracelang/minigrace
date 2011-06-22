@@ -1441,11 +1441,14 @@ struct Object *callmethod(struct Object *receiver, const char *name,
 struct Object *gracelib_print(struct Object *receiver, int nparams,
         struct Object **args) {
     int i;
+    char *sp = " ";
     for (i=0; i<nparams; i++) {
         struct Object *o = args[i];
+        if (i == nparams - 1)
+            sp = "";
         o = callmethod(o, "asString", 0, NULL);
         char *s = cstringfromString(o);
-        printf("%s ", s);
+        printf("%s%s", s, sp);
         free(s);
     }
     puts("");
