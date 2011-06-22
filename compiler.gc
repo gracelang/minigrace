@@ -19,5 +19,11 @@ lexer.setunicode(unicode)
 var tokens := lexer.lexinput()
 var values := parser.parse(tokens)
 
+if (util.buildtype == "parse") then {
+    for (values) do { v ->
+        print(v.pretty(0))
+    }
+    sys.exit(0)
+}
 genllvm.compile(values, util.outfile, util.modname, util.runmode,
 util.buildtype, util.gracelibPath)
