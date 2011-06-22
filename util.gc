@@ -102,7 +102,12 @@ method outprint(s) {
     outfilev.write("\n")
 }
 method syntax_error(s) {
-    io.error.write("Syntax error around line " ++ linenumv ++ ": ")
+    io.error.write("minigrace")
+    if (vtagv) then {
+        io.error.write("[" ++ vtagv ++ "]")
+    }
+    io.error.write(": " ++ modnamev ++ ": Syntax error around line "
+        ++ linenumv ++ ": ")
     io.error.write(s)
     io.error.write("\l")
     raise("Syntax error: "++ s)
