@@ -3,6 +3,9 @@ import sys
 
 var linenum := 1
 
+// The following works around a limitation of the current known-good
+// relating to multiple imports. After a version bump they can change to
+// straight "import unicode", "import util".
 var unicode
 method setunicode(u) {
     unicode := u
@@ -11,6 +14,8 @@ var util
 method setutil(u) {
     util := u
 }
+
+// Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {
     var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
                  "9", "a", "b", "c", "d", "e", "f"]
@@ -22,6 +27,8 @@ method hexdecchar(c) {
     }
     ret
 }
+
+// The various XXXTokenV are interned constant tokens to save allocation.
 
 class IdentifierToken { s ->
     var kind := "identifier"
@@ -103,7 +110,19 @@ class BindToken {
 }
 var BindTokenV := BindToken.new
 
-
+// When a new lexical class has begun, add to the tokens list the token
+// corresponding to the previous accumulated data. mode is the previous
+// lexical mode (a string), and accum the accumulated characters since that
+// mode begun. Modes are:
+//   n        Whitespace       i   Identifier
+//   "        Quoted string    x   Octets literal
+//   m        Number           o   Any operator
+//   c        Comment
+//   ,.{}()[] The corresponding literal character
+//
+// There are three special cases for mode o. If accum is "->", ":=", or "=",
+// the corresponding special token is created. For mode i, a keyword token
+// is created for an identifier whose name is a reserved keyword.
 method modechange(tokens, mode, accum) {
     var done := false
     var tok := 0
@@ -203,29 +222,34 @@ method modechange(tokens, mode, accum) {
     }
 }
 
+// True if ov is a valid identifier character. Identifier characters are
+// Unicode letters, Unicode numbers, apostrophe, and (currently) underscore.
+method isidentifierchar(ov) {
+    if (unicode.isLetter(ov) | unicode.isNumber(ov)
+        | (ov == 95) | (ov == 39)) then {
+        // 95 is _, 39 is '
+        true
+    } else {
+        false
+    }
+}
+
+// True if c (with codepoint ordval) is a valid operator character.
+method isoperatorchar(c, ordval) {
+    var ret := false
+    if ((c == "-") | (c == "&") | (c == "|") | (c == ":") | (c == "%")
+        | (c == "*") | (c == "/")) then {
+        ret := true
+    } elseif (unicode.isSymbolMathematical(ordval)) then {
+        ret := true
+    }
+    ret
+}
+
+// Read the program text from util.infile and return a list of tokens.
 method lexinput() {
     util.log_verbose("reading source.")
     var input := util.infile.read()
-
-    method isidentifierchar(ov) {
-        if (unicode.isLetter(ov) | unicode.isNumber(ov)
-            | (ov == 95) | (ov == 39)) then {
-            // 95 is _, 39 is '
-            true
-        } else {
-            false
-        }
-    }
-    method isoperatorchar(c, ordval) {
-        var ret := false
-        if ((c == "-") | (c == "&") | (c == "|") | (c == ":") | (c == "%")
-            | (c == "*") | (c == "/")) then {
-            ret := true
-        } elseif (unicode.isSymbolMathematical(ordval)) then {
-            ret := true
-        }
-        ret
-    }
 
     var tokens := []
     var mode := "n"
@@ -239,25 +263,32 @@ method lexinput() {
     util.log_verbose("lexing.")
     for (input) do { c ->
         var ct := ""
-        var ordval := c.ord
+        var ordval := c.ord // String.ord gives the codepoint
         if ((unicode.isSeparator(ordval) & (ordval /= 32) & (ordval /= 8232)) |
             (ordval == 9)) then {
+            // Character is whitespace, but not an ASCII space or Unicode
+            // LINE SEPARATOR, or is a tab
             util.syntax_error("illegal whitespace in input: " ++ ordval ++ ", "
                 ++ unicode.name(c))
         }
         if (unicode.isControl(ordval) & (ordval /= 10) & (ordval /= 13)) then {
+            // Character is a control character other than carriage return or
+            // line feed.
             util.syntax_error("illegal control character in input: #" ++ ordval)
         }
         if (instr) then {
 
         } elseif (mode /= "c") then {
+            // Not in a comment, so look for a mode.
             if (c == " ") then {
                 newmode := "n"
             }
             if (c == "\"") then {
+                // Beginning of a string
                 newmode := "\""
                 instr := true
-                if prev == "x" then {
+                if (prev == "x") then {
+                    // Or, actually of an Octet literal
                     newmode := "x"
                     mode := "n"
                 }
@@ -278,26 +309,34 @@ method lexinput() {
                 newmode := c
             }
             if ((c == ".") & (accum == ".")) then {
+                // Special handler for .. operator
                 mode := "o"
                 newmode := mode
             }
             if ((c == "/") & (accum == "/")) then {
+                // Start of comment
                 mode := "c"
                 newmode := mode
             }
         }
         if ((mode == "x") & (c == "\"") & (escaped.not)) then {
+            // End of octet literal
             newmode := "n"
             instr := false
         }
         if ((mode == "\"") & (c == "\"") & (escaped.not)) then {
+            // End of string literal
             newmode := "n"
             instr := false
         }
         if (newmode /= mode) then {
+            // This character is the beginning of a different lexical
+            // mode - process the old one now.
             modechange(tokens, mode, accum)
             mode := newmode
             if (instr) then {
+                // String accum should skip the opening quote, but
+                // other modes' should include their first character.
                 accum := ""
             } else {
                 accum := c
@@ -310,35 +349,49 @@ method lexinput() {
                 accum := ""
             }
         } elseif (instr) then {
-            if c == "\n" then {
+            if (c == "\n") then {
                 util.syntax_error("Newlines not permitted in string literals")
             }
             if (escaped) then {
                 if ((c == "l") | (c == "n")) then {
+                    // Newline escape
                     accum := accum ++ "\n"
                 } elseif (c == "u") then {
+                    // Beginning of a four-digit Unicode escape (for a BMP
+                    // codepoint).
                     unichars := 4
                     codepoint := 0
                 } elseif (c == "U") then {
+                    // Beginning of a six-digit Unicode escape (for a general
+                    // codepoint).
                     unichars := 6
                     codepoint := 0
                 } else {
+                    // For any other character preceded by \, insert it
+                    // literally.
                     accum := accum ++ c
                 }
                 escaped := false
             } elseif (c == "\\") then {
+                // Begin an escape sequence
                 escaped := true
             } elseif (unichars > 0) then {
+                // There are still hex digits to read for a Unicode escape.
+                // Use the current character as a hex digit and update the
+                // codepoint being calculated with its value.
                 unichars := unichars - 1
                 codepoint := codepoint * 16
                 codepoint := codepoint + hexdecchar(c)
                 if (unichars == 0) then {
+                    // At the end of the sequence construct the character
+                    // in the unicode library.
                     accum := accum ++ unicode.create(codepoint)
                 }
             } else {
                 accum := accum ++ c
             }
         } elseif (c == "\n") then {
+            // Linebreaks terminate any open tokens
             modechange(tokens, mode, accum)
             mode := "n"
             newmode := "n"
@@ -347,6 +400,9 @@ method lexinput() {
             accum := accum ++ c
         }
         if (c == "\n") then {
+            // Linebreaks increment the line counter and insert a
+            // special "line" token, which the parser can use to track
+            // the origin of AST nodes for later error reporting.
             linenum := linenum + 1
             tokens.push(object {
                 var kind := "line"
