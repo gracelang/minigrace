@@ -33,6 +33,8 @@ minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
 
+test: minigrace
+	./tests/harness "$(shell pwd)/minigrace --gracelib $(shell pwd)/gracelib.o" tests
 clean:
 	rm -f gracelib.o
 	rm -f unicode.gco unicode.gso
@@ -50,4 +52,4 @@ semiclean:
 known-good/%:
 	cd known-good && $(MAKE) $*
 
-.PHONY: all clean selfhost-stats selfhost-rec
+.PHONY: all clean selfhost-stats selfhost-rec test

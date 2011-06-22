@@ -1,0 +1,94 @@
+#!/bin/bash
+
+set -e
+GRACE="$1"
+TESTDIR="$2"
+shift
+shift
+cd "$TESTDIR"
+
+if [ $# -gt 0 ]
+then
+    tests=( "$@" )
+else
+    tests=( *.test.gc )
+fi
+
+set +e
+
+pass() {
+    echo "!PASS" >> test-$$.log
+}
+fail() {
+    echo "!FAIL $*" >> test-$$.log
+}
+
+NUM_TESTS=0
+NUM_PASS=0
+NUM_UNEXPECTED_SUCCESS=0
+NUM_WRONG_OUTPUT=0
+NUM_COMPILE_ERROR=0
+echo "Beginning test run at $(date)" > test.log
+for tcase in "${tests[@]}"
+do
+    if ! [ -e "$tcase" ]
+    then
+        tcase=$(echo $tcase*.test.gc)
+    fi
+    echo ================================================== >> test-$$.log
+    echo Beginning case "$tcase"... >>test-$$.log
+    NUM_TESTS=$((NUM_TESTS + 1))
+    if [ "${tcase%fail.test.gc}" = "$tcase" ]
+    then
+        if $GRACE --make --native "$tcase" > test-$$.log 2>&1
+        then
+            execname="${tcase%%.*}"
+            ./"$execname" > test-$$.out
+            if diff -q test-$$.out ${tcase%.test.gc}.out >/dev/null 2>&1
+            then
+                NUM_PASS=$((NUM_PASS + 1))
+                echo "${NUM_TESTS} PASS: $tcase"
+                pass
+                rm -f test-$$.out
+            else
+                echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                fail "wrong output"
+            fi
+        else
+            NUM_COMPILE_ERROR=$((NUM_COMPILER_ERROR + 1))
+            echo "${NUM_TESTS} ERROR: $tcase failed to compile"
+            fail "compile error"
+        fi
+    else
+        if $GRACE --make --native "$tcase" > test-$$.log 2>&1
+        then
+            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
+            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
+            fail "compiled"
+        else
+            NUM_PASS=$((NUM_PASS + 1))
+            echo "${NUM_TESTS} PASS: $tcase"
+            pass
+        fi
+    fi
+    cat test-$$.log >> test.log
+    if [ -e test-$$.out ]
+    then
+        echo "Got output:" >> test.log
+        cat test-$$.out >> test.log
+        echo "Expected output:" >> test.log
+        cat ${tcase%.test.gc}.out >> test.log
+    fi
+    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s
+done
+
+echo Ran $NUM_TESTS tests.
+echo $NUM_PASS/$NUM_TESTS passed.
+echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have."
+echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output."
+echo "$NUM_COMPILE_ERROR tests did not compile but should have."
+NUM_FAIL=$((NUM_TESTS - NUM_PASS))
+if [ $NUM_FAIL -gt 0 ]
+then
+    exit 1
+fi

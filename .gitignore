@@ -10,3 +10,4 @@ minigrace
 UnicodeData.txt
 unicodegen.py
 misc
+tests/test.log
