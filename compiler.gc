@@ -6,6 +6,8 @@ import lexer
 import ast
 import parser
 import genllvm
+// Workarounds for current known-good, which breaks with multiple imports
+// of the same module. When known-good is bumped, these can all be removed.
 genllvm.setast(ast)
 parser.setast(ast)
 
@@ -20,10 +22,13 @@ var tokens := lexer.lexinput()
 var values := parser.parse(tokens)
 
 if (util.buildtype == "parse") then {
+    // Parse mode pretty-prints the source's AST and quits.
     for (values) do { v ->
         print(v.pretty(0))
     }
     sys.exit(0)
 }
+
+// Perform the actual compilation
 genllvm.compile(values, util.outfile, util.modname, util.runmode,
 util.buildtype, util.gracelibPath)
