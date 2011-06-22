@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <stdint.h>
+#include <libgen.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -101,6 +102,8 @@ int Strings_allocated = 0;
 
 int start_clocks = 0;
 double start_time = 0;
+
+char **ARGV = NULL;
 
 char callstack[128][128];
 int calldepth = 0;
@@ -1497,11 +1500,51 @@ struct Object *gracelib_length(struct Object *self) {
 struct Object **alloc_var() {
     return glmalloc(sizeof(struct Object*));
 }
-struct Object *dlmodule(const char *name) {
-    char *buf = glmalloc(strlen(name) + 13);
+int find_gso(const char *name, char *buf) {
+    // Try:
+    // 1) .
+    // 2) dirname(argv[0])
+    // 3) GRACE_MODULE_PATH
+    struct stat st;
     strcpy(buf, "./");
     strcat(buf, name);
     strcat(buf, ".gso");
+    if (stat(buf, &st) == 0) {
+        return 1;
+    }
+    char *ep = ARGV[0];
+    char epm[strlen(ep) + 1];
+    strcpy(epm, ep);
+    char *dn = dirname(epm);
+    strcpy(buf, dn);
+    strcat(buf, "/");
+    strcat(buf, name);
+    strcat(buf, ".gso");
+    if (stat(buf, &st) == 0) {
+        return 1;
+    }
+    if (getenv("GRACE_MODULE_PATH") != NULL) {
+        char *gmp = getenv("GRACE_MODULE_PATH");
+        strcpy(buf, gmp);
+        strcat(buf, "/");
+        strcat(buf, name);
+        strcat(buf, ".gso");
+        if (stat(buf, &st) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+struct Object *dlmodule(const char *name) {
+    int blen = strlen(name) + 13;
+    if (getenv("GRACE_MODULE_PATH") != NULL)
+        blen += strlen(getenv("GRACE_MODULE_PATH"));
+    char buf[blen];
+    if (!find_gso(name, buf)) {
+        fprintf(stderr, "minigrace: could not find dynamic module %s.\n",
+                name);
+        exit(1);
+    }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     strcpy(buf, "module_");
     strcat(buf, name);
@@ -1527,6 +1570,9 @@ void gracelib_stats() {
     etime -= start_time;
     fprintf(stderr, "CPU time: %f\n", clocks);
     fprintf(stderr, "Elapsed time: %f\n", etime);
+}
+void gracelib_argv(char **argv) {
+    ARGV = argv;
 }
 void setdatum(struct Object *o, struct Object**params, int idx) {
     o->data[idx] = params[0];
