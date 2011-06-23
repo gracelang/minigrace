@@ -1,4 +1,4 @@
-ARCH=$(shell uname -s)-$(shell uname -m)
+ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=1b4627df5106f89b670b0070ccaeda525120007c
 all: minigrace
 
@@ -43,11 +43,11 @@ clean:
 	rm -f gracelib.o
 	rm -f unicode.gco unicode.gso
 	rm -rf l1 l2 buildinfo.gc
-	rm -f $(patsubst %.gc,%.ll,$(SOURCEFILES))
-	rm -f $(patsubst %.gc,%.s,$(SOURCEFILES))
-	rm -f $(patsubst %.gc,%.gco,$(SOURCEFILES))
-	rm -f $(patsubst %.gc,%.bc,$(SOURCEFILES))
-	rm -f $(patsubst %.gc,%,$(SOURCEFILES))
+	rm -f $(SOURCEFILES:.gc=.ll)
+	rm -f $(SOURCEFILES:.gc=.s)
+	rm -f $(SOURCEFILES:.gc=.gco)
+	rm -f $(SOURCEFILES:.gc=.bc)
+	rm -f $(SOURCEFILES:.gc=)
 	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
 
 semiclean:

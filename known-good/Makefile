@@ -1,4 +1,4 @@
-ARCH=$(shell uname -s)-$(shell uname -m)
+ARCH:=$(shell uname -s)-$(shell uname -m)
 
 $(ARCH)/minigrace-initial:
 	mkdir -p $(ARCH)
