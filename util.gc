@@ -1,5 +1,6 @@
 import io
 import sys
+import buildinfo
 
 var verbosityv := 30
 var outfilev := io.output
@@ -54,6 +55,12 @@ method parseargs() {
                 }
                 if (arg == "--parse") then {
                     buildtypev := "parse"
+                }
+                if (arg == "--version") then {
+                    print("minigrace 0.0.0")
+                    print("git revision " ++ buildinfo.gitrevision)
+                    print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
+                    sys.exit(0)
                 }
             } else {
                 var filename := arg
