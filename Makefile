@@ -1,5 +1,5 @@
 ARCH=$(shell uname -s)-$(shell uname -m)
-STABLE=f26b7f1f999067bfa44608cb282e26c28b49eaf8
+STABLE=1b4627df5106f89b670b0070ccaeda525120007c
 all: minigrace
 
 SOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc buildinfo.gc

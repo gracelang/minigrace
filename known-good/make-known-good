@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -e
+COMMIT=$1
+ARCH=$2
+
+cat >EXCLUDE <<EOT
+pax_global_header
+known-good
+tests
+EOT
+
+git archive --prefix=tmp-$$/ --remote=.. $COMMIT | tar xf - -X EXCLUDE
+cd tmp-$$
+ln -s .. known-good
+echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
+gmake l2/minigrace
+cd ..
+
+mkdir -p "$ARCH"
+mv tmp-$$/l2/minigrace $ARCH/minigrace-$COMMIT
+cp tmp-$$/l2/gracelib.o $ARCH/gracelib-$COMMIT.o
+for x in tmp-$$/l2/*.ll
+do
+   nm=$(basename "$x")
+   nm=$(cut -d. -f1 <<<"$nm")
+   mv $x independent/$nm-$COMMIT.ll
+done
+
+rm -rf tmp-$$ EXCLUDE

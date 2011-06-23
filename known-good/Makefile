@@ -110,3 +110,6 @@ $(ARCH)/minigrace-f26b7f1f999067bfa44608cb282e26c28b49eaf8: $(ARCH)/minigrace-00
 	rm -f out.*
 	rm -f compiler.gc gracelib.c
 	rm -f unicode.gso unicode.c unicodedata.h unicode.gco
+
+$(ARCH)/minigrace-%:
+	./make-known-good $* $(ARCH)
