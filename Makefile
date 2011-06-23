@@ -2,9 +2,10 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=1b4627df5106f89b670b0070ccaeda525120007c
 all: minigrace
 
-SOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc buildinfo.gc
+REALSOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc
+SOURCEFILES = $(REALSOURCEFILES) buildinfo.gc
 
-buildinfo.gc:
+buildinfo.gc: $(REALSOURCEFILES) gracelib.c
 	echo "method gitrevision() { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.gc
 
 gracelib.o: gracelib.c
@@ -32,7 +33,6 @@ selfhost-rec: minigrace
 
 minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.gc
-	rm -f buildinfo.gc
 
 unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
