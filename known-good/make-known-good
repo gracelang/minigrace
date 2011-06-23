@@ -4,6 +4,13 @@ set -e
 COMMIT=$1
 ARCH=$2
 
+if which gmake >/dev/null 2>&1
+then
+    MAKE=gmake
+else
+    MAKE=make
+fi
+
 cat >EXCLUDE <<EOT
 pax_global_header
 known-good
@@ -14,7 +21,7 @@ git archive --prefix=tmp-$$/ --remote=.. $COMMIT | tar xf - -X EXCLUDE
 cd tmp-$$
 ln -s .. known-good
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
-gmake l2/minigrace
+$MAKE l2/minigrace
 cd ..
 
 mkdir -p "$ARCH"
