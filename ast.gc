@@ -1,10 +1,6 @@
 var kwyj1 := 1
 var kwyj2 := 2
-// Workaround for known-good import limitation
-var util
-method setutil(u) {
-    util := u
-}
+import util
 
 // This module contains pseudo-classes for all the AST nodes used
 // in the parser. The module predates the existence of classes in the

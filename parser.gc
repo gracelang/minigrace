@@ -1,16 +1,7 @@
 import io
+import ast
+import util
 
-// These are because the current known-good version breaks with
-// multiple imports of the same module, and can be replaced with
-// imports later.
-var ast
-var util
-method setast(a) {
-        ast := a
-}
-method setutil(u) {
-        util := u
-}
 var lastline := 0
 var linenum := 0
 var tokens := 0

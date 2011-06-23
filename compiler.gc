@@ -9,15 +9,7 @@ import genllvm
 import buildinfo
 // Workarounds for current known-good, which breaks with multiple imports
 // of the same module. When known-good is bumped, these can all be removed.
-genllvm.setast(ast)
-parser.setast(ast)
-
 util.parseargs()
-ast.setutil(util)
-parser.setutil(util)
-genllvm.setutil(util)
-lexer.setutil(util)
-lexer.setunicode(unicode)
 
 var tokens := lexer.lexinput()
 var values := parser.parse(tokens)

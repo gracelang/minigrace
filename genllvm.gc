@@ -1,5 +1,7 @@
 import io
 import sys
+import ast
+import util
 
 // genllvm produces LLVM bitcode from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -26,15 +28,7 @@ var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
-// Workaround of multiple import bug in current known-good
-var ast
-var util
-method setast(a) {
-    ast := a
-}
-method setutil(u) {
-    util := u
-}
+
 method out(s) {
     output.push(s)
 }

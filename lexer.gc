@@ -1,19 +1,9 @@
 import io
 import sys
+import util
+import unicode
 
 var linenum := 1
-
-// The following works around a limitation of the current known-good
-// relating to multiple imports. After a version bump they can change to
-// straight "import unicode", "import util".
-var unicode
-method setunicode(u) {
-    unicode := u
-}
-var util
-method setutil(u) {
-    util := u
-}
 
 // Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {
