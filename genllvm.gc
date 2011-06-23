@@ -1,6 +1,12 @@
 import io
 import sys
 
+// genllvm produces LLVM bitcode from the AST, and optionally links and
+// compiles it to native code. Code that affects the way the compiler behaves
+// is in the "compile" method at the bottom. Other methods principally deal
+// with translating a single AST node to bitcode, and parallel the AST and
+// parser.
+
 var tmp
 var verbosity := 30
 var pad1 := 1
@@ -20,6 +26,7 @@ var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
+// Workaround of multiple import bug in current known-good
 var ast
 var util
 method setast(a) {
