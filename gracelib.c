@@ -1532,7 +1532,6 @@ int find_gso(const char *name, char *buf) {
         strcat(buf, "/");
         strcat(buf, name);
         strcat(buf, ".gso");
-        printf("Trying search at %s\n", buf);
         if (stat(buf, &st) == 0) {
             return 1;
         }
