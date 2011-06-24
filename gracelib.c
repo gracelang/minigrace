@@ -32,6 +32,30 @@ struct Object {
     int methodspace;
 };
 
+typedef struct NewObject* Object;
+
+typedef struct NewMethod {
+    char *name;
+    Object(*func)(Object, int, Object*, int);
+} Method;
+
+typedef struct ClassData {
+    char *name;
+    Method *methods;
+    int nummethods;
+}* ClassData;
+
+struct NewObject {
+    int32_t flags;
+    ClassData class;
+    char data[];
+};
+
+typedef union EitherObject {
+    Object new;
+    struct Object *old;
+} EitherObject;
+
 void addmethod(struct Object*, char*,
         struct Object* (*)(struct Object*, int, struct Object**));
 struct Object *Float64_asString(struct Object*, int nparams,
@@ -52,12 +76,14 @@ struct Object *String_concat(struct Object*, int nparams,
         struct Object**);
 struct Object *String_index(struct Object*, int nparams,
         struct Object**);
-struct Object *callmethod(struct Object *receiver, const char *name,
+void *callmethod(void *receiver, const char *name,
         int nparams, struct Object **args);
 struct Object *alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_ConcatString(struct Object *, struct Object *);
 struct Object *alloc_Undefined();
+
+Object alloc_Integer32(int);
 
 struct Object *String_size(struct Object *, int, struct Object **);
 struct Object *makeEscapedString(char *);
@@ -137,6 +163,14 @@ void initprofiling() {
 int istrue(struct Object *o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
+int isclass(void *v, const char *class) {
+    struct Object *o = v;
+    Object p = v;
+    if (o->flags & 1) {
+        return (strcmp(p->class->name, class) == 0);
+    }
+    return (strcmp(o->type, class) == 0);
+}
 char *cstringfromString(struct Object *s) {
     int *z = s->bdata[2];
     char *c = glmalloc(*z + 1);
@@ -155,7 +189,14 @@ void bufferfromString(struct Object *s, char *c) {
     int *z = s->bdata[2];
     ConcatString__FillBuffer(s, c, *z);
 }
-int integerfromAny(struct Object *o) {
+int integerfromAny(void *d) {
+    struct Object *o = d;
+    Object p = d;
+    if (0 && o->flags & 1) {
+        if (strcmp(p->class->name, "Integer32") == 0) {
+            return *(int*)p->data;
+        }
+    }
     if (strcmp(o->type, "Float64") == 0) {
         double *d = o->bdata[0];
         int i = *d;
@@ -996,36 +1037,56 @@ struct Object *Float64_Add(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Float64(a+b);
 }
 struct Object *Float64_Sub(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Float64(a-b);
 }
 struct Object *Float64_Mul(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Float64(a*b);
 }
 struct Object *Float64_Div(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Float64(a/b);
 }
 struct Object *Float64_Mod(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
     int i = (int)a;
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     int j = (int)b;
     return alloc_Float64(i % j);
 }
@@ -1033,36 +1094,61 @@ struct Object *Float64_Equals(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Boolean(a == b);
 }
 struct Object *Float64_LessThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Boolean(a < b);
 }
 struct Object *Float64_GreaterThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Boolean(a > b);
 }
 struct Object *Float64_LessOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Boolean(a <= b);
 }
 struct Object *Float64_GreaterOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+    double b;
+    if (isclass(other, "Float64"))
+        b = *((double*)other->bdata[0]);
+    else
+        b = integerfromAny(other);
     return alloc_Boolean(a >= b);
+}
+struct Object *Float64_asInteger32(struct Object *self, int nparams,
+        struct Object **args) {
+    int i = integerfromAny(self);
+    return (struct Object *)alloc_Integer32(i);
 }
 struct Object *alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
@@ -1105,6 +1191,7 @@ struct Object *alloc_Float64(double num) {
         addmethod(o, ">=", &Float64_GreaterOrEqual);
         addmethod(o, "..", &Float64_Range);
         addmethod(o, "asString", &Float64_asString);
+        addmethod(o, "asInteger32", &Float64_asInteger32);
         Float64_Methods = o->methods;
         Float64_NumMethods = o->nummethods;
     } else {
@@ -1405,18 +1492,47 @@ struct Object * alloc_Undefined() {
     undefined = o;
     return o;
 }
-struct Object *callmethod(struct Object *receiver, const char *name,
+Object callmethod2(Object self, const char *name,
+        int argc, Object *argv) {
+    ClassData c = self->class;
+    Method *m = NULL;
+    int i = 0;
+    for (i=0; i < c->nummethods; i++) {
+        if (strcmp(c->methods[i].name, name) == 0) {
+            m = &c->methods[i];
+            break;
+        }
+    }
+    sprintf(callstack[calldepth], "%s.%s (%i)", self->class->name, name,
+            linenumber);
+    calldepth++;
+    if (calldepth == 128) {
+        die("Maximum call stack depth exceeded.");
+    }
+    if (m != NULL) {
+        Object ret = m->func(self, argc, argv, 0);
+        calldepth--;
+        return ret;
+    }
+    die("Method lookup error: no %s in %s.",
+            name, self->class->name);
+    exit(1);
+}
+void *callmethod(void *receiver, const char *name,
         int nparams, struct Object **args) {
     int i;
     struct Method *m;
     struct Object *o;
-    for (i=0; i<receiver->nummethods; i++) {
-        m = receiver->methods[i];
+    struct Object *r = receiver;
+    if (r->flags & 1)
+        return callmethod2(receiver, name, nparams, (Object*)args);
+    for (i=0; i<r->nummethods; i++) {
+        m = r->methods[i];
         if (strcmp(m->name, name) == 0)
             break;
         m = NULL;
     }
-    sprintf(callstack[calldepth], "%s.%s (%i)", receiver->type, name,
+    sprintf(callstack[calldepth], "%s.%s (%i)", r->type, name,
             linenumber);
     calldepth++;
     if (calldepth == 128) {
@@ -1424,17 +1540,17 @@ struct Object *callmethod(struct Object *receiver, const char *name,
     }
     if (m != NULL) {
         if (m->closure != NULL) {
-            o = m->cfunc(receiver, nparams, args, m->closure);
+            o = m->cfunc(r, nparams, args, m->closure);
             calldepth--;
             return o;
         } else {
-            o = m->func(receiver, nparams, args);
+            o = m->func(r, nparams, args);
             calldepth--;
             return o;
         }
     }
     die("Method lookup error: no %s in %s.",
-            name, receiver->type);
+            name, r->type);
     exit(1);
 }
 
@@ -1502,6 +1618,147 @@ struct Object *gracelib_length(struct Object *self) {
 }
 struct Object **alloc_var() {
     return glmalloc(sizeof(struct Object*));
+}
+void add_Method(ClassData c, const char *name,
+        Object(*func)(Object, int, Object*, int)) {
+    int i;
+    for (i=0; c->methods[i].name != NULL; i++) { }
+    c->methods[i].name = glmalloc(strlen(name) + 1);
+    strcpy(c->methods[i].name, name);
+    c->methods[i].func = func;
+    c->nummethods++;
+}
+Object alloc_newobj(int additional_size, ClassData class) {
+    Object o = glmalloc(sizeof(struct NewObject) + additional_size);
+    o->class = class;
+    o->flags = 1;
+    return o;
+}
+ClassData alloc_class(const char *name, int nummethods) {
+    ClassData c = glmalloc(sizeof(struct ClassData));
+    c->name = glmalloc(strlen(name) + 1);
+    strcpy(c->name, name);
+    c->methods = glmalloc(sizeof(Method) * nummethods);
+    c->nummethods = 0;
+    int i;
+    for (i=0; i<nummethods; i++) {
+        c->methods[i].name = NULL;
+    }
+    return c;
+}
+
+Object Integer32_Equals(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return (Object)alloc_Boolean(ival == oval);
+}
+Object Integer32_NotEquals(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return (Object)alloc_Boolean(ival /= oval);
+}
+Object Integer32_Plus(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval;
+    if (self->class == args[0]->class) {
+        oval = *(int*)args[0]->data;
+        return alloc_Integer32(ival + oval);
+    }
+    oval = integerfromAny(args[0]);
+    return (Object)alloc_Float64(ival + oval);
+}
+Object Integer32_Times(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval;
+    if (self->class == args[0]->class) {
+        oval = *(int*)args[0]->data;
+        return alloc_Integer32(ival * oval);
+    }
+    oval = integerfromAny(args[0]);
+    return (Object)alloc_Float64(ival * oval);
+}
+Object Integer32_Minus(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval;
+    if (self->class == args[0]->class) {
+        oval = *(int*)args[0]->data;
+        return alloc_Integer32(ival - oval);
+    }
+    oval = integerfromAny(args[0]);
+    return (Object)alloc_Float64(ival - oval);
+}
+Object Integer32_DividedBy(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval;
+    if (self->class == args[0]->class) {
+        oval = *(int*)args[0]->data;
+        return alloc_Integer32(ival / oval);
+    }
+    oval = integerfromAny(args[0]);
+    return (Object)alloc_Float64(ival / oval);
+}
+Object Integer32_LShift(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return alloc_Integer32(ival << oval);
+}
+Object Integer32_RShift(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return alloc_Integer32(ival >> oval);
+}
+Object Integer32_And(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return alloc_Integer32(ival & oval);
+}
+Object Integer32_Or(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return alloc_Integer32(ival | oval);
+}
+Object Integer32_LessThan(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return (Object)alloc_Boolean(ival < oval);
+}
+Object Integer32_GreaterThan(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    int oval = integerfromAny(args[0]);
+    return (Object)alloc_Boolean(ival > oval);
+}
+Object Integer32_asString(Object self, int nargs, Object *args, int flags) {
+    int ival = *(int*)self->data;
+    char buf[12];
+    sprintf(buf, "%i", ival);
+    return (Object)alloc_String(buf);
+}
+Object Integer32_isInteger32(Object self, int nargs, Object *args, int flags) {
+    return (Object)alloc_Boolean(1);
+}
+ClassData Integer32 = NULL;
+Object alloc_Integer32(int i) {
+    if (Integer32 == NULL) {
+        Integer32 = alloc_class("Integer32", 14);
+        add_Method(Integer32, "==", &Integer32_Equals);
+        add_Method(Integer32, "/=", &Integer32_NotEquals);
+        add_Method(Integer32, "+", &Integer32_Plus);
+        add_Method(Integer32, "*", &Integer32_Times);
+        add_Method(Integer32, "-", &Integer32_Minus);
+        add_Method(Integer32, "/", &Integer32_DividedBy);
+        add_Method(Integer32, "<", &Integer32_LessThan);
+        add_Method(Integer32, ">", &Integer32_GreaterThan);
+        add_Method(Integer32, "<<", &Integer32_LShift);
+        add_Method(Integer32, ">>", &Integer32_RShift);
+        add_Method(Integer32, "&", &Integer32_And);
+        add_Method(Integer32, "|", &Integer32_Or);
+        add_Method(Integer32, "asString", &Integer32_asString);
+        add_Method(Integer32, "isInteger32", &Integer32_isInteger32);
+    }
+    Object o = alloc_newobj(sizeof(int32_t), Integer32);
+    int32_t *d = (int32_t*)o->data;
+    *d = i;
+    return (Object)o;
 }
 int find_gso(const char *name, char *buf) {
     // Try:
