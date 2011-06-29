@@ -12,6 +12,13 @@ import buildinfo
 util.parseargs()
 
 var tokens := lexer.lexinput()
+if (util.target == "lex") then {
+    // Print the lexed tokens and quit.
+    for (tokens) do { v ->
+        print(v.kind ++ ": " ++ v.value)
+    }
+    sys.exit(0)
+}
 var values := parser.parse(tokens)
 
 if (util.buildtype == "parse") then {

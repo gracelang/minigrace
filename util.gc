@@ -12,6 +12,7 @@ var gracelibPathv := "gracelib.o"
 var linenumv := 1
 var vtagv := false
 var noexecv := false
+var targetv := "llvm"
 
 method parseargs() {
     var argv := sys.argv
@@ -52,6 +53,10 @@ method parseargs() {
                 if (arg == "--gracelib") then {
                     ai := ai + 1
                     gracelibPathv := argv[ai]
+                }
+                if (arg == "--target") then {
+                    ai := ai + 1
+                    targetv := argv[ai]
                 }
                 if (arg == "--parse") then {
                     buildtypev := "parse"
@@ -152,4 +157,13 @@ method vtag() {
 }
 method noexec() {
     noexecv
+}
+method target() {
+    targetv
+}
+method engine() {
+    "native"
+}
+method debug(s) {
+
 }
