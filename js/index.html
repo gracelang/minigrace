@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+ <head>
+     <title>Minigrace JavaScript backend</title>
+     <script type="text/javascript">
+         var goldenOutput = "";
+         function compile() {
+            stdout_txt = document.getElementById("js_txt");
+            stdin_txt = document.getElementById("code_txt");
+            stderr_txt = document.getElementById("stderr_txt");
+            stderr_txt.value = "";
+            stdout_txt.value = "";
+            gracecode_compiler.call({methods:{}, data: {}});
+         }
+        function run() {
+            stdout_txt = document.getElementById("stdout_txt");
+            stdin_txt = document.getElementById("stdout_txt");
+            stderr_txt = document.getElementById("stderr_txt");
+            var code = document.getElementById("js_txt").value;
+            eval(code);
+            gracecode_USER.call({methods:{}, data: {}})
+        }
+        function compilerun() {
+            compile();
+            run();
+        }
+        function loadtest(testname) {
+            var req = new XMLHttpRequest();
+            req.open("GET", "./tests/" + testname + ".test.gc", false);
+            req.send(null);
+            if (req.status == 200) {
+                document.getElementById("code_txt").value = req.responseText;
+            }
+            if (testname.indexOf(".fail") == -1) {
+                req.open("GET", "./tests/" + testname + ".out", false);
+                req.send(null);
+                if (req.status == 200) {
+                    document.getElementById("stdout_txt").value = "Golden output:\n" + req.responseText + "=================================\n";
+                    goldenOutput = req.responseText;
+                }
+            } else {
+                document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
+            }
+        }
+     </script>
+ </head>
+ <textarea id="code_txt" rows="20" cols="60">print("Hello, world!")</textarea>
+ <textarea id="js_txt" rows="20" cols="60"></textarea><br />
+ <textarea id="stdout_txt" rows="20" cols="60"></textarea>
+ <textarea id="stderr_txt" rows="20" cols="60"></textarea>
+ <br />
+ <input type="button" value="Compile" onclick="compile()" />
+ <input type="button" value="Run code" onclick="run()" />
+ <input type="button" value="Compile & run" onclick="compilerun()" />
+ <input type="checkbox" id="show_tokens" />Tokens
+ <input type="checkbox" id="show_ast" />Parse tree
+ <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
+ <select id="testcases">
+  <option value="001-print">001-print</option>
+  <option value="002-concat">002-concat</option>
+  <option value="003-arithmetic">003-arithmetic</option>
+  <option value="004-var">004-var</option>
+  <option value="005-boolean">005-boolean</option>
+  <option value="006-dotcall">006-dotcall</option>
+  <option value="007-precedence">007-precedence</option>
+  <option value="008-if">008-if</option>
+  <option value="009-elseif">009-elseif</option>
+  <option value="010-while">010-while</option>
+  <option value="011-range">011-range</option>
+  <option value="012-for">012-for</option>
+  <option value="013-method">013-method</option>
+  <option value="014-objectvar">014-objectvar</option>
+  <option value="015-objectconst">015-objectconst</option>
+  <option value="016-objectmeth">016-objectmeth</option>
+  <option value="017-objectvarassign">017-objectvarassign</option>
+  <option value="018-objectself">018-objectself</option>
+  <option value="019-equality">019-equality</option>
+  <option value="020-inequality">020-inequality</option>
+  <option value="021-ifnothen.fail">021-ifnothen.fail</option>
+  <option value="022-elseifnothen.fail">022-elseifnothen.fail</option>
+  <option value="023-precedence.fail">023-precedence.fail</option>
+  <option value="024-tab.fail">024-tab.fail</option>
+ </select>
+ <br />
+ <script src="gracelib.js" type="text/javascript"></script>
+ <script src="compiler.js"></script>
+ <script src="lexer.js"></script>
+ <script src="ast.js"></script>
+ <script src="parser.js"></script>
+ <script src="genllvm.js"></script>
+ <script src="genjs.js"></script>
+ <script src="buildinfo.js"></script>
+</html>

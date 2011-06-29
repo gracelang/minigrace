@@ -6,6 +6,7 @@ import lexer
 import ast
 import parser
 import genllvm
+import genjs
 import buildinfo
 // Workarounds for current known-good, which breaks with multiple imports
 // of the same module. When known-good is bumped, these can all be removed.
@@ -30,5 +31,13 @@ if (util.buildtype == "parse") then {
 }
 
 // Perform the actual compilation
-genllvm.compile(values, util.outfile, util.modname, util.runmode,
-util.buildtype, util.gracelibPath)
+if (util.target == "llvm") then {
+    genllvm.compile(values, util.outfile, util.modname, util.runmode,
+        util.buildtype, util.gracelibPath)
+} elseif (util.target == "js") then {
+    genjs.compile(values, util.outfile, util.modname, util.runmode,
+        util.buildtype, util.gracelibPath)
+} else {
+    io.error.write("minigrace: no such target '" ++ util.target ++ "'")
+    sys.exit(1)
+}

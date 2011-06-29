@@ -2,7 +2,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=1b4627df5106f89b670b0070ccaeda525120007c
 all: minigrace
 
-REALSOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc
+REALSOURCEFILES = compiler.gc util.gc ast.gc genllvm.gc lexer.gc parser.gc genjs.gc
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.gc
 
 buildinfo.gc: $(REALSOURCEFILES) gracelib.c
@@ -19,6 +19,9 @@ l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso 
 
 l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.gc )
+
+js/index.html: minigrace $(SOURCEFILES) unicode.gso gracelib.o
+	( mkdir -p js ; cd js ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; for f in $(SOURCEFILES) ; do ../minigrace --verbose --target js -o $$(echo $$f|cut -d. -f1).js $$f --module $$(echo $$f|cut -d. -f1) ; done )
 
 selfhost-stats: minigrace
 	cat compiler.gc util.gc ast.gc parser.gc genllvm.gc > tmp.gc

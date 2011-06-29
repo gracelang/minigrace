@@ -1,0 +1,549 @@
+import io
+import sys
+import ast
+import util
+
+var tmp
+var verbosity := 30
+var pad1 := 1
+var auto_count := 0
+var constants := []
+var output := []
+var usedvars := []
+var declaredvars := []
+var linkfiles := []
+var bblock := "entry"
+var linenum := 1
+var modules := []
+var staticmodules := []
+var values := []
+var outfile
+var modname := "main"
+var runmode := "build"
+var buildtype := "bc"
+var gracelibPath := "gracelib.o"
+
+method out(s) {
+    output.push(s)
+}
+method outprint(s) {
+    util.outprint(s)
+}
+method log_verbose(s) {
+    util.log_verbose(s)
+}
+method beginblock(s) {
+    bblock := "%" ++ s
+    out(s ++ ":")
+}
+method compilearray(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var r
+    var vals := []
+    for (o.value) do {a ->
+        r := compilenode(a)
+        vals.push(r)
+    }
+    out("  var array" ++ myc ++ " = new GraceList([")
+    for (vals) do {r->
+        out(r ++ ",")
+    }
+    out("]);\n")
+    o.register := "array" ++ myc
+}
+method compilemember(o) {
+    // Member in value position is actually a nullary method call.
+    var l := []
+    var c := ast.astcall(o, l)
+    var r := compilenode(c)
+    o.register := r
+}
+method compileobjconstdec(o, selfr, pos) {
+    var val := "undefined"
+    if (o.value) then {
+        val := compilenode(o.value)
+    }
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.name.value
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() {")
+    out("    return this.data[\"" ++ nm ++ "\"];")
+    out("  }")
+    out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
+        "_" ++ nm ++ myc ++ ";")
+}
+method compileobjvardec(o, selfr, pos) {
+    var val := "undefined"
+    if (o.value) then {
+        val := compilenode(o.value)
+    }
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.name.value
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() {")
+    out("    return this.data[\"" ++ nm ++ "\"];")
+    out("  }")
+    out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
+        "_" ++ nm ++ myc ++ ";")
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("  var writer_" ++ modname ++ "_" ++ nm ++ myc ++ " = function(o) {")
+    out("    this.data[\"" ++ nm ++ "\"] = o;")
+    out("  }")
+    out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
+        "_" ++ nm ++ myc ++ ";")
+}
+method compileclass(o) {
+    var params := o.params
+    var mbody := [ast.astobject(o.value)]
+    var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
+        false)
+    var obody := [newmeth]
+    var cobj := ast.astobject(obody)
+    var con := ast.astconstdec(o.name, cobj, false)
+    o.register := compilenode(con)
+}
+method compileobject(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var selfr := "obj" ++ myc
+    out("  var " ++ selfr ++ " = Grace_allocObject();")
+    var pos := 0
+    for (o.value) do { e ->
+        if (e.kind == "method") then {
+            compilemethod(e, selfr)
+        }
+        if (e.kind == "vardec") then {
+            compileobjvardec(e, selfr, pos)
+            pos := pos + 1
+        }
+        if (e.kind == "constdec") then {
+            compileobjconstdec(e, selfr, pos)
+            pos := pos + 1
+        }
+    }
+    o.register := selfr
+}
+method compileblock(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    out("  var block" ++ myc ++ " = Grace_allocObject();")
+    out("  block" ++ myc ++ ".methods[\"apply\"] = function() {")
+    out("    this.real.apply(this.receiver, arguments);")
+    out("  }")
+    out("  block" ++ myc ++ ".receiver = this;")
+    out("  block" ++ myc ++ ".real = function(")
+    var first := true
+    for (o.params) do {p->
+        if (first.not) then {
+            out(",")
+        }
+        out("var_" ++ p.value)
+    }
+    out(") {")
+    var ret := "undefined"
+    for (o.body) do {l->
+        ret := compilenode(l)
+    }
+    out("  return " ++ ret ++ ";")
+    out("};")
+    o.register := "block" ++ myc
+}
+method compilefor(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var over := compilenode(o.value)
+    var blk := ast.astblock([o.variable], o.body)
+    var blko := compilenode(blk)
+    out("  var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
+        ++ over ++ ");")
+    out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"havemore\"].call("
+        ++ "it" ++ myc ++ "))) {")
+    out("    var fv" ++ myc ++ " = it" ++ myc ++ ".methods[\"next\"].call("
+        ++ "it" ++ myc ++ ");")
+    out("    "++blko++".methods[\"apply\"].call("++blko++", fv" ++ myc ++ ");")
+    out("  }")
+    o.register := over
+}
+method compilemethod(o, selfobj) {
+    var oldusedvars := usedvars
+    var olddeclaredvars := declaredvars
+    usedvars := []
+    declaredvars := []
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var name := o.value.value
+    var nm := name ++ myc
+    var closurevars := []
+    out("var func" ++ myc ++ " = function(")
+    var first := true
+    for (o.params) do { p ->
+        if (first.not) then {
+            out(",")
+        }
+        out("var_" ++ p.value)
+        first := false
+    }
+    out(") {")
+    var ret := "undefined"
+    for (o.body) do { l ->
+        ret := compilenode(l)
+    }
+    out("  return " ++ ret)
+    out("}")
+    usedvars := oldusedvars
+    declaredvars := olddeclaredvars
+    out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
+}
+method compilewhile(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var cond := compilenode(o.value)
+    out("  var wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
+    out("  while (wcond" ++ myc ++ ") {")
+    var tret := "null"
+    for (o.body) do { l->
+        tret := compilenode(l)
+    }
+    cond := compilenode(o.value)
+    out("  wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
+    out("  }")
+    o.register := cond // "%while" ++ myc
+}
+method compileif(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    out("  if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) {")
+    var tret := "undefined"
+    var fret := "undefined"
+    for (o.thenblock) do { l->
+        tret := compilenode(l)
+    }
+    out("  var if" ++ myc ++ " = " ++ tret ++ ";")
+    if (o.elseblock.size > 0) then {
+        out("  } else {")
+        for (o.elseblock) do { l->
+            fret := compilenode(l)
+        }
+        out("  var if" ++ myc ++ " = " ++ fret ++ ";")
+    }
+    out("}")
+    o.register := "if" ++ myc
+}
+method compileidentifier(o) {
+    var name := o.value
+    if (name == "self") then {
+        o.register := "this"
+    } else {
+        name := escapestring(name)
+        if (modules.contains(name)) then {
+            out("  // WARNING: module support not implemented in JS backend")
+            out("  \"var_val_" ++ name ++ auto_count
+                ++ "\" = load %object** @.module." ++ name)
+        } else {
+            usedvars.push(name)
+            o.register := "var_" ++ name
+        }
+    }
+}
+method compilebind(o) {
+    var dest := o.dest
+    var val := ""
+    var c := ""
+    var r := ""
+    if (dest.kind == "identifier") then {
+        val := o.value
+        val := compilenode(val)
+        var nm := escapestring(dest.value)
+        usedvars.push(nm)
+        out("  var_" ++ nm ++ " = " ++ val ++ ";")
+        o.register := val
+    } elseif (dest.kind == "member") then {
+        dest.value := dest.value ++ ":="
+        c := ast.astcall(dest, [o.value])
+        r := compilenode(c)
+        o.register := r
+    } elseif (dest.kind == "index") then {
+        var imem := ast.astmember("[]:=", dest.value)
+        c := ast.astcall(imem, [dest.index, o.value])
+        r := compilenode(c)
+        o.register := r
+    }
+}
+method compileconstdec(o) {
+    var nm := escapestring(o.name.value)
+    declaredvars.push(nm)
+    var val := o.value
+    if (val) then {
+        val := compilenode(val)
+    } else {
+        util.syntax_error("const must have value bound.")
+    }
+    out("  var var_" ++ nm ++ " = " ++ val ++ ";")
+    o.register := val
+}
+method compilevardec(o) {
+    var nm := escapestring(o.name.value)
+    declaredvars.push(nm)
+    var val := o.value
+    if (val) then {
+        val := compilenode(val)
+        out("  var var_" ++ nm ++ " = " ++ val ++ ";")
+    } else {
+        out("  var var_" ++ nm ++ ";")
+        val := "false"
+    }
+    o.register := val
+}
+method compileindex(o) {
+    var of := compilenode(o.value)
+    var index := compilenode(o.index)
+    out("  var idxres" ++ auto_count ++ " = " ++ of ++ ".methods[\"[]\"]"
+        ++ ".call(" ++ of ++ ", " ++ index ++ ");")
+    o.register := "idxres" ++ auto_count
+    auto_count := auto_count + 1
+}
+method compileop(o) {
+    var left := compilenode(o.left)
+    var right := compilenode(o.right)
+    auto_count := auto_count + 1
+    var rnm := "opresult"
+    if (o.value == "*") then {
+        rnm := "prod"
+    }
+    if (o.value == "/") then {
+        rnm := "quotient"
+    }
+    if (o.value == "-") then {
+        rnm := "diff"
+    }
+    if (o.value == "%") then {
+        rnm := "modulus"
+    }
+    out("  var " ++ rnm ++ auto_count ++ " = " ++ left
+        ++ ".methods[\"" ++ o.value ++ "\"].call(" ++ left ++ ", "
+        ++ right ++ ");")
+    o.register := rnm ++ auto_count
+    auto_count := auto_count + 1
+}
+method compilecall(o) {
+    var args := []
+    var obj := ""
+    var len := 0
+    var con := ""
+    for (o.with) do { p ->
+        var r := compilenode(p)
+        args.push(r)
+    }
+    if (o.value.kind == "member") then {
+        obj := compilenode(o.value.in)
+        out("  var call" ++ auto_count ++ " = " ++ obj
+            ++ ".methods[\"" ++ o.value.value ++ "\"].call(" ++ obj)
+        for (args) do { arg ->
+            out(", " ++ arg)
+        }
+        out(");")
+    } else {
+        obj := "this"
+        out("  var call" ++ auto_count ++ " = " ++ obj
+            ++ ".methods[\"" ++ o.value.value ++ "\"].call(" ++ obj)
+        for (args) do { arg->
+            out(", " ++ arg)
+        }
+        out(");")
+    }
+    o.register := "call" ++ auto_count
+    auto_count := auto_count + 1
+}
+method compileoctets(o) {
+    var escval := ""
+    var l := length(o.value) / 2
+    var i := 0
+    for (o.value) do {c->
+        if ((i % 2) == 0) then {
+            escval := escval ++ "\\"
+        }
+        escval := escval ++ c
+        i := i + 1
+    }
+    out("  %tmp" ++ auto_count ++ " = load %object** @.octlit"
+        ++ auto_count)
+    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
+        ++ auto_count ++ ", null")
+    out("  br i1 %cmp" ++ auto_count ++ ", label %octlit"
+        ++ auto_count ++ ".already, label %octlit"
+        ++ auto_count ++ ".define")
+    beginblock("octlit" ++ auto_count ++ ".already")
+    out("  %alreadyoctets" ++ auto_count ++ " = load %object** @.octlit"
+        ++ auto_count)
+    out("  br label %octlit" ++ auto_count ++ ".end")
+    beginblock("octlit" ++ auto_count ++ ".define")
+    out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.size ++ ", i32 0, i32 0")
+    out("  %defoctets" ++ auto_count ++ " = call %object* "
+        ++ "@alloc_Octets(i8* "
+          ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
+    out("  store %object* %defoctets" ++ auto_count ++ ", %object** "
+        ++ "@.octlit" ++ auto_count)
+    out("br label %octlit" ++ auto_count ++ ".end")
+    beginblock("octlit" ++ auto_count ++ ".end")
+    out(" %octets" ++ auto_count ++ " = phi %object* [%alreadyoctets"
+        ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
+        ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
+        ++ ".define]")
+    var con := "@.oct" ++ constants.size ++ " = private unnamed_addr "
+        ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
+    constants.push(con)
+    con := ("@.octlit" ++ auto_count
+        ++ " = private global %object* null")
+    constants.push(con)
+    o.register := "%octets" ++ auto_count
+    auto_count := auto_count + 1
+}
+method compileimport(o) {
+    out("// Import of " ++ o.value.value)
+    var con
+    var nm := escapestring(o.value.value)
+    out("  var var_" ++ nm ++ " = gracecode_" ++ nm ++ ".call("
+        ++ "Grace_allocObject())")
+    o.register := "undefined"
+}
+method compilereturn(o) {
+    var reg := compilenode(o.value)
+    out(  "return " ++ reg)
+    o.register := "undefined"
+}
+method compilenode(o) {
+    if (linenum /= o.line) then {
+        linenum := o.line
+        out("// Begin line " ++ linenum)
+    }
+    if (o.kind == "num") then {
+        o.register := "new GraceNum(" ++ o.value ++ ")"
+    }
+    var l := ""
+    if (o.kind == "string") then {
+        l := length(o.value)
+        l := l + 1
+        var sval := o.value.replace("\\")with("\\\\")
+        sval := sval.replace("\"")with("\\\"")
+        sval := sval.replace("\n")with("\\n")
+        out("  var string" ++ auto_count ++ " = new GraceString(\""
+            ++ sval ++ "\");")
+        o.register := "string" ++ auto_count
+        auto_count := auto_count + 1
+    }
+    if (o.kind == "index") then {
+        compileindex(o)
+    }
+    if (o.kind == "octets") then {
+        compileoctets(o)
+    }
+    if (o.kind == "import") then {
+        compileimport(o)
+    }
+    if (o.kind == "return") then {
+        compilereturn(o)
+    }
+    if ((o.kind == "identifier")
+        & ((o.value == "true") | (o.value == "false"))) then {
+        var val := 0
+        if (o.value == "true") then {
+            val := 1
+        }
+        out("  var bool" ++ auto_count ++ " = new GraceBoolean(" ++ o.value ++ ")")
+        o.register := "bool" ++ auto_count
+        auto_count := auto_count + 1
+    } elseif (o.kind == "identifier") then {
+        compileidentifier(o)
+    }
+    if (o.kind == "constdec") then {
+        compileconstdec(o)
+    }
+    if (o.kind == "vardec") then {
+        compilevardec(o)
+    }
+    if (o.kind == "block") then {
+        compileblock(o)
+    }
+    if (o.kind == "method") then {
+        compilemethod(o, "this")
+    }
+    if (o.kind == "array") then {
+        compilearray(o)
+    }
+    if (o.kind == "bind") then {
+        compilebind(o)
+    }
+    if (o.kind == "while") then {
+        compilewhile(o)
+    }
+    if (o.kind == "if") then {
+        compileif(o)
+    }
+    if (o.kind == "class") then {
+        compileclass(o)
+    }
+    if (o.kind == "object") then {
+        compileobject(o)
+    }
+    if (o.kind == "member") then {
+        compilemember(o)
+    }
+    if (o.kind == "for") then {
+        compilefor(o)
+    }
+    if ((o.kind == "call")) then {
+        if (o.value.value == "print") then {
+            var args := []
+            for (o.with) do { prm ->
+                var r := compilenode(prm)
+                args.push(r)
+            }
+            out("  var call" ++ auto_count ++ " = Grace_print(" ++ args[0] ++ ");")
+            o.register := "call" ++ auto_count
+            auto_count := auto_count + 1
+        } elseif ((o.value.kind == "identifier")
+                & (o.value.value == "length")) then {
+            tmp := compilenode(o.with[0])
+            out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
+            o.register := "call" ++ auto_count
+            auto_count := auto_count + 1
+        } elseif ((o.value.kind == "identifier")
+                & (o.value.value == "escapestring")) then {
+            tmp := o.with[0]
+            tmp := ast.astmember("_escape", tmp)
+            tmp := ast.astcall(tmp, [])
+            o.register := compilenode(tmp)
+        } else {
+            compilecall(o)
+        }
+    }
+    if (o.kind == "op") then {
+        compileop(o)
+    }
+    out("// compilenode returning " ++ o.register)
+    o.register
+}
+method compile(vl, of, mn, rm, bt, glpath) {
+    var argv := sys.argv
+    var cmd
+    values := vl
+    outfile := of
+    modname := mn
+    runmode := rm
+    buildtype := bt
+    gracelibPath := glpath
+    var linkfiles := []
+    out("function gracecode_" ++ modname ++ "() {")
+    for (values) do { o ->
+        compilenode(o)
+    }
+    out("  return this;")
+    out("}")
+    for (output) do { o->
+        outprint(o)
+    }
+    log_verbose("done.")
+}
