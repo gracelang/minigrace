@@ -20,8 +20,14 @@ l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso 
 l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.gc )
 
-js/index.html: minigrace $(SOURCEFILES) unicode.gso gracelib.o
-	( mkdir -p js ; cd js ; for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f . ; done ; for f in $(SOURCEFILES) ; do ../minigrace --verbose --target js -o $$(echo $$f|cut -d. -f1).js $$f --module $$(echo $$f|cut -d. -f1) ; done )
+js: js/index.html
+
+js/%.js: %.gc minigrace
+	./minigrace --verbose --target js -o $@ $<
+
+js/index.html: js/index.in.html $(patsubst %.gc,js/%.js,$(SOURCEFILES))
+	@echo Generating index.html from index.in.html...
+	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
 selfhost-stats: minigrace
 	cat compiler.gc util.gc ast.gc parser.gc genllvm.gc > tmp.gc
@@ -51,6 +57,8 @@ clean:
 	rm -f $(SOURCEFILES:.gc=.gco)
 	rm -f $(SOURCEFILES:.gc=.bc)
 	rm -f $(SOURCEFILES:.gc=)
+	( cd js ; for sf in $(SOURCEFILES:.gc=.js) ; do rm -f $$sf ; done )
+	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
 
 semiclean:
@@ -59,4 +67,4 @@ semiclean:
 known-good/%:
 	cd known-good && $(MAKE) $*
 
-.PHONY: all clean selfhost-stats selfhost-rec test
+.PHONY: all clean selfhost-stats selfhost-rec test js
