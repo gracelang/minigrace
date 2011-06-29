@@ -536,6 +536,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     buildtype := bt
     gracelibPath := glpath
     var linkfiles := []
+    util.log_verbose("generating ECMAScript code.")
     out("function gracecode_" ++ modname ++ "() {")
     for (values) do { o ->
         compilenode(o)
