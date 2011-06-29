@@ -32,6 +32,10 @@ GraceString.prototype = {
                 s = s.replace(what._value, wth._value);
             return new GraceString(s);
         },
+        "substringFrom()to": function(from, to) {
+            var s = this._value;
+            return new GraceString(s.substring(from._value, to._value));
+        },
         "asString": function() { return this ; },
         "encode": function() { return this ; }, // TODO this is a hack
         "==": function(other) {
