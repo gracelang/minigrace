@@ -413,6 +413,8 @@ function gracecode_util() {
         target: function() {
             if (document.getElementById("show_tokens").checked)
                 return new GraceString("lex");
+            if (document.getElementById("show_ast").checked)
+                return new GraceString("parse");
             return new GraceString("js");
         },
         modname: function() {
@@ -425,8 +427,6 @@ function gracecode_util() {
             return this._linenum;
         },
         buildtype: function() {
-            if (document.getElementById("show_ast").checked)
-                return new GraceString("parse");
             return new GraceString("normal");
         },
         runmode: function() {

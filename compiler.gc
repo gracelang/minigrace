@@ -8,8 +8,7 @@ import parser
 import genllvm
 import genjs
 import buildinfo
-// Workarounds for current known-good, which breaks with multiple imports
-// of the same module. When known-good is bumped, these can all be removed.
+
 util.parseargs()
 
 var tokens := lexer.lexinput()
@@ -22,7 +21,7 @@ if (util.target == "lex") then {
 }
 var values := parser.parse(tokens)
 
-if (util.buildtype == "parse") then {
+if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
     for (values) do { v ->
         print(v.pretty(0))
@@ -34,7 +33,7 @@ if (util.buildtype == "parse") then {
 if (util.target == "llvm") then {
     genllvm.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
-} elseif (util.target == "js") then {
+} elseif ((util.target == "js") | (util.target == "ecmascript")) then {
     genjs.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
 } else {
