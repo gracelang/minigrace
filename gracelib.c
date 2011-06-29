@@ -86,6 +86,7 @@ struct Object *alloc_Undefined();
 Object alloc_Integer32(int);
 
 struct Object *String_size(struct Object *, int, struct Object **);
+struct Object *String_replace_with(struct Object *, int, struct Object **);
 struct Object *makeEscapedString(char *);
 void ConcatString__FillBuffer(struct Object *s, char *c, int len);
 
@@ -734,6 +735,7 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
         addmethod(o, "length", &ConcatString_length);
         addmethod(o, "iter", &ConcatString_iter);
         addmethod(o, "substringFrom()to", &ConcatString_substringFrom_to);
+        addmethod(o, "replace()with", &String_replace_with);
         ConcatString_methods = o->methods;
         ConcatString_nummethods = o->nummethods;
     } else {
@@ -816,6 +818,53 @@ struct Object *String_substringFrom_to(struct Object *self,
     }
     return alloc_String(buf);
 }
+struct Object *String_replace_with(struct Object *self,
+        int nparams, struct Object **args) {
+    int *al = args[0]->bdata[2];
+    int *bl = args[1]->bdata[2];
+    int *ml = self->bdata[2];
+    char what_buf[*al + 1];
+    char with_buf[*bl + 1];
+    char my_buf[*ml + 1];
+    char *what = what_buf;
+    char *with = with_buf;
+    char *my = my_buf;
+    bufferfromString(args[0], what);
+    bufferfromString(args[1], with);
+    bufferfromString(self, my);
+    char *ins;
+    char *tmp;
+    char *lst;
+    int whatlen;
+    int withlen;
+    int startlen;
+    int count;
+    if (!(ins = strstr(my, what)))
+        return self;
+    if (!with)
+        with = "";
+    whatlen = strlen(what);
+    withlen = strlen(with);
+    lst = NULL;
+    for (count = 0; (tmp = strstr(ins, what)); ++count) {
+        ins = tmp + 1;
+        lst = ins;
+    }
+    char result[*ml + (withlen - whatlen) * count + 1];
+    result[0] = 0;
+    tmp = result;
+    int i;
+    ins = strstr(my, what);
+    for (i=0; i<count; i++) {
+        startlen = ins - my;
+        tmp = strncpy(tmp, my, startlen) + startlen;
+        tmp = strcpy(tmp, with) + withlen;
+        my += startlen + whatlen;
+        ins = strstr(my, what);
+    }
+    strcpy(tmp, my);
+    return alloc_String(result);
+}
 struct Object *alloc_String(const char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
@@ -851,6 +900,7 @@ struct Object *alloc_String(const char *data) {
         addmethod(o, "ord", &String_ord);
         addmethod(o, "encode", &String_encode);
         addmethod(o, "substringFrom()to", &String_substringFrom_to);
+        addmethod(o, "replace()with", &String_replace_with);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
