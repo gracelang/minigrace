@@ -428,6 +428,8 @@ function gracecode_util() {
                 return new GraceString("lex");
             if (document.getElementById("show_ast").checked)
                 return new GraceString("parse");
+            if (document.getElementById("show_llvm").checked)
+                return new GraceString("llvm");
             return new GraceString("js");
         },
         modname: function() {
