@@ -406,6 +406,9 @@ function gracecode_unicode() {
         name: function(s) {
             return new GraceString("UNICODE CHARACTER " + s.methods["ord"].call(s)._value + " (no Unicode character database; names unknown)");
         },
+        create: function(n) {
+            return new GraceString(String.fromCharCode(n._value));
+        },
     };
     return this;
 }
