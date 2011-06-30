@@ -345,7 +345,7 @@ method lexinput() {
             if (escaped) then {
                 if (c == "n") then {
                     // Newline escape
-                    accum := accum ++ unicode.create(10)
+                    accum := accum ++ "\u000a"
                 } elseif (c == "u") then {
                     // Beginning of a four-digit Unicode escape (for a BMP
                     // codepoint).
@@ -358,22 +358,22 @@ method lexinput() {
                     codepoint := 0
                 } elseif (c == "t") then {
                     // Tab escape
-                    accum := accum ++ unicode.create(9)
+                    accum := accum ++ "\u0009"
                 } elseif (c == "r") then {
                     // Carriage return escape
-                    accum := accum ++ unicode.create(13)
+                    accum := accum ++ "\u000d"
                 } elseif (c == "b") then {
                     // Backspace escape
-                    accum := accum ++ unicode.create(8)
+                    accum := accum ++ "\u0008"
                 } elseif (c == "l") then {
                     // LINE SEPARATOR escape
-                    accum := accum ++ unicode.create(8232)
+                    accum := accum ++ "\u2028"
                 } elseif (c == "f") then {
                     // Form feed/"page down" escape
-                    accum := accum ++ unicode.create(12)
+                    accum := accum ++ "\u000c"
                 } elseif (c == "e") then {
                     // Escape escape
-                    accum := accum ++ unicode.create(27)
+                    accum := accum ++ "\u001b"
                 } else {
                     // For any other character preceded by \, insert it
                     // literally.
