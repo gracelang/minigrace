@@ -28,9 +28,15 @@ GraceString.prototype = {
         },
         "replace()with": function(what, wth) {
             var s = this._value;
-            while (s.indexOf(what._value) != -1)
-                s = s.replace(what._value, wth._value);
-            return new GraceString(s);
+            var os = "";
+            var sl = what._value.length;
+            while ((i = s.indexOf(what._value)) != -1) {
+                os += s.substr(0, i);
+                os += wth._value;
+                s = s.substr(i + sl);
+            }
+            os += s;
+            return new GraceString(os);
         },
         "substringFrom()to": function(from, to) {
             var s = this._value;
