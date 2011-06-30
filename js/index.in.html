@@ -4,6 +4,7 @@
      <title>Minigrace JavaScript backend</title>
      <script type="text/javascript">
          var goldenOutput = "";
+         var goldenOutputOffset = 0;
          function compile() {
             stdout_txt = document.getElementById("js_txt");
             stdin_txt = document.getElementById("code_txt");
@@ -18,7 +19,17 @@
             stderr_txt = document.getElementById("stderr_txt");
             var code = document.getElementById("js_txt").value;
             eval(code);
-            gracecode_USER.call({methods:{}, data: {}})
+            gracecode_USER.call({methods:{}, data: {}});
+            if (goldenOutput != "") {
+                var realOut = stdout_txt.value.substr(goldenOutputOffset);
+                if (realOut == goldenOutput) {
+                    stderr_txt.value += "\nTest passed.\n";
+                } else {
+                    stderr_txt.value += "\nTest failed.\n";
+                }
+                goldenOutput = "";
+                setTimeout("stdout_txt.style.background = ''", 2500);
+            }
         }
         function compilerun() {
             compile();
@@ -37,6 +48,7 @@
                 if (req.status == 200) {
                     document.getElementById("stdout_txt").value = "Golden output:\n" + req.responseText + "=================================\n";
                     goldenOutput = req.responseText;
+                    goldenOutputOffset = document.getElementById("stdout_txt").value.length;
                 }
             } else {
                 document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
