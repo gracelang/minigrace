@@ -118,7 +118,7 @@ method syntax_error(s) {
     io.error.write(": " ++ modnamev ++ ": Syntax error around line "
         ++ linenumv ++ ": ")
     io.error.write(s)
-    io.error.write("\l")
+    io.error.write("\n")
     raise("Syntax error: "++ s)
 }
 

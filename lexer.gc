@@ -343,9 +343,9 @@ method lexinput() {
                 util.syntax_error("Newlines not permitted in string literals")
             }
             if (escaped) then {
-                if ((c == "l") | (c == "n")) then {
+                if (c == "n") then {
                     // Newline escape
-                    accum := accum ++ "\n"
+                    accum := accum ++ unicode.create(10)
                 } elseif (c == "u") then {
                     // Beginning of a four-digit Unicode escape (for a BMP
                     // codepoint).
@@ -356,6 +356,24 @@ method lexinput() {
                     // codepoint).
                     unichars := 6
                     codepoint := 0
+                } elseif (c == "t") then {
+                    // Tab escape
+                    accum := accum ++ unicode.create(9)
+                } elseif (c == "r") then {
+                    // Carriage return escape
+                    accum := accum ++ unicode.create(13)
+                } elseif (c == "b") then {
+                    // Backspace escape
+                    accum := accum ++ unicode.create(8)
+                } elseif (c == "l") then {
+                    // LINE SEPARATOR escape
+                    accum := accum ++ unicode.create(8232)
+                } elseif (c == "f") then {
+                    // Form feed/"page down" escape
+                    accum := accum ++ unicode.create(12)
+                } elseif (c == "e") then {
+                    // Escape escape
+                    accum := accum ++ unicode.create(27)
                 } else {
                     // For any other character preceded by \, insert it
                     // literally.
