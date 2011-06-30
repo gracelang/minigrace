@@ -164,3 +164,14 @@ method engine() {
 method debug(s) {
 
 }
+var hexdigits := "0123456789abcdef"
+method hex(num) {
+    var s := ""
+    while {num > 0} do {
+        var i := num % 16
+        s := s ++ hexdigits[i]
+        num := num - i
+        num := num / 16
+    }
+    s
+}

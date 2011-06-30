@@ -464,6 +464,18 @@ function gracecode_util() {
             stderr_txt.value += "Syntax error around line " + this._linenum._value + ": " + s._value;
             throw new Exception("Grace syntax error");
         },
+        hex: function(n) {
+            var hexdigits = "0123456789abcdef"
+            var s = ""
+            var num = n._value
+            while (num > 0) {
+                var i = num % 16
+                s = s + hexdigits.charAt(i)
+                num = num - i
+                num = num / 16
+            }
+            return new GraceString(s)
+        },
     };
     this._linenum = new GraceNum(1);
     return this;
