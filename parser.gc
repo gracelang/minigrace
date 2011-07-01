@@ -873,6 +873,10 @@ method methoddec() {
         next()
         pushidentifier()
         var meth := values.pop()
+        if (accept("bind")) then {
+            next()
+            meth.value := meth.value ++ ":="
+        }
         var rparams := []
         if (accept("lparen")) then {
             next()
