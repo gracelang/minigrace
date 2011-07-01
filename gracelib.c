@@ -461,7 +461,6 @@ struct Object *List_asString(struct Object *self, int nparams,
     }
     struct Object *cb = alloc_String("]");
     s = callmethod(s, "++", 1, &cb);
-    free(cb);
     return s;
 }
 struct Object *alloc_List() {
