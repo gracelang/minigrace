@@ -131,7 +131,7 @@ method compileblock(o) {
     auto_count := auto_count + 1
     out("  var block" ++ myc ++ " = Grace_allocObject();")
     out("  block" ++ myc ++ ".methods[\"apply\"] = function() {")
-    out("    this.real.apply(this.receiver, arguments);")
+    out("    return this.real.apply(this.receiver, arguments);")
     out("  }")
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block" ++ myc ++ ".real = function(")
