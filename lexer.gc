@@ -250,6 +250,7 @@ method lexinput() {
     var prev := ""
     var unichars := 0
     var codepoint := 0
+    var interpdepth := 0
     util.log_verbose("lexing.")
     for (input) do { c ->
         var ct := ""
@@ -323,6 +324,13 @@ method lexinput() {
             // This character is the beginning of a different lexical
             // mode - process the old one now.
             modechange(tokens, mode, accum)
+            if ((newmode == "}") & (interpdepth > 0)) then {
+                modechange(tokens, ")", ")")
+                modechange(tokens, "o", "++")
+                newmode := "\""
+                instr := true
+                interpdepth := interpdepth - 1
+            }
             mode := newmode
             if (instr) then {
                 // String accum should skip the opening quote, but
@@ -395,6 +403,15 @@ method lexinput() {
                     // in the unicode library.
                     accum := accum ++ unicode.create(codepoint)
                 }
+            } elseif (c == "\{") then {
+                modechange(tokens, mode, accum)
+                modechange(tokens, "o", "++")
+                modechange(tokens, "(", "(")
+                mode := "n"
+                newmode := "n"
+                accum := ""
+                instr := false
+                interpdepth := interpdepth + 1
             } else {
                 accum := accum ++ c
             }
