@@ -199,7 +199,7 @@ method doif() {
                 next()
                 ebody := []
                 if ((accept("lbrace")).not) then {
-                    util.syntax_error("expected {.")
+                    util.syntax_error("expected \{.")
                 }
                 next()
                 while {(accept("rbrace")).not} do {

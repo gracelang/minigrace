@@ -68,9 +68,9 @@ method compileobjconstdec(o, selfr, pos) {
     auto_count := auto_count + 1
     var nm := o.name.value
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() {")
+    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
-    out("  }")
+    out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nm ++ myc ++ ";")
 }
@@ -83,15 +83,15 @@ method compileobjvardec(o, selfr, pos) {
     auto_count := auto_count + 1
     var nm := o.name.value
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() {")
+    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
-    out("  }")
+    out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nm ++ myc ++ ";")
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("  var writer_" ++ modname ++ "_" ++ nm ++ myc ++ " = function(o) {")
+    out("  var writer_" ++ modname ++ "_" ++ nm ++ myc ++ " = function(o) \{")
     out("    this.data[\"" ++ nm ++ "\"] = o;")
-    out("  }")
+    out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
         "_" ++ nm ++ myc ++ ";")
 }
@@ -130,9 +130,9 @@ method compileblock(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     out("  var block" ++ myc ++ " = Grace_allocObject();")
-    out("  block" ++ myc ++ ".methods[\"apply\"] = function() {")
+    out("  block" ++ myc ++ ".methods[\"apply\"] = function() \{")
     out("    return this.real.apply(this.receiver, arguments);")
-    out("  }")
+    out("  \}")
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block" ++ myc ++ ".real = function(")
     var first := true
@@ -142,13 +142,13 @@ method compileblock(o) {
         }
         out("var_" ++ p.value)
     }
-    out(") {")
+    out(") \{")
     var ret := "undefined"
     for (o.body) do {l->
         ret := compilenode(l)
     }
     out("  return " ++ ret ++ ";")
-    out("};")
+    out("\};")
     o.register := "block" ++ myc
 }
 method compilefor(o) {
@@ -160,11 +160,11 @@ method compilefor(o) {
     out("  var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
         ++ over ++ ");")
     out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"havemore\"].call("
-        ++ "it" ++ myc ++ "))) {")
+        ++ "it" ++ myc ++ "))) \{")
     out("    var fv" ++ myc ++ " = it" ++ myc ++ ".methods[\"next\"].call("
         ++ "it" ++ myc ++ ");")
     out("    "++blko++".methods[\"apply\"].call("++blko++", fv" ++ myc ++ ");")
-    out("  }")
+    out("  \}")
     o.register := over
 }
 method compilemethod(o, selfobj) {
@@ -186,13 +186,13 @@ method compilemethod(o, selfobj) {
         out("var_" ++ p.value)
         first := false
     }
-    out(") {")
+    out(") \{")
     var ret := "undefined"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
     out("  return " ++ ret)
-    out("}")
+    out("\}")
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
@@ -202,20 +202,20 @@ method compilewhile(o) {
     auto_count := auto_count + 1
     var cond := compilenode(o.value)
     out("  var wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
-    out("  while (wcond" ++ myc ++ ") {")
+    out("  while (wcond" ++ myc ++ ") \{")
     var tret := "null"
     for (o.body) do { l->
         tret := compilenode(l)
     }
     cond := compilenode(o.value)
     out("  wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
-    out("  }")
+    out("  \}")
     o.register := cond // "%while" ++ myc
 }
 method compileif(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    out("  if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) {")
+    out("  if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
     var tret := "undefined"
     var fret := "undefined"
     for (o.thenblock) do { l->
@@ -223,13 +223,13 @@ method compileif(o) {
     }
     out("  var if" ++ myc ++ " = " ++ tret ++ ";")
     if (o.elseblock.size > 0) then {
-        out("  } else {")
+        out("  \} else \{")
         for (o.elseblock) do { l->
             fret := compilenode(l)
         }
         out("  var if" ++ myc ++ " = " ++ fret ++ ";")
     }
-    out("}")
+    out("\}")
     o.register := "if" ++ myc
 }
 method compileidentifier(o) {
@@ -556,12 +556,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
     var linkfiles := []
     util.log_verbose("generating ECMAScript code.")
     util.setline(1)
-    out("function gracecode_" ++ modname ++ "() {")
+    out("function gracecode_" ++ modname ++ "() \{")
     for (values) do { o ->
         compilenode(o)
     }
     out("  return this;")
-    out("}")
+    out("\}")
     var lineOut := false
     for (output) do { o ->
         if ("  lineNumber =" == o.substringFrom(0)to(14)) then {

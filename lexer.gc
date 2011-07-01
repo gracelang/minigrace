@@ -34,7 +34,7 @@ class OctetsToken { s ->
 }
 class LBraceToken {
     var kind := "lbrace"
-    var value := "{"
+    var value := "\{"
 }
 var LBraceTokenV := LBraceToken.new
 class RBraceToken {
@@ -148,7 +148,7 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := true
         }
-        if (mode == "{") then {
+        if (mode == "\{") then {
             tok := LBraceTokenV
             tokens.push(tok)
             done := true
@@ -295,7 +295,7 @@ method lexinput() {
                 newmode := "o"
             }
             if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
-                | (c == "{") | (c == "}") | (c == "[") | (c == "]")) then {
+                | (c == "\{") | (c == "}") | (c == "[") | (c == "]")) then {
                 newmode := c
             }
             if ((c == ".") & (accum == ".")) then {

@@ -81,13 +81,13 @@ method compileobjconstdec(o, selfr, pos) {
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
     outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
+        ++ "%object** %args) \{")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
     outprint("  %tmp1 = load %object*** %dt")
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  %tmp2 = load %object** %arrayidx")
     outprint("  ret %object* %tmp2")
-    outprint("}")
+    outprint("\}")
     out("  call void @addmethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
@@ -114,13 +114,13 @@ method compileobjvardec(o, selfr, pos) {
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
     outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
+        ++ "%object** %args) \{")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
     outprint("  %tmp1 = load %object*** %dt")
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  %tmp2 = load %object** %arrayidx")
     outprint("  ret %object* %tmp2")
-    outprint("}")
+    outprint("\}")
     out("  call void @addmethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
@@ -135,7 +135,7 @@ method compileobjvardec(o, selfr, pos) {
     constants.push(con)
     outprint("define private %object* @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) {")
+        ++ "%object** %args) \{")
     outprint("  %params = getelementptr %object** %args, i32 0")
     outprint("  %par0 = load %object** %params")
     outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
@@ -143,7 +143,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
     outprint("  store %object* %par0, %object** %arrayidx")
     outprint("  ret %object* %par0")
-    outprint("}")
+    outprint("\}")
     out("  call void @addmethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
@@ -276,7 +276,7 @@ method compilemethod(o, selfobj) {
         ret := compilenode(l)
     }
     out("  ret %object* " ++ ret)
-    out("}")
+    out("\}")
     var body := output
     output := []
     var closurevars := []
@@ -312,14 +312,14 @@ method compilemethod(o, selfobj) {
         out("; have closure method: " ++ closurevars.size)
         if (o.selfclosure) then {
             out("define private %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
-                ++ "%object** %args, %object*** %closure) {")
+                ++ "%object** %args, %object*** %closure) \{")
         } else {
             out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-                ++ "%object** %args, %object*** %closure) {")
+                ++ "%object** %args, %object*** %closure) \{")
         }
     } else {
         out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-            ++ "%object** %args) {")
+            ++ "%object** %args) \{")
     }
     beginblock("entry")
     var j := 0
@@ -956,11 +956,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
     out("@undefined = private global %object* null")
     out("@argv = private global %object* null")
-    outprint("%method = type { i8*, %object*(%object *, i32, %object**)*,")
+    outprint("%method = type \{ i8*, %object*(%object *, i32, %object**)*,")
     outprint("    %object***, %object*(%object *, i32, %object**,")
-    outprint("        %object***)*}")
-    outprint("%object = type { i32, [32 x i8], %method**, %object**, i8**, i32, i32 }")
-    out("define %object* @module_" ++ modname ++ "_init() {")
+    outprint("        %object***)*\}")
+    outprint("%object = type \{ i32, [32 x i8], %method**, %object**, i8**, i32, i32 \}")
+    out("define %object* @module_" ++ modname ++ "_init() \{")
     out("entry:")
     out("  %ptrsize_p = getelementptr %object** null, i32 1")
     out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
@@ -980,7 +980,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     out("  ret %object* %self")
     out("}")
-    out("define weak i32 @main(i32 %argc, i8** %argv) {")
+    out("define weak i32 @main(i32 %argc, i8** %argv) \{")
     out("entry:")
     out("  call void @initprofiling()")
     out("  call void @gracelib_argv(i8** %argv)")
