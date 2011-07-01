@@ -10,11 +10,11 @@ function GraceString(s) {
 GraceString.prototype = {
     methods: {
         "++": function(other) {
-            var o = other.methods["asString"].call(other);
+            var o = callmethod(other, "asString");
             return new GraceString(this._value + o._value);
         },
         "at": function(other) {
-            var o = other.methods["asString"].call(other);
+            var o = callmethod(other, asString);
             var idx = parseInt(o._value);
             return new GraceString(this._value.charAt(idx));
         },
@@ -53,8 +53,8 @@ GraceString.prototype = {
             return new GraceBoolean(false);
         },
         "/=": function(other) {
-            var t = this.methods["=="].call(this, other);
-            return t.methods["not"].call(t);
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
         },
         "iterator": function() {
             return new GraceStringIterator(this);
@@ -62,7 +62,8 @@ GraceString.prototype = {
         "ord": function() {
             return new GraceNum(this._value.charCodeAt(0));
         },
-    }
+    },
+    className: "String"
 };
 GraceString.prototype.methods["[]"] = GraceString.prototype.methods["at"];
 
@@ -93,11 +94,11 @@ GraceNum.prototype = {
             return new GraceNum(s)
         },
         "++": function(other) {
-            var t = this.methods["asString"].call(this);
-            return t.methods["++"].call(t, other);
+            var t = callmethod(this, "asString");
+            return callmethod(t, "++", other);
         },
         "..": function(other) {
-            var o = other.methods["asString"].call(other);
+            var o = callmethod(other, "asString");
             var ub = parseInt(o._value);
             var l = [];
             for (var i=this._value; i<=ub; i++)
@@ -132,10 +133,11 @@ GraceNum.prototype = {
             return new GraceBoolean(false);
         },
         "/=": function(other) {
-            var t = this.methods["=="].call(this, other);
-            return t.methods["not"].call(t);
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
         },
-    }
+    },
+    className: "Number",
 };
 
 function GraceBoolean(b) {
@@ -156,12 +158,12 @@ GraceBoolean.prototype = {
         },
         "ifTrue": function(other) {
             if (this._value) {
-                return other.methods["apply"].call(other);
+                return callmethod(other, "apply");
             }
         },
         "ifFalse": function(other) {
             if (!this._value) {
-                return other.methods["apply"].call(other);
+                return callmethod(other, "apply");
             }
         },
         "asString": function() {
@@ -176,10 +178,11 @@ GraceBoolean.prototype = {
             return new GraceBoolean(false);
         },
         "/=": function(other) {
-            var t = this.methods["=="].call(this, other);
-            return t.methods["not"].call(t);
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
         },
-    }
+    },
+    className: "Boolean",
 };
 function GraceList(l) {
     this._value = l;
@@ -197,12 +200,12 @@ GraceList.prototype = {
             return this._value.pop();
         },
         "at": function(other) {
-            var o = other.methods["asString"].call(other);
+            var o = callmethod(other, "asString");
             var idx = parseInt(o._value);
             return this._value[idx];
         },
         "[]": function(other) {
-            var o = other.methods["asString"].call(other);
+            var o = callmethod(other, "asString");
             var idx = parseInt(o._value);
             return this._value[idx];
         },
@@ -215,7 +218,7 @@ GraceList.prototype = {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 if (v.methods["asString"])
-                    s += v.methods["asString"].call(v)._value + ", ";
+                    s += callmethod(v, "asString")._value + ", ";
                 else {
                     var q = dbgp(v, 2);
                     s += "((" + q + ")), "
@@ -227,7 +230,7 @@ GraceList.prototype = {
         "contains": function(other) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
-                if (Grace_isTrue(v.methods["=="].call(v, other)))
+                if (Grace_isTrue(callmethod(v, "==", other)))
                     return new GraceBoolean(true);
             }
             return new GraceBoolean(false);
@@ -238,13 +241,14 @@ GraceList.prototype = {
             return new GraceBoolean(false);
         },
         "/=": function(other) {
-            var t = this.methods["=="].call(this, other);
-            return t.methods["not"].call(t);
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
         },
         "iterator": function() {
             return new GraceListIterator(this._value);
         }
-    }
+    },
+    className: "List",
 };
 
 function Grace_isTrue(o) {
@@ -252,7 +256,7 @@ function Grace_isTrue(o) {
 }
 
 function Grace_print(obj) {
-    var s = obj.methods['asString'].call(obj);
+    var s = callmethod(obj, "asString");
     stdout_txt.value += s._value + "\n";
 }
 function Grace_length(obj) {
@@ -286,9 +290,9 @@ function Grace_allocObject() {
             "==": function(o) {
                 return new GraceBoolean(this == o);
             },
-            "/=": function(o) {
-                var b = this.methods["=="].call(this, o);
-                return b.methods["not"].call(b);
+            "/=": function(other) {
+                var t = callmethod(this, "==", other);
+                return callmethod(t, "not");
             },
             "asString": function() {
                 var s = "object {";
@@ -298,7 +302,8 @@ function Grace_allocObject() {
                 return new GraceString(s + "}");
             },
         },
-        data: {}
+        data: {},
+        className: "Object",
     };
 }
 
@@ -487,7 +492,25 @@ function gracecode_util() {
     util_module = this;
     return this;
 }
-
+var callStack = [];
+function callmethod(obj, methname) {
+    var meth = obj.methods[methname];
+    if (typeof(meth) != "function") {
+        stderr_txt.value += "No such method '" + methname + "' on " + obj.className + ", called at line " + lineNumber + ".\n";
+        for (var i=callStack.length; i>0; i--)
+            stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
+        stderr_txt.value += "Methods are:\n";
+        for (var mn in obj.methods) {
+            stderr_txt.value += "  " + mn + "\n";
+        }
+        throw "No such method '" + methname + "'";
+    }
+    callStack.push(obj.className + "." + methname + " at line " + lineNumber);
+    var args = Array.prototype.slice.call(arguments, 2);
+    var ret = meth.apply(obj, args);
+    callStack.pop();
+    return ret;
+}
 function dbgp(o, d) {
     if (d == undefined)
         d = 0;

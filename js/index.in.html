@@ -21,7 +21,7 @@
             lineNumber = 1;
             eval(code);
             try {
-                gracecode_USER.call({methods:{}, data: {}});
+                gracecode_USER.call({methods:{}, data: {}, className: "__main__"});
             } catch (e) {
                 stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
             }

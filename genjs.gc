@@ -339,16 +339,16 @@ method compilecall(o) {
     }
     if (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
-        out("  var call" ++ auto_count ++ " = " ++ obj
-            ++ ".methods[\"" ++ o.value.value ++ "\"].call(" ++ obj)
+        out("  var call" ++ auto_count ++ " = callmethod(" ++ obj
+            ++ ",\"" ++ o.value.value ++ "\"")
         for (args) do { arg ->
             out(", " ++ arg)
         }
         out(");")
     } else {
         obj := "this"
-        out("  var call" ++ auto_count ++ " = " ++ obj
-            ++ ".methods[\"" ++ o.value.value ++ "\"].call(" ++ obj)
+        out("  var call" ++ auto_count ++ " = callmethod(this,"
+            ++ "\"" ++ o.value.value ++ "\"")
         for (args) do { arg->
             out(", " ++ arg)
         }
