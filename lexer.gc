@@ -433,6 +433,7 @@ method lexinput() {
                 var kind := "line"
                 var value := linenum + 0
             })
+            util.setline(linenum)
         }
         prev := c
     }
