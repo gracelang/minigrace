@@ -1,4 +1,4 @@
-
+var lineNumber = 0;
 var stdout_txt = document.getElementById("stdout_txt");
 var stdin_txt = document.getElementById("stdout_txt");
 var stderr_txt = document.getElementById("stderr_txt");
@@ -413,7 +413,10 @@ function gracecode_unicode() {
     return this;
 }
 
+var util_module = false;
 function gracecode_util() {
+    if (util_module != false)
+        return util_module;
     this.methods = {
         outfile: function() {
             return stdout;
@@ -436,6 +439,7 @@ function gracecode_util() {
             return new GraceString("USER");
         },
         setline: function(i) {
+            lineNumber = i._value;
             this._linenum = i;
         },
         linenum: function() {
@@ -480,6 +484,7 @@ function gracecode_util() {
         },
     };
     this._linenum = new GraceNum(1);
+    util_module = this;
     return this;
 }
 

@@ -13,7 +13,7 @@ var usedvars := []
 var declaredvars := []
 var linkfiles := []
 var bblock := "entry"
-var linenum := 1
+var linenum := 0
 var modules := []
 var staticmodules := []
 var values := []
@@ -417,7 +417,7 @@ method compilereturn(o) {
 method compilenode(o) {
     if (linenum /= o.line) then {
         linenum := o.line
-        out("// Begin line " ++ linenum)
+        out("  lineNumber = " ++ linenum);
     }
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
@@ -556,14 +556,24 @@ method compile(vl, of, mn, rm, bt, glpath) {
     gracelibPath := glpath
     var linkfiles := []
     util.log_verbose("generating ECMAScript code.")
+    util.setline(1)
     out("function gracecode_" ++ modname ++ "() {")
     for (values) do { o ->
         compilenode(o)
     }
     out("  return this;")
     out("}")
-    for (output) do { o->
-        outprint(o)
+    var lineOut := false
+    for (output) do { o ->
+        if ("  lineNumber =" == o.substringFrom(0)to(14)) then {
+            lineOut := o
+        } else {
+            if (false /= lineOut) then {
+                outprint(lineOut)
+                lineOut := false
+            }
+            outprint(o)
+        }
     }
     log_verbose("done.")
 }
