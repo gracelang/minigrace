@@ -682,6 +682,9 @@ struct Object *ConcatString_substringFrom_to(struct Object *self,
         int nparams, struct Object **args) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
+    int *mysize = self->bdata[1];
+    if (en > *mysize)
+        en = *mysize;
     int cl = en - st;
     int *myblen = self->bdata[2];
     char buf[cl * 4 + 1];
@@ -797,6 +800,9 @@ struct Object *String_substringFrom_to(struct Object *self,
         int nparams, struct Object **args) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
+    int *mysize = self->bdata[1];
+    if (en > *mysize)
+        en = *mysize;
     int cl = en - st;
     char buf[cl * 4 + 1];
     char *bufp = buf;
