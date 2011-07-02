@@ -61,11 +61,13 @@
                 document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
             }
         }
-        function llvmswitch() {
+        function modeswitch() {
             var show_llvm = document.getElementById("show_llvm");
+            var show_ast = document.getElementById("show_ast");
+            var show_tokens = document.getElementById("show_tokens");
             var run_but = document.getElementById("run_but");
             var compilerun_but = document.getElementById("compilerun_but");
-            if (show_llvm.checked) {
+            if (show_llvm.checked || show_ast.checked || show_tokens.checked) {
                 run_but.disabled = true;
                 compilerun_but.disabled = true;
             } else {
@@ -83,9 +85,9 @@
  <input type="button" value="Compile" onclick="compile()" />
  <input type="button" id="run_but" value="Run code" onclick="run()" />
  <input type="button" id="compilerun_but" value="Compile & run" onclick="compilerun()" />
- <input type="checkbox" id="show_tokens" />Tokens
- <input type="checkbox" id="show_ast" />Parse tree
- <input type="checkbox" id="show_llvm" onchange="llvmswitch()" />LLVM
+ <input type="checkbox" id="show_tokens" onchange="modeswitch()"/>Tokens
+ <input type="checkbox" id="show_ast" onchange="modeswitch()" />Parse tree
+ <input type="checkbox" id="show_llvm" onchange="modeswitch()" />LLVM
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
 <!--[!SH[ls tests | grep .test.gc | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
