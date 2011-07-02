@@ -1038,13 +1038,25 @@ method parse(toks) {
     while {tokens.size > 0} do {
         statement()
         if (tokens.size == oldlength) then {
-            var next := []
+            var nxtToks := ""
             for (0..5) do {i->
                 if (i < tokens.size) then {
-                    next.push(tokens.at(i))
+                    var t := tokens.at(tokens.size - i - 1)
+                    nxtToks := nxtToks ++ t.kind ++ ": " ++ t.value ++ ", "
                 }
             }
-            util.syntax_error("No token consumed. Next tokens: " ++ next)
+            var lstAST := ""
+            for (0..5) do {i->
+                if (values.size > 0) then {
+                    var t := values.pop
+                    print(t)
+                    print(t.pretty(2))
+                    lstAST := t.pretty(1) ++ lstAST
+                }
+            }
+            util.syntax_error("No token consumed. Have " ++ sym.sym.kind
+                ++ ": " ++ sym.sym.value ++ ". Recent AST:\n"
+                ++ lstAST ++ "\nNext tokens: " ++ nxtToks)
         }
         oldlength := tokens.size + 0
     }
