@@ -22,11 +22,13 @@ method next() {
         sym.sym := tokens.pop()
         if ((sym.sym.kind == "line") & (tokens.size > 0)) then {
             var l := sym.sym.value
-            if l /= linenum then {
+            if (l /= linenum) then {
                 linenum := l
                 util.setline(linenum)
                 next()
             }
+        } elseif ((sym.sym.kind == "indent") & (tokens.size > 0)) then {
+            next()
         }
     } else {
         sym.sym := object { var kind := "eof" }

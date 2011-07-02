@@ -99,6 +99,10 @@ class BindToken {
     var value := ":="
 }
 var BindTokenV := BindToken.new
+class IndentToken { level->
+    const kind := "indent"
+    var value := level
+}
 
 // When a new lexical class has begun, add to the tokens list the token
 // corresponding to the previous accumulated data. mode is the previous
@@ -197,6 +201,11 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := true
         }
+        if (mode == "d") then {
+            tok := IndentToken.new(accum.size)
+            tokens.push(tok)
+            done := true
+        }
         if (mode == "n") then {
             done := true
         }
@@ -271,7 +280,7 @@ method lexinput() {
 
         } elseif (mode /= "c") then {
             // Not in a comment, so look for a mode.
-            if (c == " ") then {
+            if ((c == " ") & (mode /= "d")) then {
                 newmode := "n"
             }
             if (c == "\"") then {
@@ -422,8 +431,8 @@ method lexinput() {
         } elseif (c == "\n") then {
             // Linebreaks terminate any open tokens
             modechange(tokens, mode, accum)
-            mode := "n"
-            newmode := "n"
+            mode := "d"
+            newmode := "d"
             accum := ""
         } else {
             accum := accum ++ c
