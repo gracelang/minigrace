@@ -372,6 +372,9 @@ function gracecode_sys() {
             new GraceString("js"),
         ]);
     };
+    this.methods.exit = function() {
+        throw "SystemExit";
+    };
     return this;
 }
 

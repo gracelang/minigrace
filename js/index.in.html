@@ -23,7 +23,9 @@
             try {
                 gracecode_USER.call({methods:{}, data: {}, className: "__main__"});
             } catch (e) {
-                stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
+                if (e != "SystemExit") {
+                    stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
+                }
             }
             if (goldenOutput != "") {
                 var realOut = stdout_txt.value.substr(goldenOutputOffset);
