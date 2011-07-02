@@ -348,7 +348,11 @@ method lexinput() {
             }
         } elseif (instr) then {
             if (c == "\n") then {
-                util.syntax_error("Newlines not permitted in string literals")
+                if (interpdepth > 0) then {
+                    util.syntax_error("Runaway string interpolation")
+                } else {
+                    util.syntax_error("Newlines not permitted in string literals")
+                }
             }
             if (escaped) then {
                 if (c == "n") then {
