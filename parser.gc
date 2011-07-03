@@ -880,11 +880,11 @@ method methoddec() {
             meth.value := meth.value ++ ":="
         }
         var rparams := []
+        var params := []
+        var type := false
         if (accept("lparen")) then {
             next()
-            var params := []
             var id
-            var type
             while {accept("identifier")} do {
                 // Parse the parameter list, including optional type
                 // annotations.
@@ -915,45 +915,45 @@ method methoddec() {
                     // a multi-part method name.
                     meth := parsempmndecrest(meth, params)
                 }
-                if (accept("arrow")) then {
-                    // Return type
-                    next()
-                    pushidentifier()
-                    type := values.pop()
-                } else {
-                    type := false
-                }
-                var body := []
-                if (accept("lbrace")) then {
-                    next()
-                    values.push(object {
-                        var kind := "lbrace"
-                        var register := ""
-                    })
-                    statement()
-                    var s := values.pop()
-                    while {s.kind /= "lbrace"} do {
-                        // The body is a sequence of statements, and
-                        // the method ends when no further statement
-                        // is found.
-                        body.push(s)
-                        statement()
-                        s := values.pop()
-                    }
-                    if (accept("rbrace")) then {
-                        next()
-                    } else {
-                        util.syntax_error("No statement but not end of "
-                            ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
-                    }
-                } else {
-                    util.syntax_error("No body in method declaration for " ++
-                        meth.value)
-                }
-                var o := ast.astmethod(meth, params, body, type)
-                values.push(o)
             }
         }
+        if (accept("arrow")) then {
+            // Return type
+            next()
+            pushidentifier()
+            type := values.pop()
+        } else {
+            type := false
+        }
+        var body := []
+        if (accept("lbrace")) then {
+            next()
+            values.push(object {
+                var kind := "lbrace"
+                var register := ""
+            })
+            statement()
+            var s := values.pop()
+            while {s.kind /= "lbrace"} do {
+                // The body is a sequence of statements, and
+                // the method ends when no further statement
+                // is found.
+                body.push(s)
+                statement()
+                s := values.pop()
+            }
+            if (accept("rbrace")) then {
+                next()
+            } else {
+                util.syntax_error("No statement but not end of "
+                    ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
+            }
+        } else {
+            util.syntax_error("No body in method declaration for " ++
+                meth.value)
+        }
+        var o := ast.astmethod(meth, params, body, type)
+        values.push(o)
     }
 }
 
