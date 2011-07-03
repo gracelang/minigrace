@@ -32,6 +32,9 @@ method outprint(s) {
 method log_verbose(s) {
     util.log_verbose(s)
 }
+method varf(vn) {
+    "var_" ++ vn.replace("'")with("__apos__")
+}
 method beginblock(s) {
     bblock := "%" ++ s
     out(s ++ ":")
@@ -140,7 +143,7 @@ method compileblock(o) {
         if (first.not) then {
             out(",")
         }
-        out("var_" ++ p.value)
+        out(varf(p.value))
     }
     out(") \{")
     var ret := "undefined"
@@ -183,7 +186,7 @@ method compilemethod(o, selfobj) {
         if (first.not) then {
             out(",")
         }
-        out("var_" ++ p.value)
+        out(varf(p.value))
         first := false
     }
     out(") \{")
@@ -244,7 +247,7 @@ method compileidentifier(o) {
                 ++ "\" = load %object** @.module." ++ name)
         } else {
             usedvars.push(name)
-            o.register := "var_" ++ name
+            o.register := varf(name)
         }
     }
 }
@@ -258,7 +261,7 @@ method compilebind(o) {
         val := compilenode(val)
         var nm := escapestring(dest.value)
         usedvars.push(nm)
-        out("  var_" ++ nm ++ " = " ++ val ++ ";")
+        out("  " ++ varf(nm) ++ " = " ++ val ++ ";")
         o.register := val
     } elseif (dest.kind == "member") then {
         dest.value := dest.value ++ ":="
@@ -281,7 +284,7 @@ method compileconstdec(o) {
     } else {
         util.syntax_error("const must have value bound.")
     }
-    out("  var var_" ++ nm ++ " = " ++ val ++ ";")
+    out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
     o.register := val
 }
 method compilevardec(o) {
@@ -290,9 +293,9 @@ method compilevardec(o) {
     var val := o.value
     if (val) then {
         val := compilenode(val)
-        out("  var var_" ++ nm ++ " = " ++ val ++ ";")
+        out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
     } else {
-        out("  var var_" ++ nm ++ ";")
+        out("  var " ++ varf(nm) ++ ";")
         val := "false"
     }
     o.register := val
@@ -405,7 +408,7 @@ method compileimport(o) {
     out("// Import of " ++ o.value.value)
     var con
     var nm := escapestring(o.value.value)
-    out("  var var_" ++ nm ++ " = gracecode_" ++ nm ++ ".call("
+    out("  var " ++ varf(nm) ++ " = gracecode_" ++ nm ++ ".call("
         ++ "Grace_allocObject())")
     o.register := "undefined"
 }
