@@ -1051,7 +1051,7 @@ method parse(toks) {
                     var t := values.pop
                     print(t)
                     print(t.pretty(2))
-                    lstAST := t.pretty(1) ++ lstAST
+                    lstAST := t.pretty(1) ++ "\n" ++ lstAST
                 }
             }
             util.syntax_error("No token consumed. Have " ++ sym.sym.kind
