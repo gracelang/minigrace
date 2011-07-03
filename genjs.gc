@@ -32,8 +32,21 @@ method outprint(s) {
 method log_verbose(s) {
     util.log_verbose(s)
 }
+method escapeident(vn) {
+    var nm := ""
+    for (vn) do {c->
+        var o := c.ord
+        if (((o >= 97 ) & (o <= 122)) | ((o >= 65) & (o <= 90))
+            | ((o >= 48) & (o <= 57))) then {
+            nm := nm ++ c
+        } else {
+            nm := nm ++ "__" ++ o ++ "__"
+        }
+    }
+    nm
+}
 method varf(vn) {
-    "var_" ++ vn.replace("'")with("__apos__")
+    "var_" ++ escapeident(vn)
 }
 method beginblock(s) {
     bblock := "%" ++ s
@@ -69,13 +82,14 @@ method compileobjconstdec(o, selfr, pos) {
     }
     var myc := auto_count
     auto_count := auto_count + 1
-    var nm := o.name.value
+    var nm := escapestring(o.name.value)
+    var nmi := escapeident(o.name.value)
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() \{")
+    out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
-        "_" ++ nm ++ myc ++ ";")
+        "_" ++ nmi ++ myc ++ ";")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -84,19 +98,20 @@ method compileobjvardec(o, selfr, pos) {
     }
     var myc := auto_count
     auto_count := auto_count + 1
-    var nm := o.name.value
+    var nm := escapestring(o.name.value)
+    var nmi := escapeident(o.name.value)
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("    var reader_" ++ modname ++ "_" ++ nm ++ myc ++ " = function() \{")
+    out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
-        "_" ++ nm ++ myc ++ ";")
+        "_" ++ nmi ++ myc ++ ";")
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("  var writer_" ++ modname ++ "_" ++ nm ++ myc ++ " = function(o) \{")
+    out("  var writer_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function(o) \{")
     out("    this.data[\"" ++ nm ++ "\"] = o;")
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
-        "_" ++ nm ++ myc ++ ";")
+        "_" ++ nmi ++ myc ++ ";")
 }
 method compileclass(o) {
     var params := o.params
@@ -177,7 +192,7 @@ method compilemethod(o, selfobj) {
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
-    var name := o.value.value
+    var name := escapestring(o.value.value)
     var nm := name ++ myc
     var closurevars := []
     out("var func" ++ myc ++ " = function(")
@@ -240,7 +255,6 @@ method compileidentifier(o) {
     if (name == "self") then {
         o.register := "this"
     } else {
-        name := escapestring(name)
         if (modules.contains(name)) then {
             out("  // WARNING: module support not implemented in JS backend")
             out("  \"var_val_" ++ name ++ auto_count
@@ -343,7 +357,7 @@ method compilecall(o) {
     if (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         out("  var call" ++ auto_count ++ " = callmethod(" ++ obj
-            ++ ",\"" ++ o.value.value ++ "\"")
+            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
         for (args) do { arg ->
             out(", " ++ arg)
         }
@@ -351,7 +365,7 @@ method compilecall(o) {
     } else {
         obj := "this"
         out("  var call" ++ auto_count ++ " = callmethod(this,"
-            ++ "\"" ++ o.value.value ++ "\"")
+            ++ "\"" ++ escapestring(o.value.value) ++ "\"")
         for (args) do { arg->
             out(", " ++ arg)
         }

@@ -72,10 +72,10 @@ method compileobjconstdec(o, selfr, pos) {
     auto_count := auto_count + 1
     var nm := o.name.value
     var len := length(nm) + 1
-    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
-    constants.push(con)
     var enm := escapestring(nm)
+    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
+    constants.push(con)
     out("; OBJECT CONST DEC " ++ enm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
@@ -105,11 +105,11 @@ method compileobjvardec(o, selfr, pos) {
     auto_count := auto_count + 1
     var nm := o.name.value
     var len := length(nm) + 1
+    var enm := escapestring(nm)
     var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
-        ++ "constant [" ++ len ++ " x i8] c\"" ++ nm ++ "\\00\""
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT VAR DEC " ++ nm)
-    var enm := escapestring(nm)
     out("  call void @adddatum(%object* " ++ selfr
         ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
     outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
@@ -130,6 +130,7 @@ method compileobjvardec(o, selfr, pos) {
         ++ "\"))")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
+    nmw := escapestring(nmw)
     con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
@@ -544,7 +545,6 @@ method compileindex(o) {
 method compileop(o) {
     var left := compilenode(o.left)
     var right := compilenode(o.right)
-    // Sometimes they don"t? Or something.
     auto_count := auto_count + 1
     if ((o.value == "+") | (o.value == "*") | (o.value == "/") |
         (o.value == "-") | (o.value == "%")) then {
@@ -574,8 +574,9 @@ method compileop(o) {
         auto_count := auto_count + 1
     } else {
         var len := length(o.value) + 1
+        var evl := escapestring(o.value)
         var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value ++ "\\00\""
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         out("  store %object* " ++ right ++ ", %object** %params_0")
         out("  %opresult" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ left
@@ -591,6 +592,7 @@ method compilecall(o) {
     var obj := ""
     var len := 0
     var con := ""
+    var evl
     for (o.with) do { p ->
         var r := compilenode(p)
         args.push(r)
@@ -598,6 +600,7 @@ method compilecall(o) {
     for (0..(args.size-1)) do { i ->
         out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
     }
+    evl := escapestring(o.value.value)
     if (o.value.kind == "member") then {
         outprint("; handling member")
         obj := compilenode(o.value.in)
@@ -605,7 +608,7 @@ method compilecall(o) {
         len := length(o.value.value) + 1
         outprint("; got len " ++ len)
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         outprint("; created con")
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
@@ -619,7 +622,7 @@ method compilecall(o) {
         obj := "%self"
         len := length(o.value.value) + 1
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ o.value.value ++ "\\00\""
+            ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"

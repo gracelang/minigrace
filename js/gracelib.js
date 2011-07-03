@@ -22,9 +22,13 @@ GraceString.prototype = {
             return new GraceNum(this._value.length);
         },
         "_escape": function() {
-            var s = this._value.replace("\\", "\\\\");
-            s = s.replace("\n", "\\n");
-            return new GraceString(s.replace("\"", "\\\""));
+            var tmp = callmethod(this, "replace()with",
+                    new GraceString("\\"), new GraceString("\\\\"));
+            tmp = callmethod(tmp, "replace()with",
+                    new GraceString("\""), new GraceString("\\\""));
+            tmp = callmethod(tmp, "replace()with",
+                    new GraceString("\n"), new GraceString("\\n"));
+            return tmp;
         },
         "replace()with": function(what, wth) {
             var s = this._value;

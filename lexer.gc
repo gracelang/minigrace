@@ -132,6 +132,11 @@ method modechange(tokens, mode, accum) {
             tokens.push(tok)
             done := true
         }
+        if (mode == "I") then {
+            tok := IdentifierToken.new(accum)
+            tokens.push(tok)
+            done := true
+        }
         if (mode == "\"") then {
             tok := StringToken.new(accum)
             tokens.push(tok)
@@ -254,6 +259,8 @@ method lexinput() {
     var mode := "n"
     var newmode := mode
     var instr := false
+    var inBackticks := false
+    var backtickIdent := false
     var accum := ""
     var escaped := false
     var prev := ""
@@ -276,7 +283,7 @@ method lexinput() {
             // line feed.
             util.syntax_error("illegal control character in input: #" ++ ordval)
         }
-        if (instr) then {
+        if (instr | inBackticks) then {
 
         } elseif (mode /= "c") then {
             // Not in a comment, so look for a mode.
@@ -292,6 +299,10 @@ method lexinput() {
                     newmode := "x"
                     mode := "n"
                 }
+            }
+            if (c == "`") then {
+                newmode := "I"
+                inBackticks := true
             }
             ct := isidentifierchar(ordval)
             if (ct) then {
@@ -329,6 +340,12 @@ method lexinput() {
             newmode := "n"
             instr := false
         }
+        if ((mode == "I") & (inBackticks) & (c == "`")) then {
+            // End of backticked identifier
+            newmode := "n"
+            inBackticks := false
+            backtickIdent := true
+        }
         if (newmode /= mode) then {
             // This character is the beginning of a different lexical
             // mode - process the old one now.
@@ -341,7 +358,7 @@ method lexinput() {
                 interpdepth := interpdepth - 1
             }
             mode := newmode
-            if (instr) then {
+            if (instr | inBackticks) then {
                 // String accum should skip the opening quote, but
                 // other modes' should include their first character.
                 accum := ""
@@ -355,6 +372,7 @@ method lexinput() {
                 newmode := "n"
                 accum := ""
             }
+            backtickIdent := false
         } elseif (instr) then {
             if (c == "\n") then {
                 if (interpdepth > 0) then {
@@ -428,6 +446,12 @@ method lexinput() {
             } else {
                 accum := accum ++ c
             }
+        } elseif (inBackticks) then {
+            if (c == "\n") then {
+                util.syntax_error("Newlines not permitted in backtick "
+                    ++ "identifiers")
+            }
+            accum := accum ++ c
         } elseif (c == "\n") then {
             // Linebreaks terminate any open tokens
             modechange(tokens, mode, accum)
