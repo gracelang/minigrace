@@ -125,6 +125,9 @@ GraceNum.prototype = {
             var s = this._value >= other._value;
             return new GraceBoolean(s)
         },
+        "prefix-": function() {
+            return new GraceNum(-this._value)
+        },
         "asString": function() {
             return new GraceString("" + this._value)
         },
@@ -150,6 +153,9 @@ function GraceBoolean(b) {
 GraceBoolean.prototype = {
     methods: {
         "not": function() {
+            return new GraceBoolean(!this._value)
+        },
+        "prefix!": function() {
             return new GraceBoolean(!this._value)
         },
         "&": function(other) {

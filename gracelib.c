@@ -1200,6 +1200,11 @@ struct Object *Float64_GreaterOrEqual(struct Object *self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a >= b);
 }
+struct Object *Float64_Negate(struct Object *self, int nparams,
+        struct Object **args) {
+    double a = *((double*)self->bdata[0]);
+    return alloc_Float64(-a);
+}
 struct Object *Float64_asInteger32(struct Object *self, int nparams,
         struct Object **args) {
     int i = integerfromAny(self);
@@ -1247,6 +1252,7 @@ struct Object *alloc_Float64(double num) {
         addmethod(o, "..", &Float64_Range);
         addmethod(o, "asString", &Float64_asString);
         addmethod(o, "asInteger32", &Float64_asInteger32);
+        addmethod(o, "prefix-", &Float64_Negate);
         Float64_Methods = o->methods;
         Float64_NumMethods = o->nummethods;
     } else {
@@ -1317,7 +1323,7 @@ struct Object *Boolean_not(struct Object *self, int nparams,
         return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-struct Object* alloc_Boolean(int val) {
+struct Object *alloc_Boolean(int val) {
     if (val && BOOLEAN_TRUE != NULL)
         return BOOLEAN_TRUE;
     if (!val && BOOLEAN_FALSE != NULL)
@@ -1331,6 +1337,7 @@ struct Object* alloc_Boolean(int val) {
     addmethod(o, "asString", &Boolean_asString);
     addmethod(o, "&", &Boolean_And);
     addmethod(o, "|", &Boolean_Or);
+    addmethod(o, "prefix!", &Boolean_not);
     addmethod(o, "not", &Boolean_not);
     addmethod(o, "ifTrue", &Boolean_ifTrue);
     if (val)
