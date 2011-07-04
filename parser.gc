@@ -16,7 +16,7 @@ var sym := object {
 // so the magic "line" tokens update the line number for error output.
 method next() {
     if (tokens.size > 0) then {
-        if (sym.sym.kind /= "line") then {
+        if ((sym.sym.kind /= "line") & (sym.sym.kind /= "indent")) then {
             lastline := linenum
         }
         sym.sym := tokens.pop()
