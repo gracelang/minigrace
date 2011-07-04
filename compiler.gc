@@ -15,7 +15,7 @@ var tokens := lexer.lexinput()
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
-            print(v.kind ++ ": " ++ v.value)
+        print(v.kind ++ ": " ++ v.value)
         if (util.verbosity > 30) then {
             print("  [line: {v.line} position: {v.linePos} indent: {v.indent}]")
         }

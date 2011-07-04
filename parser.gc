@@ -5,6 +5,8 @@ import util
 var lastline := 0
 var linenum := 0
 var lastIndent := 0
+var minIndentLevel := 0
+var statementIndent := 0
 var tokens := 0
 var values := []
 
@@ -89,6 +91,7 @@ method pushidentifier() {
 method block() {
     if (accept("lbrace")) then {
         next()
+        var minInd := statementIndent + 1
         var ident1
         var s := sym.sym
         var tmp
@@ -154,6 +157,11 @@ method block() {
             next()
         }
         var ln := values.size
+        if (sym.sym.line == lastToken.line) then {
+            minIndentLevel := sym.sym.linePos - 1
+        } else {
+            minIndentLevel := minInd
+        }
         while {(accept("rbrace")).not} do {
             // Take the body of the block
             statement()
@@ -163,6 +171,7 @@ method block() {
             tmp := values.pop()
             body.push(tmp)
         }
+        minIndentLevel := minInd - 1
         next()
         var o := ast.astblock(params, body)
         values.push(o)
@@ -188,10 +197,17 @@ method doif() {
         var elseblock := []
         var curelse := elseblock
         var v
+        var localMin
+        var minInd := statementIndent + 1
         if (accept("identifier") & (sym.sym.value == "then")) then {
             next()
             if (accept("lbrace")) then {
                 next()
+                if (sym.sym.line == lastToken.line) then {
+                    minIndentLevel := sym.sym.linePos - 1
+                } else {
+                    minIndentLevel := minInd
+                }
                 while {(accept("rbrace")).not} do {
                     statement()
                     v := values.pop()
@@ -219,6 +235,11 @@ method doif() {
                     util.syntax_error("expected \{.")
                 }
                 next()
+                if (sym.sym.line == lastToken.line) then {
+                    minIndentLevel := sym.sym.linePos - 1
+                } else {
+                    minIndentLevel := minInd
+                }
                 while {(accept("rbrace")).not} do {
                     statement()
                     v := values.pop()
@@ -240,6 +261,11 @@ method doif() {
                     // Just take all the statements and put them into
                     // curelse.
                     next()
+                    if (sym.sym.line == lastToken.line) then {
+                        minIndentLevel := sym.sym.linePos - 1
+                    } else {
+                        minIndentLevel := minInd
+                    }
                     while {(accept("rbrace")).not} do {
                         statement()
                         v := values.pop()
@@ -248,6 +274,7 @@ method doif() {
                     next()
                 }
             }
+            minIndentLevel := minInd - 1
             var o := ast.astif(cond, body, elseblock)
             values.push(o)
         } else {
@@ -267,6 +294,8 @@ method dofor() {
         over := values.pop()
         var body := []
         var variable
+        var localMin
+        var minInd := statementIndent + 1
         if (accept("identifier") & ((sym.sym.value == "each")
             | (sym.sym.value == "do"))) then {
             next()
@@ -281,6 +310,12 @@ method dofor() {
                 }
                 if (accept("arrow")) then {
                     next()
+                    localMin := minIndentLevel
+                    if (sym.sym.line == lastToken.line) then {
+                        minIndentLevel := sym.sym.linePos - 1
+                    } else {
+                        minIndentLevel := minInd
+                    }
                     while {(accept("rbrace")).not} do {
                         statement()
                         var v := values.pop()
@@ -291,6 +326,7 @@ method dofor() {
             }
             var o := ast.astfor(over, variable, body)
             values.push(o)
+            minIndentLevel := minInd - 1
         }
     }
 }
@@ -299,6 +335,7 @@ method dofor() {
 // nothing particularly special about it compared to the last two.
 method dowhile() {
     if (accept("identifier") & (sym.sym.value == "while")) then {
+        var minInd := statementIndent + 1
         next()
         var cond
         if (accept("lbrace")) then {
@@ -314,6 +351,11 @@ method dowhile() {
             next()
             if (accept("lbrace")) then {
                 next()
+                if (sym.sym.line == lastToken.line) then {
+                    minIndentLevel := sym.sym.linePos - 1
+                } else {
+                    minIndentLevel := minInd
+                }
                 while {(accept("rbrace")).not} do {
                     statement()
                     var v := values.pop()
@@ -324,6 +366,7 @@ method dowhile() {
             var o := ast.astwhile(cond, body)
             values.push(o)
         }
+        minIndentLevel := minInd - 1
     }
 }
 
@@ -997,8 +1040,16 @@ method methoddec() {
             type := false
         }
         var body := []
+        var stok := sym.sym
+        var localMin
         if (accept("lbrace")) then {
             next()
+            localMin := minIndentLevel
+            if (sym.sym.line == stok.line) then {
+                minIndentLevel := sym.sym.linePos - 1
+            } else {
+                minIndentLevel := stok.indent + 1
+            }
             values.push(object {
                 var kind := "lbrace"
                 var register := ""
@@ -1019,6 +1070,7 @@ method methoddec() {
                 util.syntax_error("No statement but not end of "
                     ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
             }
+            minIndentLevel := localMin
         } else {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
@@ -1058,6 +1110,20 @@ method doreturn() {
 // bind AST node out of the expressions on either side (which at this point
 // can be any arbitrary expression).
 method statement() {
+    statementIndent := sym.sym.indent
+    if ((sym.sym.kind == "rbrace") | (sym.sym.kind == "rparen")
+        | (sym.sym.kind == "rsquare")) then {
+        // pass
+    } elseif (sym.sym.indent < minIndentLevel) then {
+        if ((sym.sym.linePos - 1) /= minIndentLevel) then {
+            util.syntax_error("block and indentation inconsistent "
+                ++ "for token " ++ sym.sym.kind ++ ": " ++ sym.sym.value ++ "; "
+                ++ "indentation is " ++ sym.sym.indent ++ ", must be at least "
+                ++ minIndentLevel)
+        }
+    } elseif (sym.sym.indent > minIndentLevel) then {
+        minIndentLevel := sym.sym.indent
+    }
     if (accept("keyword")) then {
         if (sym.sym.value == "var") then {
             vardec()
