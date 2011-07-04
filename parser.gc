@@ -20,18 +20,16 @@ method next() {
             lastline := linenum
         }
         sym.sym := tokens.pop()
-        if ((sym.sym.kind == "line") & (tokens.size > 0)) then {
-            var l := sym.sym.value
-            if (l /= linenum) then {
-                linenum := l
-                util.setline(linenum)
-                next()
-            }
-        } elseif ((sym.sym.kind == "indent") & (tokens.size > 0)) then {
-            next()
-        }
+        linenum := sym.sym.line
+        util.setPosition(sym.sym.line, sym.sym.linePos)
     } else {
-        sym.sym := object { var kind := "eof" }
+        sym.sym := object {
+            var kind := "eof"
+            var line := linenum + 1
+            var linePos := 0
+            var indent := 0
+            var value := ""
+        }
     }
 }
 

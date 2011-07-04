@@ -3,7 +3,10 @@ import sys
 import util
 import unicode
 
-var linenum := 1
+var lineNumber := 1
+var linePosition := 0
+var startPosition := 1
+var indentLevel := 0
 
 // Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {
@@ -23,85 +26,128 @@ method hexdecchar(c) {
 class IdentifierToken { s ->
     var kind := "identifier"
     var value := s
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class StringToken { s ->
     var kind := "string"
     var value := s
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class OctetsToken { s ->
     var kind := "octets"
     var value := s
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class LBraceToken {
     var kind := "lbrace"
     var value := "\{"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var LBraceTokenV := LBraceToken.new
 class RBraceToken {
     var kind := "rbrace"
     var value := "}"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var RBraceTokenV := RBraceToken.new
 class LParenToken {
     var kind := "lparen"
     var value := "("
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var LParenTokenV := LParenToken.new
 class RParenToken {
     var kind := "rparen"
     var value := ")"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var RParenTokenV := RParenToken.new
 class LSquareToken {
     var kind := "lsquare"
     var value := "["
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var LSquareTokenV := LSquareToken.new
 class RSquareToken {
     var kind := "rsquare"
     var value := "]"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var RSquareTokenV := RSquareToken.new
 class CommaToken {
     var kind := "comma"
     var value := ","
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var CommaTokenV := CommaToken.new
 class ColonToken {
     var kind := "colon"
     var value := ":"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var ColonTokenV := ColonToken.new
 class DotToken {
     var kind := "dot"
     var value := "."
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var DotTokenV := DotToken.new
 class NumToken { v ->
     var kind := "num"
     var value := v
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class KeywordToken { v ->
     var kind := "keyword"
     var value := v
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class OpToken { v ->
     var kind := "op"
     var value := v
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 class ArrowToken {
     var kind := "arrow"
     var value := "->"
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var ArrowTokenV := ArrowToken.new
 class BindToken {
     var kind := "bind"
     var value := ":="
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
-var BindTokenV := BindToken.new
 class IndentToken { level->
     const kind := "indent"
     var value := level
+    var line := lineNumber
+    var indent := indentLevel
+    var linePos := startPosition
 }
 
 // When a new lexical class has begun, add to the tokens list the token
@@ -148,42 +194,42 @@ method modechange(tokens, mode, accum) {
             done := true
         }
         if (mode == ",") then {
-            tok := CommaTokenV
+            tok := CommaToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == ".") then {
-            tok := DotTokenV
+            tok := DotToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == "\{") then {
-            tok := LBraceTokenV
+            tok := LBraceToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == "}") then {
-            tok := RBraceTokenV
+            tok := RBraceToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == "(") then {
-            tok := LParenTokenV
+            tok := LParenToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == ")") then {
-            tok := RParenTokenV
+            tok := RParenToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == "[") then {
-            tok := LSquareTokenV
+            tok := LSquareToken.new
             tokens.push(tok)
             done := true
         }
         if (mode == "]") then {
-            tok := RSquareTokenV
+            tok := RSquareToken.new
             tokens.push(tok)
             done := true
         }
@@ -207,20 +253,19 @@ method modechange(tokens, mode, accum) {
         if (mode == "o") then {
             tok := OpToken.new(accum)
             if (accum == "->") then {
-                tok := ArrowTokenV
+                tok := ArrowToken.new
             }
             if (accum == ":=") then {
-                tok := BindTokenV
+                tok := BindToken.new
             }
             if (accum == ":") then {
-                tok := ColonTokenV
+                tok := ColonToken.new
             }
             tokens.push(tok)
             done := true
         }
         if (mode == "d") then {
-            tok := IndentToken.new(accum.size)
-            tokens.push(tok)
+            indentLevel := accum.size
             done := true
         }
         if (mode == "n") then {
@@ -236,6 +281,7 @@ method modechange(tokens, mode, accum) {
                 " with accum " ++ accum)
         }
     }
+    startPosition := linePosition
 }
 
 // True if ov is a valid identifier character. Identifier characters are
@@ -279,8 +325,10 @@ method lexinput() {
     var unichars := 0
     var codepoint := 0
     var interpdepth := 0
+    linePosition := 0
     util.log_verbose("lexing.")
     for (input) do { c ->
+        linePosition := linePosition + 1
         var ct := ""
         var ordval := c.ord // String.ord gives the codepoint
         if ((unicode.isSeparator(ordval) & (ordval /= 32) & (ordval /= 8232)) |
@@ -477,12 +525,10 @@ method lexinput() {
             // Linebreaks increment the line counter and insert a
             // special "line" token, which the parser can use to track
             // the origin of AST nodes for later error reporting.
-            linenum := linenum + 1
-            tokens.push(object {
-                var kind := "line"
-                var value := linenum + 0
-            })
-            util.setline(linenum)
+            lineNumber := lineNumber + 1
+            linePosition := 0
+            startPosition := 1
+            util.setPosition(lineNumber, 0)
         }
         prev := c
     }

@@ -10,6 +10,7 @@ var runmodev := "build"
 var buildtypev := "bc"
 var gracelibPathv := "gracelib.o"
 var linenumv := 1
+var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "llvm"
@@ -116,10 +117,10 @@ method syntax_error(s) {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write(": " ++ modnamev ++ ": Syntax error around line "
-        ++ linenumv ++ ": ")
+        ++ linenumv ++ ", character " ++ lineposv ++ ": ")
     io.error.write(s)
     io.error.write("\n")
-    raise("Syntax error: "++ s)
+    sys.exit(1)
 }
 
 method verbosity() {
@@ -146,8 +147,15 @@ method gracelibPath() {
 method setline(l) {
     linenumv := l
 }
+method setPosition(l, p) {
+    linenumv := l
+    lineposv := p
+}
 method linenum() {
     linenumv
+}
+method linepos() {
+    lineposv
 }
 method vtag() {
     vtagv

@@ -463,6 +463,14 @@ function gracecode_util() {
         linenum: function() {
             return this._linenum;
         },
+        linepos: function() {
+            return this._linepos;
+        },
+        setPosition: function(l, p) {
+            lineNumber = l._value;
+            this._linenum = l;
+            this._linepos = p;
+        },
         buildtype: function() {
             return new GraceString("normal");
         },
@@ -485,7 +493,7 @@ function gracecode_util() {
             dbg(s._value);
         },
         syntax_error: function(s) {
-            stderr_txt.value += "Syntax error around line " + this._linenum._value + ": " + s._value;
+            stderr_txt.value += "Syntax error around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value;
             throw new Exception("Grace syntax error");
         },
         hex: function(n) {
@@ -502,6 +510,7 @@ function gracecode_util() {
         },
     };
     this._linenum = new GraceNum(1);
+    this._linepos = new GraceNum(1);
     util_module = this;
     return this;
 }
