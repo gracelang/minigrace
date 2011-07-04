@@ -426,7 +426,7 @@ method lexinput() {
                 accum := c
             }
             if ((mode == "(") | (mode == ")") | (mode == "[")
-                | (mode == "]")) then {
+                | (mode == "]") | (mode == "\{") | (mode == "}")) then {
                 modechange(tokens, mode, accum)
                 mode := "n"
                 newmode := "n"
