@@ -158,6 +158,7 @@ method compileblock(o) {
         if (first.not) then {
             out(",")
         }
+        first := false
         out(varf(p.value))
     }
     out(") \{")
