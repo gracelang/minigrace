@@ -5,13 +5,23 @@
      <script type="text/javascript">
          var goldenOutput = "";
          var goldenOutputOffset = 0;
+         var compileError = false;
          function compile() {
             stdout_txt = document.getElementById("js_txt");
             stdin_txt = document.getElementById("code_txt");
             stderr_txt = document.getElementById("stderr_txt");
             stderr_txt.value = "";
             stdout_txt.value = "";
-            gracecode_compiler.call({methods:{}, data: {}});
+            compileError = false;
+            try {
+                gracecode_compiler.call({methods:{}, data: {}});
+            } catch (e) {
+                if (e == "ErrorExit") {
+                    compileError = true;
+                } else {
+                    throw e;
+                }
+            }
          }
         function run() {
             stdout_txt = document.getElementById("stdout_txt");
@@ -40,7 +50,9 @@
         }
         function compilerun() {
             compile();
-            run();
+            if (!compileError) {
+                run();
+            }
         }
         function loadtest(testname) {
             var req = new XMLHttpRequest();
