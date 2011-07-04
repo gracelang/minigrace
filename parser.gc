@@ -1085,6 +1085,9 @@ method statement() {
             values.push(o)
         }
     }
+    if (accept("semicolon")) then {
+        next()
+    }
 }
 
 // Parse the given list of tokens, returning a list of AST nodes

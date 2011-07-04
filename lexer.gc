@@ -142,9 +142,9 @@ class BindToken {
     var indent := indentLevel
     var linePos := startPosition
 }
-class IndentToken { level->
-    const kind := "indent"
-    var value := level
+class SemicolonToken { level->
+    const kind := "semicolon"
+    var value := ";"
     var line := lineNumber
     var indent := indentLevel
     var linePos := startPosition
@@ -230,6 +230,11 @@ method modechange(tokens, mode, accum) {
         }
         if (mode == "]") then {
             tok := RSquareToken.new
+            tokens.push(tok)
+            done := true
+        }
+        if (mode == ";") then {
+            tok := SemicolonToken.new
             tokens.push(tok)
             done := true
         }
@@ -376,7 +381,8 @@ method lexinput() {
                 newmode := "o"
             }
             if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
-                | (c == "\{") | (c == "}") | (c == "[") | (c == "]")) then {
+                | (c == "\{") | (c == "}") | (c == "[") | (c == "]")
+                | (c == ";")) then {
                 newmode := c
             }
             if ((c == ".") & (accum == ".")) then {
