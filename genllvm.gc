@@ -731,6 +731,22 @@ method compilereturn(o) {
     beginblock("postret" ++ auto_count)
     o.register := "%undefined"
 }
+method compilenum(o) {
+    var cnum := o.value
+    var havedot := false
+    for (cnum) do {c->
+        if (c == ".") then {
+            havedot := true
+        }
+    }
+    if (havedot.not) then {
+        cnum := cnum ++ ".0"
+    }
+    out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
+        ++ cnum ++ ")")
+    o.register := "%num" ++ auto_count
+    auto_count := auto_count + 1
+}
 method compilenode(o) {
     if (linenum /= o.line) then {
         linenum := o.line
@@ -738,10 +754,7 @@ method compilenode(o) {
         out("  call void @setline(i32 " ++ linenum ++ ")")
     }
     if (o.kind == "num") then {
-        out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
-            ++ o.value ++ ".0)")
-        o.register := "%num" ++ auto_count
-        auto_count := auto_count + 1
+        compilenum(o)
     }
     var l := ""
     if (o.kind == "string") then {

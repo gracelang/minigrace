@@ -189,6 +189,18 @@ method modechange(tokens, mode, accum) {
         }
         if (mode == "m") then {
             tok := NumToken.new(accum)
+            if (tokens.size > 1) then {
+                if (tokens[tokens.size-1].kind == "dot") then {
+                    tokens.pop()
+                    if (tokens[tokens.size-1].kind == "num") then {
+                        tok := tokens.pop()
+                        tok.value := tok.value ++ "." ++ accum
+                    } else {
+                        util.syntax_error("found ." ++ accum
+                            ++ ", expected term")
+                    }
+                }
+            }
             tokens.push(tok)
             done := true
         }
