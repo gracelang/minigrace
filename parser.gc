@@ -563,9 +563,16 @@ method callblockrest() {
 // method calls are left as "member" AST nodes and processed correctly at
 // a later stage.
 method callrest() {
+    var meth
+    var methn
+    var tmp
+    var ln := false
+    var params := []
+    var hadcall := false
     if (accept("lparen")) then {
-        var meth := values.pop()
-        var methn := meth.value
+        hadcall := true
+        meth := values.pop()
+        methn := meth.value
         next()
         values.push(object {
             var kind := "lparen"
@@ -583,7 +590,6 @@ method callrest() {
                 tmpparams.push(n)
                 n := values.pop()
             }
-            var params := []
             for (0..(tmpparams.size-1)) do { x ->
                 var p := tmpparams.pop()
                 params.push(p)
@@ -591,27 +597,33 @@ method callrest() {
             // All of the preceding has been an overly-complicated way of
             // obtaining the arguments to the method, which I think could
             // be done in a much simpler way now. TODO.
-            var ln := linenum
+            ln := linenum
             next()
-            if ((linenum == ln) & accept("identifier")) then {
-                // We have a multi-part method name! The line number check
-                // may be a bit of a hack, but prevents a(1)\nb(2) being
-                // treated as a single method call. callmprest processes
-                // the rest of the call and returns a replacement for what
-                // we've constructed in this method.
-                methn := callmprest(ast.astidentifier(methn, false), params)
-                if (meth.kind == "member") then {
-                    // callmprest loses this information, so restore
-                    // the member lookup (for x.between(3)and(10)-type
-                    // calls).
-                    meth := ast.astmember(methn.value, meth.in)
-                } else {
-                    meth := methn
-                }
-            }
-            var o := ast.astcall(meth, params)
-            values.push(o)
         }
+    } elseif (accept("string")) then {
+        hadcall := true
+        meth := values.pop()
+        methn := meth.value
+        ln := linenum
+        term()
+        var ar := values.pop
+        params.push(ar)
+    }
+    if (hadcall) then {
+        if ((linenum == ln) & accept("identifier")) then {
+            // Multi-part method name
+            methn := callmprest(ast.astidentifier(methn, false), params)
+            if (meth.kind == "member") then {
+                // callmprest loses this information, so restore
+                // the member lookup (for x.between(3)and(10)-type
+                // calls).
+                meth := ast.astmember(methn.value, meth.in)
+            } else {
+                meth := methn
+            }
+        }
+        tmp := ast.astcall(meth, params)
+        values.push(tmp)
     }
     dotrest()
 }
@@ -630,27 +642,33 @@ method callmprest(meth, params) {
         pushidentifier()
         nxt := values.pop
         methname := methname ++ nxt.value
-        var isblock := false
-        if ((accept("lparen")).not & (accept("lbrace")).not) then {
+        var isTerm := false
+        if ((accept("lparen")).not & (accept("lbrace")).not
+            & accept("string").not) then {
             util.syntax_error("multi-part method name parameters require ().")
         }
-        if (accept("lbrace")) then {
-            isblock := true
+        if (accept("lbrace") | accept("string")) then {
+            isTerm := true
         } else {
             next()
         }
-        expression()
+        if (accept("string")) then {
+            ln := lastline
+            term()
+        } else {
+            expression()
+        }
         nxt := values.pop()
         params.push(nxt)
-        if ((accept("rparen")).not & isblock.not) then {
+        if ((accept("rparen")).not & isTerm.not) then {
             // Currently, this rejects calls like:
             //   a(x) b(y,z) c(w)
             // That may not be necessary, though future varargs support
             // could be an issue.
             util.syntax_error("multi-part method name parameters must be single.")
         }
-        ln := lastline
-        if (accept("rparen")) then {
+        if (accept("rparen") & isTerm.not) then {
+            ln := lastline
             next()
         }
     }
@@ -1078,7 +1096,7 @@ method parse(toks) {
             for (0..5) do {i->
                 if (values.size > 0) then {
                     var t := values.pop
-                    print(t)
+                    print(t.kind)
                     print(t.pretty(2))
                     lstAST := t.pretty(1) ++ "\n" ++ lstAST
                 }
