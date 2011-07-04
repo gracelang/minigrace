@@ -328,6 +328,29 @@ method identifier() {
     }
 }
 
+method prefixop() {
+    if (accept("op")) then {
+        var op := sym.sym.value
+        var val
+        next()
+        if (accept("lparen")) then {
+            next()
+            expression()
+            if (accept("rparen").not) then {
+                util.syntax_error("expected rparen, have " ++ sym.sym.kind)
+            }
+            next()
+            val := values.pop()
+        } else {
+            term()
+            val := values.pop()
+        }
+        var mem := ast.astmember("prefix" ++ op, val)
+        var call := ast.astcall(mem, [])
+        values.push(call)
+    }
+}
+
 // Accept a term. Terms consist only of single syntactic units and
 // do not contain any operators or parentheses, unlike expression.
 method term() {
@@ -345,6 +368,9 @@ method term() {
         block()
     } elseif (accept("lsquare")) then {
         doarray()
+    } elseif (accept("op")) then {
+        // Prefix operator
+        prefixop()
     }
 }
 
@@ -878,6 +904,9 @@ method methoddec() {
         if (accept("bind")) then {
             next()
             meth.value := meth.value ++ ":="
+        } elseif (accept("op") & (meth.value == "prefix")) then {
+            meth.value := meth.value ++ sym.sym.value
+            next()
         }
         var rparams := []
         var params := []
