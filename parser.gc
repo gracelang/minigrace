@@ -4,6 +4,7 @@ import util
 
 var lastline := 0
 var linenum := 0
+var lastIndent := 0
 var tokens := 0
 var values := []
 
@@ -16,9 +17,8 @@ var sym := object {
 // so the magic "line" tokens update the line number for error output.
 method next() {
     if (tokens.size > 0) then {
-        if ((sym.sym.kind /= "line") & (sym.sym.kind /= "indent")) then {
-            lastline := linenum
-        }
+        lastline := linenum
+        lastIndent := sym.sym.indent
         sym.sym := tokens.pop()
         linenum := sym.sym.line
         util.setPosition(sym.sym.line, sym.sym.linePos)
@@ -37,6 +37,21 @@ method next() {
 // t is "num", "string", "method", etc.
 method accept(t) {
     sym.sym.kind == t
+}
+
+// True if the current token is a t, and it is on the same logical
+// line (either because it's on the same physical line, or because
+// it's on an indented continuation line).
+method acceptSameLine(t) {
+    (sym.sym.kind == t) & ((lastline == sym.sym.line) |
+        (sym.sym.indent > lastIndent))
+}
+
+// True if the current token is a t, and it is on the same logical
+// line as a provided token.
+method accept(t)onLineOf(other) {
+    (sym.sym.kind == t) & ((other.line == sym.sym.line) |
+        (sym.sym.indent > other.indent))
 }
 
 // Push the current token onto the output stack as a number
@@ -567,7 +582,9 @@ method callrest() {
     var ln := false
     var params := []
     var hadcall := false
+    var tok
     if (accept("lparen")) then {
+        tok := sym.sym
         hadcall := true
         meth := values.pop()
         methn := meth.value
@@ -582,6 +599,7 @@ method callrest() {
             expression()
         }
         if (accept("rparen")) then {
+            tok := sym.sym
             var tmpparams := []
             var n := values.pop()
             while {n.kind /= "lparen"} do {
@@ -599,6 +617,7 @@ method callrest() {
             next()
         }
     } elseif (accept("string")) then {
+        tok := sym.sym
         hadcall := true
         meth := values.pop()
         methn := meth.value
@@ -608,9 +627,9 @@ method callrest() {
         params.push(ar)
     }
     if (hadcall) then {
-        if ((linenum == ln) & accept("identifier")) then {
+        if (accept("identifier")onLineOf(tok)) then {
             // Multi-part method name
-            methn := callmprest(ast.astidentifier(methn, false), params)
+            methn := callmprest(ast.astidentifier(methn, false), params, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
                 // the member lookup (for x.between(3)and(10)-type
@@ -629,11 +648,11 @@ method callrest() {
 // Process the rest of a multi-part method name. Returns an identifier
 // to replace the one passed in, in which each word is joined by "()",
 // and updates params in place.
-method callmprest(meth, params) {
+method callmprest(meth, params, tok) {
     var methname := meth.value
     var nxt
     var ln := linenum
-    while {accept("identifier") & (ln == linenum)} do {
+    while {accept("identifier")onLineOf(tok)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
         methname := methname ++ "()"
