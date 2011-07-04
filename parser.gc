@@ -12,10 +12,12 @@ var values := []
 var sym := object {
     var sym
 }
+var lastToken := sym.sym
 
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
 method next() {
+    lastToken := sym.sym
     if (tokens.size > 0) then {
         lastline := linenum
         lastIndent := sym.sym.indent
@@ -582,7 +584,7 @@ method callrest() {
     var ln := false
     var params := []
     var hadcall := false
-    var tok
+    var tok := lastToken
     if (accept("lparen")) then {
         tok := sym.sym
         hadcall := true
@@ -616,7 +618,9 @@ method callrest() {
             ln := linenum
             next()
         }
-    } elseif (accept("string")) then {
+    } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
+        | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
+                                   | (sym.sym.value == "false")))) then {
         tok := sym.sym
         hadcall := true
         meth := values.pop()
@@ -664,7 +668,10 @@ method callmprest(meth, params, tok) {
             & accept("string").not) then {
             util.syntax_error("multi-part method name parameters require ().")
         }
-        if (accept("lbrace") | accept("string")) then {
+        if (accept("lbrace")onLineOf(tok) | accept("string")onLineOf(tok)
+            | accept("num")onLineOf(tok)
+            | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
+                                       | (sym.sym.value == "false")))) then {
             isTerm := true
         } else {
             next()
