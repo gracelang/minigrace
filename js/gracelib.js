@@ -480,6 +480,9 @@ function gracecode_util() {
         gracelibPath: function() {
             return new GraceString("normal");
         },
+        verbosity: function() {
+            return new GraceNum(30);
+        },
         log_verbose: function(s) {
             stderr_txt.value += "minigrace: " + s._value + "\n";
         },
