@@ -18,6 +18,8 @@
             } catch (e) {
                 if (e == "ErrorExit") {
                     compileError = true;
+                } else if (e == "SystemExit") {
+                    // pass
                 } else {
                     throw e;
                 }
