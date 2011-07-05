@@ -597,9 +597,6 @@ method compilecall(o) {
         var r := compilenode(p)
         args.push(r)
     }
-    for (0..(args.size-1)) do { i ->
-        out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
-    }
     evl := escapestring(o.value.value)
     if (o.value.kind == "member") then {
         outprint("; handling member")
@@ -610,6 +607,9 @@ method compilecall(o) {
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         outprint("; created con")
+        for (0..(args.size-1)) do { i ->
+            out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
+        }
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
@@ -623,6 +623,9 @@ method compilecall(o) {
         len := length(o.value.value) + 1
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
+        for (0..(args.size-1)) do { i ->
+            out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
+        }
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
