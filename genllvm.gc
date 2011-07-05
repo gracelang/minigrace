@@ -919,6 +919,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     buildtype := bt
     gracelibPath := glpath
     var linkfiles := []
+    var ext := false
     if (runmode == "make") then {
         log_verbose("checking imports.")
         for (values) do { v ->
@@ -940,7 +941,13 @@ method compile(vl, of, mn, rm, bt, glpath) {
                 }
                 if (exists.not) then {
                     if (io.exists(nm ++ ".gc")) then {
-                        cmd := argv[0] ++ " --make " ++ nm ++ ".gc"
+                        ext := ".gc"
+                    }
+                    if (io.exists(nm ++ ".grace")) then {
+                        ext := ".grace"
+                    }
+                    if (ext /= false) then {
+                        cmd := argv[0] ++ " --make " ++ nm ++ ext
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
@@ -956,6 +963,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                         exists := true
                         linkfiles.push(nm ++ ".gco")
                         staticmodules.push(nm)
+                        ext := false
                     }
                 }
                 if ((nm == "sys") | (nm == "io")) then {
