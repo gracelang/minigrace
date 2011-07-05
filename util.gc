@@ -26,44 +26,37 @@ method parseargs() {
                 if (arg == "-o") then {
                     ai := ai + 1
                     outfilev := io.open(argv[ai], "w")
-                }
-                if (arg == "--verbose") then {
+                } elseif (arg == "--verbose") then {
                     verbosityv := 40
-                }
-                if (arg == "--vtag") then {
+                } elseif (arg == "--vtag") then {
                     ai := ai + 1
                     vtagv := argv.at(ai)
-                }
-                if (arg == "--make") then {
+                } elseif (arg == "--make") then {
                     runmodev := "make"
-                }
-                if (arg == "--run") then {
+                } elseif (arg == "--run") then {
                     buildtypev := "run"
                     runmodev := "make"
-                }
-                if (arg == "--native") then {
+                } elseif (arg == "--native") then {
                     buildtypev := "native"
-                }
-                if (arg == "--noexec") then {
+                } elseif (arg == "--noexec") then {
                     noexecv := true
-                }
-                if (arg == "--module") then {
+                } elseif (arg == "--module") then {
                     ai := ai + 1
                     modnamev := argv[ai]
-                }
-                if (arg == "--gracelib") then {
+                } elseif (arg == "--gracelib") then {
                     ai := ai + 1
                     gracelibPathv := argv[ai]
-                }
-                if (arg == "--target") then {
+                } elseif (arg == "--target") then {
                     ai := ai + 1
                     targetv := argv[ai]
-                }
-                if (arg == "--version") then {
+                } elseif (arg == "--version") then {
                     print("minigrace 0.0.0")
                     print("git revision " ++ buildinfo.gitrevision)
                     print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
                     sys.exit(0)
+                } else {
+                    io.error.write("minigrace: invalid argument {arg}.\n")
+                    sys.exit(1)
                 }
             } else {
                 var filename := arg
