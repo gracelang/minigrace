@@ -2,6 +2,7 @@ import io
 import sys
 import buildinfo
 
+var __compilerRevision := false
 var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
@@ -14,6 +15,11 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "llvm"
+
+if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
+    & (__compilerRevision /= false)) then {
+    gracelibPathv := sys.execPath ++ "/gracelib.o"
+}
 
 method parseargs() {
     var argv := sys.argv
