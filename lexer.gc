@@ -330,6 +330,7 @@ method lexinput() {
     var unichars := 0
     var codepoint := 0
     var interpdepth := 0
+    var interpString := false
     linePosition := 0
     util.log_verbose("lexing.")
     for (input) do { c ->
@@ -405,6 +406,12 @@ method lexinput() {
             // End of string literal
             newmode := "n"
             instr := false
+            if (interpString) then {
+                modechange(tokens, mode, accum)
+                modechange(tokens, ")", ")")
+                mode := newmode
+                interpString := false
+            }
         }
         if ((mode == "I") & (inBackticks) & (c == "`")) then {
             // End of backticked identifier
@@ -501,6 +508,10 @@ method lexinput() {
                     accum := accum ++ unicode.create(codepoint)
                 }
             } elseif (c == "\{") then {
+                if (interpString.not) then {
+                    modechange(tokens, "(", "(")
+                    interpString := true
+                }
                 modechange(tokens, mode, accum)
                 modechange(tokens, "o", "++")
                 modechange(tokens, "(", "(")
