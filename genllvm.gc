@@ -701,7 +701,7 @@ method compileimport(o) {
         var l := (nm.encode("utf-8")).size() + 1
         con := mn ++ " = private unnamed_addr constant [" ++ l ++ " x i8] "
             ++ " c\"" ++ escapestring(nm) ++ "\\00\""
-            constants.push(con)
+        constants.push(con)
         out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @dlmodule(i8 *"
             ++ " getelementptr([" ++ l ++ " x i8]* " ++ mn ++ ",i32 0,i32 0))")
     }
