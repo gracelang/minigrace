@@ -1520,6 +1520,14 @@ struct Object *sys_exit(struct Object *self, int nparams,
     exit(i);
     return NULL;
 }
+struct Object *sys_execPath(struct Object *self, int nparams,
+        struct Object **args) {
+    char *ep = ARGV[0];
+    char epm[strlen(ep) + 1];
+    strcpy(epm, ep);
+    char *dn = dirname(epm);
+    return alloc_String(dn);
+}
 struct Object *Array_new(struct Object *self, int nparams,
         struct Object **args) {
     int size = integerfromAny(args[0]);
@@ -1543,6 +1551,7 @@ struct Object *module_sys_init() {
     addmethod(o, "cputime", &sys_cputime);
     addmethod(o, "elapsed", &sys_elapsed);
     addmethod(o, "exit", &sys_exit);
+    addmethod(o, "execPath", &sys_execPath);
     addmethod(o, "Array", &sys_Array);
     return o;
 }
