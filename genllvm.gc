@@ -2,6 +2,7 @@ import io
 import sys
 import ast
 import util
+import buildinfo
 
 // genllvm produces LLVM bitcode from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -464,6 +465,13 @@ method compileidentifier(o) {
     var name := o.value
     if (name == "self") then {
         o.register := "%self"
+    } elseif (name == "__compilerRevision") then {
+        out("%str___compilerRevision" ++ auto_count
+            ++ " = bitcast [41 x i8]* @.str._compilerRevision to i8*")
+        out("%\"var_val___compilerRevision" ++ auto_count
+            ++ "\" = call %object* @alloc_String(i8* %str___compilerRevision"
+            ++ auto_count ++ ")")
+        o.register := "%\"var_val___compilerRevision" ++ auto_count ++ "\""
     } else {
         name := escapestring(name)
         if (modules.contains(name)) then {
@@ -973,6 +981,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\"")
     out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
     out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
+    out("@.str._compilerRevision = private unnamed_addr constant [41 x i8]"
+        ++ "c\"" ++ buildinfo.gitrevision ++ "\\00\"")
     out("@undefined = private global %object* null")
     out("@argv = private global %object* null")
     outprint("%method = type \{ i8*, %object*(%object *, i32, %object**)*,")
