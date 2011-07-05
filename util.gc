@@ -16,10 +16,18 @@ var vtagv := false
 var noexecv := false
 var targetv := "llvm"
 
-if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
-    & (__compilerRevision /= false)) then {
-    gracelibPathv := sys.execPath ++ "/gracelib.o"
+method runOnNew(b)else(e) {
+    if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
+        & (__compilerRevision /= false)) then {
+        b.apply()
+    } else {
+        e.apply()
+    }
 }
+
+runOnNew({
+    gracelibPathv := sys.execPath ++ "/gracelib.o"
+}) else { }
 
 method parseargs() {
     var argv := sys.argv
