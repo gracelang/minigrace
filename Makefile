@@ -40,6 +40,13 @@ selfhost-rec: minigrace
 	@diff -q l2/l2.ll l3.ll
 	@rm -f l2/l2.ll l3.ll
 
+selftest: minigrace
+	rm -rf selftest
+	mkdir -p selftest
+	for f in $(SOURCEFILES) unicode.gso gracelib.o ; do ln -sf ../$$f selftest ; done
+	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest compiler.gc )
+	rm -rf selftest
+
 minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.gc
 
