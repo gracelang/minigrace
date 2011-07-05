@@ -888,7 +888,7 @@ method doobject() {
 
 // Accept a class declaration
 // Class declarations are currently of the form:
-//   class classname { param1, param2 ->
+//   class classname [extends Foo.new(...)] { param1, param2 ->
 //     var x
 //     method y(z) { ... }
 //   }
@@ -896,6 +896,30 @@ method doclass() {
     if (accept("keyword") & (sym.sym.value == "class")) then {
         next()
         pushidentifier() // A class currently cannot be anonymous
+        var superclass := false
+        if (accept("identifier") & (sym.sym.value == "extends")) then {
+            next()
+            identifier()
+            var nm := values.pop
+            if (accept("dot").not) then {
+                util.syntax_error("extends must have .new invocation on right")
+            }
+            next()
+            identifier()
+            var mn := values.pop
+            var scargs := []
+            if (accept("(")) then {
+                next()
+                while {accept(")").not} do {
+                    expression()
+                    var tmp := values.pop
+                    scargs.push(tmp)
+                }
+                next()
+            }
+            superclass := ast.astcall(ast.astmember(mn.value, nm), scargs)
+            print("got superclass:\n{superclass.pretty(2)}")
+        }
         var cname := values.pop()
         if (accept("lbrace")) then {
             values.push(object {
@@ -956,8 +980,10 @@ method doclass() {
                 var p := rbody.pop()
                 body.push(p)
             }
-            var o := ast.astclass(cname, params, body)
+            var o := ast.astclass(cname, params, body, superclass)
             values.push(o)
+        } else {
+            util.syntax_error("class definition without body")
         }
     }
 }

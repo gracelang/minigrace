@@ -178,7 +178,7 @@ method astcall(what, with) {
         }
     }
 }
-method astclass(name, params, body) {
+method astclass(name, params, body, superclass) {
     object {
         var kind := "class"
         var value := body
@@ -186,12 +186,17 @@ method astclass(name, params, body) {
         var params := params
         var register := ""
         var line := util.linenum
+        var superclass := superclass
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := "Class(" ++ self.name ++ ")"
+            var s := "Class(" ++ self.name.pretty(0) ++ ")"
+            if (self.superclass /= false) then {
+                s := s ++ "\n" ++ spc ++ "Superclass:"
+                s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
+            }
             s := s ++ "\n" ++ spc ++ "Parameters:"
             for (self.params) do {x->
                 s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
