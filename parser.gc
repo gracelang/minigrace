@@ -7,6 +7,7 @@ var linenum := 0
 var lastIndent := 0
 var minIndentLevel := 0
 var statementIndent := 0
+var statementToken
 var tokens := 0
 var values := []
 
@@ -57,6 +58,12 @@ method accept(t)onLineOf(other) {
     (sym.sym.kind == t) & ((other.line == sym.sym.line) |
         (sym.sym.indent > other.indent))
 }
+// True if the current token is a t, and it is on the same logical
+// line as a provided token.
+method accept(t)onLineOfLastOr(other) {
+    (sym.sym.kind == t) & (((other.line == sym.sym.line) |
+        (sym.sym.indent > other.indent)) | (lastToken.line == sym.sym.line))
+}
 
 // Push the current token onto the output stack as a number
 method pushnum() {
@@ -92,6 +99,7 @@ method block() {
     if (accept("lbrace")) then {
         next()
         var minInd := statementIndent + 1
+        var startIndent := statementIndent
         var ident1
         var s := sym.sym
         var tmp
@@ -172,6 +180,7 @@ method block() {
             body.push(tmp)
         }
         minIndentLevel := minInd - 1
+        statementIndent := startIndent
         next()
         var o := ast.astblock(params, body)
         values.push(o)
@@ -222,6 +231,7 @@ method doif() {
             while {accept("identifier") & (sym.sym.value == "elseif")} do {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
+                statementToken := sym.sym
                 next()
                 expression()
                 econd := values.pop()
@@ -628,6 +638,7 @@ method callrest() {
     var params := []
     var hadcall := false
     var tok := lastToken
+    var startInd := minIndentLevel
     if (accept("lparen")) then {
         tok := sym.sym
         hadcall := true
@@ -662,6 +673,7 @@ method callrest() {
             next()
         }
     } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
+        | accept("lbrace")onLineOf(tok)
         | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
                                    | (sym.sym.value == "false")))) then {
         tok := sym.sym
@@ -674,7 +686,7 @@ method callrest() {
         params.push(ar)
     }
     if (hadcall) then {
-        if (accept("identifier")onLineOf(tok)) then {
+        if (accept("identifier")onLineOfLastOr(tok)) then {
             // Multi-part method name
             methn := callmprest(ast.astidentifier(methn, false), params, tok)
             if (meth.kind == "member") then {
@@ -689,6 +701,7 @@ method callrest() {
         tmp := ast.astcall(meth, params)
         values.push(tmp)
     }
+    minIndentLevel := startInd
     dotrest()
 }
 
@@ -699,7 +712,8 @@ method callmprest(meth, params, tok) {
     var methname := meth.value
     var nxt
     var ln := linenum
-    while {accept("identifier")onLineOf(tok)} do {
+    while {accept("identifier")onLineOf(tok)
+           | accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
         methname := methname ++ "()"
@@ -708,18 +722,20 @@ method callmprest(meth, params, tok) {
         methname := methname ++ nxt.value
         var isTerm := false
         if ((accept("lparen")).not & (accept("lbrace")).not
-            & accept("string").not) then {
+            & accept("string").not & accept("num").not) then {
             util.syntax_error("multi-part method name parameters require ().")
         }
-        if (accept("lbrace")onLineOf(tok) | accept("string")onLineOf(tok)
-            | accept("num")onLineOf(tok)
-            | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
-                                       | (sym.sym.value == "false")))) then {
+        if (accept("lbrace")onLineOfLastOr(tok)
+            | accept("string")onLineOfLastOr(tok)
+            | accept("num")onLineOfLastOr(tok)
+            | (accept("identifier")onLineOfLastOr(tok)
+                & ((sym.sym.value == "true")
+                    | (sym.sym.value == "false")))) then {
             isTerm := true
         } else {
             next()
         }
-        if (accept("string")) then {
+        if (isTerm) then {
             ln := lastline
             term()
         } else {
@@ -1111,6 +1127,7 @@ method doreturn() {
 // can be any arbitrary expression).
 method statement() {
     statementIndent := sym.sym.indent
+    statementToken := sym.sym
     if ((sym.sym.kind == "rbrace") | (sym.sym.kind == "rparen")
         | (sym.sym.kind == "rsquare")) then {
         // pass
