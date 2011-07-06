@@ -166,11 +166,11 @@ method compileobjvardec(o, selfr) {
 }
 method compileclass(o) {
     var params := o.params
-    var mbody := [ast.astobject(o.value)]
+    var mbody := [ast.astobject(o.value, o.superclass)]
     var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
         false)
     var obody := [newmeth]
-    var cobj := ast.astobject(obody)
+    var cobj := ast.astobject(obody, false)
     var con := ast.astconstdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
@@ -178,7 +178,11 @@ method compileobject(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "%obj" ++ myc
-    out("  " ++ selfr ++ " = call %object* @alloc_obj()")
+    if (o.superclass /= false) then {
+        selfr := compilenode(o.superclass)
+    } else {
+        out("  " ++ selfr ++ " = call %object* @alloc_obj()")
+    }
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr)
@@ -198,7 +202,7 @@ method compileblock(o) {
     var applymeth := ast.astmethod(ast.astidentifier("apply", false),
         o.params, o.body, false)
     applymeth.selfclosure := true
-    var objbody := ast.astobject([applymeth])
+    var objbody := ast.astobject([applymeth], false)
     var obj := compilenode(objbody)
     o.register := obj
 }
@@ -209,7 +213,7 @@ method compilefor(o) {
     var applymeth := ast.astmethod(ast.astidentifier("apply", false),
         [o.variable], o.body, false)
     applymeth.selfclosure := true
-    var objbody := ast.astobject([applymeth])
+    var objbody := ast.astobject([applymeth], false)
     var obj := compilenode(objbody)
     out("  store %object* " ++ over ++ ", %object** %params_0")
     out("  %iter" ++ myc ++ " = call %object* @callmethod(%object* " ++ over

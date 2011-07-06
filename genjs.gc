@@ -115,11 +115,11 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o) {
     var params := o.params
-    var mbody := [ast.astobject(o.value)]
+    var mbody := [ast.astobject(o.value, o.superclass)]
     var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
         false)
     var obody := [newmeth]
-    var cobj := ast.astobject(obody)
+    var cobj := ast.astobject(obody, false)
     var con := ast.astconstdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
@@ -127,7 +127,11 @@ method compileobject(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "obj" ++ myc
-    out("  var " ++ selfr ++ " = Grace_allocObject();")
+    if (o.superclass /= false) then {
+        selfr := compilenode(o.superclass)
+    } else {
+        out("  var " ++ selfr ++ " = Grace_allocObject();")
+    }
     var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {
