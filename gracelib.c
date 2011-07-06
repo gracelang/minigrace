@@ -69,7 +69,7 @@ struct Object *Object_concat(struct Object*, int nparams,
         struct Object**);
 struct Object *Object_NotEquals(struct Object*, int,
         struct Object**);
-struct Object *Object_Equals(struct Object*, int,
+Object Object_Equals(struct Object*, int,
         struct Object**);
 struct Object* alloc_String(const char*);
 struct Object *String_concat(struct Object*, int nparams,
@@ -78,12 +78,16 @@ struct Object *String_index(struct Object*, int nparams,
         struct Object**);
 void *callmethod(void *receiver, const char *name,
         int nparams, struct Object **args);
-struct Object *alloc_Boolean(int val);
+Object alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
 struct Object *alloc_ConcatString(struct Object *, struct Object *);
 struct Object *alloc_Undefined();
 
 Object alloc_Integer32(int);
+void add_Method(ClassData, const char *,
+        Object(*func)(Object, int, Object*, int));
+Object alloc_newobj(int, ClassData);
+ClassData alloc_class(const char *, int);
 
 struct Object *String_size(struct Object *, int, struct Object **);
 struct Object *String_replace_with(struct Object *, int, struct Object **);
@@ -325,11 +329,11 @@ struct Object *Object_NotEquals(struct Object* receiver, int nparams,
     struct Object* b = callmethod(receiver, "==", nparams, params);
     return callmethod(b, "not", 0, NULL);
 }
-struct Object *Object_Equals(struct Object* receiver, int nparams,
+Object Object_Equals(struct Object* receiver, int nparams,
         struct Object** params) {
     return alloc_Boolean(receiver == params[0]);
 }
-struct Object *String_Equals(struct Object *receiver, int nparams,
+Object String_Equals(struct Object *receiver, int nparams,
         struct Object **params) {
     struct Object *other = params[0];
     if (strcmp(other->type, "String") && strcmp(other->type, "ConcatString"))
@@ -352,7 +356,7 @@ struct Object *ListIter_next(struct Object *self, int nparams,
     *pos  = *pos + 1;
     return arr->data[rpos];
 }
-struct Object *ListIter_havemore(struct Object *self, int nparams,
+Object ListIter_havemore(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *arr = self->data[0];
@@ -380,7 +384,7 @@ struct Object *List_pop(struct Object *self, int nparams,
     *pos = *pos - 1;
     return self->data[*pos];
 }
-struct Object *List_push(struct Object *self, int nparams,
+Object List_push(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     int *pos = self->bdata[0];
@@ -411,7 +415,7 @@ struct Object *List_indexAssign(struct Object *self, int nparams,
     self->data[index] = val;
     return val;
 }
-struct Object *List_contains(struct Object *self, int nparams,
+Object List_contains(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     struct Object *my, *b;
@@ -583,7 +587,7 @@ struct Object *StringIter_next(struct Object *self, int nparams,
     getutf8char(cstr + rpos, buf);
     return alloc_String(buf);
 }
-struct Object *StringIter_havemore(struct Object *self, int nparams,
+Object StringIter_havemore(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     struct Object *str = self->data[0];
@@ -624,7 +628,7 @@ void ConcatString__FillBuffer(struct Object *self, char *buf, int len) {
     }
     buf[len] = 0;
 }
-struct Object *ConcatString_Equals(struct Object *self, int nparams,
+Object ConcatString_Equals(struct Object *self, int nparams,
         struct Object **args) {
     if (self == args[0])
         return alloc_Boolean(1);
@@ -1005,7 +1009,7 @@ struct Object *Octets_at(struct Object *receiver, int nparams,
         die("Octets index out of bounds: %i/%i", i, *size);
     return alloc_Float64((int)data[i]&255);
 }
-struct Object *Octets_Equals(struct Object *receiver, int nparams,
+Object Octets_Equals(struct Object *receiver, int nparams,
         struct Object **args) {
     char *data = receiver->bdata[0];
     int *size = receiver->bdata[1];
@@ -1145,7 +1149,7 @@ struct Object *Float64_Mod(struct Object *self, int nparams,
     int j = (int)b;
     return alloc_Float64(i % j);
 }
-struct Object *Float64_Equals(struct Object *self, int nparams,
+Object Float64_Equals(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1156,7 +1160,7 @@ struct Object *Float64_Equals(struct Object *self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a == b);
 }
-struct Object *Float64_LessThan(struct Object *self, int nparams,
+Object Float64_LessThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1167,7 +1171,7 @@ struct Object *Float64_LessThan(struct Object *self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a < b);
 }
-struct Object *Float64_GreaterThan(struct Object *self, int nparams,
+Object Float64_GreaterThan(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1178,7 +1182,7 @@ struct Object *Float64_GreaterThan(struct Object *self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a > b);
 }
-struct Object *Float64_LessOrEqual(struct Object *self, int nparams,
+Object Float64_LessOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1189,7 +1193,7 @@ struct Object *Float64_LessOrEqual(struct Object *self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a <= b);
 }
-struct Object *Float64_GreaterOrEqual(struct Object *self, int nparams,
+Object Float64_GreaterOrEqual(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
@@ -1278,82 +1282,93 @@ struct Object *Float64_asString(struct Object *self, int nparams,
     self->data[0] = alloc_String(a);
     return self->data[0];
 }
-struct Object* Boolean_asString(struct Object *self, int nparams,
-        struct Object **args) {
-    int *myval = self->bdata[0];
-    if (*myval) {
+struct Object* Boolean_asString(Object self, int nparams,
+        Object *args) {
+    int myval = *(int*)self->data;
+    if (myval) {
         return alloc_String("true");
     } else { 
         return alloc_String("false");
     }
 }
-struct Object* Boolean_And(struct Object *self, int nparams,
-        struct Object **args) {
-    int *myval = self->bdata[0];
-    int *otherval = args[0]->bdata[0];
-    if (*myval && *otherval) {
+Object Boolean_And(Object self, int nparams,
+        Object *args) {
+    int8_t myval = *(int8_t*)self->data;
+    int8_t *otherval = *(int8_t*)args[0]->data;
+    if (myval && otherval) {
         return self;
     } else { 
         return alloc_Boolean(0);
     }
 }
-struct Object* Boolean_Or(struct Object *self, int nparams,
-        struct Object **args) {
-    int *myval = self->bdata[0];
-    int *otherval = args[0]->bdata[0];
-    if (*myval || *otherval) {
+Object Boolean_Or(Object self, int nparams,
+        Object *args) {
+    int8_t myval = *(int8_t*)self->data;
+    int8_t otherval = *(int8_t*)args[0]->data;
+    if (myval || otherval) {
         return alloc_Boolean(1);
     } else { 
         return alloc_Boolean(0);
     }
 }
-struct Object* Boolean_ifTrue(struct Object *self, int nparams,
-        struct Object **args) {
-    int *myval = self->bdata[0];
+Object Boolean_ifTrue(Object self, int nparams,
+        Object *args) {
+    int8_t myval = *(int8_t*)self->data;
     struct Object *block = args[0];
-    if (*myval) {
+    if (myval) {
         return callmethod(block, "apply", 0, NULL);
     } else {
         return self;
     }
 }
-struct Object *Boolean_not(struct Object *self, int nparams,
-        struct Object **args) {
+Object Boolean_not(Object self, int nparams,
+        Object *args) {
     if (self == BOOLEAN_TRUE)
         return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-struct Object *alloc_Boolean(int val) {
+Object Boolean_Equals(Object self, int nparams,
+        Object *args) {
+    return alloc_Boolean(self == args[0]);
+}
+Object Boolean_NotEquals(Object self, int nparams,
+        Object *args) {
+    return alloc_Boolean(self != args[0]);
+}
+ClassData Boolean;
+Object alloc_Boolean(int val) {
     if (val && BOOLEAN_TRUE != NULL)
         return BOOLEAN_TRUE;
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Boolean");
-    o->bdata = glmalloc(sizeof(void*));
-    o->bdata[0] = glmalloc(sizeof(int));
-    int *d = o->bdata[0];
-    *d = val;
-    addmethod(o, "asString", &Boolean_asString);
-    addmethod(o, "&", &Boolean_And);
-    addmethod(o, "|", &Boolean_Or);
-    addmethod(o, "prefix!", &Boolean_not);
-    addmethod(o, "not", &Boolean_not);
-    addmethod(o, "ifTrue", &Boolean_ifTrue);
+    if (Boolean == NULL) {
+        Boolean = alloc_class("Boolean", 8);
+        add_Method(Boolean, "asString", &Boolean_asString);
+        add_Method(Boolean, "&", &Boolean_And);
+        add_Method(Boolean, "|", &Boolean_Or);
+        add_Method(Boolean, "prefix!", &Boolean_not);
+        add_Method(Boolean, "not", &Boolean_not);
+        add_Method(Boolean, "ifTrue", &Boolean_ifTrue);
+        add_Method(Boolean, "==", &Boolean_Equals);
+        add_Method(Boolean, "/=", &Boolean_NotEquals);
+    }
+    Object o = alloc_newobj(sizeof(int8_t), Boolean);
+    int8_t *d = (int8_t*)o->data;
+    *d = (int8_t)val;
     if (val)
         BOOLEAN_TRUE = o;
     else
         BOOLEAN_FALSE = o;
     return o;
 }
-struct Object *File_close(struct Object *self, int nparams,
+Object File_close(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
     int rv = fclose(file);
     return alloc_Boolean(1);
 }
-struct Object *File_write(struct Object *self, int nparams,
+Object File_write(struct Object *self, int nparams,
         struct Object **args) {
     FILE **fileP = self->bdata[0];
     FILE *file = *fileP;
@@ -1448,7 +1463,7 @@ struct Object *io_system(struct Object *self, int nparams,
         ret = alloc_Boolean(1);
     return ret;
 }
-struct Object *io_newer(struct Object *self, int nparams,
+Object io_newer(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *sa = args[0];
     struct Object *sb = args[1];
@@ -1466,7 +1481,7 @@ struct Object *io_newer(struct Object *self, int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(sta.st_mtime > stb.st_mtime);
 }
-struct Object *io_exists(struct Object *self, int nparams,
+Object io_exists(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *so = args[0];
     int *sbl = so->bdata[2];
