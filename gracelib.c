@@ -58,11 +58,11 @@ typedef union EitherObject {
 
 void addmethod(struct Object*, char*,
         struct Object* (*)(struct Object*, int, struct Object**));
-struct Object *Float64_asString(struct Object*, int nparams,
-        struct Object**);
-struct Object *alloc_Float64(double);
-struct Object *Float64_Add(struct Object*, int nparams,
-        struct Object**);
+struct Object *Float64_asString(Object, int nparams,
+        Object*);
+Object alloc_Float64(double);
+Object Float64_Add(Object, int nparams,
+        Object*);
 struct Object *Object_asString(struct Object*, int nparams,
         struct Object**);
 struct Object *Object_concat(struct Object*, int nparams,
@@ -123,6 +123,9 @@ struct Method *ObjectMethod_asString = NULL;
 struct Method *ObjectMethod_concat = NULL;
 struct Method *ObjectMethod_Equals = NULL;
 struct Method *ObjectMethod_NotEquals = NULL;
+
+ClassData Number;
+ClassData Boolean;
 
 int linenumber = 0;
 
@@ -198,14 +201,14 @@ int integerfromAny(void *d) {
     struct Object *o = d;
     Object p = d;
     if (0 && o->flags & 1) {
+        if (p->class == Number) {
+            double d = *(double *)p->data;
+            int i = d;
+            return i;
+        }
         if (strcmp(p->class->name, "Integer32") == 0) {
             return *(int*)p->data;
         }
-    }
-    if (strcmp(o->type, "Float64") == 0) {
-        double *d = o->bdata[0];
-        int i = *d;
-        return i;
     }
     o = callmethod(o, "asString", 0, NULL);
     char *c = cstringfromString(o);
@@ -1078,143 +1081,144 @@ struct Object *alloc_Octets(const char *data, int len) {
     }
     return o;
 }
-struct Object *Float64_Range(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
-    double b = *((double*)other->bdata[0]);
+Object Float64_Range(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
+    double b = *(double*)other->data;
     int i = a;
     int j = b;
-    struct Object* arr = alloc_List();
+    Object arr = alloc_List();
     for (; i<=b; i++) {
-        struct Object *v = alloc_Float64(i);
+        Object v = alloc_Float64(i);
         List_push(arr, 1, &v);
     }
-    return arr;
+    return (Object)arr;
 }
-struct Object *Float64_Add(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Add(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *((double*)self->data);
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Float64(a+b);
 }
-struct Object *Float64_Sub(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Sub(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Float64(a-b);
 }
-struct Object *Float64_Mul(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Mul(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Float64(a*b);
 }
-struct Object *Float64_Div(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Div(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Float64(a/b);
 }
-struct Object *Float64_Mod(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Mod(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     int i = (int)a;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     int j = (int)b;
     return alloc_Float64(i % j);
 }
-Object Float64_Equals(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_Equals(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
-    else
-        b = integerfromAny(other);
+    if (other->class == Number)
+        b = *(double*)other->data;
+    else {
+        return alloc_Boolean(0);
+    }
     return alloc_Boolean(a == b);
 }
-Object Float64_LessThan(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_LessThan(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Boolean(a < b);
 }
-Object Float64_GreaterThan(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_GreaterThan(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Boolean(a > b);
 }
-Object Float64_LessOrEqual(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_LessOrEqual(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Boolean(a <= b);
 }
-Object Float64_GreaterOrEqual(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    double a = *((double*)self->bdata[0]);
+Object Float64_GreaterOrEqual(Object self, int nparams,
+        Object *args) {
+    Object other = args[0];
+    double a = *(double*)self->data;
     double b;
-    if (isclass(other, "Float64"))
-        b = *((double*)other->bdata[0]);
+    if (other->class == Number)
+        b = *(double*)other->data;
     else
         b = integerfromAny(other);
     return alloc_Boolean(a >= b);
 }
-struct Object *Float64_Negate(struct Object *self, int nparams,
-        struct Object **args) {
-    double a = *((double*)self->bdata[0]);
+Object Float64_Negate(Object self, int nparams,
+        Object *args) {
+    double a = *(double*)self->data;
     return alloc_Float64(-a);
 }
-struct Object *Float64_asInteger32(struct Object *self, int nparams,
-        struct Object **args) {
+Object Float64_asInteger32(Object self, int nparams,
+        Object *args) {
     int i = integerfromAny(self);
-    return (struct Object *)alloc_Integer32(i);
+    return alloc_Integer32(i);
 }
-struct Object *alloc_Float64(double num) {
+Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
     if (num == 1 && FLOAT64_ONE != NULL)
@@ -1226,43 +1230,30 @@ struct Object *alloc_Float64(double num) {
             && ival < FLOAT64_INTERN_MAX
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Float64");
-    o->bdata = glmalloc(2*sizeof(void*));
-    o->bdata[0] = glmalloc(8);
-    double *d = o->bdata[0];
-    *d = num;
-    o->bdata[1] = glmalloc(32);
-    char *s = o->bdata[1];
-    sprintf(s, "%f", num);
-    int l = strlen(s) - 1;
-    while (s[l] == '0')
-        s[l--] = '\0';
-    if (s[l] == '.')
-        s[l] = '\0';
-    o->data = glmalloc(1 * sizeof(struct Object *));
-    o->data[0] = NULL;
-    if (Float64_Methods == NULL) {
-        addmethod(o, "+", &Float64_Add);
-        addmethod(o, "*", &Float64_Mul);
-        addmethod(o, "-", &Float64_Sub);
-        addmethod(o, "/", &Float64_Div);
-        addmethod(o, "%", &Float64_Mod);
-        addmethod(o, "==", &Float64_Equals);
-        addmethod(o, "<", &Float64_LessThan);
-        addmethod(o, ">", &Float64_GreaterThan);
-        addmethod(o, "<=", &Float64_LessOrEqual);
-        addmethod(o, ">=", &Float64_GreaterOrEqual);
-        addmethod(o, "..", &Float64_Range);
-        addmethod(o, "asString", &Float64_asString);
-        addmethod(o, "asInteger32", &Float64_asInteger32);
-        addmethod(o, "prefix-", &Float64_Negate);
-        Float64_Methods = o->methods;
-        Float64_NumMethods = o->nummethods;
-    } else {
-        o->methods = Float64_Methods;
-        o->nummethods = Float64_NumMethods;
+    if (Number == NULL) {
+        Number = alloc_class("Number", 16);
+        add_Method(Number, "+", &Float64_Add);
+        add_Method(Number, "*", &Float64_Mul);
+        add_Method(Number, "-", &Float64_Sub);
+        add_Method(Number, "/", &Float64_Div);
+        add_Method(Number, "%", &Float64_Mod);
+        add_Method(Number, "==", &Float64_Equals);
+        add_Method(Number, "/=", &Object_NotEquals);
+        add_Method(Number, "++", &Object_concat);
+        add_Method(Number, "<", &Float64_LessThan);
+        add_Method(Number, ">", &Float64_GreaterThan);
+        add_Method(Number, "<=", &Float64_LessOrEqual);
+        add_Method(Number, ">=", &Float64_GreaterOrEqual);
+        add_Method(Number, "..", &Float64_Range);
+        add_Method(Number, "asString", &Float64_asString);
+        add_Method(Number, "asInteger32", &Float64_asInteger32);
+        add_Method(Number, "prefix-", &Float64_Negate);
     }
+    Object o = alloc_newobj(sizeof(double) + sizeof(Object), Number);
+    double *d = (double*)o->data;
+    *d = num;
+    Object *str = (Object*)(o->data + sizeof(double));
+    *str = NULL;
     if (ival == num && ival >= FLOAT64_INTERN_MIN
             && ival < FLOAT64_INTERN_MAX)
         Float64_Interned[ival-FLOAT64_INTERN_MIN] = o;
@@ -1274,13 +1265,22 @@ struct Object *alloc_Float64(double num) {
         FLOAT64_TWO = o;
     return o;
 }
-struct Object *Float64_asString(struct Object *self, int nparams,
-        struct Object **args) {
-    if (self->data[0] != NULL)
-        return self->data[0];
-    char *a = self->bdata[1];
-    self->data[0] = alloc_String(a);
-    return self->data[0];
+struct Object *Float64_asString(Object self, int nparams,
+        Object *args) {
+    Object *strp = (Object*)(self->data + sizeof(double));
+    if (*strp != NULL)
+        return *strp;
+    double num = *(double*)self->data;
+    char s[32];
+    sprintf(s, "%f", num);
+    int l = strlen(s) - 1;
+    while (s[l] == '0')
+        s[l--] = '\0';
+    if (s[l] == '.')
+        s[l] = '\0';
+    Object str = alloc_String(s);
+    *strp = str;
+    return str;
 }
 struct Object* Boolean_asString(Object self, int nparams,
         Object *args) {
@@ -1335,7 +1335,6 @@ Object Boolean_NotEquals(Object self, int nparams,
         Object *args) {
     return alloc_Boolean(self != args[0]);
 }
-ClassData Boolean;
 Object alloc_Boolean(int val) {
     if (val && BOOLEAN_TRUE != NULL)
         return BOOLEAN_TRUE;
