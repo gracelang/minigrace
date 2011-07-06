@@ -58,7 +58,7 @@
         }
         function loadtest(testname) {
             var req = new XMLHttpRequest();
-            req.open("GET", "./tests/" + testname + ".test.gc", false);
+            req.open("GET", "./tests/" + testname + ".test.grace", false);
             req.send(null);
             if (req.status == 200) {
                 document.getElementById("code_txt").value = req.responseText;
@@ -104,7 +104,7 @@
  <input type="checkbox" id="show_llvm" onchange="modeswitch()" />LLVM
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
-<!--[!SH[ls tests | grep .test.gc | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
+<!--[!SH[ls tests | grep .test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
  </select>
  <br />
  <script src="gracelib.js" type="text/javascript"></script>
