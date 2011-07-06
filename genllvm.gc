@@ -64,7 +64,7 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
-method compileobjconstdec(o, selfr, pos) {
+method compileobjconstdec(o, selfr) {
     var val := "%undefined"
     if (o.value) then {
         val := compilenode(o.value)
@@ -78,26 +78,30 @@ method compileobjconstdec(o, selfr, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT CONST DEC " ++ enm)
-    out("  call void @adddatum(%object* " ++ selfr
-        ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
+    out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 1)")
+    out("  %field" ++ myc ++ " = call %object** @alloc_var()")
+    out("  store %object* " ++ val ++ ", %object** %field" ++ myc)
+    out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
+        ++ "%object** %\"field" ++ myc ++ "\")")
     outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) \{")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  %tmp2 = load %object** %arrayidx")
-    outprint("  ret %object* %tmp2")
+        ++ "%object** %args, %object*** %closure) \{")
+    outprint("  %fieldpp = getelementptr %object*** %closure, i32 0")
+    outprint("  %fieldp = load %object*** %fieldpp")
+    outprint("  %val = load %object** %fieldp")
+    outprint("  ret %object* %val")
     outprint("\}")
-    out("  call void @addmethod(%object* " ++ selfr
+    out("  call void @addclosuremethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* "
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
+        ++ "%object*(%object*, i32, %object**, %object***)* "
+        ++ "getelementptr(%object* "
+        ++ "(%object*, i32, %object**, %object***)* "
+        ++ "@\"reader_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
-        ++ "\"))")
+        ++ "\"), %object*** %closure" ++ myc ++ ")")
 }
-method compileobjvardec(o, selfr, pos) {
+method compileobjvardec(o, selfr) {
     var val := "%undefined"
     if (o.value) then {
         val := compilenode(o.value)
@@ -111,24 +115,29 @@ method compileobjvardec(o, selfr, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT VAR DEC " ++ nm)
-    out("  call void @adddatum(%object* " ++ selfr
-        ++ ", %object* " ++ val ++ ", i32 " ++ pos ++ ")")
+    out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 1)")
+    out("  %field" ++ myc ++ " = call %object** @alloc_var()")
+    out("  store %object* " ++ val ++ ", %object** %field" ++ myc)
+    out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
+        ++ "%object** %\"field" ++ myc ++ "\")")
     outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) \{")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  %tmp2 = load %object** %arrayidx")
-    outprint("  ret %object* %tmp2")
+        ++ "%object** %args, %object*** %closure) \{")
+    outprint("  %fieldpp = getelementptr %object*** %closure, i32 0")
+    outprint("  %fieldp = load %object*** %fieldpp")
+    outprint("  %val = load %object** %fieldp")
+    outprint("  ret %object* %val")
     outprint("\}")
-    out("  call void @addmethod(%object* " ++ selfr
+    out("  call void @addclosuremethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"reader_" ++ modname ++ "_" ++ enm
+        ++ "%object*(%object*, i32, %object**, %object***)* "
+        ++ "getelementptr(%object* "
+        ++ "(%object*, i32, %object**, %object***)* "
+        ++ "@\"reader_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
-        ++ "\"))")
+        ++ "\"), %object*** %closure" ++ myc ++ ")")
+
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     nmw := escapestring(nmw)
@@ -137,22 +146,23 @@ method compileobjvardec(o, selfr, pos) {
     constants.push(con)
     outprint("define private %object* @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args) \{")
+        ++ "%object** %args, %object*** %closure) \{")
     outprint("  %params = getelementptr %object** %args, i32 0")
     outprint("  %par0 = load %object** %params")
-    outprint("  %dt = getelementptr %object* %self, i32 0, i32 3")
-    outprint("  %tmp1 = load %object*** %dt")
-    outprint("  %arrayidx = getelementptr %object** %tmp1, i32 " ++ pos)
-    outprint("  store %object* %par0, %object** %arrayidx")
+    outprint("  %fieldpp = getelementptr %object*** %closure, i32 0")
+    outprint("  %fieldp = load %object*** %fieldpp")
+    outprint("  store %object* %par0, %object** %fieldp")
     outprint("  ret %object* %par0")
     outprint("\}")
-    out("  call void @addmethod(%object* " ++ selfr
+    out("  call void @addclosuremethod(%object* " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
-        ++ "(%object*, i32, %object**)* @\"writer_" ++ modname ++ "_" ++ enm
+        ++ "%object*(%object*, i32, %object**, %object***)* "
+        ++ "getelementptr(%object* "
+        ++ "(%object*, i32, %object**, %object***)* "
+        ++ "@\"writer_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
-        ++ "\"))")
+        ++ "\"), %object*** %closure" ++ myc ++ ")")
 }
 method compileclass(o) {
     var params := o.params
@@ -169,18 +179,15 @@ method compileobject(o) {
     auto_count := auto_count + 1
     var selfr := "%obj" ++ myc
     out("  " ++ selfr ++ " = call %object* @alloc_obj()")
-    var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr)
         }
         if (e.kind == "vardec") then {
-            compileobjvardec(e, selfr, pos)
-            pos := pos + 1
+            compileobjvardec(e, selfr)
         }
         if (e.kind == "constdec") then {
-            compileobjconstdec(e, selfr, pos)
-            pos := pos + 1
+            compileobjconstdec(e, selfr)
         }
     }
     o.register := selfr
@@ -1087,7 +1094,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare void @addtoclosure(%object***, %object**)")
     out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
     out("    i32, %object**, %object***)*, %object***)")
-    out("declare void @adddatum(%object*, %object*, i32)")
     out("declare void @setline(i32)")
     out("; libc functions")
     out("declare i32 @puts(i8*)")
