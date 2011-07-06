@@ -209,18 +209,25 @@ method astclass(name, params, body, superclass) {
         }
     }
 }
-method astobject(body) {
+method astobject(body, superclass) {
     object {
         var kind := "object"
         var value := body
         var register := ""
         var line := util.linenum
+        var superclass := superclass
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
             var s := "Object"
+            if (self.superclass /= false) then {
+                s := s ++ "\n" ++ spc ++ "Superclass:"
+                s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
+                s := s ++ "\n" ++ spc ++ "Body:"
+                depth := depth + 1
+            }
             for (self.value) do { x ->
                 s := s ++ "\n"++ spc ++ x.pretty(depth+1)
             }

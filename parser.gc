@@ -847,6 +847,29 @@ method doobject() {
     // doobject because "object" is a keyword
     if (accept("keyword") & (sym.sym.value == "object")) then {
         next()
+        var superclass := false
+        if (accept("identifier") & (sym.sym.value == "extends")) then {
+            next()
+            identifier()
+            var nm := values.pop
+            if (accept("dot").not) then {
+                util.syntax_error("extends must have .new invocation on right")
+            }
+            next()
+            identifier()
+            var mn := values.pop
+            var scargs := []
+            if (accept("(")) then {
+                next()
+                while {accept(")").not} do {
+                    expression()
+                    var tmp := values.pop
+                    scargs.push(tmp)
+                }
+                next()
+            }
+            superclass := ast.astcall(ast.astmember(mn.value, nm), scargs)
+        }
         if (accept("lbrace")) then {
             values.push(object {
                 var kind := "lbrace"
@@ -880,7 +903,7 @@ method doobject() {
                 var p := rbody.pop()
                 body.push(p)
             }
-            var o := ast.astobject(body)
+            var o := ast.astobject(body, superclass)
             values.push(o)
         }
     }
@@ -908,9 +931,9 @@ method doclass() {
             identifier()
             var mn := values.pop
             var scargs := []
-            if (accept("(")) then {
+            if (accept("lparen")) then {
                 next()
-                while {accept(")").not} do {
+                while {accept("rparen").not} do {
                     expression()
                     var tmp := values.pop
                     scargs.push(tmp)
@@ -918,7 +941,6 @@ method doclass() {
                 next()
             }
             superclass := ast.astcall(ast.astmember(mn.value, nm), scargs)
-            print("got superclass:\n{superclass.pretty(2)}")
         }
         var cname := values.pop()
         if (accept("lbrace")) then {
