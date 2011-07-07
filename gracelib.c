@@ -708,15 +708,21 @@ struct Object *ConcatString_substringFrom_to(struct Object *self,
     }
     return alloc_String(buf);
 }
+struct Object *ConcatString_hashcode(struct Object *self, int nparams,
+        struct Object **args) {
+    unsigned int *hashcode = self->bdata[3];
+    return alloc_Float64(*hashcode);
+}
 struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "ConcatString");
     o->data = glmalloc(2 * sizeof(struct Object*));
     o->data[0] = left;
     o->data[1] = right;
-    o->bdata = glmalloc(3 * sizeof(void*));
+    o->bdata = glmalloc(4 * sizeof(void*));
     o->bdata[1] = glmalloc(sizeof(int));
     o->bdata[2] = glmalloc(sizeof(int));
+    o->bdata[3] = glmalloc(sizeof(int));
     int *lbs = left->bdata[2];
     int *rbs = right->bdata[2];
     int *mybs = o->bdata[2];
@@ -727,6 +733,11 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     int *ls = left->bdata[1];
     int *rs = right->bdata[1];
     *mys = *ls + *rs;
+    unsigned int lh = *(unsigned int*)left->bdata[3];
+    unsigned int rh = *(unsigned int*)right->bdata[3];
+    unsigned int hc = lh * rh;
+    unsigned int *hashcode = o->bdata[3];
+    *hashcode = hc;
     if (ConcatString_methods == NULL) {
         addmethod(o, "asString", &identity_function);
         addmethod(o, "++", &ConcatString_Concat);
@@ -738,6 +749,7 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
         addmethod(o, "iter", &ConcatString_iter);
         addmethod(o, "substringFrom()to", &ConcatString_substringFrom_to);
         addmethod(o, "replace()with", &String_replace_with);
+        addmethod(o, "hashcode", &ConcatString_hashcode);
         ConcatString_methods = o->methods;
         ConcatString_nummethods = o->nummethods;
     } else {
@@ -870,27 +882,37 @@ struct Object *String_replace_with(struct Object *self,
     strcpy(tmp, my);
     return alloc_String(result);
 }
+struct Object *String_hashcode(struct Object *self, int nparams,
+        struct Object **args) {
+    unsigned int *hashcode = self->bdata[3];
+    return alloc_Float64(*hashcode);
+}
 struct Object *alloc_String(const char *data) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "String");
-    o->bdata = glmalloc(sizeof(void*) * 3);
+    o->bdata = glmalloc(sizeof(void*) * 4);
     o->bdata[0] = glmalloc(strlen(data) + 1);
     o->bdata[1] = glmalloc(sizeof(int));
     o->bdata[2] = glmalloc(sizeof(int));
+    o->bdata[3] = glmalloc(sizeof(int));
     int *blen = o->bdata[2];
     *blen = strlen(data);
     char *d = o->bdata[0];
     int *size = o->bdata[1];
     *size = 0;
+    unsigned int *hashcode = o->bdata[3];
     int i;
+    unsigned int hc = 1;
     for (i=0; i<*blen; ) {
         int l = getutf8charlen(data + i);
         int j = i + l;
         for (; i<j; i++) {
             d[i] = data[i];
+            hc *= data[i];
         }
         *size = *size + 1;
     }
+    *hashcode = hc;
     d[i] = 0;
     if (String_Methods == NULL) {
         addmethod(o, "asString", &identity_function);
@@ -906,6 +928,7 @@ struct Object *alloc_String(const char *data) {
         addmethod(o, "encode", &String_encode);
         addmethod(o, "substringFrom()to", &String_substringFrom_to);
         addmethod(o, "replace()with", &String_replace_with);
+        addmethod(o, "hashcode", &String_hashcode);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {
@@ -1210,6 +1233,14 @@ struct Object *Float64_asInteger32(struct Object *self, int nparams,
     int i = integerfromAny(self);
     return (struct Object *)alloc_Integer32(i);
 }
+struct Object *Float64_hashcode(struct Object *self, int nparams,
+        struct Object **args) {
+    double *d = self->bdata[0];
+    uint32_t *w1 = self->bdata[0];
+    uint32_t *w2 = self->bdata[0] + 4;
+    uint32_t hc = *w1 ^ *w2;
+    return alloc_Float64(hc);
+}
 struct Object *alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -1253,6 +1284,7 @@ struct Object *alloc_Float64(double num) {
         addmethod(o, "asString", &Float64_asString);
         addmethod(o, "asInteger32", &Float64_asInteger32);
         addmethod(o, "prefix-", &Float64_Negate);
+        addmethod(o, "hashcode", &Float64_hashcode);
         Float64_Methods = o->methods;
         Float64_NumMethods = o->nummethods;
     } else {
