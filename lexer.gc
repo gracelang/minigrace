@@ -400,7 +400,8 @@ method lexinput() {
             if ((newmode == mode) & (mode == "n")
                 & (unicode.isSeparator(ordval).not)
                 & (unicode.isControl(ordval).not)) then {
-                if (unicode.isSeparator(ordval).not) then {
+                if ((unicode.isSeparator(ordval).not)
+                    & (ordval /= 10) & (ordval /= 13)) then {
                     util.syntax_error("unknown character in input: #{ordval}"
                         ++ " '{c}', {unicode.name(c)}")
                 }
