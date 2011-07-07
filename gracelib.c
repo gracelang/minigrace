@@ -1159,13 +1159,13 @@ struct Object *Float64_Mod(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *other = args[0];
     double a = *((double*)self->bdata[0]);
-    int i = (int)a;
+    unsigned int i = (unsigned int)a;
     double b;
     if (isclass(other, "Float64"))
         b = *((double*)other->bdata[0]);
     else
         b = integerfromAny(other);
-    int j = (int)b;
+    unsigned int j = (unsigned int)b;
     return alloc_Float64(i % j);
 }
 struct Object *Float64_Equals(struct Object *self, int nparams,
