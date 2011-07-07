@@ -401,7 +401,8 @@ method lexinput() {
                 & (unicode.isSeparator(ordval).not)
                 & (unicode.isControl(ordval).not)) then {
                 if ((unicode.isSeparator(ordval).not)
-                    & (ordval /= 10) & (ordval /= 13)) then {
+                    & (ordval /= 10) & (ordval /= 13)
+                    & (ordval /= 32)) then {
                     util.syntax_error("unknown character in input: #{ordval}"
                         ++ " '{c}', {unicode.name(c)}")
                 }
