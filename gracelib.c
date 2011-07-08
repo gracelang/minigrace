@@ -59,10 +59,10 @@ typedef union EitherObject {
 void addmethod(struct Object*, char*,
         struct Object* (*)(struct Object*, int, struct Object**));
 struct Object *Float64_asString(Object, int nparams,
-        Object*);
+        Object*, int flags);
 Object alloc_Float64(double);
 Object Float64_Add(Object, int nparams,
-        Object*);
+        Object*, int flags);
 struct Object *Object_asString(struct Object*, int nparams,
         struct Object**);
 struct Object *Object_concat(struct Object*, int nparams,
@@ -71,16 +71,18 @@ struct Object *Object_NotEquals(struct Object*, int,
         struct Object**);
 Object Object_Equals(struct Object*, int,
         struct Object**);
-struct Object* alloc_String(const char*);
-struct Object *String_concat(struct Object*, int nparams,
-        struct Object**);
-struct Object *String_index(struct Object*, int nparams,
-        struct Object**);
+Object NewObject_NotEquals(Object, int,
+        Object*, int);
+Object alloc_String(const char*);
+Object String_concat(Object, int nparams,
+        Object*, int flags);
+Object String_index(Object, int nparams,
+        Object*, int flags);
 void *callmethod(void *receiver, const char *name,
         int nparams, struct Object **args);
 Object alloc_Boolean(int val);
 struct Object *alloc_Octets(const char *data, int len);
-struct Object *alloc_ConcatString(struct Object *, struct Object *);
+Object alloc_ConcatString(Object, Object);
 struct Object *alloc_Undefined();
 
 Object alloc_Integer32(int);
@@ -89,10 +91,10 @@ void add_Method(ClassData, const char *,
 Object alloc_newobj(int, ClassData);
 ClassData alloc_class(const char *, int);
 
-struct Object *String_size(struct Object *, int, struct Object **);
-struct Object *String_replace_with(struct Object *, int, struct Object **);
-struct Object *makeEscapedString(char *);
-void ConcatString__FillBuffer(struct Object *s, char *c, int len);
+Object String_size(Object , int, Object *, int flags);
+Object String_replace_with(Object , int, Object *, int flags);
+Object makeEscapedString(char *);
+void ConcatString__FillBuffer(Object s, char *c, int len);
 
 struct Object *undefined = NULL;
 
@@ -126,6 +128,17 @@ struct Method *ObjectMethod_NotEquals = NULL;
 
 ClassData Number;
 ClassData Boolean;
+ClassData String;
+ClassData ConcatString;
+ClassData StringIter;
+
+struct StringObject {
+    int32_t flags;
+    ClassData class;
+    int blen;
+    int size;
+    char body[];
+};
 
 int linenumber = 0;
 
@@ -139,7 +152,7 @@ double start_time = 0;
 
 char **ARGV = NULL;
 
-char callstack[128][128];
+char callstack[256][256];
 int calldepth = 0;
 void backtrace() {
     int i;
@@ -160,7 +173,8 @@ void die(char *msg, ...) {
 
 void *glmalloc(size_t s) {
     heapsize += s;
-    return malloc(s);
+    void *v = malloc(s);
+    return v;
 }
 void initprofiling() {
     start_clocks = clock();
@@ -179,23 +193,31 @@ int isclass(void *v, const char *class) {
     }
     return (strcmp(o->type, class) == 0);
 }
-char *cstringfromString(struct Object *s) {
-    int *z = s->bdata[2];
-    char *c = glmalloc(*z + 1);
-    if (strcmp(s->type, "ConcatString")) {
-        strcpy(c, s->bdata[0]);
+char *cstringfromString(Object s) {
+    struct StringObject* so = (struct StringObject*)s;
+    int zs = so->blen;
+    zs++;
+    char *c = glmalloc(zs);
+    if (s->class == String) {
+        strcpy(c, so->body);
         return c;
     }
-    ConcatString__FillBuffer(s, c, *z);
+    fprintf(stderr, "FATAL: THERE ARE NO CONCATSTRINGS\n\n\n");
+    exit(2);
+    ConcatString__FillBuffer(s, c, zs);
     return c;
 }
-void bufferfromString(struct Object *s, char *c) {
-    if (strcmp(s->type, "ConcatString")) {
-        strcpy(c, s->bdata[0]);
+void bufferfromString(Object s, char *c) {
+    struct StringObject* so = (struct StringObject*)s;
+    if (s->class == String) {
+        strcpy(c, so->body);
         return;
     }
-    int *z = s->bdata[2];
+    fprintf(stderr, "FATAL: THERE ARE NO CONCATSTRINGS\n\n\n");
+    exit(2);
+    int *z = (int*)s->data;
     ConcatString__FillBuffer(s, c, *z);
+    fprintf(stderr, "ends\n");
 }
 int integerfromAny(void *d) {
     struct Object *o = d;
@@ -332,20 +354,25 @@ struct Object *Object_NotEquals(struct Object* receiver, int nparams,
     struct Object* b = callmethod(receiver, "==", nparams, params);
     return callmethod(b, "not", 0, NULL);
 }
+Object NewObject_NotEquals(Object receiver, int nparams,
+        Object* params, int flags) {
+    Object b = callmethod(receiver, "==", nparams, params);
+    return callmethod(b, "not", 0, NULL);
+}
 Object Object_Equals(struct Object* receiver, int nparams,
         struct Object** params) {
     return alloc_Boolean(receiver == params[0]);
 }
-Object String_Equals(struct Object *receiver, int nparams,
-        struct Object **params) {
-    struct Object *other = params[0];
-    if (strcmp(other->type, "String") && strcmp(other->type, "ConcatString"))
+Object String_Equals(Object self, int nparams,
+        Object *params, int flags) {
+    Object other = params[0];
+    if ((other->class != String) && (other->class != ConcatString))
         return alloc_Boolean(0);
-    int *otl = other->bdata[2];
-    char theirs[*otl + 1];
+    struct StringObject* ss = (struct StringObject*)self;
+    struct StringObject* so = (struct StringObject*)other;
+    char theirs[so->blen + 1];
     bufferfromString(other, theirs);
-    char *mine = receiver->bdata[0];
-    if (strcmp(mine, theirs)) {
+    if (strcmp(ss->body, theirs)) {
         return alloc_Boolean(0);
     }
     return alloc_Boolean(1);
@@ -385,6 +412,8 @@ struct Object *List_pop(struct Object *self, int nparams,
         struct Object **args) {
     int *pos = self->bdata[0];
     *pos = *pos - 1;
+    if (*pos < 0)
+        die("popped from negative value: %i", *pos);
     return self->data[*pos];
 }
 Object List_push(struct Object *self, int nparams,
@@ -577,11 +606,12 @@ int getutf8char(const char *s, char buf[5]) {
     }
     return 0;
 }
-struct Object *StringIter_next(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    struct Object *str = self->data[0];
-    char *cstr = str->bdata[0];
+Object StringIter_next(Object self, int nparams,
+        Object *args, int flags) {
+    int *pos = (int*)self->data;
+    Object o = *(Object *)(self->data + sizeof(int));
+    struct StringObject *str = (struct StringObject*)o;
+    char *cstr = str->body;
     int rpos = *pos;
     int charlen = getutf8charlen(cstr + rpos);
     char buf[5];
@@ -590,110 +620,127 @@ struct Object *StringIter_next(struct Object *self, int nparams,
     getutf8char(cstr + rpos, buf);
     return alloc_String(buf);
 }
-Object StringIter_havemore(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    struct Object *str = self->data[0];
-    int len = strlen(str->bdata[0]);
+Object StringIter_havemore(Object self, int nparams,
+        Object *args, int flags) {
+    int *pos = (int*)self->data;
+    Object *strp = (Object*)(self->data + sizeof(int));
+    Object str = *strp;
+    int len = *(int*)str->data;
     if (*pos < len)
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
-struct Object *alloc_StringIter(struct Object *string) {
-    struct Object *o = alloc_obj();
-    o->data = glmalloc(sizeof(struct Object*));
-    o->data[0] = string;
-    strcpy(o->type, "StringIter");
-    o->bdata = glmalloc(sizeof(void*));
-    o->bdata[0] = glmalloc(sizeof(int));
-    int *pos = o->bdata[0];
+Object alloc_StringIter(Object string) {
+    if (StringIter == NULL) {
+        StringIter = alloc_class("StringIter", 4);
+        add_Method(StringIter, "havemore", &StringIter_havemore);
+        add_Method(StringIter, "next", &StringIter_next);
+    }
+    Object o = alloc_newobj(sizeof(int) + sizeof(Object), StringIter);
+    int *pos = (int*)o->data;
     *pos = 0;
-    addmethod(o, "havemore", &StringIter_havemore);
-    addmethod(o, "next", &StringIter_next);
+    Object *strp = (Object*)(o->data + sizeof(int));
+    *strp = string;
     return o;
 }
 
-void ConcatString__FillBuffer(struct Object *self, char *buf, int len) {
-    struct Object *left = self->data[0];
-    struct Object *right = self->data[1];
-    if (strcmp(left->type, "String") == 0)
-        strncpy(buf, left->bdata[0], len);
-    else {
+void ConcatString__FillBuffer(Object self, char *buf, int len) {
+    int *blenp = (int*)self->data;
+    int *sizep = (int*)(self->data + sizeof(int));
+    Object *leftp = (Object*)(self->data + sizeof(int)*2);
+    Object *rightp = (Object*)(self->data + sizeof(int)*2 + sizeof(Object));
+    Object left = *leftp;
+    Object right = *rightp;
+    int i;
+    for (i=0; i < 20; i += 4) {
+        Object oo = (Object)(self->data + i);
+    }
+    if (left->class == String) {
+        strncpy(buf, left->data + sizeof(int) * 2, len);
+    } else {
         ConcatString__FillBuffer(left, buf, len);
     }
-    int *ls = left->bdata[2];
-    buf += *ls;
-    len -= *ls;
-    if (strcmp(right->type, "String") == 0)
-        strncpy(buf, right->bdata[0], len);
-    else {
+    int ls = *(int*)left->data;
+    buf += ls;
+    len -= ls;
+    if (right->class == String) {
+        strncpy(buf, right->data + sizeof(int) * 2, len);
+    } else {
         ConcatString__FillBuffer(right, buf, len);
     }
     buf[len] = 0;
 }
-Object ConcatString_Equals(struct Object *self, int nparams,
-        struct Object **args) {
+Object ConcatString_Equals(Object self, int nparams,
+        Object *args, int flags) {
+    fprintf(stderr, "called concatstring_equals\n");
     if (self == args[0])
         return alloc_Boolean(1);
-    int *ms = self->bdata[1];
-    int *os = args[0]->bdata[1];
-    if (*ms != *os)
+    int ms = *(int*)(self->data + sizeof(int));
+    int os = *(int*)(args[0]->data + sizeof(int));
+    if (ms != os)
         return alloc_Boolean(0);
-    int *mbs = self->bdata[2];
-    int *obs = args[0]->bdata[2];
-    if (*mbs != *obs)
+    int mbs = *(int*)self->data;
+    int obs = *(int*)args[0]->data;
+    if (mbs != obs)
         return alloc_Boolean(0);
     char *a = cstringfromString(self);
     char *b = cstringfromString(args[0]);
+    fprintf(stderr, "ends\n");
     return alloc_Boolean(strcmp(a,b) == 0);
 }
-struct Object *ConcatString_Concat(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *o = callmethod(args[0], "asString", 0, NULL);
+Object ConcatString_Concat(Object self, int nparams,
+        Object *args, int flags) {
+    Object o = callmethod(args[0], "asString", 0, NULL);
     return alloc_ConcatString(self, o);
 }
-struct Object *ConcatString__escape(struct Object *self, int nparams,
-        struct Object **args) {
+Object ConcatString__escape(Object self, int nparams,
+        Object *args, int flags) {
+    fprintf(stderr, "called concatstring_escape\n");
     char *c = cstringfromString(self);
-    struct Object *o = makeEscapedString(c);
+    Object o = makeEscapedString(c);
     free(c);
+    fprintf(stderr, "ends\n");
     return o;
 }
-struct Object *ConcatString_at(struct Object *self, int nparams,
-        struct Object **args) {
+Object ConcatString_at(Object self, int nparams,
+        Object *args, int flags) {
     int p = integerfromAny(args[0]);
-    int *ms = self->bdata[1];
-    if (*ms == 1 && p == 0)
+    int ms = *(int*)(self->data + sizeof(int));
+    if (ms == 1 && p == 0)
         return self;
-    int *ls = self->data[0]->bdata[1];
-    if (p < *ls)
-        return callmethod(self->data[0], "at", 1, args);
-    struct Object *d = args[0];
-    struct Object *lso = alloc_Float64(*ls);
+    Object left = (Object)(self->data + sizeof(int)*2);
+    Object right = (Object)(self->data + sizeof(int)*2 + sizeof(Object));
+    int ls = *(int*)(left->data + sizeof(int));
+    if (p < ls)
+        return callmethod(left, "at", 1, args);
+    Object d = args[0];
+    Object lso = alloc_Float64(ls);
     d = callmethod(d, "-", 1, &lso);
-    return callmethod(self->data[1], "at", 1, &d);
+    return callmethod(right, "at", 1, &d);
 }
-struct Object *ConcatString_length(struct Object *self, int nparams,
-        struct Object **args) {
-    int *bl = self->bdata[2];
+Object ConcatString_length(Object self, int nparams,
+        Object *args) {
+    int *bl = (int*)self->data;
     return alloc_Float64(*bl);
 }
-struct Object *ConcatString_iter(struct Object *self, int nparams,
-        struct Object **args) {
+Object ConcatString_iter(Object self, int nparams,
+        Object *args, int flags) {
+    fprintf(stderr, "called concatstring_iter  \n");
     char *c = cstringfromString(self);
-    struct Object *o = alloc_String(c);
+    Object o = alloc_String(c);
     free(c);
+    fprintf(stderr, "ends\n");
     return callmethod(o, "iter", 0, NULL);
 }
-struct Object *ConcatString_substringFrom_to(struct Object *self,
-        int nparams, struct Object **args) {
+Object ConcatString_substringFrom_to(Object self,
+        int nparams, Object *args, int flags) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
-    int *mysize = self->bdata[1];
+    int *mysize = (int*)(self->data + sizeof(int));
     if (en > *mysize)
         en = *mysize;
     int cl = en - st;
-    int *myblen = self->bdata[2];
+    int *myblen = (int*)self->data;
     char buf[cl * 4 + 1];
     char *bufp = buf;
     char value[*myblen + 1];
@@ -715,56 +762,54 @@ struct Object *ConcatString_substringFrom_to(struct Object *self,
     }
     return alloc_String(buf);
 }
-struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "ConcatString");
-    o->data = glmalloc(2 * sizeof(struct Object*));
-    o->data[0] = left;
-    o->data[1] = right;
-    o->bdata = glmalloc(3 * sizeof(void*));
-    o->bdata[1] = glmalloc(sizeof(int));
-    o->bdata[2] = glmalloc(sizeof(int));
-    int *lbs = left->bdata[2];
-    int *rbs = right->bdata[2];
-    int *mybs = o->bdata[2];
-    *mybs = *lbs + *rbs;
-    callmethod(left, "size", 0, NULL);
-    callmethod(right, "size", 0, NULL);
-    int *mys = o->bdata[1];
-    int *ls = left->bdata[1];
-    int *rs = right->bdata[1];
-    *mys = *ls + *rs;
-    if (ConcatString_methods == NULL) {
-        addmethod(o, "asString", &identity_function);
-        addmethod(o, "++", &ConcatString_Concat);
-        addmethod(o, "size", &String_size);
-        addmethod(o, "at", &ConcatString_at);
-        addmethod(o, "==", &ConcatString_Equals);
-        addmethod(o, "_escape", &ConcatString__escape);
-        addmethod(o, "length", &ConcatString_length);
-        addmethod(o, "iter", &ConcatString_iter);
-        addmethod(o, "substringFrom()to", &ConcatString_substringFrom_to);
-        addmethod(o, "replace()with", &String_replace_with);
-        ConcatString_methods = o->methods;
-        ConcatString_nummethods = o->nummethods;
-    } else {
-        o->methods = ConcatString_methods;
-        o->nummethods = ConcatString_nummethods;
+Object alloc_ConcatString(Object left, Object right) {
+    if (ConcatString == NULL) {
+        ConcatString = alloc_class("ConcatString", 14);
+        add_Method(ConcatString, "asString", &identity_function);
+        add_Method(ConcatString, "++", &ConcatString_Concat);
+        add_Method(ConcatString, "size", &String_size);
+        add_Method(ConcatString, "at", &ConcatString_at);
+        add_Method(ConcatString, "==", &ConcatString_Equals);
+        add_Method(ConcatString, "/=", &Object_NotEquals);
+        add_Method(ConcatString, "_escape", &ConcatString__escape);
+        add_Method(ConcatString, "length", &ConcatString_length);
+        add_Method(ConcatString, "iter", &ConcatString_iter);
+        add_Method(ConcatString, "substringFrom()to",
+                &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "replace()with", &String_replace_with);
     }
+    Object o = alloc_newobj(sizeof(int) * 2 + sizeof(Object) * 2, ConcatString);
+    int *blenp = (int*)o->data;
+    int *sizep = (int*)(o->data + sizeof(int));
+    Object *leftp = (Object*)(o->data + sizeof(int)*2);
+    Object *rightp = (Object*)(o->data + sizeof(int)*2 + sizeof(Object));
+    fprintf(stderr, "constructing concatstring with %x(%x) and %x(%x)\n",
+            left, left->class, right, right->class);
+    *leftp = left;
+    *rightp = right;
+    int *lbs = (int*)left->data;
+    int *rbs = (int*)right->data;
+    *blenp = *lbs + *rbs;
+    int *mys = (int*)(o->data + sizeof(int));
+    int *ls = (int*)(left->data + sizeof(int));
+    int *rs = (int*)(right->data + sizeof(int));
+    *mys = *ls + *rs;
+    fprintf(stderr, "ending concatstring with %x(%x) and %x(%x)\n",
+            *leftp, (*leftp)->class, *rightp, (*rightp)->class);
     return o;
 }
-struct Object *String__escape(struct Object*, int, struct Object**);
-struct Object *String_length(struct Object*, int, struct Object**);
-struct Object *String_iter(struct Object *receiver, int nparams,
-        struct Object** args) {
+Object String__escape(Object, int, Object*, int flags);
+Object String_length(Object, int, Object*, int flags);
+Object String_iter(Object receiver, int nparams,
+        Object* args, int flags) {
     return alloc_StringIter(receiver);
 }
-struct Object *String_at(struct Object *receiver, int nparams,
-        struct Object **args) {
-    struct Object *idxobj = args[0];
+Object String_at(Object self, int nparams,
+        Object *args, int flags) {
+    Object idxobj = args[0];
     int idx = integerfromAny(idxobj);
     int i = 0;
-    char *ptr = receiver->bdata[0];
+    char *ptr = ((struct StringObject*)(self))->body;
     while (i < idx){
         ptr += getutf8charlen(ptr);
         i++;
@@ -773,12 +818,13 @@ struct Object *String_at(struct Object *receiver, int nparams,
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
-struct Object *String_ord(struct Object *receiver, int nparams,
-        struct Object **args) {
+Object String_ord(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
     char buf[5];
     int i;
     int codepoint = 0;
-    getutf8char(receiver->bdata[0], buf);
+    getutf8char(sself->body, buf);
     if (buf[1] == 0)
         return alloc_Float64((int)buf[0]&127);
     if (buf[2] == 0)
@@ -794,28 +840,31 @@ struct Object *String_ord(struct Object *receiver, int nparams,
     }
     return alloc_Float64(codepoint);
 }
-struct Object *String_size(struct Object *receiver, int nparams,
-        struct Object **args) {
-    int *z = receiver->bdata[1];
-    return alloc_Float64(*z);
+Object String_size(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    return alloc_Float64(sself->size);
 }
-struct Object *String_encode(struct Object *receiver, int nparams,
-        struct Object **args) {
-    return alloc_Octets(receiver->bdata[0], strlen(receiver->bdata[0]));
+Object String_encode(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    return alloc_Octets(sself->body,
+            sself->blen);
 }
-struct Object *String_substringFrom_to(struct Object *self,
-        int nparams, struct Object **args) {
+Object String_substringFrom_to(Object self,
+        int nparams, Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
-    int *mysize = self->bdata[1];
-    if (en > *mysize)
-        en = *mysize;
+    int mysize = sself->size;
+    if (en > mysize)
+        en = mysize;
     int cl = en - st;
     char buf[cl * 4 + 1];
     char *bufp = buf;
     buf[0] = 0;
     int i;
-    char *pos = self->bdata[0];
+    char *pos = sself->body;
     for (i=0; i<st; i++) {
         pos += getutf8charlen(pos);
     }
@@ -830,11 +879,14 @@ struct Object *String_substringFrom_to(struct Object *self,
     }
     return alloc_String(buf);
 }
-struct Object *String_replace_with(struct Object *self,
-        int nparams, struct Object **args) {
-    int *al = args[0]->bdata[2];
-    int *bl = args[1]->bdata[2];
-    int *ml = self->bdata[2];
+Object String_replace_with(Object self,
+        int nparams, Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    struct StringObject* sa = (struct StringObject*)args[0];
+    struct StringObject* sb = (struct StringObject*)args[1];
+    int *al = &sa->blen;
+    int *bl = &sb->blen;
+    int *ml = &sself->blen;
     char what_buf[*al + 1];
     char with_buf[*bl + 1];
     char my_buf[*ml + 1];
@@ -877,52 +929,45 @@ struct Object *String_replace_with(struct Object *self,
     strcpy(tmp, my);
     return alloc_String(result);
 }
-struct Object *alloc_String(const char *data) {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "String");
-    o->bdata = glmalloc(sizeof(void*) * 3);
-    o->bdata[0] = glmalloc(strlen(data) + 1);
-    o->bdata[1] = glmalloc(sizeof(int));
-    o->bdata[2] = glmalloc(sizeof(int));
-    int *blen = o->bdata[2];
-    *blen = strlen(data);
-    char *d = o->bdata[0];
-    int *size = o->bdata[1];
-    *size = 0;
+Object alloc_String(const char *data) {
+    int blen = strlen(data);
+    if (String == NULL) {
+        String = alloc_class("String", 16);
+        add_Method(String, "asString", &identity_function);
+        add_Method(String, "++", &String_concat);
+        add_Method(String, "at", &String_at);
+        add_Method(String, "[]", &String_index);
+        add_Method(String, "==", &String_Equals);
+        add_Method(String, "/=", &NewObject_NotEquals);
+        add_Method(String, "_escape", &String__escape);
+        add_Method(String, "length", &String_length);
+        add_Method(String, "size", &String_size);
+        add_Method(String, "iter", &String_iter);
+        add_Method(String, "ord", &String_ord);
+        add_Method(String, "encode", &String_encode);
+        add_Method(String, "substringFrom()to", &String_substringFrom_to);
+        add_Method(String, "replace()with", &String_replace_with);
+    }
+    Object o = alloc_newobj(sizeof(int) * 2 + blen + 1, String);
+    struct StringObject* so = (struct StringObject*)o;
+    so->blen = blen;
+    char *d = so->body;
+    int size = 0;
     int i;
-    for (i=0; i<*blen; ) {
+    for (i=0; i<blen; ) {
         int l = getutf8charlen(data + i);
         int j = i + l;
         for (; i<j; i++) {
             d[i] = data[i];
         }
-        *size = *size + 1;
+        size = size + 1;
     }
     d[i] = 0;
-    if (String_Methods == NULL) {
-        addmethod(o, "asString", &identity_function);
-        addmethod(o, "++", &String_concat);
-        addmethod(o, "at", &String_at);
-        addmethod(o, "[]", &String_index);
-        addmethod(o, "==", &String_Equals);
-        addmethod(o, "_escape", &String__escape);
-        addmethod(o, "length", &String_length);
-        addmethod(o, "size", &String_size);
-        addmethod(o, "iter", &String_iter);
-        addmethod(o, "ord", &String_ord);
-        addmethod(o, "encode", &String_encode);
-        addmethod(o, "substringFrom()to", &String_substringFrom_to);
-        addmethod(o, "replace()with", &String_replace_with);
-        String_Methods = o->methods;
-        String_NumMethods = o->nummethods;
-    } else {
-        o->methods = String_Methods;
-        o->nummethods = String_NumMethods;
-    }
+    so->size = size;
     Strings_allocated++;
     return o;
 }
-struct Object *makeEscapedString(char *p) {
+Object makeEscapedString(char *p) {
     int len = strlen(p);
     char buf[len * 3 + 1];
     int op;
@@ -956,29 +1001,39 @@ struct Object *makeEscapedString(char *p) {
     buf[op] = 0;
     return alloc_String(buf);
 }
-struct Object *String__escape(struct Object *self, int nparams,
-        struct Object **args) {
-    char *p = self->bdata[0];
+Object String__escape(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = sself->body;
     return makeEscapedString(p);
 }
-struct Object *String_length(struct Object *self, int nparams,
-        struct Object **args) {
-    char *c = self->bdata[0];
-    return alloc_Float64(strlen(c));
+Object String_length(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    return alloc_Float64(sself->blen);
 }
-struct Object *String_index(struct Object *self, int nparams,
-        struct Object **args) {
+Object String_index(Object self, int nparams,
+        Object *args, int flags) {
     int index = integerfromAny(args[0]);
+    struct StringObject* sself = (struct StringObject*)self;
     char buf[2];
-    char *c = self->bdata[0];
+    char *c = sself->body;
     buf[0] = c[index];
     buf[1] = '\0';
     return alloc_String(buf);
 }
-struct Object *String_concat(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
+Object String_concat(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    struct StringObject* other = (struct StringObject*)args[0];
     other = callmethod(other, "asString", 0, NULL);
+    int mblen = sself->blen;
+    int oblen = other->blen;
+    int blen = mblen + oblen + 1;
+    char buf[blen];
+    strcpy(buf, sself->body);
+    strcat(buf, other->body);
+    return alloc_String(buf);
     return alloc_ConcatString(self, other);
 }
 struct Object *Octets_size(struct Object *receiver, int nparams,
@@ -1082,7 +1137,7 @@ struct Object *alloc_Octets(const char *data, int len) {
     return o;
 }
 Object Float64_Range(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b = *(double*)other->data;
@@ -1096,7 +1151,7 @@ Object Float64_Range(Object self, int nparams,
     return (Object)arr;
 }
 Object Float64_Add(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *((double*)self->data);
     double b;
@@ -1107,7 +1162,7 @@ Object Float64_Add(Object self, int nparams,
     return alloc_Float64(a+b);
 }
 Object Float64_Sub(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1118,7 +1173,7 @@ Object Float64_Sub(Object self, int nparams,
     return alloc_Float64(a-b);
 }
 Object Float64_Mul(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1129,7 +1184,7 @@ Object Float64_Mul(Object self, int nparams,
     return alloc_Float64(a*b);
 }
 Object Float64_Div(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1140,7 +1195,7 @@ Object Float64_Div(Object self, int nparams,
     return alloc_Float64(a/b);
 }
 Object Float64_Mod(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     int i = (int)a;
@@ -1153,7 +1208,7 @@ Object Float64_Mod(Object self, int nparams,
     return alloc_Float64(i % j);
 }
 Object Float64_Equals(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1165,7 +1220,7 @@ Object Float64_Equals(Object self, int nparams,
     return alloc_Boolean(a == b);
 }
 Object Float64_LessThan(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1176,7 +1231,7 @@ Object Float64_LessThan(Object self, int nparams,
     return alloc_Boolean(a < b);
 }
 Object Float64_GreaterThan(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1187,7 +1242,7 @@ Object Float64_GreaterThan(Object self, int nparams,
     return alloc_Boolean(a > b);
 }
 Object Float64_LessOrEqual(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1198,7 +1253,7 @@ Object Float64_LessOrEqual(Object self, int nparams,
     return alloc_Boolean(a <= b);
 }
 Object Float64_GreaterOrEqual(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
     double b;
@@ -1209,12 +1264,12 @@ Object Float64_GreaterOrEqual(Object self, int nparams,
     return alloc_Boolean(a >= b);
 }
 Object Float64_Negate(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     double a = *(double*)self->data;
     return alloc_Float64(-a);
 }
 Object Float64_asInteger32(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     int i = integerfromAny(self);
     return alloc_Integer32(i);
 }
@@ -1238,7 +1293,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "/", &Float64_Div);
         add_Method(Number, "%", &Float64_Mod);
         add_Method(Number, "==", &Float64_Equals);
-        add_Method(Number, "/=", &Object_NotEquals);
+        add_Method(Number, "/=", &NewObject_NotEquals);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
@@ -1266,7 +1321,7 @@ Object alloc_Float64(double num) {
     return o;
 }
 struct Object *Float64_asString(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
         return *strp;
@@ -1283,7 +1338,7 @@ struct Object *Float64_asString(Object self, int nparams,
     return str;
 }
 struct Object* Boolean_asString(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     int myval = *(int*)self->data;
     if (myval) {
         return alloc_String("true");
@@ -1292,7 +1347,7 @@ struct Object* Boolean_asString(Object self, int nparams,
     }
 }
 Object Boolean_And(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     int8_t *otherval = *(int8_t*)args[0]->data;
     if (myval && otherval) {
@@ -1302,7 +1357,7 @@ Object Boolean_And(Object self, int nparams,
     }
 }
 Object Boolean_Or(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     int8_t otherval = *(int8_t*)args[0]->data;
     if (myval || otherval) {
@@ -1312,7 +1367,7 @@ Object Boolean_Or(Object self, int nparams,
     }
 }
 Object Boolean_ifTrue(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     struct Object *block = args[0];
     if (myval) {
@@ -1322,7 +1377,7 @@ Object Boolean_ifTrue(Object self, int nparams,
     }
 }
 Object Boolean_not(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     if (self == BOOLEAN_TRUE)
         return alloc_Boolean(0);
     return alloc_Boolean(1);
@@ -1332,7 +1387,7 @@ Object Boolean_Equals(Object self, int nparams,
     return alloc_Boolean(self == args[0]);
 }
 Object Boolean_NotEquals(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     return alloc_Boolean(self != args[0]);
 }
 Object alloc_Boolean(int val) {
@@ -1464,14 +1519,14 @@ struct Object *io_system(struct Object *self, int nparams,
 }
 Object io_newer(struct Object *self, int nparams,
         struct Object **args) {
-    struct Object *sa = args[0];
-    struct Object *sb = args[1];
-    int *sal = sa->bdata[2];
-    char ba[*sal + 1];
-    bufferfromString(sa, ba);
-    int *sbl = sb->bdata[2];
-    char bb[*sbl + 1];
-    bufferfromString(sb, bb);
+    struct StringObject *sa = (struct StringObject*)args[0];
+    struct StringObject *sb = (struct StringObject*)args[1];
+    int sal = sa->blen;
+    char ba[sal + 1];
+    bufferfromString((Object)sa, ba);
+    int sbl = sb->blen;;
+    char bb[sbl + 1];
+    bufferfromString((Object)sb, bb);
     struct stat sta;
     struct stat stb;
     if (stat(ba, &sta) != 0)
@@ -1483,8 +1538,9 @@ Object io_newer(struct Object *self, int nparams,
 Object io_exists(struct Object *self, int nparams,
         struct Object **args) {
     struct Object *so = args[0];
-    int *sbl = so->bdata[2];
-    char buf[*sbl + 1];
+    struct StringObject *ss = (struct StringObject*)args[0];
+    int sbl = ss->blen;
+    char buf[sbl + 1];
     bufferfromString(so, buf);
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
