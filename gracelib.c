@@ -139,6 +139,14 @@ struct StringObject {
     int size;
     char body[];
 };
+struct ConcatStringObject {
+    int32_t flags;
+    ClassData class;
+    int blen;
+    int size;
+    Object left;
+    Object right;
+};
 
 int linenumber = 0;
 
@@ -196,14 +204,12 @@ int isclass(void *v, const char *class) {
 char *cstringfromString(Object s) {
     struct StringObject* so = (struct StringObject*)s;
     int zs = so->blen;
-    zs++;
+    zs = zs + 1;
     char *c = glmalloc(zs);
     if (s->class == String) {
         strcpy(c, so->body);
         return c;
     }
-    fprintf(stderr, "FATAL: THERE ARE NO CONCATSTRINGS\n\n\n");
-    exit(2);
     ConcatString__FillBuffer(s, c, zs);
     return c;
 }
@@ -213,11 +219,8 @@ void bufferfromString(Object s, char *c) {
         strcpy(c, so->body);
         return;
     }
-    fprintf(stderr, "FATAL: THERE ARE NO CONCATSTRINGS\n\n\n");
-    exit(2);
-    int *z = (int*)s->data;
-    ConcatString__FillBuffer(s, c, *z);
-    fprintf(stderr, "ends\n");
+    int z = so->blen;
+    ConcatString__FillBuffer(s, c, z);
 }
 int integerfromAny(void *d) {
     struct Object *o = d;
@@ -645,47 +648,41 @@ Object alloc_StringIter(Object string) {
 }
 
 void ConcatString__FillBuffer(Object self, char *buf, int len) {
-    int *blenp = (int*)self->data;
-    int *sizep = (int*)(self->data + sizeof(int));
-    Object *leftp = (Object*)(self->data + sizeof(int)*2);
-    Object *rightp = (Object*)(self->data + sizeof(int)*2 + sizeof(Object));
-    Object left = *leftp;
-    Object right = *rightp;
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    int size = sself->size;
+    Object left = sself->left;
+    Object right = sself->right;
     int i;
-    for (i=0; i < 20; i += 4) {
-        Object oo = (Object)(self->data + i);
-    }
+    struct StringObject *lefts = (struct StringObject*)left;
+    int ls = lefts->blen;
     if (left->class == String) {
-        strncpy(buf, left->data + sizeof(int) * 2, len);
+        strncpy(buf, lefts->body, lefts->blen);
     } else {
-        ConcatString__FillBuffer(left, buf, len);
+        ConcatString__FillBuffer(left, buf, ls + 1);
     }
-    int ls = *(int*)left->data;
+    buf[lefts->blen] = 0;
     buf += ls;
     len -= ls;
+    struct StringObject *rights = (struct StringObject*)right;
     if (right->class == String) {
-        strncpy(buf, right->data + sizeof(int) * 2, len);
+        strncpy(buf, rights->body, rights->blen);
     } else {
-        ConcatString__FillBuffer(right, buf, len);
+        ConcatString__FillBuffer(right, buf, rights->blen + 1);
     }
-    buf[len] = 0;
+    buf[rights->blen] = 0;
 }
 Object ConcatString_Equals(Object self, int nparams,
         Object *args, int flags) {
-    fprintf(stderr, "called concatstring_equals\n");
     if (self == args[0])
         return alloc_Boolean(1);
-    int ms = *(int*)(self->data + sizeof(int));
-    int os = *(int*)(args[0]->data + sizeof(int));
-    if (ms != os)
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    struct ConcatStringObject *other = (struct ConcatStringObject*)args[0];
+    if (sself->size != other->size)
         return alloc_Boolean(0);
-    int mbs = *(int*)self->data;
-    int obs = *(int*)args[0]->data;
-    if (mbs != obs)
+    if (sself->blen != other->blen)
         return alloc_Boolean(0);
     char *a = cstringfromString(self);
     char *b = cstringfromString(args[0]);
-    fprintf(stderr, "ends\n");
     return alloc_Boolean(strcmp(a,b) == 0);
 }
 Object ConcatString_Concat(Object self, int nparams,
@@ -695,22 +692,23 @@ Object ConcatString_Concat(Object self, int nparams,
 }
 Object ConcatString__escape(Object self, int nparams,
         Object *args, int flags) {
-    fprintf(stderr, "called concatstring_escape\n");
     char *c = cstringfromString(self);
     Object o = makeEscapedString(c);
     free(c);
-    fprintf(stderr, "ends\n");
     return o;
 }
 Object ConcatString_at(Object self, int nparams,
         Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int p = integerfromAny(args[0]);
     int ms = *(int*)(self->data + sizeof(int));
     if (ms == 1 && p == 0)
         return self;
-    Object left = (Object)(self->data + sizeof(int)*2);
-    Object right = (Object)(self->data + sizeof(int)*2 + sizeof(Object));
-    int ls = *(int*)(left->data + sizeof(int));
+    Object left = sself->left;
+    Object right = sself->right;
+    struct StringObject *lefts = (struct StringObject*)left;
+    struct StringObject *rights = (struct StringObject*)right;
+    int ls = lefts->size;
     if (p < ls)
         return callmethod(left, "at", 1, args);
     Object d = args[0];
@@ -720,31 +718,30 @@ Object ConcatString_at(Object self, int nparams,
 }
 Object ConcatString_length(Object self, int nparams,
         Object *args) {
-    int *bl = (int*)self->data;
-    return alloc_Float64(*bl);
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    return alloc_Float64(sself->blen);
 }
 Object ConcatString_iter(Object self, int nparams,
         Object *args, int flags) {
-    fprintf(stderr, "called concatstring_iter  \n");
     char *c = cstringfromString(self);
     Object o = alloc_String(c);
     free(c);
-    fprintf(stderr, "ends\n");
     return callmethod(o, "iter", 0, NULL);
 }
 Object ConcatString_substringFrom_to(Object self,
         int nparams, Object *args, int flags) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
-    int *mysize = (int*)(self->data + sizeof(int));
-    if (en > *mysize)
-        en = *mysize;
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    int mysize = sself->size;
+    if (en > mysize)
+        en = mysize;
     int cl = en - st;
-    int *myblen = (int*)self->data;
+    int myblen = sself->blen;
     char buf[cl * 4 + 1];
     char *bufp = buf;
-    char value[*myblen + 1];
-    ConcatString__FillBuffer(self, value, *myblen);
+    char value[myblen + 1];
+    ConcatString__FillBuffer(self, value, myblen);
     buf[0] = 0;
     int i;
     char *pos = value;
@@ -778,24 +775,14 @@ Object alloc_ConcatString(Object left, Object right) {
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace()with", &String_replace_with);
     }
+    struct StringObject *lefts = (struct StringObject*)left;
+    struct StringObject *rights = (struct StringObject*)right;
     Object o = alloc_newobj(sizeof(int) * 2 + sizeof(Object) * 2, ConcatString);
-    int *blenp = (int*)o->data;
-    int *sizep = (int*)(o->data + sizeof(int));
-    Object *leftp = (Object*)(o->data + sizeof(int)*2);
-    Object *rightp = (Object*)(o->data + sizeof(int)*2 + sizeof(Object));
-    fprintf(stderr, "constructing concatstring with %x(%x) and %x(%x)\n",
-            left, left->class, right, right->class);
-    *leftp = left;
-    *rightp = right;
-    int *lbs = (int*)left->data;
-    int *rbs = (int*)right->data;
-    *blenp = *lbs + *rbs;
-    int *mys = (int*)(o->data + sizeof(int));
-    int *ls = (int*)(left->data + sizeof(int));
-    int *rs = (int*)(right->data + sizeof(int));
-    *mys = *ls + *rs;
-    fprintf(stderr, "ending concatstring with %x(%x) and %x(%x)\n",
-            *leftp, (*leftp)->class, *rightp, (*rightp)->class);
+    struct ConcatStringObject *so = (struct ConcatStringObject*)o;
+    so->left = left;
+    so->right = right;
+    so->blen = lefts->blen + rights->blen;
+    so->size = lefts->size + rights->size;
     return o;
 }
 Object String__escape(Object, int, Object*, int flags);
@@ -1024,17 +1011,8 @@ Object String_index(Object self, int nparams,
 }
 Object String_concat(Object self, int nparams,
         Object *args, int flags) {
-    struct StringObject* sself = (struct StringObject*)self;
-    struct StringObject* other = (struct StringObject*)args[0];
-    other = callmethod(other, "asString", 0, NULL);
-    int mblen = sself->blen;
-    int oblen = other->blen;
-    int blen = mblen + oblen + 1;
-    char buf[blen];
-    strcpy(buf, sself->body);
-    strcat(buf, other->body);
-    return alloc_String(buf);
-    return alloc_ConcatString(self, other);
+    Object asStr = callmethod(args[0], "asString", 0, NULL);
+    return alloc_ConcatString(self, asStr);
 }
 struct Object *Octets_size(struct Object *receiver, int nparams,
         struct Object **args) {
