@@ -71,6 +71,17 @@ method expect(t) {
     }
     util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
 }
+// Require a t OR s as the current token; if not, raise a syntax error.
+method expect(t)or(s) {
+    if (sym.sym.kind == t) then {
+        return true
+    }
+    if (sym.sym.kind == s) then {
+        return true
+    }
+    util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
+}
+// Expect block to consume at least one token
 method expectConsume(block) {
     var sz := tokens.size
     block.apply
@@ -1045,7 +1056,7 @@ method parsempmndecrest(meth, params) {
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
         next()
-        expect("identifier")
+        expect("identifier")or("op")
         pushidentifier()
         var meth := values.pop()
         if (accept("bind")) then {
