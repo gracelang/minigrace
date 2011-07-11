@@ -132,6 +132,8 @@ ClassData String;
 ClassData ConcatString;
 ClassData StringIter;
 ClassData Octets;
+ClassData List;
+ClassData ListIter;
 
 struct StringObject {
     int32_t flags;
@@ -153,6 +155,13 @@ struct OctetsObject {
     ClassData class;
     int blen;
     char body[];
+};
+struct ListObject {
+    int32_t flags;
+    ClassData class;
+    int size;
+    int space;
+    Object *items;
 };
 
 int linenumber = 0;
@@ -387,158 +396,149 @@ Object String_Equals(Object self, int nparams,
     }
     return alloc_Boolean(1);
 }
-struct Object *ListIter_next(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    struct Object *arr = self->data[0];
-    int *len = arr->bdata[0];
+Object ListIter_next(Object self, int nparams,
+        Object *args, int flags) {
+    int *pos = (int*)self->data;
+    Object *arr = (Object*)(self->data + sizeof(int));
+    struct ListObject *lst = (struct ListObject*)(*arr);
     int rpos = *pos;
     *pos  = *pos + 1;
-    return arr->data[rpos];
+    return lst->items[rpos];
 }
-Object ListIter_havemore(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    struct Object *arr = self->data[0];
-    int *len = arr->bdata[0];
-    if (*pos < *len)
+Object ListIter_havemore(Object self, int nparams,
+        Object *args, int flags) {
+    int *pos = (int*)self->data;
+    Object *arr = (Object*)(self->data + sizeof(int));
+    struct ListObject *lst = (struct ListObject*)(*arr);
+    int rpos = *pos;
+    if (*pos < lst->size)
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
-struct Object *alloc_ListIter(struct Object *array) {
-    struct Object *o = alloc_obj();
-    o->data = glmalloc(sizeof(struct Object*));
-    o->data[0] = array;
-    strcpy(o->type, "ListIter");
-    o->bdata = glmalloc(sizeof(void*));
-    o->bdata[0] = glmalloc(sizeof(int));
-    int *pos = o->bdata[0];
+Object alloc_ListIter(Object array) {
+    if (ListIter == NULL) {
+        ListIter = alloc_class("ListIter", 2);
+        add_Method(ListIter, "havemore", &ListIter_havemore);
+        add_Method(ListIter, "next", &ListIter_next);
+    }
+    Object o = alloc_newobj(sizeof(int) + sizeof(Object), ListIter);
+    int *pos = (int*)o->data;
+    Object *lst = (Object*)(o->data + sizeof(int));
     *pos = 0;
-    addmethod(o, "havemore", &ListIter_havemore);
-    addmethod(o, "next", &ListIter_next);
+    *lst = array;
     return o;
 }
-struct Object *List_pop(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    *pos = *pos - 1;
-    if (*pos < 0)
-        die("popped from negative value: %i", *pos);
-    return self->data[*pos];
+Object List_pop(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    sself->size--;
+    if (sself->size < 0)
+        die("popped from negative value: %i", sself->size);
+    return sself->items[sself->size];
 }
-Object List_push(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    int *pos = self->bdata[0];
-    int *size = self->bdata[1];
-    if (*pos == *size) {
-        struct Object **dt = glmalloc(sizeof(struct Object*) * *size * 2);
-        *size = *size * 2;
+Object List_push(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    Object other = args[0];
+    if (sself->size == sself->space) {
+        Object *dt = glmalloc(sizeof(Object) * sself->space * 2);
+        sself->space *= 2;
         int i;
-        for (i=0; i<*pos; i++)
-            dt[i] = self->data[i];
-        free(self->data);
-        self->data = dt;
+        for (i=0; i<sself->size; i++)
+            dt[i] = sself->items[i];
+        free(sself->items);
+        sself->items = dt;
     }
-    self->data[*pos] = other;
-    *pos = *pos + 1;
+    sself->items[sself->size] = other;
+    sself->size++;
     return alloc_Boolean(1);
 }
-struct Object *List_indexAssign(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *idx = args[0];
-    struct Object *val = args[1];
+Object List_indexAssign(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    Object idx = args[0];
+    Object val = args[1];
     int index = integerfromAny(idx);
-    int *len = self->bdata[0];
-    if (index >= *len) {
+    if (index >= sself->size) {
         die("Error: list index out of bounds: %i/%i",
-                index, *len);
+                index, sself->size);
     }
-    self->data[index] = val;
+    sself->items[index] = val;
     return val;
 }
-Object List_contains(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other = args[0];
-    struct Object *my, *b;
-    int *len = self->bdata[0];
+Object List_contains(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    Object other = args[0];
+    Object my, b;
     int index;
-    for (index=0; index<*len; index++) {
-        my = self->data[index];
+    for (index=0; index<sself->size; index++) {
+        my = sself->items[index];
         b = callmethod(other, "==", 1, &my);
         if (istrue(b))
             return b;
     }
     return alloc_Boolean(0);
 }
-struct Object *List_index(struct Object *self, int nparams,
-        struct Object **args) {
+Object List_index(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
     int index = integerfromAny(args[0]);
-    int *len = self->bdata[0];
-    if (index >= *len) {
+    if (index >= sself->size) {
         fprintf(stderr, "Error: list index out of bounds: %i/%i\n",
-                index, *len);
+                index, sself->size);
         exit(1);
     }
-    return self->data[index];
+    return sself->items[index];
 }
-struct Object *List_iter(struct Object *self, int nparams,
-        struct Object **args) {
+Object List_iter(Object self, int nparams,
+        Object *args, int flags) {
     return alloc_ListIter(self);
 }
-struct Object *List_length(struct Object *self, int nparams,
-        struct Object **args) {
-    int *pos = self->bdata[0];
-    return alloc_Float64(*pos);
+Object List_length(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    return alloc_Float64(sself->size);
 }
-struct Object *List_asString(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *other;
-    int *lenp = self->bdata[0];
-    int len = *lenp;
+Object List_asString(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    int len = sself->size;
     int i = 0;
-    struct Object *s = alloc_String("[");
-    struct Object *c = alloc_String(",");
+    Object other;
+    Object s = alloc_String("[");
+    Object c = alloc_String(",");
     for (i=0; i<len; i++) {
-        other = callmethod(self->data[i], "asString", 0, NULL);
+        other = callmethod(sself->items[i], "asString", 0, NULL);
         s = callmethod(s, "++", 1, &other);
         if (i != len-1)
             s = callmethod(s, "++", 1, &c);
     }
-    struct Object *cb = alloc_String("]");
+    Object cb = alloc_String("]");
     s = callmethod(s, "++", 1, &cb);
     return s;
 }
-struct Object *alloc_List() {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "List");
-    o->bdata = glmalloc(sizeof(void*)*2);
-    o->bdata[0] = glmalloc(sizeof(int));
-    int *c = o->bdata[0];
-    *c = 0;
-    o->bdata[1] = glmalloc(sizeof(int));
-    int *d = o->bdata[1];
-    *d = 8;
-    o->data = glmalloc(sizeof(struct Object*) * 8);
-    if (List_Methods == NULL) {
-        addmethod(o, "asString", &List_asString);
-        addmethod(o, "at", &List_index);
-        addmethod(o, "[]", &List_index);
-        addmethod(o, "[]:=", &List_indexAssign);
-        addmethod(o, "push", &List_push);
-        addmethod(o, "pop", &List_pop);
-        addmethod(o, "length", &List_length);
-        addmethod(o, "size", &List_length);
-        addmethod(o, "iter", &List_iter);
-        addmethod(o, "contains", &List_contains);
-        List_Methods = o->methods;
-        List_NumMethods = o->nummethods;
-    } else {
-        o->methods = List_Methods;
-        o->nummethods = List_NumMethods;
+Object alloc_List() {
+    if (List == NULL) {
+        List = alloc_class("List", 12);
+        add_Method(List, "asString", &List_asString);
+        add_Method(List, "at", &List_index);
+        add_Method(List, "[]", &List_index);
+        add_Method(List, "[]:=", &List_indexAssign);
+        add_Method(List, "push", &List_push);
+        add_Method(List, "pop", &List_pop);
+        add_Method(List, "length", &List_length);
+        add_Method(List, "size", &List_length);
+        add_Method(List, "iter", &List_iter);
+        add_Method(List, "contains", &List_contains);
+        add_Method(List, "==", &Object_Equals);
+        add_Method(List, "/=", &NewObject_NotEquals);
     }
-    int *t = o->bdata[0];
-    int r = *t;
+    struct Object *o = alloc_newobj(sizeof(Object*) + sizeof(int) * 2, List);
+    struct ListObject *lo = (struct ListObject*)o;
+    lo->size = 0;
+    lo->space = 8;
+    lo->items = glmalloc(sizeof(Object) * 8);
     return o;
 }
 struct Object *Array_indexAssign(struct Object *self, int nparams,
@@ -1110,7 +1110,7 @@ Object Float64_Range(Object self, int nparams,
     Object arr = alloc_List();
     for (; i<=b; i++) {
         Object v = alloc_Float64(i);
-        List_push(arr, 1, &v);
+        List_push(arr, 1, &v, 0);
     }
     return (Object)arr;
 }
