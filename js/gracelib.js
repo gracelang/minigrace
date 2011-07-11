@@ -66,6 +66,14 @@ GraceString.prototype = {
         "ord": function() {
             return new GraceNum(this._value.charCodeAt(0));
         },
+        "hashcode": function() {
+            var hc = 1;
+            for (var i=0; i<this._value.length; i++) {
+                hc *= this._value.charCodeAt(i);
+                hc %= 0x100000000;
+            }
+            return new GraceNum(hc);
+        },
     },
     className: "String"
 };
@@ -142,6 +150,9 @@ GraceNum.prototype = {
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
+        },
+        "hashcode": function() {
+            return new GraceNum(parseInt("" + (this._value * 10)));
         },
     },
     className: "Number",

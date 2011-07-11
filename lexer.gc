@@ -335,6 +335,7 @@ method lexinput() {
     util.log_verbose("lexing.")
     for (input) do { c ->
         linePosition := linePosition + 1
+        util.setPosition(lineNumber, linePosition)
         var ct := ""
         var ordval := c.ord // String.ord gives the codepoint
         if ((unicode.isSeparator(ordval) & (ordval /= 32) & (ordval /= 8232)) |
@@ -395,6 +396,16 @@ method lexinput() {
                 // Start of comment
                 mode := "c"
                 newmode := mode
+            }
+            if ((newmode == mode) & (mode == "n")
+                & (unicode.isSeparator(ordval).not)
+                & (unicode.isControl(ordval).not)) then {
+                if ((unicode.isSeparator(ordval).not)
+                    & (ordval /= 10) & (ordval /= 13)
+                    & (ordval /= 32)) then {
+                    util.syntax_error("unknown character in input: #{ordval}"
+                        ++ " '{c}', {unicode.name(c)}")
+                }
             }
         }
         if ((mode == "x") & (c == "\"") & (escaped.not)) then {

@@ -146,6 +146,7 @@ struct StringObject {
     ClassData class;
     int blen;
     int size;
+    unsigned int hashcode;
     char body[];
 };
 struct ConcatStringObject {
@@ -153,6 +154,7 @@ struct ConcatStringObject {
     ClassData class;
     int blen;
     int size;
+    unsigned int hashcode;
     Object left;
     Object right;
 };
@@ -760,6 +762,11 @@ Object ConcatString_substringFrom_to(Object self,
     }
     return alloc_String(buf);
 }
+Object ConcatString_hashcode(Object self, int nparams,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    return alloc_Float64(sself->hashcode);
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
         ConcatString = alloc_class("ConcatString", 14);
@@ -775,15 +782,17 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace()with", &String_replace_with);
+        add_Method(ConcatString, "hashcode", &ConcatString_hashcode);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
-    Object o = alloc_newobj(sizeof(int) * 2 + sizeof(Object) * 2, ConcatString);
+    Object o = alloc_newobj(sizeof(int) * 3 + sizeof(Object) * 2, ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
     so->right = right;
     so->blen = lefts->blen + rights->blen;
     so->size = lefts->size + rights->size;
+    so->hashcode = lefts->hashcode * rights->hashcode;
     return o;
 }
 Object String__escape(Object, int, Object*, int flags);
@@ -917,6 +926,11 @@ Object String_replace_with(Object self,
     strcpy(tmp, my);
     return alloc_String(result);
 }
+Object String_hashcode(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    return alloc_Float64(sself->hashcode);
+}
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
@@ -935,21 +949,25 @@ Object alloc_String(const char *data) {
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
         add_Method(String, "replace()with", &String_replace_with);
+        add_Method(String, "hashcode", &String_hashcode);
     }
-    Object o = alloc_newobj(sizeof(int) * 2 + blen + 1, String);
+    Object o = alloc_newobj(sizeof(int) * 3 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
     so->blen = blen;
     char *d = so->body;
     int size = 0;
     int i;
+    int hc = 1;
     for (i=0; i<blen; ) {
         int l = getutf8charlen(data + i);
         int j = i + l;
         for (; i<j; i++) {
             d[i] = data[i];
+            hc *= data[i];
         }
         size = size + 1;
     }
+    so->hashcode = hc;
     d[i] = 0;
     so->size = size;
     Strings_allocated++;
@@ -1157,13 +1175,13 @@ Object Float64_Mod(Object self, int nparams,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
-    int i = (int)a;
+    unsigned int i = (unsigned int)a;
     double b;
     if (other->class == Number)
         b = *(double*)other->data;
     else
         b = integerfromAny(other);
-    int j = (int)b;
+    unsigned int j = (unsigned int)b;
     return alloc_Float64(i % j);
 }
 Object Float64_Equals(Object self, int nparams,
@@ -1231,6 +1249,14 @@ Object Float64_asInteger32(Object self, int nparams,
         Object *args, int flags) {
     int i = integerfromAny(self);
     return alloc_Integer32(i);
+}
+Object Float64_hashcode(Object self, int nparams,
+        Object *args) {
+    double *d = (double*)self->data;
+    uint32_t *w1 = (uint32_t*)d;
+    uint32_t *w2 = (uint32_t*)(d + 4);
+    uint32_t hc = *w1 ^ *w2;
+    return alloc_Float64(hc);
 }
 Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)

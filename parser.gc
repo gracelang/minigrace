@@ -64,6 +64,31 @@ method accept(t)onLineOfLastOr(other) {
     (sym.sym.kind == t) & (((other.line == sym.sym.line) |
         (sym.sym.indent > other.indent)) | (lastToken.line == sym.sym.line))
 }
+// Require a t as the current token; if not, raise a syntax error.
+method expect(t) {
+    if (sym.sym.kind == t) then {
+        return true
+    }
+    util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
+}
+// Require a t OR s as the current token; if not, raise a syntax error.
+method expect(t)or(s) {
+    if (sym.sym.kind == t) then {
+        return true
+    }
+    if (sym.sym.kind == s) then {
+        return true
+    }
+    util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
+}
+// Expect block to consume at least one token
+method expectConsume(block) {
+    var sz := tokens.size
+    block.apply
+    if (tokens.size == sz) then {
+        util.syntax_error("unable to consume token")
+    }
+}
 
 // Push the current token onto the output stack as a number
 method pushnum() {
@@ -172,10 +197,7 @@ method block() {
         }
         while {(accept("rbrace")).not} do {
             // Take the body of the block
-            statement()
-            if (ln == values.size) then {
-                util.syntax_error("expected statement, have " ++ sym.sym.kind)
-            }
+            expectConsume({statement()})
             tmp := values.pop()
             body.push(tmp)
         }
@@ -309,31 +331,29 @@ method dofor() {
         if (accept("identifier") & ((sym.sym.value == "each")
             | (sym.sym.value == "do"))) then {
             next()
-            if (accept("lbrace")) then {
+            expect("lbrace")
+            next()
+            identifier()
+            variable := values.pop()
+            if (accept("colon")) then {
                 next()
-                identifier()
-                variable := values.pop()
-                if (accept("colon")) then {
-                    next()
-                    pushidentifier()
-                    variable.type := values.pop()
-                }
-                if (accept("arrow")) then {
-                    next()
-                    localMin := minIndentLevel
-                    if (sym.sym.line == lastToken.line) then {
-                        minIndentLevel := sym.sym.linePos - 1
-                    } else {
-                        minIndentLevel := minInd
-                    }
-                    while {(accept("rbrace")).not} do {
-                        statement()
-                        var v := values.pop()
-                        body.push(v)
-                    }
-                    next()
-                }
+                pushidentifier()
+                variable.type := values.pop()
             }
+            expect("arrow")
+            next()
+            localMin := minIndentLevel
+            if (sym.sym.line == lastToken.line) then {
+                minIndentLevel := sym.sym.linePos - 1
+            } else {
+                minIndentLevel := minInd
+            }
+            while {(accept("rbrace")).not} do {
+                statement()
+                var v := values.pop()
+                body.push(v)
+            }
+            next()
             var o := ast.astfor(over, variable, body)
             values.push(o)
             minIndentLevel := minInd - 1
@@ -359,20 +379,19 @@ method dowhile() {
         var body := []
         if (accept("identifier") & (sym.sym.value == "do")) then {
             next()
-            if (accept("lbrace")) then {
-                next()
-                if (sym.sym.line == lastToken.line) then {
-                    minIndentLevel := sym.sym.linePos - 1
-                } else {
-                    minIndentLevel := minInd
-                }
-                while {(accept("rbrace")).not} do {
-                    statement()
-                    var v := values.pop()
-                    body.push(v)
-                }
-                next()
+            expect("lbrace")
+            next()
+            if (sym.sym.line == lastToken.line) then {
+                minIndentLevel := sym.sym.linePos - 1
+            } else {
+                minIndentLevel := minInd
             }
+            while {(accept("rbrace")).not} do {
+                statement()
+                var v := values.pop()
+                body.push(v)
+            }
+            next()
             var o := ast.astwhile(cond, body)
             values.push(o)
         }
@@ -387,7 +406,7 @@ method identifier() {
         if (sym.sym.value == "if") then {
             doif()
         } elseif (sym.sym.value == "while") then {
-                dowhile()
+            dowhile()
         } elseif (sym.sym.value == "for") then {
             dofor()
         } else {
@@ -404,9 +423,7 @@ method prefixop() {
         if (accept("lparen")) then {
             next()
             expression()
-            if (accept("rparen").not) then {
-                util.syntax_error("expected rparen, have " ++ sym.sym.kind)
-            }
+            expect("rparen")
             next()
             val := values.pop()
         } else {
@@ -450,12 +467,8 @@ method expression() {
     if (accept("lparen")) then {
         next()
         expression()
-        if (accept("rparen")) then {
-            next()
-        } else {
-            util.syntax_error("expected rparen, have " ++ sym.sym.kind
-                ++ "(" ++ sym.sym.value ++ ")")
-        }
+        expect("rparen")
+        next()
     } else {
         term()
     }
@@ -473,11 +486,10 @@ method postfixsquare() {
         var expr := values.pop()
         expression()
         var index := values.pop()
-        if (accept("rsquare")) then {
-            next()
-            var o := ast.astindex(expr, index)
-            values.push(o)
-        }
+        expect("rsquare")
+        next()
+        var o := ast.astindex(expr, index)
+        values.push(o)
     }
 }
 
@@ -557,12 +569,8 @@ method expressionrest() {
                 // be allowed in term() above?
                 next()
                 expression()
-                if (accept("rparen")) then {
-                    next()
-                } else {
-                    util.syntax_error("expected rparen, have " ++ sym.sym.kind
-                        ++ "(" ++ sym.sym.value ++ ")")
-                }
+                expect("rparen")
+                next()
             } else {
                 term()
             }
@@ -654,24 +662,23 @@ method callrest() {
             next()
             expression()
         }
-        if (accept("rparen")) then {
-            tok := sym.sym
-            var tmpparams := []
-            var n := values.pop()
-            while {n.kind /= "lparen"} do {
-                tmpparams.push(n)
-                n := values.pop()
-            }
-            for (0..(tmpparams.size-1)) do { x ->
-                var p := tmpparams.pop()
-                params.push(p)
-            }
-            // All of the preceding has been an overly-complicated way of
-            // obtaining the arguments to the method, which I think could
-            // be done in a much simpler way now. TODO.
-            ln := linenum
-            next()
+        expect("rparen")
+        tok := sym.sym
+        var tmpparams := []
+        var n := values.pop()
+        while {n.kind /= "lparen"} do {
+            tmpparams.push(n)
+            n := values.pop()
         }
+        for (0..(tmpparams.size-1)) do { x ->
+            var p := tmpparams.pop()
+            params.push(p)
+        }
+        // All of the preceding has been an overly-complicated way of
+        // obtaining the arguments to the method, which I think could
+        // be done in a much simpler way now. TODO.
+        ln := linenum
+        next()
     } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
         | accept("lbrace")onLineOf(tok)
         | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
@@ -819,26 +826,23 @@ method doarray() {
             next()
             expression()
         }
-        if (accept("rsquare")) then {
-            var tmpparams := []
-            var n := values.pop()
-            while {n.kind /= "lsquare"} do {
-                tmpparams.push(n)
-                n := values.pop()
-            }
-            var params := []
-            for (0..(tmpparams.size-1)) do { x ->
-                var p := tmpparams.pop()
-                params.push(p)
-            }
-            // Again, the preceding is an overly complicated way of parsing
-            // a comma-separated list and has a simpler replacement now. TODO
-            var o := ast.astarray(params)
-            values.push(o)
-            next()
-        } else {
-            util.syntax_error("expected rsquare, got " ++ sym.sym.kind)
+        expect("rsquare")
+        var tmpparams := []
+        var n := values.pop()
+        while {n.kind /= "lsquare"} do {
+            tmpparams.push(n)
+            n := values.pop()
         }
+        var params := []
+        for (0..(tmpparams.size-1)) do { x ->
+            var p := tmpparams.pop()
+            params.push(p)
+        }
+        // Again, the preceding is an overly complicated way of parsing
+        // a comma-separated list and has a simpler replacement now. TODO
+        var o := ast.astarray(params)
+        values.push(o)
+        next()
     }
 }
 
@@ -850,19 +854,21 @@ method doobject() {
         var superclass := false
         if (accept("identifier") & (sym.sym.value == "extends")) then {
             next()
+            expect("identifier")
             identifier()
             var nm := values.pop
             if (accept("dot").not) then {
                 util.syntax_error("extends must have .new invocation on right")
             }
             next()
+            expect("identifier")
             identifier()
             var mn := values.pop
             var scargs := []
             if (accept("(")) then {
                 next()
                 while {accept(")").not} do {
-                    expression()
+                    expectConsume({expression()})
                     var tmp := values.pop
                     scargs.push(tmp)
                 }
@@ -870,42 +876,41 @@ method doobject() {
             }
             superclass := ast.astcall(ast.astmember(mn.value, nm), scargs)
         }
-        if (accept("lbrace")) then {
-            values.push(object {
-                var kind := "lbrace"
-                var register := ""
-            })
-            next()
-            var sz := values.size()
-            while {(accept("rbrace")).not} do {
-                // An object body contains zero or more var declarations,
-                // const declarations, and method declarations. If anything
-                // else appears before the closing brace, it is a syntax error.
-                vardec()
-                methoddec()
-                constdec()
-                if (values.size == sz) then {
-                    util.syntax_error("did not consume anything in "
-                        ++ "object declaration.")
-                }
-                sz := values.size
+        expect("lbrace")
+        values.push(object {
+            var kind := "lbrace"
+            var register := ""
+        })
+        next()
+        var sz := values.size()
+        while {(accept("rbrace")).not} do {
+            // An object body contains zero or more var declarations,
+            // const declarations, and method declarations. If anything
+            // else appears before the closing brace, it is a syntax error.
+            vardec()
+            methoddec()
+            constdec()
+            if (values.size == sz) then {
+                util.syntax_error("did not consume anything in "
+                    ++ "object declaration.")
             }
-            next()
-            var rbody := []
-            var n := values.pop()
-            while {n.kind /= "lbrace"} do {
-                rbody.push(n)
-                n := values.pop()
-            }
-            var body := []
-            for (0..(rbody.size-1)) do { x ->
-                // Reorder the list
-                var p := rbody.pop()
-                body.push(p)
-            }
-            var o := ast.astobject(body, superclass)
-            values.push(o)
+            sz := values.size
         }
+        next()
+        var rbody := []
+        var n := values.pop()
+        while {n.kind /= "lbrace"} do {
+            rbody.push(n)
+            n := values.pop()
+        }
+        var body := []
+        for (0..(rbody.size-1)) do { x ->
+            // Reorder the list
+            var p := rbody.pop()
+            body.push(p)
+        }
+        var o := ast.astobject(body, superclass)
+        values.push(o)
     }
 }
 
@@ -918,23 +923,26 @@ method doobject() {
 method doclass() {
     if (accept("keyword") & (sym.sym.value == "class")) then {
         next()
+        expect("identifier")
         pushidentifier() // A class currently cannot be anonymous
         var superclass := false
         if (accept("identifier") & (sym.sym.value == "extends")) then {
             next()
+            expect("identifier")
             identifier()
             var nm := values.pop
             if (accept("dot").not) then {
                 util.syntax_error("extends must have .new invocation on right")
             }
             next()
+            expect("identifier")
             identifier()
             var mn := values.pop
             var scargs := []
             if (accept("lparen")) then {
                 next()
                 while {accept("rparen").not} do {
-                    expression()
+                    expectConsume({expression()})
                     var tmp := values.pop
                     scargs.push(tmp)
                 }
@@ -1048,6 +1056,7 @@ method parsempmndecrest(meth, params) {
 method methoddec() {
     if (accept("keyword") & (sym.sym.value == "method")) then {
         next()
+        expect("identifier")or("op")
         pushidentifier()
         var meth := values.pop()
         if (accept("bind")) then {
@@ -1086,13 +1095,12 @@ method methoddec() {
                     util.syntax_error("expected comma or rparen.")
                 }
             }
-            if (accept("rparen")) then {
-                next()
-                if (accept("identifier")) then {
-                    // The presence of an identifier here means
-                    // a multi-part method name.
-                    meth := parsempmndecrest(meth, params)
-                }
+            expect("rparen")
+            next()
+            if (accept("identifier")) then {
+                // The presence of an identifier here means
+                // a multi-part method name.
+                meth := parsempmndecrest(meth, params)
             }
         }
         if (accept("arrow")) then {
@@ -1149,6 +1157,7 @@ method methoddec() {
 method doimport() {
     if (accept("keyword") & (sym.sym.value == "import")) then {
         next()
+        expect("identifier")
         identifier()
         var p := values.pop()
         var o := ast.astimport(p)
@@ -1161,7 +1170,7 @@ method doimport() {
 method doreturn() {
     if (accept("keyword") & (sym.sym.value == "return")) then {
         next()
-        expression()
+        expectConsume({expression()})
         var p := values.pop()
         var o := ast.astreturn(p)
         values.push(o)
