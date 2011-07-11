@@ -661,30 +661,17 @@ method callrest() {
         meth := values.pop()
         methn := meth.value
         next()
-        values.push(object {
-            var kind := "lparen"
-            var register := ""
-        })
-        expression()
-        while {accept("comma")} do {
-            next()
-            expression()
+        ifConsume({expression()}) then {
+            while {accept("comma")} do {
+                tmp := values.pop()
+                params.push(tmp)
+                next()
+                expectConsume({expression()})
+            }
+            tmp := values.pop()
+            params.push(tmp)
         }
         expect("rparen")
-        tok := sym.sym
-        var tmpparams := []
-        var n := values.pop()
-        while {n.kind /= "lparen"} do {
-            tmpparams.push(n)
-            n := values.pop()
-        }
-        for (0..(tmpparams.size-1)) do { x ->
-            var p := tmpparams.pop()
-            params.push(p)
-        }
-        // All of the preceding has been an overly-complicated way of
-        // obtaining the arguments to the method, which I think could
-        // be done in a much simpler way now. TODO.
         ln := linenum
         next()
     } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
