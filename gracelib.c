@@ -65,12 +65,12 @@ Object Float64_Add(Object, int nparams,
         Object*, int flags);
 struct Object *Object_asString(struct Object*, int nparams,
         struct Object**);
-struct Object *Object_concat(struct Object*, int nparams,
+struct Object *OldObject_concat(struct Object*, int nparams,
         struct Object**);
 struct Object *Object_NotEquals(struct Object*, int,
         struct Object**);
-Object Object_Equals(struct Object*, int,
-        struct Object**);
+Object Object_Equals(Object, int,
+        Object*, int flags);
 Object NewObject_NotEquals(Object, int,
         Object*, int);
 Object alloc_String(const char*);
@@ -79,7 +79,7 @@ Object String_concat(Object, int nparams,
 Object String_index(Object, int nparams,
         Object*, int flags);
 void *callmethod(void *receiver, const char *name,
-        int nparams, struct Object **args);
+        int nparams, void *args);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
@@ -100,17 +100,17 @@ Object undefined = NULL;
 Object iomodule;
 Object sysmodule;
 
-struct Object *BOOLEAN_TRUE = NULL;
-struct Object *BOOLEAN_FALSE = NULL;
-struct Object *FLOAT64_ZERO = NULL;
-struct Object *FLOAT64_ONE = NULL;
-struct Object *FLOAT64_TWO = NULL;
+Object BOOLEAN_TRUE = NULL;
+Object BOOLEAN_FALSE = NULL;
+Object FLOAT64_ZERO = NULL;
+Object FLOAT64_ONE = NULL;
+Object FLOAT64_TWO = NULL;
 
 #define FLOAT64_INTERN_MIN -10
 #define FLOAT64_INTERN_MAX 10000
 #define FLOAT64_INTERN_SIZE FLOAT64_INTERN_MAX-FLOAT64_INTERN_MIN
 
-struct Object *Float64_Interned[FLOAT64_INTERN_SIZE];
+Object Float64_Interned[FLOAT64_INTERN_SIZE];
 
 struct Method **Float64_Methods = NULL;
 int Float64_NumMethods = 0;
@@ -274,11 +274,15 @@ int integerfromAny(void *d) {
             return *(int*)p->data;
         }
     }
-    o = callmethod(o, "asString", 0, NULL);
-    char *c = cstringfromString(o);
+    p = callmethod(o, "asString", 0, NULL);
+    char *c = cstringfromString(p);
     int i = atoi(c);
     free(c);
     return i;
+}
+struct Object *OldObject_Equals(struct Object* receiver, int nparams,
+        struct Object** params) {
+    return (struct Object*)alloc_Boolean(receiver == params[0]);
 }
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
@@ -297,14 +301,14 @@ struct Object* alloc_obj() {
         x->nummethods++;
     }
     if (ObjectMethod_concat == NULL) {
-        addmethod(x, "++", &Object_concat);
+        addmethod(x, "++", &OldObject_concat);
         ObjectMethod_concat = x->methods[1];
     } else {
         x->methods[1] = ObjectMethod_concat;
         x->nummethods++;
     }
     if (ObjectMethod_Equals == NULL) {
-        addmethod(x, "==", &Object_Equals);
+        addmethod(x, "==", &OldObject_Equals);
         ObjectMethod_Equals = x->methods[2];
     } else {
         x->methods[2] = ObjectMethod_Equals;
@@ -374,8 +378,8 @@ void addclosuremethod(struct Object *o, char *name,
     m->cfunc = cfunc;
     m->closure = closure;
 }
-struct Object* identity_function(struct Object* receiver, int nparams,
-        struct Object** params) {
+Object identity_function(Object receiver, int nparams,
+        Object* params, int flags) {
     return receiver;
 }
 struct Object *Object_asString(struct Object* receiver, int nparams,
@@ -383,12 +387,17 @@ struct Object *Object_asString(struct Object* receiver, int nparams,
     int i = (int)&receiver;
     char buf[40];
     sprintf(buf, "%s[0x%x]", receiver->type, i);
-    return alloc_String(buf);
+    return (struct Object *)alloc_String(buf);
 }
 
-struct Object *Object_concat(struct Object* receiver, int nparams,
+struct Object *OldObject_concat(struct Object* receiver, int nparams,
         struct Object** params) {
     struct Object *a = callmethod(receiver, "asString", 0, NULL);
+    return callmethod(a, "++", nparams, params);
+}
+Object Object_concat(Object receiver, int nparams,
+        Object* params, int flags) {
+    Object a = callmethod(receiver, "asString", 0, NULL);
     return callmethod(a, "++", nparams, params);
 }
 struct Object *Object_NotEquals(struct Object* receiver, int nparams,
@@ -401,8 +410,8 @@ Object NewObject_NotEquals(Object receiver, int nparams,
     Object b = callmethod(receiver, "==", nparams, params);
     return callmethod(b, "not", 0, NULL);
 }
-Object Object_Equals(struct Object* receiver, int nparams,
-        struct Object** params) {
+Object Object_Equals(Object receiver, int nparams,
+        Object* params, int flags) {
     return alloc_Boolean(receiver == params[0]);
 }
 Object String_Equals(Object self, int nparams,
@@ -709,7 +718,7 @@ Object ConcatString_at(Object self, int nparams,
     return callmethod(right, "at", 1, &d);
 }
 Object ConcatString_length(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     return alloc_Float64(sself->blen);
 }
@@ -759,7 +768,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
-        add_Method(ConcatString, "/=", &Object_NotEquals);
+        add_Method(ConcatString, "/=", &NewObject_NotEquals);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
@@ -1333,7 +1342,7 @@ Object Boolean_not(Object self, int nparams,
     return alloc_Boolean(1);
 }
 Object Boolean_Equals(Object self, int nparams,
-        Object *args) {
+        Object *args, int flags) {
     return alloc_Boolean(self == args[0]);
 }
 Object Boolean_NotEquals(Object self, int nparams,
@@ -1574,7 +1583,7 @@ Object alloc_Undefined() {
     if (undefined != NULL)
         return undefined;
     Undefined = alloc_class("Undefined", 0);
-    Object o = alloc_newobj(Undefined, 0);
+    Object o = alloc_newobj(0, Undefined);
     undefined = o;
     return o;
 }
@@ -1605,7 +1614,7 @@ Object callmethod2(Object self, const char *name,
     exit(1);
 }
 void *callmethod(void *receiver, const char *name,
-        int nparams, struct Object **args) {
+        int nparams, void *args) {
     int i;
     struct Method *m;
     struct Object *o;
@@ -1687,14 +1696,14 @@ void adddatum(struct Object *obj, struct Object *datum, int index) {
     free(obj->data);
     obj->data = newdata;
 }
-struct Object *gracelib_readall(struct Object *self, int nparams,
-        struct Object **args) {
+Object gracelib_readall(Object self, int nparams,
+        Object *args) {
     char *ptr = glmalloc(100000);
     int l = fread(ptr, 1, 100000, stdin);
     ptr[l] = 0;
     return alloc_String(ptr);
 }
-struct Object *gracelib_length(struct Object *self) {
+Object gracelib_length(Object self) {
     if (self == NULL) {
         die("null passed to gracelib_length()");
         exit(1);
