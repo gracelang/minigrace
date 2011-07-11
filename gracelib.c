@@ -58,7 +58,7 @@ typedef union EitherObject {
 
 void addmethod(struct Object*, char*,
         struct Object* (*)(struct Object*, int, struct Object**));
-struct Object *Float64_asString(Object, int nparams,
+Object Float64_asString(Object, int nparams,
         Object*, int flags);
 Object alloc_Float64(double);
 Object Float64_Add(Object, int nparams,
@@ -98,6 +98,7 @@ void ConcatString__FillBuffer(Object s, char *c, int len);
 
 Object undefined = NULL;
 Object iomodule;
+Object sysmodule;
 
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
@@ -138,6 +139,7 @@ ClassData ListIter;
 ClassData Undefined;
 ClassData File;
 ClassData IOModule;
+ClassData SysModule;
 
 struct StringObject {
     int32_t flags;
@@ -178,6 +180,11 @@ struct FileObject {
     int32_t flags;
     ClassData class;
     FILE* file;
+};
+struct SysModule {
+    int flags;
+    ClassData class;
+    Object argv;
 };
 
 int linenumber = 0;
@@ -550,7 +557,7 @@ Object alloc_List() {
         add_Method(List, "==", &Object_Equals);
         add_Method(List, "/=", &NewObject_NotEquals);
     }
-    struct Object *o = alloc_newobj(sizeof(Object*) + sizeof(int) * 2, List);
+    Object o = alloc_newobj(sizeof(Object*) + sizeof(int) * 2, List);
     struct ListObject *lo = (struct ListObject*)o;
     lo->size = 0;
     lo->space = 8;
@@ -1004,8 +1011,8 @@ Object Octets_size(Object receiver, int nparams,
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     return alloc_Float64(self->blen);
 }
-struct Object *Octets_asString(struct Object *receiver, int nparams,
-        struct Object **args, int flags) {
+Object Octets_asString(Object receiver, int nparams,
+        Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     char *data = self->body;
     int size = self->blen;
@@ -1030,8 +1037,8 @@ Object Octets_at(Object receiver, int nparams,
         die("Octets index out of bounds: %i/%i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
-Object Octets_Equals(struct Object *receiver, int nparams,
-        struct Object **args, int flags) {
+Object Octets_Equals(Object receiver, int nparams,
+        Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     struct OctetsObject *other = (struct OctetsObject*)args[0];
     if (self->blen != other->blen)
@@ -1064,11 +1071,12 @@ Object Octets_decode(Object receiver, int nparams,
 }
 Object alloc_Octets(const char *data, int len) {
     if (Octets == NULL) {
-        Octets = alloc_class("Octets", 6);
+        Octets = alloc_class("Octets", 7);
         add_Method(Octets, "asString", &Octets_asString);
         add_Method(Octets, "++", &Octets_Concat);
         add_Method(Octets, "at", &Octets_at);
         add_Method(Octets, "==", &Octets_Equals);
+        add_Method(Octets, "/=", &NewObject_NotEquals);
         add_Method(Octets, "size", &Octets_size);
         add_Method(Octets, "decode", &Octets_decode);
     }
@@ -1262,7 +1270,7 @@ Object alloc_Float64(double num) {
         FLOAT64_TWO = o;
     return o;
 }
-struct Object *Float64_asString(Object self, int nparams,
+Object Float64_asString(Object self, int nparams,
         Object *args, int flags) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -1279,7 +1287,7 @@ struct Object *Float64_asString(Object self, int nparams,
     *strp = str;
     return str;
 }
-struct Object* Boolean_asString(Object self, int nparams,
+Object Boolean_asString(Object self, int nparams,
         Object *args, int flags) {
     int myval = *(int*)self->data;
     if (myval) {
@@ -1311,7 +1319,7 @@ Object Boolean_Or(Object self, int nparams,
 Object Boolean_ifTrue(Object self, int nparams,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
-    struct Object *block = args[0];
+    Object block = args[0];
     if (myval) {
         return callmethod(block, "apply", 0, NULL);
     } else {
@@ -1385,7 +1393,7 @@ Object File_readline(Object self, int nparams,
     char buf[bsize];
     buf[0] = 0;
     char *cv = fgets(buf, bsize, file);
-    struct Object *ret = alloc_String(buf);
+    Object ret = alloc_String(buf);
     return ret;
 }
 Object File_read(Object self, int nparams,
@@ -1509,53 +1517,57 @@ Object module_io_init() {
     so->_stderr = alloc_File_from_stream(stderr);
     return o;
 }
-struct Object *sys_argv(struct Object *self, int nparams,
-        struct Object **args) {
-    return self->data[0];
+Object sys_argv(Object self, int nparams,
+        Object *args, int flags) {
+    struct SysModule *so = (struct SysModule*)self;
+    return so->argv;
 }
-struct Object *argv_List = NULL;
-void module_sys_init_argv(struct Object *argv) {
+Object argv_List = NULL;
+void module_sys_init_argv(Object argv) {
     argv_List = argv;
 }
-struct Object *sys_cputime(struct Object *self, int nparams,
-        struct Object **args) {
+Object sys_cputime(Object self, int nparams,
+        Object *args, int flags) {
     int i = clock() - start_clocks;
     double d = i;
     d /= CLOCKS_PER_SEC;
     return alloc_Float64(d);
 }
-struct Object *sys_elapsed(struct Object *self, int nparams,
-        struct Object **args) {
+Object sys_elapsed(Object self, int nparams,
+        Object *args, int flags) {
     struct timeval ar;
     gettimeofday(&ar, NULL);
     double now = ar.tv_sec + (double)ar.tv_usec / 1000000;
     double d = now - start_time;
     return alloc_Float64(d);
 }
-struct Object *sys_exit(struct Object *self, int nparams,
-        struct Object **args) {
+Object sys_exit(Object self, int nparams,
+        Object *args, int flags) {
     int i = integerfromAny(args[0]);
     exit(i);
     return NULL;
 }
-struct Object *sys_execPath(struct Object *self, int nparams,
-        struct Object **args) {
+Object sys_execPath(Object self, int nparams,
+        Object *args, int flags) {
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
     char *dn = dirname(epm);
     return alloc_String(dn);
 }
-struct Object *module_sys_init() {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Module<sys>");
-    o->data = glmalloc(sizeof(struct Object*)*1);
-    o->data[0] = argv_List;
-    addmethod(o, "argv", &sys_argv);
-    addmethod(o, "cputime", &sys_cputime);
-    addmethod(o, "elapsed", &sys_elapsed);
-    addmethod(o, "exit", &sys_exit);
-    addmethod(o, "execPath", &sys_execPath);
+Object module_sys_init() {
+    if (sysmodule != NULL)
+        return sysmodule;
+    SysModule = alloc_class("Module<sys>", 5);
+    add_Method(SysModule, "argv", &sys_argv);
+    add_Method(SysModule, "cputime", &sys_cputime);
+    add_Method(SysModule, "elapsed", &sys_elapsed);
+    add_Method(SysModule, "exit", &sys_exit);
+    add_Method(SysModule, "execPath", &sys_execPath);
+    Object o = alloc_newobj(sizeof(Object), SysModule);
+    struct SysModule *so = (struct SysModule*)o;
+    so->argv = argv_List;
+    sysmodule = o;
     return o;
 }
 Object alloc_Undefined() {
