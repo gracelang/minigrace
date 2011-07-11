@@ -83,7 +83,7 @@ void *callmethod(void *receiver, const char *name,
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
-struct Object *alloc_Undefined();
+Object alloc_Undefined();
 
 Object alloc_Integer32(int);
 void add_Method(ClassData, const char *,
@@ -96,7 +96,7 @@ Object String_replace_with(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
-struct Object *undefined = NULL;
+Object undefined = NULL;
 
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
@@ -134,6 +134,7 @@ ClassData StringIter;
 ClassData Octets;
 ClassData List;
 ClassData ListIter;
+ClassData Undefined;
 
 struct StringObject {
     int32_t flags;
@@ -206,7 +207,7 @@ void initprofiling() {
     gettimeofday(&ar, NULL);
     start_time = ar.tv_sec + (double)ar.tv_usec / 1000000;
 }
-int istrue(struct Object *o) {
+int istrue(Object o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
 int isclass(void *v, const char *class) {
@@ -569,7 +570,7 @@ struct Object *alloc_Array(int size) {
     o->bdata = glmalloc(sizeof(void*));
     o->bdata[0] = (void*)size;
     o->data = glmalloc(sizeof(struct Object*) * size);
-    struct Object *u = alloc_Undefined();
+    Object u = alloc_Undefined();
     int i;
     for (i=0; i<size; i++)
         o->data[i] = u;
@@ -1589,11 +1590,11 @@ struct Object *module_sys_init() {
     addmethod(o, "Array", &sys_Array);
     return o;
 }
-struct Object * alloc_Undefined() {
+Object alloc_Undefined() {
     if (undefined != NULL)
         return undefined;
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Undefined");
+    Undefined = alloc_class("Undefined", 0);
+    Object o = alloc_newobj(Undefined, 0);
     undefined = o;
     return o;
 }
@@ -1659,12 +1660,12 @@ void *callmethod(void *receiver, const char *name,
     exit(1);
 }
 
-struct Object *gracelib_print(struct Object *receiver, int nparams,
-        struct Object **args) {
+Object gracelib_print(Object receiver, int nparams,
+        Object *args) {
     int i;
     char *sp = " ";
     for (i=0; i<nparams; i++) {
-        struct Object *o = args[i];
+        Object o = args[i];
         if (i == nparams - 1)
             sp = "";
         o = callmethod(o, "asString", 0, NULL);
