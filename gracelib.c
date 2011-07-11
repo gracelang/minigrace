@@ -1299,7 +1299,7 @@ Object Boolean_asString(Object self, int nparams,
 Object Boolean_And(Object self, int nparams,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
-    int8_t *otherval = *(int8_t*)args[0]->data;
+    int8_t otherval = *(int8_t*)args[0]->data;
     if (myval && otherval) {
         return self;
     } else { 
