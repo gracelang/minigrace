@@ -81,7 +81,7 @@ Object String_index(Object, int nparams,
 void *callmethod(void *receiver, const char *name,
         int nparams, struct Object **args);
 Object alloc_Boolean(int val);
-struct Object *alloc_Octets(const char *data, int len);
+Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
 struct Object *alloc_Undefined();
 
@@ -131,6 +131,7 @@ ClassData Boolean;
 ClassData String;
 ClassData ConcatString;
 ClassData StringIter;
+ClassData Octets;
 
 struct StringObject {
     int32_t flags;
@@ -146,6 +147,12 @@ struct ConcatStringObject {
     int size;
     Object left;
     Object right;
+};
+struct OctetsObject {
+    int32_t flags;
+    ClassData class;
+    int blen;
+    char body[];
 };
 
 int linenumber = 0;
@@ -1014,104 +1021,83 @@ Object String_concat(Object self, int nparams,
     Object asStr = callmethod(args[0], "asString", 0, NULL);
     return alloc_ConcatString(self, asStr);
 }
-struct Object *Octets_size(struct Object *receiver, int nparams,
-        struct Object **args) {
-    int *size = receiver->bdata[1];
-    return alloc_Float64(*size);
+Object Octets_size(Object receiver, int nparams,
+        Object *args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    return alloc_Float64(self->blen);
 }
 struct Object *Octets_asString(struct Object *receiver, int nparams,
-        struct Object **args) {
-    char *data = receiver->bdata[0];
-    int *size = receiver->bdata[1];
-    char *dt = glmalloc(4 + *size * 2);
+        struct Object **args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    char *data = self->body;
+    int size = self->blen;
+    char dt[4 + size * 2];
     int i;
     dt[0] = 'x';
     dt[1] = '"';
-    for (i=0; i<*size; i++) {
+    for (i=0; i<size; i++) {
         sprintf(dt + 2 + i*2, "%x", (int)data[i]&255);
     }
-    dt[2 + *size * 2] = '"';
-    dt[3 + *size * 2] = 0;
-    struct Object *ret = alloc_String(dt);
-    free(dt);
-    return ret;
+    dt[2 + size * 2] = '"';
+    dt[3 + size * 2] = 0;
+    return alloc_String(dt);
 }
-struct Object *Octets_at(struct Object *receiver, int nparams,
-        struct Object **args) {
-    char *data = receiver->bdata[0];
-    int *size = receiver->bdata[1];
+Object Octets_at(Object receiver, int nparams,
+        Object *args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    char *data = self->body;
+    int size = self->blen;
     int i = integerfromAny(args[0]);
-    if (i >= *size)
-        die("Octets index out of bounds: %i/%i", i, *size);
+    if (i >= size)
+        die("Octets index out of bounds: %i/%i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
 Object Octets_Equals(struct Object *receiver, int nparams,
-        struct Object **args) {
-    char *data = receiver->bdata[0];
-    int *size = receiver->bdata[1];
-    struct Object *other = args[0];
-    char *odata = other->bdata[0];
-    int *osize = other->bdata[1];
-    if (*size != *osize)
+        struct Object **args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    struct OctetsObject *other = (struct OctetsObject*)args[0];
+    if (self->blen != other->blen)
         return alloc_Boolean(0);
     int i;
-    for (i=0; i<*size; i++)
-        if (data[i] != odata[i])
+    for (i=0; i<self->blen; i++)
+        if (self->body[i] != other->body[i])
             return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-struct Object *Octets_Concat(struct Object *receiver, int nparams,
-        struct Object **args) {
-    char *data = receiver->bdata[0];
-    int *size = receiver->bdata[1];
-    struct Object *other = args[0];
-    char *odata = other->bdata[0];
-    int *osize = other->bdata[1];
-    int newsize = *size + *osize;
-    char *newdata = glmalloc(newsize);
+Object Octets_Concat(Object receiver, int nparams,
+        Object *args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    struct OctetsObject *other = (struct OctetsObject*)args[0];
+    int newsize = self->blen + other->blen;
+    char newdata[newsize];
     int i;
-    memcpy(newdata, data, *size);
-    memcpy(newdata + *size, odata, *osize);
-    struct Object *ret = alloc_Octets(newdata, newsize);
-    free(newdata);
-    return ret;
+    memcpy(newdata, self->body, self->blen);
+    memcpy(newdata + self->blen, other->body, other->blen);
+    return alloc_Octets(newdata, newsize);
 }
-struct Object *Octets_decode(struct Object *receiver, int nparams,
-        struct Object **args) {
-    char *data = receiver->bdata[0];
-    int *size = receiver->bdata[1];
-    struct Object *codec = args[0];
-    int newsize = *size + 1;
-    char *newdata = glmalloc(newsize);
-    memcpy(newdata, data, *size);
-    newdata[*size] = 0;
-    struct Object *ret = alloc_String(newdata);
-    free(newdata);
-    return ret;
+Object Octets_decode(Object receiver, int nparams,
+        Object *args, int flags) {
+    struct OctetsObject *self = (struct OctetsObject*)receiver;
+    Object codec = args[0];
+    char newdata[self->blen + 1];
+    memcpy(newdata, self->body, self->blen);
+    newdata[self->blen] = 0;
+    return alloc_String(newdata);
 }
-struct Object *alloc_Octets(const char *data, int len) {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Octets");
-    o->bdata = glmalloc(sizeof(void*) * 2);
-    o->bdata[0] = glmalloc(len);
-    o->bdata[1] = glmalloc(sizeof(int));
-    char *d = o->bdata[0];
-    int *size = o->bdata[1];
-    *size = len;
-    memcpy(d, data, len);
-    if (Octets_Methods == NULL) {
-        addmethod(o, "asString", &Octets_asString);
-        addmethod(o, "++", &Octets_Concat);
-        addmethod(o, "at", &Octets_at);
-        addmethod(o, "==", &Octets_Equals);
-        addmethod(o, "size", &Octets_size);
-        addmethod(o, "decode", &Octets_decode);
-        Octets_Methods = o->methods;
-        Octets_NumMethods = o->nummethods;
-    } else {
-        o->methods = Octets_Methods;
-        o->nummethods = Octets_NumMethods;
+Object alloc_Octets(const char *data, int len) {
+    if (Octets == NULL) {
+        Octets = alloc_class("Octets", 6);
+        add_Method(Octets, "asString", &Octets_asString);
+        add_Method(Octets, "++", &Octets_Concat);
+        add_Method(Octets, "at", &Octets_at);
+        add_Method(Octets, "==", &Octets_Equals);
+        add_Method(Octets, "size", &Octets_size);
+        add_Method(Octets, "decode", &Octets_decode);
     }
+    Object o = alloc_newobj(sizeof(int) + len, Octets);
+    struct OctetsObject *oo = (struct OctetsObject*)o;
+    oo->blen = len;
+    memcpy(oo->body, data, len);
     return o;
 }
 Object Float64_Range(Object self, int nparams,
