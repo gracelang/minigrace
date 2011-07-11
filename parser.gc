@@ -89,6 +89,14 @@ method expectConsume(block) {
         util.syntax_error("unable to consume token")
     }
 }
+// Expect block to consume at least one token, or call fallback code.
+method ifConsume(block)then(tblock) {
+    var sz := tokens.size
+    block.apply
+    if (tokens.size /= sz) then {
+        tblock.apply
+    }
+}
 
 // Push the current token onto the output stack as a number
 method pushnum() {
@@ -817,29 +825,19 @@ method vardec() {
 method doarray() {
     if (accept("lsquare")) then {
         next()
-        values.push(object {
-            var kind := "lsquare"
-            var register := ""
-        })
-        expression()
-        while {accept("comma")} do {
-            next()
-            expression()
+        var tmp
+        var params := []
+        ifConsume({expression()}) then {
+            while {accept("comma")} do {
+                tmp := values.pop()
+                params.push(tmp)
+                next()
+                expectConsume({expression()})
+            }
+            tmp := values.pop()
+            params.push(tmp)
         }
         expect("rsquare")
-        var tmpparams := []
-        var n := values.pop()
-        while {n.kind /= "lsquare"} do {
-            tmpparams.push(n)
-            n := values.pop()
-        }
-        var params := []
-        for (0..(tmpparams.size-1)) do { x ->
-            var p := tmpparams.pop()
-            params.push(p)
-        }
-        // Again, the preceding is an overly complicated way of parsing
-        // a comma-separated list and has a simpler replacement now. TODO
         var o := ast.astarray(params)
         values.push(o)
         next()
