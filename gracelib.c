@@ -97,6 +97,7 @@ Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
 Object undefined = NULL;
+Object iomodule;
 
 struct Object *BOOLEAN_TRUE = NULL;
 struct Object *BOOLEAN_FALSE = NULL;
@@ -135,6 +136,8 @@ ClassData Octets;
 ClassData List;
 ClassData ListIter;
 ClassData Undefined;
+ClassData File;
+ClassData IOModule;
 
 struct StringObject {
     int32_t flags;
@@ -163,6 +166,18 @@ struct ListObject {
     int size;
     int space;
     Object *items;
+};
+struct IOModuleObject {
+    int32_t flags;
+    ClassData class;
+    Object _stdin;
+    Object _stdout;
+    Object _stderr;
+};
+struct FileObject {
+    int32_t flags;
+    ClassData class;
+    FILE* file;
 };
 
 int linenumber = 0;
@@ -540,44 +555,6 @@ Object alloc_List() {
     lo->size = 0;
     lo->space = 8;
     lo->items = glmalloc(sizeof(Object) * 8);
-    return o;
-}
-struct Object *Array_indexAssign(struct Object *self, int nparams,
-        struct Object **args) {
-    int idx = integerfromAny(args[0]);
-    int size = (int)self->bdata[0];
-    if (idx >= size || idx < 0)
-        die("array index out of bounds: %i/%i", idx, size);
-    self->data[idx] = args[1];
-    return args[1];
-}
-struct Object *Array_index(struct Object *self, int nparams,
-        struct Object **args) {
-    int idx = integerfromAny(args[0]);
-    int size = (int)self->bdata[0];
-    if (idx >= size || idx < 0)
-        die("array index out of bounds: %i/%i", idx, size);
-    return self->data[idx];
-}
-struct Object *Array_size(struct Object *self, int nparams,
-        struct Object **args) {
-    int size = (int)self->bdata[0];
-    return alloc_Float64(size);
-}
-struct Object *alloc_Array(int size) {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Array");
-    o->bdata = glmalloc(sizeof(void*));
-    o->bdata[0] = (void*)size;
-    o->data = glmalloc(sizeof(struct Object*) * size);
-    Object u = alloc_Undefined();
-    int i;
-    for (i=0; i<size; i++)
-        o->data[i] = u;
-    addmethod(o, "at", &Array_index);
-    addmethod(o, "size", &Array_size);
-    addmethod(o, "[]", &Array_index);
-    addmethod(o, "[]:=", &Array_indexAssign);
     return o;
 }
 int getutf8charlen(const char *s) {
@@ -1380,42 +1357,41 @@ Object alloc_Boolean(int val) {
         BOOLEAN_FALSE = o;
     return o;
 }
-Object File_close(struct Object *self, int nparams,
-        struct Object **args) {
-    FILE **fileP = self->bdata[0];
-    FILE *file = *fileP;
-    int rv = fclose(file);
+Object File_close(Object self, int nparams,
+        Object *args, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    int rv = fclose(s->file);
     return alloc_Boolean(1);
 }
-Object File_write(struct Object *self, int nparams,
-        struct Object **args) {
-    FILE **fileP = self->bdata[0];
-    FILE *file = *fileP;
-    char *data = cstringfromString(args[0]);
-    int len = strlen(data);
-    int wrote = fwrite(data, sizeof(char), len, file);
-    if (wrote != len) {
+Object File_write(Object self, int nparams,
+        Object *args, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    struct StringObject *so = (struct StringObject*)args[0];
+    char data[so->blen+1];
+    bufferfromString(args[0], data);
+    int wrote = fwrite(data, sizeof(char), so->blen, file);
+    if (wrote != so->blen) {
         perror("Error writing to file");
         die("Error writing to file.");
     }
     return alloc_Boolean(1);
 }
-struct Object *File_readline(struct Object *self, int nparams,
-        struct Object **args) {
-    FILE **fileP = self->bdata[0];
-    FILE *file = *fileP;
+Object File_readline(Object self, int nparams,
+        Object *args, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
     int bsize = 1024;
-    char *buf = glmalloc(bsize);
+    char buf[bsize];
     buf[0] = 0;
     char *cv = fgets(buf, bsize, file);
     struct Object *ret = alloc_String(buf);
-    free(buf);
     return ret;
 }
-struct Object *File_read(struct Object *self, int nparams,
-        struct Object **args) {
-    FILE **fileP = self->bdata[0];
-    FILE *file = *fileP;
+Object File_read(Object self, int nparams,
+        Object *args, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
     int bsize = 128;
     int pos = 0;
     char *buf = glmalloc(bsize);
@@ -1428,19 +1404,21 @@ struct Object *File_read(struct Object *self, int nparams,
     buf[pos] = 0;
     return alloc_String(buf);
 }
-struct Object *alloc_File_from_stream(FILE *stream) {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "File");
-    o->bdata = glmalloc(sizeof(void*));
-    o->bdata[0] = glmalloc(sizeof(FILE*));
-    FILE **fileP = o->bdata[0];
-    *fileP = stream;
-    addmethod(o, "read", &File_read);
-    addmethod(o, "write", &File_write);
-    addmethod(o, "close", &File_close);
+Object alloc_File_from_stream(FILE *stream) {
+    if (File == NULL) {
+        File = alloc_class("File", 5);
+        add_Method(File, "read", &File_read);
+        add_Method(File, "write", &File_write);
+        add_Method(File, "close", &File_close);
+        add_Method(File, "==", &Object_Equals);
+        add_Method(File, "/=", &NewObject_NotEquals);
+    }
+    Object o = alloc_newobj(sizeof(FILE*), File);
+    struct FileObject* so = (struct FileObject*)o;
+    so->file = stream;
     return o;
 }
-struct Object *alloc_File(const char *filename, const char *mode) {
+Object alloc_File(const char *filename, const char *mode) {
     FILE *file = fopen(filename, mode);
     if (file == NULL) {
         perror("File access failed");
@@ -1449,41 +1427,44 @@ struct Object *alloc_File(const char *filename, const char *mode) {
     }
     return alloc_File_from_stream(file);
 }
-struct Object *io_input(struct Object *self, int nparams,
-        struct Object **args) {
-    return self->data[0];
+Object io_input(Object self, int nparams,
+        Object *args, int flags) {
+    struct IOModuleObject *s = (struct IOModuleObject*)self;
+    return s->_stdin;
 }
-struct Object *io_output(struct Object *self, int nparams,
-        struct Object **args) {
-    return self->data[1];
+Object io_output(Object self, int nparams,
+        Object *args, int flags) {
+    struct IOModuleObject *s = (struct IOModuleObject*)self;
+    return s->_stdout;
 }
-struct Object *io_error(struct Object *self, int nparams,
-        struct Object **args) {
-    return self->data[2];
+Object io_error(Object self, int nparams,
+        Object *args, int flags) {
+    struct IOModuleObject *s = (struct IOModuleObject*)self;
+    return s->_stderr;
 }
-struct Object *io_open(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *fnstr = args[0];
-    struct Object *modestr = args[1];
+Object io_open(Object self, int nparams,
+        Object *args, int flags) {
+    Object fnstr = args[0];
+    Object modestr = args[1];
     char *fn = cstringfromString(fnstr);
     char *mode = cstringfromString(modestr);
-    struct Object *ret = alloc_File(fn, mode);
+    Object ret = alloc_File(fn, mode);
     free(fn);
     free(mode);
     return ret;
 }
-struct Object *io_system(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *cmdstr = args[0];
+Object io_system(Object self, int nparams,
+        Object *args, int flags) {
+    Object cmdstr = args[0];
     char *cmd = cstringfromString(cmdstr);
     int rv = system(cmd);
-    struct Object *ret = alloc_Boolean(0);
+    Object ret = alloc_Boolean(0);
     if (rv == 0)
         ret = alloc_Boolean(1);
     return ret;
 }
-Object io_newer(struct Object *self, int nparams,
-        struct Object **args) {
+Object io_newer(Object self, int nparams,
+        Object *args, int flags) {
     struct StringObject *sa = (struct StringObject*)args[0];
     struct StringObject *sb = (struct StringObject*)args[1];
     int sal = sa->blen;
@@ -1500,9 +1481,9 @@ Object io_newer(struct Object *self, int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(sta.st_mtime > stb.st_mtime);
 }
-Object io_exists(struct Object *self, int nparams,
-        struct Object **args) {
-    struct Object *so = args[0];
+Object io_exists(Object self, int nparams,
+        Object *args, int flags) {
+    Object so = args[0];
     struct StringObject *ss = (struct StringObject*)args[0];
     int sbl = ss->blen;
     char buf[sbl + 1];
@@ -1510,20 +1491,22 @@ Object io_exists(struct Object *self, int nparams,
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
-struct Object *module_io_init() {
-    struct Object *o = alloc_obj();
-    strcpy(o->type, "Module<io>");
-    o->data = glmalloc(sizeof(struct Object*)*3);
-    o->data[0] = alloc_File_from_stream(stdin);
-    o->data[1] = alloc_File_from_stream(stdout);
-    o->data[2] = alloc_File_from_stream(stderr);
-    addmethod(o, "input", &io_input);
-    addmethod(o, "output", &io_output);
-    addmethod(o, "error", &io_error);
-    addmethod(o, "open", &io_open);
-    addmethod(o, "system", &io_system);
-    addmethod(o, "exists", &io_exists);
-    addmethod(o, "newer", &io_newer);
+Object module_io_init() {
+    if (iomodule != NULL)
+        return iomodule;
+    IOModule = alloc_class("Module<io>", 7);
+    add_Method(IOModule, "input", &io_input);
+    add_Method(IOModule, "output", &io_output);
+    add_Method(IOModule, "error", &io_error);
+    add_Method(IOModule, "open", &io_open);
+    add_Method(IOModule, "system", &io_system);
+    add_Method(IOModule, "exists", &io_exists);
+    add_Method(IOModule, "newer", &io_newer);
+    Object o = alloc_newobj(sizeof(Object) * 3, IOModule);
+    struct IOModuleObject *so = (struct IOModuleObject*)o;
+    so->_stdin = alloc_File_from_stream(stdin);
+    so->_stdout = alloc_File_from_stream(stdout);
+    so->_stderr = alloc_File_from_stream(stderr);
     return o;
 }
 struct Object *sys_argv(struct Object *self, int nparams,
@@ -1563,20 +1546,6 @@ struct Object *sys_execPath(struct Object *self, int nparams,
     char *dn = dirname(epm);
     return alloc_String(dn);
 }
-struct Object *Array_new(struct Object *self, int nparams,
-        struct Object **args) {
-    int size = integerfromAny(args[0]);
-    return alloc_Array(size);
-}
-struct Object *sys_Array_val = NULL;
-struct Object *sys_Array(struct Object *self, int nparams,
-        struct Object **args) {
-    if (sys_Array_val != NULL)
-        return sys_Array_val;
-    sys_Array_val = alloc_obj();
-    addmethod(sys_Array_val, "new", &Array_new);
-    return sys_Array_val;
-}
 struct Object *module_sys_init() {
     struct Object *o = alloc_obj();
     strcpy(o->type, "Module<sys>");
@@ -1587,7 +1556,6 @@ struct Object *module_sys_init() {
     addmethod(o, "elapsed", &sys_elapsed);
     addmethod(o, "exit", &sys_exit);
     addmethod(o, "execPath", &sys_execPath);
-    addmethod(o, "Array", &sys_Array);
     return o;
 }
 Object alloc_Undefined() {
