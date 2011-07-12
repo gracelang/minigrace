@@ -10,6 +10,7 @@ var statementIndent := 0
 var statementToken
 var tokens := 0
 var values := []
+var auto_count := 0
 
 // Global object containing the current token
 var sym := object {
@@ -123,6 +124,10 @@ method pushstring() {
 // false means that this identifier has not been assigned a type (yet).
 method pushidentifier() {
     var o := ast.astidentifier(sym.sym.value, false)
+    if (o.value == "_") then {
+        o.value := "__" ++ auto_count
+        auto_count := auto_count + 1
+    }
     values.push(o)
     next()
 }
