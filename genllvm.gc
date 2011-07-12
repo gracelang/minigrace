@@ -29,6 +29,7 @@ var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
+var inBlock := false
 
 method out(s) {
     output.push(s)
@@ -175,6 +176,8 @@ method compileclass(o) {
     o.register := compilenode(con)
 }
 method compileobject(o) {
+    var origInBlock := inBlock
+    inBlock := false
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "%obj" ++ myc
@@ -197,6 +200,7 @@ method compileobject(o) {
     o.register := selfr
 }
 method compileblock(o) {
+    inBlock := true
     var myc := auto_count
     auto_count := auto_count + 1
     var applymeth := ast.astmethod(ast.astidentifier("apply", false),
@@ -210,11 +214,8 @@ method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var over := compilenode(o.value)
-    var applymeth := ast.astmethod(ast.astidentifier("apply", false),
-        [o.variable], o.body, false)
-    applymeth.selfclosure := true
-    var objbody := ast.astobject([applymeth], false)
-    var obj := compilenode(objbody)
+    var blk := ast.astblock([o.variable], o.body)
+    var obj := compilenode(blk)
     out("  store %object* " ++ over ++ ", %object** %params_0")
     out("  %iter" ++ myc ++ " = call %object* @callmethod(%object* " ++ over
         ++ ", i8* getelementptr([5 x i8]* @.str._iter"
@@ -253,6 +254,8 @@ method compilemethod(o, selfobj) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind %var_x as usual, but
     // set to pointer from the additional closure parameter.
+    var origInBlock := inBlock
+    inBlock := o.selfclosure
     var oldout := output
     var oldbblock := bblock
     var oldusedvars := usedvars
@@ -377,6 +380,7 @@ method compilemethod(o, selfobj) {
             ++ "%object*(%object*, i32, %object**)* getelementptr(%object* " 
             ++ "(%object*, i32, %object**)* " ++ litname ++ "))")
     } else {
+        out("  call void @block_savedest(%object* " ++ selfobj ++ ")")
         out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
             ++ closurevars.size ++ ")")
         for (closurevars) do { v ->
@@ -399,6 +403,7 @@ method compilemethod(o, selfobj) {
             ++ "(%object*, i32, %object**, %object***)* " ++ litname
             ++ "), %object*** %closure" ++ myc ++ ")")
     }
+    inBlock := origInBlock
 }
 method compilewhile(o) {
     var myc := auto_count
@@ -749,8 +754,12 @@ method compileimport(o) {
 }
 method compilereturn(o) {
     var reg := compilenode(o.value)
-    out(  "ret %object* " ++ reg)
-    beginblock("postret" ++ auto_count)
+    if (inBlock) then {
+        out("  call void @block_return(%object* %realself, %object* " ++ reg ++ ")")
+    } else {
+        out("  ret %object* " ++ reg)
+        beginblock("postret" ++ auto_count)
+    }
     o.register := "%undefined"
 }
 method compilenum(o) {
@@ -1099,6 +1108,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
     out("    i32, %object**, %object***)*, %object***)")
     out("declare void @setline(i32)")
+    out("declare void @block_return(%object*, %object*)")
+    out("declare void @block_savedest(%object*)")
     out("; libc functions")
     out("declare i32 @puts(i8*)")
     out("declare i8* @malloc(i32)")
