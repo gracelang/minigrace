@@ -37,6 +37,7 @@
             } catch (e) {
                 if (e != "SystemExit") {
                     stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
+                    throw e;
                 }
             }
             if (goldenOutput != "") {
