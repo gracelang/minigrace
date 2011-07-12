@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <stdint.h>
 #include <libgen.h>
+#include <setjmp.h>
 
 struct ClosureVarBinding {
     char *name;
@@ -199,8 +200,12 @@ int Strings_allocated = 0;
 int start_clocks = 0;
 double start_time = 0;
 
+
+
 char **ARGV = NULL;
 
+static jmp_buf return_stack[256];
+Object return_value;
 char callstack[256][256];
 int calldepth = 0;
 void backtrace() {
@@ -1613,6 +1618,14 @@ Object alloc_Undefined() {
     undefined = o;
     return o;
 }
+void block_return(struct Object *self, struct Object *obj) {
+    jmp_buf *buf = (jmp_buf*)self->bdata;
+    return_value = (Object)obj;
+    longjmp(*buf, 1);
+}
+void block_savedest(struct Object *self) {
+    self->bdata = (void *)&return_stack[calldepth-1];
+}
 Object callmethod2(Object self, const char *name,
         int argc, Object *argv) {
     ClassData c = self->class;
@@ -1645,6 +1658,18 @@ void *callmethod(void *receiver, const char *name,
     struct Method *m;
     struct Object *o;
     struct Object *r = receiver;
+    int start_calldepth = calldepth;
+    if (strcmp(name, "apply") != 0) {
+        if (setjmp(return_stack[calldepth])) {
+            Object rv = return_value;
+            return_value = NULL;
+            calldepth = start_calldepth;
+            return rv;
+        }
+    } else {
+        memcpy(return_stack[calldepth], return_stack[calldepth-1],
+                sizeof(return_stack[calldepth]));
+    }
     if (r->flags & 1)
         return callmethod2(receiver, name, nparams, (Object*)args);
     for (i=0; i<r->nummethods; i++) {

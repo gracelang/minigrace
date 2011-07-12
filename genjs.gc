@@ -22,6 +22,7 @@ var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
+var inBlock := false
 
 method out(s) {
     output.push(s)
@@ -124,6 +125,8 @@ method compileclass(o) {
     o.register := compilenode(con)
 }
 method compileobject(o) {
+    var origInBlock := inBlock
+    inBlock := false
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "obj" ++ myc
@@ -147,8 +150,11 @@ method compileobject(o) {
         }
     }
     o.register := selfr
+    inBlock := origInBlock
 }
 method compileblock(o) {
+    var origInBlock := inBlock
+    inBlock := true
     var myc := auto_count
     auto_count := auto_count + 1
     out("  var block" ++ myc ++ " = Grace_allocObject();")
@@ -173,6 +179,7 @@ method compileblock(o) {
     out("  return " ++ ret ++ ";")
     out("\};")
     o.register := "block" ++ myc
+    inBlock := origInBlock
 }
 method compilefor(o) {
     var myc := auto_count
@@ -210,11 +217,21 @@ method compilemethod(o, selfobj) {
         first := false
     }
     out(") \{")
+    out("  var returnTarget = invocationCount;")
+    out("  invocationCount++;")
+    out("  try \{")
     var ret := "undefined"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
     out("  return " ++ ret)
+    out("  \} catch(e) \{")
+    out("    if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
+    out("      return e.returnvalue;")
+    out("    \} else \{")
+    out("      throw e;")
+    out("    \}")
+    out("  \}")
     out("\}")
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
@@ -433,7 +450,11 @@ method compileimport(o) {
 }
 method compilereturn(o) {
     var reg := compilenode(o.value)
-    out(  "return " ++ reg)
+    if (inBlock) then {
+        out("  throw new ReturnException(" ++ reg ++ ", returnTarget);")
+    } else {
+        out("  return " ++ reg)
+    }
     o.register := "undefined"
 }
 method compilenode(o) {

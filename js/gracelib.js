@@ -2,6 +2,7 @@ var lineNumber = 0;
 var stdout_txt = document.getElementById("stdout_txt");
 var stdin_txt = document.getElementById("stdout_txt");
 var stderr_txt = document.getElementById("stderr_txt");
+var invocationCount = 0;
 
 function GraceString(s) {
     this._value = s;
@@ -547,6 +548,13 @@ function callmethod(obj, methname) {
     callStack.pop();
     return ret;
 }
+function ReturnException(v, target) {
+    this.returnvalue = v;
+    this.target = target;
+}
+ReturnException.prototype = {
+    'exctype': 'return',
+};
 function dbgp(o, d) {
     if (d == undefined)
         d = 0;
