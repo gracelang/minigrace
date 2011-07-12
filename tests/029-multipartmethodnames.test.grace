@@ -9,6 +9,10 @@ const a := object {
         (self.value >= lower) & (self.value <= upper)
     }
 }
+method sumOf(a,b)isSumOf(c,d) {
+    (a + b) == (c + d)
+}
 
 print(a.valueBetween(3)and(5))
 print(a.valueBetween (1) and (3))
+print(sumOf(3,4)isSumOf(2,5))

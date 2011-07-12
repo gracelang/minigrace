@@ -747,15 +747,17 @@ method callmprest(meth, params, tok) {
             term()
         } else {
             expression()
+            while {accept("comma")} do {
+                nxt := values.pop
+                params.push(nxt)
+                next()
+                expectConsume({expression()})
+            }
         }
         nxt := values.pop()
         params.push(nxt)
-        if ((accept("rparen")).not & isTerm.not) then {
-            // Currently, this rejects calls like:
-            //   a(x) b(y,z) c(w)
-            // That may not be necessary, though future varargs support
-            // could be an issue.
-            util.syntax_error("multi-part method name parameters must be single.")
+        if (isTerm.not) then {
+            expect("rparen")
         }
         if (accept("rparen") & isTerm.not) then {
             ln := lastline
@@ -1025,18 +1027,21 @@ method parsempmndecrest(meth, params) {
             util.syntax_error("multi-part method name parameters require ().")
         }
         next()
-        pushidentifier()
-        nxt := values.pop()
-        if (accept("colon")) then {
-            next()
+        while {accept("identifier")} do {
             pushidentifier()
-            var tp := values.pop()
-            nxt.type := tp
+            nxt := values.pop()
+            if (accept("colon")) then {
+                next()
+                pushidentifier()
+                var tp := values.pop()
+                nxt.type := tp
+            }
+            params.push(nxt)
+            if (accept("comma")) then {
+                next()
+            }
         }
-        params.push(nxt)
-        if ((accept("rparen")).not) then {
-            util.syntax_error("multi-part method name parameters must be single.")
-        }
+        expect("rparen")
         next()
     }
     ast.astidentifier(methname, false)
