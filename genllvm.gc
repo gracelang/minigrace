@@ -327,7 +327,6 @@ method compilemethod(o, selfobj) {
     var litname := "@\"meth_" ++ modname ++ "_" ++ escapestring(nm) ++ "\""
     outprint(";;;; METHOD DEFINITION: " ++ name)
     if (closurevars.size > 0) then {
-        out("; have closure method: " ++ closurevars.size)
         if (o.selfclosure) then {
             out("define private %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
                 ++ "%object** %args, %object*** %closure) \{")
@@ -634,14 +633,10 @@ method compilecall(o) {
     }
     evl := escapestring(o.value.value)
     if (o.value.kind == "member") then {
-        outprint("; handling member")
         obj := compilenode(o.value.in)
-        outprint("; compiled in to " ++ obj)
         len := length(o.value.value) + 1
-        outprint("; got len " ++ len)
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
-        outprint("; created con")
         for (0..(args.size-1)) do { i ->
             out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
         }
@@ -650,10 +645,8 @@ method compilecall(o) {
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
             ++ constants.size ++ ",i32 0,i32 0), i32 "
             ++ args.size ++ ", %object** %params)")
-        outprint("; pushed statement")
         constants.push(con)
     } else {
-        out("; WARNING: non-member calls not fully supported yet")
         obj := "%self"
         len := length(o.value.value) + 1
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
@@ -669,7 +662,6 @@ method compilecall(o) {
         constants.push(con)
     }
     o.register := "%call" ++ auto_count
-    out("; compilecall giving return register " ++ o.register)
     auto_count := auto_count + 1
 }
 method compileoctets(o) {
