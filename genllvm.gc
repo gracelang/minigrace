@@ -30,6 +30,7 @@ var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
+var paramsUsed := 1
 
 method out(s) {
     output.push(s)
@@ -254,6 +255,8 @@ method compilemethod(o, selfobj) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind %var_x as usual, but
     // set to pointer from the additional closure parameter.
+    var origParamsUsed := paramsUsed
+    paramsUsed := 1
     var origInBlock := inBlock
     inBlock := o.selfclosure
     var oldout := output
@@ -269,15 +272,6 @@ method compilemethod(o, selfobj) {
     var nm := name ++ myc
     beginblock("entry")
     output.pop()
-    out("  %ptrsize_p = getelementptr %object** null, i32 1")
-    out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-    out("  %paramssize = mul i32 %ptrsize, 16")
-    out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-    out("  %params = bitcast i8* %paramsu to %object**")
-    for (0..10) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
-            ++ i)
-    }
     var i := 0
     for (o.params) do { p ->
         var pn := escapestring(p.value)
@@ -346,6 +340,11 @@ method compilemethod(o, selfobj) {
             ++ "%object** %args) \{")
     }
     beginblock("entry")
+    out("  %params = alloca %object*, i32 " ++ paramsUsed)
+    for (0..(paramsUsed-1)) do { i ->
+        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
+            ++ i)
+    }
     var j := 0
     for (closurevars) do { cv ->
         if (cv == "self") then {
@@ -412,6 +411,7 @@ method compilemethod(o, selfobj) {
             ++ "), %object*** %closure" ++ myc ++ ")")
     }
     inBlock := origInBlock
+    paramsUsed := origParamsUsed
 }
 method compilewhile(o) {
     var myc := auto_count
@@ -628,6 +628,9 @@ method compilecall(o) {
     for (o.with) do { p ->
         var r := compilenode(p)
         args.push(r)
+    }
+    if (args.size > paramsUsed) then {
+        paramsUsed := args.size
     }
     evl := escapestring(o.value.value)
     if (o.value.kind == "member") then {
@@ -1027,33 +1030,33 @@ method compile(vl, of, mn, rm, bt, glpath) {
     outprint("%object = type \{ i32, [32 x i8], %method**, %object**, i8**, i32, i32 \}")
     out("define %object* @module_" ++ modname ++ "_init() \{")
     out("entry:")
-    out("  %ptrsize_p = getelementptr %object** null, i32 1")
-    out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-    out("  %paramssize = mul i32 %ptrsize, 16")
-    out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-    out("  %params = bitcast i8* %paramsu to %object**")
-    for (0..10) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
-    }
     out("  %self = call %object* @alloc_obj()")
     out("  %undefined = load %object** @undefined")
     out("  %var_argv = call %object** @alloc_var()")
     out("  %tmp_argv = load %object** @argv")
     out("  store %object* %tmp_argv, %object** %var_argv")
+    var tmpo := output
+    output := []
     for (values) do { o ->
         compilenode(o)
     }
+    var tmpo2 := output
+    output := tmpo
+    out("  %params = alloca %object*, i32 " ++ paramsUsed)
+    for (0..(paramsUsed-1)) do { i ->
+        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
+    }
+    for (tmpo2) do { l->
+        out(l)
+    }
+    paramsUsed := 1
     out("  ret %object* %self")
     out("}")
     out("define weak i32 @main(i32 %argc, i8** %argv) \{")
     out("entry:")
     out("  call void @initprofiling()")
     out("  call void @gracelib_argv(i8** %argv)")
-    out("  %ptrsize_p = getelementptr %object** null, i32 1")
-    out("  %ptrsize = ptrtoint %object** %ptrsize_p to i32")
-    out("  %paramssize = mul i32 %ptrsize, 16")
-    out("  %paramsu = call i8* @malloc(i32 %paramssize)")
-    out("  %params = bitcast i8* %paramsu to %object**")
+    out("  %params = alloca %object*, i32 1")
     out("  %params_0 = getelementptr %object** %params, i32 0")
     out("  %undefined = call %object* @alloc_Undefined()")
     out("  store %object* %undefined, %object** @undefined")
