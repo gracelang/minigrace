@@ -286,6 +286,14 @@ method compilemethod(o, selfobj) {
         declaredvars.push(pn)
         i := i + 1
     }
+    if (o.varargs) then {
+        var van := escapestring(o.vararg.value)
+        out("  %\"var_init_" ++ van ++ "\" = call %object* @process_varargs("
+            ++ "%object** %args, i32 {i}, i32 %nparams)")
+        out("  %\"var_" ++ van ++ "\" = call %object** @alloc_var()")
+        out("  store %object* %\"var_init_{van}\", %object** %\"var_{van}\"")
+        declaredvars.push(van)
+    }
     out("  %undefined = load %object** @undefined")
     var ret := "%undefined"
     for (o.body) do { l ->
@@ -1110,6 +1118,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare void @setline(i32)")
     out("declare void @block_return(%object*, %object*)")
     out("declare void @block_savedest(%object*)")
+    out("declare %object* @process_varargs(%object**, i32, i32)")
     out("; libc functions")
     out("declare i32 @puts(i8*)")
     out("declare i8* @malloc(i32)")

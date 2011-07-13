@@ -123,13 +123,15 @@ method astblock(params, body) {
         }
     }
 }
-method astmethod(name, params, body, type) {
+method astmethod(name', params', body', type') {
     object {
         var kind := "method"
-        var value := name
-        var params := params
-        var body := body
-        var type := type
+        var value := name'
+        var params := params'
+        var body := body'
+        var type := type'
+        var varargs := false
+        var vararg := false
         var selfclosure := false
         var register := ""
         var line := util.linenum

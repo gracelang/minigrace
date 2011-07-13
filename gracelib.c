@@ -1888,6 +1888,14 @@ Object alloc_Integer32(int i) {
     *d = i;
     return (Object)o;
 }
+struct Object *process_varargs(struct Object **args, int fixed, int nargs) {
+    int i = fixed;
+    struct Object *lst = alloc_List();
+    for (; i<nargs; i++) {
+        callmethod(lst, "push", 1, &args[i]);
+    }
+    return lst;
+}
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) .

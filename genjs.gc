@@ -217,6 +217,10 @@ method compilemethod(o, selfobj) {
         first := false
     }
     out(") \{")
+    if (o.varargs) then {
+        out("  var {varf(o.vararg.value)} = new GraceList(Array.prototype.slice"
+            ++ ".call(arguments, {o.params.size}));")
+    }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
     out("  try \{")

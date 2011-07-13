@@ -1064,12 +1064,19 @@ method methoddec() {
         var rparams := []
         var params := []
         var type := false
+        var varargs := false
+        var vararg := false
         if (accept("lparen")) then {
             next()
             var id
-            while {accept("identifier")} do {
+            while {accept("identifier") |
+                    (accept("op") & (sym.sym.value == "*"))} do {
                 // Parse the parameter list, including optional type
                 // annotations.
+                if (accept("op")) then {
+                    next()
+                    varargs := true
+                }
                 pushidentifier()
                 id := values.pop()
                 type := false
@@ -1083,7 +1090,12 @@ method methoddec() {
                     }
                 }
                 id.type := type
-                params.push(id)
+                if (varargs) then {
+                    vararg := id
+                    expect("rparen")
+                } else {
+                    params.push(id)
+                }
                 if (accept("comma")) then {
                     next()
                 } elseif ((accept("rparen")).not) then {
@@ -1143,6 +1155,10 @@ method methoddec() {
                 meth.value)
         }
         var o := ast.astmethod(meth, params, body, type)
+        if (varargs) then {
+            o.varargs := true
+            o.vararg := vararg
+        }
         values.push(o)
     }
 }
