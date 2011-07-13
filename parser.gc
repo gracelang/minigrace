@@ -1015,10 +1015,15 @@ method doclass() {
 // a single line (because they are ended by "{" or "->"). This method
 // returns a replacement method name identifier and modifies params in
 // place.
-method parsempmndecrest(meth, params) {
-    var methname := meth.value
+method parsempmndecrest(tm) {
+    var methname := tm.value.value
+    const params := tm.params
     var nxt
+    var varargs := false
     while {accept("identifier")} do {
+        if (varargs) then {
+            util.syntax_error("varargs parameter must be last.")
+        }
         methname := methname ++ "()"
         pushidentifier()
         nxt := values.pop
@@ -1027,7 +1032,16 @@ method parsempmndecrest(meth, params) {
             util.syntax_error("multi-part method name parameters require ().")
         }
         next()
-        while {accept("identifier")} do {
+        while {accept("identifier")
+                | (accept("op") & (sym.sym.value == "*"))} do {
+            if (varargs) then {
+                util.syntax_error("varargs parameter must be last.")
+            }
+            if (accept("op")) then {
+                next()
+                varargs := true
+                expect("identifier")
+            }
             pushidentifier()
             nxt := values.pop()
             if (accept("colon")) then {
@@ -1036,7 +1050,13 @@ method parsempmndecrest(meth, params) {
                 var tp := values.pop()
                 nxt.type := tp
             }
-            params.push(nxt)
+            if (varargs) then {
+                tm.vararg := nxt
+                tm.varargs := true
+                expect("rparen")
+            } else {
+                params.push(nxt)
+            }
             if (accept("comma")) then {
                 next()
             }
@@ -1107,7 +1127,10 @@ method methoddec() {
             if (accept("identifier")) then {
                 // The presence of an identifier here means
                 // a multi-part method name.
-                meth := parsempmndecrest(meth, params)
+                var tm := ast.astmethod(meth, params, [], false)
+                meth := parsempmndecrest(tm)
+                varargs := tm.varargs
+                vararg := tm.vararg
             }
         }
         if (accept("arrow")) then {
