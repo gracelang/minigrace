@@ -334,31 +334,13 @@ method dofor() {
             | (sym.sym.value == "do"))) then {
             next()
             expect("lbrace")
-            next()
-            identifier()
-            variable := values.pop()
-            if (accept("colon")) then {
-                next()
-                pushidentifier()
-                variable.type := values.pop()
-            }
-            expect("arrow")
-            next()
-            localMin := minIndentLevel
-            if (sym.sym.line == lastToken.line) then {
-                minIndentLevel := sym.sym.linePos - 1
-            } else {
-                minIndentLevel := minInd
-            }
-            while {(accept("rbrace")).not} do {
-                statement()
-                var v := values.pop()
-                body.push(v)
-            }
-            next()
-            var o := ast.astfor(over, variable, body)
+            block()
+            var blk := values.pop
+            var o := ast.astfor(over, blk)
             values.push(o)
             minIndentLevel := minInd - 1
+        } else {
+            util.syntax_error("expected 'do'")
         }
     }
 }

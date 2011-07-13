@@ -214,7 +214,7 @@ method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var over := compilenode(o.value)
-    var blk := ast.astblock([o.variable], o.body)
+    var blk := o.body
     var obj := compilenode(blk)
     out("  store %object* " ++ over ++ ", %object** %params_0")
     out("  %iter" ++ myc ++ " = call %object* @callmethod(%object* " ++ over
