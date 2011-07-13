@@ -148,29 +148,10 @@ method block() {
         var i := 0
         var toks := tokens
 
-        // TODO Clean this up, it's a hack.
-        // The below scans through thirty tokens searching for either
-        // an arrow or something that cannot currently appear in a
-        // block's parameter list in order to determine how to treat
-        // these tokens.
-        for (0..30) do { i->
-            if (i < (toks.size-1)) then {
-                var t := toks.at((toks.size - i) - 1)
-                if ((t.kind /= "identifier") & (t.kind /= "comma")
-                    & (t.kind /= "arrow") & (t.kind /= "colon")
-                    & found.not) then {
-                    havearrow := false
-                }
-                if (t.kind == "arrow") then {
-                    found := true
-                }
-            }
-        }
-        if (havearrow & accept("identifier")) then {
-            // This block has parameters
-            pushidentifier()
-            ident1 := values.pop()
+        ifConsume({expression()}) then {
             if (accept("comma") | accept("arrow") | accept("colon")) then {
+                // This block has parameters
+                ident1 := values.pop()
                 if (accept("colon")) then {
                     // Take a type here, and assign it to the AST node's
                     // type field. In the long run, types will need to be
@@ -197,6 +178,14 @@ method block() {
                     util.syntax_error("block parameter list not terminated ->.")
                 }
                 next()
+            } elseif (accept("bind")) then {
+                var lhs := values.pop
+                next()
+                expression()
+                var rhs := values.pop
+                body.push(ast.astbind(lhs, rhs))
+            } else {
+                body.push(values.pop)
             }
         }
         if (accept("arrow")) then {
