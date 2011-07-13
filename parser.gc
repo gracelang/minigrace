@@ -380,6 +380,8 @@ method dowhile() {
             values.push(o)
         }
         minIndentLevel := minInd - 1
+    } else {
+        util.syntax_error("expected 'do'")
     }
 }
 
