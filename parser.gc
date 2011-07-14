@@ -204,9 +204,9 @@ method block() {
         if (params.size == 1) then {
             var inbody := body
             var pat
+            var newname := ast.astidentifier("__matchvar" ++ auto_count,
+                false)
             if (params[0].kind /= "identifier") then {
-                var newname := ast.astidentifier("__matchvar" ++ auto_count,
-                    false)
                 auto_count := auto_count + 1
                 pat := params[0]
                 params := [newname]
@@ -220,11 +220,13 @@ method block() {
                         ])])]
             } elseif (params[0].type /= false) then {
                 pat := params[0].type
+                var tmpp := params[0]
+                params := [newname]
                 body := [ast.astcall(ast.astmember(
                             "match()matchesBinding()else",
-                            params[0]),
-                        [pat, ast.astblock([], inbody),
-                        ast.astblock([], [
+                            newname),
+                        [pat, ast.astblock([tmpp], inbody),
+                        ast.astblock([tmpp], [
                             ast.astcall(ast.astidentifier("print", false),
                                 [ast.aststring("Pattern match failed.")])
                         ])])]
