@@ -739,6 +739,15 @@ struct Object *ConcatString_hashcode(struct Object *self, int nparams,
     unsigned int *hashcode = self->bdata[3];
     return alloc_Float64(*hashcode);
 }
+struct Object *String_matchObject_matchesBinding_else(struct Object *self,
+        int nparams, struct Object **args) {
+    struct Object *b = callmethod(self, "==", 1, args);
+    if (istrue(b)) {
+        return callmethod(args[1], "apply", 1, &self);
+    } else {
+        return callmethod(args[2], "apply", 1, &self);
+    }
+}
 struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
     struct Object *o = alloc_obj();
     strcpy(o->type, "ConcatString");
@@ -776,6 +785,8 @@ struct Object *alloc_ConcatString(struct Object *left, struct Object *right) {
         addmethod(o, "substringFrom()to", &ConcatString_substringFrom_to);
         addmethod(o, "replace()with", &String_replace_with);
         addmethod(o, "hashcode", &ConcatString_hashcode);
+        addmethod(o, "matchObject()matchesBinding()else",
+                &String_matchObject_matchesBinding_else);
         ConcatString_methods = o->methods;
         ConcatString_nummethods = o->nummethods;
     } else {
@@ -955,6 +966,8 @@ struct Object *alloc_String(const char *data) {
         addmethod(o, "substringFrom()to", &String_substringFrom_to);
         addmethod(o, "replace()with", &String_replace_with);
         addmethod(o, "hashcode", &String_hashcode);
+        addmethod(o, "matchObject()matchesBinding()else",
+                &String_matchObject_matchesBinding_else);
         String_Methods = o->methods;
         String_NumMethods = o->nummethods;
     } else {

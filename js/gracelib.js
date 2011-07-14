@@ -79,6 +79,14 @@ GraceString.prototype = {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
+        "matchObject()matchesBinding()else": function(obj, b, e) {
+            var bl = callmethod(this, "==", obj);
+            if (Grace_isTrue(bl)) {
+                return callmethod(b, "apply", obj);
+            } else {
+                return callmethod(e, "apply", obj);
+            }
+        },
     },
     className: "String"
 };
