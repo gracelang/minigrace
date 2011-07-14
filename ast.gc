@@ -35,9 +35,7 @@ method astfor(over, body) {
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
             s := s ++ spc ++ "Do:"
-            for (self.body) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
+            s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
             s
         }
     }
