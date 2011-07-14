@@ -204,9 +204,28 @@ method block() {
         if (params.size == 1) then {
             var inbody := body
             var pat
+            var tmpp
+            var nparams
             var newname := ast.astidentifier("__matchvar" ++ auto_count,
                 false)
-            if (params[0].kind /= "identifier") then {
+            if (params[0].kind == "call") then {
+                pat := params[0]
+                tmpp := params[0]
+                params := [newname]
+                nparams := []
+                for (pat.with) do {p->
+                    nparams.push(p)
+                }
+                pat := pat.value
+                body := [ast.astcall(ast.astmember(
+                            "match()matchesBinding()else",
+                            newname),
+                        [pat, ast.astblock(nparams, inbody),
+                        ast.astblock([], [
+                            ast.astcall(ast.astidentifier("print", false),
+                                [ast.aststring("Pattern match failed.")])
+                        ])])]
+            } elseif (params[0].kind /= "identifier") then {
                 auto_count := auto_count + 1
                 pat := params[0]
                 params := [newname]
@@ -220,16 +239,32 @@ method block() {
                         ])])]
             } elseif (params[0].type /= false) then {
                 pat := params[0].type
-                var tmpp := params[0]
-                params := [newname]
-                body := [ast.astcall(ast.astmember(
-                            "match()matchesBinding()else",
-                            newname),
-                        [pat, ast.astblock([tmpp], inbody),
-                        ast.astblock([tmpp], [
-                            ast.astcall(ast.astidentifier("print", false),
-                                [ast.aststring("Pattern match failed.")])
-                        ])])]
+                tmpp := params[0]
+                if (pat.kind == "call") then {
+                    nparams := []
+                    for (pat.with) do {p->
+                        nparams.push(p)
+                    }
+                    pat := pat.value
+                    body := [ast.astcall(ast.astmember(
+                                "match()matchesBinding()else",
+                                tmpp),
+                            [pat, ast.astblock(nparams, inbody),
+                            ast.astblock([tmpp], [
+                                ast.astcall(ast.astidentifier("print", false),
+                                    [ast.aststring("Pattern match failed.")])
+                            ])])]
+                } else {
+                    params := [newname]
+                    body := [ast.astcall(ast.astmember(
+                                "match()matchesBinding()else",
+                                newname),
+                            [pat, ast.astblock([tmpp], inbody),
+                            ast.astblock([tmpp], [
+                                ast.astcall(ast.astidentifier("print", false),
+                                    [ast.aststring("Pattern match failed.")])
+                            ])])]
+                }
             }
         }
         minIndentLevel := minInd - 1
