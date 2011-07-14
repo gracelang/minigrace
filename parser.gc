@@ -153,12 +153,10 @@ method block() {
                 // This block has parameters
                 ident1 := values.pop()
                 if (accept("colon")) then {
-                    // Take a type here, and assign it to the AST node's
-                    // type field. In the long run, types will need to be
-                    // handled specially, but treating them as identifiers
-                    // works syntactically for now.
+                    // We allow an expression here for the case of v : T
+                    // patterns, where T may be "Pair(hd, tl)" or similar.
                     next()
-                    pushidentifier()
+                    expression()
                     ident1.type := values.pop()
                 }
                 params.push(ident1)
@@ -202,6 +200,35 @@ method block() {
             expectConsume({statement()})
             tmp := values.pop()
             body.push(tmp)
+        }
+        if (params.size == 1) then {
+            var inbody := body
+            var pat
+            if (params[0].kind /= "identifier") then {
+                var newname := ast.astidentifier("__matchvar" ++ auto_count,
+                    false)
+                auto_count := auto_count + 1
+                pat := params[0]
+                params := [newname]
+                body := [ast.astcall(ast.astmember(
+                            "match()matchesBinding()else",
+                            newname),
+                        [pat, ast.astblock([], inbody),
+                        ast.astblock([], [
+                            ast.astcall(ast.astidentifier("print", false),
+                                [ast.aststring("Pattern match failed.")])
+                        ])])]
+            } elseif (params[0].type /= false) then {
+                pat := params[0].type
+                body := [ast.astcall(ast.astmember(
+                            "match()matchesBinding()else",
+                            params[0]),
+                        [pat, ast.astblock([], inbody),
+                        ast.astblock([], [
+                            ast.astcall(ast.astidentifier("print", false),
+                                [ast.aststring("Pattern match failed.")])
+                        ])])]
+            }
         }
         minIndentLevel := minInd - 1
         statementIndent := startIndent

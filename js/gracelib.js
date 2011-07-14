@@ -75,6 +75,10 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
+        "match()matchesBinding()else": function(pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", this,
+                    b, e);
+        },
     },
     className: "String"
 };
@@ -155,6 +159,18 @@ GraceNum.prototype = {
         "hashcode": function() {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
+        "match()matchesBinding()else": function(pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", this,
+                    b, e);
+        },
+        "matchObject()matchesBinding()else": function(obj, b, e) {
+            var bl = callmethod(this, "==", obj);
+            if (Grace_isTrue(bl)) {
+                return callmethod(b, "apply", obj);
+            } else {
+                return callmethod(e, "apply", obj);
+            }
+        },
     },
     className: "Number",
 };
@@ -202,6 +218,10 @@ GraceBoolean.prototype = {
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
+        },
+        "match()matchesBinding()else": function(pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", this,
+                    b, e);
         },
     },
     className: "Boolean",
@@ -266,6 +286,10 @@ GraceList.prototype = {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
         },
+        "match()matchesBinding()else": function(pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", this,
+                    b, e);
+        },
         "iterator": function() {
             return new GraceListIterator(this._value);
         }
@@ -322,6 +346,10 @@ function Grace_allocObject() {
                     s += "var " + i + " = " + this.data[i]._value + " ";
                 }
                 return new GraceString(s + "}");
+            },
+            "match()matchesBinding()else": function(pat, b, e) {
+                return callmethod(pat, "matchObject()matchesBinding()else",
+                        this, b, e);
             },
         },
         data: {},

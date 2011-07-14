@@ -214,6 +214,19 @@ int integerfromAny(void *d) {
     free(c);
     return i;
 }
+struct Object *OldObject_match_matchesBinding_else(struct Object *self,
+        int nargs, struct Object **args) {
+    struct Object *pattern = args[0];
+    struct Object *matchblock = args[1];
+    struct Object *elseblock = args[2];
+    struct Object *xargs[3];
+    xargs[0] = self;
+    xargs[1] = matchblock;
+    xargs[2] = elseblock;
+    return callmethod(pattern, "matchObject()matchesBinding()else",
+            3, xargs);
+}
+struct Method *ObjectMethod_match_matchesBinding_else;
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
@@ -221,8 +234,8 @@ struct Object* alloc_obj() {
     x->nummethods = 0;
     x->bdata = NULL;
     x->data = NULL;
-    x->methods = glmalloc(4 * sizeof(struct Method*));
-    x->methodspace = 4;
+    x->methods = glmalloc(5 * sizeof(struct Method*));
+    x->methodspace = 5;
     if (ObjectMethod_asString == NULL) {
         addmethod(x, "asString", &Object_asString);
         ObjectMethod_asString = x->methods[0];
@@ -249,6 +262,14 @@ struct Object* alloc_obj() {
         ObjectMethod_NotEquals = x->methods[3];
     } else {
         x->methods[3] = ObjectMethod_NotEquals;
+        x->nummethods++;
+    }
+    if (ObjectMethod_match_matchesBinding_else == NULL) {
+        addmethod(x, "match()matchesBinding()else",
+                &OldObject_match_matchesBinding_else);
+        ObjectMethod_match_matchesBinding_else = x->methods[4];
+    } else {
+        x->methods[4] = ObjectMethod_match_matchesBinding_else;
         x->nummethods++;
     }
     objectcount++;
@@ -1246,6 +1267,15 @@ struct Object *Float64_hashcode(struct Object *self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
+struct Object *Float64_matchObject_matchesBinding_else(struct Object *self,
+        int nparams, struct Object **args) {
+    struct Object *b = callmethod(self, "==", 1, args);
+    if (istrue(b)) {
+        return callmethod(args[1], "apply", 1, &self);
+    } else {
+        return callmethod(args[2], "apply", 1, &self);
+    }
+}
 struct Object *alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -1290,6 +1320,8 @@ struct Object *alloc_Float64(double num) {
         addmethod(o, "asInteger32", &Float64_asInteger32);
         addmethod(o, "prefix-", &Float64_Negate);
         addmethod(o, "hashcode", &Float64_hashcode);
+        addmethod(o, "matchObject()matchesBinding()else",
+                &Float64_matchObject_matchesBinding_else);
         Float64_Methods = o->methods;
         Float64_NumMethods = o->nummethods;
     } else {
