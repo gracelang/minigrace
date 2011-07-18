@@ -1329,7 +1329,7 @@ Object Float64_asString(Object self, int nparams,
 }
 Object Boolean_asString(Object self, int nparams,
         Object *args, int flags) {
-    int myval = *(int*)self->data;
+    int myval = *(int8_t*)self->data;
     if (myval) {
         return alloc_String("true");
     } else { 
