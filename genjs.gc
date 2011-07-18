@@ -185,7 +185,7 @@ method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var over := compilenode(o.value)
-    var blk := ast.astblock([o.variable], o.body)
+    var blk := o.body
     var blko := compilenode(blk)
     out("  var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
         ++ over ++ ");")
@@ -217,6 +217,10 @@ method compilemethod(o, selfobj) {
         first := false
     }
     out(") \{")
+    if (o.varargs) then {
+        out("  var {varf(o.vararg.value)} = new GraceList(Array.prototype.slice"
+            ++ ".call(arguments, {o.params.size}));")
+    }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
     out("  try \{")

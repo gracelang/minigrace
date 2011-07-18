@@ -291,6 +291,31 @@ struct Object *OldObject_Equals(struct Object* receiver, int nparams,
         struct Object** params) {
     return (struct Object*)alloc_Boolean(receiver == params[0]);
 }
+Object Object_match_matchesBinding_else(Object self,
+        int nargs, Object *args, int flags) {
+    Object pattern = args[0];
+    Object matchblock = args[1];
+    Object elseblock = args[2];
+    Object xargs[3];
+    xargs[0] = self;
+    xargs[1] = matchblock;
+    xargs[2] = elseblock;
+    return callmethod(pattern, "matchObject()matchesBinding()else",
+            3, xargs);
+}
+struct Object *OldObject_match_matchesBinding_else(struct Object *self,
+        int nargs, struct Object **args) {
+    struct Object *pattern = args[0];
+    struct Object *matchblock = args[1];
+    struct Object *elseblock = args[2];
+    struct Object *xargs[3];
+    xargs[0] = self;
+    xargs[1] = matchblock;
+    xargs[2] = elseblock;
+    return callmethod(pattern, "matchObject()matchesBinding()else",
+            3, xargs);
+}
+struct Method *ObjectMethod_match_matchesBinding_else;
 struct Object* alloc_obj() {
     struct Object *x = glmalloc(sizeof(struct Object));
     strcpy(x->type, "Object");
@@ -298,8 +323,8 @@ struct Object* alloc_obj() {
     x->nummethods = 0;
     x->bdata = NULL;
     x->data = NULL;
-    x->methods = glmalloc(4 * sizeof(struct Method*));
-    x->methodspace = 4;
+    x->methods = glmalloc(5 * sizeof(struct Method*));
+    x->methodspace = 5;
     if (ObjectMethod_asString == NULL) {
         addmethod(x, "asString", &Object_asString);
         ObjectMethod_asString = x->methods[0];
@@ -326,6 +351,14 @@ struct Object* alloc_obj() {
         ObjectMethod_NotEquals = x->methods[3];
     } else {
         x->methods[3] = ObjectMethod_NotEquals;
+        x->nummethods++;
+    }
+    if (ObjectMethod_match_matchesBinding_else == NULL) {
+        addmethod(x, "match()matchesBinding()else",
+                &OldObject_match_matchesBinding_else);
+        ObjectMethod_match_matchesBinding_else = x->methods[4];
+    } else {
+        x->methods[4] = ObjectMethod_match_matchesBinding_else;
         x->nummethods++;
     }
     objectcount++;
@@ -772,6 +805,15 @@ Object ConcatString_hashcode(Object self, int nparams,
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     return alloc_Float64(sself->hashcode);
 }
+Object String_matchObject_matchesBinding_else(Object self,
+        int nparams, Object *args, int flags) {
+    Object b = callmethod(self, "==", 1, args);
+    if (istrue(b)) {
+        return callmethod(args[1], "apply", 1, &self);
+    } else {
+        return callmethod(args[2], "apply", 1, &self);
+    }
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
         ConcatString = alloc_class("ConcatString", 14);
@@ -788,6 +830,10 @@ Object alloc_ConcatString(Object left, Object right) {
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &ConcatString_hashcode);
+        add_Method(ConcatString, "matchObject()matchesBinding()else",
+                &String_matchObject_matchesBinding_else);
+        add_Method(ConcatString, "match()matchesBinding()else",
+                &Object_match_matchesBinding_else);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -939,7 +985,7 @@ Object String_hashcode(Object self, int nparams,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 16);
+        String = alloc_class("String", 17);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -955,6 +1001,10 @@ Object alloc_String(const char *data) {
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
         add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
+        add_Method(String, "matchObject()matchesBinding()else",
+                &String_matchObject_matchesBinding_else);
+        add_Method(String, "match()matchesBinding()else",
+                &Object_match_matchesBinding_else);
     }
     Object o = alloc_newobj(sizeof(int) * 3 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
@@ -1263,6 +1313,15 @@ Object Float64_hashcode(Object self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
+Object Float64_matchObject_matchesBinding_else(Object self,
+        int nparams, Object *args, int flags) {
+    Object b = callmethod(self, "==", 1, args);
+    if (istrue(b)) {
+        return callmethod(args[1], "apply", 1, &self);
+    } else {
+        return callmethod(args[2], "apply", 1, &self);
+    }
+}
 Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -1276,7 +1335,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class("Number", 16);
+        Number = alloc_class("Number", 18);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -1293,6 +1352,10 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
+        add_Method(Number, "matchObject()matchesBinding()else",
+                &Float64_matchObject_matchesBinding_else);
+        add_Method(Number, "match()matchesBinding()else",
+                &Object_match_matchesBinding_else);
     }
     Object o = alloc_newobj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
@@ -2043,6 +2106,14 @@ Object alloc_HashMapClassObject() {
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_newobj(0, c);
     return o;
+}
+Object process_varargs(Object *args, int fixed, int nargs) {
+    int i = fixed;
+    Object lst = alloc_List();
+    for (; i<nargs; i++) {
+        callmethod(lst, "push", 1, &args[i]);
+    }
+    return lst;
 }
 int find_gso(const char *name, char *buf) {
     // Try:

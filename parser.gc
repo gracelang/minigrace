@@ -10,6 +10,7 @@ var statementIndent := 0
 var statementToken
 var tokens := 0
 var values := []
+var auto_count := 0
 
 // Global object containing the current token
 var sym := object {
@@ -123,6 +124,10 @@ method pushstring() {
 // false means that this identifier has not been assigned a type (yet).
 method pushidentifier() {
     var o := ast.astidentifier(sym.sym.value, false)
+    if (o.value == "_") then {
+        o.value := "__" ++ auto_count
+        auto_count := auto_count + 1
+    }
     values.push(o)
     next()
 }
@@ -143,36 +148,15 @@ method block() {
         var i := 0
         var toks := tokens
 
-        // TODO Clean this up, it's a hack.
-        // The below scans through thirty tokens searching for either
-        // an arrow or something that cannot currently appear in a
-        // block's parameter list in order to determine how to treat
-        // these tokens.
-        for (0..30) do { i->
-            if (i < (toks.size-1)) then {
-                var t := toks.at((toks.size - i) - 1)
-                if ((t.kind /= "identifier") & (t.kind /= "comma")
-                    & (t.kind /= "arrow") & (t.kind /= "colon")
-                    & found.not) then {
-                    havearrow := false
-                }
-                if (t.kind == "arrow") then {
-                    found := true
-                }
-            }
-        }
-        if (havearrow & accept("identifier")) then {
-            // This block has parameters
-            pushidentifier()
-            ident1 := values.pop()
+        ifConsume({expression()}) then {
             if (accept("comma") | accept("arrow") | accept("colon")) then {
+                // This block has parameters
+                ident1 := values.pop()
                 if (accept("colon")) then {
-                    // Take a type here, and assign it to the AST node's
-                    // type field. In the long run, types will need to be
-                    // handled specially, but treating them as identifiers
-                    // works syntactically for now.
+                    // We allow an expression here for the case of v : T
+                    // patterns, where T may be "Pair(hd, tl)" or similar.
                     next()
-                    pushidentifier()
+                    expression()
                     ident1.type := values.pop()
                 }
                 params.push(ident1)
@@ -192,6 +176,14 @@ method block() {
                     util.syntax_error("block parameter list not terminated ->.")
                 }
                 next()
+            } elseif (accept("bind")) then {
+                var lhs := values.pop
+                next()
+                expression()
+                var rhs := values.pop
+                body.push(ast.astbind(lhs, rhs))
+            } else {
+                body.push(values.pop)
             }
         }
         if (accept("arrow")) then {
@@ -213,9 +205,96 @@ method block() {
         statementIndent := startIndent
         next()
         var o := ast.astblock(params, body)
+        o := rewritematchblock(o)
         values.push(o)
     }
 }
+method rewritematchblock(o) {
+    var params := o.params
+    if (params.size /= 1) then {
+        return o
+    }
+    var body := o.body
+    var inbody := body
+    var pat
+    var tmpp
+    var nparams
+    var newname := ast.astidentifier("__matchvar" ++ auto_count,
+        false)
+    auto_count := auto_count + 1
+    var fst := params[0]
+    if (fst.kind == "call") then {
+        pat := fst
+        tmpp := fst
+        params := [newname]
+        nparams := []
+        for (pat.with) do {p->
+            var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
+            auto_count := auto_count + 1
+            nparams.push(inname)
+            inbody := [ast.astcall(
+                ast.astmember("apply", rewritematchblock(ast.astblock([p],
+                    inbody))), [inname]) ]
+        }
+        pat := pat.value
+        body := [ast.astcall(ast.astmember(
+                    "match()matchesBinding()else",
+                    newname),
+                [pat, ast.astblock(nparams, inbody),
+                ast.astblock([], [
+                    ast.astcall(ast.astidentifier("print", false),
+                        [ast.aststring("Pattern match failed.")])
+                ])])]
+    } elseif (fst.kind /= "identifier") then {
+        auto_count := auto_count + 1
+        pat := fst
+        params := [newname]
+        body := [ast.astcall(ast.astmember(
+                    "match()matchesBinding()else",
+                    newname),
+                [pat, ast.astblock([], inbody),
+                ast.astblock([], [
+                    ast.astcall(ast.astidentifier("print", false),
+                        [ast.aststring("Pattern match failed.")])
+                ])])]
+    } elseif (fst.type /= false) then {
+        pat := fst.type
+        tmpp := fst
+        if (pat.kind == "call") then {
+            nparams := []
+            for (pat.with) do {p->
+                var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
+                auto_count := auto_count + 1
+                nparams.push(inname)
+                inbody := [ast.astcall(
+                    ast.astmember("apply", rewritematchblock(ast.astblock([p],
+                        inbody))), [inname]) ]
+            }
+            pat := pat.value
+            body := [ast.astcall(ast.astmember(
+                        "match()matchesBinding()else",
+                        tmpp),
+                    [pat, ast.astblock(nparams, inbody),
+                    ast.astblock([tmpp], [
+                        ast.astcall(ast.astidentifier("print", false),
+                            [ast.aststring("Pattern match failed.")])
+                    ])])]
+        } else {
+            params := [newname]
+            body := [ast.astcall(ast.astmember(
+                        "match()matchesBinding()else",
+                        newname),
+                    [pat, ast.astblock([tmpp], inbody),
+                    ast.astblock([tmpp], [
+                        ast.astcall(ast.astidentifier("print", false),
+                            [ast.aststring("Pattern match failed.")])
+                    ])])]
+        }
+    }
+    o := ast.astblock(params, body)
+    return o
+}
+
 
 // Accept an "if" statement. This is a special syntactic case, rather
 // than just a call with a multi-part method name - it might be possible
@@ -340,31 +419,13 @@ method dofor() {
             | (sym.sym.value == "do"))) then {
             next()
             expect("lbrace")
-            next()
-            identifier()
-            variable := values.pop()
-            if (accept("colon")) then {
-                next()
-                pushidentifier()
-                variable.type := values.pop()
-            }
-            expect("arrow")
-            next()
-            localMin := minIndentLevel
-            if (sym.sym.line == lastToken.line) then {
-                minIndentLevel := sym.sym.linePos - 1
-            } else {
-                minIndentLevel := minInd
-            }
-            while {(accept("rbrace")).not} do {
-                statement()
-                var v := values.pop()
-                body.push(v)
-            }
-            next()
-            var o := ast.astfor(over, variable, body)
+            block()
+            var blk := values.pop
+            var o := ast.astfor(over, blk)
             values.push(o)
             minIndentLevel := minInd - 1
+        } else {
+            util.syntax_error("expected 'do'")
         }
     }
 }
@@ -404,6 +465,8 @@ method dowhile() {
             values.push(o)
         }
         minIndentLevel := minInd - 1
+    } else {
+        util.syntax_error("expected 'do'")
     }
 }
 
@@ -742,15 +805,17 @@ method callmprest(meth, params, tok) {
             term()
         } else {
             expression()
+            while {accept("comma")} do {
+                nxt := values.pop
+                params.push(nxt)
+                next()
+                expectConsume({expression()})
+            }
         }
         nxt := values.pop()
         params.push(nxt)
-        if ((accept("rparen")).not & isTerm.not) then {
-            // Currently, this rejects calls like:
-            //   a(x) b(y,z) c(w)
-            // That may not be necessary, though future varargs support
-            // could be an issue.
-            util.syntax_error("multi-part method name parameters must be single.")
+        if (isTerm.not) then {
+            expect("rparen")
         }
         if (accept("rparen") & isTerm.not) then {
             ln := lastline
@@ -1008,10 +1073,15 @@ method doclass() {
 // a single line (because they are ended by "{" or "->"). This method
 // returns a replacement method name identifier and modifies params in
 // place.
-method parsempmndecrest(meth, params) {
-    var methname := meth.value
+method parsempmndecrest(tm) {
+    var methname := tm.value.value
+    const params := tm.params
     var nxt
+    var varargs := false
     while {accept("identifier")} do {
+        if (varargs) then {
+            util.syntax_error("varargs parameter must be last.")
+        }
         methname := methname ++ "()"
         pushidentifier()
         nxt := values.pop
@@ -1020,18 +1090,36 @@ method parsempmndecrest(meth, params) {
             util.syntax_error("multi-part method name parameters require ().")
         }
         next()
-        pushidentifier()
-        nxt := values.pop()
-        if (accept("colon")) then {
-            next()
+        while {accept("identifier")
+                | (accept("op") & (sym.sym.value == "*"))} do {
+            if (varargs) then {
+                util.syntax_error("varargs parameter must be last.")
+            }
+            if (accept("op")) then {
+                next()
+                varargs := true
+                expect("identifier")
+            }
             pushidentifier()
-            var tp := values.pop()
-            nxt.type := tp
+            nxt := values.pop()
+            if (accept("colon")) then {
+                next()
+                pushidentifier()
+                var tp := values.pop()
+                nxt.type := tp
+            }
+            if (varargs) then {
+                tm.vararg := nxt
+                tm.varargs := true
+                expect("rparen")
+            } else {
+                params.push(nxt)
+            }
+            if (accept("comma")) then {
+                next()
+            }
         }
-        params.push(nxt)
-        if ((accept("rparen")).not) then {
-            util.syntax_error("multi-part method name parameters must be single.")
-        }
+        expect("rparen")
         next()
     }
     ast.astidentifier(methname, false)
@@ -1054,12 +1142,19 @@ method methoddec() {
         var rparams := []
         var params := []
         var type := false
+        var varargs := false
+        var vararg := false
         if (accept("lparen")) then {
             next()
             var id
-            while {accept("identifier")} do {
+            while {accept("identifier") |
+                    (accept("op") & (sym.sym.value == "*"))} do {
                 // Parse the parameter list, including optional type
                 // annotations.
+                if (accept("op")) then {
+                    next()
+                    varargs := true
+                }
                 pushidentifier()
                 id := values.pop()
                 type := false
@@ -1073,7 +1168,12 @@ method methoddec() {
                     }
                 }
                 id.type := type
-                params.push(id)
+                if (varargs) then {
+                    vararg := id
+                    expect("rparen")
+                } else {
+                    params.push(id)
+                }
                 if (accept("comma")) then {
                     next()
                 } elseif ((accept("rparen")).not) then {
@@ -1085,7 +1185,10 @@ method methoddec() {
             if (accept("identifier")) then {
                 // The presence of an identifier here means
                 // a multi-part method name.
-                meth := parsempmndecrest(meth, params)
+                var tm := ast.astmethod(meth, params, [], false)
+                meth := parsempmndecrest(tm)
+                varargs := tm.varargs
+                vararg := tm.vararg
             }
         }
         if (accept("arrow")) then {
@@ -1133,6 +1236,10 @@ method methoddec() {
                 meth.value)
         }
         var o := ast.astmethod(meth, params, body, type)
+        if (varargs) then {
+            o.varargs := true
+            o.vararg := vararg
+        }
         values.push(o)
     }
 }

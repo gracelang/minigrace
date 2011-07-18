@@ -19,11 +19,10 @@ import util
 // both a value (the condition) and a "body", for example. None of the nodes
 // are particularly notable in any way.
 
-method astfor(over, variable, body) {
+method astfor(over, body) {
     object {
         var kind := "for"
         var value := over
-        var variable := variable
         var body := body
         var register := ""
         var line := util.linenum
@@ -32,13 +31,11 @@ method astfor(over, variable, body) {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := "For(" ++ self.variable.value ++ ")\n"
+            var s := "For\n"
             s := s ++ spc ++ self.value.pretty(depth+1)
             s := s ++ "\n"
-            s := s ++ spc ++ "Each:"
-            for (self.body) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-            }
+            s := s ++ spc ++ "Do:"
+            s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
             s
         }
     }
@@ -123,13 +120,15 @@ method astblock(params, body) {
         }
     }
 }
-method astmethod(name, params, body, type) {
+method astmethod(name', params', body', type') {
     object {
         var kind := "method"
-        var value := name
-        var params := params
-        var body := body
-        var type := type
+        var value := name'
+        var params := params'
+        var body := body'
+        var type := type'
+        var varargs := false
+        var vararg := false
         var selfclosure := false
         var register := ""
         var line := util.linenum
