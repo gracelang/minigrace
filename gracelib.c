@@ -37,6 +37,7 @@ typedef struct NewObject* Object;
 
 typedef struct NewMethod {
     char *name;
+    int32_t flags;
     Object(*func)(Object, int, Object*, int);
 } Method;
 
@@ -64,7 +65,9 @@ Object Float64_asString(Object, int nparams,
 Object alloc_Float64(double);
 Object Float64_Add(Object, int nparams,
         Object*, int flags);
-struct Object *Object_asString(struct Object*, int nparams,
+Object Object_asString(Object, int nparams,
+        Object*, int flags);
+struct Object *OldObject_asString(struct Object *, int,
         struct Object**);
 struct Object *OldObject_concat(struct Object*, int nparams,
         struct Object**);
@@ -326,7 +329,7 @@ struct Object* alloc_obj() {
     x->methods = glmalloc(5 * sizeof(struct Method*));
     x->methodspace = 5;
     if (ObjectMethod_asString == NULL) {
-        addmethod(x, "asString", &Object_asString);
+        addmethod(x, "asString", &OldObject_asString);
         ObjectMethod_asString = x->methods[0];
     } else {
         x->methods[0] = ObjectMethod_asString;
@@ -418,16 +421,27 @@ void addclosuremethod(struct Object *o, char *name,
     m->cfunc = cfunc;
     m->closure = closure;
 }
+void addmethod2(Object o, char *name,
+        Object (*func)(Object, int, Object*, int)) {
+    add_Method(o->class, name, func);
+}
 Object identity_function(Object receiver, int nparams,
         Object* params, int flags) {
     return receiver;
 }
-struct Object *Object_asString(struct Object* receiver, int nparams,
+struct Object *OldObject_asString(struct Object *receiver, int nparams,
         struct Object** params) {
     int i = (int)&receiver;
     char buf[40];
     sprintf(buf, "%s[0x%x]", receiver->type, i);
     return (struct Object *)alloc_String(buf);
+}
+Object Object_asString(Object receiver, int nparams,
+        Object* params, int flags) {
+    int i = (int)&receiver;
+    char buf[40];
+    sprintf(buf, "%s[0x%x]", receiver->class->name, i);
+    return alloc_String(buf);
 }
 
 struct Object *OldObject_concat(struct Object* receiver, int nparams,
@@ -1852,6 +1866,7 @@ ClassData alloc_class(const char *name, int nummethods) {
     int i;
     for (i=0; i<nummethods; i++) {
         c->methods[i].name = NULL;
+        c->methods[i].flags = 0;
     }
     return c;
 }
@@ -2106,6 +2121,32 @@ Object alloc_HashMapClassObject() {
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_newobj(0, c);
     return o;
+}
+struct UserClosure {
+    int32_t flags;
+    Object *vars[];
+};
+struct UserObject {
+    int32_t flags;
+    ClassData class;
+    void *data[];
+};
+Object alloc_obj2(int numMethods, int numFields) {
+    ClassData c = alloc_class("Object", numMethods);
+    Object o = alloc_newobj(sizeof(Object) * numFields, c);
+    add_Method(c, "asString", &Object_asString);
+    add_Method(c, "++", &Object_concat);
+    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "/=", &NewObject_NotEquals);
+    return o;
+}
+void adddatum2(Object o, Object datum, int index) {
+    struct UserObject *uo = (struct UserObject*)o;
+    uo->data[index] = datum;
+}
+Object getdatum2(Object o, int index) {
+    struct UserObject *uo = (struct UserObject*)o;
+    return uo->data[index];
 }
 Object process_varargs(Object *args, int fixed, int nargs) {
     int i = fixed;
