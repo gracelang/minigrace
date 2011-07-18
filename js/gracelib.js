@@ -328,7 +328,61 @@ function Grace_allocObject() {
         className: "Object",
     };
 }
-
+var_HashMap = { methods: { new: function() { return new GraceHashMap(); } } };
+function GraceHashMap() {
+    self.table = {};
+}
+GraceHashMap.prototype = Grace_allocObject();
+GraceHashMap.prototype.methods.put = function(k, v) {
+    var hc = callmethod(k, "hashcode");
+    hc = hc._value;
+    while (self.table[hc]) {
+        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
+            break;
+        hc++;
+    }
+    self.table[hc] = {key: k, value: v};
+    return self;
+}
+GraceHashMap.prototype.methods.get = function(k) {
+    var hc = callmethod(k, "hashcode");
+    hc = hc._value;
+    while (self.table[hc]) {
+        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
+            return self.table[hc].value;
+        hc++;
+    }
+    stderr_txt.value += "Key not found in HashMap at line " + lineNumber + ".\n";
+    for (var i=callStack.length; i>0; i--)
+        stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
+    throw "Key not found in HashMap";
+}
+GraceHashMap.prototype.methods.contains = function(k) {
+    var hc = callmethod(k, "hashcode");
+    hc = hc._value;
+    while (self.table[hc]) {
+        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
+            return new GraceBoolean(true);
+        hc++;
+    }
+    return new GraceBoolean(false);
+}
+GraceHashMap.prototype.methods.asString = function() {
+    var s = "[{";
+    var first = true;
+    for (h in self.table) {
+        p = self.table[h];
+        if (first)
+            first = false;
+        else
+            s += ", ";
+        s += callmethod(p.key, "asString")._value;
+        s += ": ";
+        s += callmethod(p.value, "asString")._value;
+    }
+    s += "}]";
+    return new GraceString(s);
+}
 function GraceListIterator(l) {
     this._value = l;
     this._index = 0;

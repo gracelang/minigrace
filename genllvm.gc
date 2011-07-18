@@ -1032,6 +1032,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  %var_argv = call %object** @alloc_var()")
     out("  %tmp_argv = load %object** @argv")
     out("  store %object* %tmp_argv, %object** %var_argv")
+    out("  %var_HashMap = call %object** @alloc_var()")
+    out("  %tmp_hmco = call %object* @alloc_HashMapClassObject()")
+    out("  store %object* %tmp_hmco, %object** %var_HashMap")
     for (values) do { o ->
         compilenode(o)
     }
@@ -1091,6 +1094,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object* @alloc_Octets(i8*, i32)")
     out("declare %object* @alloc_Boolean(i32)")
     out("declare %object* @alloc_Undefined()")
+    out("declare %object* @alloc_HashMapClassObject()")
     out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
     out("declare void @addmethod(%object*, i8*, %object*(%object *, i32, %object**)*)")
     out("declare %object* @gracelib_print(%object*, i32, %object**)")

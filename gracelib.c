@@ -1906,6 +1906,144 @@ Object alloc_Integer32(int i) {
     *d = i;
     return (Object)o;
 }
+ClassData HashMap = NULL;
+Object HashMap_undefined;
+struct HashMapPair {
+    Object key;
+    Object value;
+};
+struct HashMap {
+    int32_t flags;
+    ClassData class;
+    int nelems;
+    int nslots;
+    struct HashMapPair *table;
+};
+int HashMap__findSlot(struct HashMap* h, Object key) {
+    Object ko = callmethod(key, "hashcode", 0, NULL);
+    int hc = integerfromAny(ko);
+    int s = hc % h->nslots;
+    while (h->table[s].key != HashMap_undefined) {
+        if (istrue(callmethod(h->table[s].key, "==", 1, &key)))
+            return s;
+        s = (s + 1) % h->nslots;
+    }
+    return s;
+}
+int HashMap__ensureSize(struct HashMap *h, Object key, int hc) {
+    if (h->nelems > h->nslots / 2) {
+        int oslots = h->nslots;
+        h->nslots *= 2;
+        struct HashMapPair* d = glmalloc(sizeof(struct HashMapPair) *
+                h->nslots);
+        struct HashMapPair *old = h->table;
+        h->table = d;
+        int i;
+        for (i=0; i < h->nslots; i++)
+            h->table[i].key = HashMap_undefined;
+        for (i=0; i < oslots; i++) {
+            struct HashMapPair p = old[i];
+            if (p.key != HashMap_undefined) {
+                int th = integerfromAny(callmethod(p.key, "hashcode", 0, NULL));
+                th %= h->nslots;
+                int os = th;
+                while (h->table[th].key != HashMap_undefined)
+                    th = (th + 1) % h->nslots;
+                h->table[th].key = p.key;
+                h->table[th].value = p.value;
+            }
+        }
+        free(old);
+        hc = integerfromAny(callmethod(key, "hashcode", 0, NULL));
+        hc %= h->nslots;
+        while (h->table[hc].key != HashMap_undefined)
+            hc = (hc + 1) % h->nslots;
+    }
+    return hc;
+}
+Object HashMap_contains(Object self, int nargs, Object *args, int flags) {
+    struct HashMap *h = (struct HashMap*)self;
+    int s = HashMap__findSlot(h, args[0]);
+    Object tk = h->table[s].key;
+    if (tk == HashMap_undefined)
+        return alloc_Boolean(0);
+    return alloc_Boolean(1);
+}
+Object HashMap_get(Object self, int nargs, Object *args, int flags) {
+    struct HashMap *h = (struct HashMap*)self;
+    int s = HashMap__findSlot(h, args[0]);
+    Object tk = h->table[s].key;
+    if (tk == HashMap_undefined)
+        die("key not found in HashMap.");
+    return h->table[s].value;
+}
+Object HashMap_put(Object self, int nargs, Object *args, int flags) {
+    struct HashMap *h = (struct HashMap*)self;
+    int s = HashMap__findSlot(h, args[0]);
+    if (h->table[s].key == HashMap_undefined) {
+        h->nelems++;
+        s = HashMap__ensureSize(h, args[0], s);
+    }
+    h->table[s].key = args[0];
+    h->table[s].value = args[1];
+    return self;
+}
+Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
+    struct HashMap *h = (struct HashMap*)self;
+    int i;
+    Object comma = alloc_String(", ");
+    Object colon = alloc_String(": ");
+    Object str = alloc_String("[{");
+    int first = 1;
+    for (i=0; i<h->nslots; i++) {
+        struct HashMapPair p = h->table[i];
+        if (p.key == HashMap_undefined)
+            continue;
+        if (!first)
+            str = callmethod(str, "++", 1, &comma);
+        first = 0;
+        str = callmethod(str, "++", 1, &p.key);
+        str = callmethod(str, "++", 1, &colon);
+        str = callmethod(str, "++", 1, &p.value);
+    }
+    Object cls = alloc_String("}]");
+    str = callmethod(str, "++", 1, &cls);
+    return str;
+}
+Object alloc_HashMap() {
+    if (HashMap == NULL) {
+        HashMap = alloc_class("HashMap", 6);
+        add_Method(HashMap, "==", &Object_Equals);
+        add_Method(HashMap, "/=", &NewObject_NotEquals);
+        add_Method(HashMap, "contains", &HashMap_contains);
+        add_Method(HashMap, "get", &HashMap_get);
+        add_Method(HashMap, "put", &HashMap_put);
+        add_Method(HashMap, "asString", &HashMap_asString);
+    }
+    Object o = alloc_newobj(sizeof(struct HashMap)
+            + sizeof(struct HashMapPair*), HashMap);
+    struct HashMap *h = (struct HashMap*)o;
+    h->nelems = 0;
+    h->nslots = 8;
+    HashMap_undefined = alloc_Undefined();
+    h->table = glmalloc(sizeof(struct HashMapPair) * 8);
+    int i;
+    for (i=0; i<h->nslots; i++) {
+        h->table[i].key = HashMap_undefined;
+    }
+    return o;
+}
+Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
+    return alloc_HashMap();
+}
+Object alloc_HashMapClassObject() {
+    ClassData c = alloc_class("Class<HashMap>", 4);
+    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "/=", &NewObject_NotEquals);
+    add_Method(c, "new", &HashMapClassObject_new);
+    Object o = alloc_newobj(0, c);
+    return o;
+}
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) .
