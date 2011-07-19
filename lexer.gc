@@ -13,10 +13,12 @@ method hexdecchar(c) {
     var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
                  "9", "a", "b", "c", "d", "e", "f"]
     var ret := 0
-    for (0..15) do {i->
-        if (chars.at(i) == c) then {
+    var i := 0
+    for (chars) do {cr->
+        if (cr == c) then {
             ret := i
         }
+        i := i + 1
     }
     ret
 }
@@ -348,7 +350,8 @@ method lexinput() {
         if (unicode.isControl(ordval) & (ordval /= 10) & (ordval /= 13)) then {
             // Character is a control character other than carriage return or
             // line feed.
-            util.syntax_error("illegal control character in input: #" ++ ordval)
+            util.syntax_error("illegal control character in input: #{ordval}"
+                ++ " on line {lineNumber} character {linePosition}.")
         }
         if (instr | inBackticks) then {
 

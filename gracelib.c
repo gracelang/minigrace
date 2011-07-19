@@ -546,10 +546,15 @@ Object List_indexAssign(Object self, int nparams,
     Object idx = args[0];
     Object val = args[1];
     int index = integerfromAny(idx);
-    if (index >= sself->size) {
+    if (index > sself->size) {
         die("Error: list index out of bounds: %i/%i",
                 index, sself->size);
     }
+    if (index <= 0) {
+        die("Error: list index out of bounds: %i <= 0",
+                index);
+    }
+    index--;
     sself->items[index] = val;
     return val;
 }
@@ -571,11 +576,15 @@ Object List_index(Object self, int nparams,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     int index = integerfromAny(args[0]);
-    if (index >= sself->size) {
-        fprintf(stderr, "Error: list index out of bounds: %i/%i\n",
+    if (index > sself->size) {
+        die("Error: list index out of bounds: %i/%i\n",
                 index, sself->size);
-        exit(1);
     }
+    if (index <= 0) {
+        die("Error: list index out of bounds: %i <= 0",
+                index);
+    }
+    index--;
     return sself->items[index];
 }
 Object List_iter(Object self, int nparams,
@@ -611,7 +620,7 @@ Object List_indices(Object self, int nparams,
     Object o = alloc_List();
     int i;
     Object f;
-    for (i=0; i<sself->size; i++) {
+    for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
         List_push(o, 1, &f, 0);
     }

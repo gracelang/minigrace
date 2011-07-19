@@ -32,19 +32,22 @@ runOnNew({
 method parseargs() {
     var argv := sys.argv
     if (argv.size > 1) then {
-        var ai := 1
+        var indices := argv.indices
         var arg
-        while {ai < argv.size} do {
+        var skip := true
+        for (indices) do { ai->
             arg := argv.at(ai)
-            if (arg.at(0) == "-") then {
+            if (skip) then {
+                skip := false
+            } elseif (arg.at(0) == "-") then {
                 if (arg == "-o") then {
-                    ai := ai + 1
-                    outfilev := io.open(argv.at(ai), "w")
+                    outfilev := io.open(argv.at(ai + 1), "w")
+                    skip := true
                 } elseif (arg == "--verbose") then {
                     verbosityv := 40
                 } elseif (arg == "--vtag") then {
-                    ai := ai + 1
-                    vtagv := argv.at(ai)
+                    skip := true
+                    vtagv := argv.at(ai + 1)
                 } elseif (arg == "--make") then {
                     runmodev := "make"
                 } elseif (arg == "--run") then {
@@ -55,14 +58,14 @@ method parseargs() {
                 } elseif (arg == "--noexec") then {
                     noexecv := true
                 } elseif (arg == "--module") then {
-                    ai := ai + 1
-                    modnamev := argv.at(ai)
+                    skip := true
+                    modnamev := argv.at(ai + 1)
                 } elseif (arg == "--gracelib") then {
-                    ai := ai + 1
-                    gracelibPathv := argv.at(ai)
+                    skip := true
+                    gracelibPathv := argv.at(ai + 1)
                 } elseif (arg == "--target") then {
-                    ai := ai + 1
-                    targetv := argv.at(ai)
+                    skip := true
+                    targetv := argv.at(ai + 1)
                 } elseif (arg == "--version") then {
                     print("minigrace 0.0.0")
                     print("git revision " ++ buildinfo.gitrevision)
@@ -75,7 +78,7 @@ method parseargs() {
             } else {
                 var filename := arg
                 infilev := io.open(filename, "r")
-                if modnamev == "main" then {
+                if (modnamev == "main") then {
                     modnamev := ""
                     var seendot := false
                     for (filename) do { c->
@@ -91,7 +94,6 @@ method parseargs() {
                     outfilev := io.open(modnamev ++ ".ll", "w")
                 }
             }
-            ai := ai + 1
         }
     }
 }

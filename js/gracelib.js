@@ -252,15 +252,15 @@ GraceList.prototype = {
         "at": function(other) {
             var o = callmethod(other, "asString");
             var idx = parseInt(o._value);
-            return this._value[idx];
+            return this._value[idx-1];
         },
         "[]": function(other) {
             var o = callmethod(other, "asString");
             var idx = parseInt(o._value);
-            return this._value[idx];
+            return this._value[idx-1];
         },
         "[]:=": function(idx, val) {
-            this._value[idx] = val;
+            this._value[idx-1] = val;
         },
         "asString": function() {
             var s = "[";
@@ -303,7 +303,7 @@ GraceList.prototype = {
         },
         "indices": function() {
             var l = [];
-            for (var i=0; i<this._value.length; i++)
+            for (var i=1; i<=this._value.length; i++)
                 l.push(new GraceNum(i));
             return new GraceList(l);
         },
