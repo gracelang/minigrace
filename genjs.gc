@@ -567,18 +567,18 @@ method compilenode(o) {
                 var r := compilenode(prm)
                 args.push(r)
             }
-            out("  var call" ++ auto_count ++ " = Grace_print(" ++ args[0] ++ ");")
+            out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
-            tmp := compilenode(o.with[0])
+            tmp := compilenode(o.with.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
-            tmp := o.with[0]
+            tmp := o.with.first
             tmp := ast.astmember("_escape", tmp)
             tmp := ast.astcall(tmp, [])
             o.register := compilenode(tmp)

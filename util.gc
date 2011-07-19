@@ -35,11 +35,11 @@ method parseargs() {
         var ai := 1
         var arg
         while {ai < argv.size} do {
-            arg := argv[ai]
+            arg := argv.at(ai)
             if (arg.at(0) == "-") then {
                 if (arg == "-o") then {
                     ai := ai + 1
-                    outfilev := io.open(argv[ai], "w")
+                    outfilev := io.open(argv.at(ai), "w")
                 } elseif (arg == "--verbose") then {
                     verbosityv := 40
                 } elseif (arg == "--vtag") then {
@@ -56,13 +56,13 @@ method parseargs() {
                     noexecv := true
                 } elseif (arg == "--module") then {
                     ai := ai + 1
-                    modnamev := argv[ai]
+                    modnamev := argv.at(ai)
                 } elseif (arg == "--gracelib") then {
                     ai := ai + 1
-                    gracelibPathv := argv[ai]
+                    gracelibPathv := argv.at(ai)
                 } elseif (arg == "--target") then {
                     ai := ai + 1
-                    targetv := argv[ai]
+                    targetv := argv.at(ai)
                 } elseif (arg == "--version") then {
                     print("minigrace 0.0.0")
                     print("git revision " ++ buildinfo.gitrevision)
@@ -179,12 +179,13 @@ method engine() {
 method debug(s) {
 
 }
+// TODO FIXINDICES fix this when indices change
 var hexdigits := "0123456789abcdef"
 method hex(num) {
     var s := ""
     while {num > 0} do {
         var i := num % 16
-        s := s ++ hexdigits[i]
+        s := s ++ hexdigits.at(i)
         num := num - i
         num := num / 16
     }

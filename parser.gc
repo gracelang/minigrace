@@ -222,7 +222,7 @@ method rewritematchblock(o) {
     var newname := ast.astidentifier("__matchvar" ++ auto_count,
         false)
     auto_count := auto_count + 1
-    var fst := params[0]
+    var fst := params.first
     if (fst.kind == "call") then {
         pat := fst
         tmpp := fst
@@ -579,7 +579,7 @@ method oprec(o) {
 // Return the precedence of the operator at the top of the "ops" stack.
 method toprec(ops) {
     if (ops.size > 0) then {
-        var o := ops.at(ops.size - 1)
+        var o := ops.last
         return oprec(o)
     }
     0
@@ -954,7 +954,7 @@ method doobject() {
             n := values.pop()
         }
         var body := []
-        for (0..(rbody.size-1)) do { x ->
+        for (rbody.indices) do { x ->
             // Reorder the list
             var p := rbody.pop()
             body.push(p)
@@ -1056,7 +1056,7 @@ method doclass() {
                 n := values.pop()
             }
             var body := []
-            for (0..(rbody.size-1)) do { x ->
+            for (rbody.indices) do { x ->
                 var p := rbody.pop()
                 body.push(p)
             }
@@ -1327,9 +1327,9 @@ method statement() {
 method parse(toks) {
     util.log_verbose("processing tokens.")
     var otoks := toks
-    sym.sym := toks[0]
+    sym.sym := toks.first
     tokens := []
-    for (0..(otoks.size-1)) do { i ->
+    for (otoks.indices) do { i ->
         var o := otoks.pop()
         tokens.push(o)
     }
@@ -1347,6 +1347,7 @@ method parse(toks) {
             var nxtToks := ""
             for (0..5) do {i->
                 if (i < tokens.size) then {
+                    // TODO FIXINDEX fix this when indices change
                     var t := tokens.at(tokens.size - i - 1)
                     nxtToks := nxtToks ++ t.kind ++ ": " ++ t.value ++ ", "
                 }

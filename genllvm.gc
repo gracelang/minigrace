@@ -557,7 +557,6 @@ method compilevardec(o) {
     } else {
         val := "%undefined"
     }
-    //scopes[scopes.size-1].push([nm, val])
     out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
     out("  store %object* " ++ val ++ ", %object** %\"var_"
         ++ nm ++ "\"")
@@ -637,8 +636,8 @@ method compilecall(o) {
         len := length(o.value.value) + 1
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
-        for (0..(args.size-1)) do { i ->
-            out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
+        for (args.indices) do { i ->
+            out("  store %object* {args.at(i)}, %object** %params_{i}")
         }
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
@@ -651,8 +650,8 @@ method compilecall(o) {
         len := length(o.value.value) + 1
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
-        for (0..(args.size-1)) do { i ->
-            out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
+        for (args.indices) do { i ->
+            out("  store %object* {args.at(i)}, %object** %params_{i}")
         }
         out("  %call" ++ auto_count ++ " = call %object* "
             ++ "@callmethod(%object* " ++ obj
@@ -896,8 +895,8 @@ method compilenode(o) {
                 var r := compilenode(prm)
                 args.push(r)
             }
-            for (0..(args.size-1)) do { i ->
-                out("  store %object* " ++ args[i] ++ ", %object** %params_" ++ i)
+            for (args.indices) do { i ->
+                out("  store %object* {args.at(i)}, %object** %params_{i}")
             }
             out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
                   ++ args.size ++ ", %object** %params)")
@@ -910,7 +909,7 @@ method compilenode(o) {
                 out(o.pretty(0))
                 tmp := "null"
             } else {
-                tmp := compilenode(o.with[0])
+                tmp := compilenode(o.with.first)
             }
             out("  %call" ++ auto_count ++ " = call %object* "
                 ++ "@gracelib_length(%object* " ++ tmp ++ ")")
@@ -918,7 +917,7 @@ method compilenode(o) {
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
-            tmp := o.with[0]
+            tmp := o.with.first
             tmp := ast.astmember("_escape", tmp)
             tmp := ast.astcall(tmp, [])
             o.register := compilenode(tmp)
@@ -970,7 +969,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                         ext := ".grace"
                     }
                     if (ext /= false) then {
-                        cmd := argv[0] ++ " --make " ++ nm ++ ext
+                        cmd := argv.first ++ " --make " ++ nm ++ ext
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
