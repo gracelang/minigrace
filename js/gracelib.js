@@ -300,7 +300,19 @@ GraceList.prototype = {
         },
         "iterator": function() {
             return new GraceListIterator(this._value);
-        }
+        },
+        "indices": function() {
+            var l = [];
+            for (var i=0; i<this._value.length; i++)
+                l.push(new GraceNum(i));
+            return new GraceList(l);
+        },
+        "first": function() {
+            return this._value[0];
+        },
+        "last": function() {
+            return this._value[this._value.length-1];
+        },
     },
     className: "List",
 };
