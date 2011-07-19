@@ -67,6 +67,7 @@ Object Float64_Add(Object, int nparams,
         Object*, int flags);
 Object Object_asString(Object, int nparams,
         Object*, int flags);
+Object alloc_List();
 struct Object *OldObject_asString(struct Object *, int,
         struct Object**);
 struct Object *OldObject_concat(struct Object*, int nparams,
@@ -604,12 +605,35 @@ Object List_asString(Object self, int nparams,
     s = callmethod(s, "++", 1, &cb);
     return s;
 }
+Object List_indices(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    Object o = alloc_List();
+    int i;
+    Object f;
+    for (i=0; i<sself->size; i++) {
+        f = alloc_Float64(i);
+        List_push(o, 1, &f, 0);
+    }
+    return o;
+}
+Object List_first(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    return sself->items[0];
+}
+Object List_last(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    return sself->items[sself->size-1];
+}
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class("List", 12);
+        List = alloc_class("List", 16);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
+        add_Method(List, "set", &List_indexAssign);
         add_Method(List, "[]:=", &List_indexAssign);
         add_Method(List, "push", &List_push);
         add_Method(List, "pop", &List_pop);
@@ -619,6 +643,9 @@ Object alloc_List() {
         add_Method(List, "contains", &List_contains);
         add_Method(List, "==", &Object_Equals);
         add_Method(List, "/=", &NewObject_NotEquals);
+        add_Method(List, "indices", &List_indices);
+        add_Method(List, "first", &List_first);
+        add_Method(List, "last", &List_last);
     }
     Object o = alloc_newobj(sizeof(Object*) + sizeof(int) * 2, List);
     struct ListObject *lo = (struct ListObject*)o;
