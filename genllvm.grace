@@ -982,7 +982,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
                 }
                 if (exists.not) then {
                     if (io.exists(nm ++ ".gco")) then {
-                        if (io.newer(nm ++ ".gco", nm ++ ".gc")) then {
+                        if (io.newer(nm ++ ".gco", nm ++ ".grace")) then {
                             exists := true
                             linkfiles.push(nm ++ ".gco")
                             staticmodules.push(nm)
