@@ -486,7 +486,7 @@ function gracecode_io() {
     this.methods.error = function() {
         return this._error;        
     };
-    this._error = stdin;
+    this._error = stderr;
     return this;
 }
 
