@@ -106,6 +106,15 @@ class Binding { kind' ->
     var type := "unknown"
 }
 
+method haveBinding(name) {
+    var ret := false
+    for (scopes) do { sc ->
+        if (sc.contains(name)) then {
+            ret := true
+        }
+    }
+    ret
+}
 method findName(name) {
     var ret := false
     for (scopes) do { sc ->
@@ -129,9 +138,15 @@ method popScope() {
 }
 
 method bindName(name, binding) {
+    if (haveBinding(name)) then {
+        util.warning("name {name} shadows lexically enclosing name")
+    }
     scopes.last.put(name, binding)
 }
 method bindIdentifier(ident) {
+    if (haveBinding(ident.value)) then {
+        util.warning("name {ident.value} shadows lexically enclosing name")
+    }
     scopes.last.put(ident.value, Binding.new("var"))
 }
 
