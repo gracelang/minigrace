@@ -11,5 +11,5 @@ UnicodeData.txt
 unicodegen.py
 misc
 tests/test.log
-buildinfo.gc
+buildinfo.grace
 js/index.html
