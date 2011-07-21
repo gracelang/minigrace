@@ -1387,6 +1387,24 @@ method statement() {
             expression()
             var val := values.pop()
             var o := ast.astbind(dest, val)
+            if (dest.kind == "identifier") then {
+                var bd := findName(dest.value)
+                if (bd.kind == "def") then {
+                    util.syntax_error("reassignment to constant {dest.value}")
+                } elseif (bd.kind == "method") then {
+                    util.syntax_error("assignment to method call {dest.value}")
+                } elseif (bd.kind == "undef") then {
+                    util.syntax_error("assignment before declaration of "
+                        ++ dest.value)
+                }
+                if (bd.kind /= "var") then {
+                    io.error.write("Warning: assigned to "
+                        ++ "non-var {dest.value} ({bd.kind}) "
+                        ++ "on line {util.linenum}\n")
+                }
+            } elseif (dest.kind == "call") then {
+                util.syntax_error("assignment to method call")
+            }
             values.push(o)
         }
     }
