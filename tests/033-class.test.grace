@@ -1,5 +1,5 @@
 class Cat { namex : String ->
- const name : String := namex
+ def name : String = namex
  method purr() {print("Purr") }
  method mew() {print("Meow") }
 }

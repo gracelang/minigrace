@@ -1,4 +1,4 @@
 var x := object {
-    const c := "Hello"
+    def c = "Hello"
 }
 print(x.c)

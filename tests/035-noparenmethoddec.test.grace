@@ -1,4 +1,4 @@
-const a := object {
+def a = object {
  method succeeded { return true }
 }
 if (a.succeeded) then {

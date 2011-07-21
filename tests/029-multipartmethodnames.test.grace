@@ -3,7 +3,7 @@ method foo(a)bar(b) {
 }
 foo(3)bar(5)
 
-const a := object {
+def a = object {
     var value := 4
     method valueBetween (lower) and (upper) {
         (self.value >= lower) & (self.value <= upper)
