@@ -21,6 +21,7 @@ git archive --prefix=tmp-$$/ --remote=.. $COMMIT | tar xf - -X EXCLUDE
 cd tmp-$$
 ln -s .. known-good
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
+cp buildinfo.gc buildinfo.grace
 $MAKE l2/minigrace
 cd ..
 
