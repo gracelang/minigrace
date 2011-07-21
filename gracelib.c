@@ -17,12 +17,6 @@ Object Float64_Add(Object, int nparams,
         Object*, int flags);
 Object Object_asString(Object, int nparams,
         Object*, int flags);
-struct Object *OldObject_asString(struct Object *, int,
-        struct Object**);
-struct Object *OldObject_concat(struct Object*, int nparams,
-        struct Object**);
-struct Object *Object_NotEquals(struct Object*, int,
-        struct Object**);
 Object Object_Equals(Object, int,
         Object*, int flags);
 Object NewObject_NotEquals(Object, int,
@@ -52,22 +46,6 @@ Object FLOAT64_TWO = NULL;
 #define FLOAT64_INTERN_SIZE FLOAT64_INTERN_MAX-FLOAT64_INTERN_MIN
 
 Object Float64_Interned[FLOAT64_INTERN_SIZE];
-
-struct Method **Float64_Methods = NULL;
-int Float64_NumMethods = 0;
-struct Method **String_Methods = NULL;
-int String_NumMethods = 0;
-struct Method **List_Methods = NULL;
-int List_NumMethods = 0;
-struct Method **Octets_Methods = NULL;
-int Octets_NumMethods;
-struct Method** ConcatString_methods = NULL;
-int ConcatString_nummethods = 0;
-
-struct Method *ObjectMethod_asString = NULL;
-struct Method *ObjectMethod_concat = NULL;
-struct Method *ObjectMethod_Equals = NULL;
-struct Method *ObjectMethod_NotEquals = NULL;
 
 ClassData Number;
 ClassData Boolean;
@@ -180,13 +158,8 @@ void initprofiling() {
 int istrue(Object o) {
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
-int isclass(void *v, const char *class) {
-    struct Object *o = v;
-    Object p = v;
-    if (o->flags & 1) {
-        return (strcmp(p->class->name, class) == 0);
-    }
-    return (strcmp(o->type, class) == 0);
+int isclass(Object o, const char *class) {
+    return (strcmp(o->class->name, class) == 0);
 }
 char *cstringfromString(Object s) {
     struct StringObject* so = (struct StringObject*)s;
@@ -216,10 +189,6 @@ int integerfromAny(Object p) {
     free(c);
     return i;
 }
-struct Object *OldObject_Equals(struct Object* receiver, int nparams,
-        struct Object** params) {
-    return (struct Object*)alloc_Boolean(receiver == params[0]);
-}
 Object Object_match_matchesBinding_else(Object self,
         int nargs, Object *args, int flags) {
     Object pattern = args[0];
@@ -232,121 +201,7 @@ Object Object_match_matchesBinding_else(Object self,
     return callmethod(pattern, "matchObject()matchesBinding()else",
             3, xargs);
 }
-struct Object *OldObject_match_matchesBinding_else(struct Object *self,
-        int nargs, struct Object **args) {
-    struct Object *pattern = args[0];
-    struct Object *matchblock = args[1];
-    struct Object *elseblock = args[2];
-    struct Object *xargs[3];
-    xargs[0] = self;
-    xargs[1] = matchblock;
-    xargs[2] = elseblock;
-    return callmethod(pattern, "matchObject()matchesBinding()else",
-            3, xargs);
-}
-struct Method *ObjectMethod_match_matchesBinding_else;
-struct Object* alloc_obj() {
-    struct Object *x = glmalloc(sizeof(struct Object));
-    strcpy(x->type, "Object");
-    x->flags = 0;
-    x->nummethods = 0;
-    x->bdata = NULL;
-    x->data = NULL;
-    x->methods = glmalloc(5 * sizeof(struct Method*));
-    x->methodspace = 5;
-    if (ObjectMethod_asString == NULL) {
-        addmethod(x, "asString", &OldObject_asString);
-        ObjectMethod_asString = x->methods[0];
-    } else {
-        x->methods[0] = ObjectMethod_asString;
-        x->nummethods++;
-    }
-    if (ObjectMethod_concat == NULL) {
-        addmethod(x, "++", &OldObject_concat);
-        ObjectMethod_concat = x->methods[1];
-    } else {
-        x->methods[1] = ObjectMethod_concat;
-        x->nummethods++;
-    }
-    if (ObjectMethod_Equals == NULL) {
-        addmethod(x, "==", &OldObject_Equals);
-        ObjectMethod_Equals = x->methods[2];
-    } else {
-        x->methods[2] = ObjectMethod_Equals;
-        x->nummethods++;
-    }
-    if (ObjectMethod_NotEquals == NULL) {
-        addmethod(x, "/=", &Object_NotEquals);
-        ObjectMethod_NotEquals = x->methods[3];
-    } else {
-        x->methods[3] = ObjectMethod_NotEquals;
-        x->nummethods++;
-    }
-    if (ObjectMethod_match_matchesBinding_else == NULL) {
-        addmethod(x, "match()matchesBinding()else",
-                &OldObject_match_matchesBinding_else);
-        ObjectMethod_match_matchesBinding_else = x->methods[4];
-    } else {
-        x->methods[4] = ObjectMethod_match_matchesBinding_else;
-        x->nummethods++;
-    }
-    objectcount++;
-    return x;
-}
 
-struct Method* alloc_meth(char *name) {
-    struct Method *x = glmalloc(sizeof(struct Method));
-    x->name = glmalloc(strlen(name) + 1);
-    strcpy(x->name, name);
-    x->func = NULL;
-    x->closure = NULL;
-    x->cfunc = NULL;
-    return x;
-}
-
-void addmethod(struct Object *o, char *name,
-        struct Object* (*func)(struct Object*, int, struct Object**)) {
-    int i;
-    struct Method **meths;
-    if (o->nummethods == o->methodspace) {
-        meths = glmalloc(o->methodspace * 2
-                    * sizeof(struct Method*));
-        for (i=0; i<o->nummethods; i++)
-            meths[i] = o->methods[i];
-        struct Method **oldmeths = o->methods;
-        o->methods = meths;
-        free(oldmeths);
-        o->methodspace *= 2;
-    } else {
-        meths = o->methods;
-    }
-    struct Method *meth = alloc_meth(name);
-    meth->func = func;
-    for (i=0; i<o->nummethods; i++) {
-        struct Method *m = meths[i];
-        if (strcmp(m->name, meth->name) == 0) {
-            meths[i] = meth;
-            meth = m;
-        }
-    }
-    meths[o->nummethods] = meth;
-    o->nummethods++;
-}
-void addclosuremethod(struct Object *o, char *name,
-        struct Object* (*cfunc)(struct Object*, int, struct Object**,
-            struct Object***), struct Object ***closure) {
-    addmethod(o, name, NULL);
-    int i;
-    struct Method *m;
-    for (i=0; i<o->nummethods; i++) {
-        m = o->methods[i];
-        if (strcmp(m->name, name) == 0) {
-            break;
-        }
-    }
-    m->cfunc = cfunc;
-    m->closure = closure;
-}
 void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     add_Method(o->class, name, func);
@@ -354,13 +209,6 @@ void addmethod2(Object o, char *name,
 Object identity_function(Object receiver, int nparams,
         Object* params, int flags) {
     return receiver;
-}
-struct Object *OldObject_asString(struct Object *receiver, int nparams,
-        struct Object** params) {
-    int i = (int)&receiver;
-    char buf[40];
-    sprintf(buf, "%s[0x%x]", receiver->type, i);
-    return (struct Object *)alloc_String(buf);
 }
 Object Object_asString(Object receiver, int nparams,
         Object* params, int flags) {
@@ -370,20 +218,10 @@ Object Object_asString(Object receiver, int nparams,
     return alloc_String(buf);
 }
 
-struct Object *OldObject_concat(struct Object* receiver, int nparams,
-        struct Object** params) {
-    struct Object *a = callmethod(receiver, "asString", 0, NULL);
-    return callmethod(a, "++", nparams, params);
-}
 Object Object_concat(Object receiver, int nparams,
         Object* params, int flags) {
     Object a = callmethod(receiver, "asString", 0, NULL);
     return callmethod(a, "++", nparams, params);
-}
-struct Object *Object_NotEquals(struct Object* receiver, int nparams,
-        struct Object** params) {
-    struct Object* b = callmethod(receiver, "==", nparams, params);
-    return callmethod(b, "not", 0, NULL);
 }
 Object NewObject_NotEquals(Object receiver, int nparams,
         Object* params, int flags) {
@@ -1656,13 +1494,15 @@ Object alloc_Undefined() {
     undefined = o;
     return o;
 }
-void block_return(struct Object *self, struct Object *obj) {
-    jmp_buf *buf = (jmp_buf*)self->bdata;
-    return_value = (Object)obj;
+void block_return(Object self, Object obj) {
+    // TODO FIXME
+    jmp_buf *buf = (jmp_buf*)self;
+    return_value = obj;
     longjmp(*buf, 1);
 }
-void block_savedest(struct Object *self) {
-    self->bdata = (void *)&return_stack[calldepth-1];
+void block_savedest(Object self) {
+    // TODO FIXME
+    //self->bdata = (void *)&return_stack[calldepth-1];
 }
 Object callmethod2(Object self, const char *name,
         int argc, Object *argv) {
@@ -1690,12 +1530,9 @@ Object callmethod2(Object self, const char *name,
             name, self->class->name);
     exit(1);
 }
-void *callmethod(void *receiver, const char *name,
-        int nparams, void *args) {
+Object callmethod(Object receiver, const char *name,
+        int nparams, Object *args) {
     int i;
-    struct Method *m;
-    struct Object *o;
-    struct Object *r = receiver;
     int start_calldepth = calldepth;
     if (strcmp(name, "apply") != 0) {
         if (setjmp(return_stack[calldepth])) {
@@ -1708,35 +1545,7 @@ void *callmethod(void *receiver, const char *name,
         memcpy(return_stack[calldepth], return_stack[calldepth-1],
                 sizeof(return_stack[calldepth]));
     }
-    int ii = r->flags;
-    if (r->flags & 1)
-        return callmethod2(receiver, name, nparams, (Object*)args);
-    for (i=0; i<r->nummethods; i++) {
-        m = r->methods[i];
-        if (strcmp(m->name, name) == 0)
-            break;
-        m = NULL;
-    }
-    sprintf(callstack[calldepth], "%s.%s (%i)", r->type, name,
-            linenumber);
-    calldepth++;
-    if (calldepth == 128) {
-        die("Maximum call stack depth exceeded.");
-    }
-    if (m != NULL) {
-        if (m->closure != NULL) {
-            o = m->cfunc(r, nparams, args, m->closure);
-            calldepth--;
-            return o;
-        } else {
-            o = m->func(r, nparams, args);
-            calldepth--;
-            return o;
-        }
-    }
-    die("Method lookup error: no %s in %s.",
-            name, r->type);
-    exit(1);
+    return callmethod2(receiver, name, nparams, (Object*)args);
 }
 
 Object gracelib_print(Object receiver, int nparams,
@@ -1756,35 +1565,21 @@ Object gracelib_print(Object receiver, int nparams,
     return alloc_Undefined();
 }
 
-struct Object*** createclosure(int size) {
-    struct Object*** cvb = glmalloc(sizeof(struct Object **)
+Object** createclosure(int size) {
+    Object** cvb = glmalloc(sizeof(Object *)
             * (size + 1));
     int i;
     for (i=0; i<=size; i++)
         cvb[i] = NULL;
     return cvb;
 }
-void addtoclosure(struct Object ***closure, struct Object **op) {
+void addtoclosure(Object **closure, Object *op) {
     int i;
     for (i=0; closure[i] != NULL; i++) {}
     closure[i] = op;
 }
-struct Object **getfromclosure(struct Object ***closure, int idx) {
+Object *getfromclosure(Object **closure, int idx) {
     return closure[idx];
-}
-void adddatum(struct Object *obj, struct Object *datum, int index) {
-    struct Object **newdata = glmalloc((index+2) * sizeof(struct Object*));
-    int i = 0;
-    if (obj->data != NULL) {
-        while (obj->data[i] != NULL) {
-            newdata[i] = obj->data[i];
-            i++;
-        }
-    }
-    newdata[i] = datum;
-    newdata[i+1] = NULL;
-    free(obj->data);
-    obj->data = newdata;
 }
 Object gracelib_readall(Object self, int nparams,
         Object *args) {
@@ -1801,8 +1596,8 @@ Object gracelib_length(Object self) {
         return callmethod(self, "length", 0, NULL);
     }
 }
-struct Object **alloc_var() {
-    return glmalloc(sizeof(struct Object*));
+Object *alloc_var() {
+    return glmalloc(sizeof(Object));
 }
 void add_Method(ClassData c, const char *name,
         Object(*func)(Object, int, Object*, int)) {
@@ -2160,7 +1955,7 @@ int find_gso(const char *name, char *buf) {
     }
     return 0;
 }
-struct Object *dlmodule(const char *name) {
+Object dlmodule(const char *name) {
     int blen = strlen(name) + 13;
     if (getenv("GRACE_MODULE_PATH") != NULL)
         blen += strlen(getenv("GRACE_MODULE_PATH"));
@@ -2174,7 +1969,7 @@ struct Object *dlmodule(const char *name) {
     strcpy(buf, "module_");
     strcat(buf, name);
     strcat(buf, "_init");
-    struct Object *(*init)() = dlsym(handle, buf);
+    Object (*init)() = dlsym(handle, buf);
     return init();
 }
 void gracelib_stats() {
@@ -2200,9 +1995,6 @@ void gracelib_stats() {
 }
 void gracelib_argv(char **argv) {
     ARGV = argv;
-}
-void setdatum(struct Object *o, struct Object**params, int idx) {
-    o->data[idx] = params[0];
 }
 void setline(int l) {
     linenumber = l;

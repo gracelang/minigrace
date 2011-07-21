@@ -1118,7 +1118,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out(c)
     }
     out("; gracelib")
-    out("declare %object* @alloc_obj()")
     out("declare %object* @alloc_obj2(i32, i32)")
     out("declare void @addmethod2(%object*, i8*, %object*(%object*, i32, %object**, i32)*)")
     out("declare void @adddatum2(%object*, %object*, i32)")
@@ -1130,7 +1129,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object* @alloc_Undefined()")
     out("declare %object* @alloc_HashMapClassObject()")
     out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
-    out("declare void @addmethod(%object*, i8*, %object*(%object *, i32, %object**)*)")
     out("declare %object* @gracelib_print(%object*, i32, %object**)")
     out("declare %object* @gracelib_readall(%object*, i32, %object**)")
     out("declare %object* @gracelib_length(%object*)")
