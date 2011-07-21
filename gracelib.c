@@ -10,64 +10,13 @@
 #include <libgen.h>
 #include <setjmp.h>
 
-struct ClosureVarBinding {
-    char *name;
-    struct Object **ptr;
-};
-struct Method {
-    char *name;
-    struct Object* (*func)(struct Object*, int,
-            struct Object**);
-    struct Object*** closure;
-    struct Object* (*cfunc)(struct Object*, int,
-            struct Object**, struct Object ***closure);
-};
-
-struct Object {
-    int32_t flags;
-    char type[32];
-    struct Method **methods;
-    struct Object **data;
-    void **bdata;
-    int nummethods;
-    int methodspace;
-};
-
-typedef struct NewObject* Object;
-
-typedef struct NewMethod {
-    char *name;
-    int32_t flags;
-    Object(*func)(Object, int, Object*, int);
-} Method;
-
-typedef struct ClassData {
-    char *name;
-    Method *methods;
-    int nummethods;
-}* ClassData;
-
-struct NewObject {
-    int32_t flags;
-    ClassData class;
-    char data[];
-};
-
-typedef union EitherObject {
-    Object new;
-    struct Object *old;
-} EitherObject;
-
-void addmethod(struct Object*, char*,
-        struct Object* (*)(struct Object*, int, struct Object**));
+#include "gracelib.h"
 Object Float64_asString(Object, int nparams,
         Object*, int flags);
-Object alloc_Float64(double);
 Object Float64_Add(Object, int nparams,
         Object*, int flags);
 Object Object_asString(Object, int nparams,
         Object*, int flags);
-Object alloc_List();
 struct Object *OldObject_asString(struct Object *, int,
         struct Object**);
 struct Object *OldObject_concat(struct Object*, int nparams,
@@ -78,23 +27,10 @@ Object Object_Equals(Object, int,
         Object*, int flags);
 Object NewObject_NotEquals(Object, int,
         Object*, int);
-Object alloc_String(const char*);
 Object String_concat(Object, int nparams,
         Object*, int flags);
 Object String_index(Object, int nparams,
         Object*, int flags);
-void *callmethod(void *receiver, const char *name,
-        int nparams, void *args);
-Object alloc_Boolean(int val);
-Object alloc_Octets(const char *data, int len);
-Object alloc_ConcatString(Object, Object);
-Object alloc_Undefined();
-
-Object alloc_Integer32(int);
-void add_Method(ClassData, const char *,
-        Object(*func)(Object, int, Object*, int));
-Object alloc_newobj(int, ClassData);
-ClassData alloc_class(const char *, int);
 
 Object String_size(Object , int, Object *, int flags);
 Object String_replace_with(Object , int, Object *, int flags);
@@ -273,20 +209,8 @@ void bufferfromString(Object s, char *c) {
     int z = so->blen;
     ConcatString__FillBuffer(s, c, z);
 }
-int integerfromAny(void *d) {
-    struct Object *o = d;
-    Object p = d;
-    if (0 && o->flags & 1) {
-        if (p->class == Number) {
-            double d = *(double *)p->data;
-            int i = d;
-            return i;
-        }
-        if (strcmp(p->class->name, "Integer32") == 0) {
-            return *(int*)p->data;
-        }
-    }
-    p = callmethod(o, "asString", 0, NULL);
+int integerfromAny(Object p) {
+    p = callmethod(p, "asString", 0, NULL);
     char *c = cstringfromString(p);
     int i = atoi(c);
     free(c);
