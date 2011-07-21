@@ -12,6 +12,8 @@ var tokens := 0
 var values := []
 var auto_count := 0
 
+var scopes := [HashMap.new]
+
 // Global object containing the current token
 var sym := object {
     var sym
@@ -99,6 +101,40 @@ method ifConsume(block)then(tblock) {
     }
 }
 
+class Binding { kind' ->
+    var kind := kind'
+    var type := "unknown"
+}
+
+method findName(name) {
+    var ret := false
+    for (scopes) do { sc ->
+        if (sc.contains(name)) then {
+            ret := sc.get(name)
+        }
+    }
+    if (ret == false) then {
+        ret := Binding.new("undef")
+    }
+    ret
+}
+
+method pushScope() {
+    var scope := HashMap.new
+    scopes.push(scope)
+}
+
+method popScope() {
+    scopes.pop
+}
+
+method bindName(name, binding) {
+    scopes.last.put(name, binding)
+}
+method bindIdentifier(ident) {
+    scopes.last.put(ident.value, Binding.new("var"))
+}
+
 // Push the current token onto the output stack as a number
 method pushnum() {
     var o := ast.astnum(sym.sym.value)
@@ -135,6 +171,7 @@ method pushidentifier() {
 // Accept a block
 method block() {
     if (accept("lbrace")) then {
+        pushScope()
         next()
         var minInd := statementIndent + 1
         var startIndent := statementIndent
@@ -186,6 +223,9 @@ method block() {
                 body.push(values.pop)
             }
         }
+        for (params) do {prm ->
+            bindIdentifier(prm)
+        }
         if (accept("arrow")) then {
             next()
         }
@@ -207,6 +247,7 @@ method block() {
         var o := ast.astblock(params, body)
         o := rewritematchblock(o)
         values.push(o)
+        popScope()
     }
 }
 method rewritematchblock(o) {
@@ -320,6 +361,7 @@ method doif() {
         if (accept("identifier") & (sym.sym.value == "then")) then {
             next()
             if (accept("lbrace")) then {
+                pushScope()
                 next()
                 if (sym.sym.line == lastToken.line) then {
                     minIndentLevel := sym.sym.linePos - 1
@@ -332,6 +374,7 @@ method doif() {
                     body.push(v)
                 }
                 next()
+                popScope()
             }
             var econd
             var eif
@@ -354,6 +397,7 @@ method doif() {
                     util.syntax_error("expected \{.")
                 }
                 next()
+                pushScope()
                 if (sym.sym.line == lastToken.line) then {
                     minIndentLevel := sym.sym.linePos - 1
                 } else {
@@ -364,6 +408,7 @@ method doif() {
                     v := values.pop()
                     ebody.push(v)
                 }
+                popScope()
                 next()
                 newelse := []
                 eif := ast.astif(econd, ebody, newelse)
@@ -377,6 +422,7 @@ method doif() {
             if (accept("identifier") & (sym.sym.value == "else")) then {
                 next()
                 if (accept("lbrace")) then {
+                    pushScope()
                     // Just take all the statements and put them into
                     // curelse.
                     next()
@@ -391,6 +437,7 @@ method doif() {
                         curelse.push(v)
                     }
                     next()
+                    popScope()
                 }
             }
             minIndentLevel := minInd - 1
@@ -455,11 +502,13 @@ method dowhile() {
             } else {
                 minIndentLevel := minInd
             }
+            pushScope()
             while {(accept("rbrace")).not} do {
                 statement()
                 var v := values.pop()
                 body.push(v)
             }
+            popScope()
             next()
             var o := ast.astwhile(cond, body)
             values.push(o)
@@ -710,7 +759,7 @@ method callblockrest() {
 // method calls are left as "member" AST nodes and processed correctly at
 // a later stage.
 method callrest() {
-    var meth
+    var meth := values.pop
     var methn
     var tmp
     var ln := false
@@ -721,7 +770,6 @@ method callrest() {
     if (accept("lparen")) then {
         tok := sym.sym
         hadcall := true
-        meth := values.pop()
         methn := meth.value
         next()
         ifConsume({expression()}) then {
@@ -743,12 +791,13 @@ method callrest() {
                                    | (sym.sym.value == "false")))) then {
         tok := sym.sym
         hadcall := true
-        meth := values.pop()
         methn := meth.value
         ln := linenum
         term()
         var ar := values.pop
         params.push(ar)
+    } else {
+        values.push(meth)
     }
     if (hadcall) then {
         if (accept("identifier")onLineOfLastOr(tok)) then {
@@ -847,6 +896,7 @@ method constdec() {
         } else {
             util.syntax_error("const declaration requires value")
         }
+        bindName(name.value, Binding.new("def"))
         var o := ast.astconstdec(name, val, type)
         values.push(o)
     }
@@ -860,6 +910,7 @@ method vardec() {
         var val := false
         var type := false
         var name := values.pop()
+        bindIdentifier(name)
         if (accept("colon")) then {
             next()
             identifier()
@@ -935,6 +986,7 @@ method doobject() {
         })
         next()
         var sz := values.size()
+        pushScope()
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
             // const declarations, and method declarations. If anything
@@ -948,6 +1000,7 @@ method doobject() {
             }
             sz := values.size
         }
+        popScope()
         next()
         var rbody := []
         var n := values.pop()
@@ -1039,6 +1092,7 @@ method doclass() {
                 }
             }
             var sz := values.size()
+            pushScope()
             while {(accept("rbrace")).not} do {
                 // Body of the class, the same as the body of an object.
                 vardec()
@@ -1050,6 +1104,7 @@ method doclass() {
                 }
                 sz := values.size
             }
+            popScope()
             next()
             var rbody := []
             var n := values.pop()
@@ -1201,10 +1256,15 @@ method methoddec() {
         } else {
             type := false
         }
+        bindName(meth.value, Binding.new("method"))
         var body := []
         var stok := sym.sym
         var localMin
         if (accept("lbrace")) then {
+            pushScope()
+            for (params) do {prm->
+                bindIdentifier(prm)
+            }
             next()
             localMin := minIndentLevel
             if (sym.sym.line == stok.line) then {
@@ -1233,6 +1293,7 @@ method methoddec() {
                     ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
             }
             minIndentLevel := localMin
+            popScope()
         } else {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
