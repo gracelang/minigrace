@@ -131,6 +131,16 @@ method syntax_error(s) {
     io.error.write("\n")
     sys.exit(1)
 }
+method warning(s) {
+    io.error.write("minigrace")
+    if (vtagv) then {
+        io.error.write("[" ++ vtagv ++ "]")
+    }
+    io.error.write(": warning: " ++ modnamev ++ ": around line "
+        ++ linenumv ++ ", character " ++ lineposv ++ ": ")
+    io.error.write(s)
+    io.error.write("\n")
+}
 
 method verbosity() {
     verbosityv
