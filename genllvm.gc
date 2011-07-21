@@ -50,13 +50,13 @@ method compilearray(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var r
-    out("  %array" ++ myc ++ " = call %object* @alloc_List()")
+    out("  %array" ++ myc ++ " = call %object @alloc_List()")
     for (o.value) do {a ->
         r := compilenode(a)
-        out("  store %object* " ++ r ++ ", %object** %params_0")
-        out("  call %object* @callmethod(%object* %array"
+        out("  store %object " ++ r ++ ", %object* %params_0")
+        out("  call %object @callmethod(%object %array"
             ++ myc ++ ", i8* getelementptr([5 x i8]* @.str._push"
-            ++ ",i32 0,i32 0), i32 1, %object** %params)")
+            ++ ",i32 0,i32 0), i32 1, %object* %params)")
     }
     o.register := "%array" ++ myc
 }
@@ -81,22 +81,22 @@ method compileobjconstdec(o, selfr, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT CONST DEC " ++ enm)
-    out("  call void @adddatum2(%object* {selfr}, %object* {val}, i32 {pos})")
-    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args, i32 %flags) \{")
-    outprint("  %uo = bitcast %object* %self to %UserObject*")
+    out("  call void @adddatum2(%object {selfr}, %object {val}, i32 {pos})")
+    outprint("define private %object @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object %self, i32 %nparams, "
+        ++ "%object* %args, i32 %flags) \{")
+    outprint("  %uo = bitcast %object %self to %UserObject*")
     outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    outprint("  %fieldpf = getelementptr [0 x %object*]* %fieldpp, i32 0, i32 {pos}")
-    outprint("  %val = load %object** %fieldpf")
-    outprint("  ret %object* %val")
+    outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
+    outprint("  %val = load %object* %fieldpf")
+    outprint("  ret %object %val")
     outprint("\}")
-    out("  call void @addmethod2(%object* " ++ selfr
+    out("  call void @addmethod2(%object " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**, i32)* "
-        ++ "getelementptr(%object* "
-        ++ "(%object*, i32, %object**, i32)* "
+        ++ "%object(%object, i32, %object*, i32)* "
+        ++ "getelementptr(%object "
+        ++ "(%object, i32, %object*, i32)* "
         ++ "@\"reader_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
         ++ "\"))")
@@ -115,22 +115,22 @@ method compileobjvardec(o, selfr, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT VAR DEC " ++ nm)
-    out("  call void @adddatum2(%object* {selfr}, %object* {val}, i32 {pos})")
-    outprint("define private %object* @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args, i32 %flags) \{")
-    outprint("  %uo = bitcast %object* %self to %UserObject*")
+    out("  call void @adddatum2(%object {selfr}, %object {val}, i32 {pos})")
+    outprint("define private %object @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object %self, i32 %nparams, "
+        ++ "%object* %args, i32 %flags) \{")
+    outprint("  %uo = bitcast %object %self to %UserObject*")
     outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    outprint("  %fieldpf = getelementptr [0 x %object*]* %fieldpp, i32 0, i32 {pos}")
-    outprint("  %val = load %object** %fieldpf")
-    outprint("  ret %object* %val")
+    outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
+    outprint("  %val = load %object* %fieldpf")
+    outprint("  ret %object %val")
     outprint("\}")
-    out("  call void @addmethod2(%object* " ++ selfr
+    out("  call void @addmethod2(%object " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**, i32)* "
-        ++ "getelementptr(%object* "
-        ++ "(%object*, i32, %object**, i32)* "
+        ++ "%object(%object, i32, %object*, i32)* "
+        ++ "getelementptr(%object "
+        ++ "(%object, i32, %object*, i32)* "
         ++ "@\"reader_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
         ++ "\"))")
@@ -140,23 +140,23 @@ method compileobjvardec(o, selfr, pos) {
     con := "@.str.methnamew" ++ myc ++ " = private unnamed_addr "
         ++ "constant [" ++ len ++ " x i8] c\"" ++ nmw ++ "\\00\""
     constants.push(con)
-    outprint("define private %object* @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
-        ++ "\"(%object* %self, i32 %nparams, "
-        ++ "%object** %args, i32 %flags) \{")
-    outprint("  %params = getelementptr %object** %args, i32 0")
-    outprint("  %par0 = load %object** %params")
-    outprint("  %uo = bitcast %object* %self to %UserObject*")
+    outprint("define private %object @\"writer_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object %self, i32 %nparams, "
+        ++ "%object* %args, i32 %flags) \{")
+    outprint("  %params = getelementptr %object* %args, i32 0")
+    outprint("  %par0 = load %object* %params")
+    outprint("  %uo = bitcast %object %self to %UserObject*")
     outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    outprint("  %fieldpf = getelementptr [0 x %object*]* %fieldpp, i32 0, i32 {pos}")
-    outprint("  store %object* %par0, %object** %fieldpf")
-    outprint("  ret %object* %par0")
+    outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
+    outprint("  store %object %par0, %object* %fieldpf")
+    outprint("  ret %object %par0")
     outprint("\}")
-    out("  call void @addmethod2(%object* " ++ selfr
+    out("  call void @addmethod2(%object " ++ selfr
         ++ ", i8* getelementptr(["
         ++ len ++ " x i8]* @.str.methnamew" ++ myc ++ ", i32 0, i32 0), "
-        ++ "%object*(%object*, i32, %object**, i32)* "
-        ++ "getelementptr(%object* "
-        ++ "(%object*, i32, %object**, i32)* "
+        ++ "%object(%object, i32, %object*, i32)* "
+        ++ "getelementptr(%object "
+        ++ "(%object, i32, %object*, i32)* "
         ++ "@\"writer_" ++ modname ++ "_" ++ enm
         ++ "_" ++ myc
         ++ "\"))")
@@ -190,7 +190,7 @@ method compileobject(o) {
     if (o.superclass /= false) then {
         selfr := compilenode(o.superclass)
     } else {
-        out("  " ++ selfr ++ " = call %object* @alloc_obj2(i32 {numMethods},"
+        out("  " ++ selfr ++ " = call %object @alloc_obj2(i32 {numMethods},"
             ++ "i32 {numFields})")
     }
     for (o.value) do { e ->
@@ -224,19 +224,19 @@ method compilefor(o) {
     var over := compilenode(o.value)
     var blk := o.body
     var obj := compilenode(blk)
-    out("  store %object* " ++ over ++ ", %object** %params_0")
-    out("  %iter" ++ myc ++ " = call %object* @callmethod(%object* " ++ over
+    out("  store %object " ++ over ++ ", %object* %params_0")
+    out("  %iter" ++ myc ++ " = call %object @callmethod(%object " ++ over
         ++ ", i8* getelementptr([5 x i8]* @.str._iter"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
+        ++ ",i32 0,i32 0), i32 1, %object* %params)")
     
     out("  br label %BeginFor" ++ myc)
     beginblock("BeginFor" ++ myc)
-    out("  %condobj" ++ myc ++ " = call %object* @callmethod(%object* %iter"
+    out("  %condobj" ++ myc ++ " = call %object @callmethod(%object %iter"
         ++ myc
         ++ ", i8* getelementptr([9 x i8]* @.str._havemore"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
+        ++ ",i32 0,i32 0), i32 1, %object* %params)")
     var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* %condobj"
+    out("  " ++ creg ++ "_valp = call i1 @istrue(%object %condobj"
         ++ myc ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     out("br i1 " ++ creg ++ ", label %EndFor" ++ myc
@@ -244,14 +244,14 @@ method compilefor(o) {
     beginblock("ForBody" ++ myc)
     var tret := "null"
     var tblock := "ERROR"
-    out(" %forval" ++ myc ++ " = call %object* @callmethod(%object* %iter"
+    out(" %forval" ++ myc ++ " = call %object @callmethod(%object %iter"
         ++ myc
         ++ ", i8* getelementptr([5 x i8]* @.str._next"
-        ++ ",i32 0,i32 0), i32 0, %object** %params)")
-    out("  store %object* %forval" ++ myc ++ ", %object** %params_0")
-    out("  call %object* @callmethod(%object* " ++ obj
+        ++ ",i32 0,i32 0), i32 0, %object* %params)")
+    out("  store %object %forval" ++ myc ++ ", %object* %params_0")
+    out("  call %object @callmethod(%object " ++ obj
         ++ ", i8* getelementptr([6 x i8]* @.str._apply"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
+        ++ ",i32 0,i32 0), i32 1, %object* %params)")
     tblock := bblock
     out("  br label %BeginFor" ++ myc)
     beginblock("EndFor" ++ myc)
@@ -282,25 +282,25 @@ method compilemethod(o, selfobj, pos) {
     var i := 0
     for (o.params) do { p ->
         var pn := escapestring(p.value)
-        out("  %\"var_" ++ pn ++ "\" = getelementptr %object** %args, "
+        out("  %\"var_" ++ pn ++ "\" = getelementptr %object* %args, "
             ++ "i32 " ++ i)
         declaredvars.push(pn)
         i := i + 1
     }
     if (o.varargs) then {
         var van := escapestring(o.vararg.value)
-        out("  %\"var_init_" ++ van ++ "\" = call %object* @process_varargs("
-            ++ "%object** %args, i32 {i}, i32 %nparams)")
-        out("  %\"var_" ++ van ++ "\" = call %object** @alloc_var()")
-        out("  store %object* %\"var_init_{van}\", %object** %\"var_{van}\"")
+        out("  %\"var_init_" ++ van ++ "\" = call %object @process_varargs("
+            ++ "%object* %args, i32 {i}, i32 %nparams)")
+        out("  %\"var_" ++ van ++ "\" = call %object* @alloc_var()")
+        out("  store %object %\"var_init_{van}\", %object* %\"var_{van}\"")
         declaredvars.push(van)
     }
-    out("  %undefined = load %object** @undefined")
+    out("  %undefined = load %object* @undefined")
     var ret := "%undefined"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
-    out("  ret %object* " ++ ret)
+    out("  ret %object " ++ ret)
     out("\}")
     var body := output
     output := []
@@ -335,40 +335,40 @@ method compilemethod(o, selfobj, pos) {
     outprint(";;;; METHOD DEFINITION: " ++ name)
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
-            out("define private %object* " ++ litname ++ "(%object* %realself, i32 %nparams, "
-                ++ "%object** %args, i32 %flags) \{")
+            out("define private %object " ++ litname ++ "(%object %realself, i32 %nparams, "
+                ++ "%object* %args, i32 %flags) \{")
             beginblock("closureinit")
-            out("  %uo = bitcast %object* %realself to %UserObject*")
+            out("  %uo = bitcast %object %realself to %UserObject*")
         } else {
-            out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-                ++ "%object** %args, i32 %flags) \{")
+            out("define private %object " ++ litname ++ "(%object %self, i32 %nparams, "
+                ++ "%object* %args, i32 %flags) \{")
             beginblock("closureinit")
-            out("  %uo = bitcast %object* %self to %UserObject*")
+            out("  %uo = bitcast %object %self to %UserObject*")
         }
         out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 2")
-        out("  %closurepf = getelementptr [0 x %object*]* %closurepp, i32 0, i32 {pos}")
-        out("  %closurepc = bitcast %object** %closurepf to %object****")
-        out("  %closure = load %object**** %closurepc")
+        out("  %closurepf = getelementptr [0 x %object]* %closurepp, i32 0, i32 {pos}")
+        out("  %closurepc = bitcast %object* %closurepf to %object***")
+        out("  %closure = load %object*** %closurepc")
         out("  br label %entry")
     } else {
-        out("define private %object* " ++ litname ++ "(%object* %self, i32 %nparams, "
-            ++ "%object** %args, i32 %flags) \{")
+        out("define private %object " ++ litname ++ "(%object %self, i32 %nparams, "
+            ++ "%object* %args, i32 %flags) \{")
     }
     beginblock("entry")
-    out("  %params = alloca %object*, i32 " ++ paramsUsed)
+    out("  %params = alloca %object, i32 " ++ paramsUsed)
     for (0..(paramsUsed-1)) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 "
+        out("  %params_" ++ i ++ " = getelementptr %object* %params, i32 "
             ++ i)
     }
     var j := 0
     for (closurevars) do { cv ->
         if (cv == "self") then {
-            out("  %varc_" ++ cv ++ " = getelementptr %object*** %closure, i32 " ++ j)
-            out("  %self2 = load %object*** %varc_" ++ cv)
-            out("  %self = load %object** %self2")
+            out("  %varc_" ++ cv ++ " = getelementptr %object** %closure, i32 " ++ j)
+            out("  %self2 = load %object** %varc_" ++ cv)
+            out("  %self = load %object* %self2")
         } else {
-            out("  %\"varc_" ++ cv ++ "\" = getelementptr %object*** %closure, i32 " ++ j)
-            out("  %\"var_" ++ cv ++ "\" = load %object*** %\"varc_" ++ cv
+            out("  %\"varc_" ++ cv ++ "\" = getelementptr %object** %closure, i32 " ++ j)
+            out("  %\"var_" ++ cv ++ "\" = load %object** %\"varc_" ++ cv
                 ++ "\"")
         }
         j := j + 1
@@ -396,40 +396,40 @@ method compilemethod(o, selfobj, pos) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ name ++ "\\00\""
     constants.push(con)
     if (closurevars.size == 0) then {
-        out("  call void @addmethod2(%object* " ++ selfobj
+        out("  call void @addmethod2(%object " ++ selfobj
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-            ++ "%object*(%object*, i32, %object**, i32)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**, i32)* " ++ litname ++ "))")
+            ++ "%object(%object, i32, %object*, i32)* getelementptr(%object " 
+            ++ "(%object, i32, %object*, i32)* " ++ litname ++ "))")
     } else {
-        //out("  call void @block_savedest(%object* " ++ selfobj ++ ")")
-        out("  %closure" ++ myc ++ " = call %object*** @createclosure(i32 "
+        //out("  call void @block_savedest(%object " ++ selfobj ++ ")")
+        out("  %closure" ++ myc ++ " = call %object** @createclosure(i32 "
             ++ closurevars.size ++ ")")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  %selfpp" ++ auto_count ++ " = "
-                    ++ "call %object** @alloc_var()")
-                out("  store %object* %self, %object** %selfpp" ++ auto_count)
-                out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
-                    ++ "%object** %selfpp" ++ auto_count ++ ")")
+                    ++ "call %object* @alloc_var()")
+                out("  store %object %self, %object* %selfpp" ++ auto_count)
+                out("  call void @addtoclosure(%object** %closure" ++ myc ++ ", "
+                    ++ "%object* %selfpp" ++ auto_count ++ ")")
                 auto_count := auto_count + 1
             } else {
-                out("  call void @addtoclosure(%object*** %closure" ++ myc ++ ", "
-                    ++ "%object** %\"var_" ++ v ++ "\")")
+                out("  call void @addtoclosure(%object** %closure" ++ myc ++ ", "
+                    ++ "%object* %\"var_" ++ v ++ "\")")
             }
         }
         var uo := "uo{myc}"
-        out("  %{uo} = bitcast %object* {selfobj} to %UserObject*")
+        out("  %{uo} = bitcast %object {selfobj} to %UserObject*")
         out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 2")
-        out("  %closurepf{myc} = getelementptr [0 x %object*]* %closurepp{myc}, i32 0, i32 {pos}")
-        out("  %closurepc{myc} = bitcast %object** %closurepf{myc} to %object****")
-        out("  %closurec{myc} = bitcast %object*** %closure{myc} to %object*")
-        out("  store %object* %closurec{myc}, %object** %closurepf{myc}")
-        out("  call void @addmethod2(%object* " ++ selfobj
+        out("  %closurepf{myc} = getelementptr [0 x %object]* %closurepp{myc}, i32 0, i32 {pos}")
+        out("  %closurepc{myc} = bitcast %object* %closurepf{myc} to %object***")
+        out("  %closurec{myc} = bitcast %object** %closure{myc} to %object")
+        out("  store %object %closurec{myc}, %object* %closurepf{myc}")
+        out("  call void @addmethod2(%object " ++ selfobj
             ++ ", i8* getelementptr(["
             ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
-            ++ "%object*(%object*, i32, %object**, i32)* getelementptr(%object* " 
-            ++ "(%object*, i32, %object**, i32)* " ++ litname ++ "))")
+            ++ "%object(%object, i32, %object*, i32)* getelementptr(%object " 
+            ++ "(%object, i32, %object*, i32)* " ++ litname ++ "))")
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
@@ -441,7 +441,7 @@ method compilewhile(o) {
     beginblock("BeginWhile" ++ myc)
     var cond := compilenode(o.value)
     var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
+    out("  " ++ creg ++ "_valp = call i1 @istrue(%object "
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     out("br i1 " ++ creg ++ ", label %EndWhile" ++ myc
@@ -455,7 +455,7 @@ method compilewhile(o) {
     tblock := bblock
     out("  br label %BeginWhile" ++ myc)
     beginblock("EndWhile" ++ myc)
-    //out("  %while" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
+    //out("  %while" ++ myc ++ " = phi %object [ " ++ tret ++ ", "
     //    ++ tblock ++ "], [" ++ cond ++ ", %BeginIf" ++ myc ++ "]")
     o.register := cond // "%while" ++ myc
 }
@@ -466,7 +466,7 @@ method compileif(o) {
     beginblock("BeginIf" ++ myc)
     var cond := compilenode(o.value)
     var creg := "%cond" ++ myc
-    out("  " ++ creg ++ "_valp = call i1 @istrue(%object* "
+    out("  " ++ creg ++ "_valp = call i1 @istrue(%object "
         ++ cond ++ ")")
     out("  " ++ creg ++ " = icmp eq i1 0, " ++ creg ++ "_valp")
     var startblock := bblock
@@ -474,7 +474,7 @@ method compileif(o) {
         out("br i1 " ++ creg ++ ", label %FalseBranch" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     } else {
-        out("  %undefined" ++ myc ++ " = load %object** @undefined")
+        out("  %undefined" ++ myc ++ " = load %object* @undefined")
         out("br i1 " ++ creg ++ ", label %EndIf" ++ myc
             ++ ", label %TrueBranch" ++ myc)
     }
@@ -498,10 +498,10 @@ method compileif(o) {
     }
     beginblock("EndIf" ++ myc)
     if (o.elseblock.size > 0) then {
-        out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
+        out("  %if" ++ myc ++ " = phi %object [ " ++ tret ++ ", "
             ++ tblock ++ "], [" ++ fret ++ ", " ++ fblock ++ "]")
     } else {
-        out("  %if" ++ myc ++ " = phi %object* [ " ++ tret ++ ", "
+        out("  %if" ++ myc ++ " = phi %object [ " ++ tret ++ ", "
             ++ tblock ++ "], [%undefined" ++ myc ++ ", " ++ startblock ++ "]")
     }
     o.register := "%if" ++ myc
@@ -514,17 +514,17 @@ method compileidentifier(o) {
         out("%str___compilerRevision" ++ auto_count
             ++ " = bitcast [41 x i8]* @.str._compilerRevision to i8*")
         out("%\"var_val___compilerRevision" ++ auto_count
-            ++ "\" = call %object* @alloc_String(i8* %str___compilerRevision"
+            ++ "\" = call %object @alloc_String(i8* %str___compilerRevision"
             ++ auto_count ++ ")")
         o.register := "%\"var_val___compilerRevision" ++ auto_count ++ "\""
     } else {
         name := escapestring(name)
         if (modules.contains(name)) then {
             out("  %\"var_val_" ++ name ++ auto_count
-                ++ "\" = load %object** @.module." ++ name)
+                ++ "\" = load %object* @.module." ++ name)
         } else {
             usedvars.push(name)
-            out("  %\"var_val_" ++ name ++ auto_count ++ "\" = load %object** "
+            out("  %\"var_val_" ++ name ++ auto_count ++ "\" = load %object* "
                 ++ "%\"var_" ++ name ++ "\"")
         }
         o.register := "%\"var_val_" ++ name ++ auto_count ++ "\""
@@ -541,7 +541,7 @@ method compilebind(o) {
         val := compilenode(val)
         var nm := escapestring(dest.value)
         usedvars.push(nm)
-        out("  store %object* " ++ val ++ ", %object** %\"var_" ++ nm ++ "\"")
+        out("  store %object " ++ val ++ ", %object* %\"var_" ++ nm ++ "\"")
         o.register := val
     } elseif (dest.kind == "member") then {
         out("; WARNING: non-local assigns not yet fully supported")
@@ -565,8 +565,8 @@ method compileconstdec(o) {
     } else {
         util.syntax_error("const must have value bound.")
     }
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* " ++ val ++ ", %object** %\"var_"
+    out("  %\"var_" ++ nm ++ "\" = call %object* @alloc_var()")
+    out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
     o.register := val
 }
@@ -579,18 +579,18 @@ method compilevardec(o) {
     } else {
         val := "%undefined"
     }
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* " ++ val ++ ", %object** %\"var_"
+    out("  %\"var_" ++ nm ++ "\" = call %object* @alloc_var()")
+    out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
     o.register := val
 }
 method compileindex(o) {
     var of := compilenode(o.value)
     var index := compilenode(o.index)
-    out("  store %object* " ++ index ++ ", %object** %params_0")
-    out("  %idxres" ++ auto_count ++ " = call %object* @callmethod(%object* "
+    out("  store %object " ++ index ++ ", %object* %params_0")
+    out("  %idxres" ++ auto_count ++ " = call %object @callmethod(%object "
         ++ of ++ ", i8* getelementptr([3 x i8]* @.str._index"
-        ++ ",i32 0,i32 0), i32 1, %object** %params)")
+        ++ ",i32 0,i32 0), i32 1, %object* %params)")
     o.register := "%idxres" ++ auto_count
     auto_count := auto_count + 1
 }
@@ -618,10 +618,10 @@ method compileop(o) {
             rnm := "modulus"
             opnm := "percent"
         }
-        out("  store %object* " ++ right ++ ", %object** %params_0")
-        out("  %" ++ rnm ++ auto_count ++ " = call %object* @callmethod(%object* "
+        out("  store %object " ++ right ++ ", %object* %params_0")
+        out("  %" ++ rnm ++ auto_count ++ " = call %object @callmethod(%object "
             ++ left ++ ", i8* getelementptr([2 x i8]* @.str._" ++ opnm
-            ++ ",i32 0,i32 0), i32 1, %object** %params)")
+            ++ ",i32 0,i32 0), i32 1, %object* %params)")
         o.register := "%" ++ rnm ++ auto_count
         auto_count := auto_count + 1
     } else {
@@ -629,11 +629,11 @@ method compileop(o) {
         var evl := escapestring(o.value)
         var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
-        out("  store %object* " ++ right ++ ", %object** %params_0")
-        out("  %opresult" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ left
+        out("  store %object " ++ right ++ ", %object* %params_0")
+        out("  %opresult" ++ auto_count ++ " = call %object "
+            ++ "@callmethod(%object " ++ left
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
-            ++ constants.size ++ ",i32 0,i32 0), i32 1, %object** %params)")
+            ++ constants.size ++ ",i32 0,i32 0), i32 1, %object* %params)")
         constants.push(con)
         o.register := "%opresult" ++ auto_count
         auto_count := auto_count + 1
@@ -660,14 +660,14 @@ method compilecall(o) {
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         for (args) do { arg ->
-            out("  store %object* {arg}, %object** %params_{i}")
+            out("  store %object {arg}, %object* %params_{i}")
             i := i + 1
         }
-        out("  %call" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ obj
+        out("  %call" ++ auto_count ++ " = call %object "
+            ++ "@callmethod(%object " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
             ++ constants.size ++ ",i32 0,i32 0), i32 "
-            ++ args.size ++ ", %object** %params)")
+            ++ args.size ++ ", %object* %params)")
         constants.push(con)
     } else {
         obj := "%self"
@@ -675,14 +675,14 @@ method compilecall(o) {
         con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         for (args) do { arg ->
-            out("  store %object* {arg}, %object** %params_{i}")
+            out("  store %object {arg}, %object* %params_{i}")
             i := i + 1
         }
-        out("  %call" ++ auto_count ++ " = call %object* "
-            ++ "@callmethod(%object* " ++ obj
+        out("  %call" ++ auto_count ++ " = call %object "
+            ++ "@callmethod(%object " ++ obj
             ++ ", i8* getelementptr([" ++ len ++ " x i8]* @.str"
             ++ constants.size ++ ",i32 0,i32 0), i32 "
-            ++ args.size ++ ", %object** %params)")
+            ++ args.size ++ ", %object* %params)")
         constants.push(con)
     }
     o.register := "%call" ++ auto_count
@@ -699,27 +699,27 @@ method compileoctets(o) {
         escval := escval ++ c
         i := i + 1
     }
-    out("  %tmp" ++ auto_count ++ " = load %object** @.octlit"
+    out("  %tmp" ++ auto_count ++ " = load %object* @.octlit"
         ++ auto_count)
-    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
+    out("  %cmp" ++ auto_count ++ " = icmp ne %object %tmp"
         ++ auto_count ++ ", null")
     out("  br i1 %cmp" ++ auto_count ++ ", label %octlit"
         ++ auto_count ++ ".already, label %octlit"
         ++ auto_count ++ ".define")
     beginblock("octlit" ++ auto_count ++ ".already")
-    out("  %alreadyoctets" ++ auto_count ++ " = load %object** @.octlit"
+    out("  %alreadyoctets" ++ auto_count ++ " = load %object* @.octlit"
         ++ auto_count)
     out("  br label %octlit" ++ auto_count ++ ".end")
     beginblock("octlit" ++ auto_count ++ ".define")
     out("  %oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.size ++ ", i32 0, i32 0")
-    out("  %defoctets" ++ auto_count ++ " = call %object* "
+    out("  %defoctets" ++ auto_count ++ " = call %object "
         ++ "@alloc_Octets(i8* "
           ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
-    out("  store %object* %defoctets" ++ auto_count ++ ", %object** "
+    out("  store %object %defoctets" ++ auto_count ++ ", %object* "
         ++ "@.octlit" ++ auto_count)
     out("br label %octlit" ++ auto_count ++ ".end")
     beginblock("octlit" ++ auto_count ++ ".end")
-    out(" %octets" ++ auto_count ++ " = phi %object* [%alreadyoctets"
+    out(" %octets" ++ auto_count ++ " = phi %object [%alreadyoctets"
         ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
         ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
         ++ ".define]")
@@ -727,7 +727,7 @@ method compileoctets(o) {
         ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
     constants.push(con)
     con := ("@.octlit" ++ auto_count
-        ++ " = private global %object* null")
+        ++ " = private global %object null")
     constants.push(con)
     o.register := "%octets" ++ auto_count
     auto_count := auto_count + 1
@@ -738,17 +738,17 @@ method compileimport(o) {
     var nm := escapestring(o.value.value)
     var modg := "@\".module." ++ nm ++ "\""
     var sblock := bblock
-    out("  %tmp" ++ auto_count ++ " = load %object** " ++ modg)
-    out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp" ++ auto_count
+    out("  %tmp" ++ auto_count ++ " = load %object* " ++ modg)
+    out("  %cmp" ++ auto_count ++ " = icmp ne %object %tmp" ++ auto_count
         ++ ", null")
     out("  br i1 %cmp" ++ auto_count ++ ", label %\"import." ++ nm
         ++ ".already\", label %\"import." ++ nm ++ ".define\"")
     beginblock("import." ++ nm ++ ".already")
-    out("  %alreadymod" ++ auto_count ++ " = load %object** " ++ modg)
+    out("  %alreadymod" ++ auto_count ++ " = load %object* " ++ modg)
     out("  br label %\"import." ++ nm ++ ".end\"")
     beginblock("import." ++ nm ++ ".define")
     if (staticmodules.contains(nm)) then {
-        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @module_"
+        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object @module_"
             ++ nm ++ "_init()")
     } else {
         var mn := "@\".str.module." ++ nm ++ "\""
@@ -756,25 +756,25 @@ method compileimport(o) {
         con := mn ++ " = private unnamed_addr constant [" ++ l ++ " x i8] "
             ++ " c\"" ++ escapestring(nm) ++ "\\00\""
         constants.push(con)
-        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object* @dlmodule(i8 *"
+        out("  %\"tmp_mod_" ++ nm ++ "\" = call %object @dlmodule(i8 *"
             ++ " getelementptr([" ++ l ++ " x i8]* " ++ mn ++ ",i32 0,i32 0))")
     }
-    out("  store %object* %\"tmp_mod_" ++ nm
-        ++ "\", %object** @\".module." ++ nm ++ "\"")
-    out("  store %object* %\"tmp_mod_" ++ nm ++ "\", %object** @\".module."
+    out("  store %object %\"tmp_mod_" ++ nm
+        ++ "\", %object* @\".module." ++ nm ++ "\"")
+    out("  store %object %\"tmp_mod_" ++ nm ++ "\", %object* @\".module."
         ++ nm ++ "\"")
     out("  br label %\"import." ++ nm ++ ".end\"")
     beginblock("import." ++ nm ++ ".end")
-    out("  %\"tmp_modv_" ++ nm ++ "\" = phi %object* [%alreadymod"
+    out("  %\"tmp_modv_" ++ nm ++ "\" = phi %object [%alreadymod"
         ++ auto_count ++ ", %\"import." ++ nm ++ ".already\"], "
         ++ "[%\"tmp_mod_" ++ nm ++ "\", %\"import." ++ nm ++ ".define\"]")
-    out("  %\"var_" ++ nm ++ "\" = call %object** @alloc_var()")
-    out("  store %object* %\"tmp_modv_" ++ nm
-        ++ "\", %object** %\"var_" ++ nm ++ "\"")
-    con := "@\".module." ++ nm ++ "\" = weak global %object* null"
+    out("  %\"var_" ++ nm ++ "\" = call %object* @alloc_var()")
+    out("  store %object %\"tmp_modv_" ++ nm
+        ++ "\", %object* %\"var_" ++ nm ++ "\"")
+    con := "@\".module." ++ nm ++ "\" = weak global %object null"
     modules.push(nm)
     constants.push(con)
-    con := "declare %object* @\"module_" ++ nm ++ "_init\"()"
+    con := "declare %object @\"module_" ++ nm ++ "_init\"()"
     constants.push(con)
     auto_count := auto_count + 1
     o.register := "%undefined"
@@ -782,9 +782,9 @@ method compileimport(o) {
 method compilereturn(o) {
     var reg := compilenode(o.value)
     if (inBlock) then {
-        out("  call void @block_return(%object* %realself, %object* " ++ reg ++ ")")
+        out("  call void @block_return(%object %realself, %object " ++ reg ++ ")")
     } else {
-        out("  ret %object* " ++ reg)
+        out("  ret %object " ++ reg)
         beginblock("postret" ++ auto_count)
     }
     o.register := "%undefined"
@@ -800,7 +800,7 @@ method compilenum(o) {
     if (havedot.not) then {
         cnum := cnum ++ ".0"
     }
-    out("  %num" ++ auto_count ++ " = call %object* @alloc_Float64(double "
+    out("  %num" ++ auto_count ++ " = call %object @alloc_Float64(double "
         ++ cnum ++ ")")
     o.register := "%num" ++ auto_count
     auto_count := auto_count + 1
@@ -819,27 +819,27 @@ method compilenode(o) {
         l := length(o.value)
         l := l + 1
         o.value := escapestring(o.value)
-        out("  %tmp" ++ auto_count ++ " = load %object** @.strlit"
+        out("  %tmp" ++ auto_count ++ " = load %object* @.strlit"
             ++ auto_count)
-        out("  %cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
+        out("  %cmp" ++ auto_count ++ " = icmp ne %object %tmp"
             ++ auto_count ++ ", null")
         out("  br i1 %cmp" ++ auto_count ++ ", label %strlit"
             ++ auto_count ++ ".already, label %strlit"
             ++ auto_count ++ ".define")
         beginblock("strlit" ++ auto_count ++ ".already")
-        out("  %alreadystring" ++ auto_count ++ " = load %object** @.strlit"
+        out("  %alreadystring" ++ auto_count ++ " = load %object* @.strlit"
             ++ auto_count)
         out("  br label %strlit" ++ auto_count ++ ".end")
         beginblock("strlit" ++ auto_count ++ ".define")
         out("  %str" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.str" ++ constants.size ++ ", i32 0, i32 0")
-        out("  %defstring" ++ auto_count ++ " = call %object* "
+        out("  %defstring" ++ auto_count ++ " = call %object "
             ++ "@alloc_String(i8* "
               ++ "%str" ++ auto_count ++ ")")
-        out("  store %object* %defstring" ++ auto_count ++ ", %object** "
+        out("  store %object %defstring" ++ auto_count ++ ", %object* "
             ++ "@.strlit" ++ auto_count)
         out("br label %strlit" ++ auto_count ++ ".end")
         beginblock("strlit" ++ auto_count ++ ".end")
-        out(" %string" ++ auto_count ++ " = phi %object* [%alreadystring"
+        out(" %string" ++ auto_count ++ " = phi %object [%alreadystring"
             ++ auto_count ++ ", %strlit" ++ auto_count ++ ".already], "
             ++ "[%defstring" ++ auto_count ++ ", %strlit" ++ auto_count
             ++ ".define]")
@@ -847,7 +847,7 @@ method compilenode(o) {
             ++ "constant [" ++ l ++ " x i8] c\"" ++ o.value ++ "\\00\""
         constants.push(con)
         con := ("@.strlit" ++ auto_count
-            ++ " = private global %object* null")
+            ++ " = private global %object null")
         constants.push(con)
         o.register := "%string" ++ auto_count
         auto_count := auto_count + 1
@@ -870,7 +870,7 @@ method compilenode(o) {
         if (o.value == "true") then {
             val := 1
         }
-        out("  %bool" ++ auto_count ++ " = call %object* "
+        out("  %bool" ++ auto_count ++ " = call %object "
               ++ "@alloc_Boolean(i32 " ++ val ++ ")")
         o.register := "%bool" ++ auto_count
         auto_count := auto_count + 1
@@ -923,11 +923,11 @@ method compilenode(o) {
             }
             var parami := 0
             for (args) do { arg ->
-                out("  store %object* {arg}, %object** %params_{parami}")
+                out("  store %object {arg}, %object* %params_{parami}")
                 parami := parami + 1
             }
-            out("  %call" ++ auto_count ++ " = call %object* @gracelib_print(%object* null, i32 "
-                  ++ args.size ++ ", %object** %params)")
+            out("  %call" ++ auto_count ++ " = call %object @gracelib_print(%object null, i32 "
+                  ++ args.size ++ ", %object* %params)")
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
@@ -939,8 +939,8 @@ method compilenode(o) {
             } else {
                 tmp := compilenode(o.with.first)
             }
-            out("  %call" ++ auto_count ++ " = call %object* "
-                ++ "@gracelib_length(%object* " ++ tmp ++ ")")
+            out("  %call" ++ auto_count ++ " = call %object "
+                ++ "@gracelib_length(%object " ++ tmp ++ ")")
             o.register := "%call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
@@ -1041,23 +1041,22 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
     out("@.str._compilerRevision = private unnamed_addr constant [41 x i8]"
         ++ "c\"" ++ buildinfo.gitrevision ++ "\\00\"")
-    out("@undefined = private global %object* null")
-    out("@argv = private global %object* null")
-    outprint("%method = type \{ i8*, %object*(%object *, i32, %object**)*,")
-    outprint("    %object***, %object*(%object *, i32, %object**,")
-    outprint("        %object***)*\}")
-    outprint("%object = type \{ i32, [32 x i8], %method**, %object**, i8**, i32, i32 \}")
-    outprint("%UserObject = type \{ i32, i8*, [0 x %object*] \}")
-    out("define %object* @module_" ++ modname ++ "_init() \{")
+    out("@undefined = private global %object null")
+    out("@argv = private global %object null")
+    outprint("%Method = type \{i8*,i32,%object(%object,i32,%object*,i32)*\}")
+    outprint("%ClassData = type \{ i8*, %Method*, i32 \}*")
+    outprint("%object = type \{ i32, %ClassData, [0 x i8] \}*")
+    outprint("%UserObject = type \{ i32, i8*, [0 x %object] \}")
+    out("define %object @module_" ++ modname ++ "_init() \{")
     out("entry:")
-    out("  %self = call %object* @alloc_obj2(i32 100, i32 100)")
-    out("  %undefined = load %object** @undefined")
-    out("  %var_argv = call %object** @alloc_var()")
-    out("  %tmp_argv = load %object** @argv")
-    out("  store %object* %tmp_argv, %object** %var_argv")
-    out("  %var_HashMap = call %object** @alloc_var()")
-    out("  %tmp_hmco = call %object* @alloc_HashMapClassObject()")
-    out("  store %object* %tmp_hmco, %object** %var_HashMap")
+    out("  %self = call %object @alloc_obj2(i32 100, i32 100)")
+    out("  %undefined = load %object* @undefined")
+    out("  %var_argv = call %object* @alloc_var()")
+    out("  %tmp_argv = load %object* @argv")
+    out("  store %object %tmp_argv, %object* %var_argv")
+    out("  %var_HashMap = call %object* @alloc_var()")
+    out("  %tmp_hmco = call %object @alloc_HashMapClassObject()")
+    out("  store %object %tmp_hmco, %object* %var_HashMap")
     var tmpo := output
     output := []
     for (values) do { o ->
@@ -1065,25 +1064,25 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     var tmpo2 := output
     output := tmpo
-    out("  %params = alloca %object*, i32 " ++ paramsUsed)
+    out("  %params = alloca %object, i32 " ++ paramsUsed)
     for (0..(paramsUsed-1)) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object** %params, i32 " ++ i)
+        out("  %params_" ++ i ++ " = getelementptr %object* %params, i32 " ++ i)
     }
     for (tmpo2) do { l->
         out(l)
     }
     paramsUsed := 1
-    out("  ret %object* %self")
+    out("  ret %object %self")
     out("}")
     out("define weak i32 @main(i32 %argc, i8** %argv) \{")
     out("entry:")
     out("  call void @initprofiling()")
     out("  call void @gracelib_argv(i8** %argv)")
-    out("  %params = alloca %object*, i32 1")
-    out("  %params_0 = getelementptr %object** %params, i32 0")
-    out("  %undefined = call %object* @alloc_Undefined()")
-    out("  store %object* %undefined, %object** @undefined")
-    out("  %tmp_argv = call %object* @alloc_List()")
+    out("  %params = alloca %object, i32 1")
+    out("  %params_0 = getelementptr %object* %params, i32 0")
+    out("  %undefined = call %object @alloc_Undefined()")
+    out("  store %object %undefined, %object* @undefined")
+    out("  %tmp_argv = call %object @alloc_List()")
     out("  %argv_i = alloca i32")
     out("  store i32 0, i32* %argv_i")
     out("  br label %argv.cond")
@@ -1095,21 +1094,21 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  %argv_iv = load i32* %argv_i")
     out("  %argv_idx = getelementptr i8** %argv, i32 %argv_iv")
     out("  %argv_val = load i8** %argv_idx")
-    out("  %argv_tmp3 = call %object* @alloc_String(i8* %argv_val)")
-    out("  store %object* %argv_tmp3, %object** %params_0")
-    out("  call %object* @callmethod(%object* %tmp_argv, "
+    out("  %argv_tmp3 = call %object @alloc_String(i8* %argv_val)")
+    out("  store %object %argv_tmp3, %object* %params_0")
+    out("  call %object @callmethod(%object %tmp_argv, "
         ++ "i8* getelementptr([5 x i8]* @.str._push"
         ++ ",i32 0,i32 0), "
-        ++ "i32 0, %object** %params)")
+        ++ "i32 0, %object* %params)")
     out("  %argv_inc = add i32 %argv_iv, 1")
     out("  store i32 %argv_inc, i32* %argv_i")
     out("  br label %argv.cond")
     beginblock("argv.end")
-    out("  call void @module_sys_init_argv(%object* %tmp_argv)")
-    out("  %var_argv = call %object** @alloc_var()")
-    out("  store %object* %tmp_argv, %object** %var_argv")
-    out("  store %object* %tmp_argv, %object** @argv")
-    out("  call %object* @module_" ++ modname ++ "_init()")
+    out("  call void @module_sys_init_argv(%object %tmp_argv)")
+    out("  %var_argv = call %object* @alloc_var()")
+    out("  store %object %tmp_argv, %object* %var_argv")
+    out("  store %object %tmp_argv, %object* @argv")
+    out("  call %object @module_" ++ modname ++ "_init()")
     out("  call void @gracelib_stats()")
     out("  ret i32 0")
     out("}")
@@ -1118,35 +1117,35 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out(c)
     }
     out("; gracelib")
-    out("declare %object* @alloc_obj2(i32, i32)")
-    out("declare void @addmethod2(%object*, i8*, %object*(%object*, i32, %object**, i32)*)")
-    out("declare void @adddatum2(%object*, %object*, i32)")
-    out("declare %object* @alloc_List()")
-    out("declare %object* @alloc_Float64(double)")
-    out("declare %object* @alloc_String(i8*)")
-    out("declare %object* @alloc_Octets(i8*, i32)")
-    out("declare %object* @alloc_Boolean(i32)")
-    out("declare %object* @alloc_Undefined()")
-    out("declare %object* @alloc_HashMapClassObject()")
-    out("declare %object* @callmethod(%object*, i8*, i32, %object**)")
-    out("declare %object* @gracelib_print(%object*, i32, %object**)")
-    out("declare %object* @gracelib_readall(%object*, i32, %object**)")
-    out("declare %object* @gracelib_length(%object*)")
-    out("declare %object* @dlmodule(i8*)")
-    out("declare %object** @alloc_var()")
+    out("declare %object @alloc_obj2(i32, i32)")
+    out("declare void @addmethod2(%object, i8*, %object(%object, i32, %object*, i32)*)")
+    out("declare void @adddatum2(%object, %object, i32)")
+    out("declare %object @alloc_List()")
+    out("declare %object @alloc_Float64(double)")
+    out("declare %object @alloc_String(i8*)")
+    out("declare %object @alloc_Octets(i8*, i32)")
+    out("declare %object @alloc_Boolean(i32)")
+    out("declare %object @alloc_Undefined()")
+    out("declare %object @alloc_HashMapClassObject()")
+    out("declare %object @callmethod(%object, i8*, i32, %object*)")
+    out("declare %object @gracelib_print(%object, i32, %object*)")
+    out("declare %object @gracelib_readall(%object, i32, %object*)")
+    out("declare %object @gracelib_length(%object)")
+    out("declare %object @dlmodule(i8*)")
+    out("declare %object* @alloc_var()")
     out("declare void @gracelib_argv(i8**)")
-    out("declare void @module_sys_init_argv(%object*)")
-    out("declare i1 @istrue(%object*)")
+    out("declare void @module_sys_init_argv(%object)")
+    out("declare i1 @istrue(%object)")
     out("declare void @gracelib_stats()")
     out("declare void @initprofiling()")
-    out("declare %object*** @createclosure(i32)")
-    out("declare void @addtoclosure(%object***, %object**)")
-    out("declare void @addclosuremethod(%object*, i8*, %object*(%object*,")
-    out("    i32, %object**, %object***)*, %object***)")
+    out("declare %object** @createclosure(i32)")
+    out("declare void @addtoclosure(%object**, %object*)")
+    out("declare void @addclosuremethod(%object, i8*, %object(%object,")
+    out("    i32, %object*, %object**)*, %object**)")
     out("declare void @setline(i32)")
-    out("declare void @block_return(%object*, %object*)")
-    out("declare void @block_savedest(%object*)")
-    out("declare %object* @process_varargs(%object**, i32, i32)")
+    out("declare void @block_return(%object, %object)")
+    out("declare void @block_savedest(%object)")
+    out("declare %object @process_varargs(%object*, i32, i32)")
     out("; libc functions")
     out("declare i32 @puts(i8*)")
     out("declare i8* @malloc(i32)")
