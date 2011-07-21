@@ -18,7 +18,6 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
-var linkfiles := []
 var bblock := "entry"
 var linenum := 1
 var modules := []
@@ -356,9 +355,9 @@ method compilemethod(o, selfobj, pos) {
     }
     beginblock("entry")
     out("  %params = alloca %object, i32 " ++ paramsUsed)
-    for (0..(paramsUsed-1)) do { i ->
-        out("  %params_" ++ i ++ " = getelementptr %object* %params, i32 "
-            ++ i)
+    for (0..(paramsUsed-1)) do { ii ->
+        out("  %params_" ++ ii ++ " = getelementptr %object* %params, i32 "
+            ++ ii)
     }
     var j := 0
     for (closurevars) do { cv ->

@@ -15,23 +15,21 @@ var auto_count := 0
 var scopes := [HashMap.new]
 
 // Global object containing the current token
-var sym := object {
-    var sym
-}
-var lastToken := sym.sym
+var sym
+var lastToken
 
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
 method next() {
-    lastToken := sym.sym
+    lastToken := sym
     if (tokens.size > 0) then {
         lastline := linenum
-        lastIndent := sym.sym.indent
-        sym.sym := tokens.pop()
-        linenum := sym.sym.line
-        util.setPosition(sym.sym.line, sym.sym.linePos)
+        lastIndent := sym.indent
+        sym := tokens.pop()
+        linenum := sym.line
+        util.setPosition(sym.line, sym.linePos)
     } else {
-        sym.sym := object {
+        sym := object {
             var kind := "eof"
             var line := linenum + 1
             var linePos := 0
@@ -44,45 +42,45 @@ method next() {
 // True if the current token (next to be processed) is a t, where
 // t is "num", "string", "method", etc.
 method accept(t) {
-    sym.sym.kind == t
+    sym.kind == t
 }
 
 // True if the current token is a t, and it is on the same logical
 // line (either because it's on the same physical line, or because
 // it's on an indented continuation line).
 method acceptSameLine(t) {
-    (sym.sym.kind == t) & ((lastline == sym.sym.line) |
-        (sym.sym.indent > lastIndent))
+    (sym.kind == t) & ((lastline == sym.line) |
+        (sym.indent > lastIndent))
 }
 
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOf(other) {
-    (sym.sym.kind == t) & ((other.line == sym.sym.line) |
-        (sym.sym.indent > other.indent))
+    (sym.kind == t) & ((other.line == sym.line) |
+        (sym.indent > other.indent))
 }
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOfLastOr(other) {
-    (sym.sym.kind == t) & (((other.line == sym.sym.line) |
-        (sym.sym.indent > other.indent)) | (lastToken.line == sym.sym.line))
+    (sym.kind == t) & (((other.line == sym.line) |
+        (sym.indent > other.indent)) | (lastToken.line == sym.line))
 }
 // Require a t as the current token; if not, raise a syntax error.
 method expect(t) {
-    if (sym.sym.kind == t) then {
+    if (sym.kind == t) then {
         return true
     }
-    util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
+    util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
 // Require a t OR s as the current token; if not, raise a syntax error.
 method expect(t)or(s) {
-    if (sym.sym.kind == t) then {
+    if (sym.kind == t) then {
         return true
     }
-    if (sym.sym.kind == s) then {
+    if (sym.kind == s) then {
         return true
     }
-    util.syntax_error("expected {t}, got {sym.sym.kind}: {sym.sym.value}")
+    util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
 // Expect block to consume at least one token
 method expectConsume(block) {
@@ -152,21 +150,21 @@ method bindIdentifier(ident) {
 
 // Push the current token onto the output stack as a number
 method pushnum() {
-    var o := ast.astnum(sym.sym.value)
+    var o := ast.astnum(sym.value)
     values.push(o)
     next()
 }
 
 // Push the current token onto the output stack as an octet literal
 method pushoctets() {
-    var o := ast.astoctets(sym.sym.value)
+    var o := ast.astoctets(sym.value)
     values.push(o)
     next()
 }
 
 // Push the current token onto the output stack as a string
 method pushstring() {
-    var o := ast.aststring(sym.sym.value)
+    var o := ast.aststring(sym.value)
     values.push(o)
     next()
 }
@@ -174,7 +172,7 @@ method pushstring() {
 // Push the current token onto the output stack as an identifier.
 // false means that this identifier has not been assigned a type (yet).
 method pushidentifier() {
-    var o := ast.astidentifier(sym.sym.value, false)
+    var o := ast.astidentifier(sym.value, false)
     if (o.value == "_") then {
         o.value := "__" ++ auto_count
         auto_count := auto_count + 1
@@ -191,7 +189,7 @@ method block() {
         var minInd := statementIndent + 1
         var startIndent := statementIndent
         var ident1
-        var s := sym.sym
+        var s := sym
         var tmp
         var params := []
         var body := []
@@ -245,8 +243,8 @@ method block() {
             next()
         }
         var ln := values.size
-        if (sym.sym.line == lastToken.line) then {
-            minIndentLevel := sym.sym.linePos - 1
+        if (sym.line == lastToken.line) then {
+            minIndentLevel := sym.linePos - 1
         } else {
             minIndentLevel := minInd
         }
@@ -356,7 +354,7 @@ method rewritematchblock(o) {
 // than just a call with a multi-part method name - it might be possible
 // to change that and compensate later on.
 method doif() {
-    if (accept("identifier") & (sym.sym.value == "if")) then {
+    if (accept("identifier") & (sym.value == "if")) then {
         next()
         expression()
         var cond := values.pop()
@@ -373,13 +371,13 @@ method doif() {
         var v
         var localMin
         var minInd := statementIndent + 1
-        if (accept("identifier") & (sym.sym.value == "then")) then {
+        if (accept("identifier") & (sym.value == "then")) then {
             next()
             if (accept("lbrace")) then {
                 pushScope()
                 next()
-                if (sym.sym.line == lastToken.line) then {
-                    minIndentLevel := sym.sym.linePos - 1
+                if (sym.line == lastToken.line) then {
+                    minIndentLevel := sym.linePos - 1
                 } else {
                     minIndentLevel := minInd
                 }
@@ -395,15 +393,15 @@ method doif() {
             var eif
             var newelse
             var ebody
-            while {accept("identifier") & (sym.sym.value == "elseif")} do {
+            while {accept("identifier") & (sym.value == "elseif")} do {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
-                statementToken := sym.sym
+                statementToken := sym
                 next()
                 expression()
                 econd := values.pop()
                 if ((accept("identifier") &
-                    (sym.sym.value == "then")).not) then {
+                    (sym.value == "then")).not) then {
                     util.syntax_error("elseif with no then.")
                 }
                 next()
@@ -413,8 +411,8 @@ method doif() {
                 }
                 next()
                 pushScope()
-                if (sym.sym.line == lastToken.line) then {
-                    minIndentLevel := sym.sym.linePos - 1
+                if (sym.line == lastToken.line) then {
+                    minIndentLevel := sym.linePos - 1
                 } else {
                     minIndentLevel := minInd
                 }
@@ -434,15 +432,15 @@ method doif() {
                 // else block.
                 curelse := newelse
             }
-            if (accept("identifier") & (sym.sym.value == "else")) then {
+            if (accept("identifier") & (sym.value == "else")) then {
                 next()
                 if (accept("lbrace")) then {
                     pushScope()
                     // Just take all the statements and put them into
                     // curelse.
                     next()
-                    if (sym.sym.line == lastToken.line) then {
-                        minIndentLevel := sym.sym.linePos - 1
+                    if (sym.line == lastToken.line) then {
+                        minIndentLevel := sym.linePos - 1
                     } else {
                         minIndentLevel := minInd
                     }
@@ -468,7 +466,7 @@ method doif() {
 // Accept a "for" statement. This is also a syntactic special case
 // at the moment. It currently *requires* exactly one parameter.
 method dofor() {
-    if (accept("identifier") & (sym.sym.value == "for")) then {
+    if (accept("identifier") & (sym.value == "for")) then {
         next()
         var over
         expression()
@@ -477,8 +475,8 @@ method dofor() {
         var variable
         var localMin
         var minInd := statementIndent + 1
-        if (accept("identifier") & ((sym.sym.value == "each")
-            | (sym.sym.value == "do"))) then {
+        if (accept("identifier") & ((sym.value == "each")
+            | (sym.value == "do"))) then {
             next()
             expect("lbrace")
             block()
@@ -495,7 +493,7 @@ method dofor() {
 // Accept a "while" statement as a syntactic special case. There is
 // nothing particularly special about it compared to the last two.
 method dowhile() {
-    if (accept("identifier") & (sym.sym.value == "while")) then {
+    if (accept("identifier") & (sym.value == "while")) then {
         var minInd := statementIndent + 1
         next()
         var cond
@@ -508,12 +506,12 @@ method dowhile() {
             }
         }
         var body := []
-        if (accept("identifier") & (sym.sym.value == "do")) then {
+        if (accept("identifier") & (sym.value == "do")) then {
             next()
             expect("lbrace")
             next()
-            if (sym.sym.line == lastToken.line) then {
-                minIndentLevel := sym.sym.linePos - 1
+            if (sym.line == lastToken.line) then {
+                minIndentLevel := sym.linePos - 1
             } else {
                 minIndentLevel := minInd
             }
@@ -538,11 +536,11 @@ method dowhile() {
 // passing them on to the appropriate method above.
 method identifier() {
     if (accept("identifier")) then {
-        if (sym.sym.value == "if") then {
+        if (sym.value == "if") then {
             doif()
-        } elseif (sym.sym.value == "while") then {
+        } elseif (sym.value == "while") then {
             dowhile()
-        } elseif (sym.sym.value == "for") then {
+        } elseif (sym.value == "for") then {
             dofor()
         } else {
             pushidentifier()
@@ -552,7 +550,7 @@ method identifier() {
 
 method prefixop() {
     if (accept("op")) then {
-        var op := sym.sym.value
+        var op := sym.value
         var val
         next()
         if (accept("lparen")) then {
@@ -582,7 +580,7 @@ method term() {
         pushoctets()
     } elseif (accept("identifier")) then {
         identifier()
-    } elseif (accept("keyword") & (sym.sym.value == "object")) then {
+    } elseif (accept("keyword") & (sym.value == "object")) then {
         doobject()
     } elseif (accept("lbrace")) then {
         block()
@@ -668,7 +666,7 @@ method expressionrest() {
         var optype := "" // The single operator being used in this expression
         while {accept("op")onLineOf(statementToken)} do {
             opcount := opcount + 1
-            o := sym.sym.value
+            o := sym.value
             next()
             prec := oprec(o)
             if ((o /= "*") & (o /= "/") & (o /= "+") & (o /= "-")) then {
@@ -744,7 +742,7 @@ method dotrest() {
         var lookuptarget := values.pop()
         next()
         if (accept("identifier")) then {
-            var dro := ast.astmember(sym.sym.value, lookuptarget)
+            var dro := ast.astmember(sym.value, lookuptarget)
             values.push(dro)
             next()
             if (accept("dot")) then {
@@ -783,7 +781,7 @@ method callrest() {
     var tok := lastToken
     var startInd := minIndentLevel
     if (accept("lparen")) then {
-        tok := sym.sym
+        tok := sym
         hadcall := true
         methn := meth.value
         next()
@@ -802,9 +800,9 @@ method callrest() {
         next()
     } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
         | accept("lbrace")onLineOf(tok)
-        | (accept("identifier")onLineOf(tok) & ((sym.sym.value == "true")
-                                   | (sym.sym.value == "false")))) then {
-        tok := sym.sym
+        | (accept("identifier")onLineOf(tok) & ((sym.value == "true")
+                                   | (sym.value == "false")))) then {
+        tok := sym
         hadcall := true
         methn := meth.value
         ln := linenum
@@ -866,8 +864,8 @@ method callmprest(meth, params, tok) {
             | accept("string")onLineOfLastOr(tok)
             | accept("num")onLineOfLastOr(tok)
             | (accept("identifier")onLineOfLastOr(tok)
-                & ((sym.sym.value == "true")
-                    | (sym.sym.value == "false")))) then {
+                & ((sym.value == "true")
+                    | (sym.value == "false")))) then {
             isTerm := true
         } else {
             next()
@@ -900,8 +898,8 @@ method callmprest(meth, params, tok) {
 // Accept a const declaration
 method constdec() {
     if (accept("keyword") & (
-            (sym.sym.value == "const")
-            | (sym.sym.value == "def"))) then {
+            (sym.value == "const")
+            | (sym.value == "def"))) then {
         next()
         pushidentifier()
         var val := false
@@ -912,7 +910,7 @@ method constdec() {
             identifier()
             type := values.pop()
         }
-        if (accept("bind") | (accept("op") & (sym.sym.value == "="))) then {
+        if (accept("bind") | (accept("op") & (sym.value == "="))) then {
             next()
             expression()
             val := values.pop()
@@ -927,7 +925,7 @@ method constdec() {
 
 // Accept a var declaration
 method vardec() {
-    if (accept("keyword") & (sym.sym.value == "var")) then {
+    if (accept("keyword") & (sym.value == "var")) then {
         next()
         pushidentifier()
         var val := false
@@ -975,10 +973,10 @@ method doarray() {
 // Accept an object literal.
 method doobject() {
     // doobject because "object" is a keyword
-    if (accept("keyword") & (sym.sym.value == "object")) then {
+    if (accept("keyword") & (sym.value == "object")) then {
         next()
         var superclass := false
-        if (accept("identifier") & (sym.sym.value == "extends")) then {
+        if (accept("identifier") & (sym.value == "extends")) then {
             next()
             expect("identifier")
             identifier()
@@ -1049,12 +1047,12 @@ method doobject() {
 //     method y(z) { ... }
 //   }
 method doclass() {
-    if (accept("keyword") & (sym.sym.value == "class")) then {
+    if (accept("keyword") & (sym.value == "class")) then {
         next()
         expect("identifier")
         pushidentifier() // A class currently cannot be anonymous
         var superclass := false
-        if (accept("identifier") & (sym.sym.value == "extends")) then {
+        if (accept("identifier") & (sym.value == "extends")) then {
             next()
             expect("identifier")
             identifier()
@@ -1171,7 +1169,7 @@ method parsempmndecrest(tm) {
         }
         next()
         while {accept("identifier")
-                | (accept("op") & (sym.sym.value == "*"))} do {
+                | (accept("op") & (sym.value == "*"))} do {
             if (varargs) then {
                 util.syntax_error("varargs parameter must be last.")
             }
@@ -1207,7 +1205,7 @@ method parsempmndecrest(tm) {
 
 // Accept a method declaration
 method methoddec() {
-    if (accept("keyword") & (sym.sym.value == "method")) then {
+    if (accept("keyword") & (sym.value == "method")) then {
         next()
         expect("identifier")or("op")
         pushidentifier()
@@ -1216,7 +1214,7 @@ method methoddec() {
             next()
             meth.value := meth.value ++ ":="
         } elseif (accept("op") & (meth.value == "prefix")) then {
-            meth.value := meth.value ++ sym.sym.value
+            meth.value := meth.value ++ sym.value
             next()
         }
         var rparams := []
@@ -1228,7 +1226,7 @@ method methoddec() {
             next()
             var id
             while {accept("identifier") |
-                    (accept("op") & (sym.sym.value == "*"))} do {
+                    (accept("op") & (sym.value == "*"))} do {
                 // Parse the parameter list, including optional type
                 // annotations.
                 if (accept("op")) then {
@@ -1281,7 +1279,7 @@ method methoddec() {
         }
         bindName(meth.value, Binding.new("method"))
         var body := []
-        var stok := sym.sym
+        var stok := sym
         var localMin
         if (accept("lbrace")) then {
             pushScope()
@@ -1290,8 +1288,8 @@ method methoddec() {
             }
             next()
             localMin := minIndentLevel
-            if (sym.sym.line == stok.line) then {
-                minIndentLevel := sym.sym.linePos - 1
+            if (sym.line == stok.line) then {
+                minIndentLevel := sym.linePos - 1
             } else {
                 minIndentLevel := stok.indent + 1
             }
@@ -1313,7 +1311,7 @@ method methoddec() {
                 next()
             } else {
                 util.syntax_error("No statement but not end of "
-                    ++ meth.value ++ ". Have " ++ sym.sym.kind ++ ".")
+                    ++ meth.value ++ ". Have " ++ sym.kind ++ ".")
             }
             minIndentLevel := localMin
             popScope()
@@ -1333,7 +1331,7 @@ method methoddec() {
 // Accept an import statement. import takes a single identifier
 // following, as in "import parser".
 method doimport() {
-    if (accept("keyword") & (sym.sym.value == "import")) then {
+    if (accept("keyword") & (sym.value == "import")) then {
         next()
         expect("identifier")
         identifier()
@@ -1346,7 +1344,7 @@ method doimport() {
 // Accept a return statement. return takes a mandatory argument,
 // of the form "return x". x may be any expression.
 method doreturn() {
-    if (accept("keyword") & (sym.sym.value == "return")) then {
+    if (accept("keyword") & (sym.value == "return")) then {
         next()
         expectConsume({expression()})
         var p := values.pop()
@@ -1361,35 +1359,35 @@ method doreturn() {
 // bind AST node out of the expressions on either side (which at this point
 // can be any arbitrary expression).
 method statement() {
-    statementIndent := sym.sym.indent
-    statementToken := sym.sym
-    if ((sym.sym.kind == "rbrace") | (sym.sym.kind == "rparen")
-        | (sym.sym.kind == "rsquare")) then {
+    statementIndent := sym.indent
+    statementToken := sym
+    if ((sym.kind == "rbrace") | (sym.kind == "rparen")
+        | (sym.kind == "rsquare")) then {
         // pass
-    } elseif (sym.sym.indent < minIndentLevel) then {
-        if ((sym.sym.linePos - 1) /= minIndentLevel) then {
+    } elseif (sym.indent < minIndentLevel) then {
+        if ((sym.linePos - 1) /= minIndentLevel) then {
             util.syntax_error("block and indentation inconsistent "
-                ++ "for token " ++ sym.sym.kind ++ ": " ++ sym.sym.value ++ "; "
-                ++ "indentation is " ++ sym.sym.indent ++ ", must be at least "
+                ++ "for token " ++ sym.kind ++ ": " ++ sym.value ++ "; "
+                ++ "indentation is " ++ sym.indent ++ ", must be at least "
                 ++ minIndentLevel)
         }
-    } elseif (sym.sym.indent > minIndentLevel) then {
-        minIndentLevel := sym.sym.indent
+    } elseif (sym.indent > minIndentLevel) then {
+        minIndentLevel := sym.indent
     }
     if (accept("keyword")) then {
-        if (sym.sym.value == "var") then {
+        if (sym.value == "var") then {
             vardec()
-        } elseif (sym.sym.value == "def") then {
+        } elseif (sym.value == "def") then {
             constdec()
-        } elseif (sym.sym.value == "const") then {
+        } elseif (sym.value == "const") then {
             constdec()
-        } elseif (sym.sym.value == "method") then {
+        } elseif (sym.value == "method") then {
             methoddec()
-        } elseif (sym.sym.value == "import") then {
+        } elseif (sym.value == "import") then {
             doimport()
-        } elseif (sym.sym.value == "class") then {
+        } elseif (sym.value == "class") then {
             doclass()
-        } elseif (sym.sym.value == "return") then {
+        } elseif (sym.value == "return") then {
             doreturn()
         } else {
             expression()
@@ -1433,7 +1431,7 @@ method statement() {
 method parse(toks) {
     util.log_verbose("processing tokens.")
     var otoks := toks
-    sym.sym := toks.first
+    sym := toks.first
     tokens := []
     for (otoks.indices) do { i ->
         var o := otoks.pop()
@@ -1467,8 +1465,8 @@ method parse(toks) {
                     lstAST := t.pretty(1) ++ "\n" ++ lstAST
                 }
             }
-            util.syntax_error("No token consumed. Have " ++ sym.sym.kind
-                ++ ": " ++ sym.sym.value ++ ". Recent AST:\n"
+            util.syntax_error("No token consumed. Have " ++ sym.kind
+                ++ ": " ++ sym.value ++ ". Recent AST:\n"
                 ++ lstAST ++ "\nNext tokens: " ++ nxtToks)
         }
         oldlength := tokens.size + 0

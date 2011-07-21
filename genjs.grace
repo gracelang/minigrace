@@ -11,7 +11,6 @@ var constants := []
 var output := []
 var usedvars := []
 var declaredvars := []
-var linkfiles := []
 var bblock := "entry"
 var linenum := 0
 var modules := []
@@ -63,8 +62,8 @@ method compilearray(o) {
         vals.push(r)
     }
     out("  var array" ++ myc ++ " = new GraceList([")
-    for (vals) do {r->
-        out(r ++ ",")
+    for (vals) do {v->
+        out(v ++ ",")
     }
     out("]);\n")
     o.register := "array" ++ myc
@@ -600,7 +599,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     runmode := rm
     buildtype := bt
     gracelibPath := glpath
-    var linkfiles := []
     util.log_verbose("generating ECMAScript code.")
     util.setline(1)
     out("function gracecode_" ++ modname ++ "() \{")
