@@ -174,7 +174,7 @@ method modechange(tokens, mode, accum) {
             if ((accum == "object") | (accum == "method")
                 | (accum == "var") | (accum == "const")
                 | (accum == "import") | (accum == "class")
-                | (accum == "return")) then {
+                | (accum == "return") | (accum == "def")) then {
                 tok := KeywordToken.new(accum)
             }
             tokens.push(tok)

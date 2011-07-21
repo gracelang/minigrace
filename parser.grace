@@ -827,7 +827,9 @@ method callmprest(meth, params, tok) {
 
 // Accept a const declaration
 method constdec() {
-    if (accept("keyword") & (sym.sym.value == "const")) then {
+    if (accept("keyword") & (
+            (sym.sym.value == "const")
+            | (sym.sym.value == "def"))) then {
         next()
         pushidentifier()
         var val := false
@@ -838,7 +840,7 @@ method constdec() {
             identifier()
             type := values.pop()
         }
-        if (accept("bind")) then {
+        if (accept("bind") | (accept("op") & (sym.sym.value == "="))) then {
             next()
             expression()
             val := values.pop()
@@ -1293,6 +1295,8 @@ method statement() {
     if (accept("keyword")) then {
         if (sym.sym.value == "var") then {
             vardec()
+        } elseif (sym.sym.value == "def") then {
+            constdec()
         } elseif (sym.sym.value == "const") then {
             constdec()
         } elseif (sym.sym.value == "method") then {
