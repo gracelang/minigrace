@@ -137,13 +137,16 @@ method popScope() {
 
 method bindName(name, binding) {
     if (haveBinding(name)) then {
-        util.warning("name {name} shadows lexically enclosing name")
+        util.syntax_error("name {name} shadows lexically enclosing name")
     }
     scopes.last.put(name, binding)
 }
 method bindIdentifier(ident) {
+    if (ident.kind == "call") then {
+        util.syntax_error("name shadows method")
+    }
     if (haveBinding(ident.value)) then {
-        util.warning("name {ident.value} shadows lexically enclosing name")
+        util.syntax_error("name {ident.value} shadows lexically enclosing name")
     }
     scopes.last.put(ident.value, Binding.new("var"))
 }
@@ -237,7 +240,13 @@ method block() {
             }
         }
         for (params) do {prm ->
-            bindIdentifier(prm)
+            if (prm.kind == "identifier") then {
+                bindIdentifier(prm)
+            } elseif (prm.kind == "call") then {
+                if (prm.with.size == 0) then {
+                    util.syntax_error("parameter shadows method name")
+                }
+            }
         }
         if (accept("arrow")) then {
             next()
