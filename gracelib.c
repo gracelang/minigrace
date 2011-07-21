@@ -199,6 +199,7 @@ int linenumber = 0;
 int heapsize;
 
 int objectcount = 0;
+int newobjectcount = 0;
 int Strings_allocated = 0;
 
 int start_clocks = 0;
@@ -1891,6 +1892,7 @@ Object alloc_newobj(int additional_size, ClassData class) {
     Object o = glmalloc(sizeof(struct NewObject) + additional_size);
     o->class = class;
     o->flags = 1;
+    newobjectcount++;
     return o;
 }
 ClassData alloc_class(const char *name, int nummethods) {
@@ -2247,7 +2249,9 @@ struct Object *dlmodule(const char *name) {
 void gracelib_stats() {
     if (getenv("GRACE_STATS") == NULL)
         return;
-    fprintf(stderr, "Total objects allocated: %i\n", objectcount);
+    fprintf(stderr, "Old objects allocated: %i\n", objectcount);
+    fprintf(stderr, "New objects allocated: %i\n", newobjectcount);
+    fprintf(stderr, "All objects allocated: %i\n", objectcount+newobjectcount);
     fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
     fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
