@@ -1,8 +1,8 @@
 
 
-typedef struct NewObject* Object;
+typedef struct Object* Object;
 
-typedef struct NewMethod {
+typedef struct Method {
     char *name;
     int32_t flags;
     Object(*func)(Object, int, Object*, int);
@@ -14,7 +14,7 @@ typedef struct ClassData {
     int nummethods;
 }* ClassData;
 
-struct NewObject {
+struct Object {
     int32_t flags;
     ClassData class;
     char data[];
@@ -33,8 +33,10 @@ Object alloc_Undefined();
 Object alloc_Integer32(int);
 void add_Method(ClassData, const char *,
         Object(*func)(Object, int, Object*, int));
+Object alloc_obj(int, ClassData);
 Object alloc_newobj(int, ClassData);
 ClassData alloc_class(const char *, int);
+Object alloc_userobj(int, int);
 
 char *cstringfromString(Object);
 int integerfromAny(Object);

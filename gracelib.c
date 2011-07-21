@@ -19,7 +19,7 @@ Object Object_asString(Object, int nparams,
         Object*, int flags);
 Object Object_Equals(Object, int,
         Object*, int flags);
-Object NewObject_NotEquals(Object, int,
+Object Object_NotEquals(Object, int,
         Object*, int);
 Object String_concat(Object, int nparams,
         Object*, int flags);
@@ -113,7 +113,6 @@ int linenumber = 0;
 int heapsize;
 
 int objectcount = 0;
-int newobjectcount = 0;
 int Strings_allocated = 0;
 
 int start_clocks = 0;
@@ -223,7 +222,7 @@ Object Object_concat(Object receiver, int nparams,
     Object a = callmethod(receiver, "asString", 0, NULL);
     return callmethod(a, "++", nparams, params);
 }
-Object NewObject_NotEquals(Object receiver, int nparams,
+Object Object_NotEquals(Object receiver, int nparams,
         Object* params, int flags) {
     Object b = callmethod(receiver, "==", nparams, params);
     return callmethod(b, "not", 0, NULL);
@@ -271,7 +270,7 @@ Object alloc_ListIter(Object array) {
         add_Method(ListIter, "havemore", &ListIter_havemore);
         add_Method(ListIter, "next", &ListIter_next);
     }
-    Object o = alloc_newobj(sizeof(int) + sizeof(Object), ListIter);
+    Object o = alloc_obj(sizeof(int) + sizeof(Object), ListIter);
     int *pos = (int*)o->data;
     Object *lst = (Object*)(o->data + sizeof(int));
     *pos = 0;
@@ -414,12 +413,12 @@ Object alloc_List() {
         add_Method(List, "iter", &List_iter);
         add_Method(List, "contains", &List_contains);
         add_Method(List, "==", &Object_Equals);
-        add_Method(List, "/=", &NewObject_NotEquals);
+        add_Method(List, "/=", &Object_NotEquals);
         add_Method(List, "indices", &List_indices);
         add_Method(List, "first", &List_first);
         add_Method(List, "last", &List_last);
     }
-    Object o = alloc_newobj(sizeof(Object*) + sizeof(int) * 2, List);
+    Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, List);
     struct ListObject *lo = (struct ListObject*)o;
     lo->size = 0;
     lo->space = 8;
@@ -493,7 +492,7 @@ Object alloc_StringIter(Object string) {
         add_Method(StringIter, "havemore", &StringIter_havemore);
         add_Method(StringIter, "next", &StringIter_next);
     }
-    Object o = alloc_newobj(sizeof(int) + sizeof(Object), StringIter);
+    Object o = alloc_obj(sizeof(int) + sizeof(Object), StringIter);
     int *pos = (int*)o->data;
     *pos = 0;
     Object *strp = (Object*)(o->data + sizeof(int));
@@ -635,7 +634,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
-        add_Method(ConcatString, "/=", &NewObject_NotEquals);
+        add_Method(ConcatString, "/=", &Object_NotEquals);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
@@ -650,7 +649,7 @@ Object alloc_ConcatString(Object left, Object right) {
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
-    Object o = alloc_newobj(sizeof(int) * 3 + sizeof(Object) * 2, ConcatString);
+    Object o = alloc_obj(sizeof(int) * 3 + sizeof(Object) * 2, ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
     so->right = right;
@@ -804,7 +803,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_index);
         add_Method(String, "==", &String_Equals);
-        add_Method(String, "/=", &NewObject_NotEquals);
+        add_Method(String, "/=", &Object_NotEquals);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
         add_Method(String, "size", &String_size);
@@ -819,7 +818,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "match()matchesBinding()else",
                 &Object_match_matchesBinding_else);
     }
-    Object o = alloc_newobj(sizeof(int) * 3 + blen + 1, String);
+    Object o = alloc_obj(sizeof(int) * 3 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
     so->blen = blen;
     char *d = so->body;
@@ -971,11 +970,11 @@ Object alloc_Octets(const char *data, int len) {
         add_Method(Octets, "++", &Octets_Concat);
         add_Method(Octets, "at", &Octets_at);
         add_Method(Octets, "==", &Octets_Equals);
-        add_Method(Octets, "/=", &NewObject_NotEquals);
+        add_Method(Octets, "/=", &Object_NotEquals);
         add_Method(Octets, "size", &Octets_size);
         add_Method(Octets, "decode", &Octets_decode);
     }
-    Object o = alloc_newobj(sizeof(int) + len, Octets);
+    Object o = alloc_obj(sizeof(int) + len, Octets);
     struct OctetsObject *oo = (struct OctetsObject*)o;
     oo->blen = len;
     memcpy(oo->body, data, len);
@@ -1155,7 +1154,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "/", &Float64_Div);
         add_Method(Number, "%", &Float64_Mod);
         add_Method(Number, "==", &Float64_Equals);
-        add_Method(Number, "/=", &NewObject_NotEquals);
+        add_Method(Number, "/=", &Object_NotEquals);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
@@ -1170,7 +1169,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "match()matchesBinding()else",
                 &Object_match_matchesBinding_else);
     }
-    Object o = alloc_newobj(sizeof(double) + sizeof(Object), Number);
+    Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
     *d = num;
     Object *str = (Object*)(o->data + sizeof(double));
@@ -1272,7 +1271,7 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "==", &Boolean_Equals);
         add_Method(Boolean, "/=", &Boolean_NotEquals);
     }
-    Object o = alloc_newobj(sizeof(int8_t), Boolean);
+    Object o = alloc_obj(sizeof(int8_t), Boolean);
     int8_t *d = (int8_t*)o->data;
     *d = (int8_t)val;
     if (val)
@@ -1335,9 +1334,9 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
         add_Method(File, "==", &Object_Equals);
-        add_Method(File, "/=", &NewObject_NotEquals);
+        add_Method(File, "/=", &Object_NotEquals);
     }
-    Object o = alloc_newobj(sizeof(FILE*), File);
+    Object o = alloc_obj(sizeof(FILE*), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
     return o;
@@ -1426,7 +1425,7 @@ Object module_io_init() {
     add_Method(IOModule, "system", &io_system);
     add_Method(IOModule, "exists", &io_exists);
     add_Method(IOModule, "newer", &io_newer);
-    Object o = alloc_newobj(sizeof(Object) * 3, IOModule);
+    Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
     so->_stdout = alloc_File_from_stream(stdout);
@@ -1480,7 +1479,7 @@ Object module_sys_init() {
     add_Method(SysModule, "elapsed", &sys_elapsed);
     add_Method(SysModule, "exit", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
-    Object o = alloc_newobj(sizeof(Object), SysModule);
+    Object o = alloc_obj(sizeof(Object), SysModule);
     struct SysModule *so = (struct SysModule*)o;
     so->argv = argv_List;
     sysmodule = o;
@@ -1490,7 +1489,7 @@ Object alloc_Undefined() {
     if (undefined != NULL)
         return undefined;
     Undefined = alloc_class("Undefined", 0);
-    Object o = alloc_newobj(0, Undefined);
+    Object o = alloc_obj(0, Undefined);
     undefined = o;
     return o;
 }
@@ -1614,12 +1613,15 @@ void add_Method(ClassData c, const char *name,
     c->methods[i].func = func;
     c->nummethods++;
 }
-Object alloc_newobj(int additional_size, ClassData class) {
-    Object o = glmalloc(sizeof(struct NewObject) + additional_size);
+Object alloc_obj(int additional_size, ClassData class) {
+    Object o = glmalloc(sizeof(struct Object) + additional_size);
     o->class = class;
     o->flags = 1;
-    newobjectcount++;
+    objectcount++;
     return o;
+}
+Object alloc_newobj(int additional_size, ClassData class) {
+    return alloc_obj(additional_size, class);
 }
 ClassData alloc_class(const char *name, int nummethods) {
     ClassData c = glmalloc(sizeof(struct ClassData));
@@ -1743,7 +1745,7 @@ Object alloc_Integer32(int i) {
         add_Method(Integer32, "asString", &Integer32_asString);
         add_Method(Integer32, "isInteger32", &Integer32_isInteger32);
     }
-    Object o = alloc_newobj(sizeof(int32_t), Integer32);
+    Object o = alloc_obj(sizeof(int32_t), Integer32);
     int32_t *d = (int32_t*)o->data;
     *d = i;
     return (Object)o;
@@ -1856,13 +1858,13 @@ Object alloc_HashMap() {
     if (HashMap == NULL) {
         HashMap = alloc_class("HashMap", 6);
         add_Method(HashMap, "==", &Object_Equals);
-        add_Method(HashMap, "/=", &NewObject_NotEquals);
+        add_Method(HashMap, "/=", &Object_NotEquals);
         add_Method(HashMap, "contains", &HashMap_contains);
         add_Method(HashMap, "get", &HashMap_get);
         add_Method(HashMap, "put", &HashMap_put);
         add_Method(HashMap, "asString", &HashMap_asString);
     }
-    Object o = alloc_newobj(sizeof(struct HashMap)
+    Object o = alloc_obj(sizeof(struct HashMap)
             + sizeof(struct HashMapPair*), HashMap);
     struct HashMap *h = (struct HashMap*)o;
     h->nelems = 0;
@@ -1881,9 +1883,9 @@ Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
 Object alloc_HashMapClassObject() {
     ClassData c = alloc_class("Class<HashMap>", 4);
     add_Method(c, "==", &Object_Equals);
-    add_Method(c, "/=", &NewObject_NotEquals);
+    add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "new", &HashMapClassObject_new);
-    Object o = alloc_newobj(0, c);
+    Object o = alloc_obj(0, c);
     return o;
 }
 struct UserClosure {
@@ -1895,14 +1897,17 @@ struct UserObject {
     ClassData class;
     void *data[];
 };
-Object alloc_obj2(int numMethods, int numFields) {
+Object alloc_userobj(int numMethods, int numFields) {
     ClassData c = alloc_class("Object", numMethods + 5);
-    Object o = alloc_newobj(sizeof(Object) * numFields, c);
+    Object o = alloc_obj(sizeof(Object) * numFields, c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
-    add_Method(c, "/=", &NewObject_NotEquals);
+    add_Method(c, "/=", &Object_NotEquals);
     return o;
+}
+Object alloc_obj2(int numMethods, int numFields) {
+    return alloc_userobj(numMethods, numFields);
 }
 void adddatum2(Object o, Object datum, int index) {
     struct UserObject *uo = (struct UserObject*)o;
@@ -1975,9 +1980,7 @@ Object dlmodule(const char *name) {
 void gracelib_stats() {
     if (getenv("GRACE_STATS") == NULL)
         return;
-    fprintf(stderr, "Old objects allocated: %i\n", objectcount);
-    fprintf(stderr, "New objects allocated: %i\n", newobjectcount);
-    fprintf(stderr, "All objects allocated: %i\n", objectcount+newobjectcount);
+    fprintf(stderr, "Total objects allocated: %i\n", objectcount);
     fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
     fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
