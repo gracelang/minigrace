@@ -1784,6 +1784,7 @@ void *callmethod(void *receiver, const char *name,
         memcpy(return_stack[calldepth], return_stack[calldepth-1],
                 sizeof(return_stack[calldepth]));
     }
+    int ii = r->flags;
     if (r->flags & 1)
         return callmethod2(receiver, name, nparams, (Object*)args);
     for (i=0; i<r->nummethods; i++) {
@@ -1882,7 +1883,13 @@ struct Object **alloc_var() {
 void add_Method(ClassData c, const char *name,
         Object(*func)(Object, int, Object*, int)) {
     int i;
-    for (i=0; c->methods[i].name != NULL; i++) { }
+    for (i=0; c->methods[i].name != NULL; i++) {
+        if (strcmp(name, c->methods[i].name) == 0) {
+            Object(*tmpf)(Object, int, Object*, int) = func;
+            func = c->methods[i].func;
+            c->methods[i].func = tmpf;
+        }
+    }
     c->methods[i].name = glmalloc(strlen(name) + 1);
     strcpy(c->methods[i].name, name);
     c->methods[i].func = func;
@@ -2170,7 +2177,7 @@ struct UserObject {
     void *data[];
 };
 Object alloc_obj2(int numMethods, int numFields) {
-    ClassData c = alloc_class("Object", numMethods);
+    ClassData c = alloc_class("Object", numMethods + 5);
     Object o = alloc_newobj(sizeof(Object) * numFields, c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
