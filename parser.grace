@@ -796,6 +796,14 @@ method callrest() {
         term()
         var ar := values.pop
         params.push(ar)
+    } elseif (meth.kind == "identifier") then {
+        var bd := findName(meth.value)
+        if (bd.kind == "method") then {
+            hadcall := true
+            methn := meth.value
+        } else {
+            values.push(meth)
+        }
     } else {
         values.push(meth)
     }
