@@ -378,26 +378,28 @@ function Grace_allocObject() {
 }
 var_HashMap = { methods: { new: function() { return new GraceHashMap(); } } };
 function GraceHashMap() {
-    self.table = {};
+    this.table = {};
+    this.size = 0;
 }
 GraceHashMap.prototype = Grace_allocObject();
 GraceHashMap.prototype.methods.put = function(k, v) {
     var hc = callmethod(k, "hashcode");
     hc = hc._value;
-    while (self.table[hc]) {
-        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
+    while (this.table[hc]) {
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
             break;
         hc++;
     }
-    self.table[hc] = {key: k, value: v};
-    return self;
+    this.size++;
+    this.table[hc] = {key: k, value: v};
+    return this;
 }
 GraceHashMap.prototype.methods.get = function(k) {
     var hc = callmethod(k, "hashcode");
     hc = hc._value;
-    while (self.table[hc]) {
-        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
-            return self.table[hc].value;
+    while (this.table[hc]) {
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
+            return this.table[hc].value;
         hc++;
     }
     stderr_txt.value += "Key not found in HashMap at line " + lineNumber + ".\n";
@@ -408,8 +410,8 @@ GraceHashMap.prototype.methods.get = function(k) {
 GraceHashMap.prototype.methods.contains = function(k) {
     var hc = callmethod(k, "hashcode");
     hc = hc._value;
-    while (self.table[hc]) {
-        if (Grace_isTrue(callmethod(self.table[hc].key, "==", k)))
+    while (this.table[hc]) {
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
             return new GraceBoolean(true);
         hc++;
     }
@@ -418,8 +420,8 @@ GraceHashMap.prototype.methods.contains = function(k) {
 GraceHashMap.prototype.methods.asString = function() {
     var s = "[{";
     var first = true;
-    for (h in self.table) {
-        p = self.table[h];
+    for (h in this.table) {
+        p = this.table[h];
         if (first)
             first = false;
         else
