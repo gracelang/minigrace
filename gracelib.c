@@ -2026,8 +2026,8 @@ struct HashMap {
 };
 int HashMap__findSlot(struct HashMap* h, Object key) {
     Object ko = callmethod(key, "hashcode", 0, NULL);
-    int hc = integerfromAny(ko);
-    int s = hc % h->nslots;
+    unsigned int hc = integerfromAny(ko);
+    unsigned int s = hc % h->nslots;
     while (h->table[s].key != HashMap_undefined) {
         if (istrue(callmethod(h->table[s].key, "==", 1, &key)))
             return s;
@@ -2035,7 +2035,7 @@ int HashMap__findSlot(struct HashMap* h, Object key) {
     }
     return s;
 }
-int HashMap__ensureSize(struct HashMap *h, Object key, int hc) {
+int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
     if (h->nelems > h->nslots / 2) {
         int oslots = h->nslots;
         h->nslots *= 2;
@@ -2049,9 +2049,8 @@ int HashMap__ensureSize(struct HashMap *h, Object key, int hc) {
         for (i=0; i < oslots; i++) {
             struct HashMapPair p = old[i];
             if (p.key != HashMap_undefined) {
-                int th = integerfromAny(callmethod(p.key, "hashcode", 0, NULL));
+                unsigned int th = integerfromAny(callmethod(p.key, "hashcode", 0, NULL));
                 th %= h->nslots;
-                int os = th;
                 while (h->table[th].key != HashMap_undefined)
                     th = (th + 1) % h->nslots;
                 h->table[th].key = p.key;
@@ -2068,7 +2067,7 @@ int HashMap__ensureSize(struct HashMap *h, Object key, int hc) {
 }
 Object HashMap_contains(Object self, int nargs, Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
-    int s = HashMap__findSlot(h, args[0]);
+    unsigned int s = HashMap__findSlot(h, args[0]);
     Object tk = h->table[s].key;
     if (tk == HashMap_undefined)
         return alloc_Boolean(0);
@@ -2076,7 +2075,7 @@ Object HashMap_contains(Object self, int nargs, Object *args, int flags) {
 }
 Object HashMap_get(Object self, int nargs, Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
-    int s = HashMap__findSlot(h, args[0]);
+    unsigned int s = HashMap__findSlot(h, args[0]);
     Object tk = h->table[s].key;
     if (tk == HashMap_undefined)
         die("key not found in HashMap.");
@@ -2084,7 +2083,7 @@ Object HashMap_get(Object self, int nargs, Object *args, int flags) {
 }
 Object HashMap_put(Object self, int nargs, Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
-    int s = HashMap__findSlot(h, args[0]);
+    unsigned int s = HashMap__findSlot(h, args[0]);
     if (h->table[s].key == HashMap_undefined) {
         h->nelems++;
         s = HashMap__ensureSize(h, args[0], s);
