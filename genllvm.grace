@@ -85,7 +85,11 @@ method compileobjconstdec(o, selfr, pos) {
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    util.runOnNew({
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
+    })else {
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    }
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  %val = load %object* %fieldpf")
     outprint("  ret %object %val")
@@ -119,7 +123,11 @@ method compileobjvardec(o, selfr, pos) {
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    util.runOnNew({
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
+    })else {
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    }
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  %val = load %object* %fieldpf")
     outprint("  ret %object %val")
@@ -145,7 +153,11 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  %params = getelementptr %object* %args, i32 0")
     outprint("  %par0 = load %object* %params")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    util.runOnNew({
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
+    })else {
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    }
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  store %object %par0, %object* %fieldpf")
     outprint("  ret %object %par0")
@@ -344,7 +356,11 @@ method compilemethod(o, selfobj, pos) {
             beginblock("closureinit")
             out("  %uo = bitcast %object %self to %UserObject*")
         }
-        out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 2")
+        util.runOnNew({
+            out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 3")
+        })else {
+            out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 2")
+        }
         out("  %closurepf = getelementptr [0 x %object]* %closurepp, i32 0, i32 {pos}")
         out("  %closurepc = bitcast %object* %closurepf to %object***")
         out("  %closure = load %object*** %closurepc")
@@ -401,7 +417,7 @@ method compilemethod(o, selfobj, pos) {
             ++ "%object(%object, i32, %object*, i32)* getelementptr(%object " 
             ++ "(%object, i32, %object*, i32)* " ++ litname ++ "))")
     } else {
-        //out("  call void @block_savedest(%object " ++ selfobj ++ ")")
+        out("  call void @block_savedest(%object " ++ selfobj ++ ")")
         out("  %closure" ++ myc ++ " = call %object** @createclosure(i32 "
             ++ closurevars.size ++ ")")
         for (closurevars) do { v ->
@@ -419,7 +435,11 @@ method compilemethod(o, selfobj, pos) {
         }
         var uo := "uo{myc}"
         out("  %{uo} = bitcast %object {selfobj} to %UserObject*")
-        out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 2")
+        util.runOnNew({
+            out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 3")
+        })else {
+            out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 2")
+        }
         out("  %closurepf{myc} = getelementptr [0 x %object]* %closurepp{myc}, i32 0, i32 {pos}")
         out("  %closurepc{myc} = bitcast %object* %closurepf{myc} to %object***")
         out("  %closurec{myc} = bitcast %object** %closure{myc} to %object")
@@ -1045,7 +1065,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     outprint("%Method = type \{i8*,i32,%object(%object,i32,%object*,i32)*\}")
     outprint("%ClassData = type \{ i8*, %Method*, i32 \}*")
     outprint("%object = type \{ i32, %ClassData, [0 x i8] \}*")
-    outprint("%UserObject = type \{ i32, i8*, [0 x %object] \}")
+    util.runOnNew({
+        outprint("%UserObject = type \{ i32, i8*, i8*, [0 x %object] \}")
+    })else {
+        outprint("%UserObject = type \{ i32, i8*, [0 x %object] \}")
+    }
     out("define %object @module_" ++ modname ++ "_init() \{")
     out("entry:")
     out("  %self = call %object @alloc_obj2(i32 100, i32 100)")

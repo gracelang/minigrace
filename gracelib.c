@@ -107,6 +107,16 @@ struct SysModule {
     ClassData class;
     Object argv;
 };
+struct UserClosure {
+    int32_t flags;
+    Object *vars[];
+};
+struct UserObject {
+    int32_t flags;
+    ClassData class;
+    jmp_buf *retpoint;
+    void *data[];
+};
 
 int linenumber = 0;
 
@@ -1513,14 +1523,14 @@ Object alloc_Undefined() {
     return o;
 }
 void block_return(Object self, Object obj) {
-    // TODO FIXME
-    jmp_buf *buf = (jmp_buf*)self;
+    struct UserObject *uo = (struct UserObject*)self;
+    jmp_buf *buf = uo->retpoint;
     return_value = obj;
     longjmp(*buf, 1);
 }
 void block_savedest(Object self) {
-    // TODO FIXME
-    //self->bdata = (void *)&return_stack[calldepth-1];
+    struct UserObject *uo = (struct UserObject*)self;
+    uo->retpoint = (void *)&return_stack[calldepth-1];
 }
 Object callmethod2(Object self, const char *name,
         int argc, Object *argv) {
@@ -1906,15 +1916,6 @@ Object alloc_HashMapClassObject() {
     Object o = alloc_obj(0, c);
     return o;
 }
-struct UserClosure {
-    int32_t flags;
-    Object *vars[];
-};
-struct UserObject {
-    int32_t flags;
-    ClassData class;
-    void *data[];
-};
 Object alloc_userobj(int numMethods, int numFields) {
     ClassData c = alloc_class("Object", numMethods + 5);
     Object o = alloc_obj(sizeof(Object) * numFields, c);

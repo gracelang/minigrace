@@ -636,6 +636,9 @@ function gracecode_util() {
             }
             return new GraceString(s)
         },
+        "runOnNew()else": function(b,e) {
+            return callmethod(b, "apply");
+        },
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
