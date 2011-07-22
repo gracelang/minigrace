@@ -16,7 +16,7 @@ GraceString.prototype = {
         },
         "at": function(other) {
             var o = callmethod(other, asString);
-            var idx = parseInt(o._value);
+            var idx = parseInt(o._value) - 1;
             return new GraceString(this._value.charAt(idx));
         },
         "size": function() {
@@ -45,7 +45,7 @@ GraceString.prototype = {
         },
         "substringFrom()to": function(from, to) {
             var s = this._value;
-            return new GraceString(s.substring(from._value, to._value));
+            return new GraceString(s.substring(from._value - 1, to._value - 1));
         },
         "asString": function() { return this ; },
         "encode": function() { return this ; }, // TODO this is a hack
@@ -86,6 +86,12 @@ GraceString.prototype = {
             } else {
                 return callmethod(e, "apply", obj);
             }
+        },
+        "indices": function() {
+            var l = [];
+            for (var i=1; i<=this._value.length; i++)
+                l.push(new GraceNum(i));
+            return new GraceList(l);
         },
     },
     className: "String"

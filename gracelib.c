@@ -524,6 +524,18 @@ void ConcatString__FillBuffer(Object self, char *buf, int len) {
     }
     buf[rights->blen] = 0;
 }
+Object String_indices(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject *sself = (struct StringObject*)self;
+    Object o = alloc_List();
+    int i;
+    Object f;
+    for (i=1; i<=sself->size; i++) {
+        f = alloc_Float64(i);
+        List_push(o, 1, &f, 0);
+    }
+    return o;
+}
 Object ConcatString_Equals(Object self, int nparams,
         Object *args, int flags) {
     if (self == args[0])
@@ -555,14 +567,14 @@ Object ConcatString_at(Object self, int nparams,
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int p = integerfromAny(args[0]);
     int ms = *(int*)(self->data + sizeof(int));
-    if (ms == 1 && p == 0)
+    if (ms == 1 && p == 1)
         return self;
     Object left = sself->left;
     Object right = sself->right;
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
     int ls = lefts->size;
-    if (p < ls)
+    if (p <= ls)
         return callmethod(left, "at", 1, args);
     Object d = args[0];
     Object lso = alloc_Float64(ls);
@@ -585,6 +597,8 @@ Object ConcatString_substringFrom_to(Object self,
         int nparams, Object *args, int flags) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
+    st--;
+    en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int mysize = sself->size;
     if (en > mysize)
@@ -628,7 +642,7 @@ Object String_matchObject_matchesBinding_else(Object self,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class("ConcatString", 14);
+        ConcatString = alloc_class("ConcatString", 15);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
@@ -646,6 +660,7 @@ Object alloc_ConcatString(Object left, Object right) {
                 &String_matchObject_matchesBinding_else);
         add_Method(ConcatString, "match()matchesBinding()else",
                 &Object_match_matchesBinding_else);
+        add_Method(ConcatString, "indices", &String_indices);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -668,6 +683,7 @@ Object String_at(Object self, int nparams,
         Object *args, int flags) {
     Object idxobj = args[0];
     int idx = integerfromAny(idxobj);
+    idx--;
     int i = 0;
     char *ptr = ((struct StringObject*)(self))->body;
     while (i < idx){
@@ -716,6 +732,8 @@ Object String_substringFrom_to(Object self,
     struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
+    st--;
+    en--;
     int mysize = sself->size;
     if (en > mysize)
         en = mysize;
@@ -797,7 +815,7 @@ Object String_hashcode(Object self, int nparams,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 17);
+        String = alloc_class("String", 18);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -817,6 +835,7 @@ Object alloc_String(const char *data) {
                 &String_matchObject_matchesBinding_else);
         add_Method(String, "match()matchesBinding()else",
                 &Object_match_matchesBinding_else);
+        add_Method(String, "indices", &String_indices);
     }
     Object o = alloc_obj(sizeof(int) * 3 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
