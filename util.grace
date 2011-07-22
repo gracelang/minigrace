@@ -15,6 +15,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "llvm"
+var versionNumber := "0.0.2"
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
@@ -67,7 +68,7 @@ method parseargs() {
                     skip := true
                     targetv := argv.at(ai + 1)
                 } elseif (arg == "--version") then {
-                    print("minigrace 0.0.0")
+                    print("minigrace {versionNumber}.{buildinfo.gitgeneration}")
                     print("git revision " ++ buildinfo.gitrevision)
                     print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
                     sys.exit(0)

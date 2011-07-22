@@ -107,6 +107,12 @@
  <select id="testcases">
 <!--[!SH[ls tests | grep .test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
  </select>
+<span style="font-size: smaller;">
+minigrace-js
+<!--[!SH[echo "v0.0.2.$(tools/git-calculate-generation HEAD)"]!]-->
+/
+ <!--[!SH[git rev-parse HEAD|cut -b1-7]!]-->
+</span>
  <br />
  <script src="gracelib.js" type="text/javascript"></script>
  <script src="compiler.js"></script>
