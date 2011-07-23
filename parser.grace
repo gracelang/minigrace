@@ -758,22 +758,8 @@ method dotrest() {
                 dotrest()
             } elseif (accept("lparen")) then {
                 callrest()
-            } elseif (accept("lbrace")) then {
-                callblockrest()
             }
         }
-    }
-}
-
-// Accept a block, turning it into the argument to the immediately-preceding
-// method.
-method callblockrest() {
-    if (accept("lbrace")) then {
-        var meth := values.pop()
-        expression()
-        var arg := values.pop()
-        var o := ast.astcall(meth, [arg])
-        values.push(o)
     }
 }
 
@@ -816,6 +802,7 @@ method callrest() {
         methn := meth.value
         ln := linenum
         term()
+        tok := lastToken
         var ar := values.pop
         params.push(ar)
     } elseif (meth.kind == "identifier") then {
