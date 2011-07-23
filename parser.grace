@@ -802,7 +802,6 @@ method callrest() {
         methn := meth.value
         ln := linenum
         term()
-        tok := lastToken
         var ar := values.pop
         params.push(ar)
     } elseif (meth.kind == "identifier") then {
