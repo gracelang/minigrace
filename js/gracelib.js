@@ -382,7 +382,7 @@ function Grace_allocObject() {
         className: "Object",
     };
 }
-var_HashMap = { methods: { new: function() { return new GraceHashMap(); } } };
+var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
 function GraceHashMap() {
     this.table = {};
     this.size = 0;
