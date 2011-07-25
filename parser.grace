@@ -148,7 +148,11 @@ method bindIdentifier(ident) {
     if (haveBinding(ident.value)) then {
         util.syntax_error("name {ident.value} shadows lexically enclosing name")
     }
-    scopes.last.put(ident.value, Binding.new("var"))
+    if (scopes.last.contains("___is_object")) then {
+        scopes.last.put(ident.value, Binding.new("method"))
+    } else {
+        scopes.last.put(ident.value, Binding.new("var"))
+    }
 }
 
 // Push the current token onto the output stack as a number
@@ -807,8 +811,9 @@ method callrest() {
     } elseif (meth.kind == "identifier") then {
         var bd := findName(meth.value)
         if (bd.kind == "method") then {
-            hadcall := true
             methn := meth.value
+            meth := ast.astmember(methn, ast.astidentifier("self"))
+            values.push(meth)
         } else {
             values.push(meth)
         }
@@ -1003,6 +1008,7 @@ method doobject() {
         next()
         var sz := values.size()
         pushScope()
+        scopes.last.put("___is_object", Binding.new("yes"))
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
             // const declarations, and method declarations. If anything
@@ -1411,7 +1417,9 @@ method statement() {
                         ++ "on line {util.linenum}\n")
                 }
             } elseif (dest.kind == "call") then {
-                util.syntax_error("assignment to method call")
+                if (dest.value.kind /= "member") then {
+                    util.syntax_error("assignment to method call")
+                }
             }
             values.push(o)
         }
