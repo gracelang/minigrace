@@ -16,6 +16,7 @@ var vtagv := false
 var noexecv := false
 var targetv := "llvm"
 var versionNumber := "0.0.2"
+var extensionsv := HashMap.new
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
@@ -40,7 +41,7 @@ method parseargs() {
             arg := argv.at(ai)
             if (skip) then {
                 skip := false
-            } elseif (arg.at(0) == "-") then {
+            } elseif (arg.at(1) == "-") then {
                 if (arg == "-o") then {
                     outfilev := io.open(argv.at(ai + 1), "w")
                     skip := true
@@ -72,6 +73,8 @@ method parseargs() {
                     print("git revision " ++ buildinfo.gitrevision)
                     print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
                     sys.exit(0)
+                } elseif (arg.at(2) == "X") then {
+                    extensionsv.put(arg.substringFrom(3)to(arg.size), true)
                 } else {
                     io.error.write("minigrace: invalid argument {arg}.\n")
                     sys.exit(1)
@@ -188,6 +191,9 @@ method target() {
 }
 method engine() {
     "native"
+}
+method extensions {
+    extensionsv
 }
 method debug(s) {
 
