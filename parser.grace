@@ -134,20 +134,26 @@ method pushScope() {
 method popScope() {
     scopes.pop
 }
-
-method bindName(name, binding) {
+method checkShadowing(name) {
     if (haveBinding(name)) then {
-        util.syntax_error("name {name} shadows lexically enclosing name")
+        if (util.extensions.contains("ShadowingWarnOnly")) then {
+            util.warning("name {name} shadows lexically enclosing name")
+        } elseif (util.extensions.contains("IgnoreShadowing")) then {
+            // Pass
+        } else {
+            util.syntax_error("name {name} shadows lexically enclosing name")
+        }
     }
+}
+method bindName(name, binding) {
+    checkShadowing(name)
     scopes.last.put(name, binding)
 }
 method bindIdentifier(ident) {
     if (ident.kind == "call") then {
         util.syntax_error("name shadows method")
     }
-    if (haveBinding(ident.value)) then {
-        util.syntax_error("name {ident.value} shadows lexically enclosing name")
-    }
+    checkShadowing(ident.value)
     if (scopes.last.contains("___is_object")) then {
         scopes.last.put(ident.value, Binding.new("method"))
     } else {
