@@ -639,6 +639,9 @@ function gracecode_util() {
         "runOnNew()else": function(b,e) {
             return callmethod(b, "apply");
         },
+        "extensions": function() {
+            return extensionsMap;
+        }
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
@@ -699,3 +702,4 @@ function dbgp(o, d) {
 function dbg(o) {
     stderr_txt.value += dbgp(o, 0) + "\n";
 }
+var extensionsMap = callmethod(var_HashMap, "new");
