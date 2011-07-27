@@ -13,3 +13,4 @@ misc
 tests/test.log
 buildinfo.grace
 js/index.html
+.git-generation-cache
