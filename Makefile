@@ -32,7 +32,7 @@ js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
 
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genllvm.grace > tmp.grace
-	GRACE_STATS=1 ./minigrace < tmp.grace >/dev/null
+	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
 	rm -f tmp.grace
 
 selfhost-rec: minigrace
