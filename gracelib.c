@@ -626,7 +626,7 @@ Object ConcatString_substringFrom_to(Object self,
         pos += getutf8charlen(pos);
     }
     char cp[5];
-    for (i=0; i<cl; i++) {
+    for (i=0; i<=cl; i++) {
         getutf8char(pos, cp);
         strcpy(bufp, cp);
         while (bufp[0] != 0) {
@@ -757,7 +757,7 @@ Object String_substringFrom_to(Object self,
         pos += getutf8charlen(pos);
     }
     char cp[5];
-    for (i=0; i<cl; i++) {
+    for (i=0; i<=cl; i++) {
         getutf8char(pos, cp);
         strcpy(bufp, cp);
         while (bufp[0] != 0) {

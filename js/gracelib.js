@@ -45,7 +45,7 @@ GraceString.prototype = {
         },
         "substringFrom()to": function(from, to) {
             var s = this._value;
-            return new GraceString(s.substring(from._value - 1, to._value - 1));
+            return new GraceString(s.substring(from._value - 1, to._value));
         },
         "asString": function() { return this ; },
         "encode": function() { return this ; }, // TODO this is a hack
