@@ -74,5 +74,6 @@ semiclean:
 
 known-good/%:
 	cd known-good && $(MAKE) $*
+	rm -f known-good/*out
 
 .PHONY: all clean selfhost-stats selfhost-rec test js
