@@ -1159,6 +1159,20 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("define weak i32 @main(i32 %argc, i8** %argv) \{")
     out("entry:")
     out("  call void @initprofiling()")
+    util.runOnNew({
+        if (util.extensions.contains("LogCallGraph")) then {
+            var lcgfile := util.extensions.get("LogCallGraph")
+            var con := "@.str.logdest = private unnamed_addr "
+                ++ "constant [{lcgfile.size + 1} x i8] c\"{lcgfile}\\00\""
+            constants.push(con)
+            out("  call void @enable_callgraph("
+                ++ "i8* getelementptr([{lcgfile.size + 1} x i8]* "
+                ++ "@.str.logdest,"
+                ++ "i32 0,i32 0))")
+        }
+    }) else {
+
+    }
     out("  call void @gracelib_argv(i8** %argv)")
     out("  %params = alloca %object, i32 1")
     out("  %params_0 = getelementptr %object* %params, i32 0")
@@ -1215,6 +1229,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @gracelib_length(%object)")
     util.runOnNew({
         out("declare void @setclassname(%object, i8*)")
+        out("declare void @enable_callgraph(i8*)")
     }) else {
 
     }

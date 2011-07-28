@@ -1532,6 +1532,8 @@ void block_savedest(Object self) {
     struct UserObject *uo = (struct UserObject*)self;
     uo->retpoint = (void *)&return_stack[calldepth-1];
 }
+FILE *callgraph;
+int track_callgraph = 0;
 Object callmethod2(Object self, const char *name,
         int argc, Object *argv) {
     ClassData c = self->class;
@@ -1545,6 +1547,14 @@ Object callmethod2(Object self, const char *name,
     }
     sprintf(callstack[calldepth], "%s.%s (%i)", self->class->name, name,
             linenumber);
+    if (track_callgraph && calldepth > 0) {
+        char tmp[255];
+        char *prev;
+        strcpy(tmp, callstack[calldepth-1]);
+        prev = strtok(tmp, " ");
+        fprintf(callgraph, "\"%s\" -> \"%s.%s\";\n", prev, self->class->name,
+                name);
+    }
     calldepth++;
     if (calldepth == 128) {
         die("Maximum call stack depth exceeded.");
@@ -1575,7 +1585,11 @@ Object callmethod(Object receiver, const char *name,
     }
     return callmethod2(receiver, name, nparams, (Object*)args);
 }
-
+void enable_callgraph(char *filename) {
+    callgraph = fopen(filename, "w");
+    fprintf(callgraph, "digraph CallGraph {\n");
+    track_callgraph = 1;
+}
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {
     int i;
@@ -2002,6 +2016,8 @@ Object dlmodule(const char *name) {
     return init();
 }
 void gracelib_stats() {
+    if (track_callgraph)
+        fprintf(callgraph, "}\n");
     if (getenv("GRACE_STATS") == NULL)
         return;
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
