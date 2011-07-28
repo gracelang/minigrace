@@ -198,13 +198,12 @@ method extensions {
 method debug(s) {
 
 }
-// TODO FIXINDICES fix this when indices change
 var hexdigits := "0123456789abcdef"
 method hex(num) {
     var s := ""
     while {num > 0} do {
         var i := num % 16
-        s := s ++ hexdigits.at(i)
+        s := s ++ hexdigits.at(i + 1)
         num := num - i
         num := num / 16
     }

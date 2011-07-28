@@ -1460,8 +1460,7 @@ method parse(toks) {
             var nxtToks := ""
             for (0..5) do {i->
                 if (i < tokens.size) then {
-                    // TODO FIXINDEX fix this when indices change
-                    var t := tokens.at(tokens.size - i - 1)
+                    var t := tokens.at(tokens.size - i)
                     nxtToks := nxtToks ++ t.kind ++ ": " ++ t.value ++ ", "
                 }
             }
