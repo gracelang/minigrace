@@ -74,7 +74,21 @@ method parseargs() {
                     print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
                     sys.exit(0)
                 } elseif (arg.at(2) == "X") then {
-                    extensionsv.put(arg.substringFrom(3)to(arg.size), true)
+                    var ext := arg.substringFrom(3)to(arg.size)
+                    var extn := ""
+                    var extv := true
+                    var seeneq := false
+                    for (ext) do {c->
+                        if (c == "=") then {
+                            seeneq := true
+                            extv := ""
+                        } elseif (!seeneq) then {
+                            extn := extn ++ c
+                        } else {
+                            extv := extv ++ c
+                        }
+                    }
+                    extensionsv.put(extn, extv)
                 } else {
                     io.error.write("minigrace: invalid argument {arg}.\n")
                     sys.exit(1)
