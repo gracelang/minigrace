@@ -54,8 +54,11 @@ minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
 
+gencheck:
+	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
 	./tests/harness "$(shell pwd)/minigrace --gracelib $(shell pwd)/gracelib.o" tests
+fulltest: gencheck clean selfhost-rec selftest test
 clean:
 	rm -f gracelib.o
 	rm -f unicode.gco unicode.gso
