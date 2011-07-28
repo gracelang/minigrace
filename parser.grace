@@ -823,6 +823,27 @@ method callrest() {
         } else {
             values.push(meth)
         }
+    } elseif (meth.kind == "member") then {
+        var root := meth.in
+        var outroot := meth
+        while {root.kind == "member"} do {
+            outroot := root
+            root := root.in
+        }
+        if (root.kind == "identifier") then {
+            var bd' := findName(root.value)
+            if (bd'.kind == "method") then {
+                methn := meth.value
+                outroot.in := ast.astmember(root.value,
+                    ast.astidentifier("self"))
+                //meth := ast.astmember(methn, meth)
+                values.push(meth)
+            } else {
+                values.push(meth)
+            }
+        } else {
+            values.push(meth)
+        }
     } else {
         values.push(meth)
     }
