@@ -125,6 +125,21 @@ method findName(name) {
     }
     ret
 }
+method findDeepMethod(name) {
+    var mem := ast.astidentifier("self")
+    var lv := scopes.indices.last
+    var min := scopes.indices.first
+    while {scopes.at(lv).contains(name).not} do {
+        if (scopes.at(lv).contains("___is_object")) then {
+            mem := ast.astmember("outer", mem)
+        }
+        lv := lv - 1
+        if (lv == min) then {
+            return ast.astidentifier(name)
+        }
+    }
+    ast.astmember(name, mem)
+}
 
 method pushScope() {
     var scope := HashMap.new
@@ -818,7 +833,7 @@ method callrest() {
         var bd := findName(meth.value)
         if (bd.kind == "method") then {
             methn := meth.value
-            meth := ast.astmember(methn, ast.astidentifier("self"))
+            meth := findDeepMethod(methn)
             values.push(meth)
         } else {
             values.push(meth)
@@ -834,9 +849,7 @@ method callrest() {
             var bd' := findName(root.value)
             if (bd'.kind == "method") then {
                 methn := meth.value
-                outroot.in := ast.astmember(root.value,
-                    ast.astidentifier("self"))
-                //meth := ast.astmember(methn, meth)
+                outroot.in := findDeepMethod(root.value)
                 values.push(meth)
             } else {
                 values.push(meth)
