@@ -75,6 +75,19 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
+method compileobjouter(selfr) {
+    var val := "this";
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := escapestring("outer")
+    var nmi := escapeident("outer")
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
+    out("    return this.data[\"" ++ nm ++ "\"];")
+    out("  \}")
+    out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
+        "_" ++ nmi ++ myc ++ ";")
+}
 method compileobjconstdec(o, selfr, pos) {
     var val := "undefined"
     if (o.value) then {
@@ -134,6 +147,7 @@ method compileobject(o) {
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
+    compileobjouter(selfr)
     var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {

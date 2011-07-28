@@ -1036,6 +1036,7 @@ method doobject() {
         var sz := values.size()
         pushScope()
         scopes.last.put("___is_object", Binding.new("yes"))
+        scopes.last.put("outer", Binding.new("method"))
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
             // const declarations, and method declarations. If anything

@@ -66,6 +66,40 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
+method compileobjouter(selfr) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := "outer"
+    var len := length(nm) + 1
+    var enm := escapestring(nm)
+    var con := "@.str.methname" ++ myc ++ " = private unnamed_addr "
+        ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
+    constants.push(con)
+    out("; OBJECT OUTER DEC " ++ enm)
+    out("  call void @adddatum2(%object {selfr}, %object %self, i32 0)")
+    outprint("define private %object @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
+        ++ "\"(%object %self, i32 %nparams, "
+        ++ "%object* %args, i32 %flags) \{")
+    outprint("  %uo = bitcast %object %self to %UserObject*")
+    util.runOnNew({
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
+    })else {
+        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
+    }
+    outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 0")
+    outprint("  %val = load %object* %fieldpf")
+    outprint("  ret %object %val")
+    outprint("\}")
+    out("  call void @addmethod2(%object " ++ selfr
+        ++ ", i8* getelementptr(["
+        ++ len ++ " x i8]* @.str.methname" ++ myc ++ ", i32 0, i32 0), "
+        ++ "%object(%object, i32, %object*, i32)* "
+        ++ "getelementptr(%object "
+        ++ "(%object, i32, %object*, i32)* "
+        ++ "@\"reader_" ++ modname ++ "_" ++ enm
+        ++ "_" ++ myc
+        ++ "\"))")
+}
 method compileobjconstdec(o, selfr, pos) {
     var val := "%undefined"
     if (o.value) then {
@@ -204,6 +238,8 @@ method compileobject(o) {
         out("  " ++ selfr ++ " = call %object @alloc_obj2(i32 {numMethods},"
             ++ "i32 {numFields})")
     }
+    compileobjouter(selfr)
+    out("  call void @adddatum2(%object {selfr}, %object %self, i32 0)")
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
