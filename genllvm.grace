@@ -263,6 +263,17 @@ method compileblock(o) {
     applymeth.selfclosure := true
     var objbody := ast.astobject([applymeth], false)
     var obj := compilenode(objbody)
+    util.runOnNew({
+        var modn := "Block<{modname}:{myc}>"
+        var con := "@.str.block{myc} = private unnamed_addr "
+            ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
+        constants.push(con)
+        out("  call void @setclassname(%object {obj}, "
+            ++ "i8* getelementptr([{modn.size + 1} x i8]* @.str.block{myc},"
+            ++ "i32 0,i32 0))")
+    }) else {
+
+    }
     o.register := obj
 }
 method compilefor(o) {
@@ -1109,6 +1120,18 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("define %object @module_" ++ modname ++ "_init() \{")
     out("entry:")
     out("  %self = call %object @alloc_obj2(i32 100, i32 100)")
+    util.runOnNew({
+        var modn := "Module<{modname}>"
+        var con := "@\".str._modcname_{modname}\" = private unnamed_addr "
+            ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
+        constants.push(con)
+        out("  call void @setclassname(%object %self, "
+            ++ "i8* getelementptr([{modn.size + 1} x i8]* "
+            ++ "@\".str._modcname_{modname}\","
+            ++ "i32 0,i32 0))")
+    }) else {
+
+    }
     out("  %undefined = load %object* @undefined")
     out("  %var_argv = call %object* @alloc_var()")
     out("  %tmp_argv = load %object* @argv")
@@ -1190,6 +1213,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @gracelib_print(%object, i32, %object*)")
     out("declare %object @gracelib_readall(%object, i32, %object*)")
     out("declare %object @gracelib_length(%object)")
+    util.runOnNew({
+        out("declare void @setclassname(%object, i8*)")
+    }) else {
+
+    }
     out("declare %object @dlmodule(i8*)")
     out("declare %object* @alloc_var()")
     out("declare void @gracelib_argv(i8**)")

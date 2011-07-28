@@ -1928,6 +1928,11 @@ Object alloc_userobj(int numMethods, int numFields) {
 Object alloc_obj2(int numMethods, int numFields) {
     return alloc_userobj(numMethods, numFields);
 }
+void setclassname(Object self, char *name) {
+    char *cpy = glmalloc(strlen(name) + 1);
+    strcpy(cpy, name);
+    self->class->name = cpy;
+}
 void adddatum2(Object o, Object datum, int index) {
     struct UserObject *uo = (struct UserObject*)o;
     uo->data[index] = datum;
