@@ -1482,6 +1482,8 @@ method parse(toks) {
         tokens.push(o)
     }
     util.log_verbose("parsing.")
+    bindName("print", Binding.new("method"))
+    bindName("HashMap", Binding.new("def"))
     linenum := 1
     next()
     var oldlength := tokens.size + 0
