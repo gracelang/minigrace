@@ -1517,9 +1517,28 @@ method resolveIdentifiers(node) {
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
     }
+    if (node.kind == "block") then {
+        pushScope()
+        for (node.params) do {e->
+            bindIdentifier(e)
+        }
+        l := resolveIdentifiersList(node.body)
+        popScope()
+        tmp := ast.astblock(node.params, l)
+    }
     if (node.kind == "object") then {
         return ast.astobject(resolveIdentifiersList(node.value),
-            node.superclass)
+            resolveIdentifiers(node.superclass))
+    }
+    if (node.kind == "class") then {
+        pushScope()
+        for (node.params) do { e->
+            bindIdentifier(e)
+        }
+        node := ast.astclass(node.name, node.params,
+            resolveIdentifiersList(node.value),
+            resolveIdentifiers(node.superclass))
+        popScope()
     }
     if (node.kind == "bind") then {
         tmp := resolveIdentifiers(node.dest)
@@ -1533,6 +1552,42 @@ method resolveIdentifiers(node) {
             } elseif (tmp3.kind == "undef") then {
                 util.syntax_error("assignment to undeclared {tmp.value}")
             }
+        }
+    }
+    if (node.kind == "vardec") then {
+        tmp := node.value
+        tmp2 := resolveIdentifiers(tmp)
+        if (tmp2 /= tmp) then {
+            return ast.astvardec(node.name, tmp2, node.type)
+        }
+    }
+    if (node.kind == "constdec") then {
+        tmp := node.value
+        tmp2 := resolveIdentifiers(tmp)
+        if (tmp2 /= tmp) then {
+            return ast.astvardec(node.name, tmp2, node.type)
+        }
+    }
+    if (node.kind == "return") then {
+        tmp := node.value
+        tmp2 := resolveIdentifiers(tmp)
+        if (tmp2 /= tmp) then {
+            return ast.astreturn(node.name, tmp2, node.type)
+        }
+    }
+    if (node.kind == "index") then {
+        tmp := node.value
+        tmp2 := resolveIdentifiers(tmp)
+        tmp3 := resolveIdentifiers(node.index)
+        if ((tmp2 /= tmp) | (tmp3 /= node.index)) then {
+            return ast.astindex(tmp2, tmp3)
+        }
+    }
+    if (node.kind == "op") then {
+        tmp := resolveIdentifiers(node.left)
+        tmp2 := resolveIdentifiers(node.right)
+        if ((tmp /= node.left) | (tmp2 /= node.right)) then {
+            return ast.astop(node.value, tmp, tmp2)
         }
     }
     node
