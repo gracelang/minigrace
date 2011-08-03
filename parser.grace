@@ -1443,22 +1443,7 @@ method statement() {
             expression()
             var val := values.pop()
             var o := ast.astbind(dest, val)
-            if (dest.kind == "identifier") then {
-                var bd := findName(dest.value)
-                if (bd.kind == "def") then {
-                    util.syntax_error("reassignment to constant {dest.value}")
-                } elseif (bd.kind == "method") then {
-                    util.syntax_error("assignment to method call {dest.value}")
-                } elseif (bd.kind == "undef") then {
-                    util.syntax_error("assignment before declaration of "
-                        ++ dest.value)
-                }
-                if (bd.kind /= "var") then {
-                    io.error.write("Warning: assigned to "
-                        ++ "non-var {dest.value} ({bd.kind}) "
-                        ++ "on line {util.linenum}\n")
-                }
-            } elseif (dest.kind == "call") then {
+            if (dest.kind == "call") then {
                 if (dest.value.kind /= "member") then {
                     util.syntax_error("assignment to method call")
                 }
@@ -1493,6 +1478,8 @@ method resolveIdentifier(node) {
 method resolveIdentifiers(node) {
     var l
     var tmp
+    var tmp2
+    var tmp3
     if (node == false) then {
         return node
     }
@@ -1529,6 +1516,24 @@ method resolveIdentifiers(node) {
             resolveIdentifiers(node.type))
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
+    }
+    if (node.kind == "object") then {
+        return ast.astobject(resolveIdentifiersList(node.value),
+            node.superclass)
+    }
+    if (node.kind == "bind") then {
+        tmp := resolveIdentifiers(node.dest)
+        tmp2 := resolveIdentifiers(node.value)
+        if (tmp.kind == "identifier") then {
+            tmp3 := findName(tmp.value)
+            if (tmp3.kind == "def") then {
+                util.syntax_error("reassignment to constant {tmp.value}")
+            } elseif (tmp3.kind == "method") then {
+                util.syntax_error("assignment to method {node.dest.value}")
+            } elseif (tmp3.kind == "undef") then {
+                util.syntax_error("assignment to undeclared {tmp.value}")
+            }
+        }
     }
     node
 }
@@ -1570,6 +1575,8 @@ method parse(toks) {
     }
     util.log_verbose("parsing.")
     bindName("print", Binding.new("method"))
+    bindName("length", Binding.new("method"))
+    bindName("escapestring", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
