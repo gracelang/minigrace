@@ -83,17 +83,17 @@ method expect(t)or(s) {
     util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
 // Expect block to consume at least one token
-method expectConsume(block) {
+method expectConsume(ablock) {
     var sz := tokens.size
-    block.apply
+    ablock.apply
     if (tokens.size == sz) then {
         util.syntax_error("unable to consume token")
     }
 }
 // Expect block to consume at least one token, or call fallback code.
-method ifConsume(block)then(tblock) {
+method ifConsume(ablock)then(tblock) {
     var sz := tokens.size
-    block.apply
+    ablock.apply
     if (tokens.size /= sz) then {
         tblock.apply
     }
@@ -1491,6 +1491,11 @@ method resolveIdentifier(node) {
 }
 
 method resolveIdentifiers(node) {
+    var l
+    var tmp
+    if (node == false) then {
+        return node
+    }
     if (node.kind == "identifier") then {
         return resolveIdentifier(node)
     }
@@ -1509,6 +1514,21 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "member") then {
         return ast.astmember(node.value, resolveIdentifiers(node.in))
+    }
+    if (node.kind == "method") then {
+        pushScope()
+        for (node.params) do {e->
+            bindIdentifier(e)
+        }
+        if (node.varargs) then {
+            bindIdentifier(node.vararg)
+        }
+        l := resolveIdentifiersList(node.body)
+        popScope()
+        tmp := ast.astmethod(node.value, node.params, l,
+            resolveIdentifiers(node.type))
+        tmp.varargs := node.varargs
+        tmp.vararg := node.vararg
     }
     node
 }
@@ -1530,6 +1550,7 @@ method resolveIdentifiersList(lst) {
         }
     }
     for (lst) do {e->
+        util.setline(e.line)
         nl.push(resolveIdentifiers(e))
     }
     popScope()

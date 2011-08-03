@@ -1,5 +1,5 @@
-method blockrun(b) {
-    b.apply
+method blockrun(bk) {
+    bk.apply
     return 100
 }
 method foo() {
