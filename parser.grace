@@ -1378,6 +1378,7 @@ method doimport() {
         expect("identifier")
         identifier()
         var p := values.pop()
+        bindName(p.value, Binding.new("def"))
         var o := ast.astimport(p)
         values.push(o)
     }
@@ -1470,6 +1471,71 @@ method statement() {
     }
 }
 
+method resolveIdentifier(node) {
+    if (node.kind /= "identifier") then {
+        return node
+    }
+    var nm := node.value
+    if (haveBinding(nm).not) then {
+        util.syntax_error("use of undefined identifier {nm}")
+    }
+    var b := findName(nm)
+    if (b.kind == "var") then {
+        return node
+    } elseif (b.kind == "def") then {
+        return node
+    } elseif (b.kind == "method") then {
+        return ast.astcall(findDeepMethod(nm), [])
+    }
+    node
+}
+
+method resolveIdentifiers(node) {
+    if (node.kind == "identifier") then {
+        return resolveIdentifier(node)
+    }
+    if (node.kind == "op") then {
+        return ast.astop(node.value, resolveIdentifiers(node.left),
+            resolveIdentifiers(node.right))
+    }
+    if (node.kind == "call") then {
+        var p := resolveIdentifiers(node.value)
+        if (p.kind == "call") then {
+            return ast.astcall(p.value,
+                resolveIdentifiersList(node.with))
+        }
+        return ast.astcall(p,
+            resolveIdentifiersList(node.with))
+    }
+    if (node.kind == "member") then {
+        return ast.astmember(node.value, resolveIdentifiers(node.in))
+    }
+    node
+}
+
+method resolveIdentifiersList(lst) {
+    var nl := []
+    pushScope()
+    for (lst) do {e->
+        if (e.kind == "vardec") then {
+            bindName(e.name.value, Binding.new("var"))
+        } elseif (e.kind == "constdec") then {
+            bindName(e.name.value, Binding.new("def"))
+        } elseif (e.kind == "method") then {
+            bindName(e.value.value, Binding.new("method"))
+        } elseif (e.kind == "class") then {
+            bindName(e.name.value, Binding.new("def"))
+        } elseif (e.kind == "import") then {
+            bindName(e.value.value, Binding.new("def"))
+        }
+    }
+    for (lst) do {e->
+        nl.push(resolveIdentifiers(e))
+    }
+    popScope()
+    nl
+}
+
 // Parse the given list of tokens, returning a list of AST nodes
 // corresponding to it.
 method parse(toks) {
@@ -1484,6 +1550,10 @@ method parse(toks) {
     util.log_verbose("parsing.")
     bindName("print", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
+    bindName("true", Binding.new("def"))
+    bindName("false", Binding.new("def"))
+    bindName("self", Binding.new("def"))
+    pushScope()
     linenum := 1
     next()
     var oldlength := tokens.size + 0
@@ -1516,5 +1586,6 @@ method parse(toks) {
         }
         oldlength := tokens.size + 0
     }
-    values
+    popScope()
+    resolveIdentifiersList(values)
 }
