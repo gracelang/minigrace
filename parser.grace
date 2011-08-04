@@ -212,7 +212,6 @@ method pushidentifier() {
 // Accept a block
 method block() {
     if (accept("lbrace")) then {
-        pushScope()
         next()
         var minInd := statementIndent + 1
         var startIndent := statementIndent
@@ -264,15 +263,6 @@ method block() {
                 body.push(values.pop)
             }
         }
-        for (params) do {prm ->
-            if (prm.kind == "identifier") then {
-                bindIdentifier(prm)
-            } elseif (prm.kind == "call") then {
-                if (prm.with.size == 0) then {
-                    util.syntax_error("parameter shadows method name")
-                }
-            }
-        }
         if (accept("arrow")) then {
             next()
         }
@@ -294,7 +284,6 @@ method block() {
         var o := ast.astblock(params, body)
         o := rewritematchblock(o)
         values.push(o)
-        popScope()
     }
 }
 method rewritematchblock(o) {
@@ -408,7 +397,6 @@ method doif() {
         if (accept("identifier") & (sym.value == "then")) then {
             next()
             if (accept("lbrace")) then {
-                pushScope()
                 next()
                 if (sym.line == lastToken.line) then {
                     minIndentLevel := sym.linePos - 1
@@ -421,7 +409,6 @@ method doif() {
                     body.push(v)
                 }
                 next()
-                popScope()
             }
             var econd
             var eif
@@ -444,7 +431,6 @@ method doif() {
                     util.syntax_error("expected \{.")
                 }
                 next()
-                pushScope()
                 if (sym.line == lastToken.line) then {
                     minIndentLevel := sym.linePos - 1
                 } else {
@@ -455,7 +441,6 @@ method doif() {
                     v := values.pop()
                     ebody.push(v)
                 }
-                popScope()
                 next()
                 newelse := []
                 eif := ast.astif(econd, ebody, newelse)
@@ -469,7 +454,6 @@ method doif() {
             if (accept("identifier") & (sym.value == "else")) then {
                 next()
                 if (accept("lbrace")) then {
-                    pushScope()
                     // Just take all the statements and put them into
                     // curelse.
                     next()
@@ -484,7 +468,6 @@ method doif() {
                         curelse.push(v)
                     }
                     next()
-                    popScope()
                 }
             }
             minIndentLevel := minInd - 1
@@ -549,13 +532,11 @@ method dowhile() {
             } else {
                 minIndentLevel := minInd
             }
-            pushScope()
             while {(accept("rbrace")).not} do {
                 statement()
                 var v := values.pop()
                 body.push(v)
             }
-            popScope()
             next()
             var o := ast.astwhile(cond, body)
             values.push(o)
@@ -957,7 +938,6 @@ method constdec() {
         } else {
             util.syntax_error("const declaration requires value")
         }
-        bindName(name.value, Binding.new("def"))
         var o := ast.astconstdec(name, val, type)
         values.push(o)
     }
@@ -971,7 +951,6 @@ method vardec() {
         var val := false
         var type := false
         var name := values.pop()
-        bindIdentifier(name)
         if (accept("colon")) then {
             next()
             identifier()
@@ -1047,9 +1026,6 @@ method doobject() {
         })
         next()
         var sz := values.size()
-        pushScope()
-        scopes.last.put("___is_object", Binding.new("yes"))
-        scopes.last.put("outer", Binding.new("method"))
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
             // const declarations, and method declarations. If anything
@@ -1063,7 +1039,6 @@ method doobject() {
             }
             sz := values.size
         }
-        popScope()
         next()
         var rbody := []
         var n := values.pop()
@@ -1155,7 +1130,6 @@ method doclass() {
                 }
             }
             var sz := values.size()
-            pushScope()
             while {(accept("rbrace")).not} do {
                 // Body of the class, the same as the body of an object.
                 vardec()
@@ -1167,7 +1141,6 @@ method doclass() {
                 }
                 sz := values.size
             }
-            popScope()
             next()
             var rbody := []
             var n := values.pop()
@@ -1319,15 +1292,10 @@ method methoddec() {
         } else {
             type := false
         }
-        bindName(meth.value, Binding.new("method"))
         var body := []
         var stok := sym
         var localMin
         if (accept("lbrace")) then {
-            pushScope()
-            for (params) do {prm->
-                bindIdentifier(prm)
-            }
             next()
             localMin := minIndentLevel
             if (sym.line == stok.line) then {
@@ -1356,7 +1324,6 @@ method methoddec() {
                     ++ meth.value ++ ". Have " ++ sym.kind ++ ".")
             }
             minIndentLevel := localMin
-            popScope()
         } else {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
@@ -1378,7 +1345,6 @@ method doimport() {
         expect("identifier")
         identifier()
         var p := values.pop()
-        bindName(p.value, Binding.new("def"))
         var o := ast.astimport(p)
         values.push(o)
     }
@@ -1464,6 +1430,9 @@ method resolveIdentifier(node) {
     if (haveBinding(nm).not) then {
         util.syntax_error("use of undefined identifier {nm}")
     }
+    if (nm == "outer") then {
+        return ast.astmember("outer", ast.astidentifier("self"))
+    }
     var b := findName(nm)
     if (b.kind == "var") then {
         return node
@@ -1484,7 +1453,8 @@ method resolveIdentifiers(node) {
         return node
     }
     if (node.kind == "identifier") then {
-        return resolveIdentifier(node)
+        tmp := resolveIdentifier(node)
+        return tmp
     }
     if (node.kind == "op") then {
         return ast.astop(node.value, resolveIdentifiers(node.left),
@@ -1500,7 +1470,8 @@ method resolveIdentifiers(node) {
             resolveIdentifiersList(node.with))
     }
     if (node.kind == "member") then {
-        return ast.astmember(node.value, resolveIdentifiers(node.in))
+        tmp := resolveIdentifiers(node.in)
+        return ast.astmember(node.value, tmp)
     }
     if (node.kind == "method") then {
         pushScope()
@@ -1516,6 +1487,7 @@ method resolveIdentifiers(node) {
             resolveIdentifiers(node.type))
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
+        return tmp
     }
     if (node.kind == "block") then {
         pushScope()
@@ -1527,8 +1499,14 @@ method resolveIdentifiers(node) {
         tmp := ast.astblock(node.params, l)
     }
     if (node.kind == "object") then {
-        return ast.astobject(resolveIdentifiersList(node.value),
+        tmp := {
+            scopes.last.put("___is_object", Binding.new("yes"))
+            scopes.last.put("outer", Binding.new("method"))
+        }
+        l := resolveIdentifiersList(node.value)withBlock(tmp)
+        tmp2 := ast.astobject(l,
             resolveIdentifiers(node.superclass))
+        return tmp2
     }
     if (node.kind == "class") then {
         pushScope()
@@ -1593,9 +1571,10 @@ method resolveIdentifiers(node) {
     node
 }
 
-method resolveIdentifiersList(lst) {
+method resolveIdentifiersList(lst)withBlock(bk) {
     var nl := []
     pushScope()
+    bk.apply
     for (lst) do {e->
         if (e.kind == "vardec") then {
             bindName(e.name.value, Binding.new("var"))
@@ -1615,6 +1594,9 @@ method resolveIdentifiersList(lst) {
     }
     popScope()
     nl
+}
+method resolveIdentifiersList(lst) {
+    resolveIdentifiersList(lst)withBlock { }
 }
 
 // Parse the given list of tokens, returning a list of AST nodes
