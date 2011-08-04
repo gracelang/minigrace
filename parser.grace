@@ -1535,6 +1535,11 @@ method resolveIdentifiers(node) {
             } elseif (tmp3.kind == "undef") then {
                 util.syntax_error("assignment to undeclared {tmp.value}")
             }
+        } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
+            tmp := tmp.value
+        }
+        if ((tmp /= node.dest) | (tmp2 /= node.value)) then {
+            return ast.astbind(tmp, tmp2)
         }
     }
     if (node.kind == "vardec") then {
