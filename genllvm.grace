@@ -356,6 +356,15 @@ method compilemethod(o, selfobj, pos) {
     out("  %undefined = load %object* @undefined")
     var ret := "%undefined"
     for (o.body) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "constdec")
+            | (l.kind == "class")) then {
+            var tnm := escapestring(l.name.value)
+            declaredvars.push(tnm)
+            out("  %\"var_{tnm}\" = call %object* @alloc_var()")
+            out("  store %object %undefined, %object* %\"var_{tnm}\"")
+        }
+    }
+    for (o.body) do { l ->
         ret := compilenode(l)
     }
     out("  ret %object " ++ ret)
@@ -515,6 +524,15 @@ method compilewhile(o) {
     beginblock("WhileBody" ++ myc)
     var tret := "null"
     var tblock := "ERROR"
+    for (o.body) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "constdec")
+            | (l.kind == "class")) then {
+            var tnm := escapestring(l.name.value)
+            declaredvars.push(tnm)
+            out("  %\"var_{tnm}\" = call %object* @alloc_var()")
+            out("  store %object %undefined, %object* %\"var_{tnm}\"")
+        }
+    }
     for (o.body) do { l->
         tret := compilenode(l)
     }
@@ -549,6 +567,15 @@ method compileif(o) {
     var fret := "%undefined"
     var tblock := "ERROR"
     var fblock := "ERROR"
+    for (o.thenblock) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "constdec")
+            | (l.kind == "class")) then {
+            var tnm := escapestring(l.name.value)
+            declaredvars.push(tnm)
+            out("  %\"var_{tnm}\" = call %object* @alloc_var()")
+            out("  store %object %undefined, %object* %\"var_{tnm}\"")
+        }
+    }
     for (o.thenblock) do { l->
         tret := compilenode(l)
     }
@@ -556,6 +583,15 @@ method compileif(o) {
     out("  br label %EndIf" ++ myc)
     if (o.elseblock.size > 0) then {
         beginblock("FalseBranch" ++ myc)
+        for (o.elseblock) do { l ->
+            if ((l.kind == "vardec") | (l.kind == "constdec")
+                | (l.kind == "class")) then {
+                var tnm := escapestring(l.name.value)
+                declaredvars.push(tnm)
+                out("  %\"var_{tnm}\" = call %object* @alloc_var()")
+                out("  store %object %undefined, %object* %\"var_{tnm}\"")
+            }
+        }
         for (o.elseblock) do { l->
             fret := compilenode(l)
         }
@@ -631,7 +667,6 @@ method compileconstdec(o) {
     } else {
         util.syntax_error("const must have value bound.")
     }
-    out("  %\"var_" ++ nm ++ "\" = call %object* @alloc_var()")
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
     o.register := val
@@ -645,7 +680,6 @@ method compilevardec(o) {
     } else {
         val := "%undefined"
     }
-    out("  %\"var_" ++ nm ++ "\" = call %object* @alloc_var()")
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
     o.register := val
@@ -1141,6 +1175,15 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  store %object %tmp_hmco, %object* %var_HashMap")
     var tmpo := output
     output := []
+    for (values) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "constdec")
+            | (l.kind == "class")) then {
+            var tnm := escapestring(l.name.value)
+            declaredvars.push(tnm)
+            out("  %\"var_{tnm}\" = call %object* @alloc_var()")
+            out("  store %object %undefined, %object* %\"var_{tnm}\"")
+        }
+    }
     for (values) do { o ->
         compilenode(o)
     }
