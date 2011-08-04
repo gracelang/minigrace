@@ -1510,11 +1510,16 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "class") then {
         pushScope()
+        tmp := {
+            scopes.last.put("___is_object", Binding.new("yes"))
+            scopes.last.put("outer", Binding.new("method"))
+        }
         for (node.params) do { e->
             bindIdentifier(e)
         }
+        tmp2 := resolveIdentifiersList(node.value)withBlock(tmp)
         node := ast.astclass(node.name, node.params,
-            resolveIdentifiersList(node.value),
+            tmp2,
             resolveIdentifiers(node.superclass))
         popScope()
     }
@@ -1573,10 +1578,16 @@ method resolveIdentifiers(node) {
 
 method resolveIdentifiersList(lst)withBlock(bk) {
     var nl := []
+    var isobj := false
     pushScope()
     bk.apply
+    if (scopes.last.contains("___is_object")) then {
+        isobj := true
+    }
     for (lst) do {e->
-        if (e.kind == "vardec") then {
+        if (isobj & ((e.kind == "vardec") | (e.kind == "constdec"))) then {
+            bindName(e.name.value, Binding.new("method"))
+        } elseif (e.kind == "vardec") then {
             bindName(e.name.value, Binding.new("var"))
         } elseif (e.kind == "constdec") then {
             bindName(e.name.value, Binding.new("def"))
