@@ -15,7 +15,7 @@ for par in $(git show --format=%P -s $h)
 do
     if [ -e .git-generation-cache/$par ]
     then
-        nct=$((1 + $(cat .git-generation-cache/$par)))
+        nct=$(cat .git-generation-cache/$par)
     else
         nct=$($0 $par)
     fi
