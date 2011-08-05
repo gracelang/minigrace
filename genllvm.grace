@@ -316,7 +316,7 @@ method compilemethod(o, selfobj, pos) {
     var name := o.value.value
     var nm := name ++ myc
     beginblock("entry")
-    output.pop()
+    output.pop
     var i := 0
     for (o.params) do { p ->
         var pn := escapestring(p.value)
@@ -824,7 +824,7 @@ method compileimport(o) {
             ++ nm ++ "_init()")
     } else {
         var mn := "@\".str.module." ++ nm ++ "\""
-        var l := (nm.encode("utf-8")).size() + 1
+        var l := (nm.encode("utf-8")).size + 1
         con := mn ++ " = private unnamed_addr constant [" ++ l ++ " x i8] "
             ++ " c\"" ++ escapestring(nm) ++ "\\00\""
         constants.push(con)
@@ -1256,7 +1256,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
 
     if (runmode == "make") then {
-        outfile.close()
+        outfile.close
         cmd := "llvm-as -o " ++ modname ++ ".gco " ++ modname ++ ".ll"
         if ((io.system(cmd)).not) then {
             io.error.write("Failed LLVM assembling")

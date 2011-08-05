@@ -2,21 +2,21 @@ method blockrun(bk) {
     bk.apply
     return 100
 }
-method foo() {
+method foo {
     var a := { return 6 }
     print "here"
-    a.apply()
+    a.apply
     print "not here"
 }
-method baz() {
+method baz {
     var a := { return 13 }
     blockrun(a)
     return 9
 }
 
-var b := foo()
+var b := foo
 print(b)
-print(baz())
+print(baz)
 
 var vals := [1, 5, 6, 3, 12, 9, 7, 15, 13]
 method bar(n) {

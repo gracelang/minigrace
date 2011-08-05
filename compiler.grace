@@ -9,9 +9,9 @@ import genllvm
 import genjs
 import buildinfo
 
-util.parseargs()
+util.parseargs
 
-var tokens := lexer.lexinput()
+var tokens := lexer.lexinput
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->

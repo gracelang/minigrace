@@ -1,11 +1,11 @@
 var x := object {
-    method foo() {
+    method foo {
         print("Hello")
     }
 }
-x.foo()
+x.foo
 x := object {
-    method bar() {
+    method bar {
         "World"
     }
 }

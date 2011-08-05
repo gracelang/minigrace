@@ -160,7 +160,7 @@ class SemicolonToken { level->
 //   "        Quoted string    x   Octets literal
 //   m        Number           o   Any operator
 //   c        Comment
-//   ,.{}()[] The corresponding literal character
+//   ,.{}[] The corresponding literal character
 //
 // There are three special cases for mode o. If accum is "->", ":=", or "=",
 // the corresponding special token is created. For mode i, a keyword token
@@ -244,9 +244,9 @@ method modechange(tokens, mode, accum) {
             tok := NumToken.new(accum)
             if (tokens.size > 1) then {
                 if (tokens.last.kind == "dot") then {
-                    tokens.pop()
+                    tokens.pop
                     if (tokens.last.kind == "num") then {
-                        tok := tokens.pop()
+                        tok := tokens.pop
                         tok.value := tok.value ++ "." ++ accum
                     } else {
                         util.syntax_error("found ." ++ accum
@@ -316,9 +316,9 @@ method isoperatorchar(c, ordval) {
 }
 
 // Read the program text from util.infile and return a list of tokens.
-method lexinput() {
+method lexinput {
     util.log_verbose("reading source.")
-    var input := util.infile.read()
+    var input := util.infile.read
 
     var tokens := []
     var mode := "n"

@@ -1,7 +1,7 @@
 method runFirst(a)second(b)third(c) {
-    a.apply()
-    b.apply()
-    c.apply()
+    a.apply
+    b.apply
+    c.apply
 }
 runFirst {
     print "First"

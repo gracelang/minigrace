@@ -3,7 +3,7 @@ method `and a method` {
     return `a variable`
 }
 
-print(`and a method`())
+print(`and a method`)
 
 var a := object {
     var `a "field"` := 1

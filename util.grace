@@ -21,9 +21,9 @@ var extensionsv := HashMap.new
 method runOnNew(b)else(e) {
     if ((__compilerRevision /= "933033535c260ab02a5260be08b6e1b104788596")
         & (__compilerRevision /= false)) then {
-        b.apply()
+        b.apply
     } else {
-        e.apply()
+        e.apply
     }
 }
 
@@ -31,7 +31,7 @@ runOnNew {
     gracelibPathv := sys.execPath ++ "/gracelib.o"
 } else { }
 
-method parseargs() {
+method parseargs {
     var argv := sys.argv
     if (argv.size > 1) then {
         var indices := argv.indices
@@ -160,25 +160,25 @@ method warning(s) {
     io.error.write("\n")
 }
 
-method verbosity() {
+method verbosity {
     verbosityv
 }
-method outfile() {
+method outfile {
     outfilev
 }
-method infile() {
+method infile {
     infilev
 }
-method modname() {
+method modname {
     modnamev
 }
-method runmode() {
+method runmode {
     runmodev
 }
-method buildtype() {
+method buildtype {
     buildtypev
 }
-method gracelibPath() {
+method gracelibPath {
     gracelibPathv
 }
 method setline(l) {
@@ -188,22 +188,22 @@ method setPosition(l, p) {
     linenumv := l
     lineposv := p
 }
-method linenum() {
+method linenum {
     linenumv
 }
-method linepos() {
+method linepos {
     lineposv
 }
-method vtag() {
+method vtag {
     vtagv
 }
-method noexec() {
+method noexec {
     noexecv
 }
-method target() {
+method target {
     targetv
 }
-method engine() {
+method engine {
     "native"
 }
 method extensions {

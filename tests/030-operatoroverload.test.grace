@@ -7,7 +7,7 @@ factory := object {
             method +(other) {
                 factory.create(self.value + other.value)
             }
-            method asString() {
+            method asString {
                 self.value.asString
             }
         }

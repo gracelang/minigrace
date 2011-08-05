@@ -6,8 +6,8 @@ REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace 
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
-	echo "method gitrevision() { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
-	echo "method gitgeneration() { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
+	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
+	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
 gracelib.o: gracelib.c
 	clang -emit-llvm -c gracelib.c

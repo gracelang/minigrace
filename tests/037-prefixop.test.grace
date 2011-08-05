@@ -11,5 +11,5 @@ method areturner {
     a
 }
 print(!a)
-print(!(areturner()))
+print(!(areturner))
 print(!!a)

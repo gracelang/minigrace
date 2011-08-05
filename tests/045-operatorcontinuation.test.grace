@@ -3,10 +3,10 @@ var a := object {
         print("Called & with {other}")
         return "wrong!"
     }
-    method prefix&() {
+    method prefix& {
         print "Called prefix&"
     }
-    method asString() {
+    method asString {
         "right object"
     }
 }
