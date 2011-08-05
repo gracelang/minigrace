@@ -1502,6 +1502,7 @@ method resolveIdentifiers(node) {
         l := resolveIdentifiersList(node.body)
         popScope()
         tmp := ast.astblock(node.params, l)
+        return tmp
     }
     if (node.kind == "object") then {
         tmp := {
