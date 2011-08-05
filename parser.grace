@@ -1565,7 +1565,7 @@ method resolveIdentifiers(node) {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         if (tmp2 /= tmp) then {
-            return ast.astreturn(node.name, tmp2, node.type)
+            return ast.astreturn(tmp2)
         }
     }
     if (node.kind == "index") then {
@@ -1581,6 +1581,29 @@ method resolveIdentifiers(node) {
         tmp2 := resolveIdentifiers(node.right)
         if ((tmp /= node.left) | (tmp2 /= node.right)) then {
             return ast.astop(node.value, tmp, tmp2)
+        }
+    }
+    if (node.kind == "if") then {
+        tmp := resolveIdentifiers(node.value)
+        tmp2 := resolveIdentifiersList(node.thenblock)
+        tmp3 := resolveIdentifiersList(node.elseblock)
+        if ((tmp /= node.value) | (tmp2 /= node.thenblock)
+            | (tmp3 /= node.elseblock)) then {
+            return ast.astif(tmp, tmp2, tmp3)
+        }
+    }
+    if (node.kind == "while") then {
+        tmp := resolveIdentifiers(node.value)
+        tmp2 := resolveIdentifiersList(node.body)
+        if ((tmp /= node.value) | (tmp2 /= node.body)) then {
+            return ast.astwhile(tmp, tmp2)
+        }
+    }
+    if (node.kind == "for") then {
+        tmp := resolveIdentifiers(node.value)
+        tmp2 := resolveIdentifiers(node.body)
+        if ((tmp /= node.value) | (tmp2 /= node.body)) then {
+            return ast.astfor(tmp, tmp2)
         }
     }
     node
@@ -1639,6 +1662,7 @@ method parse(toks) {
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
     bindName("self", Binding.new("def"))
+    bindName("raise", Binding.new("method"))
     pushScope()
     linenum := 1
     next()
