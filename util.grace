@@ -19,7 +19,7 @@ var versionNumber := "0.0.2"
 var extensionsv := HashMap.new
 
 method runOnNew(b)else(e) {
-    if ((__compilerRevision /= "1b4627df5106f89b670b0070ccaeda525120007c")
+    if ((__compilerRevision /= "933033535c260ab02a5260be08b6e1b104788596")
         & (__compilerRevision /= false)) then {
         b.apply()
     } else {
@@ -27,9 +27,9 @@ method runOnNew(b)else(e) {
     }
 }
 
-runOnNew({
+runOnNew {
     gracelibPathv := sys.execPath ++ "/gracelib.o"
-}) else { }
+} else { }
 
 method parseargs() {
     var argv := sys.argv

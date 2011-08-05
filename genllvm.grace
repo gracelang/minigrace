@@ -81,11 +81,7 @@ method compileobjouter(selfr) {
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    util.runOnNew({
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
-    })else {
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    }
+    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 0")
     outprint("  %val = load %object* %fieldpf")
     outprint("  ret %object %val")
@@ -119,11 +115,7 @@ method compileobjconstdec(o, selfr, pos) {
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    util.runOnNew({
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
-    })else {
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    }
+    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  %val = load %object* %fieldpf")
     outprint("  ret %object %val")
@@ -157,11 +149,7 @@ method compileobjvardec(o, selfr, pos) {
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    util.runOnNew({
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
-    })else {
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    }
+    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  %val = load %object* %fieldpf")
     outprint("  ret %object %val")
@@ -187,11 +175,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  %params = getelementptr %object* %args, i32 0")
     outprint("  %par0 = load %object* %params")
     outprint("  %uo = bitcast %object %self to %UserObject*")
-    util.runOnNew({
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
-    })else {
-        outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 2")
-    }
+    outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  store %object %par0, %object* %fieldpf")
     outprint("  ret %object %par0")
@@ -263,17 +247,13 @@ method compileblock(o) {
     applymeth.selfclosure := true
     var objbody := ast.astobject([applymeth], false)
     var obj := compilenode(objbody)
-    util.runOnNew({
-        var modn := "Block<{modname}:{myc}>"
-        var con := "@.str.block{myc} = private unnamed_addr "
-            ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
-        constants.push(con)
-        out("  call void @setclassname(%object {obj}, "
-            ++ "i8* getelementptr([{modn.size + 1} x i8]* @.str.block{myc},"
-            ++ "i32 0,i32 0))")
-    }) else {
-
-    }
+    var modn := "Block<{modname}:{myc}>"
+    var con := "@.str.block{myc} = private unnamed_addr "
+        ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
+    constants.push(con)
+    out("  call void @setclassname(%object {obj}, "
+        ++ "i8* getelementptr([{modn.size + 1} x i8]* @.str.block{myc},"
+        ++ "i32 0,i32 0))")
     o.register := obj
 }
 method compilefor(o) {
@@ -412,11 +392,7 @@ method compilemethod(o, selfobj, pos) {
             beginblock("closureinit")
             out("  %uo = bitcast %object %self to %UserObject*")
         }
-        util.runOnNew({
-            out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 3")
-        })else {
-            out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 2")
-        }
+        out("  %closurepp = getelementptr %UserObject* %uo, i32 0, i32 3")
         out("  %closurepf = getelementptr [0 x %object]* %closurepp, i32 0, i32 {pos}")
         out("  %closurepc = bitcast %object* %closurepf to %object***")
         out("  %closure = load %object*** %closurepc")
@@ -491,11 +467,7 @@ method compilemethod(o, selfobj, pos) {
         }
         var uo := "uo{myc}"
         out("  %{uo} = bitcast %object {selfobj} to %UserObject*")
-        util.runOnNew({
-            out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 3")
-        })else {
-            out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 2")
-        }
+        out("  %closurepp{myc} = getelementptr %UserObject* %{uo}, i32 0, i32 3")
         out("  %closurepf{myc} = getelementptr [0 x %object]* %closurepp{myc}, i32 0, i32 {pos}")
         out("  %closurepc{myc} = bitcast %object* %closurepf{myc} to %object***")
         out("  %closurec{myc} = bitcast %object** %closure{myc} to %object")
@@ -1146,26 +1118,18 @@ method compile(vl, of, mn, rm, bt, glpath) {
     outprint("%Method = type \{i8*,i32,%object(%object,i32,%object*,i32)*\}")
     outprint("%ClassData = type \{ i8*, %Method*, i32 \}*")
     outprint("%object = type \{ i32, %ClassData, [0 x i8] \}*")
-    util.runOnNew({
-        outprint("%UserObject = type \{ i32, i8*, i8*, [0 x %object] \}")
-    })else {
-        outprint("%UserObject = type \{ i32, i8*, [0 x %object] \}")
-    }
+    outprint("%UserObject = type \{ i32, i8*, i8*, [0 x %object] \}")
     out("define %object @module_" ++ modname ++ "_init() \{")
     out("entry:")
     out("  %self = call %object @alloc_obj2(i32 100, i32 100)")
-    util.runOnNew({
-        var modn := "Module<{modname}>"
-        var con := "@\".str._modcname_{modname}\" = private unnamed_addr "
-            ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
-        constants.push(con)
-        out("  call void @setclassname(%object %self, "
-            ++ "i8* getelementptr([{modn.size + 1} x i8]* "
-            ++ "@\".str._modcname_{modname}\","
-            ++ "i32 0,i32 0))")
-    }) else {
-
-    }
+    var modn := "Module<{modname}>"
+    var con := "@\".str._modcname_{modname}\" = private unnamed_addr "
+        ++ "constant [{modn.size + 1} x i8] c\"{modn}\\00\""
+    constants.push(con)
+    out("  call void @setclassname(%object %self, "
+        ++ "i8* getelementptr([{modn.size + 1} x i8]* "
+        ++ "@\".str._modcname_{modname}\","
+        ++ "i32 0,i32 0))")
     out("  %undefined = load %object* @undefined")
     out("  %var_argv = call %object* @alloc_var()")
     out("  %tmp_argv = load %object* @argv")
@@ -1202,19 +1166,15 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("define weak i32 @main(i32 %argc, i8** %argv) \{")
     out("entry:")
     out("  call void @initprofiling()")
-    util.runOnNew({
-        if (util.extensions.contains("LogCallGraph")) then {
-            var lcgfile := util.extensions.get("LogCallGraph")
-            var con := "@.str.logdest = private unnamed_addr "
-                ++ "constant [{lcgfile.size + 1} x i8] c\"{lcgfile}\\00\""
-            constants.push(con)
-            out("  call void @enable_callgraph("
-                ++ "i8* getelementptr([{lcgfile.size + 1} x i8]* "
-                ++ "@.str.logdest,"
-                ++ "i32 0,i32 0))")
-        }
-    }) else {
-
+    if (util.extensions.contains("LogCallGraph")) then {
+        var lcgfile := util.extensions.get("LogCallGraph")
+        con := "@.str.logdest = private unnamed_addr "
+            ++ "constant [{lcgfile.size + 1} x i8] c\"{lcgfile}\\00\""
+        constants.push(con)
+        out("  call void @enable_callgraph("
+            ++ "i8* getelementptr([{lcgfile.size + 1} x i8]* "
+            ++ "@.str.logdest,"
+            ++ "i32 0,i32 0))")
     }
     out("  call void @gracelib_argv(i8** %argv)")
     out("  %params = alloca %object, i32 1")
@@ -1270,12 +1230,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @gracelib_print(%object, i32, %object*)")
     out("declare %object @gracelib_readall(%object, i32, %object*)")
     out("declare %object @gracelib_length(%object)")
-    util.runOnNew({
-        out("declare void @setclassname(%object, i8*)")
-        out("declare void @enable_callgraph(i8*)")
-    }) else {
-
-    }
+    out("declare void @setclassname(%object, i8*)")
+    out("declare void @enable_callgraph(i8*)")
     out("declare %object @dlmodule(i8*)")
     out("declare %object* @alloc_var()")
     out("declare void @gracelib_argv(i8**)")

@@ -230,7 +230,7 @@ method block() {
         var i := 0
         var toks := tokens
 
-        ifConsume({expression()}) then {
+        ifConsume {expression()} then {
             if (accept("comma") | accept("arrow") | accept("colon")) then {
                 // This block has parameters
                 ident1 := values.pop()
@@ -279,7 +279,7 @@ method block() {
         }
         while {(accept("rbrace")).not} do {
             // Take the body of the block
-            expectConsume({statement()})
+            expectConsume {statement()}
             tmp := values.pop()
             body.push(tmp)
         }
@@ -791,12 +791,12 @@ method callrest() {
         hadcall := true
         methn := meth.value
         next()
-        ifConsume({expression()}) then {
+        ifConsume {expression()} then {
             while {accept("comma")} do {
                 tmp := values.pop()
                 params.push(tmp)
                 next()
-                expectConsume({expression()})
+                expectConsume {expression()}
             }
             tmp := values.pop()
             params.push(tmp)
@@ -905,7 +905,7 @@ method callmprest(meth, params, tok) {
                 nxt := values.pop
                 params.push(nxt)
                 next()
-                expectConsume({expression()})
+                expectConsume {expression()}
             }
         }
         nxt := values.pop()
@@ -977,12 +977,12 @@ method doarray() {
         next()
         var tmp
         var params := []
-        ifConsume({expression()}) then {
+        ifConsume {expression()} then {
             while {accept("comma")} do {
                 tmp := values.pop()
                 params.push(tmp)
                 next()
-                expectConsume({expression()})
+                expectConsume {expression()}
             }
             tmp := values.pop()
             params.push(tmp)
@@ -1016,7 +1016,7 @@ method doobject() {
             if (accept("(")) then {
                 next()
                 while {accept(")").not} do {
-                    expectConsume({expression()})
+                    expectConsume {expression()}
                     var tmp := values.pop
                     scargs.push(tmp)
                 }
@@ -1090,7 +1090,7 @@ method doclass() {
             if (accept("lparen")) then {
                 next()
                 while {accept("rparen").not} do {
-                    expectConsume({expression()})
+                    expectConsume {expression()}
                     var tmp := values.pop
                     scargs.push(tmp)
                 }
@@ -1360,7 +1360,7 @@ method doimport() {
 method doreturn() {
     if (accept("keyword") & (sym.value == "return")) then {
         next()
-        expectConsume({expression()})
+        expectConsume {expression()}
         var p := values.pop()
         var o := ast.astreturn(p)
         values.push(o)
