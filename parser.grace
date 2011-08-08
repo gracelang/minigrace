@@ -877,7 +877,7 @@ method callmprest(meth, params, tok) {
            | accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
-        methname := methname ++ ""
+        methname := methname ++ "()"
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1180,7 +1180,7 @@ method parsempmndecrest(tm) {
         if (varargs) then {
             util.syntax_error("varargs parameter must be last.")
         }
-        methname := methname ++ ""
+        methname := methname ++ "()"
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
