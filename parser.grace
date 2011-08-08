@@ -923,9 +923,7 @@ method callmprest(meth, params, tok) {
 
 // Accept a const declaration
 method constdec {
-    if (accept("keyword") & (
-            (sym.value == "const")
-            | (sym.value == "def"))) then {
+    if (accept("keyword") & (sym.value == "def")) then {
         next
         pushidentifier
         var val := false
@@ -936,12 +934,14 @@ method constdec {
             identifier
             type := values.pop
         }
-        if (accept("bind") | (accept("op") & (sym.value == "="))) then {
+        if (accept("op") & (sym.value == "=")) then {
             next
             expression
             val := values.pop
+        } elseif (accept("bind")) then {
+            util.syntax_error("def declaration uses '=', not ':='")
         } else {
-            util.syntax_error("const declaration requires value")
+            util.syntax_error("def declaration requires value")
         }
         var o := ast.astconstdec(name, val, type)
         values.push(o)
