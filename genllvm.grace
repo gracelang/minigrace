@@ -334,7 +334,8 @@ method compilemethod(o, selfobj, pos) {
         declaredvars.push(van)
     }
     out("  %undefined = load %object* @undefined")
-    var ret := "%undefined"
+    out("  %nothing = load %object* @nothing")
+    var ret := "%nothing"
     for (o.body) do { l ->
         if ((l.kind == "vardec") | (l.kind == "constdec")
             | (l.kind == "class")) then {
@@ -629,6 +630,7 @@ method compilebind(o) {
         r := compilenode(c)
         o.register := r
     }
+    o.register := "%nothing"
 }
 method compileconstdec(o) {
     var nm := escapestring(o.name.value)
@@ -641,7 +643,7 @@ method compileconstdec(o) {
     }
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
-    o.register := val
+    o.register := "%nothing"
 }
 method compilevardec(o) {
     var nm := escapestring(o.name.value)
@@ -654,7 +656,7 @@ method compilevardec(o) {
     }
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
-    o.register := val
+    o.register := "%nothing"
 }
 method compileindex(o) {
     var of := compilenode(o.value)
@@ -1114,6 +1116,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str._compilerRevision = private unnamed_addr constant [41 x i8]"
         ++ "c\"" ++ buildinfo.gitrevision ++ "\\00\"")
     out("@undefined = private global %object null")
+    out("@nothing = private global %object null")
     out("@argv = private global %object null")
     outprint("%Method = type \{i8*,i32,%object(%object,i32,%object*,i32)*\}")
     outprint("%ClassData = type \{ i8*, %Method*, i32 \}*")
@@ -1181,6 +1184,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  %params_0 = getelementptr %object* %params, i32 0")
     out("  %undefined = call %object @alloc_Undefined()")
     out("  store %object %undefined, %object* @undefined")
+    out("  %nothing = call %object @alloc_Nothing()")
+    out("  store %object %nothing, %object* @nothing")
     out("  %tmp_argv = call %object @alloc_List()")
     out("  %argv_i = alloca i32")
     out("  store i32 0, i32* %argv_i")
@@ -1225,6 +1230,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @alloc_Octets(i8*, i32)")
     out("declare %object @alloc_Boolean(i32)")
     out("declare %object @alloc_Undefined()")
+    out("declare %object @alloc_Nothing()")
     out("declare %object @alloc_HashMapClassObject()")
     out("declare %object @callmethod(%object, i8*, i32, %object*)")
     out("declare %object @gracelib_print(%object, i32, %object*)")
