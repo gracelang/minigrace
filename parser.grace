@@ -922,7 +922,7 @@ method callmprest(meth, params, tok) {
 }
 
 // Accept a const declaration
-method constdec {
+method defdec {
     if (accept("keyword") & (sym.value == "def")) then {
         next
         pushidentifier
@@ -943,7 +943,7 @@ method constdec {
         } else {
             util.syntax_error("def declaration requires value")
         }
-        var o := ast.astconstdec(name, val, type)
+        var o := ast.astdefdec(name, val, type)
         values.push(o)
     }
 }
@@ -1037,7 +1037,7 @@ method doobject {
             // else appears before the closing brace, it is a syntax error.
             vardec
             methoddec
-            constdec
+            defdec
             if (values.size == sz) then {
                 util.syntax_error("did not consume anything in "
                     ++ "object declaration.")
@@ -1139,7 +1139,7 @@ method doclass {
                 // Body of the class, the same as the body of an object.
                 vardec
                 methoddec
-                constdec
+                defdec
                 if (values.size == sz) then {
                     util.syntax_error("did not consume anything in "
                         ++ "class declaration.")
@@ -1392,9 +1392,9 @@ method statement {
         if (sym.value == "var") then {
             vardec
         } elseif (sym.value == "def") then {
-            constdec
+            defdec
         } elseif (sym.value == "const") then {
-            constdec
+            defdec
         } elseif (sym.value == "method") then {
             methoddec
         } elseif (sym.value == "import") then {
@@ -1555,7 +1555,7 @@ method resolveIdentifiers(node) {
             return ast.astvardec(node.name, tmp2, node.type)
         }
     }
-    if (node.kind == "constdec") then {
+    if (node.kind == "defdec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         if (tmp2 /= tmp) then {
@@ -1619,11 +1619,11 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         isobj := true
     }
     for (lst) do {e->
-        if (isobj & ((e.kind == "vardec") | (e.kind == "constdec"))) then {
+        if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
         } elseif (e.kind == "vardec") then {
             bindName(e.name.value, Binding.new("var"))
-        } elseif (e.kind == "constdec") then {
+        } elseif (e.kind == "defdec") then {
             bindName(e.name.value, Binding.new("def"))
         } elseif (e.kind == "method") then {
             bindName(e.value.value, Binding.new("method"))

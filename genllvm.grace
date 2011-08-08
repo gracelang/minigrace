@@ -96,7 +96,7 @@ method compileobjouter(selfr) {
         ++ "_" ++ myc
         ++ "\"))")
 }
-method compileobjconstdec(o, selfr, pos) {
+method compileobjdefdec(o, selfr, pos) {
     var val := "%undefined"
     if (o.value) then {
         val := compilenode(o.value)
@@ -197,7 +197,7 @@ method compileclass(o) {
         false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
-    var con := ast.astconstdec(o.name, cobj, false)
+    var con := ast.astdefdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
 method compileobject(o) {
@@ -231,8 +231,8 @@ method compileobject(o) {
         if (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
         }
-        if (e.kind == "constdec") then {
-            compileobjconstdec(e, selfr, pos)
+        if (e.kind == "defdec") then {
+            compileobjdefdec(e, selfr, pos)
         }
         pos := pos + 1
     }
@@ -337,7 +337,7 @@ method compilemethod(o, selfobj, pos) {
     out("  %nothing = load %object* @nothing")
     var ret := "%nothing"
     for (o.body) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "constdec")
+        if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapestring(l.name.value)
             declaredvars.push(tnm)
@@ -498,7 +498,7 @@ method compilewhile(o) {
     var tret := "null"
     var tblock := "ERROR"
     for (o.body) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "constdec")
+        if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapestring(l.name.value)
             declaredvars.push(tnm)
@@ -541,7 +541,7 @@ method compileif(o) {
     var tblock := "ERROR"
     var fblock := "ERROR"
     for (o.thenblock) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "constdec")
+        if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapestring(l.name.value)
             declaredvars.push(tnm)
@@ -557,7 +557,7 @@ method compileif(o) {
     if (o.elseblock.size > 0) then {
         beginblock("FalseBranch" ++ myc)
         for (o.elseblock) do { l ->
-            if ((l.kind == "vardec") | (l.kind == "constdec")
+            if ((l.kind == "vardec") | (l.kind == "defdec")
                 | (l.kind == "class")) then {
                 var tnm := escapestring(l.name.value)
                 declaredvars.push(tnm)
@@ -642,7 +642,7 @@ method compilebind(o) {
     }
     o.register := "%nothing"
 }
-method compileconstdec(o) {
+method compiledefdec(o) {
     var nm := escapestring(o.name.value)
     declaredvars.push(nm)
     var val := o.value
@@ -985,8 +985,8 @@ method compilenode(o) {
     } elseif (o.kind == "identifier") then {
         compileidentifier(o)
     }
-    if (o.kind == "constdec") then {
-        compileconstdec(o)
+    if (o.kind == "defdec") then {
+        compiledefdec(o)
     }
     if (o.kind == "vardec") then {
         compilevardec(o)
@@ -1179,7 +1179,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     var tmpo := output
     output := []
     for (values) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "constdec")
+        if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapestring(l.name.value)
             declaredvars.push(tnm)

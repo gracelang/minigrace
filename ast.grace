@@ -379,9 +379,9 @@ method astbind(dest', val') {
         }
     }
 }
-method astconstdec(name', val, type') {
+method astdefdec(name', val, type') {
     object {
-        def kind = "constdec"
+        def kind = "defdec"
         def name = name'
         def value = val
         var type := type'
@@ -392,7 +392,7 @@ method astconstdec(name', val, type') {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := "ConstDec"
+            var s := "defdec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
             if (self.type) then {
