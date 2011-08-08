@@ -1,4 +1,4 @@
-def x := object {
+def x = object {
     method a {
         2
     }

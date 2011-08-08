@@ -1,8 +1,8 @@
-def b := object {
+def b = object {
     var pp := 0
 }
-def a := object {
-    def x := 3
+def a = object {
+    def x = 3
     var y := 4
     var z := 0
     method test {

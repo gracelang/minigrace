@@ -26,130 +26,130 @@ method hexdecchar(c) {
 // The various XXXTokenV are interned constant tokens to save allocation.
 
 class IdentifierToken { s ->
-    def kind := "identifier"
-    def value := s
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "identifier"
+    def value = s
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class StringToken { s ->
-    def kind := "string"
-    def value := s
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "string"
+    def value = s
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class OctetsToken { s ->
-    def kind := "octets"
-    def value := s
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "octets"
+    def value = s
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class LBraceToken {
-    def kind := "lbrace"
-    def value := "\{"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "lbrace"
+    def value = "\{"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class RBraceToken {
-    def kind := "rbrace"
-    def value := "}"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "rbrace"
+    def value = "}"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class LParenToken {
-    def kind := "lparen"
-    def value := "("
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "lparen"
+    def value = "("
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class RParenToken {
-    def kind := "rparen"
-    def value := ")"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "rparen"
+    def value = ")"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class LSquareToken {
-    def kind := "lsquare"
-    def value := "["
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "lsquare"
+    def value = "["
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class RSquareToken {
-    def kind := "rsquare"
-    def value := "]"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "rsquare"
+    def value = "]"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class CommaToken {
-    def kind := "comma"
-    def value := ","
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "comma"
+    def value = ","
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class ColonToken {
-    def kind := "colon"
-    def value := ":"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "colon"
+    def value = ":"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class DotToken {
-    def kind := "dot"
-    def value := "."
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "dot"
+    def value = "."
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class NumToken { v ->
-    def kind := "num"
-    def value := v
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "num"
+    def value = v
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class KeywordToken { v ->
-    def kind := "keyword"
-    def value := v
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "keyword"
+    def value = v
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class OpToken { v ->
-    def kind := "op"
-    def value := v
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "op"
+    def value = v
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class ArrowToken {
-    def kind := "arrow"
-    def value := "->"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "arrow"
+    def value = "->"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class BindToken {
-    def kind := "bind"
-    def value := ":="
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "bind"
+    def value = ":="
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 class SemicolonToken { level->
-    def kind := "semicolon"
-    def value := ";"
-    def line := lineNumber
-    def indent := indentLevel
-    def linePos := startPosition
+    def kind = "semicolon"
+    def value = ";"
+    def line = lineNumber
+    def indent = indentLevel
+    def linePos = startPosition
 }
 
 // When a new lexical class has begun, add to the tokens list the token
