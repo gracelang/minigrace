@@ -26,130 +26,130 @@ method hexdecchar(c) {
 // The various XXXTokenV are interned constant tokens to save allocation.
 
 class IdentifierToken { s ->
-    var kind := "identifier"
-    var value := s
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "identifier"
+    def value := s
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class StringToken { s ->
-    var kind := "string"
-    var value := s
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "string"
+    def value := s
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class OctetsToken { s ->
-    var kind := "octets"
-    var value := s
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "octets"
+    def value := s
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class LBraceToken {
-    var kind := "lbrace"
-    var value := "\{"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "lbrace"
+    def value := "\{"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class RBraceToken {
-    var kind := "rbrace"
-    var value := "}"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "rbrace"
+    def value := "}"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class LParenToken {
-    var kind := "lparen"
-    var value := "("
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "lparen"
+    def value := "("
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class RParenToken {
-    var kind := "rparen"
-    var value := ")"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "rparen"
+    def value := ")"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class LSquareToken {
-    var kind := "lsquare"
-    var value := "["
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "lsquare"
+    def value := "["
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class RSquareToken {
-    var kind := "rsquare"
-    var value := "]"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "rsquare"
+    def value := "]"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class CommaToken {
-    var kind := "comma"
-    var value := ","
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "comma"
+    def value := ","
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class ColonToken {
-    var kind := "colon"
-    var value := ":"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "colon"
+    def value := ":"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class DotToken {
-    var kind := "dot"
-    var value := "."
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "dot"
+    def value := "."
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class NumToken { v ->
-    var kind := "num"
-    var value := v
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "num"
+    def value := v
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class KeywordToken { v ->
-    var kind := "keyword"
-    var value := v
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "keyword"
+    def value := v
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class OpToken { v ->
-    var kind := "op"
-    var value := v
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "op"
+    def value := v
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class ArrowToken {
-    var kind := "arrow"
-    var value := "->"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "arrow"
+    def value := "->"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class BindToken {
-    var kind := "bind"
-    var value := ":="
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "bind"
+    def value := ":="
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 class SemicolonToken { level->
-    const kind := "semicolon"
-    var value := ";"
-    var line := lineNumber
-    var indent := indentLevel
-    var linePos := startPosition
+    def kind := "semicolon"
+    def value := ";"
+    def line := lineNumber
+    def indent := indentLevel
+    def linePos := startPosition
 }
 
 // When a new lexical class has begun, add to the tokens list the token
@@ -247,7 +247,7 @@ method modechange(tokens, mode, accum) {
                     tokens.pop
                     if (tokens.last.kind == "num") then {
                         tok := tokens.pop
-                        tok.value := tok.value ++ "." ++ accum
+                        tok := NumToken.new(tok.value ++ "." ++ accum)
                     } else {
                         util.syntax_error("found ." ++ accum
                             ++ ", expected term")

@@ -1173,7 +1173,7 @@ method doclass {
 // place.
 method parsempmndecrest(tm) {
     var methname := tm.value.value
-    const params := tm.params
+    def params := tm.params
     var nxt
     var varargs := false
     while {accept("identifier")} do {
