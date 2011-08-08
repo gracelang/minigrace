@@ -1394,7 +1394,7 @@ method statement {
         } elseif (sym.value == "def") then {
             defdec
         } elseif (sym.value == "const") then {
-            defdec
+            util.syntax_error("no such keyword const; did you mean def?")
         } elseif (sym.value == "method") then {
             methoddec
         } elseif (sym.value == "import") then {
@@ -1683,7 +1683,7 @@ method parse(toks) {
                 }
             }
             var lstAST := ""
-            for (0..5) do {i->
+            for (0..1) do {i->
                 if (values.size > 0) then {
                     var t := values.pop
                     print(t.kind)
