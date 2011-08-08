@@ -178,7 +178,8 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  store %object %par0, %object* %fieldpf")
-    outprint("  ret %object %par0")
+    outprint("  %nothing = load %object* @nothing")
+    outprint("  ret %object %nothing")
     outprint("\}")
     out("  call void @addmethod2(%object " ++ selfr
         ++ ", i8* getelementptr(["
