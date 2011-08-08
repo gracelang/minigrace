@@ -1262,6 +1262,23 @@ Object Boolean_Or(Object self, int nparams,
         return alloc_Boolean(0);
     }
 }
+Object Boolean_AndAnd(Object self, int nparams,
+        Object *args, int flags) {
+    int8_t myval = *(int8_t*)self->data;
+    if (!myval) {
+        return self;
+    }
+    Object o = callmethod(args[0], "apply", 0, NULL);
+    return o;
+}
+Object Boolean_OrOr(Object self, int nparams,
+        Object *args, int flags) {
+    int8_t myval = *(int8_t*)self->data;
+    if (myval)
+        return self;
+    Object o = callmethod(args[0], "apply", 0, NULL);
+    return o;
+}
 Object Boolean_ifTrue(Object self, int nparams,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
@@ -1292,10 +1309,12 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 8);
+        Boolean = alloc_class("Boolean", 10);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "&", &Boolean_And);
         add_Method(Boolean, "|", &Boolean_Or);
+        add_Method(Boolean, "&&", &Boolean_AndAnd);
+        add_Method(Boolean, "||", &Boolean_OrOr);
         add_Method(Boolean, "prefix!", &Boolean_not);
         add_Method(Boolean, "not", &Boolean_not);
         add_Method(Boolean, "ifTrue", &Boolean_ifTrue);

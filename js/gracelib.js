@@ -208,6 +208,18 @@ GraceBoolean.prototype = {
             var s = this._value || other._value;
             return new GraceBoolean(s)
         },
+        "&&": function(other) {
+            if (!this._value)
+                return this;
+            var o = callmethod(other, "apply");
+            return o;
+        },
+        "||": function(other) {
+            if (this._value)
+                return this;
+            var o = callmethod(other, "apply");
+            return o;
+        },
         "ifTrue": function(other) {
             if (this._value) {
                 return callmethod(other, "apply");
