@@ -1536,8 +1536,8 @@ Object module_sys_init() {
     return o;
 }
 Object alloc_Nothing() {
-    if (undefined != NULL)
-        return undefined;
+    if (nothing != NULL)
+        return nothing;
     Nothing = alloc_class("nothing", 0);
     Object o = alloc_obj(0, Nothing);
     nothing = o;
@@ -1612,6 +1612,12 @@ Object callmethod(Object receiver, const char *name,
         memcpy(return_stack[calldepth], return_stack[calldepth-1],
                 sizeof(return_stack[calldepth]));
     }
+    if (receiver == undefined) {
+        die("method call on undefined value");
+    }
+    for (i=0; i<nparams; i++)
+        if (args[i] == undefined)
+            die("undefined value used as argument to %s", name);
     return callmethod2(receiver, name, nparams, (Object*)args);
 }
 void enable_callgraph(char *filename) {

@@ -617,6 +617,16 @@ method compilebind(o) {
         var nm := escapestring(dest.value)
         usedvars.push(nm)
         out("  store %object " ++ val ++ ", %object* %\"var_" ++ nm ++ "\"")
+        out("  %icmp{auto_count} = icmp eq %object {val}, %undefined")
+        out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
+            ++ "label %isdef{auto_count}")
+        beginblock("isundef{auto_count}")
+        out("  call %object @callmethod(%object %nothing"
+            ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
+            ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
+        out("  br label %isdef{auto_count}")
+        beginblock("isdef{auto_count}")
+        auto_count := auto_count + 1
         o.register := val
     } elseif (dest.kind == "member") then {
         out("; WARNING: non-local assigns not yet fully supported")
@@ -643,19 +653,43 @@ method compileconstdec(o) {
     }
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
+    out("  %icmp{auto_count} = icmp eq %object {val}, %undefined")
+    out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
+        ++ "label %isdef{auto_count}")
+    beginblock("isundef{auto_count}")
+    out("  call %object @callmethod(%object %nothing"
+        ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
+        ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
+    out("  br label %isdef{auto_count}")
+    beginblock("isdef{auto_count}")
+    auto_count := auto_count + 1
     o.register := "%nothing"
 }
 method compilevardec(o) {
     var nm := escapestring(o.name.value)
     declaredvars.push(nm)
     var val := o.value
+    var hadval := false
     if (val) then {
         val := compilenode(val)
+        hadval := true
     } else {
         val := "%undefined"
     }
     out("  store %object " ++ val ++ ", %object* %\"var_"
         ++ nm ++ "\"")
+    if (hadval) then {
+        out("  %icmp{auto_count} = icmp eq %object {val}, %undefined")
+        out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
+            ++ "label %isdef{auto_count}")
+        beginblock("isundef{auto_count}")
+        out("  call %object @callmethod(%object %nothing"
+            ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
+            ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
+        out("  br label %isdef{auto_count}")
+        beginblock("isdef{auto_count}")
+        auto_count := auto_count + 1
+    }
     o.register := "%nothing"
 }
 method compileindex(o) {
@@ -1112,6 +1146,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str._apply = private unnamed_addr constant [6 x i8] c\"apply\\00\"")
     out("@.str._havemore = private unnamed_addr constant [9 x i8] c\"havemore\\00\"")
     out("@.str._next = private unnamed_addr constant [5 x i8] c\"next\\00\"")
+    out("@.str._assignment = private unnamed_addr constant [11 x i8] c\"assignment\\00\"")
     out("@.str.asString = private unnamed_addr constant [9 x i8] c\"asString\\00\"")
     out("@.str._compilerRevision = private unnamed_addr constant [41 x i8]"
         ++ "c\"" ++ buildinfo.gitrevision ++ "\\00\"")
@@ -1134,6 +1169,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         ++ "@\".str._modcname_{modname}\","
         ++ "i32 0,i32 0))")
     out("  %undefined = load %object* @undefined")
+    out("  %nothing = load %object* @nothing")
     out("  %var_argv = call %object* @alloc_var()")
     out("  %tmp_argv = load %object* @argv")
     out("  store %object %tmp_argv, %object* %var_argv")
