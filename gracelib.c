@@ -652,6 +652,20 @@ Object String_matchObject_matchesBinding_else(Object self,
         return callmethod(args[2], "apply", 1, &self);
     }
 }
+unsigned int uipow(unsigned int base, unsigned int exponent)
+{
+  if(exponent == 0)
+      return 1;
+  if(base == 0)
+      return 0;
+  unsigned int r = 1;
+  while(1) {
+    if(exponent & 1) r *= base;
+    if((exponent >>= 1) == 0)	return r;
+    base *= base;
+  }
+  return r;
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
         ConcatString = alloc_class("ConcatString", 15);
@@ -682,7 +696,7 @@ Object alloc_ConcatString(Object left, Object right) {
     so->right = right;
     so->blen = lefts->blen + rights->blen;
     so->size = lefts->size + rights->size;
-    so->hashcode = lefts->hashcode * rights->hashcode;
+    so->hashcode = lefts->hashcode * uipow(23, rights->size) + rights->hashcode;
     return o;
 }
 Object String__escape(Object, int, Object*, int flags);
@@ -855,13 +869,14 @@ Object alloc_String(const char *data) {
     char *d = so->body;
     int size = 0;
     int i;
-    int hc = 1;
+    int hc = 0;
     for (i=0; i<blen; ) {
         int l = getutf8charlen(data + i);
         int j = i + l;
         for (; i<j; i++) {
             d[i] = data[i];
-            hc *= data[i];
+            hc *= 23;
+            hc += data[i];
         }
         size = size + 1;
     }

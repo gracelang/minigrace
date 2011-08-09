@@ -68,9 +68,10 @@ GraceString.prototype = {
             return new GraceNum(this._value.charCodeAt(0));
         },
         "hashcode": function() {
-            var hc = 1;
+            var hc = 0;
             for (var i=0; i<this._value.length; i++) {
-                hc *= this._value.charCodeAt(i);
+                hc *= 23;
+                hc += this._value.charCodeAt(i);
                 hc %= 0x100000000;
             }
             return new GraceNum(hc);
