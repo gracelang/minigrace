@@ -333,6 +333,7 @@ method lexinput {
     var codepoint := 0
     var interpdepth := 0
     var interpString := false
+    var atStart := true
     linePosition := 0
     util.log_verbose("lexing.")
     for (input) do { c ->
@@ -352,6 +353,14 @@ method lexinput {
             // line feed.
             util.syntax_error("illegal control character in input: #{ordval}"
                 ++ " on line {lineNumber} character {linePosition}.")
+        }
+        if (atStart & (linePosition == 1)) then {
+            if (c == "#") then {
+                mode := "c"
+                newmode := mode
+            } else {
+                atStart := false
+            }
         }
         if (instr | inBackticks) then {
 
