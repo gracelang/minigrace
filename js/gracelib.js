@@ -57,6 +57,10 @@ GraceString.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
+        "!=": function(other) {
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
+        },
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
@@ -167,6 +171,10 @@ GraceNum.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
+        "!=": function(other) {
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
+        },
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
@@ -242,6 +250,10 @@ GraceBoolean.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
+        "!=": function(other) {
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
+        },
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
@@ -309,6 +321,10 @@ GraceList.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
+        "!=": function(other) {
+            var t = callmethod(this, "==", other);
+            return callmethod(t, "not");
+        },
         "/=": function(other) {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
@@ -355,6 +371,10 @@ GraceObject.prototype = {
         "==": function(o) {
             return new GraceBoolean(this == o);
         },
+        "!=": function(o) {
+            var b = this.methods["=="].call(this, o);
+            return b.methods["not"].call(b);
+        },
         "/=": function(o) {
             var b = this.methods["=="].call(this, o);
             return b.methods["not"].call(b);
@@ -374,6 +394,10 @@ function Grace_allocObject() {
         methods: {
             "==": function(o) {
                 return new GraceBoolean(this == o);
+            },
+            "!=": function(other) {
+                var t = callmethod(this, "==", other);
+                return callmethod(t, "not");
             },
             "/=": function(other) {
                 var t = callmethod(this, "==", other);

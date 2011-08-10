@@ -412,7 +412,7 @@ Object List_last(Object self, int nparams,
 }
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class("List", 16);
+        List = alloc_class("List", 17);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
@@ -425,6 +425,7 @@ Object alloc_List() {
         add_Method(List, "iter", &List_iter);
         add_Method(List, "contains", &List_contains);
         add_Method(List, "==", &Object_Equals);
+        add_Method(List, "!=", &Object_NotEquals);
         add_Method(List, "/=", &Object_NotEquals);
         add_Method(List, "indices", &List_indices);
         add_Method(List, "first", &List_first);
@@ -668,12 +669,13 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class("ConcatString", 15);
+        ConcatString = alloc_class("ConcatString", 16);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
+        add_Method(ConcatString, "!=", &Object_NotEquals);
         add_Method(ConcatString, "/=", &Object_NotEquals);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
@@ -841,12 +843,13 @@ Object String_hashcode(Object self, int nparams,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 18);
+        String = alloc_class("String", 19);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_index);
         add_Method(String, "==", &String_Equals);
+        add_Method(String, "!=", &Object_NotEquals);
         add_Method(String, "/=", &Object_NotEquals);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
@@ -1011,11 +1014,12 @@ Object Octets_decode(Object receiver, int nparams,
 }
 Object alloc_Octets(const char *data, int len) {
     if (Octets == NULL) {
-        Octets = alloc_class("Octets", 7);
+        Octets = alloc_class("Octets", 8);
         add_Method(Octets, "asString", &Octets_asString);
         add_Method(Octets, "++", &Octets_Concat);
         add_Method(Octets, "at", &Octets_at);
         add_Method(Octets, "==", &Octets_Equals);
+        add_Method(Octets, "!=", &Object_NotEquals);
         add_Method(Octets, "/=", &Object_NotEquals);
         add_Method(Octets, "size", &Octets_size);
         add_Method(Octets, "decode", &Octets_decode);
@@ -1193,13 +1197,14 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class("Number", 18);
+        Number = alloc_class("Number", 19);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
         add_Method(Number, "/", &Float64_Div);
         add_Method(Number, "%", &Float64_Mod);
         add_Method(Number, "==", &Float64_Equals);
+        add_Method(Number, "!=", &Object_NotEquals);
         add_Method(Number, "/=", &Object_NotEquals);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
@@ -1324,7 +1329,7 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 10);
+        Boolean = alloc_class("Boolean", 11);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "&", &Boolean_And);
         add_Method(Boolean, "|", &Boolean_Or);
@@ -1334,6 +1339,7 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "not", &Boolean_not);
         add_Method(Boolean, "ifTrue", &Boolean_ifTrue);
         add_Method(Boolean, "==", &Boolean_Equals);
+        add_Method(Boolean, "!=", &Boolean_NotEquals);
         add_Method(Boolean, "/=", &Boolean_NotEquals);
     }
     Object o = alloc_obj(sizeof(int8_t), Boolean);
@@ -1394,11 +1400,12 @@ Object File_read(Object self, int nparams,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 5);
+        File = alloc_class("File", 6);
         add_Method(File, "read", &File_read);
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
         add_Method(File, "==", &Object_Equals);
+        add_Method(File, "!=", &Object_NotEquals);
         add_Method(File, "/=", &Object_NotEquals);
     }
     Object o = alloc_obj(sizeof(FILE*), File);
@@ -1822,8 +1829,9 @@ Object Integer32_isInteger32(Object self, int nargs, Object *args, int flags) {
 ClassData Integer32 = NULL;
 Object alloc_Integer32(int i) {
     if (Integer32 == NULL) {
-        Integer32 = alloc_class("Integer32", 14);
+        Integer32 = alloc_class("Integer32", 15);
         add_Method(Integer32, "==", &Integer32_Equals);
+        add_Method(Integer32, "!=", &Integer32_NotEquals);
         add_Method(Integer32, "/=", &Integer32_NotEquals);
         add_Method(Integer32, "+", &Integer32_Plus);
         add_Method(Integer32, "*", &Integer32_Times);
@@ -1948,8 +1956,9 @@ Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
 }
 Object alloc_HashMap() {
     if (HashMap == NULL) {
-        HashMap = alloc_class("HashMap", 6);
+        HashMap = alloc_class("HashMap", 7);
         add_Method(HashMap, "==", &Object_Equals);
+        add_Method(HashMap, "!=", &Object_NotEquals);
         add_Method(HashMap, "/=", &Object_NotEquals);
         add_Method(HashMap, "contains", &HashMap_contains);
         add_Method(HashMap, "get", &HashMap_get);
@@ -1973,19 +1982,21 @@ Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
     return alloc_HashMap();
 }
 Object alloc_HashMapClassObject() {
-    ClassData c = alloc_class("Class<HashMap>", 4);
+    ClassData c = alloc_class("Class<HashMap>", 5);
     add_Method(c, "==", &Object_Equals);
+    add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_obj(0, c);
     return o;
 }
 Object alloc_userobj(int numMethods, int numFields) {
-    ClassData c = alloc_class("Object", numMethods + 5);
+    ClassData c = alloc_class("Object", numMethods + 6);
     Object o = alloc_obj(sizeof(Object) * numFields, c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
+    add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
     return o;
 }
