@@ -578,11 +578,13 @@ method prefixop {
             expression
             expect("rparen")
             next
-            val := values.pop
         } else {
             term
-            val := values.pop
         }
+        dotrest
+        postfixsquare
+        callrest
+        val := values.pop
         var mem := ast.astmember("prefix" ++ op, val)
         var call := ast.astcall(mem, [])
         values.push(call)
