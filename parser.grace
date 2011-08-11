@@ -101,7 +101,7 @@ method ifConsume(ablock)then(tblock) {
 
 class Binding { kind' ->
     var kind := kind'
-    var type := "unknown"
+    var dtype := "unknown"
 }
 
 method haveBinding(name) {
@@ -203,7 +203,7 @@ method pushstring {
 }
 
 // Push the current token onto the output stack as an identifier.
-// false means that this identifier has not been assigned a type (yet).
+// false means that this identifier has not been assigned a dtype (yet).
 method pushidentifier {
     var o := ast.astidentifier(sym.value, false)
     if (o.value == "_") then {
@@ -239,7 +239,7 @@ method block {
                     // patterns, where T may be "Pair(hd, tl)" or similar.
                     next
                     expression
-                    ident1.type := values.pop
+                    ident1.dtype := values.pop
                 }
                 params.push(ident1)
                 while {accept("comma")} do {
@@ -250,7 +250,7 @@ method block {
                     if (accept("colon")) then {
                         next
                         pushidentifier
-                        ident1.type := values.pop
+                        ident1.dtype := values.pop
                     }
                     params.push(ident1)
                 }
@@ -339,8 +339,8 @@ method rewritematchblock(o) {
                     ast.astcall(ast.astidentifier("print", false),
                         [ast.aststring("Pattern match failed.")])
                 ])])]
-    } elseif (fst.type /= false) then {
-        pat := fst.type
+    } elseif (fst.dtype /= false) then {
+        pat := fst.dtype
         tmpp := fst
         if (pat.kind == "call") then {
             nparams := []
@@ -683,7 +683,7 @@ method expressionrest {
         var prec
         var allarith := true // Consists only of arithmetic operators
         var opcount := 0
-        var optype := "" // The single operator being used in this expression
+        var opdtype := "" // The single operator being used in this expression
         while {accept("op")onLineOf(statementToken)} do {
             opcount := opcount + 1
             o := sym.value
@@ -692,14 +692,14 @@ method expressionrest {
             if ((o /= "*") & (o /= "/") & (o /= "+") & (o /= "-")) then {
                 allarith := false
             }
-            if ((optype /= "") & (optype /= o) & (allarith.not)) then {
+            if ((opdtype /= "") & (opdtype /= o) & (allarith.not)) then {
                 // If: this is not the first operator, it is not the same
                 // as the last operator, and the expression has not been
                 // entirely arithmetic, raise a syntax error.
                 util.syntax_error("mixed operators without parentheses: "
-                    ++ optype ++ " and " ++ o)
+                    ++ opdtype ++ " and " ++ o)
             }
-            optype := o
+            opdtype := o
             while {(ops.size > 0) & (prec <= toprec(ops))} do {
                 // Do the shunting: for as long as the current operator
                 // has lesser or equal precedence than the one on the
@@ -852,7 +852,7 @@ method callrest {
             methn := callmprest(ast.astidentifier(methn, false), params, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
-                // the member lookup (for x.between(3)and(10)-type
+                // the member lookup (for x.between(3)and(10)-dtype
                 // calls).
                 meth := ast.astmember(methn.value, meth.in)
             } else {
@@ -927,12 +927,12 @@ method defdec {
         next
         pushidentifier
         var val := false
-        var type := false
+        var dtype := false
         var name := values.pop
         if (accept("colon")) then {
             next
             identifier
-            type := values.pop
+            dtype := values.pop
         }
         if (accept("op") & (sym.value == "=")) then {
             next
@@ -943,7 +943,7 @@ method defdec {
         } else {
             util.syntax_error("def declaration requires value")
         }
-        var o := ast.astdefdec(name, val, type)
+        var o := ast.astdefdec(name, val, dtype)
         values.push(o)
     }
 }
@@ -954,19 +954,19 @@ method vardec {
         next
         pushidentifier
         var val := false
-        var type := false
+        var dtype := false
         var name := values.pop
         if (accept("colon")) then {
             next
             identifier
-            type := values.pop
+            dtype := values.pop
         }
         if (accept("bind")) then {
             next
             expression
             val := values.pop
         }
-        var o := ast.astvardec(name, val, type)
+        var o := ast.astvardec(name, val, dtype)
         values.push(o)
     }
 }
@@ -1114,7 +1114,7 @@ method doclass {
                 if (accept("colon")) then {
                     next
                     pushidentifier
-                    pid.type := values.pop
+                    pid.dtype := values.pop
                 }
                 params.push(pid)
                 while {accept("comma")} do {
@@ -1124,7 +1124,7 @@ method doclass {
                     if (accept("colon")) then {
                         next
                         pushidentifier
-                        pid.type := values.pop
+                        pid.dtype := values.pop
                     }
                     params.push(pid)
                 }
@@ -1204,7 +1204,7 @@ method parsempmndecrest(tm) {
                 next
                 pushidentifier
                 var tp := values.pop
-                nxt.type := tp
+                nxt.dtype := tp
             }
             if (varargs) then {
                 tm.vararg := nxt
@@ -1239,7 +1239,7 @@ method methoddec {
         }
         var rparams := []
         var params := []
-        var type := false
+        var dtype := false
         var varargs := false
         var vararg := false
         if (accept("lparen")) then {
@@ -1247,7 +1247,7 @@ method methoddec {
             var id
             while {accept("identifier") |
                     (accept("op") & (sym.value == "*"))} do {
-                // Parse the parameter list, including optional type
+                // Parse the parameter list, including optional dtype
                 // annotations.
                 if (accept("op")) then {
                     next
@@ -1255,17 +1255,17 @@ method methoddec {
                 }
                 pushidentifier
                 id := values.pop
-                type := false
+                dtype := false
                 if (accept("colon")) then {
                     next
                     if (accept("identifier")) then {
                         pushidentifier
-                        type := values.pop
+                        dtype := values.pop
                     } else {
-                        util.syntax_error("expected type after :.")
+                        util.syntax_error("expected dtype after :.")
                     }
                 }
-                id.type := type
+                id.dtype := dtype
                 if (varargs) then {
                     vararg := id
                     expect("rparen")
@@ -1290,12 +1290,12 @@ method methoddec {
             }
         }
         if (accept("arrow")) then {
-            // Return type
+            // Return dtype
             next
             pushidentifier
-            type := values.pop
+            dtype := values.pop
         } else {
-            type := false
+            dtype := false
         }
         var body := []
         var stok := sym
@@ -1333,7 +1333,7 @@ method methoddec {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
         }
-        var o := ast.astmethod(meth, params, body, type)
+        var o := ast.astmethod(meth, params, body, dtype)
         if (varargs) then {
             o.varargs := true
             o.vararg := vararg
@@ -1489,7 +1489,7 @@ method resolveIdentifiers(node) {
         l := resolveIdentifiersList(node.body)
         popScope
         tmp := ast.astmethod(node.value, node.params, l,
-            resolveIdentifiers(node.type))
+            resolveIdentifiers(node.dtype))
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
         return tmp
@@ -1552,14 +1552,14 @@ method resolveIdentifiers(node) {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         if (tmp2 /= tmp) then {
-            return ast.astvardec(node.name, tmp2, node.type)
+            return ast.astvardec(node.name, tmp2, node.dtype)
         }
     }
     if (node.kind == "defdec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         if (tmp2 /= tmp) then {
-            return ast.astvardec(node.name, tmp2, node.type)
+            return ast.astvardec(node.name, tmp2, node.dtype)
         }
     }
     if (node.kind == "return") then {

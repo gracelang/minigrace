@@ -7,14 +7,14 @@ import util
 // implementation, so they are written as object literals inside methods.
 // Each node has a different signature according to its function, but the
 // common interface is:
-// type ASTNode {
+// dtype ASTNode {
 //   kind -> String // Used for pseudo-instanceof tests.
 //   register -> String // Used later on to hold the LLVM register of
 //                      // the resulting object.
 //   line -> Number // The source line the node came from.
 //   pretty(n:Number) -> String // Pretty-print of node at depth n,
 // }
-// Most also contain "value", with varied types, holding the main value
+// Most also contain "value", with varied dtypes, holding the main value
 // in the node. Some contain other fields for their specific use: while has
 // both a value (the condition) and a "body", for example. None of the nodes
 // are particularly notable in any way.
@@ -120,13 +120,13 @@ method astblock(params', body') {
         }
     }
 }
-method astmethod(name', params', body', type') {
+method astmethod(name', params', body', dtype') {
     object {
         def kind = "method"
         def value = name'
         def params = params'
         def body = body'
-        var type := type'
+        var dtype := dtype'
         var varargs := false
         var vararg := false
         var selfclosure := false
@@ -270,11 +270,11 @@ method astmember(what, in') {
         }
     }
 }
-method astidentifier(n, type') {
+method astidentifier(n, dtype') {
     object {
         def kind = "identifier"
         var value := n
-        var type := type'
+        var dtype := dtype'
         var register := ""
         def line = util.linenum
         method pretty(depth) {
@@ -379,12 +379,12 @@ method astbind(dest', val') {
         }
     }
 }
-method astdefdec(name', val, type') {
+method astdefdec(name', val, dtype') {
     object {
         def kind = "defdec"
         def name = name'
         def value = val
-        var type := type'
+        var dtype := dtype'
         var register := ""
         def line = util.linenum
         method pretty(depth) {
@@ -395,8 +395,8 @@ method astdefdec(name', val, type') {
             var s := "defdec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
-            if (self.type) then {
-                s := s ++ " : " ++ self.type.pretty(0)
+            if (self.dtype) then {
+                s := s ++ " : " ++ self.dtype.pretty(0)
             }
             if (self.value) then {
                 s := s ++ "\n  "
@@ -406,12 +406,12 @@ method astdefdec(name', val, type') {
         }
     }
 }
-method astvardec(name', val', type') {
+method astvardec(name', val', dtype') {
     object {
         def kind = "vardec"
         def name = name'
         def value = val'
-        var type := type'
+        var dtype := dtype'
         var register := ""
         def line = util.linenum
         method pretty(depth) {
@@ -422,8 +422,8 @@ method astvardec(name', val', type') {
             var s := "VarDec"
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
-            if (self.type) then {
-                s := s ++ " : " ++ self.type.pretty(0)
+            if (self.dtype) then {
+                s := s ++ " : " ++ self.dtype.pretty(0)
             }
             if (self.value) then {
                 s := s ++ "\n    "
