@@ -267,6 +267,7 @@ method astmember(what, in') {
             }
             var s := "Member(" ++ self.value ++ ")\n"
             s := s ++ spc ++ self.in.pretty(depth+1)
+            s
         }
     }
 }
