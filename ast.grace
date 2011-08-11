@@ -120,6 +120,56 @@ method astblock(params', body') {
         }
     }
 }
+method astmethodtype(name', params', rtype') {
+    object {
+        def kind = "methodtype"
+        def value = name'
+        def params = params'
+        def rtype = rtype'
+        def line = util.linenum
+        var register := ""
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "MethodType\n"
+            s := "{s}{spc}Name: {value}\n"
+            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth+2)}\n"
+            s := s ++ spc ++ "Parameters:"
+            for (params) do { mx ->
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+                if (mx.dtype /= false) then {
+                    s := "{s} : {mx.dtype.pretty(0)}"
+                }
+            }
+            s
+        }
+    }
+}
+method asttype(name', methods') {
+    object {
+        def kind = "type"
+        def value = name'
+        def methods = methods'
+        def line = util.linenum
+        var register := ""
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Type\n"
+            s := "{s}{spc}Name: {value}\n"
+            s := s ++ spc ++ "Methods:"
+            for (methods) do { mx ->
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            }
+            s := s ++ "\n"
+            s
+        }
+    }
+}
 method astmethod(name', params', body', dtype') {
     object {
         def kind = "method"

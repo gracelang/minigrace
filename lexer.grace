@@ -172,7 +172,7 @@ method modechange(tokens, mode, accum) {
         if (mode == "i") then {
             tok := IdentifierToken.new(accum)
             if ((accum == "object") | (accum == "method")
-                | (accum == "var") | (accum == "const")
+                | (accum == "var") | (accum == "type")
                 | (accum == "import") | (accum == "class")
                 | (accum == "return") | (accum == "def")) then {
                 tok := KeywordToken.new(accum)

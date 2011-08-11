@@ -1367,6 +1367,70 @@ method doreturn {
     }
 }
 
+method domethodtype {
+    pushidentifier
+    var id := values.pop
+    var mn := id.value
+    if (accept("bind")) then {
+        mn := "{mn}:="
+    }
+    var rtype := ast.astidentifier("Unit")
+    var params := []
+    while {accept("lparen")} do {
+        next
+        while {accept("identifier")} do {
+            pushidentifier
+            var prm := values.pop
+            if (accept("colon")) then {
+                next
+                pushidentifier
+                var tp := values.pop
+                prm.dtype := tp
+            }
+            params.push(prm)
+            if (accept("comma")) then {
+                next
+            }
+        }
+        expect("rparen")
+        next
+        if (accept("identifier")) then {
+            pushidentifier
+            mn := "{mn}(){values.pop.value}"
+        }
+    }
+    if (accept("arrow")) then {
+        next
+        expect("identifier")
+        pushidentifier
+        rtype := values.pop
+    }
+    values.push(ast.astmethodtype(mn, params, rtype))
+}
+
+// Accept a type declaration.
+method dotype {
+    if (accept("keyword") & (sym.value == "type")) then {
+        next
+        expect("identifier")
+        pushidentifier
+        var p := values.pop
+        expect("op")
+        if (sym.value /= "=") then {
+            util.syntax_error("type declarations require =.")
+        }
+        next
+        def methods = []
+        expect("lbrace")
+        next
+        while {accept("rbrace").not} do {
+            expectConsume {domethodtype}
+            methods.push(values.pop)
+        }
+        values.push(ast.asttype(p.value, methods))
+    }
+}
+
 // Accept a statement. A statement is any of the above that may exist
 // at the top level, and includes expressions.
 // A statement may also be a bind statement x := y, which creates a
@@ -1399,6 +1463,8 @@ method statement {
             methoddec
         } elseif (sym.value == "import") then {
             doimport
+        } elseif (sym.value == "type") then {
+            dotype
         } elseif (sym.value == "class") then {
             doclass
         } elseif (sym.value == "return") then {
