@@ -99,7 +99,29 @@ method ifConsume(ablock)then(tblock) {
     }
 }
 
+def DynamicIdentifier = ast.astidentifier("Dynamic")
+def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic"))
+def NumberIdentifier = ast.astidentifier("Number")
+def NumberOther = ast.astidentifier("other", NumberIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
+def NumberType = ast.asttype("Number", [
+    ast.astmethodtype("+", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("*", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("-", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("/", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("%", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("==", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("!=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("/=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("++", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("<", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("<=", [NumberOther], NumberIdentifier),
+    ast.astmethodtype(">", [NumberOther], NumberIdentifier),
+    ast.astmethodtype(">=", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("..", [NumberOther], DynamicIdentifier),
+    ast.astmethodtype("asString", [], DynamicIdentifier),
+    ast.astmethodtype("prefix-", [], NumberIdentifier)
+])
 
 class Binding { kind' ->
     var kind := kind'
@@ -172,6 +194,43 @@ method conformsType(b)to(a) {
 method expressionType(expr) {
     if (expr.kind == "identifier") then {
         return expr.dtype
+    }
+    if (expr.kind == "num") then {
+        return NumberType
+    }
+    if (expr.kind == "op") then {
+        def opname = expr.value
+        def opreceiver = expr.left
+        def opargument = expr.right
+        def opreceivertype = expressionType(expr.left)
+        def opargumenttype = expressionType(expr.right)
+        if (opreceivertype == false) then {
+            return DynamicType
+        }
+        if (opreceivertype.value == "Dynamic") then {
+            return DynamicType
+        }
+        var opfound := false
+        var opmeth := false
+        for (opreceivertype.methods) do {m->
+            if (m.value == opname) then {
+                opfound := true
+                opmeth := m
+            }
+        }
+        if (opfound.not) then {
+            util.syntax_error("no such operator '{opname}' in {opreceivertype.value}")
+        }
+        def opparamtypeid = opmeth.params.first.dtype
+        def opparamtypebd = findName(opparamtypeid.value)
+        if (conformsType(opargumenttype)to(opparamtypebd.value).not) then {
+            util.syntax_error("passed argument of type "
+                ++ "{opargumenttype.value} to parameter of type "
+                ++ opparamtypebd.value.value)
+        }
+        def opreturntypeid = opmeth.rtype
+        def opreturntypebd = findName(opreturntypeid.value)
+        return opreturntypebd.value
     }
     return DynamicType
 }
@@ -1802,6 +1861,9 @@ method parse(toks) {
     btmp := Binding.new("type")
     btmp.value := DynamicType
     bindName("Dynamic", btmp)
+    btmp := Binding.new("type")
+    btmp.value := NumberType
+    bindName("Number", btmp)
     pushScope
     linenum := 1
     next
