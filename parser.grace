@@ -101,6 +101,8 @@ method ifConsume(ablock)then(tblock) {
 
 def DynamicIdentifier = ast.astidentifier("Dynamic")
 def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic"))
+def StringIdentifier = ast.astidentifier("String")
+def StringOther = ast.astidentifier("other", StringIdentifier)
 def NumberIdentifier = ast.astidentifier("Number")
 def NumberOther = ast.astidentifier("other", NumberIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
@@ -119,8 +121,24 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype(">", [NumberOther], NumberIdentifier),
     ast.astmethodtype(">=", [NumberOther], NumberIdentifier),
     ast.astmethodtype("..", [NumberOther], DynamicIdentifier),
-    ast.astmethodtype("asString", [], DynamicIdentifier),
+    ast.astmethodtype("asString", [], StringIdentifier),
     ast.astmethodtype("prefix-", [], NumberIdentifier)
+])
+def StringType = ast.asttype("String", [
+    ast.astmethodtype("++", [TopOther], StringIdentifier),
+    ast.astmethodtype("size", [], NumberIdentifier),
+    ast.astmethodtype("at", [NumberOther], StringIdentifier),
+    ast.astmethodtype("==", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("!=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("/=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("iter", [], DynamicIdentifier),
+    ast.astmethodtype("substringFrom()to", [NumberOther, NumberOther],
+        StringIdentifier),
+    ast.astmethodtype("replace()with", [NumberOther, NumberOther],
+        StringIdentifier),
+    ast.astmethodtype("hashcode", [], NumberIdentifier),
+    ast.astmethodtype("indices", [], DynamicIdentifier),
+    ast.astmethodtype("asString", [], StringIdentifier)
 ])
 
 class Binding { kind' ->
@@ -1864,6 +1882,9 @@ method parse(toks) {
     btmp := Binding.new("type")
     btmp.value := NumberType
     bindName("Number", btmp)
+    btmp := Binding.new("type")
+    btmp.value := StringType
+    bindName("String", btmp)
     pushScope
     linenum := 1
     next
