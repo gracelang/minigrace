@@ -1429,6 +1429,7 @@ method dotype {
             expectConsume {domethodtype}
             methods.push(values.pop)
         }
+        next
         values.push(ast.asttype(p.value, methods))
     }
 }
