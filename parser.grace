@@ -99,9 +99,12 @@ method ifConsume(ablock)then(tblock) {
     }
 }
 
+def DynamicType = ast.asttype("Dynamic", [])
+
 class Binding { kind' ->
     var kind := kind'
-    var dtype := "unknown"
+    var dtype := DynamicType
+    var value := false
 }
 
 method haveBinding(name) {
@@ -177,7 +180,9 @@ method bindIdentifier(ident) {
         scopes.last.put(ident.value, Binding.new("method"))
     } else {
         checkShadowing(ident.value, "var")
-        scopes.last.put(ident.value, Binding.new("var"))
+        var tmpb := Binding.new("var")
+        tmpb.dtype := ident.dtype
+        scopes.last.put(ident.value, tmpb)
     }
 }
 
@@ -956,7 +961,7 @@ method vardec {
         next
         pushidentifier
         var val := false
-        var dtype := false
+        var dtype := DynamicType
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -1682,18 +1687,39 @@ method resolveIdentifiers(node) {
 method resolveIdentifiersList(lst)withBlock(bk) {
     var nl := []
     var isobj := false
+    var tpb
+    var tmp
     pushScope
     bk.apply
     if (scopes.last.contains("___is_object")) then {
         isobj := true
     }
     for (lst) do {e->
+        if (e.kind == "type") then {
+            tpb := Binding.new("type")
+            tpb.value := e
+            bindName(e.value, tpb)
+        }
+    }
+    for (lst) do {e->
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
         } elseif (e.kind == "vardec") then {
-            bindName(e.name.value, Binding.new("var"))
+            tpb := findName(e.dtype.value)
+            if (tpb.kind /= "type") then {
+                util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
+            }
+            tmp := Binding.new("var")
+            tmp.dtype := tpb
+            bindName(e.name.value, tmp)
         } elseif (e.kind == "defdec") then {
-            bindName(e.name.value, Binding.new("def"))
+            tpb := findName(e.dtype.value)
+            if (tpb.kind /= "type") then {
+                util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
+            }
+            tmp := Binding.new("def")
+            tmp.dtype := tpb
+            bindName(e.name.value, tmp)
         } elseif (e.kind == "method") then {
             bindName(e.value.value, Binding.new("method"))
         } elseif (e.kind == "class") then {
@@ -1725,6 +1751,7 @@ method parse(toks) {
         tokens.push(o)
     }
     util.log_verbose("parsing.")
+    var btmp
     bindName("print", Binding.new("method"))
     bindName("length", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
@@ -1733,6 +1760,9 @@ method parse(toks) {
     bindName("false", Binding.new("def"))
     bindName("self", Binding.new("def"))
     bindName("raise", Binding.new("method"))
+    btmp := Binding.new("type")
+    btmp.value := DynamicType
+    bindName("Dynamic", btmp)
     pushScope
     linenum := 1
     next
