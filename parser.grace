@@ -152,6 +152,30 @@ method pushScope {
 method popScope {
     scopes.pop
 }
+
+method conformsType(b)to(a) {
+    if ((b == false) | (a == false)) then {
+        return true
+    }
+    if (a.value == "Dynamic") then {
+        return true
+    }
+    if (b.value == "Dynamic") then {
+        return true
+    }
+    if (b.value == a.value) then {
+        return true
+    }
+    return false
+}
+
+method expressionType(expr) {
+    if (expr.kind == "identifier") then {
+        return expr.dtype
+    }
+    return DynamicType
+}
+
 method checkShadowing(name, kd) {
     if (haveBinding(name)) then {
         var namebinding := findName(name)
@@ -934,7 +958,7 @@ method defdec {
         next
         pushidentifier
         var val := false
-        var dtype := false
+        var dtype := DynamicType
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -1514,8 +1538,18 @@ method resolveIdentifier(node) {
     }
     var b := findName(nm)
     if (b.kind == "var") then {
+        if (b.dtype /= false) then {
+            if (node.dtype /= b.dtype.value) then {
+                node.dtype := b.dtype.value
+            }
+        }
         return node
     } elseif (b.kind == "def") then {
+        if (b.dtype /= false) then {
+            if (node.dtype /= b.dtype.value) then {
+                node.dtype := b.dtype.value
+            }
+        }
         return node
     } elseif (b.kind == "method") then {
         return ast.astcall(findDeepMethod(nm), [])
@@ -1614,6 +1648,11 @@ method resolveIdentifiers(node) {
                 util.syntax_error("assignment to method {node.dest.value}")
             } elseif (tmp3.kind == "undef") then {
                 util.syntax_error("assignment to undeclared {tmp.value}")
+            }
+            if (conformsType(expressionType(tmp2))to(tmp.dtype).not) then {
+                util.syntax_error("assigning value of nonconforming type "
+                    ++ "{expressionType(tmp2).value} to var of type "
+                    ++ "{tmp.dtype.value}")
             }
         } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
             tmp := tmp.value

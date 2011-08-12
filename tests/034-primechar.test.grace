@@ -4,7 +4,7 @@ class Cat { name' : String ->
  method mew {print("Meow") }
 }
 
-var c : Cat := Cat.new("Macavity")
+var c := Cat.new("Macavity")
 
 c.purr
 c.mew
