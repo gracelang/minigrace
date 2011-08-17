@@ -19,7 +19,7 @@ var versionNumber := "0.0.2"
 var extensionsv := HashMap.new
 
 method runOnNew(b)else(e) {
-    if ((__compilerRevision /= "933033535c260ab02a5260be08b6e1b104788596")
+    if ((__compilerRevision /= "647a358cc4dcc6a3f67f3ff8e870386ef6241111")
         & (__compilerRevision /= false)) then {
         b.apply
     } else {
