@@ -240,12 +240,12 @@ method expressionType(expr) {
             }
         }
         if (opfound.not) then {
-            util.syntax_error("no such operator '{opname}' in {opreceivertype.value}")
+            util.type_error("no such operator '{opname}' in {opreceivertype.value}")
         }
         def opparamtypeid = opmeth.params.first.dtype
         def opparamtypebd = findName(opparamtypeid.value)
         if (conformsType(opargumenttype)to(opparamtypebd.value).not) then {
-            util.syntax_error("passed argument of type "
+            util.type_error("passed argument of type "
                 ++ "{opargumenttype.value} to parameter of type "
                 ++ opparamtypebd.value.value)
         }
@@ -272,10 +272,10 @@ method expressionType(expr) {
             }
         }
         if (memfound.not) then {
-            util.syntax_error("no such method '{memname}' in {memreceivertype.value}")
+            util.type_error("no such method '{memname}' in {memreceivertype.value}")
         }
         if (memmeth.params.size /= 0) then {
-            util.syntax_error("method '{memname}' in {memreceivertype.value} "
+            util.type_error("method '{memname}' in {memreceivertype.value} "
                 ++ "requires {memmeth.params.size} arguments, not 0")
         }
         def memreturntypeid = memmeth.rtype
@@ -305,10 +305,10 @@ method expressionType(expr) {
             }
         }
         if (callfound.not) then {
-            util.syntax_error("no such method '{callname}' in {callreceivertype.value}")
+            util.type_error("no such method '{callname}' in {callreceivertype.value}")
         }
         if (callmeth.params.size > expr.with.size) then {
-            util.syntax_error("method '{callname}' in {callreceivertype.value} "
+            util.type_error("method '{callname}' in {callreceivertype.value} "
                 ++ "requires {callmeth.params.size} arguments, not "
                 ++ "{expr.with.size}")
         }
@@ -323,7 +323,7 @@ method expressionType(expr) {
             def prmtypeid = prm.dtype
             def prmtype = findType(prmtypeid)
             if (conformsType(argtp)to(prmtype).not) then {
-                util.syntax_error("argument {i} of '{callname}' must be of "
+                util.type_error("argument {i} of '{callname}' must be of "
                     ++ "type {prmtype.value}, given {argtp.value}")
             }
         }
@@ -1922,7 +1922,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
             if (tpb.kind /= "type") then {
-                util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
+                util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("var")
             tmp.dtype := tpb
@@ -1930,7 +1930,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         } elseif (e.kind == "defdec") then {
             tpb := findType(e.dtype)
             if (tpb.kind /= "type") then {
-                util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
+                util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("def")
             tmp.dtype := tpb
