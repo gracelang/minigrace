@@ -99,11 +99,11 @@ method ifConsume(ablock)then(tblock) {
     }
 }
 
-def DynamicIdentifier = ast.astidentifier("Dynamic")
-def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic"))
-def StringIdentifier = ast.astidentifier("String")
+def DynamicIdentifier = ast.astidentifier("Dynamic", false)
+def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic", false))
+def StringIdentifier = ast.astidentifier("String", false)
 def StringOther = ast.astidentifier("other", StringIdentifier)
-def NumberIdentifier = ast.astidentifier("Number")
+def NumberIdentifier = ast.astidentifier("Number", false)
 def NumberOther = ast.astidentifier("other", NumberIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
 def NumberType = ast.asttype("Number", [
@@ -169,7 +169,7 @@ method findName(name) {
     ret
 }
 method findDeepMethod(name) {
-    var mem := ast.astidentifier("self")
+    var mem := ast.astidentifier("self", false)
     var lv := scopes.indices.last
     var min := scopes.indices.first
     while {scopes.at(lv).contains(name).not} do {
@@ -178,7 +178,7 @@ method findDeepMethod(name) {
         }
         lv := lv - 1
         if (lv == min) then {
-            return ast.astidentifier(name)
+            return ast.astidentifier(name, false)
         }
     }
     ast.astmember(name, mem)
@@ -216,6 +216,9 @@ method expressionType(expr) {
     if (expr.kind == "num") then {
         return NumberType
     }
+    if (expr.kind == "string") then {
+        return StringType
+    }
     if (expr.kind == "op") then {
         def opname = expr.value
         def opreceiver = expr.left
@@ -250,6 +253,84 @@ method expressionType(expr) {
         def opreturntypebd = findName(opreturntypeid.value)
         return opreturntypebd.value
     }
+    if (expr.kind == "member") then {
+        def memname = expr.value
+        def memin = expr.in
+        def memreceivertype = expressionType(memin)
+        if (memreceivertype == false) then {
+            return DynamicType
+        }
+        if (memreceivertype.value == "Dynamic") then {
+            return DynamicType
+        }
+        var memfound := false
+        var memmeth := false
+        for (memreceivertype.methods) do {m->
+            if (m.value == memname) then {
+                memfound := true
+                memmeth := m
+            }
+        }
+        if (memfound.not) then {
+            util.syntax_error("no such method '{memname}' in {memreceivertype.value}")
+        }
+        if (memmeth.params.size /= 0) then {
+            util.syntax_error("method '{memname}' in {memreceivertype.value} "
+                ++ "requires {memmeth.params.size} arguments, not 0")
+        }
+        def memreturntypeid = memmeth.rtype
+        def memreturntypebd = findName(memreturntypeid.value)
+        return memreturntypebd.value
+    }
+    if (expr.kind == "call") then {
+        def callmem = expr.value
+        if (callmem.kind /= "member") then {
+            return DynamicType
+        }
+        def callname = callmem.value
+        def callin = callmem.in
+        def callreceivertype = expressionType(callin)
+        if (callreceivertype == false) then {
+            return DynamicType
+        }
+        if (callreceivertype.value == "Dynamic") then {
+            return DynamicType
+        }
+        var callfound := false
+        var callmeth := false
+        for (callreceivertype.methods) do {m->
+            if (m.value == callname) then {
+                callfound := true
+                callmeth := m
+            }
+        }
+        if (callfound.not) then {
+            util.syntax_error("no such method '{callname}' in {callreceivertype.value}")
+        }
+        if (callmeth.params.size > expr.with.size) then {
+            util.syntax_error("method '{callname}' in {callreceivertype.value} "
+                ++ "requires {callmeth.params.size} arguments, not "
+                ++ "{expr.with.size}")
+        }
+        def callparams = callmeth.params
+        def callargs = expr.with
+        var calli := callparams.indices.first
+        def callimax = callparams.indices.last
+        for (calli..callimax) do { i->
+            def arg = callargs.at(i)
+            def prm = callparams.at(i)
+            def argtp = expressionType(arg)
+            def prmtypeid = prm.dtype
+            def prmtype = findType(prmtypeid)
+            if (conformsType(argtp)to(prmtype).not) then {
+                util.syntax_error("argument {i} of '{callname}' must be of "
+                    ++ "type {prmtype.value}, given {argtp.value}")
+            }
+        }
+        def callreturntypeid = callmeth.rtype
+        def callreturntypebd = findName(callreturntypeid.value)
+        return callreturntypebd.value
+    }
     return DynamicType
 }
 
@@ -282,7 +363,14 @@ method bindIdentifier(ident) {
     } else {
         checkShadowing(ident.value, "var")
         var tmpb := Binding.new("var")
-        tmpb.dtype := ident.dtype
+        var tdtype := DynamicType
+        if (ident.dtype == false) then {
+            // pass
+        } elseif (ident.dtype.kind == "identifier") then {
+            def tdb = findName(ident.dtype.value)
+            tdtype := tdb.value
+        }
+        tmpb.dtype := tdtype
         scopes.last.put(ident.value, tmpb)
     }
 }
@@ -960,7 +1048,7 @@ method callrest {
             methn := callmprest(ast.astidentifier(methn, false), params, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
-                // the member lookup (for x.between(3)and(10)-dtype
+                // the member lookup (for x.between(3)and(10)-type
                 // calls).
                 meth := ast.astmember(methn.value, meth.in)
             } else {
@@ -1482,7 +1570,7 @@ method domethodtype {
     if (accept("bind")) then {
         mn := "{mn}:="
     }
-    var rtype := ast.astidentifier("Unit")
+    var rtype := ast.astidentifier("Unit", false)
     var params := []
     while {accept("lparen")} do {
         next
@@ -1601,7 +1689,20 @@ method statement {
         next
     }
 }
-
+method findType(tp) {
+    if (tp == false) then {
+        return DynamicType
+    }
+    if (tp.kind == "type") then {
+        return tp
+    }
+    if (tp.kind == "identifier") then {
+        def tpnm = tp.value
+        def tpbd = findName(tpnm)
+        return tpbd.value
+    }
+    return DynamicType
+}
 method resolveIdentifier(node) {
     if (node.kind /= "identifier") then {
         return node
@@ -1611,21 +1712,19 @@ method resolveIdentifier(node) {
         util.syntax_error("use of undefined identifier {nm}")
     }
     if (nm == "outer") then {
-        return ast.astmember("outer", ast.astidentifier("self"))
+        return ast.astmember("outer", ast.astidentifier("self", false))
     }
     var b := findName(nm)
     if (b.kind == "var") then {
-        if (b.dtype /= false) then {
-            if (node.dtype /= b.dtype.value) then {
-                node.dtype := b.dtype.value
-            }
+        def vtp = findType(b.dtype)
+        if (node.dtype /= vtp) then {
+            node.dtype := vtp
         }
         return node
     } elseif (b.kind == "def") then {
-        if (b.dtype /= false) then {
-            if (node.dtype /= b.dtype.value) then {
-                node.dtype := b.dtype.value
-            }
+        def dtp = findType(b.dtype)
+        if (node.dtype /= dtp) then {
+            node.dtype := dtp
         }
         return node
     } elseif (b.kind == "method") then {
@@ -1821,7 +1920,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
         } elseif (e.kind == "vardec") then {
-            tpb := findName(e.dtype.value)
+            tpb := findType(e.dtype)
             if (tpb.kind /= "type") then {
                 util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
@@ -1829,7 +1928,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             tmp.dtype := tpb
             bindName(e.name.value, tmp)
         } elseif (e.kind == "defdec") then {
-            tpb := findName(e.dtype.value)
+            tpb := findType(e.dtype)
             if (tpb.kind /= "type") then {
                 util.syntax_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
@@ -1839,9 +1938,13 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         } elseif (e.kind == "method") then {
             bindName(e.value.value, Binding.new("method"))
         } elseif (e.kind == "class") then {
-            bindName(e.name.value, Binding.new("def"))
+            tmp := Binding.new("def")
+            tmp.dtype := DynamicType
+            bindName(e.name.value, tmp)
         } elseif (e.kind == "import") then {
-            bindName(e.value.value, Binding.new("def"))
+            tmp := Binding.new("def")
+            tmp.dtype := DynamicType
+            bindName(e.value.value, tmp)
         }
     }
     for (lst) do {e->
