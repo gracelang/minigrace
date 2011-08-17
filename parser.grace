@@ -1847,7 +1847,7 @@ method resolveIdentifiers(node) {
                 util.syntax_error("assignment to undeclared {tmp.value}")
             }
             if (conformsType(expressionType(tmp2))to(tmp.dtype).not) then {
-                util.syntax_error("assigning value of nonconforming type "
+                util.type_error("assigning value of nonconforming type "
                     ++ "{expressionType(tmp2).value} to var of type "
                     ++ "{tmp.dtype.value}")
             }
@@ -1861,6 +1861,14 @@ method resolveIdentifiers(node) {
     if (node.kind == "vardec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
+        if (tmp2 /= false) then {
+            tmp3 := findType(node.dtype)
+            if (conformsType(expressionType(tmp2))to(tmp3).not) then {
+                util.type_error("initialising var of type "
+                    ++ "{tmp3.value} with expression of type "
+                    ++ expressionType(tmp2).value)
+            }
+        }
         if (tmp2 /= tmp) then {
             return ast.astvardec(node.name, tmp2, node.dtype)
         }
@@ -1868,6 +1876,12 @@ method resolveIdentifiers(node) {
     if (node.kind == "defdec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
+        tmp3 := findType(node.dtype)
+        if (conformsType(expressionType(tmp2))to(tmp3).not) then {
+            util.type_error("initialising def of type "
+                ++ "{tmp3.value} with expression of type "
+                ++ expressionType(tmp2).value)
+        }
         if (tmp2 /= tmp) then {
             return ast.astvardec(node.name, tmp2, node.dtype)
         }
