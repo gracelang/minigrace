@@ -1984,7 +1984,9 @@ method resolveIdentifiersList(lst)withBlock(bk) {
     }
     for (lst) do {e->
         util.setline(e.line)
-        nl.push(resolveIdentifiers(e))
+        tmp := resolveIdentifiers(e)
+        expressionType(tmp)
+        nl.push(tmp)
     }
     popScope
     nl
