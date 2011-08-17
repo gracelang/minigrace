@@ -314,17 +314,19 @@ method expressionType(expr) {
         }
         def callparams = callmeth.params
         def callargs = expr.with
-        var calli := callparams.indices.first
-        def callimax = callparams.indices.last
-        for (calli..callimax) do { i->
-            def arg = callargs.at(i)
-            def prm = callparams.at(i)
-            def argtp = expressionType(arg)
-            def prmtypeid = prm.dtype
-            def prmtype = findType(prmtypeid)
-            if (conformsType(argtp)to(prmtype).not) then {
-                util.type_error("argument {i} of '{callname}' must be of "
-                    ++ "type {prmtype.value}, given {argtp.value}")
+        if (callparams.size > 0) then {
+            var calli := callparams.indices.first
+            def callimax = callparams.indices.last
+            for (calli..callimax) do { i->
+                def arg = callargs.at(i)
+                def prm = callparams.at(i)
+                def argtp = expressionType(arg)
+                def prmtypeid = prm.dtype
+                def prmtype = findType(prmtypeid)
+                if (conformsType(argtp)to(prmtype).not) then {
+                    util.type_error("argument {i} of '{callname}' must be of "
+                        ++ "type {prmtype.value}, given {argtp.value}")
+                }
             }
         }
         def callreturntypeid = callmeth.rtype
