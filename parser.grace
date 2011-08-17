@@ -103,6 +103,8 @@ def DynamicIdentifier = ast.astidentifier("Dynamic", false)
 def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic", false))
 def StringIdentifier = ast.astidentifier("String", false)
 def StringOther = ast.astidentifier("other", StringIdentifier)
+def BooleanIdentifier = ast.astidentifier("Boolean", false)
+def BooleanOther = ast.astidentifier("other", BooleanIdentifier)
 def NumberIdentifier = ast.astidentifier("Number", false)
 def NumberOther = ast.astidentifier("other", NumberIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
@@ -112,9 +114,9 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype("-", [NumberOther], NumberIdentifier),
     ast.astmethodtype("/", [NumberOther], NumberIdentifier),
     ast.astmethodtype("%", [NumberOther], NumberIdentifier),
-    ast.astmethodtype("==", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("!=", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("/=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("++", [TopOther], DynamicIdentifier),
     ast.astmethodtype("<", [NumberOther], NumberIdentifier),
     ast.astmethodtype("<=", [NumberOther], NumberIdentifier),
@@ -128,9 +130,9 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),
     ast.astmethodtype("size", [], NumberIdentifier),
     ast.astmethodtype("at", [NumberOther], StringIdentifier),
-    ast.astmethodtype("==", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("!=", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("/=", [TopOther], DynamicIdentifier),
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("iter", [], DynamicIdentifier),
     ast.astmethodtype("substringFrom()to", [NumberOther, NumberOther],
         StringIdentifier),
@@ -138,6 +140,20 @@ def StringType = ast.asttype("String", [
         StringIdentifier),
     ast.astmethodtype("hashcode", [], NumberIdentifier),
     ast.astmethodtype("indices", [], DynamicIdentifier),
+    ast.astmethodtype("asString", [], StringIdentifier)
+])
+def BooleanType = ast.asttype("Boolean", [
+    ast.astmethodtype("++", [TopOther], StringIdentifier),
+    ast.astmethodtype("&", [BooleanOther], BooleanIdentifier),
+    ast.astmethodtype("|", [BooleanOther], BooleanIdentifier),
+    ast.astmethodtype("&&", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("||", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("prefix!", [], BooleanIdentifier),
+    ast.astmethodtype("not", [], BooleanIdentifier),
+    ast.astmethodtype("ifTrue", [TopOther], BooleanIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
 
@@ -211,6 +227,9 @@ method conformsType(b)to(a) {
 
 method expressionType(expr) {
     if (expr.kind == "identifier") then {
+        if ((expr.value == "true") | (expr.value == "false")) then {
+            return BooleanType
+        }
         return expr.dtype
     }
     if (expr.kind == "num") then {
@@ -1990,6 +2009,9 @@ method parse(toks) {
     btmp := Binding.new("type")
     btmp.value := StringType
     bindName("String", btmp)
+    btmp := Binding.new("type")
+    btmp.value := BooleanType
+    bindName("Boolean", btmp)
     pushScope
     linenum := 1
     next
