@@ -222,6 +222,14 @@ method conformsType(b)to(a) {
     if (b.value == a.value) then {
         return true
     }
+    if (a.unionTypes.size > 0) then {
+        for (a.unionTypes) do {ut->
+            if (conformsType(b)to(findType(ut))) then {
+                return true
+            }
+        }
+        return false
+    }
     var foundall := true
     for (a.methods) do {m1 ->
         def rtype1 = findType(m1.rtype)
@@ -441,6 +449,37 @@ method pushidentifier {
     }
     values.push(o)
     next
+}
+
+method dotyperef {
+    var overallType := false
+    var tp := false
+    var op := false
+    def unionTypes = []
+    if (accept("identifier")) then {
+        pushidentifier
+        overallType := values.pop
+    }
+    while {accept("op") & (sym.value == "|")} do {
+        if (unionTypes.size == 0) then {
+            unionTypes.push(overallType)
+        }
+        next
+        pushidentifier
+        unionTypes.push(values.pop)
+    }
+    if (unionTypes.size > 0) then {
+        var unionName := "Union<"
+        for (unionTypes) do {ut->
+            unionName := "{unionName}|{ut.value}"
+        }
+        unionName := "{unionName}|>"
+        overallType := ast.asttype(unionName, [])
+        for (unionTypes) do {ut->
+            overallType.unionTypes.push(ut)
+        }
+    }
+    values.push(overallType)
 }
 
 // Accept a block
@@ -1162,7 +1201,7 @@ method defdec {
         var name := values.pop
         if (accept("colon")) then {
             next
-            identifier
+            dotyperef
             dtype := values.pop
         }
         if (accept("op") & (sym.value == "=")) then {
@@ -1189,7 +1228,8 @@ method vardec {
         var name := values.pop
         if (accept("colon")) then {
             next
-            identifier
+            //identifier
+            dotyperef
             dtype := values.pop
         }
         if (accept("bind")) then {
@@ -1490,7 +1530,7 @@ method methoddec {
                 if (accept("colon")) then {
                     next
                     if (accept("identifier")) then {
-                        pushidentifier
+                        dotyperef
                         dtype := values.pop
                     } else {
                         util.syntax_error("expected dtype after :.")
@@ -1523,7 +1563,7 @@ method methoddec {
         if (accept("arrow")) then {
             // Return dtype
             next
-            pushidentifier
+            dotyperef
             dtype := values.pop
         } else {
             dtype := false
@@ -1773,6 +1813,7 @@ method resolveIdentifiers(node) {
     var tmp
     var tmp2
     var tmp3
+    var tmp4
     if (node == false) then {
         return node
     }
@@ -1872,19 +1913,28 @@ method resolveIdentifiers(node) {
             return ast.astbind(tmp, tmp2)
         }
     }
+    if (node.kind == "type") then {
+        tmp := resolveIdentifiersList(node.unionTypes)
+        tmp2 := ast.asttype(node.value, node.methods)
+        for (tmp) do {ut->
+            tmp2.unionTypes.push(findType(ut))
+        }
+        return tmp2
+    }
     if (node.kind == "vardec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
+        tmp4 := resolveIdentifiers(node.dtype)
         if (tmp2 /= false) then {
-            tmp3 := findType(node.dtype)
+            tmp3 := findType(tmp4)
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
                 util.type_error("initialising var of type "
                     ++ "{tmp3.value} with expression of type "
                     ++ expressionType(tmp2).value)
             }
         }
-        if (tmp2 /= tmp) then {
-            return ast.astvardec(node.name, tmp2, node.dtype)
+        if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
+            return ast.astvardec(node.name, tmp2, tmp4)
         }
     }
     if (node.kind == "defdec") then {

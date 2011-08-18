@@ -152,6 +152,7 @@ method asttype(name', methods') {
         def kind = "type"
         def value = name'
         def methods = methods'
+        def unionTypes = []
         def line = util.linenum
         var register := ""
         method pretty(depth) {
@@ -161,6 +162,12 @@ method asttype(name', methods') {
             }
             var s := "Type\n"
             s := "{s}{spc}Name: {value}\n"
+            if (unionTypes.size > 0) then {
+                s := "{s}{spc}Union of:\n"
+                for (unionTypes) do {ut->
+                    s := "{s}{spc}  {ut.value}\n"
+                }
+            }
             s := s ++ spc ++ "Methods:"
             for (methods) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
