@@ -238,8 +238,10 @@ method compileobject(o) {
         pos := pos + 1
     }
     o.register := selfr
+    inBlock := origInBlock
 }
 method compileblock(o) {
+    def origInBlock = inBlock
     inBlock := true
     var myc := auto_count
     auto_count := auto_count + 1
@@ -256,6 +258,7 @@ method compileblock(o) {
         ++ "i8* getelementptr([{modn.size + 1} x i8]* @.str.block{myc},"
         ++ "i32 0,i32 0))")
     o.register := obj
+    inBlock := origInBlock
 }
 method compilefor(o) {
     var myc := auto_count
