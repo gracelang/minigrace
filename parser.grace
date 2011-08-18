@@ -233,10 +233,10 @@ method conformsType(b)to(a) {
             }
         }
         if (!found) then {
-            foundall := false
+            return false
         }
     }
-    return foundall
+    return true
 }
 
 method expressionType(expr) {
