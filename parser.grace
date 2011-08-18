@@ -222,7 +222,21 @@ method conformsType(b)to(a) {
     if (b.value == a.value) then {
         return true
     }
-    return false
+    var foundall := true
+    for (a.methods) do {m1 ->
+        def rtype1 = findType(m1.rtype)
+        var found := false
+        for (b.methods) do {m2->
+            if (m2.value == m1.value) then {
+                def rtype2 = findType(m2.rtype)
+                found := true
+            }
+        }
+        if (!found) then {
+            foundall := false
+        }
+    }
+    return foundall
 }
 
 method expressionType(expr) {
