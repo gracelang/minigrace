@@ -222,6 +222,14 @@ method conformsType(b)to(a) {
     if (b.value == a.value) then {
         return true
     }
+    if (b.unionTypes.size > 0) then {
+        for (b.unionTypes) do {ut->
+            if (conformsType(findType(ut))to(a).not) then {
+                return false
+            }
+        }
+        return true
+    }
     if (a.unionTypes.size > 0) then {
         for (a.unionTypes) do {ut->
             if (conformsType(b)to(findType(ut))) then {
