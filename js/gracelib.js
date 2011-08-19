@@ -654,6 +654,10 @@ function gracecode_util() {
         debug: function(s) {
             dbg(s._value);
         },
+        type_error: function(s) {
+            stderr_txt.value += "Type error around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value;
+            throw "ErrorExit";
+        },
         syntax_error: function(s) {
             stderr_txt.value += "Syntax error around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value;
             throw "ErrorExit";
