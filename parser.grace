@@ -1228,7 +1228,6 @@ method vardec {
         var name := values.pop
         if (accept("colon")) then {
             next
-            //identifier
             dotyperef
             dtype := values.pop
         }
@@ -1919,6 +1918,29 @@ method resolveIdentifiers(node) {
         for (tmp) do {ut->
             tmp2.unionTypes.push(findType(ut))
         }
+        tmp4 := false
+        for (tmp2.unionTypes) do {utt->
+            if (tmp4 == false) then {
+                tmp4 := utt.methods
+            } else {
+                tmp3 := []
+                for (utt.methods) do {utm->
+                    for (tmp4) do {existingmeth->
+                        if (existingmeth.value == utm.value) then {
+                            tmp3.push(existingmeth)
+                        }
+                    }
+                }
+                tmp4 := tmp3
+            }
+        }
+        if (tmp4 /= false) then {
+            tmp3 := ast.asttype(node.value, tmp4)
+            for (tmp2.unionTypes) do {ut->
+                tmp3.unionTypes.push(ut)
+            }
+            tmp2 := tmp3
+        }
         return tmp2
     }
     if (node.kind == "vardec") then {
@@ -1934,19 +1956,22 @@ method resolveIdentifiers(node) {
             }
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
+            findName(node.name.value).dtype := tmp4
             return ast.astvardec(node.name, tmp2, tmp4)
         }
     }
     if (node.kind == "defdec") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
-        tmp3 := findType(node.dtype)
+        tmp4 := resolveIdentifiers(node.dtype)
+        tmp3 := findType(tmp4)
         if (conformsType(expressionType(tmp2))to(tmp3).not) then {
             util.type_error("initialising def of type "
                 ++ "{tmp3.value} with expression of type "
                 ++ expressionType(tmp2).value)
         }
         if (tmp2 /= tmp) then {
+            findName(node.name.value).dtype := tmp4
             return ast.astvardec(node.name, tmp2, node.dtype)
         }
     }
@@ -2013,6 +2038,12 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             tpb := Binding.new("type")
             tpb.value := e
             bindName(e.value, tpb)
+        }
+    }
+    for (lst) do {e->
+        if (e.kind == "type") then {
+            tpb := findName(e.value)
+            tpb.value := resolveIdentifiers(e)
         }
     }
     for (lst) do {e->
