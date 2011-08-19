@@ -1892,7 +1892,8 @@ method resolveIdentifiers(node) {
             bindIdentifier(e)
         }
         tmp2 := resolveIdentifiersList(node.value)withBlock(tmp)
-        node := ast.astclass(node.name, node.params,
+        tmp3 := resolveIdentifiersList(node.params)
+        node := ast.astclass(node.name, tmp3,
             tmp2,
             resolveIdentifiers(node.superclass))
         popScope
