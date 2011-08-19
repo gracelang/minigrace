@@ -156,6 +156,7 @@ def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("ifTrue", [TopOther], BooleanIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
+var currentReturnType := DynamicType
 
 class Binding { kind' ->
     var kind := kind'
@@ -1854,10 +1855,14 @@ method resolveIdentifiers(node) {
         if (node.varargs) then {
             bindIdentifier(node.vararg)
         }
+        tmp4 := resolveIdentifiers(node.dtype)
+        def oldReturnType = currentReturnType
+        currentReturnType := findType(tmp4)
         l := resolveIdentifiersList(node.body)
+        currentReturnType := oldReturnType
         popScope
         tmp := ast.astmethod(node.value, tmp2, l,
-            resolveIdentifiers(node.dtype))
+            tmp4)
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
         return tmp
@@ -1988,6 +1993,12 @@ method resolveIdentifiers(node) {
     if (node.kind == "return") then {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
+        tmp3 := expressionType(tmp2)
+        if (conformsType(tmp3)to(currentReturnType).not) then {
+            util.type_error("returning type "
+                ++ "{tmp3.value} from method of return type "
+                ++ currentReturnType.value)
+        }
         if (tmp2 /= tmp) then {
             return ast.astreturn(tmp2)
         }
