@@ -1978,9 +1978,9 @@ method resolveIdentifiers(node) {
                 ++ "{tmp3.value} with expression of type "
                 ++ expressionType(tmp2).value)
         }
-        if (tmp2 /= tmp) then {
+        if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
-            return ast.astvardec(node.name, tmp2, node.dtype)
+            return ast.astdefdec(node.name, tmp2, tmp4)
         }
     }
     if (node.kind == "return") then {
