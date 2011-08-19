@@ -1850,12 +1850,13 @@ method resolveIdentifiers(node) {
         for (node.params) do {e->
             bindIdentifier(e)
         }
+        tmp2 := resolveIdentifiersList(node.params)
         if (node.varargs) then {
             bindIdentifier(node.vararg)
         }
         l := resolveIdentifiersList(node.body)
         popScope
-        tmp := ast.astmethod(node.value, node.params, l,
+        tmp := ast.astmethod(node.value, tmp2, l,
             resolveIdentifiers(node.dtype))
         tmp.varargs := node.varargs
         tmp.vararg := node.vararg
