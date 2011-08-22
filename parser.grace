@@ -1245,6 +1245,9 @@ method vardec {
             expression
             val := values.pop
         }
+        if (accept("op") & (sym.value == "=")) then {
+            util.syntax_error("var declaration uses ':=', not '='")
+        }
         var o := ast.astvardec(name, val, dtype)
         values.push(o)
     }
@@ -1541,7 +1544,7 @@ method methoddec {
                         dotyperef
                         dtype := values.pop
                     } else {
-                        util.syntax_error("expected dtype after :.")
+                        util.syntax_error("expected type after :.")
                     }
                 }
                 id.dtype := dtype
