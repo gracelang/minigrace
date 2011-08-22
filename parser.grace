@@ -5,6 +5,7 @@ import util
 var lastline := 0
 var linenum := 0
 var lastIndent := 0
+var indentFreePass := false
 var minIndentLevel := 0
 var statementIndent := 0
 var statementToken
@@ -1722,7 +1723,9 @@ method dotype {
 method statement {
     statementIndent := sym.indent
     statementToken := sym
-    if ((sym.kind == "rbrace") | (sym.kind == "rparen")
+    if (indentFreePass) then {
+        indentFreePass := false
+    } elseif ((sym.kind == "rbrace") | (sym.kind == "rparen")
         | (sym.kind == "rsquare")) then {
         // pass
     } elseif (sym.indent < minIndentLevel) then {
@@ -1772,7 +1775,11 @@ method statement {
         }
     }
     if (accept("semicolon")) then {
+        def oldLine = sym.line
         next
+        if (sym.line == oldLine) then {
+            indentFreePass := true
+        }
     }
 }
 method findType(tp) {
