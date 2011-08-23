@@ -15,7 +15,7 @@ GraceString.prototype = {
             return new GraceString(this._value + o._value);
         },
         "at": function(other) {
-            var o = callmethod(other, asString);
+            var o = callmethod(other, 'asString');
             var idx = parseInt(o._value) - 1;
             return new GraceString(this._value.charAt(idx));
         },
