@@ -194,6 +194,9 @@ method findDeepMethod(name) {
         if (scopes.at(lv).contains("___is_object")) then {
             mem := ast.astmember("outer", mem)
         }
+        if (scopes.at(lv).contains("___is_class")) then {
+            mem := ast.astmember("outer", mem)
+        }
         lv := lv - 1
         if (lv == min) then {
             return ast.astidentifier(name, false)
@@ -1911,6 +1914,7 @@ method resolveIdentifiers(node) {
         pushScope
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
+            scopes.last.put("___is_class", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
         }
         for (node.params) do { e->
