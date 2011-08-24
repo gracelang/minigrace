@@ -565,7 +565,6 @@ method block {
         statementIndent := startIndent
         next
         var o := ast.astblock(params, body)
-        o := rewritematchblock(o)
         values.push(o)
     }
 }
