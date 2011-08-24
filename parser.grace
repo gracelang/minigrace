@@ -157,7 +157,7 @@ def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("ifTrue", [TopOther], BooleanIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
-var currentReturnType := DynamicType
+var currentReturnType := false
 
 class Binding { kind' ->
     var kind := kind'
@@ -2011,6 +2011,9 @@ method resolveIdentifiers(node) {
         }
     }
     if (node.kind == "return") then {
+        if (currentReturnType == false) then {
+            util.syntax_error("return statement with no surrounding method")
+        }
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         tmp3 := expressionType(tmp2)
