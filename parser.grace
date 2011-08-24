@@ -979,6 +979,9 @@ method expressionrest {
                 util.syntax_error("mixed operators without parentheses: "
                     ++ opdtype ++ " and " ++ o)
             }
+            if (o == "=") then {
+                util.syntax_error("bare '=' outside of def declaration")
+            }
             opdtype := o
             while {(ops.size > 0) & (prec <= toprec(ops))} do {
                 // Do the shunting: for as long as the current operator
