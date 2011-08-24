@@ -1868,6 +1868,17 @@ method resolveIdentifiers(node) {
         def oldReturnType = currentReturnType
         currentReturnType := findType(tmp4)
         l := resolveIdentifiersList(node.body)
+        if (l.size > 0) then {
+            def lastStatement = l.last
+            def realType = expressionType(lastStatement)
+            if (lastStatement.kind == "return") then {
+                // pass
+            } elseif (conformsType(realType)to(currentReturnType).not) then {
+                util.type_error("returning type "
+                    ++ "{realType.value} from method of return type "
+                    ++ currentReturnType.value)
+            }
+        }
         currentReturnType := oldReturnType
         popScope
         tmp := ast.astmethod(node.value, tmp2, l,
