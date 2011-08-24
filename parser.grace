@@ -130,6 +130,7 @@ def NumberType = ast.asttype("Number", [
 def StringType = ast.asttype("String", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),
     ast.astmethodtype("size", [], NumberIdentifier),
+    ast.astmethodtype("ord", [], NumberIdentifier),
     ast.astmethodtype("at", [NumberOther], StringIdentifier),
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
@@ -980,6 +981,9 @@ method expressionrest {
                 // entirely arithmetic, raise a syntax error.
                 util.syntax_error("mixed operators without parentheses: "
                     ++ opdtype ++ " and " ++ o)
+            }
+            if (o == "=") then {
+                util.syntax_error("bare '=' outside of def declaration")
             }
             opdtype := o
             while {(ops.size > 0) & (prec <= toprec(ops))} do {
