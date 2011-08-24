@@ -130,6 +130,7 @@ def NumberType = ast.asttype("Number", [
 def StringType = ast.asttype("String", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),
     ast.astmethodtype("size", [], NumberIdentifier),
+    ast.astmethodtype("ord", [], NumberIdentifier),
     ast.astmethodtype("at", [NumberOther], StringIdentifier),
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
