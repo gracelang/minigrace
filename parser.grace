@@ -2013,6 +2013,9 @@ method resolveIdentifiers(node) {
                 ++ "{tmp3.value} with expression of type "
                 ++ expressionType(tmp2).value)
         }
+        if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
+            tmp4 := expressionType(tmp2)
+        }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
             return ast.astdefdec(node.name, tmp2, tmp4)
