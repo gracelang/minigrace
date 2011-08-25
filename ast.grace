@@ -135,7 +135,9 @@ method astmethodtype(name', params', rtype') {
             }
             var s := "MethodType\n"
             s := "{s}{spc}Name: {value}\n"
-            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth+2)}\n"
+            if (rtype /= false) then {
+                s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth+2)}\n"
+            }
             s := s ++ spc ++ "Parameters:"
             for (params) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
