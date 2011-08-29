@@ -8,6 +8,7 @@ import parser
 import genllvm
 import genjs
 import buildinfo
+import subtype
 
 util.parseargs
 
@@ -29,6 +30,10 @@ if (util.target == "parse") then {
     for (values) do { v ->
         print(v.pretty(0))
     }
+    sys.exit(0)
+}
+if (util.target == "subtypematrix") then {
+    subtype.printMatrix
     sys.exit(0)
 }
 
