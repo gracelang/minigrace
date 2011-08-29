@@ -395,16 +395,16 @@ method expressionType(expr) {
         def objecttp = ast.asttype("<Object_{util.linenum}>", objectmeths)
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
-                objectmeths.push(ast.astmethodtype(e.value.value, [],
+                objectmeths.push(ast.astmethodtype(e.name.value, [],
                     findType(e.dtype)))
             } elseif (e.kind == "method") then {
                 objectmeths.push(ast.astmethodtype(e.value.value, e.params,
                     findType(e.dtype)))
             } elseif (e.kind == "vardec") then {
                 def vtype = findType(e.dtype)
-                objectmeths.push(ast.astmethodtype(e.value.value, [],
+                objectmeths.push(ast.astmethodtype(e.name.value, [],
                     vtype))
-                objectmeths.push(ast.astmethodtype(e.value.value ++ ":=", [
+                objectmeths.push(ast.astmethodtype(e.name.value ++ ":=", [
                     ast.astidentifier("_", vtype)],
                     false))
             }
