@@ -217,6 +217,9 @@ method compileobject(o) {
         numMethods := numMethods + 1
         numFields := numFields + 1
     }
+    if (numFields == 3) then {
+        numFields := 4
+    }
     if (o.superclass /= false) then {
         selfr := compilenode(o.superclass)
     } else {
