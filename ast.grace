@@ -136,13 +136,13 @@ method astmethodtype(name', params', rtype') {
             var s := "MethodType\n"
             s := "{s}{spc}Name: {value}\n"
             if (rtype /= false) then {
-                s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth+2)}\n"
+                s := "{s}{spc}Returns:\n  {spc}{rtype.value}\n"
             }
             s := s ++ spc ++ "Parameters:"
             for (params) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
                 if (mx.dtype /= false) then {
-                    s := "{s} : {mx.dtype.pretty(0)}"
+                    s := "{s} : {mx.dtype.value}"
                 }
             }
             s
@@ -456,7 +456,7 @@ method astdefdec(name', val, dtype') {
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
             if (self.dtype) then {
-                s := s ++ " : " ++ self.dtype.pretty(0)
+                s := s ++ " : " ++ self.dtype.value
             }
             if (self.value) then {
                 s := s ++ "\n  "
@@ -483,7 +483,7 @@ method astvardec(name', val', dtype') {
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
             if (self.dtype) then {
-                s := s ++ " : " ++ self.dtype.pretty(0)
+                s := s ++ " : " ++ self.dtype.value
             }
             if (self.value) then {
                 s := s ++ "\n    "
