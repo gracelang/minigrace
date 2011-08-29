@@ -516,6 +516,7 @@ method dotyperef {
         for (unionTypes) do {ut->
             overallType.unionTypes.push(ut)
         }
+        subtype.addType(overallType)
     }
     values.push(overallType)
 }
@@ -1696,7 +1697,7 @@ method domethodtype {
             var prm := values.pop
             if (accept("colon")) then {
                 next
-                pushidentifier
+                dotyperef
                 var tp := values.pop
                 prm.dtype := tp
             }
@@ -1715,7 +1716,7 @@ method domethodtype {
     if (accept("arrow")) then {
         next
         expect("identifier")
-        pushidentifier
+        dotyperef
         rtype := values.pop
     }
     values.push(ast.astmethodtype(mn, params, rtype))
