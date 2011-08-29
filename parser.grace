@@ -881,6 +881,9 @@ method prefixop {
         next
         if (accept("lparen")) then {
             next
+            if (accept("rparen")) then {
+                util.syntax_error("empty () in expression")
+            }
             expression
             expect("rparen")
             next
@@ -1032,6 +1035,9 @@ method expressionrest {
                 // precedence. Possibly parenthesised expressions could
                 // be allowed in term above?
                 next
+                if (accept("rparen")) then {
+                    util.syntax_error("empty () in expression (maybe empty interpolated \{\} block)")
+                }
                 expression
                 expect("rparen")
                 next
