@@ -23,11 +23,6 @@ method addType(t) {
     if (t.value == "Dynamic") then {
         DynamicType := t
     }
-    if (t.unionTypes.size > 0) then {
-        for (t.uniontypes) do {ut->
-            addType(ut)
-        }
-    }
     types.push(t)
     def inner = HashMap.new
     for (types) do {t2->
@@ -86,6 +81,14 @@ method checkThat(a)mayBeSubtypeOf(b) {
     }
     if (matrix.get(a.value).get(b.value).not) then {
         return false
+    }
+    if (a.unionTypes.size > 0) then {
+        for (a.unionTypes) do {ut->
+            if (checkThat(findType(ut))mayBeSubtypeOf(b).not) then {
+                return false
+            }
+        }
+        return true
     }
     if (b.unionTypes.size > 0) then {
         for (b.unionTypes) do {ut->
