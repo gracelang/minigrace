@@ -409,6 +409,7 @@ method expressionType(expr) {
                     false))
             }
         }
+        subtype.addType(objecttp)
         return objecttp
     }
     return DynamicType
@@ -2123,11 +2124,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             tpb := findName(e.value)
             tpb.value := resolveIdentifiers(e)
             subtype.addType(tpb.value)
-            tmp := true
         }
-    }
-    if (tmp) then {
-        subtype.findSubtypes
     }
     for (lst) do {e->
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
@@ -2210,7 +2207,6 @@ method parse(toks) {
     subtype.addType(NumberType)
     subtype.addType(StringType)
     subtype.addType(BooleanType)
-    subtype.findSubtypes
     pushScope
     linenum := 1
     next
