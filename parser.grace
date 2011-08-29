@@ -1,6 +1,7 @@
 import io
 import ast
 import util
+import subtype
 
 var lastline := 0
 var linenum := 0
@@ -244,6 +245,7 @@ method conformsType(b)to(a) {
         }
         return false
     }
+    return subtype.conformsType(b)to(a)
     var foundall := true
     for (a.methods) do {m1 ->
         def rtype1 = findType(m1.rtype)
@@ -390,7 +392,7 @@ method expressionType(expr) {
     }
     if (expr.kind == "object") then {
         def objectmeths = []
-        def objecttp = ast.asttype("<Anon>", objectmeths)
+        def objecttp = ast.asttype("<Object_{util.linenum}>", objectmeths)
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
                 objectmeths.push(ast.astmethodtype(e.value.value, [],
@@ -407,7 +409,7 @@ method expressionType(expr) {
                     false))
             }
         }
-        return DynamicType
+        return objecttp
     }
     return DynamicType
 }
@@ -2103,7 +2105,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
     var nl := []
     var isobj := false
     var tpb
-    var tmp
+    var tmp := false
     pushScope
     bk.apply
     if (scopes.last.contains("___is_object")) then {
@@ -2120,7 +2122,12 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         if (e.kind == "type") then {
             tpb := findName(e.value)
             tpb.value := resolveIdentifiers(e)
+            subtype.addType(tpb.value)
+            tmp := true
         }
+    }
+    if (tmp) then {
+        subtype.findSubtypes
     }
     for (lst) do {e->
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
@@ -2199,6 +2206,11 @@ method parse(toks) {
     btmp := Binding.new("type")
     btmp.value := BooleanType
     bindName("Boolean", btmp)
+    subtype.addType(DynamicType)
+    subtype.addType(NumberType)
+    subtype.addType(StringType)
+    subtype.addType(BooleanType)
+    subtype.findSubtypes
     pushScope
     linenum := 1
     next

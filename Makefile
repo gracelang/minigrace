@@ -2,7 +2,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=647a358cc4dcc6a3f67f3ff8e870386ef6241111
 all: minigrace
 
-REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace parser.grace genjs.grace
+REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace parser.grace genjs.grace subtype.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
