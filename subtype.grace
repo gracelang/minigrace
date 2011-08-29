@@ -3,6 +3,8 @@ import util
 
 def types = []
 def matrix = HashMap.new
+var DynamicType
+var modified := true
 
 method resetMatrix {
     for (types) do {t->
@@ -18,6 +20,9 @@ method addType(t) {
     if (matrix.contains(t.value)) then {
         return false
     }
+    if (t.value == "Dynamic") then {
+        DynamicType := t
+    }
     if (t.unionTypes.size > 0) then {
         for (t.uniontypes) do {ut->
             addType(ut)
@@ -32,10 +37,14 @@ method addType(t) {
         }
     }
     matrix.put(t.value, inner)
+    modified := true
     true
 }
 
 method printMatrix {
+    if (modified) then {
+        findSubtypes
+    }
     for (types) do {t->
         def row = matrix.get(t.value)
         var st := ""
@@ -48,6 +57,9 @@ method printMatrix {
     }
 }
 method findType(typeid) {
+    if (typeid == false) then {
+        return DynamicType
+    }
     if (typeid.kind == "type") then {
         return typeid
     }
@@ -60,6 +72,9 @@ method findType(typeid) {
 }
 
 method simpleCheckThat(a)mayBeSubtypeOf(b) {
+    if ((a == false) | (b == false)) then {
+        return true
+    }
     matrix.get(a.value).get(b.value)
 }
 method checkThat(a)mayBeSubtypeOf(b) {
@@ -131,10 +146,11 @@ method findSubtypes {
             }
         }
     }
+    modified := false
 }
 
 method conformsType(a)to(b) {
-    if (addType(a) | addType(b)) then {
+    if (addType(a) | addType(b) | modified) then {
         findSubtypes
     }
     matrix.get(a.value).get(b.value)
