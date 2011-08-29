@@ -1917,8 +1917,11 @@ Object HashMap_get(Object self, int nargs, Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     unsigned int s = HashMap__findSlot(h, args[0]);
     Object tk = h->table[s].key;
-    if (tk == HashMap_undefined)
-        die("key not found in HashMap.");
+    if (tk == HashMap_undefined) {
+        Object p = callmethod(args[0], "asString", 0, NULL);
+        char *c = cstringfromString(p);
+        die("key '%s' not found in HashMap.", c);
+    }
     return h->table[s].value;
 }
 Object HashMap_put(Object self, int nargs, Object *args, int flags) {
