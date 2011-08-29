@@ -461,8 +461,7 @@ method compileimport(o) {
     out("// Import of " ++ o.value.value)
     var con
     var nm := escapestring(o.value.value)
-    out("  var " ++ varf(nm) ++ " = gracecode_" ++ nm ++ ".call("
-        ++ "Grace_allocObject())")
+    out("  var " ++ varf(nm) ++ " = do_import(\"{nm}\", gracecode_{nm});")
     o.register := "undefined"
 }
 method compilereturn(o) {

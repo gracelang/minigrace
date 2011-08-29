@@ -715,6 +715,15 @@ function ReturnException(v, target) {
 ReturnException.prototype = {
     'exctype': 'return',
 };
+var importedModules = {};
+function do_import(modname, func) {
+    if (importedModules[modname]) {
+        return importedModules[modname];
+    }
+    var f = func.call(Grace_allocObject());
+    importedModules[modname] = f;
+    return f;
+}
 function dbgp(o, d) {
     if (d == undefined)
         d = 0;

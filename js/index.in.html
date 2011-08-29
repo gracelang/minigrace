@@ -7,6 +7,7 @@
          var goldenOutputOffset = 0;
          var compileError = false;
          function compile() {
+            importedModules = {};
             stdout_txt = document.getElementById("js_txt");
             stdin_txt = document.getElementById("code_txt");
             stderr_txt = document.getElementById("stderr_txt");
@@ -26,6 +27,7 @@
             }
          }
         function run() {
+            importedModules = {};
             stdout_txt = document.getElementById("stdout_txt");
             stdin_txt = document.getElementById("stdout_txt");
             stderr_txt = document.getElementById("stderr_txt");
