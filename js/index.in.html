@@ -82,9 +82,11 @@
             var show_llvm = document.getElementById("show_llvm");
             var show_ast = document.getElementById("show_ast");
             var show_tokens = document.getElementById("show_tokens");
+            var show_types = document.getElementById("show_types");
             var run_but = document.getElementById("run_but");
             var compilerun_but = document.getElementById("compilerun_but");
-            if (show_llvm.checked || show_ast.checked || show_tokens.checked) {
+            if (show_llvm.checked || show_ast.checked || show_tokens.checked
+                    || show_types.checked) {
                 run_but.disabled = true;
                 compilerun_but.disabled = true;
             } else {
@@ -105,6 +107,7 @@
  <input type="checkbox" id="show_tokens" onchange="modeswitch()"/>Tokens
  <input type="checkbox" id="show_ast" onchange="modeswitch()" />Parse tree
  <input type="checkbox" id="show_llvm" onchange="modeswitch()" />LLVM
+ <input type="checkbox" id="show_types" onchange="modeswitch()" />Types
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
 <!--[!SH[ls tests | grep .test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
