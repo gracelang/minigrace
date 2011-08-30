@@ -458,10 +458,22 @@ int getutf8charlen(const char *s) {
 int getutf8char(const char *s, char buf[5]) {
     int i;
     int charlen = getutf8charlen(s);
+    int cp = 0;
     for (i=0; i<5; i++) {
         if (i < charlen) {
             int c = s[i] & 255;
             buf[i] = c;
+            if (i == 0) {
+                if (charlen == 1)
+                    cp = c;
+                else if (charlen == 2)
+                    cp = c & 31;
+                else if (charlen == 3)
+                    cp = c & 15;
+                else
+                    cp = c & 7;
+            } else
+                cp = (cp << 6) | (c & 63);
             if ((c == 192) || (c == 193) || (c > 244)) {
                 die("Invalid byte in UTF-8 sequence: %x at position %i",
                         c, i);
@@ -472,6 +484,15 @@ int getutf8char(const char *s, char buf[5]) {
             }
         } else
             buf[i] = 0;
+    }
+    if ((cp >= 0xD800) && (cp <= 0xDFFF)) {
+        die("Illegal surrogate in UTF-8 sequence: U+%x", cp);
+    }
+    if ((cp & 0xfffe) == 0xfffe) {
+        die("Illegal non-character in UTF-8 sequence: U+%x", cp);
+    }
+    if ((cp >= 0xfdd0) && (cp <= 0xfdef)) {
+        die("Illegal non-character in UTF-8 sequence: U+%x", cp);
     }
     return 0;
 }
