@@ -36,6 +36,25 @@ method addType(t) {
     true
 }
 
+method resetType(t) {
+    if (matrix.contains(t.value).not) then {
+        return addType(t)
+    }
+    def inner = HashMap.new
+    for (types) do {t2->
+        inner.put(t2.value, true)
+        matrix.get(t2.value).put(t.value, true)
+        if (t2.value == t.value) then {
+            for (t.methods) do {tm->
+                t2.methods.push(tm)
+            }
+        }
+    }
+    matrix.put(t.value, inner)
+    modified := true
+    true
+}
+
 method printMatrix {
     if (modified) then {
         findSubtypes
