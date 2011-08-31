@@ -198,7 +198,7 @@ Object unicode_create(Object self, int nparams,
         tmp &= 0xf;
         buf[0] |= tmp;
         tmp = cp >> 6;
-        tmp &= 0x1f;
+        tmp &= 0x3f;
         buf[1] |= tmp;
         tmp = cp & 0x3f;
         buf[2] |= tmp;
@@ -208,13 +208,13 @@ Object unicode_create(Object self, int nparams,
         buf[2] = 0x80;
         buf[3] = 0x80;
         tmp = cp >> 16;
-        tmp &= 0x8;
+        tmp &= 0x7;
         buf[0] |= tmp;
         tmp = cp >> 12;
-        tmp &= 0x1f;
+        tmp &= 0x3f;
         buf[1] |= tmp;
         tmp = cp >> 6;
-        tmp &= 0x1f;
+        tmp &= 0x3f;
         buf[2] |= tmp;
         tmp = cp & 0x3f;
         buf[3] |= tmp;
