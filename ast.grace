@@ -155,6 +155,7 @@ method asttype(name', methods') {
         def value = name'
         def methods = methods'
         def unionTypes = []
+        def intersectionTypes = []
         def line = util.linenum
         var register := ""
         method pretty(depth) {
@@ -168,6 +169,12 @@ method asttype(name', methods') {
                 s := "{s}{spc}Union of:\n"
                 for (unionTypes) do {ut->
                     s := "{s}{spc}  {ut.value}\n"
+                }
+            }
+            if (intersectionTypes.size > 0) then {
+                s := "{s}{spc}Intersection of:\n"
+                for (intersectionTypes) do {it->
+                    s := "{s}{spc}  {it.value}\n"
                 }
             }
             s := s ++ spc ++ "Methods:"
