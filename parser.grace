@@ -518,6 +518,27 @@ method dotyperef {
         }
         subtype.addType(overallType)
     }
+    def intersectionTypes = []
+    while {accept("op") & (sym.value == "&")} do {
+        if (intersectionTypes.size == 0) then {
+            intersectionTypes.push(overallType)
+        }
+        next
+        pushidentifier
+        intersectionTypes.push(values.pop)
+    }
+    if (intersectionTypes.size > 0) then {
+        var intersectionName := "Intersection<"
+        for (intersectionTypes) do {it->
+            intersectionName := "{intersectionName}&{it.value}"
+        }
+        intersectionName := intersectionName ++ "&>"
+        overallType := ast.asttype(intersectionName, [])
+        for (intersectionTypes) do {it->
+            overallType.intersectionTypes.push(it)
+        }
+        subtype.addType(overallType)
+    }
     values.push(overallType)
 }
 
@@ -1987,33 +2008,73 @@ method resolveIdentifiers(node) {
         }
     }
     if (node.kind == "type") then {
-        tmp := resolveIdentifiersList(node.unionTypes)
-        tmp2 := ast.asttype(node.value, node.methods)
-        for (tmp) do {ut->
-            tmp2.unionTypes.push(findType(ut))
-        }
-        tmp4 := false
-        for (tmp2.unionTypes) do {utt->
-            if (tmp4 == false) then {
-                tmp4 := utt.methods
-            } else {
-                tmp3 := []
-                for (utt.methods) do {utm->
-                    for (tmp4) do {existingmeth->
-                        if (existingmeth.value == utm.value) then {
-                            tmp3.push(existingmeth)
+        if (node.unionTypes.size > 0) then {
+            tmp := resolveIdentifiersList(node.unionTypes)
+            tmp2 := ast.asttype(node.value, node.methods)
+            for (tmp) do {ut->
+                tmp2.unionTypes.push(findType(ut))
+            }
+            tmp4 := false
+            for (tmp2.unionTypes) do {utt->
+                if (tmp4 == false) then {
+                    tmp4 := utt.methods
+                } else {
+                    tmp3 := []
+                    for (utt.methods) do {utm->
+                        for (tmp4) do {existingmeth->
+                            if (existingmeth.value == utm.value) then {
+                                tmp3.push(existingmeth)
+                            }
+                        }
+                    }
+                    tmp4 := tmp3
+                }
+            }
+            if (tmp4 /= false) then {
+                tmp3 := ast.asttype(node.value, tmp4)
+                for (tmp2.unionTypes) do {ut->
+                    tmp3.unionTypes.push(ut)
+                }
+                tmp2 := tmp3
+            }
+            subtype.resetType(tmp2)
+        } elseif (node.intersectionTypes.size > 0) then {
+            tmp := resolveIdentifiersList(node.intersectionTypes)
+            tmp2 := ast.asttype(node.value, node.methods)
+            for (tmp) do {it->
+                tmp2.intersectionTypes.push(findType(it))
+            }
+            tmp4 := false
+            for (tmp2.intersectionTypes) do {utt->
+                if (tmp4 == false) then {
+                    tmp4 := []
+                    for (utt.methods) do {tm->
+                        tmp4.push(tm)
+                    }
+                } else {
+                    for (utt.methods) do {utm->
+                        var imfound := false
+                        for (tmp4) do {existingmeth->
+                            if (existingmeth.value == utm.value) then {
+                                imfound := true
+                            }
+                        }
+                        if (!imfound) then {
+                            tmp4.push(utm)
                         }
                     }
                 }
-                tmp4 := tmp3
             }
-        }
-        if (tmp4 /= false) then {
-            tmp3 := ast.asttype(node.value, tmp4)
-            for (tmp2.unionTypes) do {ut->
-                tmp3.unionTypes.push(ut)
+            if (tmp4 /= false) then {
+                tmp3 := ast.asttype(node.value, tmp4)
+                for (tmp2.intersectionTypes) do {ut->
+                    tmp3.intersectionTypes.push(ut)
+                }
+                tmp2 := tmp3
             }
-            tmp2 := tmp3
+            subtype.resetType(tmp2)
+        } else {
+            tmp2 := node
         }
         return tmp2
     }
