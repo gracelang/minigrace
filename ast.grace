@@ -281,6 +281,7 @@ method astobject(body, superclass') {
         var register := ""
         def line = util.linenum
         def superclass = superclass'
+        var otype := false
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->

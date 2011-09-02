@@ -2,6 +2,7 @@
 import util
 
 def types = []
+def typesToId = HashMap.new
 def matrix = HashMap.new
 var DynamicType
 var modified := true
@@ -23,6 +24,7 @@ method addType(t) {
     if (t.value == "Dynamic") then {
         DynamicType := t
     }
+    typesToId.put(t.value, types.size)
     types.push(t)
     def inner = HashMap.new
     for (types) do {t2->
@@ -53,6 +55,25 @@ method resetType(t) {
     matrix.put(t.value, inner)
     modified := true
     true
+}
+
+method typeId(t) {
+    if (t == false) then {
+        return typeId(DynamicType)
+    }
+    typesToId.get(t.value)
+}
+
+method boolMatrix {
+    def mtrx = []
+    for (types) do {t->
+        def row = matrix.get(t.value)
+        def inner = []
+        for (types) do {t2->
+            inner.push(row.get(t2.value))
+        }
+    }
+    mtrx
 }
 
 method printMatrix {

@@ -392,7 +392,7 @@ method expressionType(expr) {
     }
     if (expr.kind == "object") then {
         def objectmeths = []
-        def objecttp = ast.asttype("<Object_{util.linenum}>", objectmeths)
+        def objecttp = ast.asttype("<Object_{expr.line}>", objectmeths)
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
                 objectmeths.push(ast.astmethodtype(e.name.value, [],
@@ -410,6 +410,7 @@ method expressionType(expr) {
             }
         }
         subtype.addType(objecttp)
+        expr.otype := objecttp
         return objecttp
     }
     return DynamicType
