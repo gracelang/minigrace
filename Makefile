@@ -9,10 +9,10 @@ buildinfo.grace: $(REALSOURCEFILES) gracelib.c
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
-gracelib.o: gracelib.c
+gracelib.o: gracelib.c gracelib.h
 	clang -emit-llvm -c gracelib.c
 
-unicode.gso: unicode.c unicodedata.h
+unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
 l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.o
