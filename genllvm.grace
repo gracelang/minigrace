@@ -1268,6 +1268,25 @@ method compile(vl, of, mn, rm, bt, glpath) {
     for (constants) do { c ->
         out(c)
     }
+    def mtx = subtype.boolMatrix
+    out("@.subtypes = private unnamed_addr "
+        ++ "constant [{mtx.size * mtx.size} x i16] [")
+    var smfirst := true
+    for (mtx) do {m1->
+        for (m1) do {m2->
+            if (smfirst) then {
+                smfirst := false
+            } else {
+                out(",")
+            }
+            if (m2) then {
+                out("i16 1")
+            } else {
+                out("i16 0")
+            }
+        }
+    }
+    out("]")
     out("; gracelib")
     out("declare %object @alloc_obj2(i32, i32)")
     out("declare void @addmethod2(%object, i8*, %object(%object, i32, %object*, i32)*)")
