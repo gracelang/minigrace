@@ -1270,7 +1270,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     def mtx = subtype.boolMatrix
     out("@.subtypes = private unnamed_addr "
-        ++ "constant [{mtx.size * mtx.size} x i16] [")
+        ++ "constant [{mtx.size * mtx.size} x i1] [")
     var smfirst := true
     for (mtx) do {m1->
         for (m1) do {m2->
@@ -1280,13 +1280,24 @@ method compile(vl, of, mn, rm, bt, glpath) {
                 out(",")
             }
             if (m2) then {
-                out("i16 1")
+                out("i1 1")
             } else {
-                out("i16 0")
+                out("i1 0")
             }
         }
     }
     out("]")
+    out("@.typecount = private unnamed_addr constant i16 {mtx.size}")
+    out("define private i1 @checksub(i16 %sub, i16 %sup) \{")
+    out("entry:")
+    out("  %tc = load i16* @.typecount")
+    out("  %st = load [{mtx.size * mtx.size} x i1]* @.subtypes")
+    out("  %ridx = mul i16 %sub, %tc")
+    out("  %idx = add i16 %ridx, %sup")
+    out("  %ptr = getelementptr [{mtx.size * mtx.size} x i1]* @.subtypes, i32 0, i16 %idx")
+    out("  %rv = load i1* %ptr")
+    out("  ret i1 %rv")
+    out("}")
     out("; gracelib")
     out("declare %object @alloc_obj2(i32, i32)")
     out("declare void @addmethod2(%object, i8*, %object(%object, i32, %object*, i32)*)")
