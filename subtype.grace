@@ -65,6 +65,9 @@ method typeId(t) {
 }
 
 method boolMatrix {
+    if (modified) then {
+        findSubtypes
+    }
     def mtrx = []
     for (types) do {t->
         def row = matrix.get(t.value)
@@ -72,6 +75,7 @@ method boolMatrix {
         for (types) do {t2->
             inner.push(row.get(t2.value))
         }
+        mtrx.push(inner)
     }
     mtrx
 }
