@@ -2014,6 +2014,12 @@ Object alloc_HashMapClassObject() {
     Object o = alloc_obj(0, c);
     return o;
 }
+void set_type(Object o, int16_t t) {
+    int32_t flags = o->flags;
+    flags &= 0xffff;
+    flags |= (t << 16);
+    o->flags = flags;
+}
 Object alloc_userobj(int numMethods, int numFields) {
     ClassData c = alloc_class("Object", numMethods + 6);
     Object o = alloc_obj(sizeof(Object) * numFields, c);
