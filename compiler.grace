@@ -12,7 +12,7 @@ import subtype
 
 util.parseargs
 
-var tokens := lexer.lexinput
+var tokens := lexer.Lexer.new.lexinput
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
