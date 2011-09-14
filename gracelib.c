@@ -701,13 +701,13 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
-        add_Method(ConcatString, "substringFrom()to",
+        add_Method(ConcatString, "substringFrom(1)to",
                 &ConcatString_substringFrom_to);
-        add_Method(ConcatString, "replace()with", &String_replace_with);
+        add_Method(ConcatString, "replace(1)with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &ConcatString_hashcode);
-        add_Method(ConcatString, "matchObject()matchesBinding()else",
+        add_Method(ConcatString, "matchObject(1)matchesBinding(1)else",
                 &String_matchObject_matchesBinding_else);
-        add_Method(ConcatString, "match()matchesBinding()else",
+        add_Method(ConcatString, "match(1)matchesBinding(1)else",
                 &Object_match_matchesBinding_else);
         add_Method(ConcatString, "indices", &String_indices);
     }
@@ -878,12 +878,12 @@ Object alloc_String(const char *data) {
         add_Method(String, "iter", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
-        add_Method(String, "substringFrom()to", &String_substringFrom_to);
-        add_Method(String, "replace()with", &String_replace_with);
+        add_Method(String, "substringFrom(1)to", &String_substringFrom_to);
+        add_Method(String, "replace(1)with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
-        add_Method(String, "matchObject()matchesBinding()else",
+        add_Method(String, "matchObject(1)matchesBinding(1)else",
                 &String_matchObject_matchesBinding_else);
-        add_Method(String, "match()matchesBinding()else",
+        add_Method(String, "match(1)matchesBinding(1)else",
                 &Object_match_matchesBinding_else);
         add_Method(String, "indices", &String_indices);
     }
@@ -1236,9 +1236,9 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
-        add_Method(Number, "matchObject()matchesBinding()else",
+        add_Method(Number, "matchObject(1)matchesBinding(1)else",
                 &Float64_matchObject_matchesBinding_else);
-        add_Method(Number, "match()matchesBinding()else",
+        add_Method(Number, "match(1)matchesBinding(1)else",
                 &Object_match_matchesBinding_else);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);

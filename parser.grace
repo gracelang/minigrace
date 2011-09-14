@@ -1212,11 +1212,18 @@ method callmprest(meth, params, tok) {
     var methname := meth.value
     var nxt
     var ln := linenum
+    var lastparamcount := 0
     while {accept("identifier")onLineOf(tok)
            | accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
-        methname := methname ++ "()"
+        util.runOnNew {
+            methname := methname ++ "({params.size - lastparamcount})"
+            lastparamcount := params.size
+        } else {
+            false // XXX Parse bug
+            methname := methname ++ "()"
+        }
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1516,13 +1523,20 @@ method doclass {
 method parsempmndecrest(tm) {
     var methname := tm.value.value
     def params = tm.params
+    var lastparamcount := 0
     var nxt
     var varargs := false
     while {accept("identifier")} do {
         if (varargs) then {
             util.syntax_error("varargs parameter must be last.")
         }
-        methname := methname ++ "()"
+        util.runOnNew {
+            methname := methname ++ "({params.size - lastparamcount})"
+            lastparamcount := params.size
+        } else {
+            false // XXX Parse bug
+            methname := methname ++ "()"
+        }
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1718,6 +1732,7 @@ method domethodtype {
     }
     var rtype := ast.astidentifier("Unit", false)
     var params := []
+    var lastparamcount := 0
     while {accept("lparen")} do {
         next
         while {accept("identifier")} do {
@@ -1738,7 +1753,13 @@ method domethodtype {
         next
         if (accept("identifier")) then {
             pushidentifier
-            mn := "{mn}(){values.pop.value}"
+            util.runOnNew {
+                mn := "{mn}({params.size - lastparamcount}){values.pop.value}"
+                lastparamcount := params.size
+            } else {
+                false // XXX Parse bug
+                mn := mn ++ "()" ++ values.pop.value
+            }
         }
     }
     if (accept("arrow")) then {
