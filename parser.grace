@@ -558,7 +558,7 @@ method block {
         var found := false
         var i := 0
         var toks := tokens
-
+        statementToken := sym
         ifConsume {expression} then {
             if (accept("comma") | accept("arrow") | accept("colon")) then {
                 // This block has parameters
