@@ -679,7 +679,7 @@ function gracecode_util() {
             }
             return new GraceString(s)
         },
-        "runOnNew()else": function(b,e) {
+        "runOnNew(1)else": function(b,e) {
             return callmethod(b, "apply");
         },
         "extensions": function() {
