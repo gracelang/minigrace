@@ -604,15 +604,7 @@ function gracecode_util() {
         parseargs: function() {
         },
         target: function() {
-            if (document.getElementById("show_tokens").checked)
-                return new GraceString("lex");
-            if (document.getElementById("show_ast").checked)
-                return new GraceString("parse");
-            if (document.getElementById("show_types").checked)
-                return new GraceString("subtypematrix");
-            if (document.getElementById("show_llvm").checked)
-                return new GraceString("llvm");
-            return new GraceString("js");
+            return new GraceString(document.getElementById('mode').value);
         },
         modname: function() {
             return new GraceString("USER");

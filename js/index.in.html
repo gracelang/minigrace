@@ -8,6 +8,12 @@
          var compileError = false;
          var passes = 0;
          function compile() {
+            if (document.getElementById('mode').value == 'testall') {
+                document.getElementById('mode').selectedIndex = 0;
+                modeswitch();
+                testall();
+                return;
+            }
             importedModules = {};
             stdout_txt = document.getElementById("js_txt");
             stdin_txt = document.getElementById("code_txt");
@@ -82,14 +88,10 @@
             }
         }
         function modeswitch() {
-            var show_llvm = document.getElementById("show_llvm");
-            var show_ast = document.getElementById("show_ast");
-            var show_tokens = document.getElementById("show_tokens");
-            var show_types = document.getElementById("show_types");
             var run_but = document.getElementById("run_but");
             var compilerun_but = document.getElementById("compilerun_but");
-            if (show_llvm.checked || show_ast.checked || show_tokens.checked
-                    || show_types.checked) {
+            var mode = document.getElementById('mode');
+            if (mode.value != 'js') {
                 run_but.disabled = true;
                 compilerun_but.disabled = true;
             } else {
@@ -136,10 +138,15 @@
  <input type="button" value="Compile" onclick="compile()" />
  <input type="button" id="run_but" value="Run code" onclick="run()" />
  <input type="button" id="compilerun_but" value="Compile & run" onclick="compilerun()" />
- <input type="checkbox" id="show_tokens" onchange="modeswitch()"/>Tokens
- <input type="checkbox" id="show_ast" onchange="modeswitch()" />Parse tree
- <input type="checkbox" id="show_llvm" onchange="modeswitch()" />LLVM
- <input type="checkbox" id="show_types" onchange="modeswitch()" />Types
+ Target:
+ <select id="mode" onchange="modeswitch()">
+  <option value="js" />Javascript
+  <option value="lex" />Tokens
+  <option value="parse" />AST
+  <option value="llvm" />LLVM bitcode
+  <option value="subtypematrix" />Type matrix
+  <option value="testall" />All tests (slow)
+ </select>
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
 <!--[!SH[ls tests | grep .test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
