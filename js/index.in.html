@@ -6,6 +6,7 @@
          var goldenOutput = "";
          var goldenOutputOffset = 0;
          var compileError = false;
+         var passes = 0;
          function compile() {
             importedModules = {};
             stdout_txt = document.getElementById("js_txt");
@@ -34,6 +35,7 @@
             var code = document.getElementById("js_txt").value;
             lineNumber = 1;
             eval(code);
+            testpass = false;
             try {
                 gracecode_USER.call({methods:{}, data: {}, className: "__main__"});
             } catch (e) {
@@ -46,6 +48,7 @@
                 var realOut = stdout_txt.value.substr(goldenOutputOffset);
                 if (realOut == goldenOutput) {
                     stderr_txt.value += "\nTest passed.\n";
+                    passes = passes + 1;
                 } else {
                     stderr_txt.value += "\nTest failed.\n";
                 }
@@ -92,6 +95,35 @@
             } else {
                 run_but.disabled = false;
                 compilerun_but.disabled = false;
+            }
+        }
+        function testall() {
+            var tc = document.getElementById('testcases');
+            passes = 0;
+            var tests = 0;
+            var failures = [];
+            for (var i=0;i<tc.children.length;i++) {
+                tests++;
+                tc.selectedIndex = i;
+                loadtest(tc.children[i].value);
+                var op = passes;
+                compilerun();
+                if (tc.children[i].value.indexOf(".fail") != -1) {
+                    if (stderr_txt.value.indexOf("error") != -1) {
+                        passes++;
+                    } else {
+                        failures.push(tc.children[i].value);
+                    }
+                } else {
+                    if (op == passes)
+                        failures.push(tc.children[i].value);
+                }
+            }
+            stderr_txt.value += "\n\nRan all tests. Passed: "+passes+"/"+tests;
+            if (failures.length > 0) {
+                stderr_txt.value += "\nFailures: ";
+                for (var i=0; i<failures.length; i++)
+                    stderr_txt.value += "\n  " + failures[i];
             }
         }
      </script>
