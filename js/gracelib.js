@@ -23,11 +23,11 @@ GraceString.prototype = {
             return new GraceNum(this._value.length);
         },
         "_escape": function() {
-            var tmp = callmethod(this, "replace()with",
+            var tmp = callmethod(this, "replace(1)with",
                     new GraceString("\\"), new GraceString("\\\\"));
-            tmp = callmethod(tmp, "replace()with",
+            tmp = callmethod(tmp, "replace(1)with",
                     new GraceString("\""), new GraceString("\\\""));
-            tmp = callmethod(tmp, "replace()with",
+            tmp = callmethod(tmp, "replace(1)with",
                     new GraceString("\n"), new GraceString("\\n"));
             return tmp;
         },
