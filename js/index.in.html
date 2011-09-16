@@ -105,13 +105,29 @@
             var tests = 0;
             var failures = [];
             var idx = 0;
+            var overallStartTime = (new Date).getTime();
+            var fetchTime = 0;
+            var compileTime = 0;
+            var runTime = 0;
             function testnext() {
                 function testthis() {
                     tests++;
                     tc.selectedIndex = idx;
+                    var st = (new Date).getTime();
                     loadtest(tc.children[idx].value);
+                    var et = (new Date).getTime();
+                    fetchTime += (et - st);
                     var op = passes;
-                    compilerun();
+                    st = (new Date).getTime();
+                    compile();
+                    et = (new Date).getTime();
+                    compileTime += (et - st);
+                    st = (new Date).getTime();
+                    if (!compileError) {
+                        run();
+                    }
+                    et = (new Date).getTime();
+                    runTime += (et - st);
                     if (tc.children[idx].value.indexOf(".fail") != -1) {
                         if (stderr_txt.value.indexOf("error") != -1) {
                             passes++;
@@ -129,8 +145,9 @@
                     testnext();
                 }
                 if (idx < tc.children.length) {
-                    setTimeout(testthis, 20);
+                    setTimeout(testthis, 0);
                 } else {
+                    var overallEndTime = (new Date).getTime();
                     stderr_txt.value = "Ran all tests. Passed: " +
                         passes + "/" + tests;
                     if (failures.length > 0) {
@@ -138,6 +155,11 @@
                         for (var i=0; i<failures.length; i++)
                             stderr_txt.value += "\n  " + failures[i];
                     }
+                    stderr_txt.value += "\nTook " + (
+                            overallEndTime - overallStartTime) +
+                        "ms real time, " + fetchTime + "ms fetching, "
+                        + compileTime + "ms compiling, "
+                        + runTime + "ms running.";
                 }
             }
             testnext();
