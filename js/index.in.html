@@ -131,7 +131,8 @@
                 if (idx < tc.children.length) {
                     setTimeout(testthis, 20);
                 } else {
-                    stderr_txt.value += "\n\nRan all tests. Passed: "+passes+"/"+tests;
+                    stderr_txt.value = "Ran all tests. Passed: " +
+                        passes + "/" + tests;
                     if (failures.length > 0) {
                         stderr_txt.value += "\nFailures: ";
                         for (var i=0; i<failures.length; i++)
