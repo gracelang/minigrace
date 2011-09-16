@@ -104,29 +104,42 @@
             passes = 0;
             var tests = 0;
             var failures = [];
-            for (var i=0;i<tc.children.length;i++) {
-                tests++;
-                tc.selectedIndex = i;
-                loadtest(tc.children[i].value);
-                var op = passes;
-                compilerun();
-                if (tc.children[i].value.indexOf(".fail") != -1) {
-                    if (stderr_txt.value.indexOf("error") != -1) {
-                        passes++;
+            var idx = 0;
+            function testnext() {
+                function testthis() {
+                    tests++;
+                    tc.selectedIndex = idx;
+                    loadtest(tc.children[idx].value);
+                    var op = passes;
+                    compilerun();
+                    if (tc.children[idx].value.indexOf(".fail") != -1) {
+                        if (stderr_txt.value.indexOf("error") != -1) {
+                            passes++;
+                        } else {
+                            failures.push(tc.children[idx].value);
+                        }
                     } else {
-                        failures.push(tc.children[i].value);
+                        if (op == passes)
+                            failures.push(tc.children[idx].value);
                     }
+                    idx++;
+                    stderr_txt.value = ("Ran " + idx + "/"
+                            + tc.children.length + " tests.\n\n"
+                            + stderr_txt.value);
+                    testnext();
+                }
+                if (idx < tc.children.length) {
+                    setTimeout(testthis, 20);
                 } else {
-                    if (op == passes)
-                        failures.push(tc.children[i].value);
+                    stderr_txt.value += "\n\nRan all tests. Passed: "+passes+"/"+tests;
+                    if (failures.length > 0) {
+                        stderr_txt.value += "\nFailures: ";
+                        for (var i=0; i<failures.length; i++)
+                            stderr_txt.value += "\n  " + failures[i];
+                    }
                 }
             }
-            stderr_txt.value += "\n\nRan all tests. Passed: "+passes+"/"+tests;
-            if (failures.length > 0) {
-                stderr_txt.value += "\nFailures: ";
-                for (var i=0; i<failures.length; i++)
-                    stderr_txt.value += "\n  " + failures[i];
-            }
+            testnext();
         }
      </script>
  </head>
