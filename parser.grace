@@ -393,6 +393,12 @@ method expressionType(expr) {
     if (expr.kind == "object") then {
         def objectmeths = []
         def objecttp = ast.asttype("<Object_{expr.line}>", objectmeths)
+        if (expr.superclass /= false) then {
+            def supertype = expressionType(expr.superclass)
+            for (supertype.methods) do {e->
+                objectmeths.push(e)
+            }
+        }
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
                 objectmeths.push(ast.astmethodtype(e.name.value, [],
