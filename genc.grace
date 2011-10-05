@@ -677,7 +677,7 @@ method compileimport(o) {
     out("  *var_{nm} = {modg};")
     modules.push(nm)
     globals.push("Object {modg}_init();")
-    globals.push("static Object {modg};")
+    globals.push("Object {modg};")
     auto_count := auto_count + 1
     o.register := "undefined"
 }
@@ -722,7 +722,7 @@ method compilenode(o) {
         out("  if (strlit{auto_count} == NULL) \{")
         out("    strlit{auto_count} = alloc_String(\"{o.value}\");")
         out("  \}")
-        globals.push("Object strlit{auto_count};")
+        globals.push("static Object strlit{auto_count};")
         o.register := "strlit" ++ auto_count
         auto_count := auto_count + 1
     }
