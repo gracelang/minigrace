@@ -33,6 +33,10 @@ js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
+c/minigrace: minigrace unicode.gso Makefile
+	mkdir -p c
+	( cd c && cp ../gracelib.c ../gracelib.h ../unicode.gso . && for f in $(SOURCEFILES) ; do ln -sf ../$$f . ; done && gcc -o gracelibn.o -c gracelib.c && ../minigrace --target c --make --verbose --module minigrace compiler.grace && for f in $(SOURCEFILES) ; do rm -f $$f ; done )
+
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genllvm.grace > tmp.grace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
