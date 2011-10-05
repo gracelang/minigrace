@@ -109,7 +109,11 @@ method parseargs {
                     }
                 }
                 if (outfilev == io.output) then {
-                    outfilev := io.open(modnamev ++ ".ll", "w")
+                    if (targetv == "c") then {
+                        outfilev := io.open(modnamev ++ ".c", "w")
+                    } else {
+                        outfilev := io.open(modnamev ++ ".ll", "w")
+                    }
                 }
             }
         }

@@ -79,7 +79,7 @@ do
         echo "Expected output:" >> test.log
         cat ${tcase%.test.grace}.out >> test.log
     fi
-    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s
+    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c
 done
 
 echo Ran $NUM_TESTS tests.

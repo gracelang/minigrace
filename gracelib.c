@@ -113,12 +113,6 @@ struct UserClosure {
     int32_t flags;
     Object *vars[];
 };
-struct UserObject {
-    int32_t flags;
-    ClassData class;
-    jmp_buf *retpoint;
-    void *data[];
-};
 
 int linenumber = 0;
 

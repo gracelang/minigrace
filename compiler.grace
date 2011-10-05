@@ -6,6 +6,7 @@ import lexer
 import ast
 import parser
 import genllvm
+import genc
 import genjs
 import buildinfo
 import subtype
@@ -41,6 +42,9 @@ if (util.target == "subtypematrix") then {
 if (util.target == "llvm") then {
     genllvm.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
+} elseif (util.target == "c") then {
+    genc.compile(values, util.outfile, util.modname, util.runmode,
+        util.buildtype)
 } elseif ((util.target == "js") | (util.target == "ecmascript")) then {
     genjs.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)

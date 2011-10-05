@@ -2,7 +2,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=647a358cc4dcc6a3f67f3ff8e870386ef6241111
 all: minigrace
 
-REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace parser.grace genjs.grace subtype.grace
+REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace parser.grace genjs.grace subtype.grace genc.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
@@ -11,6 +11,9 @@ buildinfo.grace: $(REALSOURCEFILES) gracelib.c
 
 gracelib.o: gracelib.c gracelib.h
 	clang -emit-llvm -c gracelib.c
+
+gracelibn.o: gracelib.c gracelib.h
+	gcc -o gracelibn.o -c gracelib.c
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
@@ -48,7 +51,7 @@ selftest: minigrace
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest compiler.grace )
 	rm -rf selftest
 
-minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
+minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o gracelibn.o
 	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.grace
 
 unicode.gco: unicode.c unicodedata.h
@@ -65,7 +68,9 @@ clean:
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.ll)
 	rm -f $(SOURCEFILES:.grace=.s)
+	rm -f $(SOURCEFILES:.grace=.c)
 	rm -f $(SOURCEFILES:.grace=.gco)
+	rm -f $(SOURCEFILES:.grace=.gcn)
 	rm -f $(SOURCEFILES:.grace=.bc)
 	rm -f $(SOURCEFILES:.grace=)
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
