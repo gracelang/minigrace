@@ -2016,7 +2016,7 @@ void set_type(Object o, int16_t t) {
 }
 Object alloc_userobj(int numMethods, int numFields) {
     ClassData c = alloc_class("Object", numMethods + 6);
-    Object o = alloc_obj(sizeof(Object) * numFields, c);
+    Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *), c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
