@@ -33,9 +33,8 @@ js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
-c/minigrace: minigrace unicode.gso Makefile
-	mkdir -p c
-	( cd c && cp ../gracelib.c ../gracelib.h ../unicode.gso . && for f in $(SOURCEFILES) ; do ln -sf ../$$f . ; done && gcc -o gracelibn.o -c gracelib.c && ../minigrace --target c --make --verbose --module minigrace compiler.grace && for f in $(SOURCEFILES) ; do rm -f $$f ; done )
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) unicode.gso ; do cp $$f c ; done && cd c && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn unicode.gso
 
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genllvm.grace > tmp.grace
@@ -79,6 +78,7 @@ clean:
 	rm -f $(SOURCEFILES:.grace=)
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
+	( cd c ; rm -f *.gcn *.c *.h *.grace minigrace unicode.gso gracelibn.o )
 	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
 
 semiclean:
@@ -88,4 +88,4 @@ known-good/%:
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
-.PHONY: all clean selfhost-stats selfhost-rec test js
+.PHONY: all clean selfhost-stats selfhost-rec test js c
