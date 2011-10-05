@@ -968,7 +968,12 @@ method compile(vl, of, mn, rm, bt) {
         }
         if (util.noexec.not) then {
             log_verbose("linking.")
-            cmd := "gcc -o {modname} -fPIC -Wl,--export-dynamic -ldl "
+            var dlbit := ""
+            cmd := "ld -ldl -o /dev/null 2>/dev/null"
+            if (io.system(cmd)) then {
+                dlbit := "-ldl"
+            }
+            cmd := "gcc -o {modname} -fPIC -Wl,--export-dynamic {dlbit} "
                 ++ "{modname}.gcn "
                 ++ util.gracelibPath.replace("gracelib.o")
                     with("gracelibn.o") ++ " "
