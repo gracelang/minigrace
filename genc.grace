@@ -960,6 +960,7 @@ method compile(vl, of, mn, rm, bt) {
     }
 
     if (runmode == "make") then {
+        log_verbose("compiling C code.")
         outfile.close
         cmd := "gcc -o {modname}.gcn -c {modname}.c"
         if ((io.system(cmd)).not) then {
