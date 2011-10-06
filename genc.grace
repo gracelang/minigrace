@@ -971,11 +971,16 @@ method compile(vl, of, mn, rm, bt) {
         if (util.noexec.not) then {
             log_verbose("linking.")
             var dlbit := ""
+            var exportDynamicBit := ""
             cmd := "ld -ldl -o /dev/null 2>/dev/null"
             if (io.system(cmd)) then {
                 dlbit := "-ldl"
             }
-            cmd := "gcc -o {modname} -fPIC -Wl,--export-dynamic {dlbit} "
+            cmd := "ld -o /dev/null --export-dynamic -lc 2>&1"
+            if (io.system(cmd)) then {
+                exportDynamicBit := "-Wl,--export-dynamic"
+            }
+            cmd := "gcc -o {modname} -fPIC {exportDynamicBit} {dlbit} "
                 ++ "{modname}.gcn "
                 ++ util.gracelibPath ++ " "
             for (linkfiles) do { fn ->
