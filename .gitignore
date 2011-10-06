@@ -4,6 +4,8 @@
 *.ll
 *.gco
 *.gso
+*.gcn
+*.c
 l1
 l2
 minigrace
@@ -14,3 +16,9 @@ tests/test.log
 buildinfo.grace
 js/index.html
 .git-generation-cache
+c/*.c
+c/*.grace
+c/*.gcn
+c/*.gso
+c/minigrace
+c/*.h
