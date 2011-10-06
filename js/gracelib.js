@@ -631,7 +631,7 @@ function gracecode_util() {
             return new GraceString("normal");
         },
         gracelibPath: function() {
-            return new GraceString("normal");
+            return new GraceString("gracelib.h");
         },
         verbosity: function() {
             return new GraceNum(30);
