@@ -36,6 +36,11 @@ js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) unicode.gso ; do cp $$f c ; done && cd c && ../minigrace --target c --gracelib gracelib.o --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn unicode.gso
 
+tarball: minigrace
+	make -C c fullclean
+	make c
+	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
+
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genllvm.grace > tmp.grace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
