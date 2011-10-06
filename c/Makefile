@@ -17,8 +17,15 @@ unicode.gso: unicode.c unicodedata.h gracelib.h
 gracelib.o: gracelib.c
 	gcc -c -o gracelib.o gracelib.c
 
+install: minigrace
+	mkdir -p $(PREFIX)/bin
+	cp minigrace gracelib.h gracelib.o unicode.gso $(PREFIX)/bin
+
 buildclean:
-	rm -f *.gcn minigrace unicode.gso gracelib.o Makefile.conf
+	rm -rf *.gcn minigrace unicode.gso gracelib.o bin Makefile.conf
 
 fullclean: buildclean
-	rm -f *.grace *.c *.h Makefile.conf
+	rm -f *.grace *.c *.h
+
+Makefile.conf:
+	./configure
