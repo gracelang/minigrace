@@ -15,7 +15,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "c"
-var versionNumber := "0.0.2"
+var versionNumber := "0.0.3"
 var extensionsv := HashMap.new
 
 method runOnNew(b)else(e) {
