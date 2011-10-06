@@ -866,6 +866,7 @@ method compile(vl, of, mn, rm, bt) {
                     }
                     if (ext /= false) then {
                         cmd := argv.first ++ " --target c --make " ++ nm ++ ext
+                        cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
