@@ -290,6 +290,9 @@ GraceList.prototype = {
             var idx = parseInt(o._value);
             return this._value[idx-1];
         },
+        "at(1)put": function(idx, val) {
+            this._value[idx-1] = val;
+        },
         "[]:=": function(idx, val) {
             this._value[idx-1] = val;
         },

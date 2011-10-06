@@ -410,7 +410,7 @@ Object alloc_List() {
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
-        add_Method(List, "set", &List_indexAssign);
+        add_Method(List, "at(1)put", &List_indexAssign);
         add_Method(List, "[]:=", &List_indexAssign);
         add_Method(List, "push", &List_push);
         add_Method(List, "pop", &List_pop);
