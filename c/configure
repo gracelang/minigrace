@@ -1,0 +1,70 @@
+#!/bin/bash
+
+PLATFORM=$(uname)
+PREFIX=.
+LDFLAGS=
+UNICODE_LDFLAGS=
+
+while [ $# -gt 0 ]
+do
+    if [ "$1" = "--prefix" ]
+    then
+        PREFIX=$2
+        shift
+    elif [ "$1" = "--help" ]
+    then
+        echo "Available flags:"
+        echo " --prefix <path>"
+        exit 0
+    else
+        echo "Unknown argument '$1'."
+        exit 1
+    fi
+    shift
+done
+
+echo -n "Checking linker... "
+case "$(ld -v 2>&1)" in
+    "GNU ld"*)
+    GNU_LD=1
+    echo GNU LD.
+    LDFLAGS="-Wl,--export-dynamic"
+    ;;
+    *llvm*)
+    LLVM_LD=1
+    echo LLVM LD.
+    UNICODE_LDFLAGS="-Wl,-undefined -Wl,dynamic_lookup"
+    ;;
+    *)
+    echo unknown.
+    ;;
+esac
+
+echo -n "Checking for -ldl... "
+if ld -o /dev/null -ldl >/dev/null 2>&1
+then
+    echo yes.
+    LDFLAGS="$LDFLAGS -ldl"
+else
+    echo no.
+fi
+
+cat <<EOT > Makefile.conf
+PREFIX = $PREFIX
+LDFLAGS = $LDFLAGS
+UNICODE_LDFLAGS = $UNICODE_LDFLAGS
+EOT
+
+MK=make
+if make -v 2>&1 | grep -q GNU
+then
+    MK=make
+elif gmake -v 2>&1 | grep -q GNU
+then
+    MK=gmake
+else
+    echo "This software requires GNU make to build."
+    echo "Substitute the path to your GNU make below."
+fi
+
+echo "Run '$MK' to build, and 'make selfhost' to have it compile itself."
