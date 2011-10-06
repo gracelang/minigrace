@@ -976,8 +976,8 @@ method compile(vl, of, mn, rm, bt) {
             }
             cmd := "gcc -o {modname} -fPIC -Wl,--export-dynamic {dlbit} "
                 ++ "{modname}.gcn "
-                ++ util.gracelibPath.replace("gracelib.o")
-                    with("gracelibn.o") ++ " "
+                ++ util.gracelibPath.replace("gracelib.bc")
+                    with("gracelib.o") ++ " "
             for (linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }

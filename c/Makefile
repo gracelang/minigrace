@@ -2,8 +2,8 @@ CFILES = ast.c buildinfo.c genc.c genjs.c genllvm.c lexer.c parser.c subtype.c u
 
 DL=-ldl
 
-minigrace: $(CFILES:.c=.gcn) minigrace.gcn unicode.gso gracelibn.o
-	gcc -o minigrace $(DL) -fPIC -Wl,--export-dynamic gracelibn.o minigrace.gcn $(CFILES:.c=.gcn)
+minigrace: $(CFILES:.c=.gcn) minigrace.gcn unicode.gso gracelib.o
+	gcc -o minigrace $(DL) -fPIC -Wl,--export-dynamic gracelib.o minigrace.gcn $(CFILES:.c=.gcn)
 
 selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f *.gcn
@@ -15,11 +15,11 @@ selfhost: minigrace $(CFILES:.c=.grace)
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
-gracelibn.o: gracelib.c
-	gcc -c -o gracelibn.o gracelib.c
+gracelib.o: gracelib.c
+	gcc -c -o gracelib.o gracelib.c
 
 buildclean:
-	rm -f *.gcn minigrace unicode.gso gracelibn.o
+	rm -f *.gcn minigrace unicode.gso gracelib.o
 
 fullclean: buildclean
 	rm -f *.grace *.c *.h

@@ -9,7 +9,7 @@ var infilev := io.input
 var modnamev := "main"
 var runmodev := "build"
 var buildtypev := "bc"
-var gracelibPathv := "gracelib.o"
+var gracelibPathv := "gracelib.bc"
 var linenumv := 1
 var lineposv := 1
 var vtagv := false
@@ -28,7 +28,7 @@ method runOnNew(b)else(e) {
 }
 
 runOnNew {
-    gracelibPathv := sys.execPath ++ "/gracelib.o"
+    gracelibPathv := sys.execPath ++ "/gracelib.bc"
 } else { }
 
 method parseargs {

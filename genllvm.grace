@@ -28,7 +28,7 @@ var outfile
 var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
-var gracelibPath := "gracelib.o"
+var gracelibPath := "gracelib.bc"
 var inBlock := false
 var paramsUsed := 1
 var topLevelMethodPos := 1
