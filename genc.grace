@@ -976,7 +976,7 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 dlbit := "-ldl"
             }
-            cmd := "ld -o /dev/null --export-dynamic -lc 2>&1"
+            cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
