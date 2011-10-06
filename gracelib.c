@@ -217,9 +217,8 @@ Object identity_function(Object receiver, int nparams,
 }
 Object Object_asString(Object receiver, int nparams,
         Object* params, int flags) {
-    int i = (int)&receiver;
     char buf[40];
-    sprintf(buf, "%s[0x%x]", receiver->class->name, i);
+    sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
     return alloc_String(buf);
 }
 
