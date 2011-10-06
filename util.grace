@@ -9,12 +9,12 @@ var infilev := io.input
 var modnamev := "main"
 var runmodev := "build"
 var buildtypev := "bc"
-var gracelibPathv := "gracelib.bc"
+var gracelibPathv := false
 var linenumv := 1
 var lineposv := 1
 var vtagv := false
 var noexecv := false
-var targetv := "llvm"
+var targetv := "c"
 var versionNumber := "0.0.2"
 var extensionsv := HashMap.new
 
@@ -26,10 +26,6 @@ method runOnNew(b)else(e) {
         e.apply
     }
 }
-
-runOnNew {
-    gracelibPathv := sys.execPath ++ "/gracelib.bc"
-} else { }
 
 method parseargs {
     var argv := sys.argv
@@ -116,6 +112,13 @@ method parseargs {
                     }
                 }
             }
+        }
+    }
+    if (gracelibPathv == false) then {
+        if (targetv == "llvm") then {
+            gracelibPathv := sys.execPath ++ "/gracelib.bc"
+        } else {
+            gracelibPathv := sys.execPath ++ "/gracelib.o"
         }
     }
 }

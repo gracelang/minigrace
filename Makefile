@@ -18,11 +18,11 @@ gracelib.o: gracelib.c gracelib.h
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -fPIC -shared -o unicode.gso unicode.c
 
-l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.bc
-	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) unicode.gso gracelib.bc ; do ln -sf ../$$f . ; done ; ../known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/gracelib-$(STABLE).o compiler.grace )
+l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.c gracelib.h
+	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ../known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/gracelib-$(STABLE).o compiler.grace )
 
-l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.bc
-	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) unicode.gso gracelib.bc ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.grace )
+l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o gracelib.h
+	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.grace )
 
 js: js/index.html
 
@@ -50,7 +50,7 @@ selfhost-rec: minigrace
 selftest: minigrace
 	rm -rf selftest
 	mkdir -p selftest
-	for f in $(SOURCEFILES) unicode.gso gracelib.bc ; do ln -sf ../$$f selftest ; done
+	for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f selftest ; done
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest compiler.grace )
 	rm -rf selftest
 
@@ -63,7 +63,7 @@ unicode.gco: unicode.c unicodedata.h
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
-	./tests/harness "$(shell pwd)/minigrace --gracelib $(shell pwd)/gracelib.bc" tests
+	./tests/harness "$(shell pwd)/minigrace" tests
 fulltest: gencheck clean selfhost-rec selftest test
 clean:
 	rm -f gracelib.bc
