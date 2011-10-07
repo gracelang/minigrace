@@ -71,15 +71,15 @@ test: minigrace
 	./tests/harness "$(shell pwd)/minigrace" tests
 fulltest: gencheck clean selfhost-rec selftest test
 clean:
-	rm -f gracelib.bc
+	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.ll)
 	rm -f $(SOURCEFILES:.grace=.s)
-	rm -f $(SOURCEFILES:.grace=.c)
+	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)
-	rm -f $(SOURCEFILES:.grace=.gcn)
-	rm -f $(SOURCEFILES:.grace=.bc)
+	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
+	rm -f $(SOURCEFILES:.grace=.bc) minigrace.bc
 	rm -f $(SOURCEFILES:.grace=)
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
