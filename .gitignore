@@ -22,3 +22,5 @@ c/*.gcn
 c/*.gso
 c/minigrace
 c/*.h
+c/Makefile.conf
+c/bin
