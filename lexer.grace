@@ -151,6 +151,20 @@ def LexerClass = object {
             def indent = indentLevel
             def linePos = startPosition
         }
+        class LGenericToken {
+            def kind = "lgeneric"
+            def value = "<"
+            def line = lineNumber
+            def indent = indentLevel
+            def linePos = startPosition
+        }
+        class RGenericToken {
+            def kind = "rgeneric"
+            def value = ">"
+            def line = lineNumber
+            def indent = indentLevel
+            def linePos = startPosition
+        }
 
         object {
             // When a new lexical class has begun, add to the tokens list
@@ -234,6 +248,16 @@ def LexerClass = object {
                     }
                     if (mode == "]") then {
                         tok := RSquareToken.new
+                        tokens.push(tok)
+                        done := true
+                    }
+                    if (mode == "<") then {
+                        tok := LGenericToken.new
+                        tokens.push(tok)
+                        done := true
+                    }
+                    if (mode == ">") then {
+                        tok := RGenericToken.new
                         tokens.push(tok)
                         done := true
                     }
@@ -402,7 +426,15 @@ def LexerClass = object {
                         if (ct & (mode /= "i")) then {
                             newmode := "m"
                         }
-                        if (isoperatorchar(c, ordval)) then {
+                        if ((mode == "i") & (c == "<")) then {
+                            newmode := "<"
+                        } elseif (((mode == "i") | (mode == ">"))
+                            & (c == ">")) then {
+                            if (mode == ">") then {
+                                modechange(tokens, mode, accum)
+                            }
+                            newmode := ">"
+                        } elseif (isoperatorchar(c, ordval)) then {
                             newmode := "o"
                         }
                         if ((c == "(") | (c == ")") | (c == ",") | (c == ".")

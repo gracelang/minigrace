@@ -338,6 +338,23 @@ method astmember(what, in') {
         }
     }
 }
+method astgeneric(base, params') {
+    object {
+        def kind = "generic"
+        def value = base
+        def params = params'
+        var register := ""
+        def line = util.linenum
+        method pretty(depth) {
+            var s := "Generic(" ++ self.value.value ++ "<"
+            for (params) do {p->
+                s := s ++ p.pretty(0)
+                s := s ++ ","
+            }
+            s ++ ">)"
+        }
+    }
+}
 method astidentifier(n, dtype') {
     object {
         def kind = "identifier"
@@ -464,10 +481,10 @@ method astdefdec(name', val, dtype') {
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
             if (self.dtype) then {
-                s := s ++ " : " ++ self.dtype.value
+                s := s ++ " : " ++ self.dtype.pretty(0)
             }
             if (self.value) then {
-                s := s ++ "\n  "
+                s := s ++ "\n"
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
             s
@@ -491,10 +508,10 @@ method astvardec(name', val', dtype') {
             s := s ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth + 1)
             if (self.dtype) then {
-                s := s ++ " : " ++ self.dtype.value
+                s := s ++ " : " ++ self.dtype.pretty(0)
             }
             if (self.value) then {
-                s := s ++ "\n    "
+                s := s ++ "\n"
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
             s

@@ -503,6 +503,7 @@ method dotyperef {
     def unionTypes = []
     if (accept("identifier")) then {
         pushidentifier
+        generic
         overallType := values.pop
     }
     while {accept("op") & (sym.value == "|")} do {
@@ -511,6 +512,7 @@ method dotyperef {
         }
         next
         pushidentifier
+        generic
         unionTypes.push(values.pop)
     }
     if (unionTypes.size > 0) then {
@@ -532,6 +534,7 @@ method dotyperef {
         }
         next
         pushidentifier
+        generic
         intersectionTypes.push(values.pop)
     }
     if (intersectionTypes.size > 0) then {
@@ -928,6 +931,26 @@ method prefixop {
     }
 }
 
+method generic {
+    if (accept("lgeneric")) then {
+        def id = values.pop
+        def gens = []
+        next
+        while {accept("identifier")} do {
+            identifier
+            generic
+            gens.push(values.pop)
+            if (accept("comma")) then {
+                next
+            } else {
+                expect("rgeneric")
+            }
+        }
+        expect("rgeneric")
+        next
+        values.push(ast.astgeneric(id, gens))
+    }
+}
 // Accept a term. Terms consist only of single syntactic units and
 // do not contain any operators or parentheses, unlike expression.
 method term {
@@ -939,6 +962,9 @@ method term {
         pushoctets
     } elseif (accept("identifier")) then {
         identifier
+        if (accept("lgeneric")) then {
+            generic
+        }
     } elseif (accept("keyword") & (sym.value == "object")) then {
         doobject
     } elseif (accept("lbrace")) then {
@@ -1428,11 +1454,13 @@ method doclass {
         next
         expect("identifier")
         pushidentifier // A class currently cannot be anonymous
+        generic
         var superclass := false
         if (accept("identifier") & (sym.value == "extends")) then {
             next
             expect("identifier")
             identifier
+            generic
             var nm := values.pop
             if (accept("dot").not) then {
                 util.syntax_error("extends must have .new invocation on right")
@@ -1469,16 +1497,19 @@ method doclass {
                 if (accept("colon")) then {
                     next
                     pushidentifier
+                    generic
                     pid.dtype := values.pop
                 }
                 params.push(pid)
                 while {accept("comma")} do {
                     next
                     pushidentifier
+                    generic
                     pid := values.pop
                     if (accept("colon")) then {
                         next
                         pushidentifier
+                        generic
                         pid.dtype := values.pop
                     }
                     params.push(pid)
@@ -1783,6 +1814,7 @@ method dotype {
         next
         expect("identifier")
         pushidentifier
+        generic
         var p := values.pop
         expect("op")
         if (sym.value /= "=") then {
