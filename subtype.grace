@@ -7,46 +7,66 @@ def matrix = HashMap.new
 var DynamicType
 var modified := true
 
+method stringifyType(t) {
+    var s := t.value
+    if (t.kind == "identifier") then {
+        return s
+    }
+    if (t.generics.size > 0) then {
+        s := s ++ "<"
+        for (t.generics) do {g->
+            s := s ++ stringifyType(g) ++ ","
+        }
+        s := s ++ ">"
+    }
+    s
+}
+
 method resetMatrix {
     for (types) do {t->
         def inner = HashMap.new
+        def d = stringifyType(t)
         for (types) do {t2->
-            inner.put(t2.value, true)
+            inner.put(stringifyType(t2), true)
         }
-        matrix.put(t.value, inner)
+        matrix.put(d, inner)
     }
 }
 
 method addType(t) {
-    if (matrix.contains(t.value)) then {
+    def d = stringifyType(t)
+    if (matrix.contains(d)) then {
         return false
     }
-    if (t.value == "Dynamic") then {
+    if (d == "Dynamic") then {
         DynamicType := t
     }
-    typesToId.put(t.value, types.size)
+    typesToId.put(d, types.size)
     types.push(t)
     def inner = HashMap.new
     for (types) do {t2->
-        inner.put(t2.value, true)
+        def d2 = stringifyType(t2)
+        inner.put(d2, true)
         if (t2 /= t) then {
-            matrix.get(t2.value).put(t.value, true)
+            matrix.get(d2).put(d, true)
         }
     }
-    matrix.put(t.value, inner)
+    matrix.put(d, inner)
     modified := true
     true
 }
 
 method resetType(t) {
-    if (matrix.contains(t.value).not) then {
+    def d = stringifyType(t)
+    if (matrix.contains(d).not) then {
         return addType(t)
     }
     def inner = HashMap.new
     for (types) do {t2->
-        inner.put(t2.value, true)
-        matrix.get(t2.value).put(t.value, true)
-        if (t2.value == t.value) then {
+        def d2 = stringifyType(t2)
+        inner.put(d2, true)
+        matrix.get(d2).put(d, true)
+        if (d2 == d) then {
             for (t.methods) do {tm->
                 t2.methods.push(tm)
             }
@@ -61,7 +81,7 @@ method typeId(t) {
     if (t == false) then {
         return typeId(DynamicType)
     }
-    typesToId.get(t.value)
+    typesToId.get(stringifyType(t))
 }
 
 method boolMatrix {
@@ -70,10 +90,10 @@ method boolMatrix {
     }
     def mtrx = []
     for (types) do {t->
-        def row = matrix.get(t.value)
+        def row = matrix.get(stringifyType(t))
         def inner = []
         for (types) do {t2->
-            inner.push(row.get(t2.value))
+            inner.push(row.get(stringifyType(t2)))
         }
         mtrx.push(inner)
     }
@@ -85,14 +105,16 @@ method printMatrix {
         findSubtypes
     }
     for (types) do {t->
-        def row = matrix.get(t.value)
+        def d = stringifyType(t)
+        def row = matrix.get(d)
         var st := ""
         for (types) do {t2->
-            if (row.get(t2.value)) then {
-                st := "{st} {t2.value}"
+            def d2 = stringifyType(t2)
+            if (row.get(d2)) then {
+                st := "{st} {d2}"
             }
         }
-        print("{t.value} is a subtype of:{st}")
+        print("{d} is a subtype of:{st}")
     }
 }
 method findType(typeid) {
@@ -103,7 +125,7 @@ method findType(typeid) {
         return typeid
     }
     for (types) do {t->
-        if (t.value == typeid.value) then {
+        if (stringifyType(t) == typeid.value) then {
             return t
         }
     }
@@ -114,7 +136,7 @@ method simpleCheckThat(a)mayBeSubtypeOf(b) {
     if ((a == false) | (b == false)) then {
         return true
     }
-    matrix.get(a.value).get(b.value)
+    matrix.get(stringifyType(a)).get(stringifyType(b))
 }
 method checkThat(a)mayBeSubtypeOf(b) {
     if (a.value == "Dynamic") then {
@@ -123,8 +145,13 @@ method checkThat(a)mayBeSubtypeOf(b) {
     if (b.value == "Dynamic") then {
         return true
     }
-    if (matrix.get(a.value).get(b.value).not) then {
+    def at = stringifyType(a)
+    def bt = stringifyType(b)
+    if (matrix.get(at).get(bt).not) then {
         return false
+    }
+    if (a.nominal | b.nominal) then {
+        return (a == b)
     }
     if (a.unionTypes.size > 0) then {
         for (a.unionTypes) do {ut->
@@ -182,11 +209,12 @@ method findSubtypes {
     while {changed} do {
         changed := false
         for (types) do {t1->
-            def row = matrix.get(t1.value)
+            def row = matrix.get(stringifyType(t1))
             for (types) do {t2->
-                if (row.get(t2.value)) then {
+                def d2 = stringifyType(t2)
+                if (row.get(d2)) then {
                     if (checkThat(t1)mayBeSubtypeOf(t2).not) then {
-                        row.put(t2.value, false)
+                        row.put(d2, false)
                         changed := true
                     }
                 }
@@ -200,6 +228,6 @@ method conformsType(a)to(b) {
     if (addType(a) | addType(b) | modified) then {
         findSubtypes
     }
-    matrix.get(a.value).get(b.value)
+    matrix.get(stringifyType(a)).get(stringifyType(b))
 }
 

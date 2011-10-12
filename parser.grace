@@ -120,10 +120,10 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("++", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("<", [NumberOther], NumberIdentifier),
-    ast.astmethodtype("<=", [NumberOther], NumberIdentifier),
-    ast.astmethodtype(">", [NumberOther], NumberIdentifier),
-    ast.astmethodtype(">=", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("<", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype("<=", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype(">", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype(">=", [NumberOther], BooleanIdentifier),
     ast.astmethodtype("..", [NumberOther], DynamicIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier),
     ast.astmethodtype("prefix-", [], NumberIdentifier)
@@ -224,9 +224,6 @@ method conformsType(b)to(a) {
         return true
     }
     if (b.value == "Dynamic") then {
-        return true
-    }
-    if (b.value == a.value) then {
         return true
     }
     if (b.unionTypes.size > 0) then {
@@ -1816,6 +1813,11 @@ method dotype {
         pushidentifier
         generic
         var p := values.pop
+        var gens := []
+        if (p.kind == "generic") then {
+            gens := p.params
+            p := p.value
+        }
         expect("op")
         if (sym.value /= "=") then {
             util.syntax_error("type declarations require =.")
@@ -1829,7 +1831,9 @@ method dotype {
             methods.push(values.pop)
         }
         next
-        values.push(ast.asttype(p.value, methods))
+        def t = ast.asttype(p.value, methods)
+        t.generics := gens
+        values.push(t)
     }
 }
 
@@ -1911,6 +1915,44 @@ method findType(tp) {
         def tpnm = tp.value
         def tpbd = findName(tpnm)
         return tpbd.value
+    }
+    if (tp.kind == "generic") then {
+        def gtnm = tp.value.value
+        def gtbd = findName(gtnm)
+        def gtg = gtbd.value
+        var gnm := gtnm ++ "<"
+        var methods := gtg.methods
+        var tmprt
+        var tmpparams
+        for (tp.params.indices) do {i->
+            def tv = gtg.generics.at(i)
+            def ct = findType(tp.params.at(i))
+            gnm := gnm ++ ct.value ++ ","
+            def newmeth = []
+            for (methods) do {m->
+                tmprt := m.rtype
+                if (tmprt.value == tv.value) then {
+                    tmprt := ct
+                }
+                tmpparams := []
+                for (m.params) do {pp->
+                    if (pp.dtype == false) then {
+                        tmpparams.push(pp)
+                    } elseif (pp.dtype.value == tv.value) then {
+                        tmpparams.push(ast.astidentifier(pp.value, ct))
+                    } else {
+                        tmpparams.push(pp)
+                    }
+                }
+                newmeth.push(ast.astmethodtype(m.value, tmpparams, tmprt))
+            }
+            methods := newmeth
+        }
+        def nt = ast.asttype(gtnm, methods)
+        nt.generics := tp.params
+        subtype.addType(nt)
+        subtype.addType(gtg)
+        return nt
     }
     return DynamicType
 }
@@ -2057,8 +2099,9 @@ method resolveIdentifiers(node) {
             }
             if (conformsType(expressionType(tmp2))to(tmp.dtype).not) then {
                 util.type_error("assigning value of nonconforming type "
-                    ++ "{expressionType(tmp2).value} to var of type "
-                    ++ "{tmp.dtype.value}")
+                    ++ subtype.stringifyType(expressionType(tmp2))
+                    ++ " to var of type "
+                    ++ subtype.stringifyType(findType(tmp.dtype)))
             }
         } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
             tmp := tmp.value
@@ -2068,7 +2111,34 @@ method resolveIdentifiers(node) {
         }
     }
     if (node.kind == "type") then {
-        if (node.unionTypes.size > 0) then {
+        if (node.generics.size > 0) then {
+            pushScope
+            for (node.generics) do {g->
+                def nom = ast.asttype(ast.astidentifier(g.value), [])
+                nom.nominal := true
+                def tpb = Binding.new("type")
+                tpb.value := nom
+                bindName(g.value, tpb)
+            }
+            tmp := []
+            for (node.methods) do {mt->
+                pushScope
+                tmp2 := []
+                for (mt.params) do {e->
+                    e.dtype := resolveIdentifiers(e.dtype)
+                    bindIdentifier(e)
+                    tmp2.push(e)
+                }
+                tmp3 := resolveIdentifiers(mt.rtype)
+                tmp.push(ast.astmethodtype(mt.value, tmp2, tmp3))
+                popScope
+            }
+            popScope
+            tmp := ast.asttype(node.value, tmp)
+            tmp.generics := node.generics
+            tmp.nominal := node.nominal
+            return tmp
+        } elseif (node.unionTypes.size > 0) then {
             tmp := resolveIdentifiersList(node.unionTypes)
             tmp2 := ast.asttype(node.value, node.methods)
             for (tmp) do {ut->
@@ -2144,6 +2214,8 @@ method resolveIdentifiers(node) {
         tmp4 := resolveIdentifiers(node.dtype)
         if (tmp2 /= false) then {
             tmp3 := findType(tmp4)
+            tmp4 := tmp3
+            subtype.addType(tmp3)
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
                 util.type_error("initialising var of type "
                     ++ "{tmp3.value} with expression of type "
