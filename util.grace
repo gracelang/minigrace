@@ -241,3 +241,16 @@ method hex(num) {
     }
     s
 }
+
+method join(joiner, iterable) {
+    def ind = iterable.indices
+    def min = ind.first
+    var s := ""
+    for (ind) do {i->
+        if (i /= min) then {
+            s := s ++ joiner
+        }
+        s := s ++ iterable.at(i)
+    }
+    s
+}
