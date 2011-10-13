@@ -674,6 +674,17 @@ function gracecode_util() {
             }
             return new GraceString(s)
         },
+        join: function(joiner, iterable) {
+            var s = "";
+            var ind = callmethod(iterable, "indices");
+            for (var i=0; i<ind._value.length; i++) {
+                if (i > 0)
+                    s += ",";
+                s += callmethod(callmethod(iterable, "at", new GraceNum(i)),
+                        "asString")._value;
+            }
+            return new GraceString(s);
+        },
         "runOnNew(1)else": function(b,e) {
             return callmethod(b, "apply");
         },
