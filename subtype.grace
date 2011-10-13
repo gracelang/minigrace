@@ -231,3 +231,33 @@ method conformsType(a)to(b) {
     matrix.get(stringifyType(a)).get(stringifyType(b))
 }
 
+method nicename(t) {
+    if (addType(t) | modified) then {
+        findSubtypes
+    }
+    def id = stringifyType(t)
+    if (id.at(1) /= "<") then {
+        return id
+    }
+    def st = matrix.get(id)
+    def maybe = []
+    for (types) do { t2 ->
+        def d2 = stringifyType(t2)
+        if ((d2 /= "Dynamic") & st.get(d2) & matrix.get(d2).get(id)) then {
+            maybe.push(d2)
+        }
+    }
+    var best := ""
+    for (maybe) do {mn ->
+        if (mn.size > best.size) then {
+            if (mn.at(1) /= "<") then {
+                best := mn
+            }
+        }
+    }
+    if (best.size > 0) then {
+        return best
+    }
+    return id
+}
+

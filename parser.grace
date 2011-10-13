@@ -2099,9 +2099,9 @@ method resolveIdentifiers(node) {
             }
             if (conformsType(expressionType(tmp2))to(tmp.dtype).not) then {
                 util.type_error("assigning value of nonconforming type "
-                    ++ subtype.stringifyType(expressionType(tmp2))
+                    ++ subtype.nicename(expressionType(tmp2))
                     ++ " to var of type "
-                    ++ subtype.stringifyType(findType(tmp.dtype)))
+                    ++ subtype.nicename(findType(tmp.dtype)))
             }
         } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
             tmp := tmp.value
@@ -2217,9 +2217,9 @@ method resolveIdentifiers(node) {
             tmp4 := tmp3
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
                 util.type_error("initialising var of type "
-                    ++ subtype.stringifyType(tmp3)
+                    ++ subtype.nicename(tmp3)
                     ++ " with expression of type "
-                    ++ subtype.stringifyType(expressionType(tmp2)))
+                    ++ subtype.nicename(expressionType(tmp2)))
             }
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
@@ -2234,9 +2234,9 @@ method resolveIdentifiers(node) {
         tmp3 := findType(tmp4)
         if (conformsType(expressionType(tmp2))to(tmp3).not) then {
             util.type_error("initialising def of type "
-                ++ subtype.stringifyType(tmp3)
+                ++ subtype.nicename(tmp3)
                 ++ " with expression of type "
-                ++ subtype.stringifyType(expressionType(tmp2)))
+                ++ subtype.nicename(expressionType(tmp2)))
         }
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
