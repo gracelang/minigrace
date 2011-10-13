@@ -2215,11 +2215,11 @@ method resolveIdentifiers(node) {
         if (tmp2 /= false) then {
             tmp3 := findType(tmp4)
             tmp4 := tmp3
-            subtype.addType(tmp3)
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
                 util.type_error("initialising var of type "
-                    ++ "{tmp3.value} with expression of type "
-                    ++ expressionType(tmp2).value)
+                    ++ subtype.stringifyType(tmp3)
+                    ++ " with expression of type "
+                    ++ subtype.stringifyType(expressionType(tmp2)))
             }
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
@@ -2234,8 +2234,9 @@ method resolveIdentifiers(node) {
         tmp3 := findType(tmp4)
         if (conformsType(expressionType(tmp2))to(tmp3).not) then {
             util.type_error("initialising def of type "
-                ++ "{tmp3.value} with expression of type "
-                ++ expressionType(tmp2).value)
+                ++ subtype.stringifyType(tmp3)
+                ++ " with expression of type "
+                ++ subtype.stringifyType(expressionType(tmp2)))
         }
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
