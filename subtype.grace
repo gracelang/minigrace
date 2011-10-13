@@ -13,11 +13,11 @@ method stringifyType(t) {
         return s
     }
     if (t.generics.size > 0) then {
-        s := s ++ "<"
+        def joinees = []
         for (t.generics) do {g->
-            s := s ++ stringifyType(g) ++ ","
+            joinees.push(stringifyType(g))
         }
-        s := s ++ ">"
+        s := s ++ "<" ++ util.join(",", joinees) ++ ">"
     }
     s
 }

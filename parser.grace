@@ -1927,7 +1927,6 @@ method findType(tp) {
         for (tp.params.indices) do {i->
             def tv = gtg.generics.at(i)
             def ct = findType(tp.params.at(i))
-            gnm := gnm ++ ct.value ++ ","
             def newmeth = []
             for (methods) do {m->
                 tmprt := m.rtype
