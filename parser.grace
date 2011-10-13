@@ -2080,6 +2080,17 @@ method resolveIdentifiers(node) {
             scopes.last.put("___is_class", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
         }
+        if (node.name.kind == "generic") then {
+            for (node.name.params) do {gp->
+                def nomnm = gp.value
+                def nom = ast.asttype(nomnm, [])
+                nom.nominal := true
+                subtype.addType(nom)
+                def tpb = Binding.new("type")
+                tpb.value := nom
+                bindName(gp.value, tpb)
+            }
+        }
         for (node.params) do { e->
             bindIdentifier(e)
         }
@@ -2356,7 +2367,11 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         } elseif (e.kind == "class") then {
             tmp := Binding.new("def")
             tmp.dtype := DynamicType
-            bindName(e.name.value, tmp)
+            if (e.name.kind == "identifier") then {
+                bindName(e.name.value, tmp)
+            } else {
+                bindName(e.name.value.value, tmp)
+            }
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
             tmp.dtype := DynamicType
