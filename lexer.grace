@@ -144,7 +144,7 @@ def LexerClass = object {
             def indent = indentLevel
             def linePos = startPosition
         }
-        class SemicolonToken { level->
+        class SemicolonToken {
             def kind = "semicolon"
             def value = ";"
             def line = lineNumber
