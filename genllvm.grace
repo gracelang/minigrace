@@ -655,7 +655,12 @@ method compilebind(o) {
     o.register := "%nothing"
 }
 method compiledefdec(o) {
-    var nm := escapestring(o.name.value)
+    var nm
+    if (o.name.kind == "generic") then {
+        nm := escapestring(o.name.value.value)
+    } else {
+        nm := escapestring(o.name.value)
+    }
     declaredvars.push(nm)
     var val := o.value
     if (val) then {
@@ -984,6 +989,9 @@ method compilenode(o) {
     if (o.kind == "return") then {
         compilereturn(o)
     }
+    if (o.kind == "generic") then {
+        o.register := compilenode(o.value)
+    }
     if ((o.kind == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
         var val := 0
@@ -1191,12 +1199,21 @@ method compile(vl, of, mn, rm, bt, glpath) {
     var tmpo := output
     output := []
     for (values) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
+        if ((l.kind == "vardec") | (l.kind == "defdec")) then {
             var tnm := escapestring(l.name.value)
             declaredvars.push(tnm)
             out("  %\"var_{tnm}\" = call %object* @alloc_var()")
             out("  store %object %undefined, %object* %\"var_{tnm}\"")
+        } elseif (l.kind == "class") then {
+            var tnmc
+            if (l.name.kind == "generic") then {
+                tnmc := escapestring(l.name.value.value)
+            } else {
+                tnmc := escapestring(l.name.value)
+            }
+            declaredvars.push(tnmc)
+            out("  %\"var_{tnmc}\" = call %object* @alloc_var()")
+            out("  store %object %undefined, %object* %\"var_{tnmc}\"")
         }
     }
     for (values) do { o ->
