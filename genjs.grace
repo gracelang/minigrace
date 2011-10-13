@@ -329,7 +329,12 @@ method compilebind(o) {
     }
 }
 method compiledefdec(o) {
-    var nm := escapestring(o.name.value)
+    var nm
+    if (o.name.kind == "generic") then {
+        nm := escapestring(o.name.value.value)
+    } else {
+        nm := escapestring(o.name.value)
+    }
     declaredvars.push(nm)
     var val := o.value
     if (val) then {
@@ -523,6 +528,9 @@ method compilenode(o) {
     }
     if (o.kind == "return") then {
         compilereturn(o)
+    }
+    if (o.kind == "generic") then {
+        o.register := compilenode(o.value)
     }
     if ((o.kind == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
