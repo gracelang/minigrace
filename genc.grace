@@ -531,7 +531,12 @@ method compilebind(o) {
     o.register := "nothing"
 }
 method compiledefdec(o) {
-    var nm := escapeident(o.name.value)
+    var nm
+    if (o.name.kind == "generic") then {
+        nm := escapeident(o.name.value.value)
+    } else {
+        nm := escapeident(o.name.value)
+    }
     declaredvars.push(nm)
     var val := o.value
     if (val) then {
@@ -738,6 +743,9 @@ method compilenode(o) {
     if (o.kind == "return") then {
         compilereturn(o)
     }
+    if (o.kind == "generic") then {
+        o.register := compilenode(o.value)
+    }
     if ((o.kind == "identifier")
         & ((o.value == "true") | (o.value == "false"))) then {
         var val := 0
@@ -909,12 +917,21 @@ method compile(vl, of, mn, rm, bt) {
     var tmpo := output
     output := []
     for (values) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
+        if ((l.kind == "vardec") | (l.kind == "defdec")) then {
             var tnm := escapeident(l.name.value)
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = alloc_var();")
             out("  *var_{tnm} = undefined;")
+        } elseif (l.kind == "class") then {
+            var tnmc
+            if (l.name.kind == "generic") then {
+                tnmc := escapeident(l.name.value.value)
+            } else {
+                tnmc := escapeident(l.name.value)
+            }
+            declaredvars.push(tnmc)
+            out("  Object *var_{tnmc} = alloc_var();")
+            out("  *var_{tnmc} = undefined;")
         }
     }
     for (values) do { o ->
