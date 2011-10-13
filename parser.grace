@@ -20,6 +20,12 @@ var scopes := [HashMap.new]
 var sym
 var lastToken
 
+var uniqueCount := 0
+method uniquify {
+    uniqueCount := uniqueCount + 1
+    uniqueCount
+}
+
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
 method next {
