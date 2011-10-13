@@ -2119,7 +2119,7 @@ method resolveIdentifiers(node) {
         if (node.generics.size > 0) then {
             pushScope
             for (node.generics) do {g->
-                def nom = ast.asttype(ast.astidentifier(g.value), [])
+                def nom = ast.asttype(g.value, [])
                 nom.nominal := true
                 def tpb = Binding.new("type")
                 tpb.value := nom
