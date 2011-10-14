@@ -339,6 +339,9 @@ method expressionType(expr) {
                 ++ "requires {memmeth.params.size} arguments, not 0")
         }
         def memreturntypeid = memmeth.rtype
+        if (memreturntypeid.kind == "type") then {
+            return memreturntypeid
+        }
         def memreturntypebd = findName(memreturntypeid.value)
         return memreturntypebd.value
     }
@@ -390,6 +393,9 @@ method expressionType(expr) {
             }
         }
         def callreturntypeid = callmeth.rtype
+        if (callreturntypeid.kind == "type") then {
+            return callreturntypeid
+        }
         def callreturntypebd = findName(callreturntypeid.value)
         return callreturntypebd.value
     }
@@ -421,6 +427,25 @@ method expressionType(expr) {
         subtype.addType(objecttp)
         expr.otype := objecttp
         return objecttp
+    }
+    if (expr.kind == "generic") then {
+        var gtype := expressionType(expr.value)
+        def gtb = gtype
+        for (expr.params.indices) do {i->
+            def tv = gtb.generics.at(i)
+            def ct = findType(expr.params.at(i))
+            gtype := betaReduceType(gtype, tv, ct)
+        }
+        var gtnm := expr.value.value ++ "<"
+        def gts = []
+        for (expr.params) do {gp ->
+            gts.push(findType(gp).value)
+        }
+        gtnm := gtnm ++ util.join(",", gts) ++ ">"
+        def nt = ast.asttype(expr.value.value, gtype.methods)
+        nt.generics := expr.params
+        subtype.addType(nt)
+        return nt
     }
     return DynamicType
 }
@@ -1910,6 +1935,65 @@ method statement {
         }
     }
 }
+method betaReduceType(tp, typevar, concrete) {
+    var methods := tp.methods
+    var tmpparams
+    var tmprt
+    var newmeth := []
+    var changed := false
+    for (methods) do {m->
+        tmprt := m.rtype
+        if (tmprt == false) then {
+        } elseif (tmprt.value == typevar.value) then {
+            tmprt := concrete
+            changed := true
+        } elseif (tmprt.value.substringFrom(1)to(11) == "InstanceOf<") then {
+            def ortype = findType(tmprt)
+            def tryrrep = betaReduceType(ortype, typevar, concrete)
+            if (ortype /= tryrrep) then {
+                tmprt := tryrrep
+                changed := true
+            }
+        }
+        tmpparams := []
+        for (m.params) do {pp->
+            if (pp.dtype == false) then {
+                tmpparams.push(pp)
+            } elseif (pp.dtype.value == typevar.value) then {
+                tmpparams.push(ast.astidentifier(pp.value, concrete))
+                changed := true
+            } elseif (pp.dtype.value.at(1) == "<") then {
+                def otype = findType(pp.dtype)
+                def tryrep = betaReduceType(otype, typevar, concrete)
+                if (otype == tryrep) then {
+                    tmpparams.push(pp)
+                } else {
+                    def trynamed = ast.asttype(tryrep.value
+                        ++ "<{typevar.value}={concrete.value}>",
+                        tryrep.methods)
+                    tmpparams.push(ast.astidentifier(pp.value, trynamed))
+                    changed := true
+                }
+            } else {
+                tmpparams.push(pp)
+            }
+        }
+        newmeth.push(ast.astmethodtype(m.value, tmpparams, tmprt))
+    }
+    if (changed) then {
+        var tmp
+        if (tp.value.substringFrom(1)to(11) == "InstanceOf<") then {
+            tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+                newmeth)
+        } else {
+            tmp := ast.asttype(tp.value, newmeth)
+        }
+        subtype.addType(tmp)
+        return tmp
+    } else {
+        return tp
+    }
+}
 method findType(tp) {
     if (tp == false) then {
         return DynamicType
@@ -1927,33 +2011,19 @@ method findType(tp) {
         def gtbd = findName(gtnm)
         def gtg = gtbd.value
         var gnm := gtnm ++ "<"
+        if (gtg == false) then {
+            util.type_error("could not find base type to instantiate: {gtnm}")
+        }
         var methods := gtg.methods
         var tmprt
         var tmpparams
+        var tmptp := gtg
         for (tp.params.indices) do {i->
             def tv = gtg.generics.at(i)
             def ct = findType(tp.params.at(i))
-            def newmeth = []
-            for (methods) do {m->
-                tmprt := m.rtype
-                if (tmprt.value == tv.value) then {
-                    tmprt := ct
-                }
-                tmpparams := []
-                for (m.params) do {pp->
-                    if (pp.dtype == false) then {
-                        tmpparams.push(pp)
-                    } elseif (pp.dtype.value == tv.value) then {
-                        tmpparams.push(ast.astidentifier(pp.value, ct))
-                    } else {
-                        tmpparams.push(pp)
-                    }
-                }
-                newmeth.push(ast.astmethodtype(m.value, tmpparams, tmprt))
-            }
-            methods := newmeth
+            tmptp := betaReduceType(tmptp, tv, ct)
         }
-        def nt = ast.asttype(gtnm, methods)
+        def nt = ast.asttype(gtnm, tmptp.methods)
         nt.generics := tp.params
         subtype.addType(nt)
         subtype.addType(gtg)
@@ -2003,6 +2073,11 @@ method resolveIdentifiers(node) {
     if (node.kind == "identifier") then {
         tmp := resolveIdentifier(node)
         return tmp
+    }
+    if (node.kind == "generic") then {
+        tmp := resolveIdentifier(node.value)
+        tmp2 := resolveIdentifiersList(node.params)
+        return ast.astgeneric(tmp, tmp2)
     }
     if (node.kind == "op") then {
         return ast.astop(node.value, resolveIdentifiers(node.left),
@@ -2366,12 +2441,37 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             bindName(e.value.value, Binding.new("method"))
         } elseif (e.kind == "class") then {
             tmp := Binding.new("def")
-            tmp.dtype := DynamicType
+            var className
+            var classGenerics := []
+            pushScope
             if (e.name.kind == "identifier") then {
-                bindName(e.name.value, tmp)
+                className := e.name.value
             } else {
-                bindName(e.name.value.value, tmp)
+                className := e.name.value.value
+                classGenerics := e.name.params
+                for (classGenerics) do {gp->
+                    def nomnm = gp.value
+                    def nom = ast.asttype(nomnm, [])
+                    nom.nominal := true
+                    subtype.addType(nom)
+                    def gtpb = Binding.new("type")
+                    gtpb.value := nom
+                    bindName(gp.value, gtpb)
+                }
             }
+            def classInstanceType' = expressionType(ast.astobject(e.value,
+                e.superclass))
+            popScope
+            def classInstanceType = ast.asttype("InstanceOf<{className}>",
+                classInstanceType'.methods)
+            def classItselfType = ast.asttype("ClassOf<{className}>", [
+                ast.astmethodtype("new", e.params, classInstanceType)
+            ])
+            classItselfType.generics := classGenerics
+            subtype.addType(classInstanceType)
+            subtype.addType(classItselfType)
+            tmp.dtype := classItselfType
+            bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
             tmp.dtype := DynamicType
