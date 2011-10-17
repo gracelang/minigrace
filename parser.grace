@@ -271,6 +271,17 @@ method expressionType(expr) {
         if ((expr.value == "true") | (expr.value == "false")) then {
             return BooleanType
         }
+        if (expr.dtype /= false) then {
+            if (expr.dtype.kind == "type") then {
+                if (expr.dtype.generics.size > 0) then {
+                    def gdyns = []
+                    for (expr.dtype.generics) do {gt->
+                        gdyns.push(DynamicType)
+                    }
+                    return expressionType(ast.astgeneric(expr.dtype, gdyns))
+                }
+            }
+        }
         return expr.dtype
     }
     if (expr.kind == "num") then {
@@ -429,20 +440,22 @@ method expressionType(expr) {
         return objecttp
     }
     if (expr.kind == "generic") then {
-        var gtype := expressionType(expr.value)
+        var gtype
+        var gname
+        if (expr.value.kind == "type") then {
+            gname := expr.value.value
+            gtype := expr.value
+        } else {
+            gname := expr.value.value
+            gtype := expressionType(expr.value)
+        }
         def gtb = gtype
         for (expr.params.indices) do {i->
             def tv = gtb.generics.at(i)
             def ct = findType(expr.params.at(i))
             gtype := betaReduceType(gtype, tv, ct)
         }
-        var gtnm := expr.value.value ++ "<"
-        def gts = []
-        for (expr.params) do {gp ->
-            gts.push(findType(gp).value)
-        }
-        gtnm := gtnm ++ util.join(",", gts) ++ ">"
-        def nt = ast.asttype(expr.value.value, gtype.methods)
+        def nt = ast.asttype(gname, gtype.methods)
         nt.generics := expr.params
         subtype.addType(nt)
         return nt
