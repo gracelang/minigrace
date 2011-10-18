@@ -274,11 +274,11 @@ method expressionType(expr) {
         if (expr.dtype /= false) then {
             if (expr.dtype.kind == "type") then {
                 if (expr.dtype.generics.size > 0) then {
-                    def gdyns = []
+                    var gitype := findType(expr.dtype)
                     for (expr.dtype.generics) do {gt->
-                        gdyns.push(DynamicType)
+                        gitype := betaReduceType(gitype, gt, DynamicType)
                     }
-                    return expressionType(ast.astgeneric(expr.dtype, gdyns))
+                    return gitype
                 }
             }
         }
@@ -445,6 +445,10 @@ method expressionType(expr) {
         if (expr.value.kind == "type") then {
             gname := expr.value.value
             gtype := expr.value
+        } elseif (expr.value.kind == "identifier") then {
+            gname := expr.value.value
+            def gidb = findName(gname)
+            gtype := findType(gidb.dtype)
         } else {
             gname := expr.value.value
             gtype := expressionType(expr.value)
@@ -2001,6 +2005,8 @@ method betaReduceType(tp, typevar, concrete) {
         } else {
             tmp := ast.asttype(tp.value, newmeth)
         }
+        tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+            newmeth)
         subtype.addType(tmp)
         return tmp
     } else {
@@ -2017,6 +2023,17 @@ method findType(tp) {
     if (tp.kind == "identifier") then {
         def tpnm = tp.value
         def tpbd = findName(tpnm)
+        var gtp := tpbd.value
+        if (gtp /= false) then {
+            if (gtp.generics.size > 0) then {
+                def gdyns = []
+                for (gtp.generics) do {gdt->
+                    gtp := betaReduceType(gtp, gdt, DynamicType)
+                    gdyns.push(gdt)
+                }
+            }
+        }
+        return gtp
         return tpbd.value
     }
     if (tp.kind == "generic") then {
@@ -2031,13 +2048,15 @@ method findType(tp) {
         var tmprt
         var tmpparams
         var tmptp := gtg
+        def gnms = []
         for (tp.params.indices) do {i->
             def tv = gtg.generics.at(i)
             def ct = findType(tp.params.at(i))
+            gnms.push(ct.value)
             tmptp := betaReduceType(tmptp, tv, ct)
         }
-        def nt = ast.asttype(gtnm, tmptp.methods)
-        nt.generics := tp.params
+        gnm := gnm ++ util.join(",", gnms) ++ ">"
+        def nt = ast.asttype(gnm, tmptp.methods)
         subtype.addType(nt)
         subtype.addType(gtg)
         return nt
@@ -2194,6 +2213,12 @@ method resolveIdentifiers(node) {
         tmp2 := resolveIdentifiers(node.value)
         if (tmp.kind == "identifier") then {
             tmp3 := findName(tmp.value)
+            tmp4 := findType(tmp.dtype)
+            io.error.write("bind {tmp2.value}\n")
+            if (tmp2.kind == "identifier") then {
+                io.error.write("  {tmp2.dtype.kind}\n")
+                io.error.write("  {tmp2.dtype.value}\n")
+            }
             if (tmp3.kind == "def") then {
                 util.syntax_error("reassignment to constant {tmp.value}")
             } elseif (tmp3.kind == "method") then {
