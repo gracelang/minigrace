@@ -1125,7 +1125,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
                         ext := ".grace"
                     }
                     if (ext /= false) then {
-                        cmd := argv.first ++ " --make " ++ nm ++ ext
+                        cmd := argv.first ++ " --target llvm29"
+                        cmd := cmd ++ " --make " ++ nm ++ ext
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
@@ -1367,7 +1368,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
             raise("Fatal.")
         }
         log_verbose("linking.")
-        cmd := "llvm-link -o " ++ modname ++ ".bc " ++ gracelibPath ++ " "
+        cmd := "llvm-link -o " ++ modname ++ ".bc "
+        cmd := cmd ++ gracelibPath.replace(".o")with(".bc") ++ " "
         cmd := cmd ++ modname ++ ".gco"
         for (linkfiles) do { fn ->
             cmd := cmd ++ " " ++ fn
