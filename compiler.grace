@@ -13,6 +13,16 @@ import subtype
 
 util.parseargs
 
+def targets = ["lex", "parse", "subtypematrix", "llvm", "c", "js"]
+
+if (util.target == "help") then {
+    print("Valid targets:")
+    for (targets) do {t->
+        print("  {t}")
+    }
+    sys.exit(0)
+}
+
 var tokens := lexer.Lexer.new.lexinput
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
