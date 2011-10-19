@@ -67,4 +67,4 @@ else
     echo "Substitute the path to your GNU make below."
 fi
 
-echo "Run '$MK' to build, and 'make selfhost' to have it compile itself."
+echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
