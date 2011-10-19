@@ -680,7 +680,7 @@ function gracecode_util() {
             for (var i=0; i<ind._value.length; i++) {
                 if (i > 0)
                     s += ",";
-                s += callmethod(callmethod(iterable, "at", new GraceNum(i)),
+                s += callmethod(callmethod(iterable, "at", new GraceNum(i + 1)),
                         "asString")._value;
             }
             return new GraceString(s);
