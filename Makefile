@@ -2,7 +2,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=c8f22842e73c1a409d06a632acd038e86792994e
 all: minigrace
 
-REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm.grace lexer.grace parser.grace genjs.grace subtype.grace genc.grace
+REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm29.grace lexer.grace parser.grace genjs.grace subtype.grace genc.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
@@ -42,7 +42,7 @@ tarball: minigrace
 	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
 selfhost-stats: minigrace
-	cat compiler.grace util.grace ast.grace parser.grace genllvm.grace > tmp.grace
+	cat compiler.grace util.grace ast.grace parser.grace genllvm29.grace > tmp.grace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
 	rm -f tmp.grace
 
@@ -87,7 +87,7 @@ clean:
 	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
 
 semiclean:
-	rm -f lexer.gco parser.gco util.gco ast.gco genllvm.gco
+	rm -f lexer.gco parser.gco util.gco ast.gco genllvm29.gco
 
 known-good/%:
 	cd known-good && $(MAKE) $*
