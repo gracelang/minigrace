@@ -2214,11 +2214,6 @@ method resolveIdentifiers(node) {
         if (tmp.kind == "identifier") then {
             tmp3 := findName(tmp.value)
             tmp4 := findType(tmp.dtype)
-            io.error.write("bind {tmp2.value}\n")
-            if (tmp2.kind == "identifier") then {
-                io.error.write("  {tmp2.dtype.kind}\n")
-                io.error.write("  {tmp2.dtype.value}\n")
-            }
             if (tmp3.kind == "def") then {
                 util.syntax_error("reassignment to constant {tmp.value}")
             } elseif (tmp3.kind == "method") then {
