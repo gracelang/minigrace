@@ -5,6 +5,7 @@ import util
 import lexer
 import ast
 import parser
+import typechecker
 import genllvm29
 import genc
 import genjs
@@ -43,6 +44,7 @@ if (util.target == "parse") then {
     }
     sys.exit(0)
 }
+values := typechecker.typecheck(values)
 if (util.target == "subtypematrix") then {
     subtype.printMatrix
     sys.exit(0)
