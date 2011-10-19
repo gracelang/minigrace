@@ -20,6 +20,12 @@ var scopes := [HashMap.new]
 var sym
 var lastToken
 
+var uniqueCount := 0
+method uniquify {
+    uniqueCount := uniqueCount + 1
+    uniqueCount
+}
+
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
 method next {
@@ -120,10 +126,10 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("++", [TopOther], DynamicIdentifier),
-    ast.astmethodtype("<", [NumberOther], NumberIdentifier),
-    ast.astmethodtype("<=", [NumberOther], NumberIdentifier),
-    ast.astmethodtype(">", [NumberOther], NumberIdentifier),
-    ast.astmethodtype(">=", [NumberOther], NumberIdentifier),
+    ast.astmethodtype("<", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype("<=", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype(">", [NumberOther], BooleanIdentifier),
+    ast.astmethodtype(">=", [NumberOther], BooleanIdentifier),
     ast.astmethodtype("..", [NumberOther], DynamicIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier),
     ast.astmethodtype("prefix-", [], NumberIdentifier)
@@ -226,9 +232,6 @@ method conformsType(b)to(a) {
     if (b.value == "Dynamic") then {
         return true
     }
-    if (b.value == a.value) then {
-        return true
-    }
     if (b.unionTypes.size > 0) then {
         for (b.unionTypes) do {ut->
             if (conformsType(findType(ut))to(a).not) then {
@@ -267,6 +270,17 @@ method expressionType(expr) {
     if (expr.kind == "identifier") then {
         if ((expr.value == "true") | (expr.value == "false")) then {
             return BooleanType
+        }
+        if (expr.dtype /= false) then {
+            if (expr.dtype.kind == "type") then {
+                if (expr.dtype.generics.size > 0) then {
+                    var gitype := findType(expr.dtype)
+                    for (expr.dtype.generics) do {gt->
+                        gitype := betaReduceType(gitype, gt, DynamicType)
+                    }
+                    return gitype
+                }
+            }
         }
         return expr.dtype
     }
@@ -336,6 +350,9 @@ method expressionType(expr) {
                 ++ "requires {memmeth.params.size} arguments, not 0")
         }
         def memreturntypeid = memmeth.rtype
+        if (memreturntypeid.kind == "type") then {
+            return memreturntypeid
+        }
         def memreturntypebd = findName(memreturntypeid.value)
         return memreturntypebd.value
     }
@@ -387,6 +404,9 @@ method expressionType(expr) {
             }
         }
         def callreturntypeid = callmeth.rtype
+        if (callreturntypeid.kind == "type") then {
+            return callreturntypeid
+        }
         def callreturntypebd = findName(callreturntypeid.value)
         return callreturntypebd.value
     }
@@ -418,6 +438,31 @@ method expressionType(expr) {
         subtype.addType(objecttp)
         expr.otype := objecttp
         return objecttp
+    }
+    if (expr.kind == "generic") then {
+        var gtype
+        var gname
+        if (expr.value.kind == "type") then {
+            gname := expr.value.value
+            gtype := expr.value
+        } elseif (expr.value.kind == "identifier") then {
+            gname := expr.value.value
+            def gidb = findName(gname)
+            gtype := findType(gidb.dtype)
+        } else {
+            gname := expr.value.value
+            gtype := expressionType(expr.value)
+        }
+        def gtb = gtype
+        for (expr.params.indices) do {i->
+            def tv = gtb.generics.at(i)
+            def ct = findType(expr.params.at(i))
+            gtype := betaReduceType(gtype, tv, ct)
+        }
+        def nt = ast.asttype(gname, gtype.methods)
+        nt.generics := expr.params
+        subtype.addType(nt)
+        return nt
     }
     return DynamicType
 }
@@ -1816,6 +1861,11 @@ method dotype {
         pushidentifier
         generic
         var p := values.pop
+        var gens := []
+        if (p.kind == "generic") then {
+            gens := p.params
+            p := p.value
+        }
         expect("op")
         if (sym.value /= "=") then {
             util.syntax_error("type declarations require =.")
@@ -1829,7 +1879,9 @@ method dotype {
             methods.push(values.pop)
         }
         next
-        values.push(ast.asttype(p.value, methods))
+        def t = ast.asttype(p.value, methods)
+        t.generics := gens
+        values.push(t)
     }
 }
 
@@ -1900,6 +1952,67 @@ method statement {
         }
     }
 }
+method betaReduceType(tp, typevar, concrete) {
+    var methods := tp.methods
+    var tmpparams
+    var tmprt
+    var newmeth := []
+    var changed := false
+    for (methods) do {m->
+        tmprt := m.rtype
+        if (tmprt == false) then {
+        } elseif (tmprt.value == typevar.value) then {
+            tmprt := concrete
+            changed := true
+        } elseif (tmprt.value.substringFrom(1)to(11) == "InstanceOf<") then {
+            def ortype = findType(tmprt)
+            def tryrrep = betaReduceType(ortype, typevar, concrete)
+            if (ortype /= tryrrep) then {
+                tmprt := tryrrep
+                changed := true
+            }
+        }
+        tmpparams := []
+        for (m.params) do {pp->
+            if (pp.dtype == false) then {
+                tmpparams.push(pp)
+            } elseif (pp.dtype.value == typevar.value) then {
+                tmpparams.push(ast.astidentifier(pp.value, concrete))
+                changed := true
+            } elseif (pp.dtype.value.at(1) == "<") then {
+                def otype = findType(pp.dtype)
+                def tryrep = betaReduceType(otype, typevar, concrete)
+                if (otype == tryrep) then {
+                    tmpparams.push(pp)
+                } else {
+                    def trynamed = ast.asttype(tryrep.value
+                        ++ "<{typevar.value}={concrete.value}>",
+                        tryrep.methods)
+                    tmpparams.push(ast.astidentifier(pp.value, trynamed))
+                    changed := true
+                }
+            } else {
+                tmpparams.push(pp)
+            }
+        }
+        newmeth.push(ast.astmethodtype(m.value, tmpparams, tmprt))
+    }
+    if (changed) then {
+        var tmp
+        if (tp.value.substringFrom(1)to(11) == "InstanceOf<") then {
+            tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+                newmeth)
+        } else {
+            tmp := ast.asttype(tp.value, newmeth)
+        }
+        tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+            newmeth)
+        subtype.addType(tmp)
+        return tmp
+    } else {
+        return tp
+    }
+}
 method findType(tp) {
     if (tp == false) then {
         return DynamicType
@@ -1910,7 +2023,43 @@ method findType(tp) {
     if (tp.kind == "identifier") then {
         def tpnm = tp.value
         def tpbd = findName(tpnm)
+        var gtp := tpbd.value
+        if (gtp /= false) then {
+            if (gtp.generics.size > 0) then {
+                def gdyns = []
+                for (gtp.generics) do {gdt->
+                    gtp := betaReduceType(gtp, gdt, DynamicType)
+                    gdyns.push(gdt)
+                }
+            }
+        }
+        return gtp
         return tpbd.value
+    }
+    if (tp.kind == "generic") then {
+        def gtnm = tp.value.value
+        def gtbd = findName(gtnm)
+        def gtg = gtbd.value
+        var gnm := gtnm ++ "<"
+        if (gtg == false) then {
+            util.type_error("could not find base type to instantiate: {gtnm}")
+        }
+        var methods := gtg.methods
+        var tmprt
+        var tmpparams
+        var tmptp := gtg
+        def gnms = []
+        for (tp.params.indices) do {i->
+            def tv = gtg.generics.at(i)
+            def ct = findType(tp.params.at(i))
+            gnms.push(ct.value)
+            tmptp := betaReduceType(tmptp, tv, ct)
+        }
+        gnm := gnm ++ util.join(",", gnms) ++ ">"
+        def nt = ast.asttype(gnm, tmptp.methods)
+        subtype.addType(nt)
+        subtype.addType(gtg)
+        return nt
     }
     return DynamicType
 }
@@ -1956,6 +2105,11 @@ method resolveIdentifiers(node) {
     if (node.kind == "identifier") then {
         tmp := resolveIdentifier(node)
         return tmp
+    }
+    if (node.kind == "generic") then {
+        tmp := resolveIdentifier(node.value)
+        tmp2 := resolveIdentifiersList(node.params)
+        return ast.astgeneric(tmp, tmp2)
     }
     if (node.kind == "op") then {
         return ast.astop(node.value, resolveIdentifiers(node.left),
@@ -2033,6 +2187,17 @@ method resolveIdentifiers(node) {
             scopes.last.put("___is_class", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
         }
+        if (node.name.kind == "generic") then {
+            for (node.name.params) do {gp->
+                def nomnm = gp.value
+                def nom = ast.asttype(nomnm, [])
+                nom.nominal := true
+                subtype.addType(nom)
+                def tpb = Binding.new("type")
+                tpb.value := nom
+                bindName(gp.value, tpb)
+            }
+        }
         for (node.params) do { e->
             bindIdentifier(e)
         }
@@ -2048,6 +2213,7 @@ method resolveIdentifiers(node) {
         tmp2 := resolveIdentifiers(node.value)
         if (tmp.kind == "identifier") then {
             tmp3 := findName(tmp.value)
+            tmp4 := findType(tmp.dtype)
             if (tmp3.kind == "def") then {
                 util.syntax_error("reassignment to constant {tmp.value}")
             } elseif (tmp3.kind == "method") then {
@@ -2057,8 +2223,9 @@ method resolveIdentifiers(node) {
             }
             if (conformsType(expressionType(tmp2))to(tmp.dtype).not) then {
                 util.type_error("assigning value of nonconforming type "
-                    ++ "{expressionType(tmp2).value} to var of type "
-                    ++ "{tmp.dtype.value}")
+                    ++ subtype.nicename(expressionType(tmp2))
+                    ++ " to var of type "
+                    ++ subtype.nicename(findType(tmp.dtype)))
             }
         } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
             tmp := tmp.value
@@ -2068,7 +2235,34 @@ method resolveIdentifiers(node) {
         }
     }
     if (node.kind == "type") then {
-        if (node.unionTypes.size > 0) then {
+        if (node.generics.size > 0) then {
+            pushScope
+            for (node.generics) do {g->
+                def nom = ast.asttype(g.value, [])
+                nom.nominal := true
+                def tpb = Binding.new("type")
+                tpb.value := nom
+                bindName(g.value, tpb)
+            }
+            tmp := []
+            for (node.methods) do {mt->
+                pushScope
+                tmp2 := []
+                for (mt.params) do {e->
+                    e.dtype := resolveIdentifiers(e.dtype)
+                    bindIdentifier(e)
+                    tmp2.push(e)
+                }
+                tmp3 := resolveIdentifiers(mt.rtype)
+                tmp.push(ast.astmethodtype(mt.value, tmp2, tmp3))
+                popScope
+            }
+            popScope
+            tmp := ast.asttype(node.value, tmp)
+            tmp.generics := node.generics
+            tmp.nominal := node.nominal
+            return tmp
+        } elseif (node.unionTypes.size > 0) then {
             tmp := resolveIdentifiersList(node.unionTypes)
             tmp2 := ast.asttype(node.value, node.methods)
             for (tmp) do {ut->
@@ -2144,10 +2338,12 @@ method resolveIdentifiers(node) {
         tmp4 := resolveIdentifiers(node.dtype)
         if (tmp2 /= false) then {
             tmp3 := findType(tmp4)
+            tmp4 := tmp3
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
                 util.type_error("initialising var of type "
-                    ++ "{tmp3.value} with expression of type "
-                    ++ expressionType(tmp2).value)
+                    ++ subtype.nicename(tmp3)
+                    ++ " with expression of type "
+                    ++ subtype.nicename(expressionType(tmp2)))
             }
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
@@ -2162,8 +2358,9 @@ method resolveIdentifiers(node) {
         tmp3 := findType(tmp4)
         if (conformsType(expressionType(tmp2))to(tmp3).not) then {
             util.type_error("initialising def of type "
-                ++ "{tmp3.value} with expression of type "
-                ++ expressionType(tmp2).value)
+                ++ subtype.nicename(tmp3)
+                ++ " with expression of type "
+                ++ subtype.nicename(expressionType(tmp2)))
         }
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
@@ -2277,8 +2474,37 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             bindName(e.value.value, Binding.new("method"))
         } elseif (e.kind == "class") then {
             tmp := Binding.new("def")
-            tmp.dtype := DynamicType
-            bindName(e.name.value, tmp)
+            var className
+            var classGenerics := []
+            pushScope
+            if (e.name.kind == "identifier") then {
+                className := e.name.value
+            } else {
+                className := e.name.value.value
+                classGenerics := e.name.params
+                for (classGenerics) do {gp->
+                    def nomnm = gp.value
+                    def nom = ast.asttype(nomnm, [])
+                    nom.nominal := true
+                    subtype.addType(nom)
+                    def gtpb = Binding.new("type")
+                    gtpb.value := nom
+                    bindName(gp.value, gtpb)
+                }
+            }
+            def classInstanceType' = expressionType(ast.astobject(e.value,
+                e.superclass))
+            popScope
+            def classInstanceType = ast.asttype("InstanceOf<{className}>",
+                classInstanceType'.methods)
+            def classItselfType = ast.asttype("ClassOf<{className}>", [
+                ast.astmethodtype("new", e.params, classInstanceType)
+            ])
+            classItselfType.generics := classGenerics
+            subtype.addType(classInstanceType)
+            subtype.addType(classItselfType)
+            tmp.dtype := classItselfType
+            bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
             tmp.dtype := DynamicType

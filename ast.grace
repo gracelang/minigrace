@@ -157,6 +157,8 @@ method asttype(name', methods') {
         def unionTypes = []
         def intersectionTypes = []
         def line = util.linenum
+        var generics := []
+        var nominal := false
         var register := ""
         method pretty(depth) {
             var spc := ""
