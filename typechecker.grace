@@ -582,6 +582,12 @@ method resolveIdentifiers(node) {
         tmp := resolveIdentifiers(node.in)
         return ast.astmember(node.value, tmp)
     }
+    if (node.kind == "array") then {
+        tmp := resolveIdentifiersList(node.value)
+        if (node.value /= tmp) then {
+            return ast.astarray(tmp)
+        }
+    }
     if (node.kind == "method") then {
         pushScope
         for (node.params) do {e->
