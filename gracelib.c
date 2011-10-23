@@ -683,11 +683,12 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class("ConcatString", 16);
+        ConcatString = alloc_class("ConcatString", 17);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
+        add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
         add_Method(ConcatString, "!=", &Object_NotEquals);
         add_Method(ConcatString, "/=", &Object_NotEquals);
@@ -861,7 +862,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
-        add_Method(String, "[]", &String_index);
+        add_Method(String, "[]", &String_at);
         add_Method(String, "==", &String_Equals);
         add_Method(String, "!=", &Object_NotEquals);
         add_Method(String, "/=", &Object_NotEquals);
