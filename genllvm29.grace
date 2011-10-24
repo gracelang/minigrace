@@ -329,14 +329,7 @@ method compilemethod(o, selfobj, pos) {
     var nm := name ++ myc
     beginblock("entry")
     output.pop
-    var i := 0
-    for (o.params) do { p ->
-        var pn := escapestring(p.value)
-        out("  %\"var_" ++ pn ++ "\" = getelementptr %object* %args, "
-            ++ "i32 " ++ i)
-        declaredvars.push(pn)
-        i := i + 1
-    }
+    var i := o.params.size
     if (o.varargs) then {
         var van := escapestring(o.vararg.value)
         out("  %\"var_init_" ++ van ++ "\" = call %object @process_varargs("
@@ -415,6 +408,36 @@ method compilemethod(o, selfobj, pos) {
             ++ "%object* %args, i32 %flags) \{")
     }
     beginblock("entry")
+    // We need to detect which parameters are used in a closure, and
+    // treat those specially. As params[] is stack-allocated, references
+    // to those variables would fail once the method was out of scope
+    // unless we copied them onto the heap.
+    i := 0
+    def toremove = []
+    for (o.params) do { p ->
+        var pn := escapestring(p.value)
+        if (closurevars.contains(pn)) then {
+            out("  %\"var_" ++ pn ++ "\" = call %object* @alloc_var()")
+            out("  %argp_{i} = getelementptr %object* %args, i32 {i}")
+            out("  %argval_{i} = load %object* %argp_{i}")
+            out("  store %object %\"argval_{i}\", %object* %\"var_{pn}\"")
+            toremove.push(pn)
+        } else {
+            out("  %\"var_" ++ pn ++ "\" = getelementptr %object* %args, "
+                ++ "i32 " ++ i)
+        }
+        declaredvars.push(pn)
+        i := i + 1
+    }
+    def origclosurevars = closurevars
+    closurevars := []
+    for (origclosurevars) do {pn->
+        if (toremove.contains(pn)) then {
+            // Remove this one
+        } else {
+            closurevars.push(pn)
+        }
+    }
     out("  %params = alloca %object, i32 " ++ paramsUsed)
     for (0..(paramsUsed-1)) do { ii ->
         out("  %params_" ++ ii ++ " = getelementptr %object* %params, i32 "
