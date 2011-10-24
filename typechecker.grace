@@ -600,6 +600,9 @@ method resolveIdentifiers(node) {
         tmp4 := resolveIdentifiers(node.dtype)
         def oldReturnType = currentReturnType
         currentReturnType := findType(tmp4)
+        if (currentReturnType == false) then {
+            util.type_error("return type of method not defined as a type.")
+        }
         l := resolveIdentifiersList(node.body)
         if (l.size > 0) then {
             def lastStatement = l.last
