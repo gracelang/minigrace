@@ -69,7 +69,10 @@ gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
 	./tests/harness "$(shell pwd)/minigrace" tests
-fulltest: gencheck clean selfhost-rec selftest test
+fulltest: gencheck clean selfhost-rec selftest test llvmtest
+llvmtest: minigrace
+	./tests/harness "$(shell pwd)/minigrace --target llvm29" tests
+backendtests: test llvmtest
 clean:
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso
