@@ -58,3 +58,4 @@ int integerfromAny(Object);
 Object **createclosure(int);
 
 void setline(int);
+void gracedie(char *msg, ...);

@@ -138,6 +138,16 @@ void backtrace() {
         fprintf(stderr, "  Called %s\n", callstack[i]);
     }
 }
+void gracedie(char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    fprintf(stderr, "Error around line %i: ", linenumber);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
+    backtrace();
+    va_end(args);
+    exit(1);
+}
 void die(char *msg, ...) {
     va_list args;
     va_start(args, msg);
