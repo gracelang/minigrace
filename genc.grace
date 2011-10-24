@@ -292,13 +292,7 @@ method compilemethod(o, selfobj, pos) {
     auto_count := auto_count + 1
     var name := o.value.value
     var nm := name ++ myc
-    var i := 0
-    for (o.params) do { p ->
-        var pn := escapeident(p.value)
-        out("  Object *var_{pn} = args + {i};")
-        declaredvars.push(pn)
-        i := i + 1
-    }
+    var i := o.params.size
     if (o.varargs) then {
         var van := escapeident(o.vararg.value)
         out("  Object var_init_{van} = process_varargs(args, {i}, nparams);")
@@ -365,6 +359,33 @@ method compilemethod(o, selfobj, pos) {
     } else {
         out("Object {litname}(Object self, int nparams, Object *args, "
             ++ "int32_t flags) \{")
+    }
+    // We need to detect which parameters are used in a closure, and
+    // treat those specially. As params[] is stack-allocated, references
+    // to those variables would fail once the method was out of scope
+    // unless we copied them onto the heap.
+    i := 0
+    def toremove = []
+    for (o.params) do { p ->
+        var pn := escapeident(p.value)
+        if (closurevars.contains(pn)) then {
+            out("  Object *var_{pn} = alloc_var();");
+            out("  *var_{pn} = args[{i}];");
+            toremove.push(pn)
+        } else {
+            out("  Object *var_{pn} = args + {i};")
+        }
+        declaredvars.push(pn)
+        i := i + 1
+    }
+    def origclosurevars = closurevars
+    closurevars := []
+    for (origclosurevars) do {pn->
+        if (toremove.contains(pn)) then {
+            // Remove this one
+        } else {
+            closurevars.push(pn)
+        }
     }
     out("  Object params[{paramsUsed}];")
     var j := 0
