@@ -161,6 +161,8 @@ void initprofiling() {
     start_time = ar.tv_sec + (double)ar.tv_usec / 1000000;
 }
 int istrue(Object o) {
+    if (o == undefined)
+        die("Undefined value used in boolean test.");
     return o != NULL && o != BOOLEAN_FALSE && o != undefined;
 }
 int isclass(Object o, const char *class) {
