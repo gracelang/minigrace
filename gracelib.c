@@ -589,6 +589,17 @@ Object ConcatString__escape(Object self, int nparams,
     free(c);
     return o;
 }
+Object ConcatString_ord(Object self, int nparams,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    Object left = sself->left;
+    struct StringObject *lefts = (struct StringObject*)left;
+    int ls = lefts->size;
+    if (ls > 0)
+        return callmethod(left, "ord", 0, NULL);
+    Object right = sself->right;
+    return callmethod(right, "ord", 0, NULL);
+}
 Object ConcatString_at(Object self, int nparams,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -683,7 +694,7 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class("ConcatString", 17);
+        ConcatString = alloc_class("ConcatString", 18);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
@@ -704,6 +715,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "match(1)matchesBinding(1)else",
                 &Object_match_matchesBinding_else);
         add_Method(ConcatString, "indices", &String_indices);
+        add_Method(ConcatString, "ord", &ConcatString_ord);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
