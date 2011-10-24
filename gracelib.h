@@ -59,3 +59,5 @@ Object **createclosure(int);
 
 void setline(int);
 void gracedie(char *msg, ...);
+
+void grace_register_shutdown_function(void(*)());

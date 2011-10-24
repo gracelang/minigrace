@@ -114,6 +114,13 @@ struct UserClosure {
     Object *vars[];
 };
 
+struct SFLinkList {
+    void(*func)();
+    struct SFLinkList *next;
+};
+
+struct SFLinkList *shutdown_functions;
+
 int linenumber = 0;
 
 int heapsize;
@@ -170,6 +177,19 @@ void initprofiling() {
     gettimeofday(&ar, NULL);
     start_time = ar.tv_sec + (double)ar.tv_usec / 1000000;
 }
+void grace_register_shutdown_function(void(*func)()) {
+    struct SFLinkList *nw = glmalloc(sizeof(struct SFLinkList));
+    nw->func = func;
+    nw->next = shutdown_functions;
+    shutdown_functions = nw;
+}
+void grace_run_shutdown_functions() {
+    while (shutdown_functions != NULL) {
+        shutdown_functions->func();
+        shutdown_functions = shutdown_functions->next;
+    }
+}
+
 int istrue(Object o) {
     if (o == undefined)
         die("Undefined value used in boolean test.");
@@ -2125,6 +2145,7 @@ Object dlmodule(const char *name) {
     return init();
 }
 void gracelib_stats() {
+    grace_run_shutdown_functions();
     if (track_callgraph)
         fprintf(callgraph, "}\n");
     if (getenv("GRACE_STATS") == NULL)
