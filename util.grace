@@ -146,24 +146,18 @@ method outprint(s) {
     outfilev.write("\n")
 }
 method syntax_error(s) {
-    io.error.write("minigrace")
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write(": " ++ modnamev ++ ": Syntax error around line "
-        ++ linenumv ++ ", character " ++ lineposv ++ ": ")
-    io.error.write(s)
+    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Syntax error: {s}")
     io.error.write("\n")
     sys.exit(1)
 }
 method type_error(s) {
-    io.error.write("minigrace")
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write(": " ++ modnamev ++ ": Type error around line "
-        ++ linenumv ++ ", character " ++ lineposv ++ ": ")
-    io.error.write(s)
+    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
     io.error.write("\n")
     sys.exit(1)
 }
