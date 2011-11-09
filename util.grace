@@ -166,9 +166,7 @@ method warning(s) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write(": warning: " ++ modnamev ++ ": around line "
-        ++ linenumv ++ ", character " ++ lineposv ++ ": ")
-    io.error.write(s)
+    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
     io.error.write("\n")
 }
 
