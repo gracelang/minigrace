@@ -53,6 +53,7 @@ Object gracelib_print(Object, int, Object*);
 Object gracelib_length(Object);
 Object dlmodule(const char *);
 
+void bufferfromString(Object, char *);
 char *cstringfromString(Object);
 int integerfromAny(Object);
 Object **createclosure(int);
