@@ -652,15 +652,18 @@ function gracecode_util() {
             dbg(s._value);
         },
         type_error: function(s) {
-            stderr_txt.value += "Type error around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value;
+            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+                this._linepos._value + ": type error: " + s._value;
             throw "ErrorExit";
         },
         syntax_error: function(s) {
-            stderr_txt.value += "Syntax error around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value;
+            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+                this._linepos._value + ": syntax error: " + s._value;
             throw "ErrorExit";
         },
         warning: function(s) {
-            stderr_txt.value += "Warning around line " + this._linenum._value + ", character " + this._linepos._value + ": " + s._value + "\n";
+            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+                this._linepos._value + ": warning: " + s._value;
         },
         hex: function(n) {
             var hexdigits = "0123456789abcdef"
