@@ -56,12 +56,12 @@ UNICODE_LDFLAGS = $UNICODE_LDFLAGS
 EOT
 
 MK=make
-if make -v 2>&1 | grep -q GNU
-then
-    MK=make
-elif gmake -v 2>&1 | grep -q GNU
+if gmake -v 2>&1 | grep -q GNU
 then
     MK=gmake
+elif make -v 2>&1 | grep -q GNU
+then
+    MK=make
 else
     echo "This software requires GNU make to build."
     echo "Substitute the path to your GNU make below."
