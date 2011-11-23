@@ -59,7 +59,7 @@ selftest: minigrace
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest compiler.grace )
 	rm -rf selftest
 
-minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.bc gracelib.o
+minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
 	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.grace
 
 unicode.gco: unicode.c unicodedata.h
@@ -70,7 +70,7 @@ gencheck:
 test: minigrace
 	./tests/harness "$(shell pwd)/minigrace" tests
 fulltest: gencheck clean selfhost-rec selftest test llvmtest
-llvmtest: minigrace
+llvmtest: minigrace gracelib.bc
 	./tests/harness "$(shell pwd)/minigrace --target llvm29" tests
 backendtests: test llvmtest
 clean:
