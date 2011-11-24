@@ -935,6 +935,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_HashMap = alloc_var();")
     out("  *var_HashMap = alloc_HashMapClassObject();")
+    out("  Object *var_MatchFailed = alloc_var();")
+    out("  *var_MatchFailed = alloc_userobj(0, 0);")
     var tmpo := output
     output := []
     for (values) do { l ->

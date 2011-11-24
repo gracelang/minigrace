@@ -4,6 +4,7 @@ import util
 import subtype
 
 var scopes := [HashMap.new]
+var auto_count := 0
 
 def DynamicIdentifier = ast.astidentifier("Dynamic", false)
 def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic", false))
@@ -547,6 +548,107 @@ method resolveIdentifier(node) {
     node
 }
 
+method rewritematchblock(o) {
+    var params := o.params
+    if (params.size /= 1) then {
+        return o
+    }
+    var body := o.body
+    var inbody := body
+    var pat
+    var tmpp
+    var nparams
+    var newname := ast.astidentifier("__matchvar" ++ auto_count,
+        false)
+    auto_count := auto_count + 1
+    var fst := params.first
+    if (fst.kind == "call") then {
+        pat := fst
+        tmpp := fst
+        params := [newname]
+        nparams := []
+        for (pat.with) do {p->
+            var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
+            auto_count := auto_count + 1
+            nparams.push(inname)
+            inbody := [ast.astcall(
+                ast.astmember("apply", rewritematchblock(ast.astblock([p],
+                    inbody))), [inname]) ]
+        }
+        pat := pat.value
+        body := [ast.astcall(ast.astmember(
+                    "matchmatchesBindingelse",
+                    newname),
+                [pat, ast.astblock(nparams, inbody),
+                ast.astblock([], [
+                    ast.astcall(ast.astidentifier("print", false),
+                        [ast.aststring("Pattern match failed.")])
+                ])])]
+    } elseif (fst.kind /= "identifier") then {
+        auto_count := auto_count + 1
+        pat := fst
+        params := [newname]
+        body := [ast.astif(
+                    ast.astop("==", pat, newname),
+                    [
+                        ast.astcall(
+                            ast.astmember("apply",
+                                ast.astblock([], inbody)
+                            ),
+                            [])
+                    ],
+                    [ast.astidentifier("MatchFailed")]
+                    )
+                ]
+    } elseif (fst.dtype /= false) then {
+        pat := fst.dtype
+        tmpp := fst
+        if (pat.kind == "call") then {
+            nparams := []
+            for (pat.with) do {p->
+                var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
+                auto_count := auto_count + 1
+                nparams.push(inname)
+                inbody := [ast.astcall(
+                    ast.astmember("apply", rewritematchblock(ast.astblock([p],
+                        inbody))), [inname]) ]
+            }
+            pat := pat.value
+            body := [ast.astcall(ast.astmember(
+                        "matchmatchesBindingelse",
+                        tmpp),
+                    [pat, ast.astblock(nparams, inbody),
+                    ast.astblock([tmpp], [
+                        ast.astcall(ast.astidentifier("print", false),
+                            [ast.aststring("Pattern match failed.")])
+                    ])])]
+        } else {
+            def binding = findName(pat.value)
+            if (binding.kind != "type") then {
+                params := [newname]
+                body := [ast.astif(
+                            ast.astcall(
+                                ast.astmember(
+                                    "match",
+                                    pat),
+                                [newname]),
+                            [
+                                ast.astcall(
+                                    ast.astmember("apply",
+                                        ast.astblock(o.params, inbody)
+                                    ),
+                                    [newname])
+                            ],
+                            [ast.astidentifier("MatchFailed")]
+                            )
+                        ]
+            }
+        }
+    }
+    o := ast.astblock(params, body)
+    return o
+}
+
 method resolveIdentifiers(node) {
     var l
     var tmp
@@ -626,11 +728,14 @@ method resolveIdentifiers(node) {
     if (node.kind == "block") then {
         pushScope
         for (node.params) do {e->
-            bindIdentifier(e)
+            if (e.kind == "identifier") then {
+                bindIdentifier(e)
+            }
         }
         l := resolveIdentifiersList(node.body)
-        popScope
         tmp := ast.astblock(node.params, l)
+        tmp := rewritematchblock(tmp)
+        popScope
         return tmp
     }
     if (node.kind == "object") then {
@@ -994,6 +1099,7 @@ method typecheck(values) {
     bindName("length", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
+    bindName("MatchFailed", Binding.new("def"))
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
     bindName("self", Binding.new("def"))
