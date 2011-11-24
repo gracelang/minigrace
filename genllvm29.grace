@@ -1220,6 +1220,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  %var_HashMap = call %object* @alloc_var()")
     out("  %tmp_hmco = call %object @alloc_HashMapClassObject()")
     out("  store %object %tmp_hmco, %object* %var_HashMap")
+    out("  %var_MatchFailed = call %object* @alloc_var()")
+    out("  %tmp_mf = call %object @alloc_obj2(i32 0, i32 0)")
+    out("  store %object %tmp_mf, %object* %var_MatchFailed")
     var tmpo := output
     output := []
     for (values) do { l ->
