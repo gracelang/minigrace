@@ -45,6 +45,12 @@ if (util.target == "parse") then {
     sys.exit(0)
 }
 values := typechecker.typecheck(values)
+if (util.target == "processed-ast") then {
+    for (values) do { v ->
+        print(v.pretty(0))
+    }
+    sys.exit(0)
+}
 if (util.target == "subtypematrix") then {
     subtype.printMatrix
     sys.exit(0)
