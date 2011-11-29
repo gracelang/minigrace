@@ -435,9 +435,20 @@ Object List_last(Object self, int nparams,
     struct ListObject *sself = (struct ListObject*)self;
     return sself->items[sself->size-1];
 }
+Object List_prepended(Object self, int nparams,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    int i;
+    Object nl = alloc_List();
+    callmethod(nl, "push", 1, args);
+    for (i = 0; i < sself->size; i++) {
+        List_push(nl, 1, sself->items + i, 0);
+    }
+    return nl;
+}
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class("List", 17);
+        List = alloc_class("List", 18);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
@@ -455,6 +466,7 @@ Object alloc_List() {
         add_Method(List, "indices", &List_indices);
         add_Method(List, "first", &List_first);
         add_Method(List, "last", &List_last);
+        add_Method(List, "prepended", &List_prepended);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, List);
     struct ListObject *lo = (struct ListObject*)o;
