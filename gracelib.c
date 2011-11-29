@@ -119,6 +119,13 @@ struct SFLinkList {
     struct SFLinkList *next;
 };
 
+struct BlockObject {
+    int32_t flags;
+    ClassData class;
+    jmp_buf *retpoint;
+    Object data[1];
+};
+
 struct SFLinkList *shutdown_functions;
 
 int linenumber = 0;
@@ -1694,7 +1701,8 @@ Object callmethod(Object receiver, const char *name,
         int nparams, Object *args) {
     int i;
     int start_calldepth = calldepth;
-    if (strcmp(name, "apply") != 0) {
+    if (strcmp(name, "_apply") != 0 && strcmp(name, "apply") != 0
+            && strcmp(name, "applyIndirectly") != 0) {
         if (setjmp(return_stack[calldepth])) {
             Object rv = return_value;
             return_value = NULL;
@@ -2063,6 +2071,34 @@ Object alloc_HashMapClassObject() {
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_obj(0, c);
     return o;
+}
+Object Block_apply(Object self, int nargs, Object *args, int flags) {
+    return callmethod(self, "_apply", nargs, args);
+}
+Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
+    Object tuple = args[0];
+    Object size = callmethod(tuple, "size", 0, NULL);
+    int sz = integerfromAny(size);
+    int i;
+    Object rargs[sz];
+    for (i=0; i<sz; i++) {
+        Object flt = alloc_Float64(i + 1);
+        rargs[i] = callmethod(tuple, "[]", 1, &flt);
+    }
+    return callmethod(self, "_apply", sz, rargs);
+}
+Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int)) {
+    ClassData c = alloc_class("Block«unknown:-1»", 8);
+    add_Method(c, "asString", &Object_asString);
+    add_Method(c, "++", &Object_concat);
+    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "!=", &Object_NotEquals);
+    add_Method(c, "/=", &Object_NotEquals);
+    add_Method(c, "apply", &Block_apply);
+    add_Method(c, "applyIndirectly", &Block_applyIndirectly);
+    struct BlockObject *o = (struct BlockObject*)(
+            alloc_obj(sizeof(jmp_buf*) + sizeof(Object), c));
+    return (Object)o;
 }
 void set_type(Object o, int16_t t) {
     int32_t flags = o->flags;

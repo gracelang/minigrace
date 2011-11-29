@@ -246,13 +246,12 @@ method compileblock(o) {
     inBlock := true
     var myc := auto_count
     auto_count := auto_count + 1
-    var applymeth := ast.astmethod(ast.astidentifier("apply", false),
+    var obj := "block{myc}"
+    out("  Object {obj} = alloc_Block(NULL, NULL);")
+    var applymeth := ast.astmethod(ast.astidentifier("_apply", false),
         o.params, o.body, false)
     applymeth.selfclosure := true
-    var objbody := ast.astobject([applymeth], false)
-    var obj := compilenode(objbody)
-    var modn := "Block<{modname}:{myc}>"
-    out("  setclassname({obj}, \"{modn}\");")
+    compilemethod(applymeth, obj, 0)
     o.register := obj
     inBlock := origInBlock
 }
@@ -413,7 +412,8 @@ method compilemethod(o, selfobj, pos) {
         }
     }
     var len := length(name) + 1
-    if (closurevars.size == 0) then {
+    if (selfobj == false) then {
+    } elseif (closurevars.size == 0) then {
         out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
     } else {
         out("  block_savedest({selfobj});")
