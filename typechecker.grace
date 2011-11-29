@@ -567,23 +567,25 @@ method rewritematchblock(o) {
         tmpp := fst
         params := [newname]
         nparams := []
-        for (pat.with) do {p->
-            var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
-            auto_count := auto_count + 1
-            nparams.push(inname)
-            inbody := [ast.astcall(
-                ast.astmember("apply", rewritematchblock(ast.astblock([p],
-                    inbody))), [inname]) ]
-        }
-        pat := pat.value
-        body := [ast.astcall(ast.astmember(
-                    "matchmatchesBindingelse",
-                    newname),
-                [pat, ast.astblock(nparams, inbody),
-                ast.astblock([], [
-                    ast.astcall(ast.astidentifier("print", false),
-                        [ast.aststring("Pattern match failed.")])
-                ])])]
+        body := [ast.astif(
+                    ast.astcall(
+                        ast.astmember(
+                            "match",
+                            pat.value),
+                        [newname]),
+                    [
+                        ast.astcall(
+                            ast.astmember("applyIndirectly",
+                                ast.astblock(pat.with, inbody)
+                            ),
+                            [ast.astcall(
+                                ast.astmember("try", pat.value),
+                                [newname]
+                            )])
+                    ],
+                    [ast.astidentifier("MatchFailed")]
+                    )
+                ]
     } elseif (fst.kind /= "identifier") then {
         auto_count := auto_count + 1
         pat := fst
@@ -605,23 +607,34 @@ method rewritematchblock(o) {
         tmpp := fst
         if (pat.kind == "call") then {
             nparams := []
-            for (pat.with) do {p->
-                var inname := ast.astidentifier("__matchvar" ++ auto_count, false)
-                auto_count := auto_count + 1
-                nparams.push(inname)
-                inbody := [ast.astcall(
-                    ast.astmember("apply", rewritematchblock(ast.astblock([p],
-                        inbody))), [inname]) ]
-            }
-            pat := pat.value
-            body := [ast.astcall(ast.astmember(
-                        "matchmatchesBindingelse",
-                        tmpp),
-                    [pat, ast.astblock(nparams, inbody),
-                    ast.astblock([tmpp], [
-                        ast.astcall(ast.astidentifier("print", false),
-                            [ast.aststring("Pattern match failed.")])
-                    ])])]
+            params := [newname]
+            body := [ast.astif(
+                        ast.astcall(
+                            ast.astmember(
+                                "match",
+                                pat.value),
+                            [newname]),
+                        [
+                            ast.astcall(
+                                ast.astmember("applyIndirectly",
+                                    ast.astblock(pat.with.prepended(fst),
+                                                inbody)
+                                ),
+                                [ast.astcall(
+                                    ast.astmember(
+                                        "prepended",
+                                        ast.astcall(
+                                            ast.astmember("try", pat.value),
+                                            [newname]
+                                        )
+                                    ),
+                                    [newname]
+                                )
+                                ])
+                        ],
+                        [ast.astidentifier("MatchFailed")]
+                        )
+                    ]
         } else {
             def binding = findName(pat.value)
             if (binding.kind != "type") then {
