@@ -25,7 +25,7 @@ buildclean:
 	rm -rf *.gcn minigrace unicode.gso gracelib.o bin Makefile.conf
 
 fullclean: buildclean
-	rm -f *.grace *.c *.h
+	rm -f *.grace *.c *.h configure
 
 Makefile.conf:
 	./configure

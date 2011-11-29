@@ -1,3 +1,5 @@
+include Makefile.conf
+
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=4df500fa93a8e8f5886b3590424a7aa67e21bf0e
 all: minigrace
@@ -16,7 +18,7 @@ gracelib.o: gracelib.c gracelib.h
 	gcc -o gracelib.o -c gracelib.c
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc -fPIC -shared -o unicode.gso unicode.c
+	gcc $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
 l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.c gracelib.h
 	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ../known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/gracelib-$(STABLE).o compiler.grace )
@@ -37,8 +39,10 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) unicode.gso ; do cp $$f c ; done && cd c && ../minigrace --target c --gracelib gracelib.o --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn unicode.gso
 
 tarball: minigrace
+	touch c/Makefile.conf
 	make -C c fullclean
 	make c
+	cp configure c
 	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
 selfhost-stats: minigrace
@@ -95,5 +99,8 @@ semiclean:
 known-good/%:
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
+
+Makefile.conf: configure
+	./configure
 
 .PHONY: all clean selfhost-stats selfhost-rec test js c
