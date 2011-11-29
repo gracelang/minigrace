@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DISTRIB=tree
 PLATFORM=$(uname)
 PREFIX=.
 LDFLAGS=
@@ -67,4 +68,9 @@ else
     echo "Substitute the path to your GNU make below."
 fi
 
-echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
+if [ "$DISTRIB" = "tarball" ]
+then
+    echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
+else
+    echo "Run '$MK' to build."
+fi
