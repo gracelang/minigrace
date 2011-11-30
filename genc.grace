@@ -181,7 +181,7 @@ method compileobjvardec(o, selfr, pos) {
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  uo->data[{pos}] = args[0];")
-    outprint("  return nothing;");
+    outprint("  return None;");
     outprint("\}")
     out("  addmethod2({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
@@ -299,7 +299,7 @@ method compilemethod(o, selfobj, pos) {
         out("  *var_{van} = var_init_{van};")
         declaredvars.push(van)
     }
-    var ret := "nothing"
+    var ret := "None"
     for (o.body) do { l ->
         if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
@@ -535,7 +535,7 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
-        out("    callmethod(nothing, \"assignment\", 0, NULL);")
+        out("    callmethod(None, \"assignment\", 0, NULL);")
         auto_count := auto_count + 1
         o.register := val
     } elseif (dest.kind == "member") then {
@@ -549,7 +549,7 @@ method compilebind(o) {
         r := compilenode(c)
         o.register := r
     }
-    o.register := "nothing"
+    o.register := "None"
 }
 method compiledefdec(o) {
     var nm
@@ -567,8 +567,8 @@ method compiledefdec(o) {
     }
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
-    out("    callmethod(nothing, \"assignment\", 0, NULL);")
-    o.register := "nothing"
+    out("    callmethod(None, \"assignment\", 0, NULL);")
+    o.register := "None"
 }
 method compilevardec(o) {
     var nm := escapeident(o.name.value)
@@ -585,9 +585,9 @@ method compilevardec(o) {
     out("  *var_{nm} = {val};")
     if (hadval) then {
         out("  if ({val} == undefined)")
-        out("    callmethod(nothing, \"assignment\", 0, NULL);")
+        out("    callmethod(None, \"assignment\", 0, NULL);")
     }
-    o.register := "nothing"
+    o.register := "None"
 }
 method compileindex(o) {
     var of := compilenode(o.value)
@@ -927,7 +927,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("#pragma weak main")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
-    outprint("static Object nothing;")
+    outprint("static Object None;")
     outprint("static Object argv;")
     out("Object module_{escmodname}_init() \{")
     out("  Object self = alloc_obj2(100, 100);")
@@ -981,7 +981,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  gracelib_argv(argv);")
     out("  Object params[1];")
     out("  undefined = alloc_Undefined();")
-    out("  nothing = alloc_Nothing();")
+    out("  None = alloc_None();")
     out("  Object tmp_argv = alloc_List();")
     out("  int i; for (i=0; i<argc; i++) \{")
     out("    params[0] = alloc_String(argv[i]);")
