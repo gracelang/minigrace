@@ -47,6 +47,7 @@ Object FLOAT64_TWO = NULL;
 #define FLOAT64_INTERN_SIZE FLOAT64_INTERN_MAX-FLOAT64_INTERN_MIN
 
 Object Float64_Interned[FLOAT64_INTERN_SIZE];
+Object String_Interned_1[256];
 
 ClassData Number;
 ClassData Boolean;
@@ -944,6 +945,10 @@ Object alloc_String(const char *data) {
                 &Object_match_matchesBinding_else);
         add_Method(String, "indices", &String_indices);
     }
+    if (blen == 1) {
+        if (String_Interned_1[data[0]] != NULL)
+            return String_Interned_1[data[0]];
+    }
     Object o = alloc_obj(sizeof(int) * 3 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
     so->blen = blen;
@@ -965,6 +970,9 @@ Object alloc_String(const char *data) {
     d[i] = 0;
     so->size = size;
     Strings_allocated++;
+    if (blen == 1) {
+        String_Interned_1[data[0]] = o;
+    }
     return o;
 }
 Object makeEscapedString(char *p) {
