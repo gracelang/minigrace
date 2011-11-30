@@ -200,48 +200,39 @@ def LexerClass = object {
                         tok := IdentifierToken.new(accum)
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "\"") then {
+                    } elseif (mode == "\"") then {
                         tok := StringToken.new(accum)
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "x") then {
+                    } elseif (mode == "x") then {
                         tok := OctetsToken.new(accum)
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == ",") then {
+                    } elseif (mode == ",") then {
                         tok := CommaToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == ".") then {
+                    } elseif (mode == ".") then {
                         tok := DotToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "\{") then {
+                    } elseif (mode == "\{") then {
                         tok := LBraceToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "}") then {
+                    } elseif (mode == "}") then {
                         tok := RBraceToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "(") then {
+                    } elseif (mode == "(") then {
                         tok := LParenToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == ")") then {
+                    } elseif (mode == ")") then {
                         tok := RParenToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "[") then {
+                    } elseif (mode == "[") then {
                         tok := LSquareToken.new
                         tokens.push(tok)
                         done := true
@@ -250,23 +241,19 @@ def LexerClass = object {
                         tok := RSquareToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "<") then {
+                    } elseif (mode == "<") then {
                         tok := LGenericToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == ">") then {
+                    } elseif (mode == ">") then {
                         tok := RGenericToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == ";") then {
+                    } elseif (mode == ";") then {
                         tok := SemicolonToken.new
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "m") then {
+                    } elseif (mode == "m") then {
                         tok := NumToken.new(accum)
                         if (tokens.size > 1) then {
                             if (tokens.last.kind == "dot") then {
@@ -282,32 +269,25 @@ def LexerClass = object {
                         }
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "o") then {
+                    } elseif (mode == "o") then {
                         tok := OpToken.new(accum)
                         if (accum == "->") then {
                             tok := ArrowToken.new
-                        }
-                        if (accum == ":=") then {
+                        } elseif (accum == ":=") then {
                             tok := BindToken.new
-                        }
-                        if (accum == ":") then {
+                        } elseif (accum == ":") then {
                             tok := ColonToken.new
                         }
                         tokens.push(tok)
                         done := true
-                    }
-                    if (mode == "d") then {
+                    } elseif (mode == "d") then {
                         indentLevel := accum.size
                         done := true
-                    }
-                    if (mode == "n") then {
+                    } elseif (mode == "n") then {
                         done := true
-                    }
-                    if (mode == "c") then {
+                    } elseif (mode == "c") then {
                         done := true
-                    }
-                    if (done) then {
+                    } elseif (done) then {
                         //print(mode, accum, tokens)
                     } else {
                         util.syntax_error("Lexing error: no handler for mode " ++ mode ++
