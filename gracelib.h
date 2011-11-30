@@ -63,3 +63,19 @@ void setline(int);
 void gracedie(char *msg, ...);
 
 void grace_register_shutdown_function(void(*)());
+
+// These are used by code generation, and shouldn't need to be
+// used elsewhere.
+void initprofiling();
+void gracelib_argv(char **);
+void module_sys_init_argv(Object);
+void gracelib_stats();
+void addtoclosure(Object **, Object *);
+void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
+void adddatum2(Object, Object, int);
+void set_type(Object, int16_t);
+void block_savedest(Object);
+void block_return(Object, Object);
+void setclassname(Object, char*);
+void gracelib_stats();
+int istrue(Object);
