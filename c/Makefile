@@ -2,7 +2,7 @@ include Makefile.conf
 CFILES = ast.c buildinfo.c genc.c genjs.c genllvm29.c typechecker.c lexer.c parser.c subtype.c util.c
 
 minigrace: $(CFILES:.c=.gcn) minigrace.gcn unicode.gso gracelib.o
-	gcc -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn)
+	gcc -std=c99 -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn)
 
 selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f *.gcn
@@ -12,10 +12,10 @@ selfhost: minigrace $(CFILES:.c=.grace)
 	gcc -c -o $@ $<
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
 gracelib.o: gracelib.c
-	gcc -c -o gracelib.o gracelib.c
+	gcc -std=c99 -c -o gracelib.o gracelib.c
 
 install: minigrace
 	mkdir -p $(PREFIX)/bin
