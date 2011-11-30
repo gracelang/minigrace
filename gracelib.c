@@ -1609,6 +1609,7 @@ Object sys_elapsed(Object self, int nparams,
 Object sys_exit(Object self, int nparams,
         Object *args, int flags) {
     int i = integerfromAny(args[0]);
+    gracelib_stats();
     exit(i);
     return NULL;
 }
