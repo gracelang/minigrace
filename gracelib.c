@@ -234,19 +234,6 @@ int integerfromAny(Object p) {
     free(c);
     return i;
 }
-Object Object_match_matchesBinding_else(Object self,
-        int nargs, Object *args, int flags) {
-    Object pattern = args[0];
-    Object matchblock = args[1];
-    Object elseblock = args[2];
-    Object xargs[3];
-    xargs[0] = self;
-    xargs[1] = matchblock;
-    xargs[2] = elseblock;
-    return callmethod(pattern, "matchObject()matchesBinding()else",
-            3, xargs);
-}
-
 void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     add_Method(o->class, name, func);
@@ -723,15 +710,6 @@ Object ConcatString_hashcode(Object self, int nparams,
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     return alloc_Float64(sself->hashcode);
 }
-Object String_matchObject_matchesBinding_else(Object self,
-        int nparams, Object *args, int flags) {
-    Object b = callmethod(self, "==", 1, args);
-    if (istrue(b)) {
-        return callmethod(args[1], "apply", 1, &self);
-    } else {
-        return callmethod(args[2], "apply", 1, &self);
-    }
-}
 unsigned int uipow(unsigned int base, unsigned int exponent)
 {
   if(exponent == 0)
@@ -764,10 +742,6 @@ Object alloc_ConcatString(Object left, Object right) {
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace(1)with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &ConcatString_hashcode);
-        add_Method(ConcatString, "matchObject(1)matchesBinding(1)else",
-                &String_matchObject_matchesBinding_else);
-        add_Method(ConcatString, "match(1)matchesBinding(1)else",
-                &Object_match_matchesBinding_else);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
     }
@@ -941,10 +915,6 @@ Object alloc_String(const char *data) {
         add_Method(String, "substringFrom(1)to", &String_substringFrom_to);
         add_Method(String, "replace(1)with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
-        add_Method(String, "matchObject(1)matchesBinding(1)else",
-                &String_matchObject_matchesBinding_else);
-        add_Method(String, "match(1)matchesBinding(1)else",
-                &Object_match_matchesBinding_else);
         add_Method(String, "indices", &String_indices);
     }
     if (blen == 1) {
@@ -1263,15 +1233,6 @@ Object Float64_hashcode(Object self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
-Object Float64_matchObject_matchesBinding_else(Object self,
-        int nparams, Object *args, int flags) {
-    Object b = callmethod(self, "==", 1, args);
-    if (istrue(b)) {
-        return callmethod(args[1], "apply", 1, &self);
-    } else {
-        return callmethod(args[2], "apply", 1, &self);
-    }
-}
 Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -1303,10 +1264,6 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
-        add_Method(Number, "matchObject(1)matchesBinding(1)else",
-                &Float64_matchObject_matchesBinding_else);
-        add_Method(Number, "match(1)matchesBinding(1)else",
-                &Object_match_matchesBinding_else);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
