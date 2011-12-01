@@ -283,6 +283,8 @@ Object String_Equals(Object self, int nparams,
         return alloc_Boolean(0);
     struct StringObject* ss = (struct StringObject*)self;
     struct StringObject* so = (struct StringObject*)other;
+    if (ss->size != so->size)
+        return alloc_Boolean(0);
     char theirs[so->blen + 1];
     bufferfromString(other, theirs);
     if (strcmp(ss->body, theirs)) {
