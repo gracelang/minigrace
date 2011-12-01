@@ -305,7 +305,7 @@ method compilefor(o) {
     tblock := bblock
     out("  br label %BeginFor" ++ myc)
     beginblock("EndFor" ++ myc)
-    o.register := over // "%while" ++ myc
+    o.register := "%none" // "%while" ++ myc
 }
 method compilemethod(o, selfobj, pos) {
     // How to deal with closures:
@@ -571,8 +571,8 @@ method compileif(o) {
             ++ ", label %TrueBranch" ++ myc)
     }
     beginblock("TrueBranch" ++ myc)
-    var tret := "%undefined"
-    var fret := "%undefined"
+    var tret := "%none"
+    var fret := "%none"
     var tblock := "ERROR"
     var fblock := "ERROR"
     for (o.thenblock) do { l ->
@@ -925,7 +925,7 @@ method compileimport(o) {
     con := "declare %object @\"module_" ++ nm ++ "_init\"()"
     constants.push(con)
     auto_count := auto_count + 1
-    o.register := "%undefined"
+    o.register := "%none"
 }
 method compilereturn(o) {
     var reg := compilenode(o.value)
@@ -935,7 +935,7 @@ method compilereturn(o) {
         out("  ret %object " ++ reg)
         beginblock("postret" ++ auto_count)
     }
-    o.register := "%undefined"
+    o.register := "%none"
 }
 method compilenum(o) {
     var cnum := o.value

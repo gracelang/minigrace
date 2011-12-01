@@ -269,7 +269,7 @@ method compilefor(o) {
     out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL);")
     out("    callmethod({obj}, \"apply\", 1, params);")
     out("  \}")
-    o.register := over
+    o.register := "none"
 }
 method compilemethod(o, selfobj, pos) {
     // How to deal with closures:
@@ -441,10 +441,8 @@ method compilemethod(o, selfobj, pos) {
 method compilewhile(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    out("  Object while{myc};")
     out("  while (1) \{")
     def cond = compilenode(o.value)
-    out("    while{myc} = {cond};")
     out("    if (!istrue({cond})) break;")
     var tret := "null"
     for (o.body) do { l ->
@@ -460,7 +458,7 @@ method compilewhile(o) {
         tret := compilenode(l)
     }
     out("  \}")
-    o.register := "while" ++ myc
+    o.register := "none"
 }
 method compileif(o) {
     var myc := auto_count
@@ -468,8 +466,8 @@ method compileif(o) {
     var cond := compilenode(o.value)
     out("  Object if{myc};")
     out("  if (istrue({cond})) \{")
-    var tret := "undefined"
-    var fret := "undefined"
+    var tret := "none"
+    var fret := "none"
     var tblock := "ERROR"
     var fblock := "ERROR"
     for (o.thenblock) do { l ->
@@ -705,7 +703,7 @@ method compileimport(o) {
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
-    o.register := "undefined"
+    o.register := "none"
 }
 method compilereturn(o) {
     var reg := compilenode(o.value)
