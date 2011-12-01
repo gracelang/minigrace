@@ -1708,7 +1708,7 @@ Object gracelib_print(Object receiver, int nparams,
         free(s);
     }
     puts("");
-    return alloc_Undefined();
+    return none;
 }
 
 Object** createclosure(int size) {
