@@ -32,7 +32,7 @@ Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
 Object undefined = NULL;
-Object None = NULL;
+Object none = NULL;
 Object iomodule;
 Object sysmodule;
 
@@ -58,7 +58,7 @@ ClassData Octets;
 ClassData List;
 ClassData ListIter;
 ClassData Undefined;
-ClassData NoneClass;
+ClassData noneClass;
 ClassData File;
 ClassData IOModule;
 ClassData SysModule;
@@ -1603,12 +1603,12 @@ Object module_sys_init() {
     sysmodule = o;
     return o;
 }
-Object alloc_None() {
-    if (None != NULL)
-        return None;
-    NoneClass = alloc_class("None", 0);
-    Object o = alloc_obj(0, NoneClass);
-    None = o;
+Object alloc_none() {
+    if (none != NULL)
+        return none;
+    noneClass = alloc_class("none", 0);
+    Object o = alloc_obj(0, noneClass);
+    none = o;
     return o;
 }
 Object alloc_Undefined() {

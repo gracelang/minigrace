@@ -179,8 +179,8 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  %fieldpp = getelementptr %UserObject* %uo, i32 0, i32 3")
     outprint("  %fieldpf = getelementptr [0 x %object]* %fieldpp, i32 0, i32 {pos}")
     outprint("  store %object %par0, %object* %fieldpf")
-    outprint("  %None = load %object* @None")
-    outprint("  ret %object %None")
+    outprint("  %none = load %object* @none")
+    outprint("  ret %object %none")
     outprint("\}")
     out("  call void @addmethod2(%object " ++ selfr
         ++ ", i8* getelementptr(["
@@ -339,8 +339,8 @@ method compilemethod(o, selfobj, pos) {
         declaredvars.push(van)
     }
     out("  %undefined = load %object* @undefined")
-    out("  %None = load %object* @None")
-    var ret := "%None"
+    out("  %none = load %object* @none")
+    var ret := "%none"
     for (o.body) do { l ->
         if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
@@ -656,7 +656,7 @@ method compilebind(o) {
         out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
             ++ "label %isdef{auto_count}")
         beginblock("isundef{auto_count}")
-        out("  call %object @callmethod(%object %None"
+        out("  call %object @callmethod(%object %none"
             ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
             ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
         out("  br label %isdef{auto_count}")
@@ -675,7 +675,7 @@ method compilebind(o) {
         r := compilenode(c)
         o.register := r
     }
-    o.register := "%None"
+    o.register := "%none"
 }
 method compiledefdec(o) {
     var nm
@@ -697,13 +697,13 @@ method compiledefdec(o) {
     out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
         ++ "label %isdef{auto_count}")
     beginblock("isundef{auto_count}")
-    out("  call %object @callmethod(%object %None"
+    out("  call %object @callmethod(%object %none"
         ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
         ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
     out("  br label %isdef{auto_count}")
     beginblock("isdef{auto_count}")
     auto_count := auto_count + 1
-    o.register := "%None"
+    o.register := "%none"
 }
 method compilevardec(o) {
     var nm := escapestring(o.name.value)
@@ -723,14 +723,14 @@ method compilevardec(o) {
         out("  br i1 %icmp{auto_count}, label %isundef{auto_count}, "
             ++ "label %isdef{auto_count}")
         beginblock("isundef{auto_count}")
-        out("  call %object @callmethod(%object %None"
+        out("  call %object @callmethod(%object %none"
             ++ ", i8* getelementptr([11 x i8]* @.str._assignment"
             ++ ",i32 0,i32 0), i32 1, %object* %\"var_{nm}\")")
         out("  br label %isdef{auto_count}")
         beginblock("isdef{auto_count}")
         auto_count := auto_count + 1
     }
-    o.register := "%None"
+    o.register := "%none"
 }
 method compileindex(o) {
     var of := compilenode(o.value)
@@ -1195,7 +1195,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("@.str._compilerRevision = private unnamed_addr constant [41 x i8]"
         ++ "c\"" ++ buildinfo.gitrevision ++ "\\00\"")
     out("@undefined = private global %object null")
-    out("@None = private global %object null")
+    out("@none = private global %object null")
     out("@argv = private global %object null")
     outprint("%Method = type \{i8*,i32,%object(%object,i32,%object*,i32)*\}")
     outprint("%ClassData = type \{ i8*, %Method*, i32 \}*")
@@ -1213,7 +1213,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         ++ "@\".str._modcname_{modname}\","
         ++ "i32 0,i32 0))")
     out("  %undefined = load %object* @undefined")
-    out("  %None = load %object* @None")
+    out("  %none = load %object* @none")
     out("  %var_argv = call %object* @alloc_var()")
     out("  %tmp_argv = load %object* @argv")
     out("  store %object %tmp_argv, %object* %var_argv")
@@ -1276,8 +1276,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("  %params_0 = getelementptr %object* %params, i32 0")
     out("  %undefined = call %object @alloc_Undefined()")
     out("  store %object %undefined, %object* @undefined")
-    out("  %None = call %object @alloc_None()")
-    out("  store %object %None, %object* @None")
+    out("  %none = call %object @alloc_none()")
+    out("  store %object %none, %object* @none")
     out("  %tmp_argv = call %object @alloc_List()")
     out("  %argv_i = alloca i32")
     out("  store i32 0, i32* %argv_i")
@@ -1352,7 +1352,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @alloc_Octets(i8*, i32)")
     out("declare %object @alloc_Boolean(i32)")
     out("declare %object @alloc_Undefined()")
-    out("declare %object @alloc_None()")
+    out("declare %object @alloc_none()")
     out("declare %object @alloc_HashMapClassObject()")
     out("declare %object @callmethod(%object, i8*, i32, %object*)")
     out("declare %object @gracelib_print(%object, i32, %object*)")

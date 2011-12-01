@@ -38,7 +38,7 @@ Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
 Object alloc_Undefined();
-Object alloc_None();
+Object alloc_none();
 Object alloc_Integer32(int);
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int));
 void add_Method(ClassData, const char *,
