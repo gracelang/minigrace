@@ -4,7 +4,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=4df500fa93a8e8f5886b3590424a7aa67e21bf0e
 all: minigrace
 
-REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm29.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace
+REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm29.grace genllvm30.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
@@ -76,7 +76,7 @@ test: minigrace
 	./tests/harness "$(shell pwd)/minigrace" tests
 fulltest: gencheck clean selfhost-rec selftest test llvmtest
 llvmtest: minigrace gracelib.bc
-	./tests/harness "$(shell pwd)/minigrace --target llvm29" tests
+	./tests/harness "$(shell pwd)/minigrace --target llvm30" tests
 backendtests: test llvmtest
 clean:
 	rm -f gracelib.bc gracelib.o

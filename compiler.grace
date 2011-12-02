@@ -7,6 +7,7 @@ import ast
 import parser
 import typechecker
 import genllvm29
+import genllvm30
 import genc
 import genjs
 import buildinfo
@@ -59,6 +60,9 @@ if (util.target == "subtypematrix") then {
 // Perform the actual compilation
 if (util.target == "llvm29") then {
     genllvm29.compile(values, util.outfile, util.modname, util.runmode,
+        util.buildtype, util.gracelibPath)
+} elseif (util.target == "llvm30") then {
+    genllvm30.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
 } elseif (util.target == "c") then {
     genc.compile(values, util.outfile, util.modname, util.runmode,
