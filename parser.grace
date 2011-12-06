@@ -1406,8 +1406,6 @@ method statement {
             defdec
         } elseif (sym.value == "const") then {
             util.syntax_error("no such keyword const; did you mean def?")
-        } elseif (sym.value == "method") then {
-            methoddec
         } elseif (sym.value == "import") then {
             doimport
         } elseif (sym.value == "type") then {
@@ -1464,6 +1462,7 @@ method parse(toks) {
         statement
     }
     while {tokens.size > 0} do {
+        methoddec
         statement
         if (tokens.size == oldlength) then {
             var nxtToks := ""
