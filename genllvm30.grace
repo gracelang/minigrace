@@ -67,7 +67,7 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
-method compileobjouter(selfr) {
+method compileobjouter(selfr, outerRef) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := "outer"
@@ -77,7 +77,7 @@ method compileobjouter(selfr) {
         ++ "constant [" ++ len ++ " x i8] c\"" ++ enm ++ "\\00\""
     constants.push(con)
     out("; OBJECT OUTER DEC " ++ enm)
-    out("  call void @adddatum2(%object {selfr}, %object %self, i32 0)")
+    out("  call void @adddatum2(%object {selfr}, %object {outerRef}, i32 0)")
     outprint("define private %object @\"reader_" ++ modname ++ "_" ++ enm ++ "_" ++ myc
         ++ "\"(%object %self, i32 %nparams, "
         ++ "%object* %args, i32 %flags) \{")
@@ -100,7 +100,12 @@ method compileobjouter(selfr) {
 method compileobjdefdec(o, selfr, pos) {
     var val := "%undefined"
     if (o.value) then {
-        val := compilenode(o.value)
+        if (o.value.kind == "object") then {
+            compileobject(o.value, selfr)
+            val := o.value.register
+        } else {
+            val := compilenode(o.value)
+        }
     }
     var myc := auto_count
     auto_count := auto_count + 1
@@ -202,12 +207,16 @@ method compileclass(o) {
     var con := ast.astdefdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
-method compileobject(o) {
+method compileobject(o, *additional) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "%obj" ++ myc
+    var outerRef := "%self"
+    if (additional.length > 0) then {
+        outerRef := additional[1]
+    }
     var numFields := 1
     var numMethods := 0
     var pos := 1
@@ -227,8 +236,7 @@ method compileobject(o) {
         out("  " ++ selfr ++ " = call %object @alloc_obj2(i32 {numMethods},"
             ++ "i32 {numFields})")
     }
-    compileobjouter(selfr)
-    out("  call void @adddatum2(%object {selfr}, %object %self, i32 0)")
+    compileobjouter(selfr, outerRef)
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
