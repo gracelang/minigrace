@@ -152,7 +152,7 @@ method compileobject(o, *additional) {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
     var outerRef := "this"
-    if (additional.length > 0) then {
+    if (additional.size > 0) then {
         outerRef := additional[1]
     }
     compileobjouter(selfr, outerRef)

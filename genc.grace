@@ -207,7 +207,7 @@ method compileobject(o, *additional) {
     auto_count := auto_count + 1
     var outerRef := "self"
     var selfr := "obj" ++ myc
-    if (additional.length > 0) then {
+    if (additional.size > 0) then {
         outerRef := additional[1]
     }
     var numFields := 1
