@@ -537,7 +537,7 @@ method compilebind(o) {
     if (dest.kind == "identifier") then {
         val := o.value
         val := compilenode(val)
-        var nm := escapestring2(dest.value)
+        var nm := escapeident(dest.value)
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
