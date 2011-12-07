@@ -75,13 +75,12 @@ method compilemember(o) {
     var r := compilenode(c)
     o.register := r
 }
-method compileobjouter(selfr) {
-    var val := "this";
+method compileobjouter(selfr, outerRef) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := escapestring("outer")
     var nmi := escapeident("outer")
-    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ outerRef ++ ";")
     out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
@@ -91,7 +90,12 @@ method compileobjouter(selfr) {
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
     if (o.value) then {
-        val := compilenode(o.value)
+        if (o.value.kind == "object") then {
+            compileobject(o.value, selfr)
+            val := o.value.register
+        } else {
+            val := compilenode(o.value)
+        }
     }
     var myc := auto_count
     auto_count := auto_count + 1
@@ -136,7 +140,7 @@ method compileclass(o) {
     var con := ast.astdefdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
-method compileobject(o) {
+method compileobject(o, *additional) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
@@ -147,7 +151,11 @@ method compileobject(o) {
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
-    compileobjouter(selfr)
+    var outerRef := "this"
+    if (additional.length > 0) then {
+        outerRef := additional[1]
+    }
+    compileobjouter(selfr, outerRef)
     var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {
