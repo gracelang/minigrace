@@ -548,10 +548,49 @@ method resolveIdentifier(node) {
     node
 }
 
+method rewritematchblockterm(param, body) {
+    if (param.kind == "identifier") then {
+        bindIdentifier(param)
+        if ((param.dtype == false) || {param.dtype.kind == "call"}) then {
+            return [param, body]
+        }
+    }
+    var newname := ast.astidentifier("__matchterm" ++ auto_count,
+        false)
+    auto_count := auto_count + 1
+    bindIdentifier(newname)
+    var pat := param
+    var st
+    if (pat.kind == "call") then {
+        st := ast.astif(
+            ast.astcall(
+                ast.astmember(
+                    "match",
+                    pat.value),
+                [newname]),
+            body,
+            [ast.astidentifier("MatchFailed")]
+        )
+    } elseif (pat.kind == "identifier") then {
+        pat := pat.dtype
+        param.dtype := false
+        st := ast.astcall(ast.astidentifier("print"),
+            ast.aststring("Recursively binding pattern matches unimplemented"))
+    } else {
+        st := ast.astif(
+            ast.astop("==", pat, newname),
+            body,
+            [ast.astidentifier("MatchFailed")]
+        )
+    }
+    return [newname, [st]]
+}
+
 method rewritematchblock(o) {
     var params := o.params
     if (params.size /= 1) then {
-        return o
+        def skipListBody = resolveIdentifiersList(o.body)
+        return ast.astblock(o.params, skipListBody)
     }
     var body := o.body
     var inbody := body
@@ -561,12 +600,20 @@ method rewritematchblock(o) {
     var newname := ast.astidentifier("__matchvar" ++ auto_count,
         false)
     auto_count := auto_count + 1
+    bindIdentifier(newname)
     var fst := params.first
     if (fst.kind == "call") then {
         pat := fst
         tmpp := fst
         params := [newname]
         nparams := []
+        for (pat.with.indices) do {pwi->
+            def pw = pat.with[pwi]
+            def rw2 = rewritematchblockterm(pw, inbody)
+            pat.with[pwi] := rw2[1]
+            inbody := rw2[2]
+        }
+        inbody := resolveIdentifiersList(inbody)
         body := [ast.astif(
                     ast.astcall(
                         ast.astmember(
@@ -590,6 +637,7 @@ method rewritematchblock(o) {
         auto_count := auto_count + 1
         pat := fst
         params := [newname]
+        inbody := resolveIdentifiersList(inbody)
         body := [ast.astif(
                     ast.astop("==", pat, newname),
                     [
@@ -605,6 +653,7 @@ method rewritematchblock(o) {
     } elseif (fst.dtype /= false) then {
         pat := fst.dtype
         tmpp := fst
+        inbody := resolveIdentifiersList(inbody)
         if (pat.kind == "call") then {
             nparams := []
             params := [newname]
@@ -657,6 +706,8 @@ method rewritematchblock(o) {
                         ]
             }
         }
+    } else {
+        body := resolveIdentifiersList(body)
     }
     o := ast.astblock(params, body)
     return o
@@ -745,9 +796,7 @@ method resolveIdentifiers(node) {
                 bindIdentifier(e)
             }
         }
-        l := resolveIdentifiersList(node.body)
-        tmp := ast.astblock(node.params, l)
-        tmp := rewritematchblock(tmp)
+        tmp := rewritematchblock(node)
         popScope
         return tmp
     }
