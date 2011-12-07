@@ -1661,6 +1661,10 @@ Object callmethod2(Object self, const char *name,
         calldepth--;
         return ret;
     }
+    fprintf(stderr, "Available methods are:\n");
+    for (i=0; i<c->nummethods; i++) {
+        fprintf(stderr, "  %s\n", c->methods[i].name);
+    }
     die("Method lookup error: no %s in %s.",
             name, self->class->name);
     exit(1);
