@@ -336,6 +336,12 @@ GraceList.prototype = {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
+        "prepended": function(item) {
+            var l = [item];
+            for (var i=0; i<this._value.length; i++)
+                l.push(this._value[i]);
+            return new GraceList(l);
+        },
         "iterator": function() {
             return new GraceListIterator(this._value);
         },
