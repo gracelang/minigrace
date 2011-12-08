@@ -569,7 +569,7 @@ method rewritematchblockterm(param, body) {
                     pat.value),
                 [newname]),
             body,
-            [ast.astidentifier("MatchFailed")]
+            [ast.astidentifier("MatchFailed", false)]
         )
     } elseif (pat.kind == "identifier") then {
         pat := pat.dtype
@@ -580,7 +580,7 @@ method rewritematchblockterm(param, body) {
         st := ast.astif(
             ast.astop("==", pat, newname),
             body,
-            [ast.astidentifier("MatchFailed")]
+            [ast.astidentifier("MatchFailed", false)]
         )
     }
     return [newname, [st]]
@@ -630,7 +630,7 @@ method rewritematchblock(o) {
                                 [newname]
                             )])
                     ],
-                    [ast.astidentifier("MatchFailed")]
+                    [ast.astidentifier("MatchFailed", false)]
                     )
                 ]
     } elseif (fst.kind /= "identifier") then {
@@ -647,7 +647,7 @@ method rewritematchblock(o) {
                             ),
                             [])
                     ],
-                    [ast.astidentifier("MatchFailed")]
+                    [ast.astidentifier("MatchFailed", false)]
                     )
                 ]
     } elseif (fst.dtype /= false) then {
@@ -687,7 +687,7 @@ method rewritematchblock(o) {
                                 )
                                 ])
                         ],
-                        [ast.astidentifier("MatchFailed")]
+                        [ast.astidentifier("MatchFailed", false)]
                         )
                     ]
         } else {
@@ -708,7 +708,7 @@ method rewritematchblock(o) {
                                     ),
                                     [newname])
                             ],
-                            [ast.astidentifier("MatchFailed")]
+                            [ast.astidentifier("MatchFailed", false)]
                             )
                         ]
             }
