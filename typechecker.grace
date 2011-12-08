@@ -653,10 +653,16 @@ method rewritematchblock(o) {
     } elseif (fst.dtype /= false) then {
         pat := fst.dtype
         tmpp := fst
-        inbody := resolveIdentifiersList(inbody)
         if (pat.kind == "call") then {
             nparams := []
             params := [newname]
+            for (pat.with.indices) do {pwi->
+                def pw = pat.with[pwi]
+                def rw2 = rewritematchblockterm(pw, inbody)
+                pat.with[pwi] := rw2[1]
+                inbody := rw2[2]
+            }
+            inbody := resolveIdentifiersList(inbody)
             body := [ast.astif(
                         ast.astcall(
                             ast.astmember(
@@ -685,6 +691,7 @@ method rewritematchblock(o) {
                         )
                     ]
         } else {
+            inbody := resolveIdentifiersList(inbody)
             def binding = findName(pat.value)
             if (binding.kind != "type") then {
                 params := [newname]
