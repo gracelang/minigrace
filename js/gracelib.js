@@ -291,10 +291,10 @@ GraceList.prototype = {
             return this._value[idx-1];
         },
         "at(1)put": function(idx, val) {
-            this._value[idx-1] = val;
+            this._value[idx._value-1] = val;
         },
         "[]:=": function(idx, val) {
-            this._value[idx-1] = val;
+            this._value[idx._value-1] = val;
         },
         "asString": function() {
             var s = "[";
