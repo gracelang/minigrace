@@ -182,6 +182,9 @@ method compileblock(o) {
     out("  block" ++ myc ++ ".methods[\"apply\"] = function() \{")
     out("    return this.real.apply(this.receiver, arguments);")
     out("  \}")
+    out("  block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(a) \{")
+    out("    return this.real.apply(this.receiver, a._value);")
+    out("  \}")
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block" ++ myc ++ ".real = function(")
     var first := true
