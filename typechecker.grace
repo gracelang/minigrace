@@ -122,6 +122,9 @@ method popScope {
 }
 
 method conformsType(b)to(a) {
+    if (util.extensions.contains("IgnoreTypes")) then {
+        return DynamicType
+    }
     if ((b == false) | (a == false)) then {
         return true
     }
