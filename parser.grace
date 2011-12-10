@@ -142,7 +142,7 @@ method dotyperef {
         generic
         overallType := values.pop
     }
-    while {accept("op") & (sym.value == "|")} do {
+    while {acceptSameLine("op") & (sym.value == "|")} do {
         if (unionTypes.size == 0) then {
             unionTypes.push(overallType)
         }
@@ -164,7 +164,7 @@ method dotyperef {
         subtype.addType(overallType)
     }
     def intersectionTypes = []
-    while {accept("op") & (sym.value == "&")} do {
+    while {acceptSameLine("op") & (sym.value == "&")} do {
         if (intersectionTypes.size == 0) then {
             intersectionTypes.push(overallType)
         }
