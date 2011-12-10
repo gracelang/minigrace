@@ -154,6 +154,9 @@ method syntax_error(s) {
     sys.exit(1)
 }
 method type_error(s) {
+    if (extensionsv.contains("IgnoreTypes")) then {
+        return true
+    }
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
