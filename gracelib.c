@@ -143,7 +143,8 @@ double start_time = 0;
 
 char **ARGV = NULL;
 
-#define STACK_SIZE 1024
+int stack_size = 1024;
+#define STACK_SIZE stack_size
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
@@ -2189,6 +2190,9 @@ void gracelib_stats() {
 }
 void gracelib_argv(char **argv) {
     ARGV = argv;
+    if (getenv("GRACE_STACK") != NULL) {
+        stack_size = atoi(getenv("GRACE_STACK"));
+    }
     callstack = calloc(STACK_SIZE, 256);
     // We need return_stack[-1] to be available.
     return_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
