@@ -143,9 +143,10 @@ double start_time = 0;
 
 char **ARGV = NULL;
 
-static jmp_buf return_stack[256];
+#define STACK_SIZE 1024
+static jmp_buf *return_stack;
 Object return_value;
-char callstack[256][256];
+char (*callstack)[256];
 int calldepth = 0;
 void backtrace() {
     int i;
@@ -1653,7 +1654,7 @@ Object callmethod2(Object self, const char *name,
                 name);
     }
     calldepth++;
-    if (calldepth == 128) {
+    if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
     if (m != NULL) {
@@ -2188,6 +2189,10 @@ void gracelib_stats() {
 }
 void gracelib_argv(char **argv) {
     ARGV = argv;
+    callstack = calloc(STACK_SIZE, 256);
+    // We need return_stack[-1] to be available.
+    return_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
+    return_stack++;
 }
 void setline(int l) {
     linenumber = l;
