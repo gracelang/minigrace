@@ -710,7 +710,7 @@ method callrest {
     var hadcall := false
     var tok := lastToken
     var startInd := minIndentLevel
-    if (accept("lparen")) then {
+    if (acceptSameLine("lparen")) then {
         tok := sym
         hadcall := true
         methn := meth.value
