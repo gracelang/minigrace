@@ -270,6 +270,8 @@ method block {
 // to change that and compensate later on.
 method doif {
     if (accept("identifier") & (sym.value == "if")) then {
+        def tmpStatementToken = statementToken
+        statementToken := sym
         next
         expression
         var cond := values.pop
@@ -369,6 +371,7 @@ method doif {
             // Raise an error here, or it will spin nastily forever.
             util.syntax_error("if with no then")
         }
+        statementToken := tmpStatementToken
     }
 }
 
