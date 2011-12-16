@@ -200,16 +200,12 @@ method compileclass(o) {
     var con := ast.astdefdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
-method compileobject(o, *additional) {
+method compileobject(o, outerRef) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
     auto_count := auto_count + 1
-    var outerRef := "self"
     var selfr := "obj" ++ myc
-    if (additional.size > 0) then {
-        outerRef := additional[1]
-    }
     var numFields := 1
     var numMethods := 0
     var pos := 1
@@ -814,7 +810,7 @@ method compilenode(o) {
         compileclass(o)
     }
     if (o.kind == "object") then {
-        compileobject(o)
+        compileobject(o, "self")
     }
     if (o.kind == "member") then {
         compilemember(o)

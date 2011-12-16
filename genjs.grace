@@ -140,7 +140,7 @@ method compileclass(o) {
     var con := ast.astdefdec(o.name, cobj, false)
     o.register := compilenode(con)
 }
-method compileobject(o, *additional) {
+method compileobject(o, outerRef) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
@@ -150,10 +150,6 @@ method compileobject(o, *additional) {
         selfr := compilenode(o.superclass)
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
-    }
-    var outerRef := "this"
-    if (additional.size > 0) then {
-        outerRef := additional[1]
     }
     compileobjouter(selfr, outerRef)
     var pos := 0
@@ -583,7 +579,7 @@ method compilenode(o) {
         compileclass(o)
     }
     if (o.kind == "object") then {
-        compileobject(o)
+        compileobject(o, "this")
     }
     if (o.kind == "member") then {
         compilemember(o)
