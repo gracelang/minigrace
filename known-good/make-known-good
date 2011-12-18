@@ -28,11 +28,12 @@ cd ..
 mkdir -p "$ARCH"
 mv tmp-$$/l2/minigrace $ARCH/minigrace-$COMMIT
 cp tmp-$$/l2/gracelib.o $ARCH/gracelib-$COMMIT.o
-for x in tmp-$$/l2/*.ll
+cp tmp-$$/l2/gracelib.h $ARCH/gracelib-$COMMIT.h
+for x in tmp-$$/l2/*.c
 do
    nm=$(basename "$x")
    nm=$(cut -d. -f1 <<<"$nm")
-   mv $x independent/$nm-$COMMIT.ll
+   mv $x independent/$nm-$COMMIT.c
 done
 
 rm -rf tmp-$$ EXCLUDE
