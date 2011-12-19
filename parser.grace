@@ -552,7 +552,7 @@ method expression {
 // Accept postcircumfix square brackets (as in x[y]) and replace the
 // preceding expression with an index node into itself.
 method postfixsquare {
-    if (accept("lsquare")) then {
+    if (acceptSameLine("lsquare")) then {
         next
         var expr := values.pop
         expression
