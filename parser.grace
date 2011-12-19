@@ -472,8 +472,8 @@ method prefixop {
             term
         }
         dotrest
-        postfixsquare
         callrest
+        postfixsquare
         val := values.pop
         var mem := ast.astmember("prefix" ++ op, val)
         var call := ast.astcall(mem, [])
@@ -544,8 +544,8 @@ method expression {
         term
     }
     dotrest
-    postfixsquare
     callrest
+    postfixsquare
     expressionrest
 }
 
@@ -657,8 +657,8 @@ method expressionrest {
             // which should be applied and the result put into the operands
             // list.
             dotrest
-            postfixsquare
             callrest
+            postfixsquare
             tmp := values.pop
             terms.push(tmp)
         }
