@@ -363,6 +363,8 @@ method compilemethod(o, selfobj, pos) {
         out("Object {litname}(Object self, int nparams, Object *args, "
             ++ "int32_t flags) \{")
     }
+    out("  if (nparams < {o.params.size})")
+    out("    gracedie(\"insufficient arguments to method\");")
     // We need to detect which parameters are used in a closure, and
     // treat those specially. As params[] is stack-allocated, references
     // to those variables would fail once the method was out of scope
