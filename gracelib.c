@@ -774,11 +774,16 @@ Object String_at(Object self, int nparams,
     idx--;
     int i = 0;
     char *ptr = ((struct StringObject*)(self))->body;
+    char buf[5];
+    if (((struct StringObject*)(self))->ascii) {
+        buf[0] = ptr[idx];
+        buf[1] = 0;
+        return alloc_String(buf);
+    }
     while (i < idx){
         ptr += getutf8charlen(ptr);
         i++;
     }
-    char buf[5];
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
