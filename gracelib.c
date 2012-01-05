@@ -683,7 +683,7 @@ Object ConcatString_at(Object self, int nparams,
     int ms = *(int*)(self->data + sizeof(int));
     if (ms == 1 && p == 1)
         return self;
-    grcstring(self);
+    ConcatString__Flatten(self);
     return String_at(self, nparams, args, flags);
 }
 Object ConcatString_length(Object self, int nparams,
@@ -693,7 +693,7 @@ Object ConcatString_length(Object self, int nparams,
 }
 Object ConcatString_iter(Object self, int nparams,
         Object *args, int flags) {
-    char *c = grcstring(self);
+    char *c = ConcatString__Flatten(self);
     Object o = alloc_String(c);
     return callmethod(o, "iter", 0, NULL);
 }
@@ -704,7 +704,7 @@ Object ConcatString_substringFrom_to(Object self,
     st--;
     en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
-    grcstring(self);
+    ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparams, args, flags);
     int mysize = sself->size;
     if (en > mysize)
