@@ -27,7 +27,9 @@ Object String_index(Object, int nparams,
         Object*, int flags);
 
 Object String_size(Object , int, Object *, int flags);
+Object String_at(Object , int, Object *, int flags);
 Object String_replace_with(Object , int, Object *, int flags);
+Object String_substringFrom_to(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 char *ConcatString__Flatten(Object s);
@@ -671,17 +673,8 @@ Object ConcatString_at(Object self, int nparams,
     int ms = *(int*)(self->data + sizeof(int));
     if (ms == 1 && p == 1)
         return self;
-    Object left = sself->left;
-    Object right = sself->right;
-    struct StringObject *lefts = (struct StringObject*)left;
-    struct StringObject *rights = (struct StringObject*)right;
-    int ls = lefts->size;
-    if (p <= ls)
-        return callmethod(left, "at", 1, args);
-    Object d = args[0];
-    Object lso = alloc_Float64(ls);
-    d = callmethod(d, "-", 1, &lso);
-    return callmethod(right, "at", 1, &d);
+    ConcatString__Flatten(self);
+    return String_at(self, nparams, args, flags);
 }
 Object ConcatString_length(Object self, int nparams,
         Object *args, int flags) {
@@ -701,6 +694,8 @@ Object ConcatString_substringFrom_to(Object self,
     st--;
     en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_substringFrom_to(self, nparams, args, flags);
     int mysize = sself->size;
     if (en > mysize)
         en = mysize;
@@ -793,7 +788,7 @@ Object String_at(Object self, int nparams,
     int idx = integerfromAny(idxobj);
     idx--;
     int i = 0;
-    char *ptr = ((struct StringObject*)(self))->body;
+    char *ptr = ((struct StringObject*)(self))->flat;
     char buf[5];
     if (((struct StringObject*)(self))->ascii) {
         buf[0] = ptr[idx];
@@ -855,7 +850,7 @@ Object String_substringFrom_to(Object self,
     char *bufp = buf;
     buf[0] = 0;
     int i;
-    char *pos = sself->body;
+    char *pos = sself->flat;
     for (i=0; i<st; i++) {
         pos += getutf8charlen(pos);
     }
