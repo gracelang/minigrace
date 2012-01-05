@@ -32,7 +32,8 @@ Object String_replace_with(Object , int, Object *, int flags);
 Object String_substringFrom_to(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
-char *ConcatString__Flatten(Object s);
+
+char *grcstring(Object s);
 
 Object undefined = NULL;
 Object none = NULL;
@@ -224,7 +225,7 @@ char *cstringfromString(Object s) {
         strcpy(c, so->body);
         return c;
     }
-    ConcatString__Flatten(s);
+    grcstring(s);
     ConcatString__FillBuffer(s, c, zs);
     return c;
 }
@@ -235,7 +236,7 @@ void bufferfromString(Object s, char *c) {
         return;
     }
     int z = so->blen;
-    ConcatString__Flatten(s);
+    grcstring(s);
     ConcatString__FillBuffer(s, c, z);
 }
 int integerfromAny(Object p) {
@@ -589,6 +590,15 @@ char *ConcatString__Flatten(Object self) {
     return flat;
 }
 
+char *grcstring(Object self) {
+    if (self->class != ConcatString && self->class != String)
+        self = callmethod(self, "asString", 0, NULL);
+    struct StringObject *sself = (struct StringObject *)self;
+    if (sself->flat)
+        return sself->flat;
+    return ConcatString__Flatten(self);
+}
+
 void ConcatString__FillBuffer(Object self, char *buf, int len) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int size = sself->size;
@@ -640,8 +650,8 @@ Object ConcatString_Equals(Object self, int nparams,
         return alloc_Boolean(0);
     if (sself->blen != other->blen)
         return alloc_Boolean(0);
-    char *a = ConcatString__Flatten(self);
-    char *b = ConcatString__Flatten(args[0]);
+    char *a = grcstring(self);
+    char *b = grcstring(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
 Object ConcatString_Concat(Object self, int nparams,
@@ -651,7 +661,7 @@ Object ConcatString_Concat(Object self, int nparams,
 }
 Object ConcatString__escape(Object self, int nparams,
         Object *args, int flags) {
-    char *c = ConcatString__Flatten(self);
+    char *c = grcstring(self);
     Object o = makeEscapedString(c);
     return o;
 }
@@ -673,7 +683,7 @@ Object ConcatString_at(Object self, int nparams,
     int ms = *(int*)(self->data + sizeof(int));
     if (ms == 1 && p == 1)
         return self;
-    ConcatString__Flatten(self);
+    grcstring(self);
     return String_at(self, nparams, args, flags);
 }
 Object ConcatString_length(Object self, int nparams,
@@ -683,7 +693,7 @@ Object ConcatString_length(Object self, int nparams,
 }
 Object ConcatString_iter(Object self, int nparams,
         Object *args, int flags) {
-    char *c = ConcatString__Flatten(self);
+    char *c = grcstring(self);
     Object o = alloc_String(c);
     return callmethod(o, "iter", 0, NULL);
 }
@@ -694,7 +704,7 @@ Object ConcatString_substringFrom_to(Object self,
     st--;
     en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
-    ConcatString__Flatten(self);
+    grcstring(self);
     return String_substringFrom_to(self, nparams, args, flags);
     int mysize = sself->size;
     if (en > mysize)
@@ -1737,7 +1747,7 @@ Object gracelib_print(Object receiver, int nparams,
         if (i == nparams - 1)
             sp = "";
         o = callmethod(o, "asString", 0, NULL);
-        char *s = ConcatString__Flatten(o);
+        char *s = grcstring(o);
         printf("%s%s", s, sp);
     }
     puts("");

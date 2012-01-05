@@ -65,6 +65,8 @@ void gracedie(char *msg, ...);
 
 void grace_register_shutdown_function(void(*)());
 
+char *grcstring(Object);
+
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.
 void initprofiling();
