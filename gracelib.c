@@ -69,6 +69,7 @@ struct StringObject {
     int blen;
     int size;
     unsigned int hashcode;
+    int ascii;
     char body[];
 };
 struct ConcatStringObject {
@@ -77,6 +78,7 @@ struct ConcatStringObject {
     int blen;
     int size;
     unsigned int hashcode;
+    int ascii;
     Object left;
     Object right;
 };
@@ -749,12 +751,13 @@ Object alloc_ConcatString(Object left, Object right) {
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
-    Object o = alloc_obj(sizeof(int) * 3 + sizeof(Object) * 2, ConcatString);
+    Object o = alloc_obj(sizeof(int) * 4 + sizeof(Object) * 2, ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
     so->right = right;
     so->blen = lefts->blen + rights->blen;
     so->size = lefts->size + rights->size;
+    so->ascii = lefts->ascii & rights->ascii;
     so->hashcode = lefts->hashcode * uipow(23, rights->size) + rights->hashcode;
     return o;
 }
@@ -923,16 +926,19 @@ Object alloc_String(const char *data) {
         if (String_Interned_1[data[0]] != NULL)
             return String_Interned_1[data[0]];
     }
-    Object o = alloc_obj(sizeof(int) * 3 + blen + 1, String);
+    Object o = alloc_obj(sizeof(int) * 4 + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
     so->blen = blen;
     char *d = so->body;
     int size = 0;
     int i;
     int hc = 0;
+    int ascii = 1;
     for (i=0; i<blen; ) {
         int l = getutf8charlen(data + i);
         int j = i + l;
+        if (l > 1 && ascii == 1)
+            ascii = 0;
         for (; i<j; i++) {
             d[i] = data[i];
             hc *= 23;
@@ -943,6 +949,7 @@ Object alloc_String(const char *data) {
     so->hashcode = hc;
     d[i] = 0;
     so->size = size;
+    so->ascii = ascii;
     Strings_allocated++;
     if (blen == 1) {
         String_Interned_1[data[0]] = o;
