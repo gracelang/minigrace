@@ -638,8 +638,8 @@ Object ConcatString_Equals(Object self, int nparams,
         return alloc_Boolean(0);
     if (sself->blen != other->blen)
         return alloc_Boolean(0);
-    char *a = cstringfromString(self);
-    char *b = cstringfromString(args[0]);
+    char *a = ConcatString__Flatten(self);
+    char *b = ConcatString__Flatten(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
 Object ConcatString_Concat(Object self, int nparams,
@@ -649,9 +649,8 @@ Object ConcatString_Concat(Object self, int nparams,
 }
 Object ConcatString__escape(Object self, int nparams,
         Object *args, int flags) {
-    char *c = cstringfromString(self);
+    char *c = ConcatString__Flatten(self);
     Object o = makeEscapedString(c);
-    free(c);
     return o;
 }
 Object ConcatString_ord(Object self, int nparams,
@@ -691,9 +690,8 @@ Object ConcatString_length(Object self, int nparams,
 }
 Object ConcatString_iter(Object self, int nparams,
         Object *args, int flags) {
-    char *c = cstringfromString(self);
+    char *c = ConcatString__Flatten(self);
     Object o = alloc_String(c);
-    free(c);
     return callmethod(o, "iter", 0, NULL);
 }
 Object ConcatString_substringFrom_to(Object self,
@@ -1744,9 +1742,8 @@ Object gracelib_print(Object receiver, int nparams,
         if (i == nparams - 1)
             sp = "";
         o = callmethod(o, "asString", 0, NULL);
-        char *s = cstringfromString(o);
+        char *s = ConcatString__Flatten(o);
         printf("%s%s", s, sp);
-        free(s);
     }
     puts("");
     return none;
