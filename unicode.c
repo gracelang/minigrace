@@ -94,7 +94,7 @@ Object unicode_iscategory(Object self, int nparams,
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     const char *cat = Unicode_Categories[cindex];
-    char *dt = cstringfromString(co);
+    char *dt = grcstring(co);
     Object ret = alloc_Boolean(0);
     if (strlen(dt) == 1) {
         if (cat[0] == dt[0])
@@ -102,7 +102,6 @@ Object unicode_iscategory(Object self, int nparams,
     }
     if (strcmp(cat, dt) == 0)
         ret = alloc_Boolean(1);
-    free(dt);
     return ret;
 }
 // Return a Grace Boolean indicating whether the argument is a separator.
