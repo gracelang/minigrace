@@ -706,31 +706,6 @@ Object ConcatString_substringFrom_to(Object self,
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparams, args, flags);
-    int mysize = sself->size;
-    if (en > mysize)
-        en = mysize;
-    int cl = en - st;
-    int myblen = sself->blen;
-    char buf[cl * 4 + 1];
-    char *bufp = buf;
-    char value[myblen + 1];
-    ConcatString__FillBuffer(self, value, myblen);
-    buf[0] = 0;
-    int i;
-    char *pos = value;
-    for (i=0; i<st; i++) {
-        pos += getutf8charlen(pos);
-    }
-    char cp[5];
-    for (i=0; i<=cl; i++) {
-        getutf8char(pos, cp);
-        strcpy(bufp, cp);
-        while (bufp[0] != 0) {
-            pos++;
-            bufp++;
-        }
-    }
-    return alloc_String(buf);
 }
 Object ConcatString_hashcode(Object self, int nparams,
         Object *args, int flags) {
