@@ -30,6 +30,7 @@ Object String_size(Object , int, Object *, int flags);
 Object String_replace_with(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
+char *ConcatString__Flatten(Object s);
 
 Object undefined = NULL;
 Object none = NULL;
@@ -79,6 +80,7 @@ struct ConcatStringObject {
     int size;
     unsigned int hashcode;
     int ascii;
+    char *flat;
     Object left;
     Object right;
 };
@@ -219,6 +221,7 @@ char *cstringfromString(Object s) {
         strcpy(c, so->body);
         return c;
     }
+    ConcatString__Flatten(s);
     ConcatString__FillBuffer(s, c, zs);
     return c;
 }
@@ -229,6 +232,7 @@ void bufferfromString(Object s, char *c) {
         return;
     }
     int z = so->blen;
+    ConcatString__Flatten(s);
     ConcatString__FillBuffer(s, c, z);
 }
 int integerfromAny(Object p) {
@@ -572,12 +576,27 @@ Object alloc_StringIter(Object string) {
     return o;
 }
 
+char *ConcatString__Flatten(Object self) {
+    struct ConcatStringObject *s = (struct ConcatStringObject*)self;
+    if (s->flat != NULL)
+        return s->flat;
+    char *flat = glmalloc(s->blen + 1);
+    ConcatString__FillBuffer(self, flat, s->blen);
+    s->flat = flat;
+    return flat;
+}
+
 void ConcatString__FillBuffer(Object self, char *buf, int len) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int size = sself->size;
     Object left = sself->left;
     Object right = sself->right;
     int i;
+    if (sself->flat != NULL) {
+        strncpy(buf, sself->flat, len);
+        buf[sself->blen] = 0;
+        return;
+    }
     struct StringObject *lefts = (struct StringObject*)left;
     int ls = lefts->blen;
     if (left->class == String) {
@@ -751,13 +770,15 @@ Object alloc_ConcatString(Object left, Object right) {
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
-    Object o = alloc_obj(sizeof(int) * 4 + sizeof(Object) * 2, ConcatString);
+    Object o = alloc_obj(sizeof(int) * 4 + sizeof(char*) * 1 +
+            sizeof(Object) * 2, ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
     so->right = right;
     so->blen = lefts->blen + rights->blen;
     so->size = lefts->size + rights->size;
     so->ascii = lefts->ascii & rights->ascii;
+    so->flat = NULL;
     so->hashcode = lefts->hashcode * uipow(23, rights->size) + rights->hashcode;
     return o;
 }
