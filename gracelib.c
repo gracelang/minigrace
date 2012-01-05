@@ -71,6 +71,7 @@ struct StringObject {
     int size;
     unsigned int hashcode;
     int ascii;
+    char *flat;
     char body[];
 };
 struct ConcatStringObject {
@@ -952,7 +953,7 @@ Object alloc_String(const char *data) {
         if (String_Interned_1[data[0]] != NULL)
             return String_Interned_1[data[0]];
     }
-    Object o = alloc_obj(sizeof(int) * 4 + blen + 1, String);
+    Object o = alloc_obj(sizeof(int) * 4 + sizeof(char*) + blen + 1, String);
     struct StringObject* so = (struct StringObject*)o;
     so->blen = blen;
     char *d = so->body;
@@ -976,6 +977,7 @@ Object alloc_String(const char *data) {
     d[i] = 0;
     so->size = size;
     so->ascii = ascii;
+    so->flat = so->body;
     Strings_allocated++;
     if (blen == 1) {
         String_Interned_1[data[0]] = o;
