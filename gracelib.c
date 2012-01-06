@@ -145,6 +145,16 @@ int heapsize;
 
 int objectcount = 0;
 
+Object *objects_living;
+int objects_living_size = 0;
+int objects_living_next = 0;
+int objects_living_max = 0;
+struct GC_Root {
+    Object object;
+    struct GC_Root *next;
+};
+struct GC_Root *GC_roots;
+#define FLAG_REACHABLE 4
 #define FLAG_USEROBJ 16
 
 int Strings_allocated = 0;
@@ -320,9 +330,12 @@ Object ListIter_havemore(Object self, int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
+void ListIter_mark(Object o) {
+    gc_mark((Object)(o->data + sizeof(int)));
+}
 Object alloc_ListIter(Object array) {
     if (ListIter == NULL) {
-        ListIter = alloc_class("ListIter", 2);
+        ListIter = alloc_class2("ListIter", 2, (void*)&ListIter_mark);
         add_Method(ListIter, "havemore", &ListIter_havemore);
         add_Method(ListIter, "next", &ListIter_next);
     }
@@ -465,9 +478,15 @@ Object List_prepended(Object self, int nparams,
     }
     return nl;
 }
+void List_mark(Object o) {
+    struct ListObject *s = (struct ListObject *)o;
+    int i;
+    for (i=0; i<s->size; i++)
+        gc_mark(s->items[i]);
+}
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class("List", 18);
+        List = alloc_class2("List", 18, (void*)&List_mark);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
@@ -736,9 +755,15 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
   }
   return r;
 }
+void ConcatString__mark(Object o) {
+    struct ConcatStringObject *s = (struct ConcatStringObject *)o;
+    gc_mark(s->left);
+    gc_mark(s->right);
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class("ConcatString", 18);
+        ConcatString = alloc_class2("ConcatString", 18,
+                (void*)&ConcatString__mark);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
@@ -1296,8 +1321,10 @@ Object alloc_Float64(double num) {
     Object *str = (Object*)(o->data + sizeof(double));
     *str = NULL;
     if (ival == num && ival >= FLOAT64_INTERN_MIN
-            && ival < FLOAT64_INTERN_MAX)
+            && ival < FLOAT64_INTERN_MAX) {
         Float64_Interned[ival-FLOAT64_INTERN_MIN] = o;
+        gc_root(o);
+    }
     if (num == 0)
         FLOAT64_ZERO = o;
     if (num == 1)
@@ -1419,6 +1446,7 @@ Object alloc_Boolean(int val) {
         BOOLEAN_TRUE = o;
     else
         BOOLEAN_FALSE = o;
+    gc_root(o);
     return o;
 }
 Object File_close(Object self, int nparams,
@@ -1556,6 +1584,11 @@ Object io_exists(Object self, int nparams,
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
+void io__mark(struct IOModuleObject *o) {
+    gc_mark(o->_stdin);
+    gc_mark(o->_stdout);
+    gc_mark(o->_stderr);
+}
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
@@ -1572,6 +1605,7 @@ Object module_io_init() {
     so->_stdin = alloc_File_from_stream(stdin);
     so->_stdout = alloc_File_from_stream(stdout);
     so->_stderr = alloc_File_from_stream(stderr);
+    gc_root(o);
     return o;
 }
 Object sys_argv(Object self, int nparams,
@@ -1582,6 +1616,7 @@ Object sys_argv(Object self, int nparams,
 Object argv_List = NULL;
 void module_sys_init_argv(Object argv) {
     argv_List = argv;
+    gc_root(argv);
 }
 Object sys_cputime(Object self, int nparams,
         Object *args, int flags) {
@@ -1613,10 +1648,13 @@ Object sys_execPath(Object self, int nparams,
     char *dn = dirname(epm);
     return alloc_String(dn);
 }
+void sys__mark(struct SysModule *o) {
+    gc_mark(o->argv);
+}
 Object module_sys_init() {
     if (sysmodule != NULL)
         return sysmodule;
-    SysModule = alloc_class("Module<sys>", 5);
+    SysModule = alloc_class2("Module<sys>", 5, (void*)*sys__mark);
     add_Method(SysModule, "argv", &sys_argv);
     add_Method(SysModule, "cputime", &sys_cputime);
     add_Method(SysModule, "elapsed", &sys_elapsed);
@@ -1626,6 +1664,7 @@ Object module_sys_init() {
     struct SysModule *so = (struct SysModule*)o;
     so->argv = argv_List;
     sysmodule = o;
+    gc_root(o);
     return o;
 }
 Object alloc_none() {
@@ -1634,6 +1673,7 @@ Object alloc_none() {
     noneClass = alloc_class("none", 0);
     Object o = alloc_obj(0, noneClass);
     none = o;
+    gc_root(o);
     return o;
 }
 Object alloc_Undefined() {
@@ -1642,6 +1682,7 @@ Object alloc_Undefined() {
     Undefined = alloc_class("Undefined", 0);
     Object o = alloc_obj(0, Undefined);
     undefined = o;
+    gc_root(o);
     return o;
 }
 void block_return(Object self, Object obj) {
@@ -1767,8 +1808,10 @@ void enable_callgraph(char *filename) {
 }
 Object MatchFailed;
 Object alloc_MatchFailed() {
-    if (!MatchFailed)
+    if (!MatchFailed) {
         MatchFailed = alloc_userobj(0, 0);
+        gc_root(MatchFailed);
+    }
     return MatchFailed;
 }
 Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
@@ -1854,6 +1897,11 @@ Object alloc_obj(int additional_size, ClassData class) {
     o->class = class;
     o->flags = 1;
     objectcount++;
+    if (objects_living_next >= objects_living_size)
+        expand_living();
+    objects_living[objects_living_next++] = o;
+    if (objects_living_next > objects_living_max)
+        objects_living_max = objects_living_next;
     return o;
 }
 Object alloc_newobj(int additional_size, ClassData class) {
@@ -1865,6 +1913,23 @@ ClassData alloc_class(const char *name, int nummethods) {
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
     c->nummethods = 0;
+    c->mark = NULL;
+    c->release = NULL;
+    int i;
+    for (i=0; i<nummethods; i++) {
+        c->methods[i].name = NULL;
+        c->methods[i].flags = 0;
+    }
+    return c;
+}
+ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
+    ClassData c = glmalloc(sizeof(struct ClassData));
+    c->name = glmalloc(strlen(name) + 1);
+    strcpy(c->name, name);
+    c->methods = glmalloc(sizeof(Method) * nummethods);
+    c->nummethods = 0;
+    c->mark = mark;
+    c->release = NULL;
     int i;
     for (i=0; i<nummethods; i++) {
         c->methods[i].name = NULL;
@@ -2120,13 +2185,18 @@ Object alloc_HashMap() {
 Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
     return alloc_HashMap();
 }
+ClassData HashMapClassObject;
 Object alloc_HashMapClassObject() {
+    if (HashMapClassObject)
+        return HashMapClassObject;
     ClassData c = alloc_class("Class<HashMap>", 5);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_obj(0, c);
+    gc_root(o);
+    HashMapClassObject = o;
     return o;
 }
 Object Block_apply(Object self, int nargs, Object *args, int flags) {
@@ -2263,12 +2333,15 @@ Object dlmodule(const char *name) {
     strcat(buf, name);
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
-    return init();
+    Object mod = init();
+    gc_root(mod);
+    return mod;
 }
 void gracelib_stats() {
     grace_run_shutdown_functions();
     if (track_callgraph)
         fprintf(callgraph, "}\n");
+    rungc();
     if (getenv("GRACE_STATS") == NULL)
         return;
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
@@ -2296,10 +2369,59 @@ void gracelib_argv(char **argv) {
     // We need return_stack[-1] to be available.
     return_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
     return_stack++;
+    objects_living_size = 2048;
+    objects_living = calloc(sizeof(Object), objects_living_size);
 }
 void setline(int l) {
     linenumber = l;
 }
 void setmodule(const char *mod) {
     modulename = mod;
+}
+
+int expand_living() {
+    objects_living_size *= 2;
+    objects_living = realloc(objects_living,
+            objects_living_size * sizeof(Object));
+    return 0;
+}
+void gc_mark(Object o) {
+    ClassData c = o->class;
+    o->flags |= FLAG_REACHABLE;
+    if (c->mark)
+        c->mark(o);
+}
+void gc_root(Object o) {
+    struct GC_Root *r = malloc(sizeof(struct GC_Root));
+    r->object = o;
+    r->next = GC_roots;
+    GC_roots = r;
+}
+void rungc() {
+    int i;
+    int32_t unreachable = 0xffffffff ^ FLAG_REACHABLE;
+    for (i=0; i<objects_living_max; i++) {
+        Object o = objects_living[i];
+        if (o == NULL)
+            continue;
+        o->flags = o->flags & unreachable;
+    }
+    struct GC_Root *r = GC_roots;
+    while (r != NULL) {
+        gc_mark(r->object);
+        r = r->next;
+    }
+    int reached = 0;
+    int unreached = 0;
+    for (i=0; i<objects_living_max; i++) {
+        Object o = objects_living[i];
+        if (o == NULL)
+            continue;
+        if (o->flags & FLAG_REACHABLE) {
+            reached++;
+        } else {
+            unreached++;
+        }
+    }
+    fprintf(stderr, "Reachable:   %i\nUnreachable: %i\n", reached, unreached);
 }

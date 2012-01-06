@@ -15,6 +15,8 @@ typedef struct ClassData {
     char *name;
     Method *methods;
     int nummethods;
+    void (*mark)(void *);
+    void (*release)(void *);
 }* ClassData;
 
 struct Object {
@@ -53,6 +55,7 @@ Method* add_Method(ClassData, const char *,
 Object alloc_obj(int, ClassData);
 Object alloc_newobj(int, ClassData);
 ClassData alloc_class(const char *, int);
+ClassData alloc_class2(const char *, int, void(*)(void *));
 Object alloc_userobj(int, int);
 Object alloc_obj2(int, int);
 Object* alloc_var();
@@ -73,6 +76,10 @@ void gracedie(char *msg, ...);
 void grace_register_shutdown_function(void(*)());
 
 char *grcstring(Object);
+
+
+void gc_mark(Object);
+void gc_root(Object);
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.

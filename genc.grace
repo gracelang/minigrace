@@ -981,6 +981,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static const char modulename[] = \"{modname}\";");
     out("Object module_{escmodname}_init() \{")
     out("  Object self = alloc_obj2(100, 100);")
+    out("  gc_root(self);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_HashMap = alloc_var();")
