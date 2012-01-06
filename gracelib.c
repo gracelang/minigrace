@@ -161,6 +161,8 @@ struct GC_Root {
 struct GC_Root *GC_roots;
 #define FLAG_REACHABLE 4
 #define FLAG_USEROBJ 16
+int gc_dofree = 1;
+int gc_dowarn = 0;
 
 int Strings_allocated = 0;
 
@@ -1955,13 +1957,15 @@ Object alloc_obj(int additional_size, ClassData class) {
     o->class = class;
     o->flags = 3;
     objectcount++;
-    if (objects_living_next >= objects_living_size)
-        expand_living();
-    if (objects_living_next % 100000 == 0)
-        rungc();
-    objects_living[objects_living_next++] = o;
-    if (objects_living_next > objects_living_max)
-        objects_living_max = objects_living_next;
+    if (gc_dofree || gc_dowarn) {
+        if (objects_living_next >= objects_living_size)
+            expand_living();
+        if (objectcount % 100000 == 0)
+            rungc();
+        objects_living[objects_living_next++] = o;
+        if (objects_living_next > objects_living_max)
+            objects_living_max = objects_living_next;
+    }
     return o;
 }
 Object alloc_newobj(int additional_size, ClassData class) {
@@ -2461,6 +2465,10 @@ void gracelib_argv(char **argv) {
     return_stack++;
     objects_living_size = 2048;
     objects_living = calloc(sizeof(Object), objects_living_size);
+    gc_dofree = (getenv("GRACE_GC_DISABLE") == NULL);
+    gc_dowarn = (getenv("GRACE_GC_WARN") != NULL);
+    if (gc_dowarn)
+        gc_dofree = 0;
 }
 void setline(int l) {
     linenumber = l;
@@ -2536,10 +2544,6 @@ void rungc() {
     int reached = 0;
     int unreached = 0;
     int freed = 0;
-    int dofree = (getenv("GRACE_GC_DISABLE") == NULL);
-    int dowarn = (getenv("GRACE_GC_WARN") != NULL);
-    if (dowarn)
-        dofree = 0;
     int doinfo = (getenv("GRACE_GC_INFO") != NULL);
     for (i=0; i<objects_living_max; i++) {
         Object o = objects_living[i];
@@ -2548,9 +2552,9 @@ void rungc() {
         if (o->flags & FLAG_REACHABLE) {
             reached++;
         } else {
-            if ((dofree || dowarn) && !(o->flags & 2)) {
+            if ((gc_dofree || gc_dowarn) && !(o->flags & 2)) {
                 o->flags |= 8;
-                if (dofree) {
+                if (gc_dofree) {
                     glfree(o);
                     objects_living[i] = NULL;
                     freedcount++;
