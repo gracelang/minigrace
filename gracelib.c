@@ -33,6 +33,9 @@ Object String_substringFrom_to(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
+void rungc();
+int expand_living();
+
 char *grcstring(Object s);
 
 Object undefined = NULL;
