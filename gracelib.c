@@ -2436,6 +2436,10 @@ void gracelib_stats() {
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
     fprintf(stderr, "                      %iMiB\n", heapsize/1024/1024);
     fprintf(stderr, "                      %iGiB\n", heapsize/1024/1024/1024);
+    fprintf(stderr, "Peak heap allocated:  %iB\n", heapmax);
+    fprintf(stderr, "                      %iKiB\n", heapmax/1024);
+    fprintf(stderr, "                      %iMiB\n", heapmax/1024/1024);
+    fprintf(stderr, "                      %iGiB\n", heapmax/1024/1024/1024);
     int nowclocks = (clock() - start_clocks);
     float clocks = nowclocks;
     clocks /= CLOCKS_PER_SEC;
