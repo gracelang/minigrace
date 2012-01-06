@@ -740,6 +740,7 @@ method compilenode(o) {
         linenum := o.line
         out("// Begin line " ++ linenum)
         out("  setline({linenum});")
+        out("  setmodule(modulename);")
     }
     if (o.kind == "num") then {
         compilenum(o)
@@ -933,6 +934,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object undefined;")
     outprint("static Object none;")
     outprint("static Object argv;")
+    outprint("static const char modulename[] = \"{modname}\";");
     out("Object module_{escmodname}_init() \{")
     out("  Object self = alloc_obj2(100, 100);")
     var modn := "Module<{modname}>"

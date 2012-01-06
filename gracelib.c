@@ -138,6 +138,7 @@ struct BlockObject {
 struct SFLinkList *shutdown_functions;
 
 int linenumber = 0;
+const char *modulename;
 
 int heapsize;
 
@@ -2212,4 +2213,7 @@ void gracelib_argv(char **argv) {
 }
 void setline(int l) {
     linenumber = l;
+}
+void setmodule(const char *mod) {
+    modulename = mod;
 }
