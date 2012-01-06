@@ -2239,11 +2239,14 @@ Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
     }
     return callmethod(self, "_apply", sz, rargs);
 }
+void Block__mark(struct BlockObject *o) {
+    gc_mark(o->data[0]);
+}
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class(buf, 8);
+    ClassData c = alloc_class2(buf, 8, (void*)&Block__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -2266,16 +2269,29 @@ void setsuperobj(Object sub, Object super) {
     struct UserObject *uo = (struct UserObject *)sub;
     uo->super = super;
 }
+void UserObj__mark(struct UserObject *o) {
+    int i;
+    for (i=0; o->data[i] != NULL; i++) {
+        gc_mark(o->data[i]);
+    }
+    if (o->super)
+        gc_mark(o->super);
+}
 Object alloc_userobj(int numMethods, int numFields) {
-    ClassData c = alloc_class("Object", numMethods + 6);
+    ClassData c = alloc_class2("Object", numMethods + 6, (void*)&UserObj__mark);
     Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *)
-            + sizeof(Object), c);
+            + sizeof(int) + sizeof(Object), c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
     o->flags |= FLAG_USEROBJ;
+    struct UserObject *uo = (struct UserObject *)o;
+    int i;
+    for (i=0; i<numFields; i++)
+        uo->data[i] = NULL;
+    uo->super = NULL;
     return o;
 }
 Object alloc_obj2(int numMethods, int numFields) {
