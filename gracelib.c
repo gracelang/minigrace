@@ -144,7 +144,9 @@ struct SFLinkList *shutdown_functions;
 int linenumber = 0;
 const char *modulename;
 
-int heapsize;
+size_t heapsize;
+size_t heapcurrent;
+size_t heapmax;
 
 int objectcount = 0;
 int freedcount = 0;
@@ -204,8 +206,18 @@ void die(char *msg, ...) {
 
 void *glmalloc(size_t s) {
     heapsize += s;
-    void *v = calloc(1, s);
-    return v;
+    heapcurrent += s;
+    if (heapcurrent >= heapmax)
+        heapmax = heapcurrent;
+    void *v = calloc(1, s + sizeof(size_t));
+    size_t *i = v;
+    *i = s;
+    return v + sizeof(size_t);
+}
+void glfree(void *p) {
+    size_t *i = p - sizeof(size_t);
+    heapcurrent -= *i;
+    free(i);
 }
 void initprofiling() {
     start_clocks = clock();
@@ -261,7 +273,7 @@ int integerfromAny(Object p) {
     p = callmethod(p, "asString", 0, NULL);
     char *c = cstringfromString(p);
     int i = atoi(c);
-    free(c);
+    glfree(c);
     return i;
 }
 void addmethodreal(Object o, char *name,
@@ -368,7 +380,7 @@ Object List_push(Object self, int nparams,
         int i;
         for (i=0; i<sself->size; i++)
             dt[i] = sself->items[i];
-        free(sself->items);
+        glfree(sself->items);
         sself->items = dt;
     }
     sself->items[sself->size] = other;
@@ -1496,7 +1508,7 @@ Object File_read(Object self, int nparams,
     FILE *file = s->file;
     int bsize = 128;
     int pos = 0;
-    char *buf = glmalloc(bsize);
+    char *buf = malloc(bsize);
     pos += fread(buf, sizeof(char), bsize, file);
     while (!feof(file)) {
         bsize *= 2;
@@ -1504,7 +1516,9 @@ Object File_read(Object self, int nparams,
         pos += fread(buf+pos, sizeof(char), bsize-pos-1, file);
     }
     buf[pos] = 0;
-    return alloc_String(buf);
+    Object str = alloc_String(buf);
+    free(buf);
+    return str;
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
@@ -1552,8 +1566,8 @@ Object io_open(Object self, int nparams,
     char *fn = cstringfromString(fnstr);
     char *mode = cstringfromString(modestr);
     Object ret = alloc_File(fn, mode);
-    free(fn);
-    free(mode);
+    glfree(fn);
+    glfree(mode);
     return ret;
 }
 Object io_system(Object self, int nparams,
@@ -2144,7 +2158,7 @@ int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
                 h->table[th].value = p.value;
             }
         }
-        free(old);
+        glfree(old);
         hc = integerfromAny(callmethod(key, "hashcode", 0, NULL));
         hc %= h->nslots;
         while (h->table[hc].key != HashMap_undefined)
@@ -2533,7 +2547,7 @@ void rungc() {
             if ((dofree || dowarn) && !(o->flags & 2)) {
                 o->flags |= 8;
                 if (dofree) {
-                    free(o);
+                    glfree(o);
                     objects_living[i] = NULL;
                     freedcount++;
                 }
@@ -2548,5 +2562,6 @@ void rungc() {
         fprintf(stderr, "Reachable:   %i\n", reached);
         fprintf(stderr, "Unreachable: %i\n", unreached);
         fprintf(stderr, "Freed:       %i\n", freed);
+        fprintf(stderr, "Heap:        %i\n", heapcurrent);
     }
 }
