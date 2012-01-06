@@ -2427,6 +2427,8 @@ int expand_living() {
     return 0;
 }
 void gc_mark(Object o) {
+    if (o->flags & FLAG_REACHABLE)
+        return;
     ClassData c = o->class;
     o->flags |= FLAG_REACHABLE;
     if (c->mark)
