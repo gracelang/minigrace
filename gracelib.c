@@ -2448,9 +2448,17 @@ void setmodule(const char *mod) {
 
 int expand_living() {
     rungc();
+    int i;
+    Object *before = objects_living;
+    objects_living = calloc(sizeof(Object), objects_living_size * 2);
+    int j = 0;
+    for (i=0; i<objects_living_size; i++) {
+        if (before[i] != NULL)
+            objects_living[j++] = before[i];
+    }
+    objects_living_max = j;
+    objects_living_next = j;
     objects_living_size *= 2;
-    objects_living = realloc(objects_living,
-            objects_living_size * sizeof(Object));
     return 0;
 }
 void gc_mark(Object o) {
