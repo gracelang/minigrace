@@ -1940,6 +1940,8 @@ Object alloc_obj(int additional_size, ClassData class) {
     objectcount++;
     if (objects_living_next >= objects_living_size)
         expand_living();
+    if (objects_living_next % 100000 == 0)
+        rungc();
     objects_living[objects_living_next++] = o;
     if (objects_living_next > objects_living_max)
         objects_living_max = objects_living_next;
