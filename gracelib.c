@@ -201,7 +201,7 @@ void die(char *msg, ...) {
 
 void *glmalloc(size_t s) {
     heapsize += s;
-    void *v = malloc(s);
+    void *v = calloc(1, s);
     return v;
 }
 void initprofiling() {
@@ -1636,7 +1636,8 @@ Object sys_elapsed(Object self, int nparams,
 Object sys_exit(Object self, int nparams,
         Object *args, int flags) {
     int i = integerfromAny(args[0]);
-    gracelib_stats();
+    if (i == 0)
+        gracelib_stats();
     exit(i);
     return NULL;
 }
@@ -2427,6 +2428,8 @@ int expand_living() {
     return 0;
 }
 void gc_mark(Object o) {
+    if (o == NULL)
+        return;
     if (o->flags & FLAG_REACHABLE)
         return;
     ClassData c = o->class;
@@ -2439,6 +2442,23 @@ void gc_root(Object o) {
     r->object = o;
     r->next = GC_roots;
     GC_roots = r;
+}
+Object *gc_stack;
+int gc_framepos = 0;
+int gc_frame_new() {
+    if (gc_stack == NULL)
+        gc_stack = calloc(sizeof(Object), STACK_SIZE * 1024);
+    return gc_framepos;
+}
+void gc_frame_end(int pos) {
+    gc_framepos = pos;
+}
+int gc_frame_newslot(Object o) {
+    gc_stack[gc_framepos] = o;
+    return gc_framepos++;
+}
+void gc_frame_setslot(int slot, Object o) {
+    gc_stack[slot] = o;
 }
 void rungc() {
     int i;
@@ -2454,6 +2474,8 @@ void rungc() {
         gc_mark(r->object);
         r = r->next;
     }
+    for (i=0; i<gc_framepos; i++)
+        gc_mark(gc_stack[i]);
     int reached = 0;
     int unreached = 0;
     for (i=0; i<objects_living_max; i++) {

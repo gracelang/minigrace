@@ -307,6 +307,7 @@ method compilemethod(o, selfobj, pos) {
         out("  Object var_init_{van} = process_varargs(args, {i}, nparams);")
         out("  Object *var_{van} = alloc_var();")
         out("  *var_{van} = var_init_{van};")
+        out("  int gc_slot_{van} = gc_frame_newslot(var_init_{van});")
         declaredvars.push(van)
     }
     var ret := "none"
@@ -317,11 +318,13 @@ method compilemethod(o, selfobj, pos) {
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = alloc_var();")
             out("  *var_{tnm} = undefined;")
+            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
         }
     }
     for (o.body) do { l ->
         ret := compilenode(l)
     }
+    out("  gc_frame_end(frame);")
     out("  return {ret};")
     out("\}")
     var body := output
@@ -369,6 +372,7 @@ method compilemethod(o, selfobj, pos) {
         out("Object {litname}(Object self, int nparams, Object *args, "
             ++ "int32_t flags) \{")
     }
+    out("  int frame = gc_frame_new();")
     out("  if (nparams < {o.params.size})")
     out("    gracedie(\"insufficient arguments to method\");")
     // We need to detect which parameters are used in a closure, and
@@ -382,9 +386,11 @@ method compilemethod(o, selfobj, pos) {
         if (closurevars.contains(pn)) then {
             out("  Object *var_{pn} = alloc_var();");
             out("  *var_{pn} = args[{i}];");
+            out("  int gc_slot_{pn} = gc_frame_newslot(args[{i}]);")
             toremove.push(pn)
         } else {
             out("  Object *var_{pn} = args + {i};")
+            out("  int gc_slot_{pn} = gc_frame_newslot(*var_{pn});")
         }
         declaredvars.push(pn)
         i := i + 1
@@ -405,6 +411,7 @@ method compilemethod(o, selfobj, pos) {
             out("  Object self = *(getfromclosure(closure, {j}));")
         } else {
             out("  Object *var_{cv} = getfromclosure(closure, {j});")
+            out("  int gc_slot_{cv} = gc_frame_newslot(*var_{cv});")
         }
         j := j + 1
     }
@@ -464,6 +471,7 @@ method compilewhile(o) {
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = alloc_var();")
             out("  *var_{tnm} = undefined;")
+            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
         }
     }
     for (o.body) do { l->
@@ -489,6 +497,7 @@ method compileif(o) {
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = alloc_var();")
             out("  *var_{tnm} = undefined;")
+            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
         }
     }
     for (o.thenblock) do { l->
@@ -504,6 +513,7 @@ method compileif(o) {
                 declaredvars.push(tnm)
                 out("  Object *var_{tnm} = alloc_var();")
                 out("  *var_{tnm} = undefined;")
+                out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
             }
         }
         for (o.elseblock) do { l->
@@ -544,6 +554,7 @@ method compilebind(o) {
         var nm := escapeident(dest.value)
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
+        out("  gc_frame_setslot(gc_slot_{nm}, {val});")
         out("  if ({val} == undefined)")
         out("    callmethod(none, \"assignment\", 0, NULL);")
         auto_count := auto_count + 1
@@ -576,6 +587,7 @@ method compiledefdec(o) {
         util.syntax_error("const must have value bound.")
     }
     out("  *var_{nm} = {val};")
+    out("  gc_frame_setslot(gc_slot_{nm}, {val});")
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL);")
     o.register := "none"
@@ -593,6 +605,7 @@ method compilevardec(o) {
     }
     out("  var_{nm} = alloc_var();")
     out("  *var_{nm} = {val};")
+    out("  gc_frame_setslot(gc_slot_{nm}, {val});")
     if (hadval) then {
         out("  if ({val} == undefined)")
         out("    callmethod(none, \"assignment\", 0, NULL);")
@@ -980,6 +993,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object argv;")
     outprint("static const char modulename[] = \"{modname}\";");
     out("Object module_{escmodname}_init() \{")
+    out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2(100, 100);")
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
@@ -996,6 +1010,7 @@ method compile(vl, of, mn, rm, bt) {
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = alloc_var();")
             out("  *var_{tnm} = undefined;")
+            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
         } elseif (l.kind == "class") then {
             var tnmc
             if (l.name.kind == "generic") then {
@@ -1006,6 +1021,7 @@ method compile(vl, of, mn, rm, bt) {
             declaredvars.push(tnmc)
             out("  Object *var_{tnmc} = alloc_var();")
             out("  *var_{tnmc} = undefined;")
+            out("  int gc_slot_{tnmc} = gc_frame_newslot(undefined);")
         }
     }
     for (values) do { o ->
@@ -1021,6 +1037,7 @@ method compile(vl, of, mn, rm, bt) {
         out(l)
     }
     paramsUsed := 1
+    out("  gc_frame_end(frame);")
     out("  return self;")
     out("}")
     out("int main(int argc, char **argv) \{")
