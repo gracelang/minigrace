@@ -331,7 +331,8 @@ Object ListIter_havemore(Object self, int nparams,
     return alloc_Boolean(0);
 }
 void ListIter_mark(Object o) {
-    gc_mark((Object)(o->data + sizeof(int)));
+    Object *lst = (Object*)(o->data + sizeof(int));
+    gc_mark(*lst);
 }
 Object alloc_ListIter(Object array) {
     if (ListIter == NULL) {
@@ -993,6 +994,7 @@ Object alloc_String(const char *data) {
     so->flat = so->body;
     Strings_allocated++;
     if (blen == 1) {
+        gc_root(o);
         String_Interned_1[data[0]] = o;
     }
     return o;
@@ -1592,7 +1594,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class("Module<io>", 7);
+    IOModule = alloc_class2("Module<io>", 7, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -1782,6 +1784,11 @@ Object callmethod(Object receiver, const char *name,
         int nparams, Object *args) {
     int i;
     int start_calldepth = calldepth;
+    if (receiver->flags & 8) {
+        fprintf(stderr, "warning: called method on freed object:"
+                "%s.%s at %s:%i\n",
+                receiver->class->name, name, modulename, linenumber);
+    }
     if (strcmp(name, "_apply") != 0 && strcmp(name, "apply") != 0
             && strcmp(name, "applyIndirectly") != 0) {
         if (setjmp(return_stack[calldepth])) {
@@ -1846,6 +1853,7 @@ ClassData ClosureEnv;
 struct ClosureEnvObject {
     int32_t flags;
     ClassData class;
+    char name[256];
     int size;
     Object *data[];
 };
@@ -1854,15 +1862,17 @@ void ClosureEnv__mark(struct ClosureEnvObject *o) {
     for (i=0; i<o->size; i++)
         gc_mark(*(o->data[i]));
 }
-Object createclosure(int size) {
+Object createclosure(int size, char *name) {
     if (ClosureEnv == NULL) {
         ClosureEnv = alloc_class2("ClosureEnv", 0, (void*)&ClosureEnv__mark);
     }
-    Object o = alloc_obj(sizeof(int) + sizeof(Object*) * size, ClosureEnv);
+    Object o = alloc_obj(sizeof(int) + 256 + sizeof(Object*) * size, ClosureEnv);
     struct ClosureEnvObject *oo = (struct ClosureEnvObject *)o;
+    oo->size = size;
     int i;
     for (i=0; i<size; i++)
         oo->data[i] = NULL;
+    strcpy(oo->name, name);
     return o;
 }
 Object** createclosure2(int size) {
@@ -1921,7 +1931,7 @@ Method* add_Method(ClassData c, const char *name,
 Object alloc_obj(int additional_size, ClassData class) {
     Object o = glmalloc(sizeof(struct Object) + additional_size);
     o->class = class;
-    o->flags = 1;
+    o->flags = 3;
     objectcount++;
     if (objects_living_next >= objects_living_size)
         expand_living();
@@ -2184,9 +2194,19 @@ Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
     str = callmethod(str, "++", 1, &cls);
     return str;
 }
+void HashMap__mark(struct HashMap *h) {
+    int i = 0;
+    for (i=0; i<h->nslots; i++) {
+        struct HashMapPair p = h->table[i];
+        if (p.key == HashMap_undefined)
+            continue;
+        gc_mark(p.key);
+        gc_mark(p.value);
+    }
+}
 Object alloc_HashMap() {
     if (HashMap == NULL) {
-        HashMap = alloc_class("HashMap", 7);
+        HashMap = alloc_class2("HashMap", 7, (void*)&HashMap__mark);
         add_Method(HashMap, "==", &Object_Equals);
         add_Method(HashMap, "!=", &Object_NotEquals);
         add_Method(HashMap, "/=", &Object_NotEquals);
@@ -2422,6 +2442,7 @@ void setmodule(const char *mod) {
 }
 
 int expand_living() {
+    rungc();
     objects_living_size *= 2;
     objects_living = realloc(objects_living,
             objects_living_size * sizeof(Object));
@@ -2478,6 +2499,10 @@ void rungc() {
         gc_mark(gc_stack[i]);
     int reached = 0;
     int unreached = 0;
+    int freed = 0;
+    int dofree = (getenv("GRACE_GC_FREE") != NULL);
+    int dowarn = (getenv("GRACE_GC_WARN") != NULL);
+    int doinfo = (getenv("GRACE_GC_INFO") != NULL);
     for (i=0; i<objects_living_max; i++) {
         Object o = objects_living[i];
         if (o == NULL)
@@ -2485,10 +2510,22 @@ void rungc() {
         if (o->flags & FLAG_REACHABLE) {
             reached++;
         } else {
-            reached++;
-        } else {
-            unreached++;
+            if ((dofree || dowarn) && !(o->flags & 2) && (o->class != String)) {
+                o->flags |= 8;
+                if (dofree) {
+                    free(o);
+                    objects_living[i] = NULL;
+                }
+                freed++;
+            } else {
+                o->flags &= 0xfffffffd;
+                unreached++;
+            }
         }
     }
-    fprintf(stderr, "Reachable:   %i\nUnreachable: %i\n", reached, unreached);
+    if (doinfo) {
+        fprintf(stderr, "Reachable:   %i\n", reached);
+        fprintf(stderr, "Unreachable: %i\n", unreached);
+        fprintf(stderr, "Freed:       %i\n", freed);
+    }
 }

@@ -103,6 +103,7 @@ method haveBinding(name) {
 }
 method findName(name) {
     var ret := false
+    var scc := scopes
     for (scopes) do { sc ->
         if (sc.contains(name)) then {
             ret := sc.get(name)

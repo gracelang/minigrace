@@ -68,7 +68,7 @@ Object process_varargs(Object *, int, int);
 void bufferfromString(Object, char *);
 char *cstringfromString(Object);
 int integerfromAny(Object);
-Object createclosure(int);
+Object createclosure(int, char*);
 
 void setline(int);
 void gracedie(char *msg, ...);

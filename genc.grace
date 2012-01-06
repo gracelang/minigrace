@@ -273,6 +273,8 @@ method compilefor(o) {
     var obj := compilenode(blk)
     out("  params[0] = {over};")
     out("  Object iter{myc} = callmethod({over}, \"iter\", 1, params);")
+    out("  gc_frame_newslot(iter{myc});")
+    out("  gc_frame_newslot({obj});")
     out("  while(1) \{")
     out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL);")
     out("    if (!istrue(cond{myc})) break;")
@@ -433,11 +435,14 @@ method compilemethod(o, selfobj, pos) {
     var len := length(name) + 1
     if (selfobj == false) then {
     } elseif (closurevars.size == 0) then {
+        var uo2 := "uo{myc}"
+        out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
+        out("  {uo2}->data[{pos}] = emptyclosure;")
         out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
-            ++ closurevars.size ++ ");")
+            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  Object *selfpp{auto_count} = "
@@ -462,6 +467,7 @@ method compilewhile(o) {
     auto_count := auto_count + 1
     out("  while (1) \{")
     def cond = compilenode(o.value)
+    out("  gc_frame_newslot({cond});")
     out("    if (!istrue({cond})) break;")
     var tret := "null"
     for (o.body) do { l ->
@@ -806,6 +812,7 @@ method compilenode(o) {
         o.value := escapestring2(o.value)
         out("  if (strlit{auto_count} == NULL) \{")
         out("    strlit{auto_count} = alloc_String(\"{o.value}\");")
+        out("    gc_root(strlit{auto_count});")
         out("  \}")
         globals.push("static Object strlit{auto_count};")
         o.register := "strlit" ++ auto_count
@@ -991,10 +998,12 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object undefined;")
     outprint("static Object none;")
     outprint("static Object argv;")
+    outprint("static Object emptyclosure;")
     outprint("static const char modulename[] = \"{modname}\";");
     out("Object module_{escmodname}_init() \{")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2(100, 100);")
+    out("  adddatum2(self, self, 0);")
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
@@ -1002,6 +1011,9 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
+    out("  gc_root(*var_MatchFailed);")
+    out("  emptyclosure = createclosure(0, \"empty\");")
+    out("  gc_root(emptyclosure);")
     var tmpo := output
     output := []
     for (values) do { l ->
