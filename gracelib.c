@@ -2500,8 +2500,10 @@ void rungc() {
     int reached = 0;
     int unreached = 0;
     int freed = 0;
-    int dofree = (getenv("GRACE_GC_FREE") != NULL);
+    int dofree = (getenv("GRACE_GC_DISABLE") == NULL);
     int dowarn = (getenv("GRACE_GC_WARN") != NULL);
+    if (dowarn)
+        dofree = 0;
     int doinfo = (getenv("GRACE_GC_INFO") != NULL);
     for (i=0; i<objects_living_max; i++) {
         Object o = objects_living[i];
