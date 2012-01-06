@@ -1285,6 +1285,11 @@ Object Float64_hashcode(Object self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
+void Float64__mark(Object self) {
+    Object *strp = (Object*)(self->data + sizeof(double));
+    if (*strp != NULL)
+        gc_mark(*strp);
+}
 Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -1298,7 +1303,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class("Number", 19);
+        Number = alloc_class2("Number", 19, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2512,7 +2517,7 @@ void rungc() {
         if (o->flags & FLAG_REACHABLE) {
             reached++;
         } else {
-            if ((dofree || dowarn) && !(o->flags & 2) && (o->class != String)) {
+            if ((dofree || dowarn) && !(o->flags & 2)) {
                 o->flags |= 8;
                 if (dofree) {
                     free(o);
