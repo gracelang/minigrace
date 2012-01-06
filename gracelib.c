@@ -144,7 +144,7 @@ const char *modulename;
 int heapsize;
 
 int objectcount = 0;
-
+int freedcount = 0;
 Object *objects_living;
 int objects_living_size = 0;
 int objects_living_next = 0;
@@ -2403,10 +2403,10 @@ void gracelib_stats() {
     grace_run_shutdown_functions();
     if (track_callgraph)
         fprintf(callgraph, "}\n");
-    rungc();
     if (getenv("GRACE_STATS") == NULL)
         return;
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
+    fprintf(stderr, "Total objects freed:     %i\n", freedcount);
     fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
     fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
     fprintf(stderr, "                      %iKiB\n", heapsize/1024);
@@ -2517,6 +2517,7 @@ void rungc() {
                 if (dofree) {
                     free(o);
                     objects_living[i] = NULL;
+                    freedcount++;
                 }
                 freed++;
             } else {
