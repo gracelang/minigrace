@@ -465,9 +465,10 @@ method compilemethod(o, selfobj, pos) {
 method compilewhile(o) {
     var myc := auto_count
     auto_count := auto_count + 1
+    out("  int while_cond{myc} = gc_frame_newslot(undefined);")
     out("  while (1) \{")
     def cond = compilenode(o.value)
-    out("  gc_frame_newslot({cond});")
+    out("    gc_frame_setslot(while_cond{myc}, {cond});")
     out("    if (!istrue({cond})) break;")
     var tret := "null"
     for (o.body) do { l ->
