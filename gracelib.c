@@ -2074,8 +2074,11 @@ Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
     }
     return callmethod(self, "_apply", sz, rargs);
 }
-Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int)) {
-    ClassData c = alloc_class("Block«unknown:-1»", 8);
+Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
+        const char *modname, int line) {
+    char buf[strlen(modname) + 15];
+    sprintf(buf, "Block«%s:%i»", modname, line);
+    ClassData c = alloc_class(buf, 8);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);

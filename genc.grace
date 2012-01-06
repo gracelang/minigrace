@@ -251,7 +251,7 @@ method compileblock(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var obj := "block{myc}"
-    out("  Object {obj} = alloc_Block(NULL, NULL);")
+    out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     var applymeth := ast.astmethod(ast.astidentifier("_apply", false),
         o.params, o.body, false)
     applymeth.selfclosure := true

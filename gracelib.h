@@ -40,7 +40,8 @@ Object alloc_ConcatString(Object, Object);
 Object alloc_Undefined();
 Object alloc_none();
 Object alloc_Integer32(int);
-Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int));
+Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
+        const char *, int);
 void add_Method(ClassData, const char *,
         Object(*func)(Object, int, Object*, int));
 Object alloc_obj(int, ClassData);
