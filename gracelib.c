@@ -1841,7 +1841,30 @@ Object gracelib_print(Object receiver, int nparams,
     return none;
 }
 
-Object** createclosure(int size) {
+ClassData ClosureEnv;
+struct ClosureEnvObject {
+    int32_t flags;
+    ClassData class;
+    int size;
+    Object *data[];
+};
+void ClosureEnv__mark(struct ClosureEnvObject *o) {
+    int i;
+    for (i=0; i<o->size; i++)
+        gc_mark(*(o->data[i]));
+}
+Object createclosure(int size) {
+    if (ClosureEnv == NULL) {
+        ClosureEnv = alloc_class2("ClosureEnv", 0, (void*)&ClosureEnv__mark);
+    }
+    Object o = alloc_obj(sizeof(int) + sizeof(Object*) * size, ClosureEnv);
+    struct ClosureEnvObject *oo = (struct ClosureEnvObject *)o;
+    int i;
+    for (i=0; i<size; i++)
+        oo->data[i] = NULL;
+    return o;
+}
+Object** createclosure2(int size) {
     Object** cvb = glmalloc(sizeof(Object *)
             * (size + 1));
     int i;
@@ -1849,13 +1872,15 @@ Object** createclosure(int size) {
         cvb[i] = NULL;
     return cvb;
 }
-void addtoclosure(Object **closure, Object *op) {
+void addtoclosure(Object o, Object *op) {
+    struct ClosureEnvObject *closure = (struct ClosureEnvObject *)o;
     int i;
-    for (i=0; closure[i] != NULL; i++) {}
-    closure[i] = op;
+    for (i=0; closure->data[i] != NULL; i++) {}
+    closure->data[i] = op;
 }
-Object *getfromclosure(Object **closure, int idx) {
-    return closure[idx];
+Object *getfromclosure(Object o, int idx) {
+    struct ClosureEnvObject *closure = (struct ClosureEnvObject *)o;
+    return closure->data[idx];
 }
 Object gracelib_readall(Object self, int nparams,
         Object *args) {
@@ -2185,7 +2210,7 @@ Object alloc_HashMap() {
 Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
     return alloc_HashMap();
 }
-ClassData HashMapClassObject;
+Object HashMapClassObject;
 Object alloc_HashMapClassObject() {
     if (HashMapClassObject)
         return HashMapClassObject;
@@ -2418,6 +2443,8 @@ void rungc() {
         if (o == NULL)
             continue;
         if (o->flags & FLAG_REACHABLE) {
+            reached++;
+        } else {
             reached++;
         } else {
             unreached++;

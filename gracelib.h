@@ -68,7 +68,7 @@ Object process_varargs(Object *, int, int);
 void bufferfromString(Object, char *);
 char *cstringfromString(Object);
 int integerfromAny(Object);
-Object **createclosure(int);
+Object createclosure(int);
 
 void setline(int);
 void gracedie(char *msg, ...);
@@ -87,7 +87,8 @@ void initprofiling();
 void gracelib_argv(char **);
 void module_sys_init_argv(Object);
 void gracelib_stats();
-void addtoclosure(Object **, Object *);
+void addtoclosure(Object, Object *);
+Object *getfromclosure(Object, int);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
 void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
 void adddatum2(Object, Object, int);

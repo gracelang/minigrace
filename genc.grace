@@ -364,7 +364,7 @@ method compilemethod(o, selfobj, pos) {
                 ++ "int32_t flags) \{")
             out("  struct UserObject *uo = (struct UserObject*)self;")
         }
-        out("  Object **closure = (Object**)getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
+        out("  Object closure = getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
     } else {
         out("Object {litname}(Object self, int nparams, Object *args, "
             ++ "int32_t flags) \{")
@@ -402,9 +402,9 @@ method compilemethod(o, selfobj, pos) {
     var j := 0
     for (closurevars) do { cv ->
         if (cv == "self") then {
-            out("  Object self = *closure[{j}];")
+            out("  Object self = *(getfromclosure(closure, {j}));")
         } else {
-            out("  Object *var_{cv} = closure[{j}];")
+            out("  Object *var_{cv} = getfromclosure(closure, {j});")
         }
         j := j + 1
     }
@@ -429,7 +429,7 @@ method compilemethod(o, selfobj, pos) {
         out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
     } else {
         out("  block_savedest({selfobj});")
-        out("  Object **closure" ++ myc ++ " = createclosure("
+        out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ");")
         for (closurevars) do { v ->
             if (v == "self") then {
