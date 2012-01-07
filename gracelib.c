@@ -2510,15 +2510,21 @@ void gc_root(Object o) {
 }
 Object *gc_stack;
 int gc_framepos = 0;
+int gc_stack_size;
 int gc_frame_new() {
-    if (gc_stack == NULL)
-        gc_stack = calloc(sizeof(Object), STACK_SIZE * 1024);
+    if (gc_stack == NULL) {
+        gc_stack_size = STACK_SIZE * 1024;
+        gc_stack = calloc(sizeof(Object), gc_stack_size);
+    }
     return gc_framepos;
 }
 void gc_frame_end(int pos) {
     gc_framepos = pos;
 }
 int gc_frame_newslot(Object o) {
+    if (gc_framepos == gc_stack_size) {
+        die("gc shadow stack size exceeded\n");
+    }
     gc_stack[gc_framepos] = o;
     return gc_framepos++;
 }
