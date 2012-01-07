@@ -159,10 +159,13 @@ struct GC_Root {
     struct GC_Root *next;
 };
 struct GC_Root *GC_roots;
+#define FLAG_FRESH 2
 #define FLAG_REACHABLE 4
+#define FLAG_DEAD 8
 #define FLAG_USEROBJ 16
 int gc_dofree = 1;
 int gc_dowarn = 0;
+int gc_enabled = 1;
 
 int Strings_allocated = 0;
 
@@ -1812,7 +1815,7 @@ Object callmethod(Object receiver, const char *name,
         int nparams, Object *args) {
     int i;
     int start_calldepth = calldepth;
-    if (receiver->flags & 8) {
+    if (receiver->flags & FLAG_DEAD) {
         fprintf(stderr, "warning: called method on freed object:"
                 "%s.%s at %s:%i\n",
                 receiver->class->name, name, modulename, linenumber);
@@ -1961,7 +1964,7 @@ Object alloc_obj(int additional_size, ClassData class) {
     o->class = class;
     o->flags = 3;
     objectcount++;
-    if (gc_dofree || gc_dowarn) {
+    if (gc_enabled) {
         if (objects_living_next >= objects_living_size)
             expand_living();
         if (objectcount % 100000 == 0)
@@ -2471,6 +2474,7 @@ void gracelib_argv(char **argv) {
     objects_living = calloc(sizeof(Object), objects_living_size);
     gc_dofree = (getenv("GRACE_GC_DISABLE") == NULL);
     gc_dowarn = (getenv("GRACE_GC_WARN") != NULL);
+    gc_enabled = gc_dofree | gc_dowarn;
     if (gc_dowarn)
         gc_dofree = 0;
 }
@@ -2566,8 +2570,8 @@ int rungc() {
         if (o->flags & FLAG_REACHABLE) {
             reached++;
         } else {
-            if ((gc_dofree || gc_dowarn) && !(o->flags & 2)) {
-                o->flags |= 8;
+            if (gc_enabled && !(o->flags & FLAG_FRESH)) {
+                o->flags |= FLAG_DEAD;
                 if (gc_dofree) {
                     glfree(o);
                     objects_living[i] = NULL;
