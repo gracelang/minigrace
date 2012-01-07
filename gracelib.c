@@ -33,7 +33,7 @@ Object String_substringFrom_to(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
-void rungc();
+int rungc();
 int expand_living();
 
 char *grcstring(Object s);
@@ -2478,10 +2478,13 @@ void setmodule(const char *mod) {
 }
 
 int expand_living() {
-    rungc();
+    int freed = rungc();
+    int mul = 2;
+    if (freed * 3 > objects_living_size)
+        mul = 1;
     int i;
     Object *before = objects_living;
-    objects_living = calloc(sizeof(Object), objects_living_size * 2);
+    objects_living = calloc(sizeof(Object), objects_living_size * mul);
     int j = 0;
     for (i=0; i<objects_living_size; i++) {
         if (before[i] != NULL)
@@ -2489,7 +2492,8 @@ int expand_living() {
     }
     objects_living_max = j;
     objects_living_next = j;
-    objects_living_size *= 2;
+    objects_living_size *= mul;
+    free(before);
     return 0;
 }
 void gc_mark(Object o) {
@@ -2531,7 +2535,7 @@ int gc_frame_newslot(Object o) {
 void gc_frame_setslot(int slot, Object o) {
     gc_stack[slot] = o;
 }
-void rungc() {
+int rungc() {
     int i;
     int32_t unreachable = 0xffffffff ^ FLAG_REACHABLE;
     for (i=0; i<objects_living_max; i++) {
@@ -2578,4 +2582,5 @@ void rungc() {
         fprintf(stderr, "Freed:       %i\n", freed);
         fprintf(stderr, "Heap:        %i\n", heapcurrent);
     }
+    return freed;
 }
