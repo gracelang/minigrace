@@ -715,6 +715,8 @@ Object ConcatString__escape(Object self, int nparams,
 Object ConcatString_ord(Object self, int nparams,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    if (sself->flat)
+        return callmethod(alloc_String(sself->flat), "ord", 0, NULL);
     Object left = sself->left;
     struct StringObject *lefts = (struct StringObject*)left;
     int ls = lefts->size;
@@ -775,6 +777,8 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
 }
 void ConcatString__mark(Object o) {
     struct ConcatStringObject *s = (struct ConcatStringObject *)o;
+    if (s->flat)
+        return;
     gc_mark(s->left);
     gc_mark(s->right);
 }
