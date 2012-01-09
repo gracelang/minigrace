@@ -657,8 +657,12 @@ method compilematchcase(o) {
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
     var left := compilenode(o.left)
+    out("  int op_slot_left_{myc} = gc_frame_newslot({left});")
     var right := compilenode(o.right)
+    out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
     if ((o.value == "+") | (o.value == "*") | (o.value == "/") |
         (o.value == "-") | (o.value == "%")) then {
