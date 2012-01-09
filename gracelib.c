@@ -240,6 +240,7 @@ void *glmalloc(size_t s) {
 }
 void glfree(void *p) {
     size_t *i = p - sizeof(size_t);
+    debug("glfree: freed %p (%i)", p, *i);
     heapcurrent -= *i;
     free(i);
 }
@@ -1849,9 +1850,8 @@ Object callmethod(Object receiver, const char *name,
     int i;
     int start_calldepth = calldepth;
     if (receiver->flags & FLAG_DEAD) {
-        fprintf(stderr, "warning: called method on freed object:"
-                "%s.%s at %s:%i\n",
-                receiver->class->name, name, modulename, linenumber);
+        debug("called method on freed object %p: %s.%s",
+                receiver, receiver->class->name, name);
     }
     if (strcmp(name, "_apply") != 0 && strcmp(name, "apply") != 0
             && strcmp(name, "applyIndirectly") != 0) {
@@ -1955,6 +1955,9 @@ void addtoclosure(Object o, Object *op) {
 }
 Object *getfromclosure(Object o, int idx) {
     struct ClosureEnvObject *closure = (struct ClosureEnvObject *)o;
+    if (o->flags & FLAG_DEAD) {
+        debug("getting from freed closure %p(%s)", closure, closure->name);
+    }
     return closure->data[idx];
 }
 Object gracelib_readall(Object self, int nparams,
