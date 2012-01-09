@@ -474,6 +474,7 @@ method compilewhile(o) {
     auto_count := auto_count + 1
     out("  int while_cond{myc} = gc_frame_newslot(undefined);")
     out("  while (1) \{")
+    out("  int while_frame{myc} = gc_frame_new();")
     def cond = compilenode(o.value)
     out("    gc_frame_setslot(while_cond{myc}, {cond});")
     out("    if (!istrue({cond})) break;")
@@ -491,6 +492,7 @@ method compilewhile(o) {
     for (o.body) do { l->
         tret := compilenode(l)
     }
+    out("  gc_frame_end(while_frame{myc});")
     out("  \}")
     o.register := "none"
 }
