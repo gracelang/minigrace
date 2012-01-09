@@ -1757,6 +1757,9 @@ FILE *callgraph;
 int track_callgraph = 0;
 Object callmethod3(Object self, const char *name,
         int argc, Object *argv, int superdepth) {
+    debug("callmethod %s on %p", name, self);
+    int frame = gc_frame_new();
+    int slot = gc_frame_newslot(self);
     ClassData c = self->class;
     Method *m = NULL;
     Object realself = self;
@@ -1821,6 +1824,11 @@ Object callmethod3(Object self, const char *name,
     } else if (m != NULL) {
         Object ret = m->func(self, argc, argv, callflags);
         calldepth--;
+        if (ret != NULL && (ret->flags & FLAG_DEAD)) {
+            debug("returned freed object %p from %s.%s",
+                    ret, self->class->name, name);
+        }
+        gc_frame_end(frame);
         return ret;
     }
     fprintf(stderr, "Available methods are:\n");
