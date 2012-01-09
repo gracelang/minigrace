@@ -2520,10 +2520,11 @@ void setmodule(const char *mod) {
     modulename = mod;
 }
 
+int freed_since_expansion;
 int expand_living() {
     int freed = rungc();
     int mul = 2;
-    if (freed * 3 > objects_living_size)
+    if (freed_since_expansion * 3 > objects_living_size)
         mul = 1;
     int i;
     Object *before = objects_living;
@@ -2533,9 +2534,15 @@ int expand_living() {
         if (before[i] != NULL)
             objects_living[j++] = before[i];
     }
+    if (mul == 1) {
+        freed_since_expansion -= (objects_living_max - j);
+    } else {
+        freed_since_expansion = 0;
+    }
     objects_living_max = j;
     objects_living_next = j;
     objects_living_size *= mul;
+    debug("expanded next %i size %i mul %i freed %i fse %i", j, objects_living_size, mul, freed, freed_since_expansion);
     free(before);
     return 0;
 }
@@ -2599,6 +2606,7 @@ int rungc() {
         o->flags = o->flags & unreachable;
     }
     struct GC_Root *r = GC_roots;
+    int freednow = 0;
     while (r != NULL) {
         gc_mark(r->object);
         r = r->next;
@@ -2618,10 +2626,11 @@ int rungc() {
         } else {
             if (gc_enabled && !(o->flags & FLAG_FRESH)) {
                 o->flags |= FLAG_DEAD;
+                debug("reaping %p (%s)", o, o->class->name);
                 if (gc_dofree) {
                     glfree(o);
                     objects_living[i] = NULL;
-                    freedcount++;
+                    freednow++;
                 }
                 freed++;
             } else {
@@ -2630,11 +2639,14 @@ int rungc() {
             }
         }
     }
+    debug("reaped %i objects", freednow);
+    freedcount += freednow;
+    freed_since_expansion += freednow;
     if (doinfo) {
         fprintf(stderr, "Reachable:   %i\n", reached);
         fprintf(stderr, "Unreachable: %i\n", unreached);
         fprintf(stderr, "Freed:       %i\n", freed);
         fprintf(stderr, "Heap:        %i\n", heapcurrent);
     }
-    return freed;
+    return freednow;
 }
