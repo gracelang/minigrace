@@ -35,6 +35,7 @@ Object String_substringFrom_to(Object , int, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
+int gc_period = 100000;
 int rungc();
 int gc_frame_new();
 void gc_frame_end(int);
@@ -1983,7 +1984,7 @@ Object alloc_obj(int additional_size, ClassData class) {
     if (gc_enabled) {
         if (objects_living_next >= objects_living_size)
             expand_living();
-        if (objectcount % 100000 == 0)
+        if (objectcount % gc_period == 0)
             rungc();
         objects_living[objects_living_next++] = o;
         if (objects_living_next > objects_living_max)
@@ -2493,6 +2494,11 @@ void gracelib_argv(char **argv) {
     }
     objects_living_size = 2048;
     objects_living = calloc(sizeof(Object), objects_living_size);
+    char *periodstr = getenv("GRACE_GC_PERIOD");
+    if (periodstr)
+        gc_period = atoi(periodstr);
+    else
+        gc_period = 100000;
     gc_dofree = (getenv("GRACE_GC_DISABLE") == NULL);
     gc_dowarn = (getenv("GRACE_GC_WARN") != NULL);
     gc_enabled = gc_dofree | gc_dowarn;
