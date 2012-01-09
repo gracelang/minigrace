@@ -224,6 +224,7 @@ method compileobject(o, outerRef) {
     }
     out("  Object " ++ selfr ++ " = alloc_obj2({numMethods},"
         ++ "{numFields});")
+    out("  gc_frame_newslot({selfr});")
     if (o.superclass /= false) then {
         superobj := compilenode(o.superclass)
         out("  setsuperobj({selfr}, {superobj});")
@@ -260,6 +261,7 @@ method compileblock(o) {
     auto_count := auto_count + 1
     var obj := "block{myc}"
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
+    out("  gc_frame_newslot({obj});")
     var applymeth := ast.astmethod(ast.astidentifier("_apply", false),
         o.params, o.body, false)
     applymeth.selfclosure := true
