@@ -697,14 +697,18 @@ method compileop(o) {
     }
 }
 method compilecall(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
     var args := []
     var obj := ""
     var len := 0
     var evl
     var i := 0
+    out("  int callframe{myc} = gc_frame_new();")
     for (o.with) do { p ->
         var r := compilenode(p)
         args.push(r)
+        out("  gc_frame_newslot({r});")
     }
     if (args.size > paramsUsed) then {
         paramsUsed := args.size
@@ -742,6 +746,7 @@ method compilecall(o) {
         out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
         out("    {args.size}, params);")
     }
+    out("  gc_frame_end(callframe{myc});")
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
 }
