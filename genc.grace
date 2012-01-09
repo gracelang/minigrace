@@ -272,19 +272,22 @@ method compileblock(o) {
 method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
+    out("  int forframe{myc} = gc_frame_new();")
     var over := compilenode(o.value)
+    out("  gc_frame_newslot({over});")
     var blk := o.body
     var obj := compilenode(blk)
+    out("  gc_frame_newslot({obj});")
     out("  params[0] = {over};")
     out("  Object iter{myc} = callmethod({over}, \"iter\", 1, params);")
     out("  gc_frame_newslot(iter{myc});")
-    out("  gc_frame_newslot({obj});")
     out("  while(1) \{")
     out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL);")
     out("    if (!istrue(cond{myc})) break;")
     out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL);")
     out("    callmethod({obj}, \"apply\", 1, params);")
     out("  \}")
+    out("  gc_frame_end(forframe{myc});")
     o.register := "none"
 }
 method compilemethod(o, selfobj, pos) {
