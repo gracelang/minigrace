@@ -102,11 +102,13 @@ method compilearray(o) {
     auto_count := auto_count + 1
     var r
     out("  Object array" ++ myc ++ " = alloc_List();")
+    out("  gc_pause();")
     for (o.value) do {a ->
         r := compilenode(a)
         out("  params[0] = {r};")
         out("  callmethod(array{myc}, \"push\", 1, params);")
     }
+    out("  gc_unpause();")
     o.register := "array" ++ myc
 }
 method compilemember(o) {
