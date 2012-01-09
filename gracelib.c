@@ -635,9 +635,13 @@ Object StringIter_havemore(Object self, int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
+void StringIter__mark(Object o) {
+    Object *strp = (Object*)(o->data + sizeof(int));
+    gc_mark(*strp);
+}
 Object alloc_StringIter(Object string) {
     if (StringIter == NULL) {
-        StringIter = alloc_class("StringIter", 4);
+        StringIter = alloc_class2("StringIter", 4, (void *)&StringIter__mark);
         add_Method(StringIter, "havemore", &StringIter_havemore);
         add_Method(StringIter, "next", &StringIter_next);
     }
