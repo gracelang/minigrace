@@ -489,12 +489,14 @@ Object List_indices(Object self, int nparams,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     Object o = alloc_List();
+    int slot = gc_frame_newslot(o);
     int i;
     Object f;
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
         List_push(o, 1, &f, 0);
     }
+    gc_frame_setslot(slot, undefined);
     return o;
 }
 Object List_first(Object self, int nparams,
