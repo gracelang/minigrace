@@ -470,7 +470,7 @@ method compileif(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var cond := compilenode(o.value)
-    out("  Object if{myc};")
+    out("  Object if{myc} = none;")
     out("  if (istrue({cond})) \{")
     var tret := "none"
     var fret := "none"
