@@ -42,6 +42,8 @@ void gc_frame_end(int);
 int gc_frame_newslot(Object);
 void gc_frame_setslot(int, Object);
 int expand_living();
+void gc_pause();
+void gc_unpause();
 
 char *grcstring(Object s);
 
@@ -2547,6 +2549,13 @@ void gc_root(Object o) {
     r->next = GC_roots;
     GC_roots = r;
 }
+int gc_paused;
+void gc_pause() {
+    gc_paused++;
+}
+void gc_unpause() {
+    gc_paused--;
+}
 Object *gc_stack;
 int gc_framepos = 0;
 int gc_stack_size;
@@ -2572,6 +2581,10 @@ void gc_frame_setslot(int slot, Object o) {
 }
 int rungc() {
     int i;
+    if (gc_paused) {
+        debug("skipping GC; paused %i times", gc_paused);
+        return 0;
+    }
     int32_t unreachable = 0xffffffff ^ FLAG_REACHABLE;
     for (i=0; i<objects_living_max; i++) {
         Object o = objects_living[i];
