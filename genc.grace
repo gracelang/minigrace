@@ -1080,6 +1080,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  undefined = alloc_Undefined();")
     out("  none = alloc_none();")
     out("  Object tmp_argv = alloc_List();")
+    out("  gc_root(tmp_argv);")
     out("  int i; for (i=0; i<argc; i++) \{")
     out("    params[0] = alloc_String(argv[i]);")
     out("    callmethod(tmp_argv, \"push\", 1,params);")

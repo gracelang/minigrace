@@ -1675,7 +1675,6 @@ Object sys_argv(Object self, int nparams,
 Object argv_List = NULL;
 void module_sys_init_argv(Object argv) {
     argv_List = argv;
-    gc_root(argv);
 }
 Object sys_cputime(Object self, int nparams,
         Object *args, int flags) {
