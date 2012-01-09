@@ -34,6 +34,10 @@ Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
 int rungc();
+int gc_frame_new();
+void gc_frame_end(int);
+int gc_frame_newslot(Object);
+void gc_frame_setslot(int, Object);
 int expand_living();
 
 char *grcstring(Object s);
