@@ -1013,7 +1013,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("#pragma weak main")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
-    outprint("static Object none;")
+    outprint("extern Object none;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static const char modulename[] = \"{modname}\";");
