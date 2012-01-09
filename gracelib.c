@@ -2168,6 +2168,7 @@ int HashMap__findSlot(struct HashMap* h, Object key) {
 }
 int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
     if (h->nelems > h->nslots / 2) {
+        gc_pause();
         int oslots = h->nslots;
         h->nslots *= 2;
         struct HashMapPair* d = glmalloc(sizeof(struct HashMapPair) *
@@ -2193,6 +2194,7 @@ int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
         hc %= h->nslots;
         while (h->table[hc].key != HashMap_undefined)
             hc = (hc + 1) % h->nslots;
+        gc_unpause();
     }
     return hc;
 }
