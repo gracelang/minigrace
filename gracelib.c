@@ -25,6 +25,8 @@ Object String_concat(Object, int nparams,
         Object*, int flags);
 Object String_index(Object, int nparams,
         Object*, int flags);
+FILE *debugfp;
+int debug_enabled = 0;
 
 Object String_size(Object , int, Object *, int flags);
 Object String_at(Object , int, Object *, int flags);
@@ -211,6 +213,16 @@ void die(char *msg, ...) {
     backtrace();
     va_end(args);
     exit(1);
+}
+void debug(char *msg, ...) {
+    if (!debug_enabled)
+        return;
+    va_list args;
+    va_start(args, msg);
+    fprintf(debugfp, "%s:%i:", modulename, linenumber);
+    vfprintf(debugfp, msg, args);
+    fprintf(debugfp, "\n");
+    va_end(args);
 }
 
 void *glmalloc(size_t s) {
@@ -2474,6 +2486,11 @@ void gracelib_argv(char **argv) {
     // We need return_stack[-1] to be available.
     return_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
     return_stack++;
+    debug_enabled = (getenv("GRACE_DEBUG_LOG") != NULL);
+    if (debug_enabled) {
+        debugfp = fopen("debug", "w");
+        setbuf(debugfp, NULL);
+    }
     objects_living_size = 2048;
     objects_living = calloc(sizeof(Object), objects_living_size);
     gc_dofree = (getenv("GRACE_GC_DISABLE") == NULL);
