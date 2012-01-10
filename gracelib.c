@@ -132,6 +132,7 @@ struct BlockObject {
     int32_t flags;
     ClassData class;
     jmp_buf *retpoint;
+    Object super;
     Object data[1];
 };
 
@@ -143,6 +144,9 @@ const char *modulename;
 int heapsize;
 
 int objectcount = 0;
+
+#define FLAG_USEROBJ 16
+
 int Strings_allocated = 0;
 
 int start_clocks = 0;
@@ -1668,6 +1672,23 @@ Object callmethod2(Object self, const char *name,
         fprintf(callgraph, "\"%s\" -> \"%s.%s\";\n", prev, self->class->name,
                 name);
     }
+    if (m == NULL && (self->flags & FLAG_USEROBJ)) {
+        Object o = self;
+        while (m == NULL && (o->flags & FLAG_USEROBJ)) {
+            struct UserObject *uo = (struct UserObject *)o;
+            if (uo->super) {
+                c = uo->super->class;
+                i = 0;
+                for (i=0; i < c->nummethods; i++) {
+                    if (strcmp(c->methods[i].name, name) == 0) {
+                        m = &c->methods[i];
+                        break;
+                    }
+                }
+                o = uo->super;
+            }
+        }
+    }
     calldepth++;
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
@@ -2087,7 +2108,8 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "apply", &Block_apply);
     add_Method(c, "applyIndirectly", &Block_applyIndirectly);
     struct BlockObject *o = (struct BlockObject*)(
-            alloc_obj(sizeof(jmp_buf*) + sizeof(Object), c));
+            alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 2, c));
+    o->super = NULL;
     return (Object)o;
 }
 void set_type(Object o, int16_t t) {
@@ -2096,14 +2118,20 @@ void set_type(Object o, int16_t t) {
     flags |= (t << 16);
     o->flags = flags;
 }
+void setsuperobj(Object sub, Object super) {
+    struct UserObject *uo = (struct UserObject *)sub;
+    uo->super = super;
+}
 Object alloc_userobj(int numMethods, int numFields) {
     ClassData c = alloc_class("Object", numMethods + 6);
-    Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *), c);
+    Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *)
+            + sizeof(Object), c);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
+    o->flags |= FLAG_USEROBJ;
     return o;
 }
 Object alloc_obj2(int numMethods, int numFields) {

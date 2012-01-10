@@ -25,6 +25,7 @@ struct UserObject {
     int32_t flags;
     ClassData class;
     jmp_buf *retpoint;
+    Object super;
     void *data[];
 };
 
@@ -78,6 +79,7 @@ void addtoclosure(Object **, Object *);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
 void adddatum2(Object, Object, int);
 void set_type(Object, int16_t);
+void setsuperobj(Object, Object);
 void block_savedest(Object);
 void block_return(Object, Object);
 void setclassname(Object, char*);

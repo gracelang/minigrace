@@ -209,6 +209,7 @@ method compileobject(o, outerRef) {
     var numFields := 1
     var numMethods := 0
     var pos := 1
+    var superobj := false
     for (o.value) do { e ->
         if (e.kind == "vardec") then {
             numMethods := numMethods + 1
@@ -219,11 +220,11 @@ method compileobject(o, outerRef) {
     if (numFields == 3) then {
         numFields := 4
     }
+    out("  Object " ++ selfr ++ " = alloc_obj2({numMethods},"
+        ++ "{numFields});")
     if (o.superclass /= false) then {
-        selfr := compilenode(o.superclass)
-    } else {
-        out("  Object " ++ selfr ++ " = alloc_obj2({numMethods},"
-            ++ "{numFields});")
+        superobj := compilenode(o.superclass)
+        out("  setsuperobj({selfr}, {superobj});")
     }
     compileobjouter(selfr, outerRef)
     for (o.value) do { e ->
