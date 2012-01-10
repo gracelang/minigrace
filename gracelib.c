@@ -2043,6 +2043,13 @@ ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
     }
     return c;
 }
+ClassData alloc_class3(const char *name, int nummethods, void (*mark)(void*),
+        void (*release)(void*)) {
+    ClassData c = alloc_class(name, nummethods);
+    c->mark = mark;
+    c->release = release;
+    return c;
+}
 
 Object Integer32_Equals(Object self, int nargs, Object *args, int flags) {
     int ival = *(int*)self->data;
@@ -2640,6 +2647,8 @@ int rungc() {
                 o->flags |= FLAG_DEAD;
                 debug("reaping %p (%s)", o, o->class->name);
                 if (gc_dofree) {
+                    if (o->class->release != NULL)
+                        o->class->release(o);
                     glfree(o);
                     objects_living[i] = NULL;
                     freednow++;
