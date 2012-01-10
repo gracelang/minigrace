@@ -1119,7 +1119,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             bindName(e.name.value, Binding.new("method"))
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
-            if (tpb.kind /= "type") then {
+            if ((tpb == false) || {tpb.kind /= "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("var")
@@ -1127,7 +1127,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             bindName(e.name.value, tmp)
         } elseif (e.kind == "defdec") then {
             tpb := findType(e.dtype)
-            if (tpb.kind /= "type") then {
+            if ((tpb == false) || {tpb.kind /= "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("def")
