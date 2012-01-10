@@ -521,6 +521,10 @@ Object List_prepended(Object self, int nparams,
     }
     return nl;
 }
+void List__release(Object o) {
+    struct ListObject *s = (struct ListObject *)o;
+    glfree(s->items);
+}
 void List_mark(Object o) {
     struct ListObject *s = (struct ListObject *)o;
     int i;
@@ -529,7 +533,8 @@ void List_mark(Object o) {
 }
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class2("List", 18, (void*)&List_mark);
+        List = alloc_class3("List", 18, (void*)&List_mark,
+                (void*)&List__release);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
