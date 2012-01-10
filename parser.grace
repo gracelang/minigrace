@@ -561,6 +561,9 @@ method postfixsquare {
         next
         var o := ast.astindex(expr, index)
         values.push(o)
+        dotrest
+        callrest
+        postfixsquare
     }
 }
 
