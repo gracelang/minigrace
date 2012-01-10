@@ -44,7 +44,7 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("iter", [], DynamicIdentifier),
     ast.astmethodtype("substringFrom(1)to", [NumberOther, NumberOther],
         StringIdentifier),
-    ast.astmethodtype("replace(1)with", [NumberOther, NumberOther],
+    ast.astmethodtype("replace(1)with", [StringOther, StringOther],
         StringIdentifier),
     ast.astmethodtype("hashcode", [], NumberIdentifier),
     ast.astmethodtype("indices", [], DynamicIdentifier),
