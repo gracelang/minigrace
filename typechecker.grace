@@ -14,6 +14,8 @@ def BooleanIdentifier = ast.astidentifier("Boolean", false)
 def BooleanOther = ast.astidentifier("other", BooleanIdentifier)
 def NumberIdentifier = ast.astidentifier("Number", false)
 def NumberOther = ast.astidentifier("other", NumberIdentifier)
+def ListIdentifier = ast.astidentifier("List", false)
+def ListOther = ast.astidentifier("other", ListIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
 def NumberType = ast.asttype("Number", [
     ast.astmethodtype("+", [NumberOther], NumberIdentifier),
@@ -47,7 +49,7 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("replace(1)with", [StringOther, StringOther],
         StringIdentifier),
     ast.astmethodtype("hashcode", [], NumberIdentifier),
-    ast.astmethodtype("indices", [], DynamicIdentifier),
+    ast.astmethodtype("indices", [], ListIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
 def BooleanType = ast.asttype("Boolean", [
@@ -62,6 +64,24 @@ def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("prefix!", [], BooleanIdentifier),
     ast.astmethodtype("not", [], BooleanIdentifier),
     ast.astmethodtype("ifTrue", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("asString", [], StringIdentifier)
+])
+def ListType = ast.asttype("List", [
+    ast.astmethodtype("size", [], NumberIdentifier),
+    ast.astmethodtype("at", [NumberOther], TopOther),
+    ast.astmethodtype("[]", [NumberOther], TopOther),
+    ast.astmethodtype("[]:=", [NumberOther, TopOther], TopOther),
+    ast.astmethodtype("at(1)put", [NumberOther, TopOther], TopOther),
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("iter", [], DynamicIdentifier),
+    ast.astmethodtype("push", [TopOther], TopOther),
+    ast.astmethodtype("pop", [], TopOther),
+    ast.astmethodtype("first", [], NumberIdentifier),
+    ast.astmethodtype("last", [], NumberIdentifier),
+    ast.astmethodtype("prepended", [TopOther], ListIdentifier),
+    ast.astmethodtype("indices", [], ListIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
 var currentReturnType := false
@@ -191,6 +211,9 @@ method expressionType(expr) {
     }
     if (expr.kind == "string") then {
         return StringType
+    }
+    if (expr.kind == "array") then {
+        return ListType
     }
     if (expr.kind == "op") then {
         def opname = expr.value
@@ -1188,9 +1211,13 @@ method typecheck(values) {
     btmp := Binding.new("type")
     btmp.value := BooleanType
     bindName("Boolean", btmp)
+    btmp := Binding.new("type")
+    btmp.value := ListType
+    bindName("List", btmp)
     subtype.addType(DynamicType)
     subtype.addType(NumberType)
     subtype.addType(StringType)
     subtype.addType(BooleanType)
+    subtype.addType(ListType)
     resolveIdentifiersList(values)
 }
