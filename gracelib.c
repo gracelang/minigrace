@@ -804,6 +804,11 @@ unsigned int uipow(unsigned int base, unsigned int exponent)
   }
   return r;
 }
+void ConcatString__release(Object o) {
+    struct ConcatStringObject *s = (struct ConcatStringObject *)o;
+    if (s->flat)
+        glfree(s->flat);
+}
 void ConcatString__mark(Object o) {
     struct ConcatStringObject *s = (struct ConcatStringObject *)o;
     if (s->flat)
@@ -813,8 +818,9 @@ void ConcatString__mark(Object o) {
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class2("ConcatString", 18,
-                (void*)&ConcatString__mark);
+        ConcatString = alloc_class3("ConcatString", 18,
+                (void*)&ConcatString__mark,
+                (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
         add_Method(ConcatString, "++", &ConcatString_Concat);
         add_Method(ConcatString, "size", &String_size);
