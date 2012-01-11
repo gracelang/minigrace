@@ -424,6 +424,7 @@ function Grace_allocObject() {
                         this, b, e);
             },
         },
+        superobj: null,
         data: {},
         className: "Object",
     };
@@ -710,6 +711,15 @@ function gracecode_util() {
 var callStack = [];
 function callmethod(obj, methname) {
     var meth = obj.methods[methname];
+    if (typeof(meth) != "function") {
+        var s = obj
+        while (s.superobj != null) {
+            s = s.superobj;
+            meth = s.methods[methname];
+            if (typeof(meth) == "function")
+                break;
+        }
+    }
     if (typeof(meth) != "function") {
         stderr_txt.value += "No such method '" + methname + "' on " + obj.className + ", called at line " + lineNumber + ".\n";
         for (var i=callStack.length; i>0; i--)

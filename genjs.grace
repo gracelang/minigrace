@@ -153,7 +153,10 @@ method compileobject(o, outerRef) {
         }
     }
     if (superobj /= false) then {
-        selfr := compilenode(superobj)
+        var sup := compilenode(superobj)
+        out("  var {selfr} = Grace_allocObject();")
+        out("  {selfr}.superobj = {sup};")
+        out("  {selfr}.data = {sup}.data;")
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
