@@ -657,7 +657,15 @@ method compilecall(o) {
         paramsUsed := args.size
     }
     evl := escapestring2(o.value.value)
-    if (o.value.kind == "member") then {
+    if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "super")}) then {
+        for (args) do { arg ->
+            out("  params[{i}] = {arg};")
+            i := i + 1
+        }
+        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
+            ++ "{args.size}, params, ((flags >> 24) & 0xff) + 1);")
+    } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
         for (args) do { arg ->

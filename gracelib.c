@@ -1654,13 +1654,15 @@ void block_savedest(Object self) {
     struct UserObject *uo = (struct UserObject*)self;
     uo->retpoint = (void *)&return_stack[calldepth-1];
 }
+
 FILE *callgraph;
 int track_callgraph = 0;
-Object callmethod2(Object self, const char *name,
-        int argc, Object *argv) {
+Object callmethod3(Object self, const char *name,
+        int argc, Object *argv, int superdepth) {
     ClassData c = self->class;
     Method *m = NULL;
     Object realself = self;
+    int callflags = 0;
     int i = 0;
     for (i=0; i < c->nummethods; i++) {
         if (strcmp(c->methods[i].name, name) == 0) {
@@ -1668,6 +1670,8 @@ Object callmethod2(Object self, const char *name,
             break;
         }
     }
+    if (superdepth)
+        m = NULL;
     sprintf(callstack[calldepth], "%s.%s (%i)", self->class->name, name,
             linenumber);
     if (track_callgraph && calldepth > 0) {
@@ -1678,13 +1682,19 @@ Object callmethod2(Object self, const char *name,
         fprintf(callgraph, "\"%s\" -> \"%s.%s\";\n", prev, self->class->name,
                 name);
     }
-    if (m == NULL && (self->flags & FLAG_USEROBJ)) {
+    if ((m == NULL || superdepth > 0) && (self->flags & FLAG_USEROBJ)) {
         Object o = self;
+        int depth = 0;
         while (m == NULL && (o->flags & FLAG_USEROBJ)) {
             struct UserObject *uo = (struct UserObject *)o;
             if (uo->super) {
+                depth++;
                 c = uo->super->class;
                 i = 0;
+                if (depth < superdepth) {
+                    o = uo->super;
+                    continue;
+                }
                 for (i=0; i < c->nummethods; i++) {
                     if (strcmp(c->methods[i].name, name) == 0) {
                         m = &c->methods[i];
@@ -1692,6 +1702,7 @@ Object callmethod2(Object self, const char *name,
                             self = uo->super;
                         if (m->flags & MFLAG_REALSELFALSO)
                             realself = uo->super;
+                        callflags |= depth << 24;
                         break;
                     }
                 }
@@ -1706,9 +1717,9 @@ Object callmethod2(Object self, const char *name,
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         Object(*func)(Object, Object, int, Object*, int);
         func = (Object(*)(Object, Object, int, Object*, int))m->func;
-        func(self, realself, argc, argv, 0);
+        func(self, realself, argc, argv, callflags);
     } else if (m != NULL) {
-        Object ret = m->func(self, argc, argv, 0);
+        Object ret = m->func(self, argc, argv, callflags);
         calldepth--;
         return ret;
     }
@@ -1719,6 +1730,9 @@ Object callmethod2(Object self, const char *name,
     die("Method lookup error: no %s in %s.",
             name, self->class->name);
     exit(1);
+}
+Object callmethod2(Object self, const char *name, int argc, Object *argv) {
+   return callmethod3(self, name, argc, argv, 0);
 }
 Object callmethod(Object receiver, const char *name,
         int nparams, Object *args) {
