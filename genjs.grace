@@ -80,9 +80,9 @@ method compileobjouter(selfr, outerRef) {
     auto_count := auto_count + 1
     var nm := escapestring("outer")
     var nmi := escapeident("outer")
-    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ outerRef ++ ";")
+    out("  " ++ selfr ++ ".outer = " ++ outerRef ++ ";")
     out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
-    out("    return this.data[\"" ++ nm ++ "\"];")
+    out("    return this.outer;")
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
@@ -422,6 +422,11 @@ method compilecall(o) {
             out(", " ++ arg)
         }
         out(");")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "self") & (o.value.value == "outer")}
+        ) then {
+        out("  var call{auto_count} = callmethod(superDepth, "
+            ++ "\"outer\");")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         out("  var call" ++ auto_count ++ " = callmethod(" ++ obj
