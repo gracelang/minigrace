@@ -1,4 +1,4 @@
-class Cat { name' : String ->
+class Cat.new(name' : String) {
  def name : String = name'
  method purr {print("Purr") }
  method mew {print("Meow") }

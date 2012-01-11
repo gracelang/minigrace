@@ -1,4 +1,4 @@
-class ConsGood { hd', tl' ->
+class ConsGood.new(hd', tl') {
     def hd = hd'
     def tl = tl'
     def brand = "Cons"
