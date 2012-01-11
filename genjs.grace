@@ -146,8 +146,14 @@ method compileobject(o, outerRef) {
     var myc := auto_count
     auto_count := auto_count + 1
     var selfr := "obj" ++ myc
-    if (o.superclass /= false) then {
-        selfr := compilenode(o.superclass)
+    var superobj := false
+    for (o.value) do {e->
+        if (e.kind == "inherits") then {
+            superobj := e.value
+        }
+    }
+    if (superobj /= false) then {
+        selfr := compilenode(superobj)
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
