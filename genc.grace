@@ -156,7 +156,7 @@ method compileobjdefdec(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethod2({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -177,7 +177,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethod2({selfr}, \"{enm}\", &reader_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     nmw := escapestring2(nmw)

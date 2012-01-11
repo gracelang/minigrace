@@ -251,9 +251,14 @@ int integerfromAny(Object p) {
     free(c);
     return i;
 }
+void addmethodreal(Object o, char *name,
+        Object (*func)(Object, int, Object*, int)) {
+    Method *m = add_Method(o->class, name, func);
+}
 void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
-    add_Method(o->class, name, func);
+    Method *m = add_Method(o->class, name, func);
+    m->flags &= ~MFLAG_REALSELFONLY;
 }
 Object identity_function(Object receiver, int nparams,
         Object* params, int flags) {
@@ -1655,6 +1660,7 @@ Object callmethod2(Object self, const char *name,
         int argc, Object *argv) {
     ClassData c = self->class;
     Method *m = NULL;
+    Object realself = self;
     int i = 0;
     for (i=0; i < c->nummethods; i++) {
         if (strcmp(c->methods[i].name, name) == 0) {
@@ -1682,6 +1688,10 @@ Object callmethod2(Object self, const char *name,
                 for (i=0; i < c->nummethods; i++) {
                     if (strcmp(c->methods[i].name, name) == 0) {
                         m = &c->methods[i];
+                        if (m->flags & MFLAG_REALSELFONLY)
+                            self = uo->super;
+                        if (m->flags & MFLAG_REALSELFALSO)
+                            realself = uo->super;
                         break;
                     }
                 }
@@ -1693,7 +1703,11 @@ Object callmethod2(Object self, const char *name,
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
-    if (m != NULL) {
+    if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
+        Object(*func)(Object, Object, int, Object*, int);
+        func = (Object(*)(Object, Object, int, Object*, int))m->func;
+        func(self, realself, argc, argv, 0);
+    } else if (m != NULL) {
         Object ret = m->func(self, argc, argv, 0);
         calldepth--;
         return ret;
@@ -1785,7 +1799,7 @@ Object gracelib_length(Object self) {
 Object *alloc_var() {
     return glmalloc(sizeof(Object));
 }
-void add_Method(ClassData c, const char *name,
+Method* add_Method(ClassData c, const char *name,
         Object(*func)(Object, int, Object*, int)) {
     int i;
     for (i=0; c->methods[i].name != NULL; i++) {
@@ -1795,10 +1809,12 @@ void add_Method(ClassData c, const char *name,
             c->methods[i].func = tmpf;
         }
     }
+    c->methods[i].flags = MFLAG_REALSELFONLY;
     c->methods[i].name = glmalloc(strlen(name) + 1);
     strcpy(c->methods[i].name, name);
     c->methods[i].func = func;
     c->nummethods++;
+    return &c->methods[i];
 }
 Object alloc_obj(int additional_size, ClassData class) {
     Object o = glmalloc(sizeof(struct Object) + additional_size);

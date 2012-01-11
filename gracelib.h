@@ -8,6 +8,8 @@ typedef struct Method {
     int32_t flags;
     Object(*func)(Object, int, Object*, int);
 } Method;
+#define MFLAG_REALSELFONLY 2
+#define MFLAG_REALSELFALSO 4
 
 typedef struct ClassData {
     char *name;
@@ -43,7 +45,7 @@ Object alloc_none();
 Object alloc_Integer32(int);
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *, int);
-void add_Method(ClassData, const char *,
+Method* add_Method(ClassData, const char *,
         Object(*func)(Object, int, Object*, int));
 Object alloc_obj(int, ClassData);
 Object alloc_newobj(int, ClassData);
@@ -77,6 +79,7 @@ void module_sys_init_argv(Object);
 void gracelib_stats();
 void addtoclosure(Object **, Object *);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
+void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
 void adddatum2(Object, Object, int);
 void set_type(Object, int16_t);
 void setsuperobj(Object, Object);
