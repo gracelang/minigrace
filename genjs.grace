@@ -414,7 +414,15 @@ method compilecall(o) {
         var r := compilenode(p)
         args.push(r)
     }
-    if (o.value.kind == "member") then {
+    if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "super")}) then {
+        out("  var call" ++ auto_count ++ " = callmethodsuper(this"
+            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
+        for (args) do { arg ->
+            out(", " ++ arg)
+        }
+        out(");")
+    } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         out("  var call" ++ auto_count ++ " = callmethod(" ++ obj
             ++ ",\"" ++ escapestring(o.value.value) ++ "\"")

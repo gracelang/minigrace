@@ -2,6 +2,7 @@ var lineNumber = 0;
 var stdout_txt = document.getElementById("stdout_txt");
 var stdin_txt = document.getElementById("stdout_txt");
 var stderr_txt = document.getElementById("stderr_txt");
+var superDepth = null;
 var invocationCount = 0;
 
 function GraceString(s) {
@@ -709,15 +710,26 @@ function gracecode_util() {
     return this;
 }
 var callStack = [];
+var overrideReceiver = null;
+function callmethodsuper(obj, methname) {
+    overrideReceiver = obj;
+    var args = Array.prototype.slice.call(arguments, 1);
+    args.splice(0, 0, superDepth.superobj);
+    return callmethod.apply(null, args);
+}
 function callmethod(obj, methname) {
     var meth = obj.methods[methname];
+    var origSuperDepth = superDepth;
+    superDepth = obj;
     if (typeof(meth) != "function") {
         var s = obj
         while (s.superobj != null) {
             s = s.superobj;
             meth = s.methods[methname];
-            if (typeof(meth) == "function")
+            if (typeof(meth) == "function") {
+                superDepth = s;
                 break;
+            }
         }
     }
     if (typeof(meth) != "function") {
@@ -730,9 +742,14 @@ function callmethod(obj, methname) {
         }
         throw "No such method '" + methname + "'";
     }
+    if (overrideReceiver != null) {
+        obj = overrideReceiver;
+        overrideReceiver = null;
+    }
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
     var args = Array.prototype.slice.call(arguments, 2);
     var ret = meth.apply(obj, args);
+    superDepth = origSuperDepth;
     callStack.pop();
     return ret;
 }
