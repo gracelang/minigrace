@@ -1009,6 +1009,67 @@ method doclass {
         next
         expect("identifier")
         pushidentifier // A class currently cannot be anonymous
+        if (!accept("dot")) then {
+            return doclassOld
+        }
+        def cname = values.pop
+        next
+        expect("identifier")
+        if (sym.value != "new") then {
+            util.syntax_error("class declaration requires '.new'")
+        }
+        next
+        def params = []
+        if (accept("lparen")) then {
+            next
+            while {accept("identifier")} do {
+                pushidentifier
+                var pid := values.pop
+                if (accept("colon")) then {
+                    next
+                    pushidentifier
+                    generic
+                    pid.dtype := values.pop
+                }
+                params.push(pid)
+                if (accept("comma")) then {
+                    next
+                } elseif (accept("rparen")) then {
+                    // Pass
+                } else {
+                    util.syntax_error("expected comma or ) in parameter list")
+                }
+            }
+            expect("rparen")
+            next
+        }
+        if (!accept("lbrace")) then {
+            util.syntax_error("class declaration without body")
+        }
+        next
+        def body = []
+        while {(accept("rbrace")).not} do {
+            ifConsume {vardec} then {
+                body.push(values.pop)
+            }
+            ifConsume {defdec} then {
+                body.push(values.pop)
+            }
+            ifConsume {methoddec} then {
+                body.push(values.pop)
+            }
+            ifConsume {inheritsdec} then {
+                body.push(values.pop)
+            }
+        }
+        next
+        var o := ast.astclass(cname, params, body, false)
+        values.push(o)
+    }   
+}
+
+method doclassOld {
+    if (true) then {
         generic
         var superclass := false
         if (accept("identifier") & (sym.value == "extends")) then {
