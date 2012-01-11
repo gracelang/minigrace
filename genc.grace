@@ -237,6 +237,11 @@ method compileobject(o, outerRef) {
         if (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
         }
+        if (e.kind == "inherits") then {
+            superobj := compilenode(e.value)
+            out("  setsuperobj({selfr}, {superobj});")
+            pos := pos - 1
+        }
         pos := pos + 1
     }
     util.runOnNew {

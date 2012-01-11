@@ -556,3 +556,21 @@ method astreturn(expr) {
         }
     }
 }
+method astinherits(expr) {
+    object {
+        def kind = "inherits"
+        def value = expr
+        var register := ""
+        def line = util.linenum
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Inherits"
+            s := s ++ "\n"
+            s := s ++ spc ++ self.value.pretty(depth + 1)
+            s
+        }
+    }
+}

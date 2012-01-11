@@ -917,6 +917,18 @@ method doarray {
     }
 }
 
+// Accept "inherits X.new"
+method inheritsdec {
+    if (accept("keyword") & (sym.value == "inherits")) then {
+        next
+        expectConsume {
+            expression
+        }
+        var tmp := values.pop
+        values.push(ast.astinherits(tmp))
+    }
+}
+
 // Accept an object literal.
 method doobject {
     // doobject because "object" is a keyword
@@ -961,6 +973,7 @@ method doobject {
             vardec
             methoddec
             defdec
+            inheritsdec
             if (values.size == sz) then {
                 util.syntax_error("did not consume anything in "
                     ++ "object declaration.")
@@ -1068,6 +1081,7 @@ method doclass {
                 vardec
                 methoddec
                 defdec
+                inheritsdec
                 if (values.size == sz) then {
                     util.syntax_error("did not consume anything in "
                         ++ "class declaration.")

@@ -7,7 +7,8 @@ class A { v'->
         print "A's baz"
     }
 }
-class B extends A.new(x) {x->
+class B {x->
+    inherits A.new(x)
     method bar {
         print "B's bar"
     }
