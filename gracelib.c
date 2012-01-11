@@ -1707,6 +1707,8 @@ Object callmethod3(Object self, const char *name,
                     }
                 }
                 o = uo->super;
+            } else {
+                break;
             }
         }
     }

@@ -130,7 +130,7 @@ method compileobjouter(selfr, outerRef) {
     outprint("  struct UserObject *uo = (struct UserObject*)self;")
     outprint("  return uo->data[0];")
     outprint("\}")
-    out("  addmethod2({selfr}, \"outer\", &reader_{escmodname}_{enm}_{myc});")
+    out("  addmethodreal({selfr},\"outer\", &reader_{escmodname}_{enm}_{myc});")
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
@@ -665,6 +665,11 @@ method compilecall(o) {
         }
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "{args.size}, params, ((flags >> 24) & 0xff) + 1);")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "self") & (o.value.value == "outer")}
+        ) then {
+        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
+            ++ "0, NULL, ((flags >> 24) & 0xff));")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
