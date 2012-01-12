@@ -255,12 +255,6 @@ void addmethodreal(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
 }
-void addmethodrealalso(Object o, char *name,
-        Object(*func)(Object, Object, int, Object*, int)) {
-    Method *m = add_Method(o->class, name, (void*)func);
-    m->flags &= ~MFLAG_REALSELFONLY;
-    m->flags |= MFLAG_REALSELFALSO;
-}
 void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
@@ -1725,9 +1719,7 @@ Object callmethod3(Object self, const char *name,
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         Object(*func)(Object, Object, int, Object*, int);
         func = (Object(*)(Object, Object, int, Object*, int))m->func;
-        Object ret = func(self, realself, argc, argv, callflags);
-        calldepth--;
-        return ret;
+        func(self, realself, argc, argv, callflags);
     } else if (m != NULL) {
         Object ret = m->func(self, argc, argv, callflags);
         calldepth--;
@@ -2202,6 +2194,12 @@ void setclassname(Object self, char *name) {
 void adddatum2(Object o, Object datum, int index) {
     struct UserObject *uo = (struct UserObject*)o;
     uo->data[index] = datum;
+}
+Object getdatum(Object o, int index, int depth) {
+    struct UserObject *uo = (struct UserObject*)o;
+    while (depth-- > 0)
+        uo = (struct UserObject*)uo->super;
+    return uo->data[index];
 }
 Object getdatum2(Object o, int index) {
     struct UserObject *uo = (struct UserObject*)o;
