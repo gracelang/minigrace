@@ -120,6 +120,31 @@ method astblock(params', body') {
         }
     }
 }
+method astmatchcase(matchee, cases', elsecase') {
+    object {
+        def kind = "matchcase"
+        def value = matchee
+        def cases = cases'
+        def elsecase = elsecase'
+        var register := ""
+        def line = util.linenum
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "Match\n"
+            s := s ++ spc ++ matchee.pretty(depth + 2)
+            for (self.cases) do { mx ->
+                s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
+            }
+            if (false != elsecase) then {
+                s := s ++ "\n{spc}Else:\n{spc}  {elsecase.pretty(depth+2)}"
+            }
+            s
+        }
+    }
+}
 method astmethodtype(name', params', rtype') {
     object {
         def kind = "methodtype"

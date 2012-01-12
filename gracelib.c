@@ -1765,6 +1765,23 @@ void enable_callgraph(char *filename) {
     fprintf(callgraph, "digraph CallGraph {\n");
     track_callgraph = 1;
 }
+Object MatchFailed;
+Object alloc_MatchFailed() {
+    if (!MatchFailed)
+        MatchFailed = alloc_userobj(0, 0);
+    return MatchFailed;
+}
+Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
+    int i;
+    for (i=0; i<ncases; i++) {
+        Object ret = callmethod(cases[i], "apply", 1, &matchee);
+        if (ret != MatchFailed)
+            return ret;
+    }
+    if (elsecase)
+        return callmethod(elsecase, "apply", 1, &matchee);
+    return MatchFailed;
+}
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {
     int i;

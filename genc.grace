@@ -607,6 +607,28 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
+method compilematchcase(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def cases = o.cases
+    if (o.cases.size > paramsUsed) then {
+        paramsUsed := o.cases.size
+    }
+    def matchee = compilenode(o.value)
+    var i := 0
+    for (cases) do {c->
+        def e = compilenode(c)
+        out("  params[{i}] = {e};")
+        i := i + 1
+    }
+    var elsecase := "NULL"
+    if (false != o.elsecase) then {
+        elsecase := compilenode(o.elsecase)
+    }
+    out("  Object matchres{myc} = matchCase({matchee}, params, {cases.size},"
+        ++ "{elsecase});")
+    o.register := "matchres" ++ myc
+}
 method compileop(o) {
     var left := compilenode(o.left)
     var right := compilenode(o.right)
@@ -828,6 +850,9 @@ method compilenode(o) {
     if (o.kind == "if") then {
         compileif(o)
     }
+    if (o.kind == "matchcase") then {
+        compilematchcase(o)
+    }
     if (o.kind == "class") then {
         compileclass(o)
     }
@@ -961,7 +986,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  Object *var_HashMap = alloc_var();")
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
-    out("  *var_MatchFailed = alloc_userobj(0, 0);")
+    out("  *var_MatchFailed = alloc_MatchFailed();")
     var tmpo := output
     output := []
     for (values) do { l ->

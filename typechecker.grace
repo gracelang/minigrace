@@ -787,6 +787,16 @@ method resolveIdentifiers(node) {
             return ast.astarray(tmp)
         }
     }
+    if (node.kind == "matchcase") then {
+        tmp := resolveIdentifiers(node.value)
+        tmp2 := resolveIdentifiersList(node.cases)
+        tmp3 := resolveIdentifiers(node.elsecase)
+        if ((tmp != node.value) | (tmp2 != node.cases)
+            | (tmp3 != node.elsecase)) then {
+            return ast.astmatchcase(tmp, tmp2, tmp3)
+        }
+        return node
+    }
     if (node.kind == "method") then {
         pushScope
         for (node.params) do {e->

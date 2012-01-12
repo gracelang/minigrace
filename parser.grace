@@ -501,6 +501,51 @@ method generic {
         values.push(ast.astgeneric(id, gens))
     }
 }
+method matchcase {
+    if (!(accept("identifier") & (sym.value == "match"))) then {
+        return 0
+    }
+    def localmin = minIndentLevel
+    next
+    expect("lparen")
+    next
+    expectConsume {expression}
+    def matchee = values.pop
+    expect("rparen")
+    next
+    def cases = []
+    var elsecase := false
+    while {accept("identifier") & (sym.value == "case")} do {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            expression
+            expect("rparen")
+            next
+        } else {
+            util.syntax_error("no argument to case")
+        }
+        cases.push(values.pop)
+    }
+    if (accept("identifier") & (sym.value == "else")) then {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            expression
+            expect("rparen")
+            next
+        } else {
+            util.syntax_error("no argument to case")
+        }
+        elsecase := values.pop
+    }
+    values.push(ast.astmatchcase(matchee, cases, elsecase))
+    minIndentLevel := localmin
+}
 // Accept a term. Terms consist only of single syntactic units and
 // do not contain any operators or parentheses, unlike expression.
 method term {
@@ -510,6 +555,8 @@ method term {
         pushstring
     } elseif (accept("octets")) then {
         pushoctets
+    } elseif(accept("identifier") & (sym.value == "match")) then {
+        matchcase
     } elseif (accept("identifier")) then {
         identifier
         if (accept("lgeneric")) then {
