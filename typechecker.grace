@@ -1180,7 +1180,9 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             subtype.addType(classItselfType)
             // XXX Temporarily disabled until type inference is updated
             // for inheritance
-            //tmp.dtype := classItselfType
+            if (classGenerics.size > 0) then {
+                tmp.dtype := classItselfType
+            }
             bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
