@@ -83,6 +83,7 @@ void gracelib_stats();
 void addtoclosure(Object **, Object *);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
 void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
+void addmethodrealalso(Object, char *, Object (*)(Object, Object, int, Object*, int));
 void adddatum2(Object, Object, int);
 void set_type(Object, int16_t);
 void setsuperobj(Object, Object);

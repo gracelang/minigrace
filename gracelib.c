@@ -255,6 +255,12 @@ void addmethodreal(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
 }
+void addmethodrealalso(Object o, char *name,
+        Object(*func)(Object, Object, int, Object*, int)) {
+    Method *m = add_Method(o->class, name, (void*)func);
+    m->flags &= ~MFLAG_REALSELFONLY;
+    m->flags |= MFLAG_REALSELFALSO;
+}
 void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
@@ -1719,7 +1725,9 @@ Object callmethod3(Object self, const char *name,
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         Object(*func)(Object, Object, int, Object*, int);
         func = (Object(*)(Object, Object, int, Object*, int))m->func;
-        func(self, realself, argc, argv, callflags);
+        Object ret = func(self, realself, argc, argv, callflags);
+        calldepth--;
+        return ret;
     } else if (m != NULL) {
         Object ret = m->func(self, argc, argv, callflags);
         calldepth--;

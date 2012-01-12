@@ -188,7 +188,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return none;");
     outprint("\}")
-    out("  addmethod2({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileclass(o) {
     var params := o.params
@@ -354,19 +354,21 @@ method compilemethod(o, selfobj, pos) {
         closurevars.push("self")
     }
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}")
+    var realselfdecl := false
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
-            out("Object {litname}(Object realself, int nparams, "
+            out("Object {litname}(Object realself, Object junk, int nparams, "
                 ++ "Object *args, int32_t flags) \{")
             out("  struct UserObject *uo = (struct UserObject*)realself;")
         } else {
-            out("Object {litname}(Object self, int nparams, Object *args, "
-                ++ "int32_t flags) \{")
-            out("  struct UserObject *uo = (struct UserObject*)self;")
+            out("Object {litname}(Object self, Object realself, int nparams," 
+                ++ "Object *args, int32_t flags) \{")
+            out("  struct UserObject *uo = (struct UserObject*)realself;")
+            realselfdecl := true
         }
         out("  Object **closure = uo->data[{pos}];")
     } else {
-        out("Object {litname}(Object self, int nparams, Object *args, "
+        out("Object {litname}(Object self, Object realself, int nparams, Object *args, "
             ++ "int32_t flags) \{")
     }
     out("  if (nparams < {o.params.size})")
@@ -426,7 +428,7 @@ method compilemethod(o, selfobj, pos) {
     var len := length(name) + 1
     if (selfobj == false) then {
     } elseif (closurevars.size == 0) then {
-        out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
+        out("  addmethodrealalso({selfobj}, \"{escapestring2(name)}\", &{litname});")
     } else {
         out("  block_savedest({selfobj});")
         out("  Object **closure" ++ myc ++ " = createclosure("
@@ -445,7 +447,7 @@ method compilemethod(o, selfobj, pos) {
         var uo := "uo{myc}"
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
-        out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
+        out("  addmethodrealalso({selfobj}, \"{escapestring2(name)}\", &{litname});")
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
