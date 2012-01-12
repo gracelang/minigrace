@@ -1035,8 +1035,10 @@ method resolveIdentifiers(node) {
                 ++ " with expression of type "
                 ++ subtype.nicename(expressionType(tmp2)))
         }
+        // XXX Temporarily disabled until type inference is updated
+        // for inheritance.
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
-            tmp4 := expressionType(tmp2)
+            // tmp4 := expressionType(tmp2)
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
@@ -1176,7 +1178,9 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             classItselfType.generics := classGenerics
             subtype.addType(classInstanceType)
             subtype.addType(classItselfType)
-            tmp.dtype := classItselfType
+            // XXX Temporarily disabled until type inference is updated
+            // for inheritance
+            //tmp.dtype := classItselfType
             bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
