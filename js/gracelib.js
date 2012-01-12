@@ -753,6 +753,17 @@ function callmethod(obj, methname) {
     callStack.pop();
     return ret;
 }
+function matchCase(obj, cases, elsecase) {
+    var i = 0;
+    for (i = 0; i<cases.length; i++) {
+        var ret = callmethod(cases[i], "apply", obj);
+        if (ret != var_MatchFailed)
+            return ret;
+    }
+    if (elsecase != false)
+        return callmethod(elsecase, "apply", obj);
+    return var_MatchFailed;
+}
 function ReturnException(v, target) {
     this.returnvalue = v;
     this.target = target;

@@ -382,6 +382,23 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
+method compilematchcase(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def cases = o.cases
+    def matchee = compilenode(o.value)
+    out("  var cases{myc} = [];")
+    for (cases) do {c->
+        def e = compilenode(c)
+        out("  cases{myc}.push({e});")
+    }
+    var elsecase := "false"
+    if (false != o.elsecase) then {
+        elsecase := compilenode(o.elsecase)
+    }
+    out("  var matchres{myc} = matchCase({matchee},cases{myc},{elsecase});")
+    o.register := "matchres" ++ myc
+}
 method compileop(o) {
     var left := compilenode(o.left)
     var right := compilenode(o.right)
@@ -596,6 +613,9 @@ method compilenode(o) {
     }
     if (o.kind == "if") then {
         compileif(o)
+    }
+    if (o.kind == "matchcase") then {
+        compilematchcase(o)
     }
     if (o.kind == "class") then {
         compileclass(o)
