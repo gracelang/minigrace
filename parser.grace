@@ -652,7 +652,7 @@ method expressionrest {
         var allarith := true // Consists only of arithmetic operators
         var opcount := 0
         var opdtype := "" // The single operator being used in this expression
-        while {accept("op")onLineOf(statementToken)} do {
+        while {accept("op")onLineOfLastOr(statementToken)} do {
             opcount := opcount + 1
             o := sym.value
             next
