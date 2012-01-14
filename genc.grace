@@ -188,7 +188,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return none;");
     outprint("\}")
-    out("  addmethod2({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
+    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileclass(o) {
     var params := o.params
