@@ -1283,6 +1283,7 @@ method parsempmndecrest(tm) {
 // Accept a method declaration
 method methoddec {
     if (accept("keyword") & (sym.value == "method")) then {
+        var stok := sym
         next
         expect("identifier")or("op")
         pushidentifier
@@ -1355,7 +1356,6 @@ method methoddec {
             dtype := false
         }
         var body := []
-        var stok := sym
         var localMin
         if (accept("lbrace")) then {
             next
