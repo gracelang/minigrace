@@ -743,7 +743,8 @@ method dotrest {
             next
             if (accept("dot")) then {
                 dotrest
-            } elseif (accept("lparen")) then {
+            } elseif (accept("lparen") | accept("lbrace")
+                | accept("num") | accept("string") | accept("lsquare")) then {
                 callrest
             }
         }
