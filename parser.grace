@@ -284,7 +284,8 @@ method doif {
         var elseblock := []
         var curelse := elseblock
         var v
-        var localMin
+        def localMin = minIndentLevel
+        def localStatementIndent = statementIndent
         var minInd := statementIndent + 1
         if (accept("identifier") & (sym.value == "then")) then {
             next
@@ -362,13 +363,14 @@ method doif {
                     next
                 }
             }
-            minIndentLevel := minInd - 1
             var o := ast.astif(cond, body, elseblock)
             values.push(o)
         } else {
             // Raise an error here, or it will spin nastily forever.
             util.syntax_error("if with no then")
         }
+        minIndentLevel := localMin
+        statementIndent := localStatementIndent
     }
 }
 
