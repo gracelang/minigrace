@@ -54,6 +54,7 @@ int hash_init = 0;
 
 Object undefined = NULL;
 Object none = NULL;
+Object ellipsis = NULL;
 Object iomodule;
 Object sysmodule;
 
@@ -80,6 +81,7 @@ ClassData List;
 ClassData ListIter;
 ClassData Undefined;
 ClassData noneClass;
+ClassData ellipsisClass;
 ClassData File;
 ClassData IOModule;
 ClassData SysModule;
@@ -1809,6 +1811,19 @@ Object alloc_none() {
     Object o = alloc_obj(0, noneClass);
     none = o;
     gc_root(o);
+    return o;
+}
+Object alloc_ellipsis() {
+    if (ellipsis != NULL)
+        return ellipsis;
+    ellipsisClass = alloc_class("ellipsis", 4);
+    add_Method(ellipsisClass, "asString", &Object_asString);
+    add_Method(ellipsisClass, "++", &Object_concat);
+    add_Method(ellipsisClass, "==", &Object_Equals);
+    add_Method(ellipsisClass, "!=", &Object_NotEquals);
+    Object o = alloc_obj(0, ellipsisClass);
+    gc_root(o);
+    ellipsis = o;
     return o;
 }
 Object alloc_Undefined() {

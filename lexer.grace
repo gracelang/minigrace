@@ -444,6 +444,13 @@ def LexerClass = object {
                                     ++ " '{c}', {unicode.name(c)}")
                             }
                         }
+                        if ((c == ".") & (accum == "..")) then {
+                            // Special handler for ... identifier
+                            mode := "n"
+                            newmode := mode
+                            modechange(tokens, "i", "...")
+                            accum := ""
+                        }
                     }
                     if ((mode == "x") & (c == "\"") & (escaped.not)) then {
                         // End of octet literal
@@ -590,6 +597,12 @@ def LexerClass = object {
                         accum := ""
                     } else {
                         accum := accum ++ c
+                    }
+                    if ((accum == "...") && {mode == "o"}) then {
+                            modechange(tokens, "i", "...")
+                            newmode := "n"
+                            mode := newmode
+                            accum := ""
                     }
                     if (c == "\n") then {
                         // Linebreaks increment the line counter and insert a

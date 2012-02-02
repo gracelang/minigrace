@@ -1227,6 +1227,7 @@ method typecheck(values) {
     bindName("void", Binding.new("def"))
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
+    bindName("...", Binding.new("def"))
     bindName("self", Binding.new("def"))
     bindName("super", Binding.new("def"))
     bindName("raise", Binding.new("method"))

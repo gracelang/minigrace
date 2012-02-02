@@ -692,6 +692,10 @@ method compileidentifier(o) {
             ++ " = alloc_String(compilerRevision);")
         o.register := "var_val___compilerRevision" ++ auto_count
         auto_count := auto_count + 1
+    } elseif (name == "_46__46__46_") then {
+        out("  Object ellipsis{auto_count} = alloc_ellipsis();")
+        o.register := "ellipsis{auto_count}"
+        auto_count := auto_count + 1
     } else {
         name := escapestring2(name)
         if (modules.contains(name)) then {
