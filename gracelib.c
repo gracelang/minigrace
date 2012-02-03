@@ -2679,7 +2679,7 @@ int rungc() {
         if (o->flags & FLAG_REACHABLE) {
             reached++;
         } else {
-            if (gc_enabled && !(o->flags & FLAG_FRESH)) {
+            if (gc_enabled) {
                 o->flags |= FLAG_DEAD;
                 debug("reaping %p (%s)", o, o->class->name);
                 if (gc_dofree) {
