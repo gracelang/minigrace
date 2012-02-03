@@ -1208,11 +1208,13 @@ Object Float64_Range(Object self, int nparams,
     double b = *(double*)other->data;
     int i = a;
     int j = b;
+    gc_pause();
     Object arr = alloc_List();
     for (; i<=b; i++) {
         Object v = alloc_Float64(i);
         List_push(arr, 1, &v, 0);
     }
+    gc_unpause();
     return (Object)arr;
 }
 Object Float64_Add(Object self, int nparams,
