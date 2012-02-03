@@ -717,10 +717,12 @@ Object String_indices(Object self, int nparams,
     Object o = alloc_List();
     int i;
     Object f;
+    gc_pause();
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
         List_push(o, 1, &f, 0);
     }
+    gc_unpause();
     return o;
 }
 Object ConcatString_Equals(Object self, int nparams,
