@@ -359,6 +359,11 @@ method expressionType(expr) {
                 objectmeths.push(ast.astmethodtype(e.name.value ++ ":=", [
                     ast.astidentifier("_", vtype)],
                     false))
+            } elseif (e.kind == "inherits") then {
+                def stype = expressionType(resolveIdentifiers(e.value))
+                for (stype.methods) do { m->
+                    objectmeths.push(m)
+                }
             }
         }
         subtype.addType(objecttp)
@@ -854,6 +859,12 @@ method resolveIdentifiers(node) {
             resolveIdentifiers(node.superclass))
         return tmp2
     }
+    if (node.kind == "inherits") then {
+        def csupertype = expressionType(resolveIdentifiers(node.value))
+        for (csupertype.methods) do { m->
+            scopes.last.put(m.value, Binding.new("method"))
+        }
+    }
     if (node.kind == "class") then {
         pushScope
         tmp := {
@@ -1036,10 +1047,8 @@ method resolveIdentifiers(node) {
                 ++ " with expression of type "
                 ++ subtype.nicename(expressionType(tmp2)))
         }
-        // XXX Temporarily disabled until type inference is updated
-        // for inheritance.
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
-            // tmp4 := expressionType(tmp2)
+            tmp4 := expressionType(tmp2)
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
@@ -1182,11 +1191,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             classItselfType.generics := classGenerics
             subtype.addType(classInstanceType)
             subtype.addType(classItselfType)
-            // XXX Temporarily disabled until type inference is updated
-            // for inheritance
-            if (classGenerics.size > 0) then {
-                tmp.dtype := classItselfType
-            }
+            tmp.dtype := classItselfType
             bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
