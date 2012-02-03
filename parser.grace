@@ -1455,13 +1455,12 @@ method domethodtype {
         }
         expect("rparen")
         next
-        if (accept("identifier")) then {
+        if (acceptSameLine("identifier")) then {
             pushidentifier
             util.runOnNew {
                 mn := "{mn}({params.size - lastparamcount}){values.pop.value}"
                 lastparamcount := params.size
             } else {
-                false // XXX Parse bug
                 mn := mn ++ "()" ++ values.pop.value
             }
         }
