@@ -2565,6 +2565,8 @@ void gracelib_argv(char **argv) {
     gc_enabled = gc_dofree | gc_dowarn;
     if (gc_dowarn)
         gc_dofree = 0;
+    srand(time(NULL));
+    hash_init = rand();
 }
 void setline(int l) {
     linenumber = l;
