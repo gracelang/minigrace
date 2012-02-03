@@ -11,6 +11,7 @@
 #include <setjmp.h>
 
 #include "gracelib.h"
+#define max(x,y) (x>y?x:y)
 Object Float64_asString(Object, int nparams,
         Object*, int flags);
 Object Float64_Add(Object, int nparams,
@@ -97,6 +98,7 @@ struct ConcatStringObject {
     unsigned int hashcode;
     int ascii;
     char *flat;
+    int depth;
     Object left;
     Object right;
 };
@@ -846,7 +848,19 @@ Object alloc_ConcatString(Object left, Object right) {
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
-    Object o = alloc_obj(sizeof(int) * 4 + sizeof(char*) * 1 +
+    int depth = 1;
+    if (lefts->class == ConcatString)
+        depth = max(depth, ((struct ConcatStringObject*)lefts)->depth + 1);
+    if (rights->class == ConcatString)
+        depth = max(depth, ((struct ConcatStringObject*)rights)->depth + 1);
+    if (depth > 1000) {
+        int len = lefts->blen + rights->blen + 1;
+        char buf[len];
+        ConcatString__FillBuffer(left, buf, len);
+        ConcatString__FillBuffer(right, buf + lefts->blen, len - lefts->blen);
+        return alloc_String(buf);
+    }
+    Object o = alloc_obj(sizeof(int) * 5 + sizeof(char*) * 1 +
             sizeof(Object) * 2, ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
@@ -855,6 +869,7 @@ Object alloc_ConcatString(Object left, Object right) {
     so->size = lefts->size + rights->size;
     so->ascii = lefts->ascii & rights->ascii;
     so->flat = NULL;
+    so->depth = depth;
     so->hashcode = lefts->hashcode * uipow(23, rights->size) + rights->hashcode;
     return o;
 }
