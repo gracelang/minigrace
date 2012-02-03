@@ -48,6 +48,8 @@ void gc_unpause();
 
 char *grcstring(Object s);
 
+int hash_init = 0;
+
 Object undefined = NULL;
 Object none = NULL;
 Object iomodule;
@@ -794,9 +796,17 @@ Object ConcatString_substringFrom_to(Object self,
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparams, args, flags);
 }
-Object ConcatString_hashcode(Object self, int nparams,
+Object String_hashcode(Object self, int nparams,
         Object *args, int flags) {
-    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    struct StringObject* sself = (struct StringObject*)self;
+    if (!sself->hashcode) {
+        int32_t hashcode = hash_init;
+        char *c = grcstring(self);
+        while (*c != 0) {
+            hashcode = (hashcode << 5) + hashcode + *c++;
+        }
+        sself->hashcode = hashcode;
+    }
     return alloc_Float64(sself->hashcode);
 }
 unsigned int uipow(unsigned int base, unsigned int exponent)
@@ -844,7 +854,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "substringFrom(1)to",
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace(1)with", &String_replace_with);
-        add_Method(ConcatString, "hashcode", &ConcatString_hashcode);
+        add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
     }
@@ -872,7 +882,7 @@ Object alloc_ConcatString(Object left, Object right) {
     so->ascii = lefts->ascii & rights->ascii;
     so->flat = NULL;
     so->depth = depth;
-    so->hashcode = lefts->hashcode * uipow(23, rights->size) + rights->hashcode;
+    so->hashcode = 0;
     return o;
 }
 Object String__escape(Object, int, Object*, int flags);
@@ -1014,11 +1024,6 @@ Object String_replace_with(Object self,
     strcpy(tmp, my);
     return alloc_String(result);
 }
-Object String_hashcode(Object self, int nparams,
-        Object *args, int flags) {
-    struct StringObject* sself = (struct StringObject*)self;
-    return alloc_Float64(sself->hashcode);
-}
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
@@ -1051,7 +1056,7 @@ Object alloc_String(const char *data) {
     char *d = so->body;
     int size = 0;
     int i;
-    int hc = 0;
+    int hc = hash_init;
     int ascii = 1;
     for (i=0; i<blen; ) {
         int l = getutf8charlen(data + i);
@@ -1060,8 +1065,7 @@ Object alloc_String(const char *data) {
             ascii = 0;
         for (; i<j; i++) {
             d[i] = data[i];
-            hc *= 23;
-            hc += data[i];
+            hc = (hc << 5) + hc + data[i];
         }
         size = size + 1;
     }
