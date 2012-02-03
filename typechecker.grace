@@ -1168,6 +1168,9 @@ method resolveIdentifiersList(lst)withBlock(bk) {
                     bindName(gp.value, gtpb)
                 }
             }
+            for (e.params) do {p->
+                bindIdentifier(p)
+            }
             def classInstanceType' = expressionType(ast.astobject(e.value,
                 e.superclass))
             popScope
