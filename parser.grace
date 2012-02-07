@@ -1492,16 +1492,29 @@ method dotype {
         }
         next
         def methods = []
-        expect("lbrace")
-        next
-        while {accept("rbrace").not} do {
-            expectConsume {domethodtype}
-            methods.push(values.pop)
+        if (accept("lbrace")) then {
+            next
+            while {accept("rbrace").not} do {
+                expectConsume {domethodtype}
+                methods.push(values.pop)
+            }
+            next
+            def t = ast.asttype(p.value, methods)
+            t.generics := gens
+            values.push(t)
+        } else {
+            dotyperef
+            def ot = values.pop
+            def nt = ast.asttype(p.value, ot.methods)
+            nt.generics := nt.generics
+            for (ot.unionTypes) do {ut->
+                nt.unionTypes.push(ut)
+            }
+            for (ot.intersectionTypes) do {ut->
+                nt.intersectionTypes.push(ut)
+            }
+            values.push(nt)
         }
-        next
-        def t = ast.asttype(p.value, methods)
-        t.generics := gens
-        values.push(t)
     }
 }
 
