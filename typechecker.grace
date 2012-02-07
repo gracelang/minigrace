@@ -75,6 +75,7 @@ def ListType = ast.asttype("List", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("contains", [TopOther], BooleanIdentifier),
     ast.astmethodtype("iter", [], DynamicIdentifier),
     ast.astmethodtype("push", [TopOther], TopOther),
     ast.astmethodtype("pop", [], TopOther),
