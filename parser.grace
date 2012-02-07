@@ -1077,8 +1077,7 @@ method doclass {
                 var pid := values.pop
                 if (accept("colon")) then {
                     next
-                    pushidentifier
-                    generic
+                    dotyperef
                     pid.dtype := values.pop
                 }
                 params.push(pid)
