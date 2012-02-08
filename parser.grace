@@ -973,6 +973,7 @@ method doarray {
 // Accept "inherits X.new"
 method inheritsdec {
     if (accept("keyword") & (sym.value == "inherits")) then {
+        checkIndent
         next
         expectConsume {
             expression
@@ -1019,14 +1020,13 @@ method doobject {
             var register := ""
         })
         next
+        minIndentLevel := minIndentLevel + 1
         var sz := values.size
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
             // const declarations, and method declarations. If anything
             // else appears before the closing brace, it is a syntax error.
-            vardec
             methoddec
-            defdec
             inheritsdec
             statement
             if (values.size == sz) then {
@@ -1105,12 +1105,6 @@ method doclass {
         next
         def body = []
         while {(accept("rbrace")).not} do {
-            ifConsume {vardec} then {
-                body.push(values.pop)
-            }
-            ifConsume {defdec} then {
-                body.push(values.pop)
-            }
             ifConsume {methoddec} then {
                 body.push(values.pop)
             }
@@ -1298,6 +1292,7 @@ method parsempmndecrest(tm) {
 // Accept a method declaration
 method methoddec {
     if (accept("keyword") & (sym.value == "method")) then {
+        checkIndent
         var stok := sym
         next
         expect("identifier")or("op")
@@ -1531,14 +1526,7 @@ method dotype {
     }
 }
 
-// Accept a statement. A statement is any of the above that may exist
-// at the top level, and includes expressions.
-// A statement may also be a bind statement x := y, which creates a
-// bind AST node out of the expressions on either side (which at this point
-// can be any arbitrary expression).
-method statement {
-    statementIndent := sym.indent
-    statementToken := sym
+method checkIndent {
     if (indentFreePass) then {
         indentFreePass := false
     } elseif ((sym.kind == "rbrace") | (sym.kind == "rparen")
@@ -1554,6 +1542,17 @@ method statement {
     } elseif (sym.indent > minIndentLevel) then {
         minIndentLevel := sym.indent
     }
+}
+
+// Accept a statement. A statement is any of the above that may exist
+// at the top level, and includes expressions.
+// A statement may also be a bind statement x := y, which creates a
+// bind AST node out of the expressions on either side (which at this point
+// can be any arbitrary expression).
+method statement {
+    statementIndent := sym.indent
+    statementToken := sym
+    checkIndent
     if (accept("keyword")) then {
         if (sym.value == "var") then {
             vardec
