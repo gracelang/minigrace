@@ -1130,6 +1130,7 @@ method doclass {
 
 method doclassOld {
     if (true) then {
+        def localMinIndentLevel = minIndentLevel
         generic
         var superclass := false
         if (accept("identifier") & (sym.value == "extends")) then {
@@ -1226,6 +1227,7 @@ method doclassOld {
         } else {
             util.syntax_error("class definition without body")
         }
+        minIndentLevel := localMinIndentLevel
     }
 }
 
