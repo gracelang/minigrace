@@ -755,6 +755,9 @@ method dotrest {
 // method calls are left as "member" AST nodes and processed correctly at
 // a later stage.
 method callrest {
+    if (values.size == 0) then {
+        return 0
+    }
     var meth := values.pop
     var methn
     var tmp
@@ -1122,7 +1125,7 @@ method doclass {
         var o := ast.astclass(cname, params, body, false)
         values.push(o)
         minIndentLevel := localMinIndentLevel
-    }   
+    }
 }
 
 method doclassOld {
