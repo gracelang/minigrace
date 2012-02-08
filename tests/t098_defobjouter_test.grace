@@ -1,5 +1,5 @@
 def ClassWithPrivate = object {
-   method new {
+  method new {
      return (
         object {// Private parts
            var secret := 0
