@@ -1020,7 +1020,11 @@ method doobject {
             var register := ""
         })
         next
-        minIndentLevel := minIndentLevel + 1
+        if (sym.line == statementToken.line) then {
+            minIndentLevel := sym.linePos - 1
+        } else {
+            minIndentLevel := statementToken.indent + 1
+        }
         var sz := values.size
         while {(accept("rbrace")).not} do {
             // An object body contains zero or more var declarations,
@@ -1103,6 +1107,11 @@ method doclass {
             util.syntax_error("class declaration without body")
         }
         next
+        if (sym.line == statementToken.line) then {
+            minIndentLevel := sym.linePos - 1
+        } else {
+            minIndentLevel := statementToken.indent + 1
+        }
         def body = []
         while {(accept("rbrace")).not} do {
             ifConsume {methoddec} then {
@@ -1529,6 +1538,8 @@ method dotype {
 method checkIndent {
     if (indentFreePass) then {
         indentFreePass := false
+    } elseif (sym.kind == "semicolon") then {
+        // pass
     } elseif ((sym.kind == "rbrace") | (sym.kind == "rparen")
         | (sym.kind == "rsquare")) then {
         // pass
