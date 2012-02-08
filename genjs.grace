@@ -161,20 +161,28 @@ method compileobject(o, outerRef) {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
     compileobjouter(selfr, outerRef)
+    out("function obj_init_{myc}() \{")
+    out("  var origSuperDepth = superDepth;")
+    out("  superDepth = this;")
     var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr)
-        }
-        if (e.kind == "vardec") then {
+        } elseif (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
             pos := pos + 1
-        }
-        if (e.kind == "defdec") then {
+        } elseif (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
+        } elseif (e.kind == "object") then {
+            compileobject(e, selfr)
+        } else {
+            compilenode(e)
         }
     }
+    out("  superDepth = origSuperDepth;")
+    out("\}")
+    out("obj_init_{myc}.apply({selfr}, []);")
     o.register := selfr
     inBlock := origInBlock
 }
