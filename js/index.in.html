@@ -70,12 +70,12 @@
         }
         function loadtest(testname) {
             var req = new XMLHttpRequest();
-            req.open("GET", "./tests/" + testname + ".test.grace", false);
+            req.open("GET", "./tests/" + testname + "_test.grace", false);
             req.send(null);
             if (req.status == 200) {
                 document.getElementById("code_txt").value = req.responseText;
             }
-            if (testname.indexOf(".fail") == -1) {
+            if (testname.indexOf("_fail") == -1) {
                 req.open("GET", "./tests/" + testname + ".out", false);
                 req.send(null);
                 if (req.status == 200) {
@@ -128,7 +128,7 @@
                     }
                     et = (new Date).getTime();
                     runTime += (et - st);
-                    if (tc.children[idx].value.indexOf(".fail") != -1) {
+                    if (tc.children[idx].value.indexOf("_fail") != -1) {
                         if (stderr_txt.value.indexOf("error") != -1) {
                             passes++;
                         } else {
@@ -186,7 +186,7 @@
  </select>
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
-<!--[!SH[ls tests | grep .test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d. -f1-2) ; else o=$(echo "$fn"|cut -d. -f1) ; fi ; echo "  <option value=\"$o\">$o</option>" ; done]!]-->
+<!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
  </select>
 <span style="font-size: smaller;">
 minigrace-js

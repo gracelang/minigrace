@@ -11,7 +11,7 @@ if [ $# -gt 0 ]
 then
     tests=( "$@" )
 else
-    tests=( *.test.grace )
+    tests=( t*_test.grace )
 fi
 
 set +e
@@ -33,18 +33,18 @@ for tcase in "${tests[@]}"
 do
     if ! [ -e "$tcase" ]
     then
-        tcase=$(echo $tcase*.test.grace)
+        tcase=$(echo $tcase*_test.grace)
     fi
     echo ================================================== >> test-$$.log
     echo Beginning case "$tcase"... >>test-$$.log
     NUM_TESTS=$((NUM_TESTS + 1))
-    if [ "${tcase%fail.test.grace}" = "$tcase" ]
+    if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
         if $GRACE --make --native "$tcase" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
             ./"$execname" > test-$$.out
-            if diff -q test-$$.out ${tcase%.test.grace}.out >/dev/null 2>&1
+            if diff -q test-$$.out ${tcase%_test.grace}.out >/dev/null 2>&1
             then
                 NUM_PASS=$((NUM_PASS + 1))
                 echo "${NUM_TESTS} PASS: $tcase"
