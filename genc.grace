@@ -230,23 +230,25 @@ method compileobject(o, outerRef) {
         out("  setsuperobj({selfr}, {superobj});")
     }
     compileobjouter(selfr, outerRef)
+    out("  Object oldself{myc} = self;")
+    out("  self = {selfr};")
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
-        }
-        if (e.kind == "vardec") then {
+        } elseif (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
-        }
-        if (e.kind == "defdec") then {
+        } elseif (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
-        }
-        if (e.kind == "inherits") then {
+        } elseif (e.kind == "inherits") then {
             superobj := compilenode(e.value)
             out("  setsuperobj({selfr}, {superobj});")
             pos := pos - 1
+        } else {
+            compilenode(e)
         }
         pos := pos + 1
     }
+    out("  self = oldself{myc};")
     util.runOnNew {
         out("  set_type({selfr}, "
             ++ "{subtype.typeId(o.otype)});")
@@ -1025,6 +1027,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object emptyclosure;")
     outprint("static const char modulename[] = \"{modname}\";");
     out("Object module_{escmodname}_init() \{")
+    out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2(100, 100);")
     out("  adddatum2(self, self, 0);")

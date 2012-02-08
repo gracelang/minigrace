@@ -983,6 +983,7 @@ method inheritsdec {
 method doobject {
     // doobject because "object" is a keyword
     if (accept("keyword") & (sym.value == "object")) then {
+        def localMinIndentLevel = minIndentLevel
         next
         var superclass := false
         if (accept("identifier") & (sym.value == "extends")) then {
@@ -1024,6 +1025,7 @@ method doobject {
             methoddec
             defdec
             inheritsdec
+            statement
             if (values.size == sz) then {
                 util.syntax_error("did not consume anything in "
                     ++ "object declaration.")
@@ -1045,6 +1047,7 @@ method doobject {
         }
         var o := ast.astobject(body, superclass)
         values.push(o)
+        minIndentLevel := localMinIndentLevel
     }
 }
 
@@ -1057,6 +1060,7 @@ method doobject {
 method doclass {
     if (accept("keyword") & (sym.value == "class")) then {
         next
+        def localMinIndentLevel = minIndentLevel
         expect("identifier")
         pushidentifier // A class currently cannot be anonymous
         if (!accept("dot")) then {
@@ -1110,10 +1114,14 @@ method doclass {
             ifConsume {inheritsdec} then {
                 body.push(values.pop)
             }
+            ifConsume {statement} then {
+                body.push(values.pop)
+            }
         }
         next
         var o := ast.astclass(cname, params, body, false)
         values.push(o)
+        minIndentLevel := localMinIndentLevel
     }   
 }
 
