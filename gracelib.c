@@ -246,6 +246,7 @@ void glfree(void *p) {
     size_t *i = p - sizeof(size_t);
     debug("glfree: freed %p (%i)", p, *i);
     heapcurrent -= *i;
+    memset(i, 0, *i);
     free(i);
 }
 void initprofiling() {
@@ -1935,26 +1936,64 @@ Object gracelib_print(Object receiver, int nparams,
     return none;
 }
 
+ClassData StackFrame;
+void StackFrame__mark(struct StackFrameObject *o) {
+    int i;
+    for (i=0; i<o->size; i++)
+        gc_mark(o->slots[i]);
+    if (o->parent != NULL)
+        gc_mark((Object)o->parent);
+}
+struct StackFrameObject *alloc_StackFrame(int size,
+        struct StackFrameObject *parent) {
+    int i;
+    if (StackFrame == NULL) {
+        StackFrame = alloc_class2("StackFrame", 0, (void*)&StackFrame__mark);
+    }
+    Object o = alloc_obj(sizeof(int) + sizeof(struct StackFrameObject *) +
+            size * sizeof(Object), StackFrame);
+    struct StackFrameObject *s = (struct StackFrameObject *)o;
+    s->size = size;
+    s->parent = parent;
+    Object u = alloc_Undefined();
+    for (i=0; i<size; i++) {
+        s->slots[i] = u;
+    }
+    return s;
+}
+
+
 ClassData ClosureEnv;
 struct ClosureEnvObject {
     int32_t flags;
     ClassData class;
     char name[256];
     int size;
+    Object frame;
     Object *data[];
 };
 void ClosureEnv__mark(struct ClosureEnvObject *o) {
     int i;
     for (i=0; i<o->size; i++)
         gc_mark(*(o->data[i]));
+    if (o->frame != NULL)
+        gc_mark(o->frame);
+}
+void setclosureframe(Object c, struct StackFrameObject *p) {
+    ((struct ClosureEnvObject*)c)->frame = (Object)p;
+}
+struct StackFrameObject *getclosureframe(Object c) {
+    return (struct StackFrameObject *)(((struct ClosureEnvObject*)c)->frame);
 }
 Object createclosure(int size, char *name) {
     if (ClosureEnv == NULL) {
         ClosureEnv = alloc_class2("ClosureEnv", 0, (void*)&ClosureEnv__mark);
     }
-    Object o = alloc_obj(sizeof(int) + 256 + sizeof(Object*) * size, ClosureEnv);
+    Object o = alloc_obj(sizeof(int) + 256 + sizeof(Object*) * size
+            + sizeof(Object), ClosureEnv);
     struct ClosureEnvObject *oo = (struct ClosureEnvObject *)o;
     oo->size = size;
+    oo->frame = NULL;
     int i;
     for (i=0; i<size; i++)
         oo->data[i] = NULL;

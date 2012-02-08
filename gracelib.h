@@ -33,6 +33,13 @@ struct UserObject {
     void *data[];
 };
 
+struct StackFrameObject {
+    int32_t flags;
+    ClassData class;
+    struct StackFrameObject *parent;
+    int size;
+    Object slots[];
+};
 
 Object alloc_Float64(double);
 Object alloc_List();
@@ -70,6 +77,9 @@ void bufferfromString(Object, char *);
 char *cstringfromString(Object);
 int integerfromAny(Object);
 Object createclosure(int, char*);
+struct StackFrameObject *alloc_StackFrame(int, struct StackFrameObject *);
+void setclosureframe(Object, struct StackFrameObject *);
+struct StackFrameObject *getclosureframe(Object);
 
 void setline(int);
 void gracedie(char *msg, ...);

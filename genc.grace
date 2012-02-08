@@ -324,14 +324,15 @@ method compilemethod(o, selfobj, pos) {
         declaredvars.push(van)
     }
     var ret := "none"
+    var numslots := 0
     for (o.body) do { l ->
         if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapeident(l.name.value)
             declaredvars.push(tnm)
-            out("  Object *var_{tnm} = alloc_var();")
-            out("  *var_{tnm} = undefined;")
+            out("  Object *var_{tnm} = &(stackframe->slots[{numslots}]);")
             out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
+            numslots := numslots + 1
         }
     }
     for (o.body) do { l ->
@@ -381,11 +382,14 @@ method compilemethod(o, selfobj, pos) {
             out("  struct UserObject *uo = (struct UserObject*)self;")
         }
         out("  Object closure = getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
+        out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, getclosureframe(closure));")
     } else {
         out("Object {litname}(Object self, int nparams, Object *args, "
             ++ "int32_t flags) \{")
+        out("struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
     }
     out("  int frame = gc_frame_new();")
+    out("gc_frame_newslot((Object)stackframe);")
     out("  if (nparams < {o.params.size})")
     out("    gracedie(\"insufficient arguments to method\");")
     // We need to detect which parameters are used in a closure, and
@@ -454,6 +458,7 @@ method compilemethod(o, selfobj, pos) {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+        out("setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  Object *selfpp{auto_count} = "
@@ -625,7 +630,6 @@ method compilevardec(o) {
     } else {
         val := "undefined"
     }
-    out("  var_{nm} = alloc_var();")
     out("  *var_{nm} = {val};")
     out("  gc_frame_setslot(gc_slot_{nm}, {val});")
     if (hadval) then {
@@ -1046,6 +1050,9 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
+    out("struct StackFrameObject *stackframe = alloc_StackFrame(100, ")
+    out("  NULL);")
+    out("gc_root((Object)stackframe);")
     var tmpo := output
     output := []
     for (values) do { l ->
