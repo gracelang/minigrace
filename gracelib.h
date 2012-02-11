@@ -33,6 +33,9 @@ struct UserObject {
     void *data[];
 };
 
+ClassData String;
+ClassData ConcatString;
+
 
 Object alloc_Float64(double);
 Object alloc_List();
