@@ -37,8 +37,6 @@
 // Intern module
 Object unicode_module = NULL;
 
-#define isstring(x) ((x->class == String) || (x->class == ConcatString))
-
 // Return a Grace String containing the Unicode name of the first 
 // character in the String argument (e.g.,
 // "LATIN SMALL LETTER A WITH DIARESIS").
@@ -110,7 +108,7 @@ Object unicode_iscategory(Object self, int nparams,
 Object unicode_isSeparator(Object self, int nparams,
         Object *args, int flags) {
     Object o = args[0];
-    if (isstring(args[0])) {
+    if (strcmp(args[0]->class->name, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
     int v = integerfromAny(o);
@@ -123,7 +121,7 @@ Object unicode_isSeparator(Object self, int nparams,
 Object unicode_isControl(Object self, int nparams,
         Object *args, int flags) {
     Object o = args[0];
-    if (isstring(args[0])) {
+    if (strcmp(args[0]->class->name, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
     int v = integerfromAny(o);
@@ -135,7 +133,7 @@ Object unicode_isControl(Object self, int nparams,
 Object unicode_isLetter(Object self, int nparams,
         Object *args, int flags) {
     Object o = args[0];
-    if ((args[0]->class == String) || (args[0]->class == ConcatString)) {
+    if (strcmp(args[0]->class->name, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
     int v = integerfromAny(o);
@@ -147,7 +145,7 @@ Object unicode_isLetter(Object self, int nparams,
 Object unicode_isNumber(Object self, int nparams,
         Object *args, int flags) {
     Object o = args[0];
-    if (isstring(args[0])) {
+    if (strcmp(args[0]->class->name, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
     int v = integerfromAny(o);
@@ -160,7 +158,7 @@ Object unicode_isNumber(Object self, int nparams,
 Object unicode_isSymbolMathematical(Object self, int nparams,
         Object *args, int flags) {
     Object o = args[0];
-    if (isstring(args[0])) {
+    if (strcmp(args[0]->class->name, "String") == 0) {
         o = callmethod(args[0], "ord", 0, 0);
     }
     int v = integerfromAny(o);

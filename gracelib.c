@@ -861,6 +861,10 @@ Object alloc_ConcatString(Object left, Object right) {
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
     int depth = 1;
+    if (lefts->size == 0)
+        return rights;
+    if (rights->size == 0)
+        return lefts;
     if (lefts->class == ConcatString)
         depth = max(depth, ((struct ConcatStringObject*)lefts)->depth + 1);
     if (rights->class == ConcatString)
