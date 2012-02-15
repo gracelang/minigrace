@@ -300,9 +300,8 @@ void bufferfromString(Object s, char *c) {
 }
 int integerfromAny(Object p) {
     p = callmethod(p, "asString", 0, NULL);
-    char *c = cstringfromString(p);
+    char *c = grcstring(p);
     int i = atoi(c);
-    glfree(c);
     return i;
 }
 void addmethodreal(Object o, char *name,
