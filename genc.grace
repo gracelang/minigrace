@@ -521,8 +521,19 @@ method compileif(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var cond := compilenode(o.value)
+    out("struct StackFrameObject *iftmpstackframe{myc} = stackframe;")
     out("  Object if{myc} = none;")
     out("  if (istrue({cond})) \{")
+    var numslots := 0
+    var slot := 0
+    for (o.thenblock) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "defdec")
+            | (l.kind == "class")) then {
+            numslots := numslots + 1
+        }
+    }
+    out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+    out("gc_frame_newslot(stackframe);")
     var tret := "none"
     var fret := "none"
     var tblock := "ERROR"
@@ -532,9 +543,9 @@ method compileif(o) {
             | (l.kind == "class")) then {
             var tnm := escapeident(l.name.value)
             declaredvars.push(tnm)
-            out("  Object *var_{tnm} = alloc_var();")
-            out("  *var_{tnm} = undefined;")
+            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
             out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
+            slot := slot + 1
         }
     }
     for (o.thenblock) do { l->
@@ -544,14 +555,24 @@ method compileif(o) {
     out("    if{myc} = {tret};")
     out("  \} else \{")
     if (o.elseblock.size > 0) then {
+        numslots := 0
+        for (o.elseblock) do { l ->
+            if ((l.kind == "vardec") | (l.kind == "defdec")
+                | (l.kind == "class")) then {
+                numslots := numslots + 1
+            }
+        }
+        out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+        out("gc_frame_newslot(stackframe);")
+        slot := 0
         for (o.elseblock) do { l ->
             if ((l.kind == "vardec") | (l.kind == "defdec")
                 | (l.kind == "class")) then {
                 var tnm := escapeident(l.name.value)
                 declaredvars.push(tnm)
-                out("  Object *var_{tnm} = alloc_var();")
-                out("  *var_{tnm} = undefined;")
+                out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
                 out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
+                slot := slot + 1
             }
         }
         for (o.elseblock) do { l->
@@ -561,6 +582,7 @@ method compileif(o) {
         out("    if{myc} = {fret};")
     }
     out("  \}")
+    out("stackframe = iftmpstackframe{myc};")
     o.register := "if" ++ myc
 }
 method compileidentifier(o) {
