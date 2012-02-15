@@ -349,17 +349,30 @@ method compilemethod(o, selfobj, pos) {
     var name := o.value.value
     var nm := name ++ myc
     var i := o.params.size
+    var numslots := o.params.size + 1
+    var slot := 0
+    for (o.params) do {p->
+        var pn := escapeident(p.value)
+        out("Object *var_{pn} = &(stackframe->slots[{slot}]);")
+        out("*var_{pn} = args[{slot}];")
+        declaredvars.push(pn)
+        slot := slot + 1
+    }
+    out("Object *selfslot = &(stackframe->slots[{slot}]);")
+    out("*selfslot = self;")
+    slot := slot + 1
     if (o.varargs) then {
         var van := escapeident(o.vararg.value)
         out("  Object var_init_{van} = process_varargs(args, {i}, nparams);")
-        out("  Object *var_{van} = alloc_var();")
+        out("  Object *var_{van} = &(stackframe->slots[0]);")
         out("  *var_{van} = var_init_{van};")
-        out("  int gc_slot_{van} = gc_frame_newslot(var_init_{van});")
         declaredvars.push(van)
+        slot := slot + 1
+        numslots := numslots + 1
     }
     var ret := "none"
-    var numslots := countbindings(o.body)
-    definebindings(o.body, 0)
+    numslots := numslots + countbindings(o.body)
+    definebindings(o.body, slot)
     for (o.body) do { l ->
         ret := compilenode(l)
     }
@@ -426,16 +439,8 @@ method compilemethod(o, selfobj, pos) {
     for (o.params) do { p ->
         var pn := escapeident(p.value)
         if (closurevars.contains(pn)) then {
-            out("  Object *var_{pn} = alloc_var();");
-            out("  *var_{pn} = args[{i}];");
-            out("  int gc_slot_{pn} = gc_frame_newslot(args[{i}]);")
             toremove.push(pn)
-        } else {
-            out("  Object *var_{pn} = args + {i};")
-            out("  int gc_slot_{pn} = gc_frame_newslot(*var_{pn});")
         }
-        declaredvars.push(pn)
-        i := i + 1
     }
     def origclosurevars = closurevars
     closurevars := []
@@ -453,7 +458,6 @@ method compilemethod(o, selfobj, pos) {
             out("  Object self = *(getfromclosure(closure, {j}));")
         } else {
             out("  Object *var_{cv} = getfromclosure(closure, {j});")
-            out("  int gc_slot_{cv} = gc_frame_newslot(*var_{cv});")
         }
         j := j + 1
     }
@@ -486,10 +490,7 @@ method compilemethod(o, selfobj, pos) {
         out("setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
-                out("  Object *selfpp{auto_count} = "
-                    ++ "alloc_var();")
-                out("  *selfpp{auto_count} = self;")
-                out("  addtoclosure(closure{myc}, selfpp{auto_count});")
+                out("  addtoclosure(closure{myc}, selfslot);")
                 auto_count := auto_count + 1
             } else {
                 out("  addtoclosure(closure{myc}, var_{v});")
@@ -1052,9 +1053,11 @@ method compile(vl, of, mn, rm, bt) {
     out("struct StackFrameObject *stackframe = alloc_StackFrame(100, ")
     out("  NULL);")
     out("gc_root((Object)stackframe);")
+    out("Object *selfslot = &(stackframe->slots[0]);")
+    out("*selfslot = self;")
     var tmpo := output
     output := []
-    definebindings(values, 0)
+    definebindings(values, 1)
     for (values) do { o ->
         compilenode(o)
     }
