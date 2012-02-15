@@ -52,6 +52,41 @@ method outswitchdown {
 method log_verbose(s) {
     util.log_verbose(s)
 }
+method countnodebindings(n) {
+    if (n.kind == "if") then {
+        countbindings(n.thenblock) + countbindings(n.elseblock)
+    } else {
+        0
+    }
+}
+method countbindings(l) {
+    var numslots := 0
+    for (l) do { n ->
+        if ((n.kind == "vardec") | (n.kind == "defdec")
+            | (n.kind == "class")) then {
+            numslots := numslots + 1
+        } elseif (n.kind == "if") then {
+            numslots := numslots + countnodebindings(n)
+        }
+    }
+    numslots
+}
+method definebindings(l, slot) {
+    for (l) do { n ->
+        if ((n.kind == "vardec") | (n.kind == "defdec")
+            | (n.kind == "class")) then {
+            var tnm := escapeident(n.name.value)
+            declaredvars.push(tnm)
+            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
+            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
+            slot := slot + 1
+        } elseif (n.kind == "if") then {
+            slot := definebindings(n.thenblock, slot)
+            slot := definebindings(n.elseblock, slot)
+        }
+    }
+    slot
+}
 method beginblock(s) {
     bblock := "%" ++ s
     out(s ++ ":")
@@ -324,17 +359,8 @@ method compilemethod(o, selfobj, pos) {
         declaredvars.push(van)
     }
     var ret := "none"
-    var numslots := 0
-    for (o.body) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
-            var tnm := escapeident(l.name.value)
-            declaredvars.push(tnm)
-            out("  Object *var_{tnm} = &(stackframe->slots[{numslots}]);")
-            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
-            numslots := numslots + 1
-        }
-    }
+    var numslots := countbindings(o.body)
+    definebindings(o.body, 0)
     for (o.body) do { l ->
         ret := compilenode(l)
     }
@@ -481,13 +507,7 @@ method compilemethod(o, selfobj, pos) {
 method compilewhile(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    var numslots := 0
-    for (o.body) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
-            numslots := numslots + 1
-        }
-    }
+    var numslots := countbindings(o.body)
     out("  int while_cond{myc} = gc_frame_newslot(undefined);")
     out("struct StackFrameObject *whiletmpstackframe{myc} = stackframe;")
     out("  while (1) \{")
@@ -499,16 +519,7 @@ method compilewhile(o) {
     out("    if (!istrue({cond})) break;")
     var tret := "null"
     var slot := 0
-    for (o.body) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
-            var tnm := escapeident(l.name.value)
-            declaredvars.push(tnm)
-            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
-            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
-            slot := slot + 1
-        }
-    }
+    definebindings(o.body, 0)
     for (o.body) do { l->
         tret := compilenode(l)
     }
@@ -521,33 +532,12 @@ method compileif(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var cond := compilenode(o.value)
-    out("struct StackFrameObject *iftmpstackframe{myc} = stackframe;")
     out("  Object if{myc} = none;")
     out("  if (istrue({cond})) \{")
-    var numslots := 0
-    var slot := 0
-    for (o.thenblock) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
-            numslots := numslots + 1
-        }
-    }
-    out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-    out("gc_frame_newslot(stackframe);")
     var tret := "none"
     var fret := "none"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    for (o.thenblock) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")
-            | (l.kind == "class")) then {
-            var tnm := escapeident(l.name.value)
-            declaredvars.push(tnm)
-            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
-            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
-            slot := slot + 1
-        }
-    }
     for (o.thenblock) do { l->
         tret := compilenode(l)
     }
@@ -555,26 +545,6 @@ method compileif(o) {
     out("    if{myc} = {tret};")
     out("  \} else \{")
     if (o.elseblock.size > 0) then {
-        numslots := 0
-        for (o.elseblock) do { l ->
-            if ((l.kind == "vardec") | (l.kind == "defdec")
-                | (l.kind == "class")) then {
-                numslots := numslots + 1
-            }
-        }
-        out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-        out("gc_frame_newslot(stackframe);")
-        slot := 0
-        for (o.elseblock) do { l ->
-            if ((l.kind == "vardec") | (l.kind == "defdec")
-                | (l.kind == "class")) then {
-                var tnm := escapeident(l.name.value)
-                declaredvars.push(tnm)
-                out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
-                out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
-                slot := slot + 1
-            }
-        }
         for (o.elseblock) do { l->
             fret := compilenode(l)
         }
@@ -582,7 +552,6 @@ method compileif(o) {
         out("    if{myc} = {fret};")
     }
     out("  \}")
-    out("stackframe = iftmpstackframe{myc};")
     o.register := "if" ++ myc
 }
 method compileidentifier(o) {
