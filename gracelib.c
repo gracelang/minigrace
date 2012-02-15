@@ -1640,17 +1640,15 @@ Object io_open(Object self, int nparams,
         Object *args, int flags) {
     Object fnstr = args[0];
     Object modestr = args[1];
-    char *fn = cstringfromString(fnstr);
-    char *mode = cstringfromString(modestr);
+    char *fn = grcstring(fnstr);
+    char *mode = grcstring(modestr);
     Object ret = alloc_File(fn, mode);
-    glfree(fn);
-    glfree(mode);
     return ret;
 }
 Object io_system(Object self, int nparams,
         Object *args, int flags) {
     Object cmdstr = args[0];
-    char *cmd = cstringfromString(cmdstr);
+    char *cmd = grcstring(cmdstr);
     int rv = system(cmd);
     Object ret = alloc_Boolean(0);
     if (rv == 0)
@@ -2277,7 +2275,7 @@ Object HashMap_get(Object self, int nargs, Object *args, int flags) {
     Object tk = h->table[s].key;
     if (tk == HashMap_undefined) {
         Object p = callmethod(args[0], "asString", 0, NULL);
-        char *c = cstringfromString(p);
+        char *c = grcstring(p);
         die("key '%s' not found in HashMap.", c);
     }
     return h->table[s].value;
