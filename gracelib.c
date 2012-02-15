@@ -481,6 +481,7 @@ Object List_asString(Object self, int nparams,
     int len = sself->size;
     int i = 0;
     Object other;
+    gc_pause();
     Object s = alloc_String("[");
     Object c = alloc_String(",");
     for (i=0; i<len; i++) {
@@ -491,6 +492,7 @@ Object List_asString(Object self, int nparams,
     }
     Object cb = alloc_String("]");
     s = callmethod(s, "++", 1, &cb);
+    gc_unpause();
     return s;
 }
 Object List_indices(Object self, int nparams,
@@ -2275,6 +2277,7 @@ Object HashMap_put(Object self, int nargs, Object *args, int flags) {
 Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     int i;
+    gc_pause();
     Object comma = alloc_String(", ");
     Object colon = alloc_String(": ");
     Object str = alloc_String("[{");
@@ -2292,6 +2295,7 @@ Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
     }
     Object cls = alloc_String("}]");
     str = callmethod(str, "++", 1, &cls);
+    gc_unpause();
     return str;
 }
 void HashMap__mark(struct HashMap *h) {
