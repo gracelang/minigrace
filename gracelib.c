@@ -352,8 +352,7 @@ Object String_Equals(Object self, int nparams,
     struct StringObject* so = (struct StringObject*)other;
     if (ss->size != so->size)
         return alloc_Boolean(0);
-    char theirs[so->blen + 1];
-    bufferfromString(other, theirs);
+    char *theirs = grcstring(other);
     if (strcmp(ss->body, theirs)) {
         return alloc_Boolean(0);
     }
@@ -985,20 +984,10 @@ Object String_substringFrom_to(Object self,
 Object String_replace_with(Object self,
         int nparams, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
-    struct StringObject* sa = (struct StringObject*)args[0];
-    struct StringObject* sb = (struct StringObject*)args[1];
-    int *al = &sa->blen;
-    int *bl = &sb->blen;
     int *ml = &sself->blen;
-    char what_buf[*al + 1];
-    char with_buf[*bl + 1];
-    char my_buf[*ml + 1];
-    char *what = what_buf;
-    char *with = with_buf;
-    char *my = my_buf;
-    bufferfromString(args[0], what);
-    bufferfromString(args[1], with);
-    bufferfromString(self, my);
+    char *what = grcstring(args[0]);
+    char *with = grcstring(args[1]);
+    char *my = grcstring(self);
     char *ins;
     char *tmp;
     char *lst;
@@ -1559,8 +1548,7 @@ Object File_write(Object self, int nparams,
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     struct StringObject *so = (struct StringObject*)args[0];
-    char data[so->blen+1];
-    bufferfromString(args[0], data);
+    char *data = grcstring(args[0]);
     int wrote = fwrite(data, sizeof(char), so->blen, file);
     if (wrote != so->blen) {
         perror("Error writing to file");
@@ -1657,14 +1645,8 @@ Object io_system(Object self, int nparams,
 }
 Object io_newer(Object self, int nparams,
         Object *args, int flags) {
-    struct StringObject *sa = (struct StringObject*)args[0];
-    struct StringObject *sb = (struct StringObject*)args[1];
-    int sal = sa->blen;
-    char ba[sal + 1];
-    bufferfromString((Object)sa, ba);
-    int sbl = sb->blen;;
-    char bb[sbl + 1];
-    bufferfromString((Object)sb, bb);
+    char *ba = grcstring(args[0]);
+    char *bb = grcstring(args[1]);
     struct stat sta;
     struct stat stb;
     if (stat(ba, &sta) != 0)
@@ -1678,8 +1660,7 @@ Object io_exists(Object self, int nparams,
     Object so = args[0];
     struct StringObject *ss = (struct StringObject*)args[0];
     int sbl = ss->blen;
-    char buf[sbl + 1];
-    bufferfromString(so, buf);
+    char *buf = grcstring(args[0]);
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
