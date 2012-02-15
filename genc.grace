@@ -78,7 +78,6 @@ method definebindings(l, slot) {
             var tnm := escapeident(n.name.value)
             declaredvars.push(tnm)
             out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
-            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
             slot := slot + 1
         } elseif (n.kind == "if") then {
             slot := definebindings(n.thenblock, slot)
@@ -584,7 +583,6 @@ method compilebind(o) {
         var nm := escapeident(dest.value)
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
-        out("  gc_frame_setslot(gc_slot_{nm}, {val});")
         out("  if ({val} == undefined)")
         out("    callmethod(none, \"assignment\", 0, NULL);")
         auto_count := auto_count + 1
@@ -617,7 +615,6 @@ method compiledefdec(o) {
         util.syntax_error("const must have value bound.")
     }
     out("  *var_{nm} = {val};")
-    out("  gc_frame_setslot(gc_slot_{nm}, {val});")
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL);")
     o.register := "none"
@@ -634,7 +631,6 @@ method compilevardec(o) {
         val := "undefined"
     }
     out("  *var_{nm} = {val};")
-    out("  gc_frame_setslot(gc_slot_{nm}, {val});")
     if (hadval) then {
         out("  if ({val} == undefined)")
         out("    callmethod(none, \"assignment\", 0, NULL);")
