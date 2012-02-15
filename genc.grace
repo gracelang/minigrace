@@ -1058,26 +1058,7 @@ method compile(vl, of, mn, rm, bt) {
     out("gc_root((Object)stackframe);")
     var tmpo := output
     output := []
-    for (values) do { l ->
-        if ((l.kind == "vardec") | (l.kind == "defdec")) then {
-            var tnm := escapeident(l.name.value)
-            declaredvars.push(tnm)
-            out("  Object *var_{tnm} = alloc_var();")
-            out("  *var_{tnm} = undefined;")
-            out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
-        } elseif (l.kind == "class") then {
-            var tnmc
-            if (l.name.kind == "generic") then {
-                tnmc := escapeident(l.name.value.value)
-            } else {
-                tnmc := escapeident(l.name.value)
-            }
-            declaredvars.push(tnmc)
-            out("  Object *var_{tnmc} = alloc_var();")
-            out("  *var_{tnmc} = undefined;")
-            out("  int gc_slot_{tnmc} = gc_frame_newslot(undefined);")
-        }
-    }
+    definebindings(values, 0)
     for (values) do { o ->
         compilenode(o)
     }
