@@ -299,6 +299,11 @@ void bufferfromString(Object s, char *c) {
     ConcatString__FillBuffer(s, c, z);
 }
 int integerfromAny(Object p) {
+    if (p->class == Number) {
+        double *d = (double*)p->data;
+        int j = *d;
+        return j;
+    }
     p = callmethod(p, "asString", 0, NULL);
     char *c = grcstring(p);
     int i = atoi(c);
@@ -861,9 +866,9 @@ Object alloc_ConcatString(Object left, Object right) {
     struct StringObject *rights = (struct StringObject*)right;
     int depth = 1;
     if (lefts->size == 0)
-        return rights;
+        return right;
     if (rights->size == 0)
-        return lefts;
+        return left;
     if (lefts->class == ConcatString)
         depth = max(depth, ((struct ConcatStringObject*)lefts)->depth + 1);
     if (rights->class == ConcatString)
