@@ -481,21 +481,32 @@ method compilemethod(o, selfobj, pos) {
 method compilewhile(o) {
     var myc := auto_count
     auto_count := auto_count + 1
+    var numslots := 0
+    for (o.body) do { l ->
+        if ((l.kind == "vardec") | (l.kind == "defdec")
+            | (l.kind == "class")) then {
+            numslots := numslots + 1
+        }
+    }
     out("  int while_cond{myc} = gc_frame_newslot(undefined);")
+    out("struct StackFrameObject *whiletmpstackframe{myc} = stackframe;")
     out("  while (1) \{")
     out("  int while_frame{myc} = gc_frame_new();")
+    out("stackframe = alloc_StackFrame({numslots}, whiletmpstackframe{myc});")
+    out("gc_frame_newslot(stackframe);")
     def cond = compilenode(o.value)
     out("    gc_frame_setslot(while_cond{myc}, {cond});")
     out("    if (!istrue({cond})) break;")
     var tret := "null"
+    var slot := 0
     for (o.body) do { l ->
         if ((l.kind == "vardec") | (l.kind == "defdec")
             | (l.kind == "class")) then {
             var tnm := escapeident(l.name.value)
             declaredvars.push(tnm)
-            out("  Object *var_{tnm} = alloc_var();")
-            out("  *var_{tnm} = undefined;")
+            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
             out("  int gc_slot_{tnm} = gc_frame_newslot(undefined);")
+            slot := slot + 1
         }
     }
     for (o.body) do { l->
@@ -503,6 +514,7 @@ method compilewhile(o) {
     }
     out("  gc_frame_end(while_frame{myc});")
     out("  \}")
+    out("stackframe = whiletmpstackframe{myc};")
     o.register := "none"
 }
 method compileif(o) {
