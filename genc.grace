@@ -283,10 +283,12 @@ method compilefor(o) {
     out("  params[0] = {over};")
     out("  Object iter{myc} = callmethod({over}, \"iter\", 1, params);")
     out("  gc_frame_newslot(iter{myc});")
+    out("  int forvalslot{myc} = gc_frame_newslot(NULL);")
     out("  while(1) \{")
     out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL);")
     out("    if (!istrue(cond{myc})) break;")
     out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL);")
+    out("    gc_frame_setslot(forvalslot{myc}, params[0]);")
     out("    callmethod({obj}, \"apply\", 1, params);")
     out("  \}")
     out("  gc_frame_end(forframe{myc});")
@@ -521,6 +523,7 @@ method compileif(o) {
     for (o.thenblock) do { l->
         tret := compilenode(l)
     }
+    out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
     out("  \} else \{")
     if (o.elseblock.size > 0) then {
@@ -537,6 +540,7 @@ method compileif(o) {
         for (o.elseblock) do { l->
             fret := compilenode(l)
         }
+        out("    gc_frame_newslot({fret});")
         out("    if{myc} = {fret};")
     }
     out("  \}")
@@ -634,6 +638,7 @@ method compileindex(o) {
     var of := compilenode(o.value)
     var index := compilenode(o.index)
     out("  params[0] = {index};")
+    out("  gc_frame_newslot(params[0]);")
     out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, params);")
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
