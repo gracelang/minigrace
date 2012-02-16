@@ -182,6 +182,7 @@ struct GC_Root *GC_roots;
 #define FLAG_DEAD 8
 #define FLAG_USEROBJ 16
 #define FLAG_BLOCK 32
+#define FLAG_MUTABLE 64
 int gc_dofree = 1;
 int gc_dowarn = 0;
 int gc_enabled = 1;
@@ -321,6 +322,11 @@ int integerfromAny(Object p) {
     int i = atoi(c);
     return i;
 }
+void addmethodrealflags(Object o, char *name,
+        Object (*func)(Object, int, Object*, int), int flags) {
+    Method *m = add_Method(o->class, name, func);
+    m->flags |= flags;
+}
 void addmethodreal(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
@@ -329,6 +335,12 @@ void addmethod2(Object o, char *name,
         Object (*func)(Object, int, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
+}
+void addmethod2pos(Object o, char *name,
+        Object (*func)(Object, int, Object*, int), int pos) {
+    Method *m = add_Method(o->class, name, func);
+    m->flags &= ~MFLAG_REALSELFONLY;
+    m->pos = pos;
 }
 Object identity_function(Object receiver, int nparams,
         Object* params, int flags) {
@@ -2042,25 +2054,14 @@ Object tailcall(Object self, const char *name, int argc, Object *argv,
     return (Object)o;
 }
 
-FILE *callgraph;
-int track_callgraph = 0;
-int callcount = 0;
-int tailcount = 0;
-Object callmethod3(Object self, const char *name,
-        int argc, Object *argv, int superdepth) {
-    debug("callmethod %s on %p (%s)", name, self, self->class->name);
-    int frame = gc_frame_new();
-    int istail = 0;
-start:
-    callcount++;
-    int i = 0;
-    for (i=0; i<argc; i++)
-        debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
-    int slot = gc_frame_newslot(self);
-    ClassData c = self->class;
-    Method *m = NULL;
-    Object realself = self;
+Method *findmethod(Object *selfp, Object *realselfp, const char *name,
+        int superdepth, int *cflags) {
+    Object self = *selfp;
+    Object realself = *realselfp;
+    int i;
     int callflags = 0;
+    Method *m = NULL;
+    ClassData c = self->class;
     for (i=0; i < c->nummethods; i++) {
         if (strcmp(c->methods[i].name, name) == 0) {
             m = &c->methods[i];
@@ -2069,16 +2070,6 @@ start:
     }
     if (superdepth)
         m = NULL;
-    sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
-            self->class->name, name, linenumber);
-    if (track_callgraph && calldepth > 0) {
-        char tmp[255];
-        char *prev;
-        strcpy(tmp, callstack[calldepth-1]);
-        prev = strtok(tmp, " ");
-        fprintf(callgraph, "\"%s\" -> \"%s.%s\";\n", prev, self->class->name,
-                name);
-    }
     if ((m == NULL || superdepth > 0) && (self->flags & FLAG_USEROBJ)) {
         Object o = self;
         int depth = 0;
@@ -2108,6 +2099,44 @@ start:
                 break;
             }
         }
+    }
+    *cflags = callflags;
+    *selfp = self;
+    *realselfp = realself;
+    return m;
+}
+Method *findmethodsimple(Object self, const char *name) {
+    int i = 0;
+    return findmethod(&self, &self, name, 0, &i);
+}
+FILE *callgraph;
+int track_callgraph = 0;
+int callcount = 0;
+int tailcount = 0;
+Object callmethod3(Object self, const char *name,
+        int argc, Object *argv, int superdepth) {
+    debug("callmethod %s on %p (%s)", name, self, self->class->name);
+    int frame = gc_frame_new();
+    int istail = 0;
+start:
+    callcount++;
+    int i = 0;
+    for (i=0; i<argc; i++)
+        debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
+    int slot = gc_frame_newslot(self);
+    ClassData c = self->class;
+    Object realself = self;
+    int callflags = 0;
+    Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
+    sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
+            self->class->name, name, linenumber);
+    if (track_callgraph && calldepth > 0) {
+        char tmp[255];
+        char *prev;
+        strcpy(tmp, callstack[calldepth-1]);
+        prev = strtok(tmp, " ");
+        fprintf(callgraph, "\"%s\" -> \"%s.%s\";\n", prev, self->class->name,
+                name);
     }
     calldepth++;
     if (calldepth == STACK_SIZE) {
@@ -2378,6 +2407,7 @@ ClassData alloc_class(const char *name, int nummethods) {
     for (i=0; i<nummethods; i++) {
         c->methods[i].name = NULL;
         c->methods[i].flags = 0;
+        c->methods[i].pos = 0;
     }
     return c;
 }
@@ -2395,6 +2425,7 @@ ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
     for (i=0; i<nummethods; i++) {
         c->methods[i].name = NULL;
         c->methods[i].flags = 0;
+        c->methods[i].pos = 0;
     }
     return c;
 }
@@ -2740,13 +2771,60 @@ void UserObj__mark(struct UserObject *o) {
     if (o->super)
         gc_mark(o->super);
 }
+Object UserObj_Equals(Object self, int nargs, Object *args, int flags) {
+    Object other = args[0];
+    if (self == other)
+        return alloc_Boolean(1);
+    if (self->flags & FLAG_MUTABLE)
+        return alloc_Boolean(0);
+    if (other->flags & FLAG_MUTABLE)
+        return alloc_Boolean(0);
+    if (!(other->flags & FLAG_USEROBJ))
+        return alloc_Boolean(0);
+    ClassData myclass = self->class;
+    ClassData otclass = other->class;
+    int i, j;
+    for (i=0; i<myclass->nummethods; i++) {
+        struct Method *m = &myclass->methods[i];
+        if (strcmp(m->name, "outer") == 0) {
+        } else if (m->flags & MFLAG_DEF) {
+            Method *om = findmethodsimple(other, m->name);
+            if (!om || !(om->flags & MFLAG_DEF))
+                return alloc_Boolean(0);
+            Object myval = callmethod(self, m->name, 0, NULL);
+            Object otval = callmethod(other, m->name, 0, NULL);
+            if (!istrue(callmethod(myval, "==", 1, &otval)))
+                return alloc_Boolean(0);
+        } else {
+            Object realself = other;
+            Object tmpself = other;
+            int cflags = 0;
+            Method *om = findmethod(&tmpself, &realself, m->name, 0, &cflags);
+            if (!om)
+                return alloc_Boolean(0);
+            if (m->func != om->func)
+                return alloc_Boolean(0);
+            struct ClosureEnvObject *myclosure = ((struct UserObject*)self)->data[m->pos];
+            struct ClosureEnvObject *otclosure = ((struct UserObject*)realself)->data[om->pos];
+            if (myclosure->frame != otclosure->frame)
+                return alloc_Boolean(0);
+        }
+    }
+    for (i=0; i<otclass->nummethods; i++) {
+        struct Method *m = &otclass->methods[i];
+        Method *mm = findmethodsimple(self, m->name);
+        if (!mm)
+            return alloc_Boolean(0);
+    }
+    return alloc_Boolean(1);
+}
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (c == NULL) {
         c = alloc_class2("Object", numMethods + 6,
                 (void*)&UserObj__mark);
         add_Method(c, "asString", &Object_asString);
         add_Method(c, "++", &Object_concat);
-        add_Method(c, "==", &Object_Equals);
+        add_Method(c, "==", &UserObj_Equals);
         add_Method(c, "!=", &Object_NotEquals);
         add_Method(c, "/=", &Object_NotEquals);
     }

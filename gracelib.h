@@ -7,9 +7,13 @@ typedef struct Method {
     char *name;
     int32_t flags;
     Object(*func)(Object, int, Object*, int);
+    int pos;
 } Method;
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
+#define MFLAG_DEF 8
+
+#define OFLAG_MUTABLE 64
 
 typedef struct ClassData* ClassData;
 struct ClassData {
@@ -107,7 +111,9 @@ void gracelib_stats();
 void addtoclosure(Object, Object *);
 Object *getfromclosure(Object, int);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
+void addmethod2pos(Object, char *, Object (*)(Object, int, Object*, int), int);
 void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
+void addmethodrealflags(Object, char *, Object (*)(Object, int, Object*, int), int);
 void adddatum2(Object, Object, int);
 Object getdatum(Object, int, int);
 void set_type(Object, int16_t);

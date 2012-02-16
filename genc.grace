@@ -202,7 +202,7 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
@@ -228,7 +228,7 @@ method compileobjdefdec(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
 }
 method compileobjvardecdata(o, selfr, pos) {
     var val := "undefined"
@@ -356,6 +356,7 @@ method compileobject(o, outerRef) {
             out("if (objclass{myc} == NULL) \{")
             compileobjvardecmeth(e, selfr, pos)
             out("\}")
+            out("{selfr}->flags |= OFLAG_MUTABLE;")
             compileobjvardecdata(e, selfr, pos)
         } elseif (e.kind == "defdec") then {
             out("if (objclass{myc} == NULL) \{")
@@ -581,7 +582,7 @@ method compilemethod(o, selfobj, pos) {
         var uo2 := "uo{myc}"
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
-        out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
+        out("  addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
@@ -598,7 +599,7 @@ method compilemethod(o, selfobj, pos) {
         var uo := "uo{myc}"
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
-        out("  addmethod2({selfobj}, \"{escapestring2(name)}\", &{litname});")
+        out("  addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
