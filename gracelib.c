@@ -1974,8 +1974,6 @@ struct ClosureEnvObject {
 };
 void ClosureEnv__mark(struct ClosureEnvObject *o) {
     int i;
-    for (i=0; i<o->size; i++)
-        gc_mark(*(o->data[i]));
     if (o->frame != NULL)
         gc_mark(o->frame);
 }
