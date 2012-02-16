@@ -2551,14 +2551,14 @@ void gracelib_stats() {
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
     fprintf(stderr, "Total objects freed:     %i\n", freedcount);
     fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
-    fprintf(stderr, "Total heap allocated: %iB\n", heapsize);
-    fprintf(stderr, "                      %iKiB\n", heapsize/1024);
-    fprintf(stderr, "                      %iMiB\n", heapsize/1024/1024);
-    fprintf(stderr, "                      %iGiB\n", heapsize/1024/1024/1024);
-    fprintf(stderr, "Peak heap allocated:  %iB\n", heapmax);
-    fprintf(stderr, "                      %iKiB\n", heapmax/1024);
-    fprintf(stderr, "                      %iMiB\n", heapmax/1024/1024);
-    fprintf(stderr, "                      %iGiB\n", heapmax/1024/1024/1024);
+    fprintf(stderr, "Total heap allocated: %zuB\n", heapsize);
+    fprintf(stderr, "                      %zuKiB\n", heapsize/1024);
+    fprintf(stderr, "                      %zuMiB\n", heapsize/1024/1024);
+    fprintf(stderr, "                      %zuGiB\n", heapsize/1024/1024/1024);
+    fprintf(stderr, "Peak heap allocated:  %zuB\n", heapmax);
+    fprintf(stderr, "                      %zuKiB\n", heapmax/1024);
+    fprintf(stderr, "                      %zuMiB\n", heapmax/1024/1024);
+    fprintf(stderr, "                      %zuGiB\n", heapmax/1024/1024/1024);
     int nowclocks = (clock() - start_clocks);
     float clocks = nowclocks;
     clocks /= CLOCKS_PER_SEC;
@@ -2733,7 +2733,7 @@ int rungc() {
         fprintf(stderr, "Reachable:   %i\n", reached);
         fprintf(stderr, "Unreachable: %i\n", unreached);
         fprintf(stderr, "Freed:       %i\n", freed);
-        fprintf(stderr, "Heap:        %i\n", heapcurrent);
+        fprintf(stderr, "Heap:        %zu\n", heapcurrent);
     }
     return freednow;
 }
