@@ -71,6 +71,7 @@ method astif(cond, thenblock', elseblock') {
         def elseblock = elseblock'
         var register := ""
         def line = util.linenum
+        var handledIdentifiers := false
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->

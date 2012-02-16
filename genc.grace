@@ -76,15 +76,15 @@ method definebindings(l, slot) {
         if ((n.kind == "vardec") | (n.kind == "defdec")
             | (n.kind == "class")) then {
             var tnm := escapeident(n.name.value)
-            if (declaredvars.contains(tnm)) then {
-                return slot
+            if (!declaredvars.contains(tnm)) then {
+                declaredvars.push(tnm)
+                out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
+                slot := slot + 1
             }
-            declaredvars.push(tnm)
-            out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
-            slot := slot + 1
         } elseif (n.kind == "if") then {
             slot := definebindings(n.thenblock, slot)
             slot := definebindings(n.elseblock, slot)
+            n.handledIdentifiers := true
         }
     }
     slot
@@ -531,7 +531,46 @@ method compilewhile(o) {
     out("stackframe = whiletmpstackframe{myc};")
     o.register := "none"
 }
+method compileifexpr(o) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var cond := compilenode(o.value)
+    out("  Object if{myc} = none;")
+    out("struct StackFrameObject *iftmpstackframe{myc} = stackframe;")
+    out("  if (istrue({cond})) \{")
+    var numslots := countbindings(o.thenblock)
+    out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+    out("gc_frame_newslot(stackframe);")
+    var tret := "none"
+    var fret := "none"
+    var tblock := "ERROR"
+    var fblock := "ERROR"
+    definebindings(o.thenblock, 0)
+    for (o.thenblock) do { l->
+        tret := compilenode(l)
+    }
+    out("    gc_frame_newslot({tret});")
+    out("    if{myc} = {tret};")
+    out("  \} else \{")
+    if (o.elseblock.size > 0) then {
+        numslots := countbindings(o.elseblock)
+        out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+        out("gc_frame_newslot(stackframe);")
+        definebindings(o.elseblock, 0)
+        for (o.elseblock) do { l->
+            fret := compilenode(l)
+        }
+        out("    gc_frame_newslot({fret});")
+        out("    if{myc} = {fret};")
+    }
+    out("  \}")
+    out("stackframe = iftmpstackframe{myc};")
+    o.register := "if" ++ myc
+}
 method compileif(o) {
+    if (o.handledIdentifiers == false) then {
+        return compileifexpr(o)
+    }
     var myc := auto_count
     auto_count := auto_count + 1
     var cond := compilenode(o.value)
