@@ -2045,6 +2045,8 @@ Method* add_Method(ClassData c, const char *name,
             Object(*tmpf)(Object, int, Object*, int) = func;
             func = c->methods[i].func;
             c->methods[i].func = tmpf;
+            c->methods[i].flags = MFLAG_REALSELFONLY;
+            return &c->methods[i];
         }
     }
     c->methods[i].flags = MFLAG_REALSELFONLY;
