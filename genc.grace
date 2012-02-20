@@ -291,7 +291,9 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o) {
     var params := o.params
-    var mbody := [ast.astobject(o.value, o.superclass)]
+    def obj = ast.astobject(o.value, o.superclass)
+    obj.classname := o.name.value
+    var mbody := [obj]
     var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
         false)
     var obody := [newmeth]
@@ -323,6 +325,12 @@ method compileobject(o, outerRef) {
     out("  Object " ++ selfr ++ " = alloc_userobj2({numMethods},"
         ++ "{numFields}, objclass{myc});")
     out("  gc_frame_newslot({selfr});")
+    if (o.classname != "object") then {
+        out("if (objclass{myc} == NULL) \{")
+        out("  glfree({selfr}->class->name);")
+        out("  {selfr}->class->name = \"{o.classname}\";")
+        out("\}")
+    }
     if (o.superclass /= false) then {
         superobj := compilenode(o.superclass)
         out("  setsuperobj({selfr}, {superobj});")

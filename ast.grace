@@ -310,6 +310,7 @@ method astobject(body, superclass') {
         def line = util.linenum
         def superclass = superclass'
         var otype := false
+        var classname := "object"
         method pretty(depth) {
             var spc := ""
             for (0..depth) do { i ->
