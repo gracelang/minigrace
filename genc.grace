@@ -171,6 +171,33 @@ method compileobjouter(selfr, outerRef) {
     outprint("\}")
     out("  addmethodreal({selfr},\"outer\", &reader_{escmodname}_{enm}_{myc});")
 }
+method compileobjdefdecdata(o, selfr, pos) {
+    var val := "undefined"
+    if (o.value) then {
+        if (o.value.kind == "object") then {
+            compileobject(o.value, selfr)
+            val := o.value.register
+        } else {
+            val := compilenode(o.value)
+        }
+    }
+    out("  adddatum2({selfr}, {val}, {pos});")
+}
+method compileobjdefdecmeth(o, selfr, pos) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.name.value
+    var len := length(nm) + 1
+    var enm := escapestring2(nm)
+    var inm := escapeident(nm)
+    outprint("Object reader_{escmodname}_{inm}_{myc}"
+        ++ "(Object self, int nparams, "
+        ++ "Object* args, int flags) \{")
+    outprint("  struct UserObject *uo = (struct UserObject *)self;")
+    outprint("  return uo->data[{pos}];")
+    outprint("\}")
+    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+}
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
     if (o.value) then {
@@ -196,6 +223,39 @@ method compileobjdefdec(o, selfr, pos) {
     outprint("  return uo->data[{pos}];")
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+}
+method compileobjvardecdata(o, selfr, pos) {
+    var val := "undefined"
+    if (o.value) then {
+        val := compilenode(o.value)
+    }
+    out("  adddatum2({selfr}, {val}, {pos});")
+}
+method compileobjvardecmeth(o, selfr, pos) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.name.value
+    var len := length(nm) + 1
+    var enm := escapestring2(nm)
+    var inm := escapeident(nm)
+    outprint("Object reader_{escmodname}_{inm}_{myc}"
+        ++ "(Object self, int nparams, "
+        ++ "Object* args, int flags) \{")
+    outprint("  struct UserObject *uo = (struct UserObject *)self;")
+    outprint("  return uo->data[{pos}];")
+    outprint("\}")
+    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+    var nmw := nm ++ ":="
+    len := length(nmw) + 1
+    nmw := escapestring2(nmw)
+    outprint("Object writer_{escmodname}_{inm}_{myc}"
+        ++ "(Object self, int nparams, "
+        ++ "Object* args, int flags) \{")
+    outprint("  struct UserObject *uo = (struct UserObject *)self;")
+    outprint("  uo->data[{pos}] = args[0];")
+    outprint("  return none;");
+    outprint("\}")
+    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -263,7 +323,6 @@ method compileobject(o, outerRef) {
     out("  Object " ++ selfr ++ " = alloc_userobj2({numMethods},"
         ++ "{numFields}, objclass{myc});")
     out("  gc_frame_newslot({selfr});")
-    out("objclass{myc} = {selfr}->class;")
     if (o.superclass /= false) then {
         superobj := compilenode(o.superclass)
         out("  setsuperobj({selfr}, {superobj});")
@@ -275,9 +334,15 @@ method compileobject(o, outerRef) {
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
         } elseif (e.kind == "vardec") then {
-            compileobjvardec(e, selfr, pos)
+            out("if (objclass{myc} == NULL) \{")
+            compileobjvardecmeth(e, selfr, pos)
+            out("\}")
+            compileobjvardecdata(e, selfr, pos)
         } elseif (e.kind == "defdec") then {
-            compileobjdefdec(e, selfr, pos)
+            out("if (objclass{myc} == NULL) \{")
+            compileobjdefdecmeth(e, selfr, pos)
+            out("\}")
+            compileobjdefdecdata(e, selfr, pos)
         } elseif (e.kind == "inherits") then {
             superobj := compilenode(e.value)
             out("  setsuperobj({selfr}, {superobj});")
@@ -287,6 +352,7 @@ method compileobject(o, outerRef) {
         }
         pos := pos + 1
     }
+    out("objclass{myc} = {selfr}->class;")
     out("  self = oldself{myc};")
     util.runOnNew {
         out("  set_type({selfr}, "
