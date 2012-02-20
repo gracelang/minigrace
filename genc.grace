@@ -259,9 +259,11 @@ method compileobject(o, outerRef) {
     if (numFields == 3) then {
         numFields := 4
     }
-    out("  Object " ++ selfr ++ " = alloc_obj2({numMethods},"
-        ++ "{numFields});")
+    globals.push("static ClassData objclass{myc};");
+    out("  Object " ++ selfr ++ " = alloc_userobj2({numMethods},"
+        ++ "{numFields}, objclass{myc});")
     out("  gc_frame_newslot({selfr});")
+    out("objclass{myc} = {selfr}->class;")
     if (o.superclass /= false) then {
         superobj := compilenode(o.superclass)
         out("  setsuperobj({selfr}, {superobj});")

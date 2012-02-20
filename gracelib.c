@@ -2441,15 +2441,18 @@ void UserObj__mark(struct UserObject *o) {
     if (o->super)
         gc_mark(o->super);
 }
-Object alloc_userobj(int numMethods, int numFields) {
-    ClassData c = alloc_class2("Object", numMethods + 6, (void*)&UserObj__mark);
+Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
+    if (c == NULL) {
+        c = alloc_class2("Object", numMethods + 6,
+                (void*)&UserObj__mark);
+        add_Method(c, "asString", &Object_asString);
+        add_Method(c, "++", &Object_concat);
+        add_Method(c, "==", &Object_Equals);
+        add_Method(c, "!=", &Object_NotEquals);
+        add_Method(c, "/=", &Object_NotEquals);
+    }
     Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *)
             + sizeof(int) + sizeof(Object), c);
-    add_Method(c, "asString", &Object_asString);
-    add_Method(c, "++", &Object_concat);
-    add_Method(c, "==", &Object_Equals);
-    add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "/=", &Object_NotEquals);
     o->flags |= FLAG_USEROBJ;
     struct UserObject *uo = (struct UserObject *)o;
     int i;
@@ -2458,8 +2461,11 @@ Object alloc_userobj(int numMethods, int numFields) {
     uo->super = NULL;
     return o;
 }
+Object alloc_userobj(int numMethods, int numFields) {
+    return alloc_userobj2(numMethods, numFields, NULL);
+}
 Object alloc_obj2(int numMethods, int numFields) {
-    return alloc_userobj(numMethods, numFields);
+    return alloc_userobj2(numMethods, numFields, NULL);
 }
 void setclassname(Object self, char *name) {
     char *cpy = glmalloc(strlen(name) + 1);
