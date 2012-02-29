@@ -6,7 +6,6 @@ import lexer
 import ast
 import parser
 import typechecker
-import genllvm29
 import genllvm30
 import genc
 import genjs
@@ -15,7 +14,7 @@ import subtype
 
 util.parseargs
 
-def targets = ["lex", "parse", "subtypematrix", "llvm29", "c", "js"]
+def targets = ["lex", "parse", "subtypematrix", "llvm30", "c", "js"]
 
 if (util.target == "help") then {
     print("Valid targets:")
@@ -58,10 +57,7 @@ if (util.target == "subtypematrix") then {
 }
 
 // Perform the actual compilation
-if (util.target == "llvm29") then {
-    genllvm29.compile(values, util.outfile, util.modname, util.runmode,
-        util.buildtype, util.gracelibPath)
-} elseif (util.target == "llvm30") then {
+if (util.target == "llvm30") then {
     genllvm30.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
 } elseif (util.target == "c") then {
