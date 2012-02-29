@@ -36,6 +36,7 @@ var paramsUsed := 1
 var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
+var compilationDepth := 0
 
 method out(s) {
     output.push(s)
@@ -304,7 +305,7 @@ method compileclass(o) {
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
-    if (o.name.kind != "generic") then {
+    if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
         def meth = ast.astmethod(o.name, [], [o.name], false)
         compilenode(meth)
     }
@@ -958,6 +959,7 @@ method compilenum(o) {
     auto_count := auto_count + 1
 }
 method compilenode(o) {
+    compilationDepth := compilationDepth + 1
     if (linenum /= o.line) then {
         linenum := o.line
         out("// Begin line " ++ linenum)
@@ -1088,6 +1090,7 @@ method compilenode(o) {
     if (o.kind == "op") then {
         compileop(o)
     }
+    compilationDepth := compilationDepth - 1
     out("// compilenode returning " ++ o.register)
     o.register
 }

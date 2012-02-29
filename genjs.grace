@@ -22,6 +22,7 @@ var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
+var compilationDepth := 0
 
 method out(s) {
     output.push(s)
@@ -138,7 +139,7 @@ method compileclass(o) {
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
-    if (o.name.kind != "generic") then {
+    if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
         def meth = ast.astmethod(o.name, [], [o.name], false)
         compilenode(meth)
     }
@@ -537,6 +538,7 @@ method compilereturn(o) {
     o.register := "undefined"
 }
 method compilenode(o) {
+    compilationDepth := compilationDepth + 1
     if (linenum /= o.line) then {
         linenum := o.line
         out("  lineNumber = " ++ linenum);
@@ -670,6 +672,7 @@ method compilenode(o) {
     if (o.kind == "op") then {
         compileop(o)
     }
+    compilationDepth := compilationDepth - 1
     o.register
 }
 method compile(vl, of, mn, rm, bt, glpath) {
