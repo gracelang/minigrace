@@ -75,7 +75,12 @@ method definebindings(l, slot) {
     for (l) do { n ->
         if ((n.kind == "vardec") | (n.kind == "defdec")
             | (n.kind == "class")) then {
-            var tnm := escapeident(n.name.value)
+            var tnm := ""
+            if (n.name.kind == "generic") then {
+                tnm := escapeident(n.name.value.value)
+            } else {
+                tnm := escapeident(n.name.value)
+            }
             if (!declaredvars.contains(tnm)) then {
                 declaredvars.push(tnm)
                 out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
