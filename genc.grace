@@ -443,7 +443,7 @@ method compilemethod(o, selfobj, pos) {
     if (o.varargs) then {
         var van := escapeident(o.vararg.value)
         out("  Object var_init_{van} = process_varargs(args, {i}, nparams);")
-        out("  Object *var_{van} = &(stackframe->slots[0]);")
+        out("  Object *var_{van} = &(stackframe->slots[{slot}]);")
         out("  *var_{van} = var_init_{van};")
         declaredvars.push(van)
         slot := slot + 1
