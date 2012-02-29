@@ -1108,6 +1108,18 @@ method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
     values := vl
+    var nummethods := 1
+    for (values) do { v->
+        if (v.kind == "vardec") then {
+            nummethods := nummethods + 2
+        } elseif (v.kind == "method") then {
+            nummethods := nummethods + 1
+        } elseif (v.kind == "defdec") then {
+            nummethods := nummethods + 1
+        } elseif (v.kind == "class") then {
+            nummethods := nummethods + 1
+        }
+    }
     outfile := of
     modname := mn
     escmodname := escapeident(modname)
@@ -1178,7 +1190,7 @@ method compile(vl, of, mn, rm, bt) {
     out("Object module_{escmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
-    out("  Object self = alloc_obj2(100, 100);")
+    out("  Object self = alloc_obj2({nummethods}, {nummethods});")
     out("  adddatum2(self, self, 0);")
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
