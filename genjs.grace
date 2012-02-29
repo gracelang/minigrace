@@ -372,6 +372,9 @@ method compiledefdec(o) {
         util.syntax_error("const must have value bound.")
     }
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
+    if (compilationDepth == 1) then {
+        compilenode(ast.astmethod(o.name, [], [o.name], false))
+    }
     o.register := val
 }
 method compilevardec(o) {
@@ -384,6 +387,13 @@ method compilevardec(o) {
     } else {
         out("  var " ++ varf(nm) ++ ";")
         val := "false"
+    }
+    if (compilationDepth == 1) then {
+        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        def assignID = ast.astidentifier(o.name.value ++ ":=", false)
+        def tmpID = ast.astidentifier("_var_assign_tmp", false)
+        compilenode(ast.astmethod(assignID, [tmpID],
+            [ast.astbind(o.name, tmpID)], false))
     }
     o.register := val
 }

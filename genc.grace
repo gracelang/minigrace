@@ -746,6 +746,9 @@ method compiledefdec(o) {
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL);")
+    if (compilationDepth == 1) then {
+        compilenode(ast.astmethod(o.name, [], [o.name], false))
+    }
     o.register := "none"
 }
 method compilevardec(o) {
@@ -763,6 +766,13 @@ method compilevardec(o) {
     if (hadval) then {
         out("  if ({val} == undefined)")
         out("    callmethod(none, \"assignment\", 0, NULL);")
+    }
+    if (compilationDepth == 1) then {
+        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        def assignID = ast.astidentifier(o.name.value ++ ":=", false)
+        def tmpID = ast.astidentifier("_var_assign_tmp", false)
+        compilenode(ast.astmethod(assignID, [tmpID],
+            [ast.astbind(o.name, tmpID)], false))
     }
     o.register := "none"
 }
