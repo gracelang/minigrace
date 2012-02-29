@@ -138,6 +138,10 @@ method compileclass(o) {
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
+    if (o.name.kind != "generic") then {
+        def meth = ast.astmethod(o.name, [], [o.name], false)
+        compilenode(meth)
+    }
     o.register := compilenode(con)
 }
 method compileobject(o, outerRef) {
