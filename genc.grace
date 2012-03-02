@@ -1258,7 +1258,7 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
-        cmd := "gcc -o {modname}.gcn -c {modname}.c"
+        cmd := "gcc -g -o {modname}.gcn -c {modname}.c"
         if ((io.system(cmd)).not) then {
             io.error.write("Failed C compilation")
             raise("Fatal.")
@@ -1275,7 +1275,7 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
-            cmd := "gcc -o {modname} -fPIC {exportDynamicBit} {dlbit} "
+            cmd := "gcc -g -o {modname} -fPIC {exportDynamicBit} {dlbit} "
                 ++ "{modname}.gcn "
                 ++ util.gracelibPath ++ " "
             for (linkfiles) do { fn ->

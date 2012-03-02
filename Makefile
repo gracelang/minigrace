@@ -15,10 +15,10 @@ gracelib.bc: gracelib.c gracelib.h
 	clang -emit-llvm -c -o gracelib.bc gracelib.c
 
 gracelib.o: gracelib.c gracelib.h
-	gcc -o gracelib.o -c gracelib.c
+	gcc -g -o gracelib.o -c gracelib.c
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
+	gcc -g $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
 l1/minigrace: known-good/$(ARCH)/minigrace-$(STABLE) $(SOURCEFILES) unicode.gso gracelib.c gracelib.h
 	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ../known-good/$(ARCH)/minigrace-$(STABLE) --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/gracelib-$(STABLE).o compiler.grace )
