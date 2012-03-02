@@ -1,7 +1,7 @@
 include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
-STABLE=ffaca44bd543917c1c9f29e02e8070ae8c6299d7
+STABLE=30a3cefedaa93e1da661d3853cfb8b9aab584eea
 all: minigrace
 
 REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm29.grace genllvm30.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace
@@ -98,6 +98,7 @@ semiclean:
 	rm -f lexer.gco parser.gco util.gco ast.gco genllvm29.gco
 
 known-good/%:
+	rm -rf l1 l2 # We must regenerate files so #include updated
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
