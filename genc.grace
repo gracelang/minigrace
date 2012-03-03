@@ -348,6 +348,7 @@ method compileobject(o, outerRef) {
     compileobjouter(selfr, outerRef)
     out("  Object oldself{myc} = self;")
     out("  self = {selfr};")
+    out("  *selfslot = self;")
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
@@ -367,6 +368,7 @@ method compileobject(o, outerRef) {
             pos := pos - 1
         } else {
             compilenode(e)
+            pos := pos - 1 // Compensate for below
         }
         pos := pos + 1
     }
