@@ -1780,9 +1780,11 @@ void block_savedest(Object self) {
 
 FILE *callgraph;
 int track_callgraph = 0;
+int callcount = 0;
 Object callmethod3(Object self, const char *name,
         int argc, Object *argv, int superdepth) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
+    callcount++;
     int i = 0;
     for (i=0; i<argc; i++)
         debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
@@ -2559,6 +2561,7 @@ void gracelib_stats() {
     fprintf(stderr, "Total objects allocated: %i\n", objectcount);
     fprintf(stderr, "Total objects freed:     %i\n", freedcount);
     fprintf(stderr, "Total strings allocated: %i\n", Strings_allocated);
+    fprintf(stderr, "Total method calls made: %i\n", callcount);
     fprintf(stderr, "Total heap allocated: %zuB\n", heapsize);
     fprintf(stderr, "                      %zuKiB\n", heapsize/1024);
     fprintf(stderr, "                      %zuMiB\n", heapsize/1024/1024);
