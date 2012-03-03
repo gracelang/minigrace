@@ -747,11 +747,6 @@ Object ConcatString_Equals(Object self, int nparams,
     char *b = grcstring(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
-Object ConcatString_Concat(Object self, int nparams,
-        Object *args, int flags) {
-    Object o = callmethod(args[0], "asString", 0, NULL);
-    return alloc_ConcatString(self, o);
-}
 Object ConcatString__escape(Object self, int nparams,
         Object *args, int flags) {
     char *c = grcstring(self);
@@ -847,7 +842,7 @@ Object alloc_ConcatString(Object left, Object right) {
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
-        add_Method(ConcatString, "++", &ConcatString_Concat);
+        add_Method(ConcatString, "++", &String_concat);
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "[]", &ConcatString_at);
@@ -1138,8 +1133,12 @@ Object String_index(Object self, int nparams,
 }
 Object String_concat(Object self, int nparams,
         Object *args, int flags) {
+    int frame = gc_frame_new();
     Object asStr = callmethod(args[0], "asString", 0, NULL);
-    return alloc_ConcatString(self, asStr);
+    gc_frame_newslot(asStr);
+    Object r = alloc_ConcatString(self, asStr);
+    gc_frame_end(frame);
+    return r;
 }
 Object Octets_size(Object receiver, int nparams,
         Object *args, int flags) {
