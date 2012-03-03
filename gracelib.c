@@ -1782,14 +1782,16 @@ FILE *callgraph;
 int track_callgraph = 0;
 Object callmethod3(Object self, const char *name,
         int argc, Object *argv, int superdepth) {
-    debug("callmethod %s on %p", name, self);
+    debug("callmethod %s on %p (%s)", name, self, self->class->name);
+    int i = 0;
+    for (i=0; i<argc; i++)
+        debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
     int frame = gc_frame_new();
     int slot = gc_frame_newslot(self);
     ClassData c = self->class;
     Method *m = NULL;
     Object realself = self;
     int callflags = 0;
-    int i = 0;
     for (i=0; i < c->nummethods; i++) {
         if (strcmp(c->methods[i].name, name) == 0) {
             m = &c->methods[i];
@@ -1854,6 +1856,7 @@ Object callmethod3(Object self, const char *name,
                     ret, self->class->name, name);
         }
         gc_frame_end(frame);
+        debug(" returned %p (%s) from %s on %p", ret, ret->class->name, name, self);
         return ret;
     }
     fprintf(stderr, "Available methods are:\n");
