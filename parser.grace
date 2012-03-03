@@ -82,6 +82,17 @@ method expect(t)or(s) {
     }
     util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
+// Require a t OR s OR u as the current token; if not, raise a syntax error.
+method expect(t)or(s)or(u) {
+    if (sym.kind == t) then {
+        return true
+    } elseif (sym.kind == s) then {
+        return true
+    } elseif (sym.kind == u) then {
+        return true
+    }
+    util.syntax_error("expected {t} or {s} or {u}, got {sym.kind}: {sym.value}")
+}
 // Expect block to consume at least one token
 method expectConsume(ablock) {
     var sz := tokens.size
@@ -1304,9 +1315,13 @@ method methoddec {
         checkIndent
         var stok := sym
         next
-        expect("identifier")or("op")
+        expect("identifier")or("op")or("lsquare")
         pushidentifier
         var meth := values.pop
+        if (accept("rsquare") && {meth.value == "["}) then {
+            meth.value := meth.value ++ "]"
+            next
+        }
         if (accept("bind")) then {
             next
             meth.value := meth.value ++ ":="
