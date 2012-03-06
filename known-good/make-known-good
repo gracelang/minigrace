@@ -17,7 +17,7 @@ known-good
 tests
 EOT
 
-( cd .. && git archive --prefix=tmp-$$/ $COMMIT ) | tar xf - -X EXCLUDE
+( cd $(git rev-parse --show-toplevel) && git archive --prefix=tmp-$$/ $COMMIT ) | tar xf - -X EXCLUDE
 cd tmp-$$
 ln -s .. known-good
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
