@@ -837,3 +837,5 @@ function dbg(o) {
 }
 var extensionsMap = callmethod(var_HashMap, "new");
 var var_void = new GraceObject();
+var ellipsis = Grace_allocObject();
+ellipsis.methods.asString = function() {return new GraceString("ellipsis");}

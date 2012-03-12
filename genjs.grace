@@ -322,6 +322,8 @@ method compileidentifier(o) {
     var name := o.value
     if (name == "self") then {
         o.register := "this"
+    } elseif (name == "...") then {
+        o.register := "ellipsis"
     } else {
         if (modules.contains(name)) then {
             out("  // WARNING: module support not implemented in JS backend")
