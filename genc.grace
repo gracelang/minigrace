@@ -179,7 +179,7 @@ method compileobjouter(selfr, outerRef) {
 }
 method compileobjdefdecdata(o, selfr, pos) {
     var val := "undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
             val := o.value.register
@@ -206,7 +206,7 @@ method compileobjdefdecmeth(o, selfr, pos) {
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
             val := o.value.register
@@ -232,7 +232,7 @@ method compileobjdefdec(o, selfr, pos) {
 }
 method compileobjvardecdata(o, selfr, pos) {
     var val := "undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         val := compilenode(o.value)
     }
     out("  adddatum2({selfr}, {val}, {pos});")
@@ -265,7 +265,7 @@ method compileobjvardecmeth(o, selfr, pos) {
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count

@@ -512,7 +512,7 @@ method astdefdec(name', val, dtype') {
             if (self.dtype) then {
                 s := s ++ " : " ++ self.dtype.pretty(0)
             }
-            if (self.value) then {
+            if (false != self.value) then {
                 s := s ++ "\n"
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }
@@ -539,7 +539,7 @@ method astvardec(name', val', dtype') {
             if (self.dtype) then {
                 s := s ++ " : " ++ self.dtype.pretty(0)
             }
-            if (self.value) then {
+            if (false != self.value) then {
                 s := s ++ "\n"
                 s := s ++ spc ++ self.value.pretty(depth + 1)
             }

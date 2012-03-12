@@ -99,7 +99,7 @@ method compileobjouter(selfr) {
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "%undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count
@@ -133,7 +133,7 @@ method compileobjdefdec(o, selfr, pos) {
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "%undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count

@@ -99,7 +99,7 @@ method compileobjouter(selfr, outerRef) {
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "%undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
             val := o.value.register
@@ -138,7 +138,7 @@ method compileobjdefdec(o, selfr, pos) {
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "%undefined"
-    if (o.value) then {
+    if (false != o.value) then {
         val := compilenode(o.value)
     }
     var myc := auto_count
