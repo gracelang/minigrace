@@ -836,9 +836,13 @@ void ConcatString__mark(Object o) {
     gc_mark(s->left);
     gc_mark(s->right);
 }
+Object String_asNumber(Object self, int argc, Object *argv, int flags) {
+    char *c = grcstring(self);
+    return alloc_Float64(atof(c));
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 18,
+        ConcatString = alloc_class3("ConcatString", 19,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -858,6 +862,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
+        add_Method(ConcatString, "asNumber", &String_asNumber);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -1022,7 +1027,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 19);
+        String = alloc_class("String", 20);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1040,6 +1045,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "replace(1)with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
+        add_Method(String, "asNumber", &String_asNumber);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)

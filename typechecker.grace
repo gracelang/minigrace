@@ -50,7 +50,8 @@ def StringType = ast.asttype("String", [
         StringIdentifier),
     ast.astmethodtype("hashcode", [], NumberIdentifier),
     ast.astmethodtype("indices", [], ListIdentifier),
-    ast.astmethodtype("asString", [], StringIdentifier)
+    ast.astmethodtype("asString", [], StringIdentifier),
+    ast.astmethodtype("asNumber", [], NumberIdentifier)
 ])
 def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),

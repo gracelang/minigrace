@@ -99,6 +99,9 @@ GraceString.prototype = {
                 l.push(new GraceNum(i));
             return new GraceList(l);
         },
+        "asNumber": function() {
+            return new GraceNum(0 + this._value);
+        },
     },
     className: "String"
 };
