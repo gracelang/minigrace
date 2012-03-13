@@ -1,5 +1,5 @@
 include Makefile.conf
-CFILES = ast.c buildinfo.c genc.c genjs.c genllvm29.c genllvm30.c typechecker.c lexer.c parser.c subtype.c util.c
+CFILES = ast.c buildinfo.c genc.c genjs.c genllvm30.c typechecker.c lexer.c parser.c subtype.c util.c
 
 minigrace: $(CFILES:.c=.gcn) minigrace.gcn unicode.gso gracelib.o
 	gcc -std=c99 -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn)
