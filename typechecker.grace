@@ -33,7 +33,8 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype(">=", [NumberOther], BooleanIdentifier),
     ast.astmethodtype("..", [NumberOther], DynamicIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier),
-    ast.astmethodtype("prefix-", [], NumberIdentifier)
+    ast.astmethodtype("prefix-", [], NumberIdentifier),
+    ast.astmethodtype("inBase", [NumberOther], StringIdentifier)
 ])
 def StringType = ast.asttype("String", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),

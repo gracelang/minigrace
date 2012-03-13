@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <libgen.h>
 #include <setjmp.h>
+#include <float.h>
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
@@ -1374,6 +1375,35 @@ Object Float64_hashcode(Object self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
+Object Float64_inBase(Object self, int nparams, Object *args, int flags) {
+    Object basenum = args[0];
+    double based = *((double*)args[0]->data);
+    double mined = *((double*)self->data);
+    int base = (int)based;
+    int mine = (int)mined;
+    if (base > 36 || base < 2)
+        die("base must be in range 2..36");
+    char symbols[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+    char buf[DBL_MAX_EXP + 3]; // One byte for sign, one for null, one for luck
+    int i = 0;
+    char *b = buf + DBL_MAX_EXP + 2;
+    *b = 0;
+    char before = 0;
+    if (mine < 0) {
+        before = '-';
+        mine = -mine;
+    }
+    while (mine != 0) {
+        b--;
+        int r = mine % base;
+        *(b-1) = *(b+1);
+        *b = symbols[r];
+        mine = (mine - r) / base;
+    }
+    if (before)
+        *(--b) = before;
+    return alloc_String(b); 
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -1410,6 +1440,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
+        add_Method(Number, "inBase", &Float64_inBase);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;

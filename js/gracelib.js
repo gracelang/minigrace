@@ -198,6 +198,25 @@ GraceNum.prototype = {
                 return callmethod(e, "apply", obj);
             }
         },
+        "inBase": function(other) {
+            var mine = this._value;
+            var base = other._value;
+            var symbols = "0123456789abcdefghijklmnopqrstuvwxyz";
+            var str = "";
+            var before = "";
+            if (mine < 0) {
+                before = '-';
+                mine = -mine;
+            }
+            while (mine != 0) {
+                var r = mine % base;
+                str = symbols[r] + str;
+                mine = (mine - r) / base;
+            }
+            if (before)
+                str = before + str;
+            return new GraceString(str); 
+        }
     },
     className: "Number",
 };
