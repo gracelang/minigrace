@@ -1896,18 +1896,21 @@ Object callmethod3(Object self, const char *name,
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
+    Object ret = NULL;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         Object(*func)(Object, Object, int, Object*, int);
         func = (Object(*)(Object, Object, int, Object*, int))m->func;
-        func(self, realself, argc, argv, callflags);
+        ret = func(self, realself, argc, argv, callflags);
     } else if (m != NULL) {
-        Object ret = m->func(self, argc, argv, callflags);
+        ret = m->func(self, argc, argv, callflags);
         calldepth--;
         if (ret != NULL && (ret->flags & FLAG_DEAD)) {
             debug("returned freed object %p from %s.%s",
                     ret, self->class->name, name);
         }
         gc_frame_end(frame);
+    }
+    if (ret != NULL) {
         debug(" returned %p (%s) from %s on %p", ret, ret->class->name, name, self);
         return ret;
     }
