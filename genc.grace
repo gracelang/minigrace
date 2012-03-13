@@ -1277,7 +1277,7 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
-            cmd := "gcc -g -o {modname} -fPIC {exportDynamicBit} {dlbit} "
+            cmd := "gcc -g -o {modname} -fPIC {exportDynamicBit} -lm {dlbit} "
                 ++ "{modname}.gcn "
                 ++ util.gracelibPath ++ " "
             for (linkfiles) do { fn ->
