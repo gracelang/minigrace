@@ -216,6 +216,11 @@ GraceNum.prototype = {
             if (before)
                 str = before + str;
             return new GraceString(str); 
+        },
+        "truncate": function() {
+            if (this._value < 0)
+                return new GraceNum(Math.ceil(this._value));
+            return new GraceNum(Math.floor(this._value));
         }
     },
     className: "Number",

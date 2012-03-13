@@ -10,6 +10,7 @@
 #include <libgen.h>
 #include <setjmp.h>
 #include <float.h>
+#include <math.h>
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
@@ -1404,6 +1405,17 @@ Object Float64_inBase(Object self, int nparams, Object *args, int flags) {
         *(--b) = before;
     return alloc_String(b); 
 }
+Object Float64_truncate(Object self, int nparams, Object *args, int flags) {
+    double *d = (double*)self->data;
+    double r;
+    if (*d < 0)
+        r = ceil(*d);
+    else
+        r = floor(*d);
+    if (*d == r)
+        return self;
+    return alloc_Float64(r);
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -1422,7 +1434,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 19, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 20, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -1441,6 +1453,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
+        add_Method(Number, "truncate", &Float64_truncate);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
