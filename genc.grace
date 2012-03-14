@@ -857,7 +857,7 @@ method compileop(o) {
         auto_count := auto_count + 1
     }
 }
-method compilecall(o) {
+method compilecall(o, tailcall) {
     def myc = auto_count
     auto_count := auto_count + 1
     var args := []
@@ -903,8 +903,13 @@ method compilecall(o) {
             out("  params[{i}] = {arg};")
             i := i + 1
         }
-        out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-        out("    {args.size}, params);")
+        if (tailcall) then {
+            out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
+            out("    {args.size}, params, 0);")
+        } else {
+            out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
+            out("    {args.size}, params);")
+        }
     } else {
         obj := "self"
         len := length(o.value.value) + 1
@@ -912,8 +917,13 @@ method compilecall(o) {
             out("  params[{i}] = {arg};")
             i := i + 1
         }
-        out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-        out("    {args.size}, params);")
+        if (tailcall) then {
+            out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
+            out("    {args.size}, params, 0);")
+        } else {
+            out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
+            out("    {args.size}, params);")
+        }
     }
     out("  gc_frame_end(callframe{myc});")
     o.register := "call" ++ auto_count
@@ -958,7 +968,15 @@ method compileimport(o) {
     o.register := "none"
 }
 method compilereturn(o) {
-    var reg := compilenode(o.value)
+    var reg
+    if ((o.value.kind == "call") &&
+        {util.extensions.contains("TailCall")}) then {
+        // Tail-call support
+        compilecall(o.value, true)
+        reg := o.value.register
+    } else {
+        reg := compilenode(o.value)
+    }
     if (inBlock) then {
         out("  block_return(realself, {reg});")
     } else {
@@ -1120,7 +1138,7 @@ method compilenode(o) {
             tmp := ast.astcall(tmp, [])
             o.register := compilenode(tmp)
         } else {
-            compilecall(o)
+            compilecall(o, false)
         }
     }
     if (o.kind == "op") then {
