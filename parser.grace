@@ -855,13 +855,8 @@ method callmprest(meth, params, tok) {
            | accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
-        util.runOnNew {
-            methname := methname ++ "({params.size - lastparamcount})"
-            lastparamcount := params.size
-        } else {
-            false // XXX Parse bug
-            methname := methname ++ "()"
-        }
+        methname := methname ++ "({params.size - lastparamcount})"
+        lastparamcount := params.size
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1260,13 +1255,8 @@ method parsempmndecrest(tm) {
         if (varargs) then {
             util.syntax_error("varargs parameter must be last.")
         }
-        util.runOnNew {
-            methname := methname ++ "({params.size - lastparamcount})"
-            lastparamcount := params.size
-        } else {
-            false // XXX Parse bug
-            methname := methname ++ "()"
-        }
+        methname := methname ++ "({params.size - lastparamcount})"
+        lastparamcount := params.size
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1488,12 +1478,8 @@ method domethodtype {
         next
         if (acceptSameLine("identifier")) then {
             pushidentifier
-            util.runOnNew {
-                mn := "{mn}({params.size - lastparamcount}){values.pop.value}"
-                lastparamcount := params.size
-            } else {
-                mn := mn ++ "()" ++ values.pop.value
-            }
+            mn := "{mn}({params.size - lastparamcount}){values.pop.value}"
+            lastparamcount := params.size
         }
     }
     if (accept("arrow")) then {

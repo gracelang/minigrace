@@ -374,10 +374,8 @@ method compileobject(o, outerRef) {
     }
     out("objclass{myc} = {selfr}->class;")
     out("  self = oldself{myc};")
-    util.runOnNew {
-        out("  set_type({selfr}, "
-            ++ "{subtype.typeId(o.otype)});")
-    } else { }
+    out("  set_type({selfr}, "
+        ++ "{subtype.typeId(o.otype)});")
     o.register := selfr
     inBlock := origInBlock
 }

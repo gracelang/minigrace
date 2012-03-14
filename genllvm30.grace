@@ -245,10 +245,8 @@ method compileobject(o, outerRef) {
         }
         pos := pos + 1
     }
-    util.runOnNew {
-        out("  call void @set_type(%object {selfr}, "
-            ++ "i16 {subtype.typeId(o.otype)})")
-    } else { }
+    out("  call void @set_type(%object {selfr}, "
+        ++ "i16 {subtype.typeId(o.otype)})")
     o.register := selfr
     inBlock := origInBlock
 }
@@ -1364,9 +1362,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("declare %object @gracelib_print(%object, i32, %object*)")
     out("declare %object @gracelib_readall(%object, i32, %object*)")
     out("declare %object @gracelib_length(%object)")
-    util.runOnNew {
-        out("declare void @set_type(%object, i16)")
-    } else { }
+    out("declare void @set_type(%object, i16)")
     out("declare void @setclassname(%object, i8*)")
     out("declare void @enable_callgraph(i8*)")
     out("declare %object @dlmodule(i8*)")
