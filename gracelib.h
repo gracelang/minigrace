@@ -44,6 +44,7 @@ struct StackFrameObject {
 Object alloc_Float64(double);
 Object alloc_List();
 Object alloc_String(const char*);
+Object tailcall(Object, const char *, int, Object *, int);
 Object callmethod3(Object, const char *, int, Object *, int);
 Object callmethod(Object receiver, const char *name,
         int nparams, Object *args);

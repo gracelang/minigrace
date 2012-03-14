@@ -1992,6 +1992,46 @@ void block_savedest(Object self) {
     struct UserObject *uo = (struct UserObject*)self;
     uo->retpoint = (void *)&return_stack[calldepth-1];
 }
+struct TailCallObject {
+    int32_t flags;
+    ClassData class;
+    Object self;
+    const char *name;
+    int argc;
+    Object *argv;
+    int superdepth;
+};
+ClassData TailCall = NULL;
+void TailCall__mark(struct TailCallObject *t) {
+    gc_mark(t->self);
+    int i;
+    for (i=0; i<t->argc; i++)
+        gc_mark(t->argv[i]);
+}
+void TailCall__release(struct TailCallObject *t) {
+    glfree(t->argv);
+}
+Object tailcall(Object self, const char *name, int argc, Object *argv,
+        int superdepth) {
+    if (TailCall == NULL) {
+        TailCall = alloc_class3("TailCall", 0, (void*)&TailCall__mark,
+                (void*)&TailCall__release);
+    }
+    struct TailCallObject *o = (struct TailCallObject*)alloc_obj(
+            sizeof(struct TailCallObject) - sizeof(int32_t)
+                - sizeof(ClassData), TailCall);
+    o->flags = 0;
+    o->class = TailCall;
+    o->self = self;
+    o->name = name;
+    o->argc = argc;
+    o->argv = glmalloc(sizeof(Object) * argc);
+    int i;
+    for (i=0; i<argc; i++)
+        o->argv[i] = argv[i];
+    o->superdepth = superdepth;
+    return (Object)o;
+}
 
 FILE *callgraph;
 int track_callgraph = 0;
@@ -1999,11 +2039,13 @@ int callcount = 0;
 Object callmethod3(Object self, const char *name,
         int argc, Object *argv, int superdepth) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
+    int frame = gc_frame_new();
+    int istail = 0;
+start:
     callcount++;
     int i = 0;
     for (i=0; i<argc; i++)
         debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
-    int frame = gc_frame_new();
     int slot = gc_frame_newslot(self);
     ClassData c = self->class;
     Method *m = NULL;
@@ -2017,8 +2059,8 @@ Object callmethod3(Object self, const char *name,
     }
     if (superdepth)
         m = NULL;
-    sprintf(callstack[calldepth], "%s.%s (%i)", self->class->name, name,
-            linenumber);
+    sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
+            self->class->name, name, linenumber);
     if (track_callgraph && calldepth > 0) {
         char tmp[255];
         char *prev;
@@ -2063,6 +2105,7 @@ Object callmethod3(Object self, const char *name,
     }
     Object ret = NULL;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
+        calldepth--;
         Object(*func)(Object, Object, int, Object*, int);
         func = (Object(*)(Object, Object, int, Object*, int))m->func;
         ret = func(self, realself, argc, argv, callflags);
@@ -2073,10 +2116,23 @@ Object callmethod3(Object self, const char *name,
             debug("returned freed object %p from %s.%s",
                     ret, self->class->name, name);
         }
-        gc_frame_end(frame);
     }
     if (ret != NULL) {
+        gc_frame_end(frame);
         debug(" returned %p (%s) from %s on %p", ret, ret->class->name, name, self);
+        if (ret->class == TailCall) {
+            frame = gc_frame_new();
+            gc_frame_newslot(ret);
+            struct TailCallObject *t = (struct TailCallObject*)ret;
+            self = t->self;
+            name = t->name;
+            argc = t->argc;
+            argv = t->argv;
+            superdepth = t->superdepth;
+            debug("tailcall to %s on %p (%s)", name, self, self->class->name);
+            istail = 1;
+            goto start;
+        }
         return ret;
     }
     fprintf(stderr, "Available methods are:\n");
