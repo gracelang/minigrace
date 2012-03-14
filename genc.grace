@@ -463,8 +463,17 @@ method compilemethod(o, selfobj, pos) {
     var ret := "none"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)
+    var tco := false
+    if ((o.body.size > 0) && {o.body.last.kind == "call"}
+        && {util.extensions.contains("TailCall")}) then {
+        tco := o.body.pop
+    }
     for (o.body) do { l ->
         ret := compilenode(l)
+    }
+    if (false != tco) then {
+        compilecall(tco, true)
+        ret := tco.register
     }
     out("  gc_frame_end(frame);")
     out("  return {ret};")
