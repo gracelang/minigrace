@@ -806,7 +806,7 @@ function do_import(modname, func) {
     if (importedModules[modname]) {
         return importedModules[modname];
     }
-    var f = func.call(new GraceModule());
+    var f = func.call(Grace_allocModule(modname));
     importedModules[modname] = f;
     return f;
 }
@@ -842,13 +842,19 @@ var extensionsMap = callmethod(var_HashMap, "new");
 var var_void = new GraceObject();
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
-function GraceModule() {
-
-}
-GraceModule.prototype = Grace_allocObject();
-GraceModule.prototype.methods["while(1)do"] = function(c,b) {
+var Grace_prelude = Grace_allocObject();
+Grace_prelude.methods["while(1)do"] = function(c,b) {
     while (Grace_isTrue(callmethod(c, "apply"))) {
         callmethod(b, "apply");
     }
     return var_void;
+}
+function Grace_allocModule(modname) {
+    var mod = Grace_allocObject();
+    mod.methods.outer = function() {
+        return this.outer;
+    }
+    mod.outer = Grace_prelude;
+    mod.className = "module<" + modname + ">";
+    return mod;
 }

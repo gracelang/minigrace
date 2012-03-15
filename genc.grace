@@ -1212,11 +1212,11 @@ method compile(vl, of, mn, rm, bt) {
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
-    out("  adddatum2(self, self, 0);")
+    out("  adddatum2(self, grace_prelude(), 0);")
+    out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
-    out("  addmethod2(self, \"while(1)do\", &grace_while_do);")
     out("  Object *var_HashMap = alloc_var();")
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")

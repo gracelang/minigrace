@@ -3,7 +3,10 @@ import ast
 import util
 import subtype
 
-var scopes := [HashMap.new]
+def prelude = HashMap.new
+def moduleScope = HashMap.new
+moduleScope.put("___is_object", true)
+var scopes := [HashMap.new, prelude, moduleScope]
 var auto_count := 0
 
 def DynamicIdentifier = ast.astidentifier("Dynamic", false)
@@ -1216,12 +1219,12 @@ method resolveIdentifiersList(lst) {
     resolveIdentifiersList(lst)withBlock { }
 }
 
+prelude.put("while(1)do", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
     var btmp
     bindName("print", Binding.new("method"))
     bindName("length", Binding.new("method"))
-    bindName("while(1)do", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))
