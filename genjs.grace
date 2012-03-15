@@ -663,12 +663,28 @@ method compilenode(o) {
             out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
+        } elseif ((o.value.kind == "member") &&
+                { (o.value.in.kind == "identifier")
+                    & (o.value.in.value == "self")
+                    & (o.value.value == "length")}) then {
+            tmp := compilenode(o.with.first)
+            out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
+            o.register := "call" ++ auto_count
+            auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
             tmp := compilenode(o.with.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
+        } elseif ((o.value.kind == "member") &&
+                { (o.value.in.kind == "identifier")
+                    & (o.value.in.value == "self")
+                    & (o.value.value == "escapestring")}) then {
+            tmp := o.with.first
+            tmp := ast.astmember("_escape", tmp)
+            tmp := ast.astcall(tmp, [])
+            o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
             tmp := o.with.first
