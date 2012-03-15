@@ -2834,17 +2834,29 @@ Object grace_while_do(Object self, int argc, Object *argv, int flags) {
     }
     return none;
 }
+Object grace_for_do(Object self, int argc, Object *argv, int flags) {
+    if (argc != 2)
+        die("for-do requires exactly two arguments");
+    Object iter = callmethod(argv[0], "iter", 0, NULL);
+    gc_frame_newslot(iter);
+    while (istrue(callmethod(iter, "havemore", 0, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL);
+        callmethod(argv[1], "apply", 1, &val);
+    }
+    return none;
+}
 Object prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("Prelude", 6, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("Prelude", 7, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "while(1)do", &grace_while_do);
-    prelude = alloc_userobj2(0, 6, c);
+    add_Method(c, "for(1)do", &grace_for_do);
+    prelude = alloc_userobj2(0, 7, c);
     return prelude;
 }

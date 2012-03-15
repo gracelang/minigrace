@@ -422,8 +422,6 @@ method identifier {
     if (accept("identifier")) then {
         if (sym.value == "if") then {
             doif
-        } elseif (sym.value == "for") then {
-            dofor
         } else {
             pushidentifier
         }

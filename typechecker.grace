@@ -1220,6 +1220,7 @@ method resolveIdentifiersList(lst) {
 }
 
 prelude.put("while(1)do", Binding.new("method"))
+prelude.put("for(1)do", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
     var btmp
