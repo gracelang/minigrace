@@ -1445,9 +1445,14 @@ method doimport {
 method doreturn {
     if (accept("keyword") & (sym.value == "return")) then {
         next
-        expectConsume {expression}
-        var p := values.pop
-        var o := ast.astreturn(p)
+        var retval
+        if (tokenOnSameLine) then {
+            expectConsume {expression}
+            retval := values.pop
+        } else {
+            retval := ast.astidentifier("void", false)
+        }
+        var o := ast.astreturn(retval)
         values.push(o)
     }
 }
