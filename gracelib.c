@@ -1802,7 +1802,10 @@ Object module_sys_init() {
 Object alloc_none() {
     if (none != NULL)
         return none;
-    noneClass = alloc_class("none", 0);
+    noneClass = alloc_class("void", 3);
+    add_Method(noneClass, "==", &Object_Equals);
+    add_Method(noneClass, "!=", &Object_NotEquals);
+    add_Method(noneClass, "asString", &Object_asString);
     Object o = alloc_obj(0, noneClass);
     none = o;
     gc_root(o);

@@ -1199,6 +1199,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
+    out("  Object *var_void = alloc_var();")
+    out("  *var_void = none;")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")

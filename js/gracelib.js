@@ -836,3 +836,4 @@ function dbg(o) {
     stderr_txt.value += dbgp(o, 0) + "\n";
 }
 var extensionsMap = callmethod(var_HashMap, "new");
+var var_void = new GraceObject();

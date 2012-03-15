@@ -1224,6 +1224,7 @@ method typecheck(values) {
     bindName("escapestring", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))
+    bindName("void", Binding.new("def"))
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
     bindName("self", Binding.new("def"))
