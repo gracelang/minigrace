@@ -65,6 +65,10 @@ method accept(t)onLineOfLastOr(other) {
     (sym.kind == t) & (((other.line == sym.line) |
         (sym.indent > other.indent)) | (lastToken.line == sym.line))
 }
+// True if there is a token on the same logical line
+method tokenOnSameLine {
+    (lastline == sym.line) | (sym.indent > lastIndent)
+}
 // Require a t as the current token; if not, raise a syntax error.
 method expect(t) {
     if (sym.kind == t) then {
