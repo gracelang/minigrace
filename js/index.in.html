@@ -22,7 +22,7 @@
             stdout_txt.value = "";
             compileError = false;
             try {
-                gracecode_compiler.call({methods:{}, data: {}});
+                gracecode_compiler.call(new GraceModule());
             } catch (e) {
                 if (e == "ErrorExit") {
                     compileError = true;
