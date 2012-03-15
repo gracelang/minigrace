@@ -1236,6 +1236,7 @@ method typecheck(values) {
     bindName("self", Binding.new("def"))
     bindName("super", Binding.new("def"))
     bindName("raise", Binding.new("method"))
+    bindName("outer", Binding.new("method"))
     btmp := Binding.new("type")
     btmp.value := DynamicType
     bindName("Dynamic", btmp)
