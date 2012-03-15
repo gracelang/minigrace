@@ -1221,6 +1221,7 @@ method typecheck(values) {
     var btmp
     bindName("print", Binding.new("method"))
     bindName("length", Binding.new("method"))
+    bindName("while(1)do", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))

@@ -416,54 +416,12 @@ method dofor {
     }
 }
 
-// Accept a "while" statement as a syntactic special case. There is
-// nothing particularly special about it compared to the last two.
-method dowhile {
-    if (accept("identifier") & (sym.value == "while")) then {
-        var minInd := statementIndent + 1
-        next
-        var cond
-        if (accept("lbrace")) then {
-            next
-            expression
-            cond := values.pop
-            if (accept("rbrace")) then {
-                next
-            }
-        }
-        var body := []
-        if (accept("identifier") & (sym.value == "do")) then {
-            next
-            expect("lbrace")
-            next
-            if (sym.line == lastToken.line) then {
-                minIndentLevel := sym.linePos - 1
-            } else {
-                minIndentLevel := minInd
-            }
-            while {(accept("rbrace")).not} do {
-                statement
-                var v := values.pop
-                body.push(v)
-            }
-            next
-            var o := ast.astwhile(cond, body)
-            values.push(o)
-        }
-        minIndentLevel := minInd - 1
-    } else {
-        util.syntax_error("expected 'do'")
-    }
-}
-
 // Accept an identifier. Handle "if", "while", and "for" specially by
 // passing them on to the appropriate method above.
 method identifier {
     if (accept("identifier")) then {
         if (sym.value == "if") then {
             doif
-        } elseif (sym.value == "while") then {
-            dowhile
         } elseif (sym.value == "for") then {
             dofor
         } else {

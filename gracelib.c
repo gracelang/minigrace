@@ -2822,3 +2822,11 @@ int rungc() {
     }
     return freednow;
 }
+Object grace_while_do(Object self, int argc, Object *argv, int flags) {
+    if (argc != 2)
+        die("while-do requires exactly two arguments");
+    while (istrue(callmethod(argv[0], "apply", 0, NULL))) {
+        callmethod(argv[1], "apply", 0, NULL);
+    }
+    return none;
+}

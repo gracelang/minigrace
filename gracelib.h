@@ -114,4 +114,4 @@ void setclassname(Object, char*);
 void gracelib_stats();
 int istrue(Object);
 void setmodule(const char *);
-
+Object grace_while_do(Object, int, Object*, int);

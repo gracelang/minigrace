@@ -1129,7 +1129,7 @@ method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
     values := vl
-    var nummethods := 1
+    var nummethods := 2
     for (values) do { v->
         if (v.kind == "vardec") then {
             nummethods := nummethods + 2
@@ -1216,6 +1216,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
+    out("  addmethod2(self, \"while(1)do\", &grace_while_do);")
     out("  Object *var_HashMap = alloc_var();")
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
