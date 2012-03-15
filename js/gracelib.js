@@ -849,6 +849,14 @@ Grace_prelude.methods["while(1)do"] = function(c,b) {
     }
     return var_void;
 }
+Grace_prelude.methods["for(1)do"] = function(c,b) {
+    var iter = callmethod(c, "iterator");
+    while (Grace_isTrue(callmethod(iter, "havemore"))) {
+        var val = callmethod(iter, "next");
+        callmethod(b, "apply", val);
+    }
+    return var_void;
+}
 function Grace_allocModule(modname) {
     var mod = Grace_allocObject();
     mod.methods.outer = function() {
