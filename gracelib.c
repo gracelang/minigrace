@@ -2449,6 +2449,9 @@ Object alloc_HashMapClassObject() {
     return o;
 }
 Object Block_apply(Object self, int nargs, Object *args, int flags) {
+    struct BlockObject *bo = (struct BlockObject*)self;
+    memcpy(return_stack[calldepth - 1], bo->retpoint,
+            sizeof(return_stack[calldepth - 1]));
     return callmethod(self, "_apply", nargs, args);
 }
 Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
