@@ -470,6 +470,14 @@ method compilecall(o) {
         ) then {
         out("  var call{auto_count} = callmethod(superDepth, "
             ++ "\"outer\");")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "prelude")}) then {
+        out("  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
+            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
+        for (args) do { arg ->
+            out(", " ++ arg)
+        }
+        out(");")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         out("  var call" ++ auto_count ++ " = callmethod(" ++ obj

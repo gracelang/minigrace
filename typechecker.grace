@@ -3,10 +3,11 @@ import ast
 import util
 import subtype
 
-def prelude = HashMap.new
+def preludeObj = HashMap.new
 def moduleScope = HashMap.new
 moduleScope.put("___is_object", true)
-var scopes := [HashMap.new, prelude, moduleScope]
+preludeObj.put("___is_prelude", true)
+var scopes := [HashMap.new, preludeObj, moduleScope]
 var auto_count := 0
 
 def DynamicIdentifier = ast.astidentifier("Dynamic", false)
@@ -137,7 +138,11 @@ method findDeepMethod(name) {
             return ast.astidentifier(name, false)
         }
     }
-    ast.astmember(name, mem)
+    if (scopes.at(lv).contains("___is_prelude")) then {
+        ast.astmember(name, ast.astidentifier("prelude", false))
+    } else {
+        ast.astmember(name, mem)
+    }
 }
 
 method pushScope {
@@ -1219,8 +1224,8 @@ method resolveIdentifiersList(lst) {
     resolveIdentifiersList(lst)withBlock { }
 }
 
-prelude.put("while(1)do", Binding.new("method"))
-prelude.put("for(1)do", Binding.new("method"))
+preludeObj.put("while(1)do", Binding.new("method"))
+preludeObj.put("for(1)do", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
     var btmp
@@ -1237,6 +1242,7 @@ method typecheck(values) {
     bindName("super", Binding.new("def"))
     bindName("raise", Binding.new("method"))
     bindName("outer", Binding.new("method"))
+    bindName("prelude", Binding.new("def"))
     btmp := Binding.new("type")
     btmp.value := DynamicType
     bindName("Dynamic", btmp)

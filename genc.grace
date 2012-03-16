@@ -888,6 +888,14 @@ method compilecall(o) {
         ) then {
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, NULL, ((flags >> 24) & 0xff));")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "prelude")}) then {
+        for (args) do { arg ->
+            out("  params[{i}] = {arg};")
+            i := i + 1
+        }
+        out("  Object call{auto_count} = callmethod(prelude, \"{evl}\", "
+            ++ "{args.size}, params);")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
@@ -1205,6 +1213,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
     outprint("extern Object none;")
+    outprint("extern Object prelude;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static const char modulename[] = \"{modname}\";");
