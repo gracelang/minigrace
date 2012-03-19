@@ -204,6 +204,7 @@ method compileblock(o) {
     out("    return this.real.apply(this.receiver, a._value);")
     out("  \}")
     out("  block" ++ myc ++ ".receiver = this;")
+    out("  block{myc}.className = 'block<{modname}:{o.line}>';")
     out("  block" ++ myc ++ ".real = function(")
     var first := true
     for (o.params) do {p->
