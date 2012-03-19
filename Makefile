@@ -77,6 +77,8 @@ test: minigrace
 fulltest: gencheck clean selfhost-rec selftest test llvmtest
 javatest: minigrace
 	./tests/harness "$(shell pwd)/minigrace --target java --gracelib $(shell pwd)/java" tests "java -classpath .:$(shell pwd)/java"
+javajavatest: java
+	./tests/harness "$(shell pwd)/java/minigracej" tests "java -classpath .:$(shell pwd)/java"
 backendtests: test javatest
 
 java: minigrace $(SOURCEFILES)
