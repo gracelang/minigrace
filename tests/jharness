@@ -1,0 +1,13 @@
+#!/bin/bash
+
+tcase=$3
+
+if ../minigrace --target java --make $tcase
+then
+    execname="${tcase%%.*}"
+    echo "#!/bin/bash" > $execname
+    echo "java -cp .:../java $execname" >> $execname
+    chmod +x "$execname"
+else
+    exit 1
+fi
