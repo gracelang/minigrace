@@ -1,11 +1,23 @@
 #!/bin/bash
 
 set -e
+
+if [ $# -lt 3 ]
+then
+    echo "Error: harness requires three arguments" >&2
+    echo "- Grace command" >&2
+    echo "- Directory of tests to run" >&2
+    echo "- Command to execute compiled code (empty for native)" >&2
+fi
 GRACE="$1"
 TESTDIR="$2"
+EXECUTOR="$3"
+shift
 shift
 shift
 cd "$TESTDIR"
+
+[ "$EXECUTOR" ] && EXECUTOR="$EXECUTOR " || EXECUTOR="./"
 
 if [ $# -gt 0 ]
 then
@@ -43,7 +55,7 @@ do
         if $GRACE --make --native "$tcase" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
-            ./"$execname" > test-$$.out
+            $EXECUTOR"$execname" > test-$$.out
             if diff test-$$.out ${tcase%_test.grace}.out
             then
                 NUM_PASS=$((NUM_PASS + 1))

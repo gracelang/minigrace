@@ -73,11 +73,11 @@ unicode.gco: unicode.c unicodedata.h
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
-	./tests/harness "$(shell pwd)/minigrace" tests
+	./tests/harness "$(shell pwd)/minigrace" tests ""
 fulltest: gencheck clean selfhost-rec selftest test llvmtest
-llvmtest: minigrace gracelib.bc
-	./tests/harness "$(shell pwd)/minigrace --target llvm30" tests
-backendtests: test llvmtest
+javatest: minigrace
+	./tests/harness "$(shell pwd)/minigrace --target java --gracelib $(shell pwd)/java" tests "java -classpath .:$(shell pwd)/java"
+backendtests: test javatest
 
 java: minigrace $(SOURCEFILES)
 	cd java && for x in $(SOURCEFILES) ; do ln -sf ../$$x . ; done && ../minigrace --make --verbose --target java --module minigrace compiler.grace
