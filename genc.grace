@@ -743,7 +743,7 @@ method compiledefdec(o) {
     }
     declaredvars.push(nm)
     var val := o.value
-    if (val) then {
+    if (false != val) then {
         val := compilenode(val)
     } else {
         util.syntax_error("const must have value bound.")
