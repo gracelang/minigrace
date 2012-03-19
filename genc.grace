@@ -761,7 +761,7 @@ method compilevardec(o) {
     declaredvars.push(nm)
     var val := o.value
     var hadval := false
-    if (val) then {
+    if (false != val) then {
         val := compilenode(val)
         hadval := true
     } else {
