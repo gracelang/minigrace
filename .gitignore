@@ -28,3 +28,4 @@ c/Makefile.conf
 c/bin
 Makefile.conf
 c/configure
+java/*.grace

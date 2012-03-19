@@ -79,6 +79,9 @@ llvmtest: minigrace gracelib.bc
 	./tests/harness "$(shell pwd)/minigrace --target llvm30" tests
 backendtests: test llvmtest
 
+java: minigrace $(SOURCEFILES)
+	cd java && for x in $(SOURCEFILES) ; do ln -sf ../$$x . ; done && ../minigrace --make --verbose --target java --module minigrace compiler.grace
+
 javaclean:
 	rm -f $(SOURCEFILES:.grace=.java) minigrace.java
 	rm -f $(SOURCEFILES:.grace=)*.class minigrace.class
@@ -111,4 +114,4 @@ known-good/%:
 Makefile.conf: configure
 	./configure
 
-.PHONY: all clean selfhost-stats selfhost-rec test js c
+.PHONY: all clean selfhost-stats selfhost-rec test js c java
