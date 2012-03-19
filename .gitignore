@@ -6,6 +6,8 @@
 *.gso
 *.gcn
 *.c
+*.java
+*.class
 l1
 l2
 minigrace

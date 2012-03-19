@@ -107,6 +107,8 @@ method parseargs {
                 if (outfilev == io.output) then {
                     if (targetv == "c") then {
                         outfilev := io.open(modnamev ++ ".c", "w")
+                    } elseif (targetv == "java") then {
+                        outfilev := io.open(modnamev ++ ".java", "w")
                     } else {
                         outfilev := io.open(modnamev ++ ".ll", "w")
                     }
@@ -117,6 +119,8 @@ method parseargs {
     if (gracelibPathv == false) then {
         if (targetv == "llvm") then {
             gracelibPathv := sys.execPath ++ "/gracelib.bc"
+        } elseif (targetv == "java") then {
+            gracelibPathv := sys.execPath ++ "/java"
         } else {
             gracelibPathv := sys.execPath ++ "/gracelib.o"
         }

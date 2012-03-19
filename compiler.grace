@@ -8,13 +8,14 @@ import parser
 import typechecker
 import genllvm30
 import genc
+import genjava
 import genjs
 import buildinfo
 import subtype
 
 util.parseargs
 
-def targets = ["lex", "parse", "subtypematrix", "llvm30", "c", "js"]
+def targets = ["lex", "parse", "subtypematrix", "llvm29", "c", "js", "java"]
 
 if (util.target == "help") then {
     print("Valid targets:")
@@ -65,6 +66,9 @@ if (util.target == "llvm30") then {
         util.buildtype)
 } elseif ((util.target == "js") | (util.target == "ecmascript")) then {
     genjs.compile(values, util.outfile, util.modname, util.runmode,
+        util.buildtype, util.gracelibPath)
+} elseif (util.target == "java") then {
+    genjava.compile(values, util.outfile, util.modname, util.runmode,
         util.buildtype, util.gracelibPath)
 } else {
     io.error.write("minigrace: no such target '" ++ util.target ++ "'")
