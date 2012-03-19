@@ -78,7 +78,13 @@ fulltest: gencheck clean selfhost-rec selftest test llvmtest
 llvmtest: minigrace gracelib.bc
 	./tests/harness "$(shell pwd)/minigrace --target llvm30" tests
 backendtests: test llvmtest
-clean:
+
+javaclean:
+	rm -f $(SOURCEFILES:.grace=.java) minigrace.java
+	rm -f $(SOURCEFILES:.grace=)*.class minigrace.class
+	rm -f java/grace/lib/*.class
+	rm -f java/grace/lang/*.class
+clean: javaclean
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso
 	rm -rf l1 l2 buildinfo.grace
