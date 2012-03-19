@@ -46,8 +46,12 @@ public class GraceString extends GraceObject {
     return new GraceString(value.replace(str(what), str(with)));
   }
 
-  public GraceObject subvalueFrom$to(GraceObject from, GraceObject to) {
-    return new GraceString(value.substring(i(from), i(to)));
+  public GraceObject substringFrom$to(GraceObject from, GraceObject to) {
+    int i = i(to) - 1;
+    if (i >= value.length()) {
+      return new GraceString(value.substring(i(from) - 1));
+    }
+    return new GraceString(value.substring(i(from) - 1, i));
   }
 
   public GraceObject ord() {
