@@ -828,6 +828,10 @@ method resolveIdentifiers(node) {
         pushScope
         for (node.params) do {e->
             bindIdentifier(e)
+            // Ensure parameter type exists
+            if (false != e.dtype) then {
+                resolveIdentifier(e.dtype)
+            }
         }
         tmp2 := resolveIdentifiersList(node.params)
         if (node.varargs) then {
