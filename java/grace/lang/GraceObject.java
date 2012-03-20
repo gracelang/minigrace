@@ -1,5 +1,7 @@
 package grace.lang;
 
+import grace.lib.prelude;
+
 import java.lang.reflect.*;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,6 +19,8 @@ public class GraceObject implements Iterable<GraceObject>,
       return new GraceHashMap();
     }
   };
+
+  public static final GraceObject prelude = new prelude();
 
   public static GraceObject escapestring(GraceObject str) {
     final String p = ((GraceString) str).value;

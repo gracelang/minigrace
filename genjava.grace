@@ -183,10 +183,6 @@ method compileExecution(nodes: List, scope: Scope) -> String {
         scope.line(compileBind(node, scope))
     }.kind("if") do { node ->
         scope.stmt(compileIf(node, scope))
-    }.kind("while") do { node ->
-        scope.stmt(compileWhile(node, scope))
-    }.kind("for") do { node ->
-        scope.stmt(compileFor(node, scope))
     }.kind("member") do { node ->
         scope.line(compileMember(node, scope))
     }.kind("call") do { node ->
@@ -443,32 +439,32 @@ method compileIf(node, scope: Scope) -> String {
     } else { "\}" })
 }
 
-method compileWhile(node, scope: Scope) -> String {
-    def block = compileExpression(node.value, scope)
+// method compileWhile(node, scope: Scope) -> String {
+//     def block = compileExpression(node.value, scope)
 
-    scope.block("while ((({bln}) {block}).value) \{", { scope' ->
-        compileExecution(node.body, scope')
-    }, "\}")
-}
+//     scope.block("while ((({bln}) {block}).value) \{", { scope' ->
+//         compileExecution(node.body, scope')
+//     }, "\}")
+// }
 
-method compileFor(node, scope: Scope) -> String {
-    def over = compileExpression(node.value, scope)
-    def params = node.body.params
-    def param = params.size > 0
-    def name = if (param) then {
-        escape(params[1].value)
-    } else {
-        scope.newVariable("for")
-    }
+// method compileFor(node, scope: Scope) -> String {
+//     def over = compileExpression(node.value, scope)
+//     def params = node.body.params
+//     def param = params.size > 0
+//     def name = if (param) then {
+//         escape(params[1].value)
+//     } else {
+//         scope.newVariable("for")
+//     }
 
-    scope.block("for (final {obj} _{name} : {over}) \{", { scope' ->
-        if (param) then {
-            scope'.line("{name} = _{name}")
-        } else {
-            ""
-        } ++ compileExecution(node.body.body, scope')
-    }, "\}")
-}
+//     scope.block("for (final {obj} _{name} : {over}) \{", { scope' ->
+//         if (param) then {
+//             scope'.line("{name} = _{name}")
+//         } else {
+//             ""
+//         } ++ compileExecution(node.body.body, scope')
+//     }, "\}")
+// }
 
 method compileMember(node, scope: Scope) -> String {
     if (node.value == "outer") then {
