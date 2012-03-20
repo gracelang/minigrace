@@ -46,6 +46,9 @@ tarball: minigrace
 	chmod 755 c/configure
 	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
+jar: java
+	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) && cd java && jar cvfe minigrace-$$VER.jar minigrace . && mv minigrace-$$VER.jar ../..
+
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genllvm29.grace > tmp.grace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
