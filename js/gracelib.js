@@ -24,15 +24,15 @@ GraceString.prototype = {
             return new GraceNum(this._value.length);
         },
         "_escape": function() {
-            var tmp = callmethod(this, "replace(1)with",
+            var tmp = callmethod(this, "replace()with",
                     new GraceString("\\"), new GraceString("\\\\"));
-            tmp = callmethod(tmp, "replace(1)with",
+            tmp = callmethod(tmp, "replace()with",
                     new GraceString("\""), new GraceString("\\\""));
-            tmp = callmethod(tmp, "replace(1)with",
+            tmp = callmethod(tmp, "replace()with",
                     new GraceString("\n"), new GraceString("\\n"));
             return tmp;
         },
-        "replace(1)with": function(what, wth) {
+        "replace()with": function(what, wth) {
             var s = this._value;
             var os = "";
             var sl = what._value.length;
@@ -44,7 +44,7 @@ GraceString.prototype = {
             os += s;
             return new GraceString(os);
         },
-        "substringFrom(1)to": function(from, to) {
+        "substringFrom()to": function(from, to) {
             var s = this._value;
             return new GraceString(s.substring(from._value - 1, to._value));
         },
@@ -81,11 +81,11 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
-        "match(1)matchesBinding(1)else": function(pat, b, e) {
+        "match()matchesBinding()else": function(pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
-        "matchObject(1)matchesBinding(1)else": function(obj, b, e) {
+        "matchObject()matchesBinding()else": function(obj, b, e) {
             var bl = callmethod(this, "==", obj);
             if (Grace_isTrue(bl)) {
                 return callmethod(b, "apply", obj);
@@ -186,11 +186,11 @@ GraceNum.prototype = {
         "hashcode": function() {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
-        "match(1)matchesBinding(1)else": function(pat, b, e) {
+        "match()matchesBinding()else": function(pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
-        "matchObject(1)matchesBinding(1)else": function(obj, b, e) {
+        "matchObject()matchesBinding()else": function(obj, b, e) {
             var bl = callmethod(this, "==", obj);
             if (Grace_isTrue(bl)) {
                 return callmethod(b, "apply", obj);
@@ -286,7 +286,7 @@ GraceBoolean.prototype = {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
         },
-        "match(1)matchesBinding(1)else": function(pat, b, e) {
+        "match()matchesBinding()else": function(pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
@@ -318,7 +318,7 @@ GraceList.prototype = {
             var idx = parseInt(o._value);
             return this._value[idx-1];
         },
-        "at(1)put": function(idx, val) {
+        "at()put": function(idx, val) {
             this._value[idx._value-1] = val;
         },
         "[]:=": function(idx, val) {
@@ -360,7 +360,7 @@ GraceList.prototype = {
             var t = callmethod(this, "==", other);
             return callmethod(t, "not");
         },
-        "match(1)matchesBinding(1)else": function(pat, b, e) {
+        "match()matchesBinding()else": function(pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
         },
@@ -447,7 +447,7 @@ function Grace_allocObject() {
                 }
                 return new GraceString(s + "}");
             },
-            "match(1)matchesBinding(1)else": function(pat, b, e) {
+            "match()matchesBinding()else": function(pat, b, e) {
                 return callmethod(pat, "matchObject()matchesBinding()else",
                         this, b, e);
             },
@@ -727,7 +727,7 @@ function gracecode_util() {
             }
             return new GraceString(s);
         },
-        "runOnNew(1)else": function(b,e) {
+        "runOnNew()else": function(b,e) {
             return callmethod(b, "apply");
         },
         "extensions": function() {
@@ -843,13 +843,13 @@ var var_void = new GraceObject();
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var Grace_prelude = Grace_allocObject();
-Grace_prelude.methods["while(1)do"] = function(c,b) {
+Grace_prelude.methods["while()do"] = function(c,b) {
     while (Grace_isTrue(callmethod(c, "apply"))) {
         callmethod(b, "apply");
     }
     return var_void;
 }
-Grace_prelude.methods["for(1)do"] = function(c,b) {
+Grace_prelude.methods["for()do"] = function(c,b) {
     var iter = callmethod(c, "iterator");
     while (Grace_isTrue(callmethod(iter, "havemore"))) {
         var val = callmethod(iter, "next");
