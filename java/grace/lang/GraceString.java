@@ -47,7 +47,7 @@ public class GraceString extends GraceObject {
   }
 
   public GraceObject substringFrom$to(GraceObject from, GraceObject to) {
-    int i = i(to) - 1;
+    int i = i(to);
     if (i >= value.length()) {
       return new GraceString(value.substring(i(from) - 1));
     }

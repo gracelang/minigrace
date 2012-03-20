@@ -15,10 +15,29 @@ public class GraceHashMap extends GraceObject {
   }
 
   public GraceObject get(GraceObject key) {
-    return value.get(getKey(key));
+    key = getKey(key);
+
+    if (key == null) {
+      return GraceVoid.value;
+    }
+
+    return value.get(key);
   }
 
   public GraceObject put(GraceObject key, GraceObject item) {
+    if (key instanceof GraceString) {
+      String value = ((GraceString) key).value;
+      if (value.contains("=")) {
+        System.out.println(value);
+      }
+    }
+
+    GraceObject other = getKey(key);
+
+    if (other != null) {
+      value.remove(other);
+    }
+
     value.put(key, item);
 
     return GraceVoid.value;
@@ -28,9 +47,9 @@ public class GraceHashMap extends GraceObject {
     return GraceBoolean.evaluate(getKey(key) != null);
   }
 
-  private GraceObject getKey(final GraceObject eq) {
-    for (final GraceObject key : value.keySet()) {
-      if (key.equals(eq)) {
+  private GraceObject getKey(GraceObject eq) {
+    for (GraceObject key : value.keySet()) {
+      if (((GraceBoolean) key.invoke("bin$61$61", eq)).value) {
         return key;
       }
     }
@@ -47,7 +66,7 @@ public class GraceHashMap extends GraceObject {
       first = false;
     }
 
-    return new GraceString(out + "]");
+    return new GraceString(out + "}]");
   }
 
 }
