@@ -552,7 +552,7 @@ Object alloc_List() {
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
         add_Method(List, "[]", &List_index);
-        add_Method(List, "at(1)put", &List_indexAssign);
+        add_Method(List, "at()put", &List_indexAssign);
         add_Method(List, "[]:=", &List_indexAssign);
         add_Method(List, "push", &List_push);
         add_Method(List, "pop", &List_pop);
@@ -860,9 +860,9 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
-        add_Method(ConcatString, "substringFrom(1)to",
+        add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
-        add_Method(ConcatString, "replace(1)with", &String_replace_with);
+        add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
@@ -1045,8 +1045,8 @@ Object alloc_String(const char *data) {
         add_Method(String, "iter", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
-        add_Method(String, "substringFrom(1)to", &String_substringFrom_to);
-        add_Method(String, "replace(1)with", &String_replace_with);
+        add_Method(String, "substringFrom()to", &String_substringFrom_to);
+        add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
@@ -2855,8 +2855,8 @@ Object grace_prelude() {
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "/=", &Object_NotEquals);
-    add_Method(c, "while(1)do", &grace_while_do);
-    add_Method(c, "for(1)do", &grace_for_do);
+    add_Method(c, "while()do", &grace_while_do);
+    add_Method(c, "for()do", &grace_for_do);
     prelude = alloc_userobj2(0, 7, c);
     return prelude;
 }

@@ -50,9 +50,9 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("iter", [], DynamicIdentifier),
-    ast.astmethodtype("substringFrom(1)to", [NumberOther, NumberOther],
+    ast.astmethodtype("substringFrom()to", [NumberOther, NumberOther],
         StringIdentifier),
-    ast.astmethodtype("replace(1)with", [StringOther, StringOther],
+    ast.astmethodtype("replace()with", [StringOther, StringOther],
         StringIdentifier),
     ast.astmethodtype("hashcode", [], NumberIdentifier),
     ast.astmethodtype("indices", [], ListIdentifier),
@@ -78,7 +78,7 @@ def ListType = ast.asttype("List", [
     ast.astmethodtype("at", [NumberOther], TopOther),
     ast.astmethodtype("[]", [NumberOther], TopOther),
     ast.astmethodtype("[]:=", [NumberOther, TopOther], TopOther),
-    ast.astmethodtype("at(1)put", [NumberOther, TopOther], TopOther),
+    ast.astmethodtype("at()put", [NumberOther, TopOther], TopOther),
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
@@ -1224,8 +1224,8 @@ method resolveIdentifiersList(lst) {
     resolveIdentifiersList(lst)withBlock { }
 }
 
-preludeObj.put("while(1)do", Binding.new("method"))
-preludeObj.put("for(1)do", Binding.new("method"))
+preludeObj.put("while()do", Binding.new("method"))
+preludeObj.put("for()do", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
     var btmp
