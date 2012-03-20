@@ -25,10 +25,11 @@ cp buildinfo.gc buildinfo.grace
 $MAKE l2/minigrace
 cd ..
 
-mkdir -p "$ARCH"
-mv tmp-$$/l2/minigrace $ARCH/minigrace-$COMMIT
-cp tmp-$$/l2/gracelib.o $ARCH/gracelib-$COMMIT.o
-cp tmp-$$/l2/gracelib.h $ARCH/gracelib-$COMMIT.h
+mkdir -p "$ARCH/$COMMIT"
+mv tmp-$$/l2/minigrace $ARCH/$COMMIT
+cp tmp-$$/l2/gracelib.o $ARCH/$COMMIT/gracelib.o
+cp tmp-$$/l2/gracelib.h $ARCH/$COMMIT/gracelib.h
+cp tmp-$$/l2/unicode.gso $ARCH/$COMMIT
 for x in tmp-$$/l2/*.c
 do
    nm=$(basename "$x")
