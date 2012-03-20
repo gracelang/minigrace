@@ -556,6 +556,9 @@ var stderr = Grace_allocObject();
 stderr.methods.write = function(s) {
     stderr_txt.value += s._value;
 }
+stdout.methods.close = function() {};
+stderr.methods.close = function() {};
+stdin.methods.close = function() {};
 function gracecode_io() {
     this.methods.output = function() {
         return this._output;        
