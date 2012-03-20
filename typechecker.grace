@@ -96,6 +96,11 @@ def VoidType = ast.asttype("Void", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
 ])
+def BlockType = ast.asttype("Block", [
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("apply", [], TopOther)
+])
 var currentReturnType := false
 
 class Binding { kind' ->
@@ -1266,6 +1271,9 @@ method typecheck(values) {
     btmp := Binding.new("type")
     btmp.value := VoidType
     bindName("Void", btmp)
+    btmp := Binding.new("type")
+    btmp.value := BlockType
+    bindName("Block", btmp)
     subtype.addType(DynamicType)
     subtype.addType(NumberType)
     subtype.addType(StringType)
