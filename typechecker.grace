@@ -92,6 +92,10 @@ def ListType = ast.asttype("List", [
     ast.astmethodtype("indices", [], ListIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier)
 ])
+def VoidType = ast.asttype("Void", [
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
+])
 var currentReturnType := false
 
 class Binding { kind' ->
@@ -1259,10 +1263,14 @@ method typecheck(values) {
     btmp := Binding.new("type")
     btmp.value := ListType
     bindName("List", btmp)
+    btmp := Binding.new("type")
+    btmp.value := VoidType
+    bindName("Void", btmp)
     subtype.addType(DynamicType)
     subtype.addType(NumberType)
     subtype.addType(StringType)
     subtype.addType(BooleanType)
     subtype.addType(ListType)
+    subtype.addType(VoidType)
     resolveIdentifiersList(values)
 }
