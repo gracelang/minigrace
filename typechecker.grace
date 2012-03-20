@@ -857,7 +857,8 @@ method resolveIdentifiers(node) {
                 bindIdentifier(e)
             }
         }
-        tmp := rewritematchblock(node)
+        l := resolveIdentifiersList(node.body)
+        tmp := ast.astblock(node.params, l)
         popScope
         return tmp
     }
