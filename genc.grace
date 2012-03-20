@@ -1207,7 +1207,7 @@ method compile(vl, of, mn, rm, bt) {
             }
         }
     }
-    outprint("#include \"" ++ util.gracelibPath.replace(".o")with(".h")++"\"")
+    outprint("#include \"{util.gracelibPath}/gracelib.h\"")
     outprint("#include <stdlib.h>")
     outprint("#pragma weak main")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
@@ -1310,7 +1310,7 @@ method compile(vl, of, mn, rm, bt) {
             }
             cmd := "gcc -g -o {modname} -fPIC {exportDynamicBit} -lm {dlbit} "
                 ++ "{modname}.gcn "
-                ++ util.gracelibPath ++ " "
+                ++ util.gracelibPath ++ "/gracelib.o "
             for (linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }

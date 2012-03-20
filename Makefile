@@ -36,7 +36,7 @@ js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) unicode.gso ; do cp $$f c ; done && cd c && ../minigrace --target c --gracelib gracelib.o --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn unicode.gso
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) unicode.gso ; do cp $$f c ; done && cd c && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn unicode.gso
 
 tarball: minigrace
 	touch c/Makefile.conf

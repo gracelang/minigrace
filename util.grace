@@ -122,7 +122,7 @@ method parseargs {
         } elseif (targetv == "java") then {
             gracelibPathv := sys.execPath ++ "/java"
         } else {
-            gracelibPathv := sys.execPath ++ "/gracelib.o"
+            gracelibPathv := sys.execPath
         }
     }
 }
