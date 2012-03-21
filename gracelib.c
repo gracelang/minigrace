@@ -1640,17 +1640,64 @@ Object File_read(Object self, int nparams,
     free(buf);
     return str;
 }
+Object File_seek(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    int loc = integerfromAny(argv[0]);
+    fseek(file, loc, SEEK_SET);
+    return self;
+}
+Object File_seekForward(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    int loc = integerfromAny(argv[0]);
+    fseek(file, loc, SEEK_CUR);
+    return self;
+}
+Object File_seekBackward(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    int loc = integerfromAny(argv[0]);
+    fseek(file, -loc, SEEK_CUR);
+    return self;
+}
+Object File_iter(Object self, int argc, Object *argv, int flags) {
+    return self;
+}
+Object File_havemore(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    return alloc_Boolean(!feof(s->file));
+}
+Object File_next(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    char c = getc(s->file);
+    char buf[5];
+    char *b = buf;
+    int l = getutf8charlen(&c);
+    *b++ = c;
+    while (--l)
+        *b++ = getc(s->file);
+    *b = 0;
+    return alloc_String(buf);
+}
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 6);
+        File = alloc_class("File", 12);
         add_Method(File, "read", &File_read);
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
+        add_Method(File, "seek", &File_seek);
+        add_Method(File, "seekForward", &File_seekForward);
+        add_Method(File, "seekBackward", &File_seekBackward);
+        add_Method(File, "iter", &File_iter);
+        add_Method(File, "havemore", &File_havemore);
+        add_Method(File, "next", &File_next);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
         add_Method(File, "/=", &Object_NotEquals);
     }
-    Object o = alloc_obj(sizeof(FILE*), File);
+    Object o = alloc_obj(sizeof(FILE*) + sizeof(int), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
     return o;
