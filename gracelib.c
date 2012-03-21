@@ -2858,5 +2858,6 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     prelude = alloc_userobj2(0, 7, c);
+    gc_root(prelude);
     return prelude;
 }
