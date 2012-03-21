@@ -552,6 +552,9 @@ var stdin = Grace_allocObject();
 stdin.methods.read = function() {
     return new GraceString(stdin_txt.value);
 }
+stdin.methods.iterator = function() {
+    return callmethod(new GraceString(stdin_txt.value), "iterator");
+}
 var stderr = Grace_allocObject();
 stderr.methods.write = function(s) {
     stderr_txt.value += s._value;
