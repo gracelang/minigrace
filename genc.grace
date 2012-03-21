@@ -1322,7 +1322,11 @@ method compile(vl, of, mn, rm, bt) {
         log_verbose("done.")
         if (buildtype == "run") then {
             cmd := "./" ++ modname
-            io.system(cmd)
+            if (!io.system(cmd)) then {
+                io.error.write("minigrace: Program exited with error: "
+                    ++ modname ++ "\n")
+                sys.exit(1)
+            }
         }
     }
 }
