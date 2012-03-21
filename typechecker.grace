@@ -261,7 +261,10 @@ method expressionType(expr) {
             util.type_error("no such operator '{opname}' in {opreceivertype.value}")
         }
         def opparamtypeid = opmeth.params.first.dtype
-        def opparamtypebd = findName(opparamtypeid.value)
+        def opparamtypebd = if (false != opparamtypeid)
+            then {findName(opparamtypeid.value)} else {
+                object {def value=object {def value="Dynamic"}}
+            }
         if (conformsType(opargumenttype)to(opparamtypebd.value).not) then {
             util.type_error("passed argument of type "
                 ++ "{opargumenttype.value} to parameter of type "
