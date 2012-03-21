@@ -1640,6 +1640,25 @@ Object File_read(Object self, int nparams,
     free(buf);
     return str;
 }
+Object File_readBinary(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    int size = integerfromAny(argv[0]);
+    char *buf = malloc(size);
+    int pos = fread(buf, sizeof(char), size, file);
+    Object ret = alloc_Octets(buf, pos);
+    free(buf);
+    return ret;
+}
+Object File_writeBinary(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    FILE *file = s->file;
+    Object oct = argv[0];
+    struct OctetsObject *octo = (struct OctetsObject *)oct;
+    int size = integerfromAny(callmethod(oct, "size", 0, NULL));
+    int pos = fwrite(octo->body, sizeof(char), size, file);
+    return alloc_Float64(pos);
+}
 Object File_seek(Object self, int argc, Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
@@ -1681,9 +1700,13 @@ Object File_next(Object self, int argc, Object *argv, int flags) {
     *b = 0;
     return alloc_String(buf);
 }
+Object File_eof(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    return alloc_Boolean(feof(s->file));
+}
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 12);
+        File = alloc_class("File", 15);
         add_Method(File, "read", &File_read);
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
@@ -1693,6 +1716,9 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "iter", &File_iter);
         add_Method(File, "havemore", &File_havemore);
         add_Method(File, "next", &File_next);
+        add_Method(File, "readBinary", &File_readBinary);
+        add_Method(File, "writeBinary", &File_writeBinary);
+        add_Method(File, "eof", &File_eof);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
         add_Method(File, "/=", &Object_NotEquals);
