@@ -589,7 +589,7 @@ def LexerClass = object {
                                 ++ "backtick identifiers")
                         }
                         accum := accum ++ c
-                    } elseif (c == "\n") then {
+                    } elseif ((c == "\n") | (c == "\r")) then {
                         // Linebreaks terminate any open tokens
                         modechange(tokens, mode, accum)
                         mode := "d"
