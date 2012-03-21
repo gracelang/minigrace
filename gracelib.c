@@ -11,6 +11,7 @@
 #include <setjmp.h>
 #include <float.h>
 #include <math.h>
+#include <sys/wait.h>
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
@@ -1718,6 +1719,24 @@ Object io_exists(Object self, int nparams,
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
+Object io_spawn(Object self, int argc, Object *argv, int flags) {
+    char *args[argc + 1];
+    int i;
+    for (i=0; i<argc; i++)
+        args[i] = grcstring(argv[i]);
+    args[i] = NULL;
+    pid_t pid;
+    if (!(pid = fork())) {
+        execvp(args[0], args);
+        exit(127);
+    }
+    int status = 0;
+    waitpid(pid, &status, 0);
+    if (WIFEXITED(status)) {
+        return alloc_Float64(WEXITSTATUS(status));
+    }
+    return alloc_Float64(-WTERMSIG(status));
+}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -1726,7 +1745,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 7, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 8, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -1734,6 +1753,7 @@ Object module_io_init() {
     add_Method(IOModule, "system", &io_system);
     add_Method(IOModule, "exists", &io_exists);
     add_Method(IOModule, "newer", &io_newer);
+    add_Method(IOModule, "spawn", &io_spawn);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
