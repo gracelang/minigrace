@@ -1235,7 +1235,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
-    out("struct StackFrameObject *stackframe = alloc_StackFrame(100, ")
+    out("struct StackFrameObject *stackframe = alloc_StackFrame({nummethods}, ")
     out("  NULL);")
     out("gc_root((Object)stackframe);")
     out("Object *selfslot = &(stackframe->slots[0]);")
