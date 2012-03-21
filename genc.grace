@@ -925,13 +925,13 @@ method compileoctets(o) {
     var i := 0
     for (o.value) do {c->
         if ((i % 2) == 0) then {
-            escval := escval ++ "\"\"\\x\"\""
+            escval := escval ++ "\"\"\\x"
         }
         escval := escval ++ c
         i := i + 1
     }
     out("  if (octlit{auto_count} == NULL) \{")
-    out("    octlit{auto_count} = alloc_Octets(\"{escval}\");")
+    out("    octlit{auto_count} = alloc_Octets(\"{escval}\", {l});")
     out("  \}")
     globals.push("static Object octlit{auto_count};");
     o.register := "octlit" ++ auto_count

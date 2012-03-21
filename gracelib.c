@@ -1166,7 +1166,7 @@ Object Octets_asString(Object receiver, int nparams,
     dt[0] = 'x';
     dt[1] = '"';
     for (i=0; i<size; i++) {
-        sprintf(dt + 2 + i*2, "%x", (int)data[i]&255);
+        sprintf(dt + 2 + i*2, "%.2x", (int)data[i]&255);
     }
     dt[2 + size * 2] = '"';
     dt[3 + size * 2] = 0;
@@ -1220,9 +1220,9 @@ Object alloc_Octets(const char *data, int len) {
         add_Method(Octets, "asString", &Octets_asString);
         add_Method(Octets, "++", &Octets_Concat);
         add_Method(Octets, "at", &Octets_at);
+        add_Method(Octets, "[]", &Octets_at);
         add_Method(Octets, "==", &Octets_Equals);
         add_Method(Octets, "!=", &Object_NotEquals);
-        add_Method(Octets, "/=", &Object_NotEquals);
         add_Method(Octets, "size", &Octets_size);
         add_Method(Octets, "decode", &Octets_decode);
     }
