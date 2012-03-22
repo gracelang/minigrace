@@ -1243,6 +1243,7 @@ method resolveIdentifiersList(lst) {
 
 preludeObj.put("while()do", Binding.new("method"))
 preludeObj.put("for()do", Binding.new("method"))
+preludeObj.put("octets", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
     var btmp

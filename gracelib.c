@@ -2938,11 +2938,31 @@ Object grace_for_do(Object self, int argc, Object *argv, int flags) {
     }
     return none;
 }
+#define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
+Object grace_octets(Object self, int argc, Object *argv, int flags) {
+    if (argc != 1)
+        die("octets requires exactly one argument");
+    char *str = grcstring(argv[0]);
+    int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL));
+    if (slen % 2 != 0)
+        die("octets requires an even-length string");
+    int len = slen / 2;
+    char buf[len];
+    int i, j;
+    for (i=0, j=0; i<len; i++, j=j+2) {
+        int c1 = HEXVALC(str[j]);
+        int c2 = HEXVALC(str[j+1]);
+        if (c1 < 0 || c2 < 0)
+            die("octets requires only hexadecimal digits [0-9a-f]");
+        buf[i] = 16 * c1 + c2;
+    }
+    return alloc_Octets(buf, len);
+}
 Object prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("Prelude", 7, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("Prelude", 8, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -2950,6 +2970,7 @@ Object grace_prelude() {
     add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
+    add_Method(c, "octets", &grace_octets);
     prelude = alloc_userobj2(0, 7, c);
     gc_root(prelude);
     return prelude;
