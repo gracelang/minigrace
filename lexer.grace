@@ -256,6 +256,7 @@ def LexerClass = object {
                         done := true
                     } elseif (mode == "m") then {
                         tok := NumToken.new(accum)
+                        tok := makeNumToken(accum)
                         if (tokens.size > 1) then {
                             if (tokens.last.kind == "dot") then {
                                 tokens.pop
@@ -298,6 +299,36 @@ def LexerClass = object {
                 startPosition := linePosition
             }
 
+            method fromBase(str, base) {
+                def digits = "0123456789abcdefghijklmnopqrstuvqxyz"
+                var val := 0
+                for (str) do {c->
+                    def n = c.ord
+                    val := val * base
+                    if ((n >= 48) & (n <= 57)) then {
+                        val := val + n - 48 // 0
+                    } else {
+                        val := val + n - 87 // 'a' - 10
+                    }
+                }
+                val
+            }
+            method makeNumToken(accum) {
+                var base := 10
+                var sofar := ""
+                for (accum) do {c->
+                    if (c == "x") then {
+                        base := sofar.asNumber
+                        if (base == 0) then {
+                            base := 16
+                        }
+                        sofar := ""
+                    } else {
+                        sofar := sofar ++ c
+                    }
+                }
+                NumToken.new(fromBase(sofar, base).asString)
+            }
             // True if ov is a valid identifier character. Identifier
             // characters are Unicode letters, Unicode numbers, apostrophe,
             // and (currently) underscore.
@@ -405,6 +436,9 @@ def LexerClass = object {
                         }
                         ct := ((ordval >= 48) & (ordval <=57))
                         if (ct & (mode /= "i")) then {
+                            newmode := "m"
+                        }
+                        if ((ordval >= 97) & (ordval <=122) & (mode == "m")) then {
                             newmode := "m"
                         }
                         if ((mode == "i") & (c == "<")) then {

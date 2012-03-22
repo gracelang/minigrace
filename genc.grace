@@ -974,9 +974,6 @@ method compilenum(o) {
             havedot := true
         }
     }
-    if (havedot.not) then {
-        cnum := cnum ++ ".0"
-    }
     out("  Object num{auto_count} = alloc_Float64({cnum});")
     o.register := "num" ++ auto_count
     auto_count := auto_count + 1
