@@ -346,7 +346,7 @@ def LexerClass = object {
             method isoperatorchar(c, ordval) {
                 var ret := false
                 if ((c == "-") | (c == "&") | (c == "|") | (c == ":")
-                    | (c == "%")
+                    | (c == "%") | (c == "^")
                     | (c == "*") | (c == "/") | (c == "+") | (c == "!")) then {
                     ret := true
                 } elseif (unicode.isSymbolMathematical(ordval)) then {
