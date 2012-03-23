@@ -1184,9 +1184,11 @@ method compile(vl, of, mn, rm, bt) {
                         if (util.vtag) then {
                             cmd := cmd ++ " --vtag " ++ util.vtag
                         }
-                        cmd := cmd ++ " --noexec"
-                        if (io.system(cmd).not) then {
-                            util.syntax_error("failed processing import of " ++nm ++".")
+                        cmd := cmd ++ " --noexec --no-recurse"
+                        if (util.recurse) then {
+                            if (io.system(cmd).not) then {
+                                util.syntax_error("failed processing import of " ++nm ++".")
+                            }
                         }
                         exists := true
                         linkfiles.push(nm ++ ".gcn")

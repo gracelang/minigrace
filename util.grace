@@ -17,6 +17,7 @@ var noexecv := false
 var targetv := "c"
 var versionNumber := "0.0.6"
 var extensionsv := HashMap.new
+var recurse := true
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision /= "647a358cc4dcc6a3f67f3ff8e870386ef6241111")
@@ -48,6 +49,8 @@ method parseargs {
                     vtagv := argv.at(ai + 1)
                 } elseif (arg == "--make") then {
                     runmodev := "make"
+                } elseif (arg == "--no-recurse") then {
+                    recurse := false
                 } elseif (arg == "--run") then {
                     buildtypev := "run"
                     runmodev := "make"
