@@ -92,6 +92,8 @@ javaclean:
 	rm -f $(SOURCEFILES:.grace=)*.class minigrace.class
 	rm -f java/grace/lib/*.class
 	rm -f java/grace/lang/*.class
+	rm -f java/*.java
+	rm -f java/*.class
 clean: javaclean
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso
