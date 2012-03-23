@@ -1792,6 +1792,65 @@ Object io_exists(Object self, int nparams,
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
+struct ProcessObject {
+    int32_t flags;
+    ClassData class;
+    pid_t pid;
+    int status;
+    int done;
+};
+ClassData Process;
+Object Process_wait(Object self, int argc, Object *argv, int flags) {
+    struct ProcessObject *p = (struct ProcessObject *)self;
+    waitpid(p->pid, &(p->status), 0);
+    p->done = 1;
+    if (WIFEXITED(p->status)) {
+        return alloc_Float64(WEXITSTATUS(p->status));
+    }
+    return alloc_Float64(-WTERMSIG(p->status));
+}
+Object Process_status(Object self, int argc, Object *argv, int flags) {
+    struct ProcessObject *p = (struct ProcessObject *)self;
+    if (!p->done)
+        callmethod(self, "wait", 0, NULL);
+    if (WIFEXITED(p->status)) {
+        return alloc_Float64(WEXITSTATUS(p->status));
+    }
+    return alloc_Float64(-WTERMSIG(p->status));
+}
+Object Process_success(Object self, int argc, Object *argv, int flags) {
+    struct ProcessObject *p = (struct ProcessObject *)self;
+    waitpid(p->pid, &(p->status), 0);
+    if (WIFEXITED(p->status))
+        return alloc_Boolean(WEXITSTATUS(p->status) == 0);
+    return alloc_Boolean(0);
+}
+Object Process_terminated(Object self, int argc, Object *argv, int flags) {
+    struct ProcessObject *p = (struct ProcessObject *)self;
+    if (p->done)
+        return alloc_Boolean(1);
+    int n = waitpid(p->pid, &(p->status), WNOHANG);
+    if ((n == 0) || (n == (pid_t)-1))
+        return alloc_Boolean(0);
+    return alloc_Boolean(1);
+}
+Object alloc_Process(pid_t pid) {
+    if (Process == NULL) {
+        Process = alloc_class("Process", 6);
+        add_Method(Process, "wait", &Process_wait);
+        add_Method(Process, "success", &Process_success);
+        add_Method(Process, "terminated", &Process_terminated);
+        add_Method(Process, "status", &Process_status);
+        add_Method(Process, "==", &Object_Equals);
+        add_Method(Process, "!=", &Object_NotEquals);
+    }
+    Object o = alloc_obj(sizeof(pid_t) + sizeof(int) * 2, Process);
+    struct ProcessObject *p = (struct ProcessObject *)o;
+    p->pid = pid;
+    p->status = 0;
+    p->done = 0;
+    return o;
+}
 Object io_spawn(Object self, int argc, Object *argv, int flags) {
     char *args[argc + 1];
     int i;
@@ -1803,12 +1862,7 @@ Object io_spawn(Object self, int argc, Object *argv, int flags) {
         execvp(args[0], args);
         exit(127);
     }
-    int status = 0;
-    waitpid(pid, &status, 0);
-    if (WIFEXITED(status)) {
-        return alloc_Float64(WEXITSTATUS(status));
-    }
-    return alloc_Float64(-WTERMSIG(status));
+    return alloc_Process(pid);
 }
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
