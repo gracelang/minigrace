@@ -26,7 +26,7 @@ $(ARCH)/minigrace-4df500fa93a8e8f5886b3590424a7aa67e21bf0e:
 	rm -rf c-4df500fa93a8e8f5886b3590424a7aa67e21bf0e
 
 $(ARCH)/minigrace-%:
-	./make-known-good $* $(ARCH)
+	./make-known-good $* $(ARCH) "hyphenated"
 
 $(ARCH)/%/minigrace:
 	./make-known-good $* $(ARCH)
