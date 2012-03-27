@@ -208,41 +208,41 @@ method compileExecution(nodes: List, scope: Scope) -> String {
 }
 
 method compileExpression(node, scope: Scope) -> String {
-    match (node.kind) case { "identifier" ->
+    if (node.kind == "identifier") then {
         compileIdentifier(node, scope)
-    } case { "num" ->
+    } elseif (node.kind == "num") then {
         compileNumber(node, scope)
-    } case { "string" ->
+    } elseif (node.kind == "string") then {
         compileString(node, scope)
-    } case { "bind" ->
+    } elseif (node.kind == "bind") then {
         "({compileBind(node, scope)})"
-    } case { "member" ->
+    } elseif (node.kind == "member") then {
         compileMember(node, scope)
-    } case { "call" ->
+    } elseif (node.kind == "call") then {
         compileCall(node, scope)
-    } case { "if" ->
+    } elseif (node.kind == "if") then {
         compileTernary(node, scope)
-    } case { "for" ->
+    } elseif (node.kind == "for") then {
         compileClosure([node, literal(vdv)], scope)
-    } case { "index" ->
+    } elseif (node.kind == "index") then {
         compileIndex(node, scope)
-    } case { "op" ->
+    } elseif (node.kind == "op") then {
         compileOp(node, scope)
-    } case { "array" ->
+    } elseif (node.kind == "array") then {
         compileArray(node, scope)
-    } case { "block" ->
+    } elseif (node.kind == "block") then {
         compileBlock(node, scope)
-    } case { "object" ->
+    } elseif (node.kind == "object") then {
         compileObject(node, scope)
-    } case { "matchcase" ->
+    } elseif (node.kind == "matchcase") then {
         compileMatch(node, scope)
-    } case { "generic" ->
+    } elseif (node.kind == "generic") then {
         compileIdentifier(node.value, scope)
-    } case { "literal" ->
+    } elseif (node.kind == "literal") then {
         node.value
-    } case { kind ->
-        util.log_verbose("Unknown expression: {kind}")
-        "/* {kind} */ {vdv}"
+    } else {
+        util.log_verbose("Unknown expression: {node.kind}")
+        "/* {node.kind} */ {vdv}"
     }
 }
 
