@@ -506,15 +506,17 @@ method compileClass(node, scope: Scope) -> String {
         "final {obj} _{escape(param.value)}"
     }) separatedBy(", ")
 
+    def constructor = escape(node.constructor.value)
     def body = [ast.astobject(node.value, void)]
     def meth = ast.astmethod(void, node.params, body, void)
 
     scope.line(scope.block("{name} = new {obj}($outer, false) \{", { scope' ->
         // This outer is a hack until the outer class problem is fixed.
         scope'.line("private final {obj} $outer = this") ++
-        scope'.stmt(scope'.block("public {obj} $new({params}) \{", { scope'' ->
-            scope''.line("return {compileParamClosure(meth, scope'')}")
-        }, "\}")) ++ makeInvoke(scope')
+        scope'.stmt(scope'.block("public {obj} {constructor}({params}) \{",
+            { scope'' ->
+                scope''.line("return {compileParamClosure(meth, scope'')}")
+            }, "\}")) ++ makeInvoke(scope')
     }, "\}"))
 }
 
