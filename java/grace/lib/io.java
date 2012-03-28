@@ -24,6 +24,70 @@ public final class io extends GraceObject {
         file(path2).lastModified());
   }
 
+
+  public final class GraceProcess extends GraceObject {
+    Process process;
+    int status;
+    public GraceProcess(Process process) {
+      this.process = process;
+    }
+    public GraceObject $wait() {
+      try {
+        process.waitFor();
+      } catch (Exception ex) {
+      }
+      status = process.exitValue();
+      return new GraceNumber(status);
+    }
+    public GraceObject success() {
+      this.$wait();
+      if (status == 0)
+          return GraceBoolean.graceTrue;
+      return GraceBoolean.graceFalse;
+    }
+    public GraceObject terminated() {
+      // Suboptimal...
+      this.$wait();
+      return GraceBoolean.graceTrue;
+    }
+    public GraceObject status() {
+      return this.$wait();
+    }
+  }
+  public GraceObject spawn(GraceObject... parts) {
+    Process process;
+
+    String[] tokens = new String[parts.length];
+    for (int i=0; i<parts.length; i++)
+        tokens[i] = ((GraceString) parts[i]).value;
+
+    try {
+      process = Runtime.getRuntime().exec(tokens);
+    } catch (Exception ex) {
+      return GraceBoolean.graceFalse;
+    }
+
+    Redirect out = new Redirect(process.getInputStream(), System.out);
+    Redirect err = new Redirect(process.getErrorStream(), System.err);
+
+    try {
+      out.start();
+      err.start();
+
+    } catch (Exception ex) {
+      return GraceBoolean.graceFalse;
+    } finally {
+      try {
+        out.close();
+      } catch (Exception ex) {}
+      try {
+        err.close();
+      } catch (Exception ex) {}
+    }
+
+    return new GraceProcess(process);
+  }
+
   public GraceObject system(GraceObject cmd) {
     String exec = ((GraceString) cmd).value;
     Process process;
