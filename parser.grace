@@ -1097,6 +1097,11 @@ method doclass {
             }
             constructorName := ast.astidentifier(constructorNameStr, false)
         }
+        if (accept("arrow")) then {
+            next
+            dotyperef
+            values.pop
+        }
         if (!accept("lbrace")) then {
             util.syntax_error("class declaration without body")
         }
