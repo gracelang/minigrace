@@ -134,7 +134,7 @@ method compileobjvardec(o, selfr, pos) {
 method compileclass(o) {
     var params := o.params
     var mbody := [ast.astobject(o.value, o.superclass)]
-    var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
+    var newmeth := ast.astmethod(o.constructor, params, mbody,
         false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
