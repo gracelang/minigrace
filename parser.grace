@@ -1042,11 +1042,9 @@ method doclass {
         def cname = values.pop
         next
         expect("identifier")
-        if (sym.value != "new") then {
-            util.syntax_error("class declaration requires '.new'")
-        }
-        next
-        def params = []
+        pushidentifier
+        var constructorName := values.pop
+        def cparams = []
         if (accept("lparen")) then {
             next
             while {accept("identifier")} do {
@@ -1057,7 +1055,7 @@ method doclass {
                     dotyperef
                     pid.dtype := values.pop
                 }
-                params.push(pid)
+                cparams.push(pid)
                 if (accept("comma")) then {
                     next
                 } elseif (accept("rparen")) then {
@@ -1068,6 +1066,36 @@ method doclass {
             }
             expect("rparen")
             next
+        }
+        if (accept("identifier")) then {
+            var constructorNameStr := constructorName.value
+            while {accept("identifier")} do {
+                pushidentifier
+                constructorNameStr := constructorNameStr ++ "()" ++
+                    values.pop.value
+                expect("lparen")
+                next
+                while {!accept("rparen")} do {
+                    pushidentifier
+                    var pid2 := values.pop
+                    if (accept("colon")) then {
+                        next
+                        dotyperef
+                        pid2.dtype := values.pop
+                    }
+                    cparams.push(pid2)
+                    if (accept("comma")) then {
+                        next
+                    } else {
+                        if (!accept("rparen")) then {
+                            util.syntax_error("expected comma or )")
+                        }
+                    }
+                }
+                expect("rparen")
+                next
+            }
+            constructorName := ast.astidentifier(constructorNameStr, false)
         }
         if (!accept("lbrace")) then {
             util.syntax_error("class declaration without body")
@@ -1091,7 +1119,7 @@ method doclass {
             }
         }
         next
-        var o := ast.astclass(cname, params, body, false)
+        var o := ast.astclass(cname, cparams, body, false, constructorName)
         values.push(o)
         minIndentLevel := localMinIndentLevel
     }
@@ -1191,7 +1219,8 @@ method doclassOld {
                 var p := rbody.pop
                 body.push(p)
             }
-            var o := ast.astclass(cname, params, body, superclass)
+            var o := ast.astclass(cname, params, body, superclass,
+                ast.astidentifier("new", false))
             values.push(o)
         } else {
             util.syntax_error("class definition without body")
@@ -1221,7 +1250,7 @@ method parsempmndecrest(tm) {
         nxt := values.pop
         methname := methname ++ nxt.value
         if ((accept("lparen")).not) then {
-            util.syntax_error("multi-part method name parameters require .")
+            util.syntax_error("multi-part method name parameters require ().")
         }
         next
         while {accept("identifier")

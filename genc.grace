@@ -300,7 +300,7 @@ method compileclass(o) {
     def obj = ast.astobject(o.value, o.superclass)
     obj.classname := o.name.value
     var mbody := [obj]
-    var newmeth := ast.astmethod(ast.astidentifier("new", false), params, mbody,
+    var newmeth := ast.astmethod(o.constructor, params, mbody,
         false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)

@@ -271,11 +271,12 @@ method astcall(what, with') {
         }
     }
 }
-method astclass(name', params', body', superclass') {
+method astclass(name', params', body', superclass', constructor') {
     object {
         def kind = "class"
         def value = body'
         def name = name'
+        def constructor = constructor'
         def params = params'
         var register := ""
         def line = util.linenum

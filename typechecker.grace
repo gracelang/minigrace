@@ -919,7 +919,8 @@ method resolveIdentifiers(node) {
         tmp3 := resolveIdentifiersList(node.params)
         node := ast.astclass(node.name, tmp3,
             tmp2,
-            resolveIdentifiers(node.superclass))
+            resolveIdentifiers(node.superclass),
+            node.constructor)
         popScope
     }
     if (node.kind == "bind") then {
@@ -1215,7 +1216,8 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             def classInstanceType = ast.asttype("InstanceOf<{className}>",
                 classInstanceType'.methods)
             def classItselfType = ast.asttype("ClassOf<{className}>", [
-                ast.astmethodtype("new", e.params, classInstanceType)
+                ast.astmethodtype(e.constructor.value, e.params,
+                    classInstanceType)
             ])
             classItselfType.generics := classGenerics
             subtype.addType(classInstanceType)
