@@ -18,6 +18,7 @@ var targetv := "c"
 var versionNumber := "0.0.6"
 var extensionsv := HashMap.new
 var recurse := true
+var jobs := 2
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision /= "647a358cc4dcc6a3f67f3ff8e870386ef6241111")
@@ -67,6 +68,9 @@ method parseargs {
                 } elseif (arg == "--target") then {
                     skip := true
                     targetv := argv.at(ai + 1)
+                } elseif (arg == "-j") then {
+                    skip := true
+                    jobs := argv.at(ai + 1).asNumber
                 } elseif (arg == "--version") then {
                     print("minigrace {versionNumber}.{buildinfo.gitgeneration}")
                     print("git revision " ++ buildinfo.gitrevision)

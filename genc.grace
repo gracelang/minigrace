@@ -1187,6 +1187,26 @@ method compilenode(o) {
     out("// compilenode returning " ++ o.register)
     o.register
 }
+method spawnSubprocess(subprocesses, id, cmd) {
+    if (subprocesses.size < util.jobs) then {
+        return subprocesses.push([id, io.spawn("bash", "-c", cmd)])
+    }
+    var alive := 0
+    var firstAlive := false
+    for (subprocesses) do {spinfo->
+        def sp = spinfo[2]
+        if (!sp.terminated) then {
+            if (false == firstAlive) then {
+                firstAlive := spinfo
+            }
+            alive := alive + 1
+        }
+    }
+    if (alive >= util.jobs) then {
+        firstAlive[2].wait
+    }
+    subprocesses.push([id, io.spawn("bash", "-c", cmd)])
+}
 method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
@@ -1212,6 +1232,7 @@ method compile(vl, of, mn, rm, bt) {
     var ext := false
     if (runmode == "make") then {
         log_verbose("checking imports.")
+        def subprocesses = []
         for (values) do { v ->
             if (v.kind == "import") then {
                 var nm := v.value.value
@@ -1243,9 +1264,7 @@ method compile(vl, of, mn, rm, bt) {
                         }
                         cmd := cmd ++ " --noexec --no-recurse"
                         if (util.recurse) then {
-                            if (io.system(cmd).not) then {
-                                util.syntax_error("failed processing import of " ++nm ++".")
-                            }
+                            spawnSubprocess(subprocesses, nm, cmd)
                         }
                         exists := true
                         linkfiles.push(nm ++ ".gcn")
@@ -1261,6 +1280,17 @@ method compile(vl, of, mn, rm, bt) {
                     util.syntax_error("failed finding import of " ++ nm ++ ".")
                 }
             }
+        }
+        def imperrors = []
+        for (subprocesses) do { tt->
+            def nm = tt[1]
+            def p = tt[2]
+            if (!p.success) then {
+                imperrors.push(nm)
+            }
+        }
+        if (imperrors.size > 0) then {
+            util.syntax_error("failed processing import of " ++ imperrors ++".")
         }
     }
     outprint("#include \"{util.gracelibPath}/gracelib.h\"")
