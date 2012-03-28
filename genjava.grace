@@ -872,7 +872,7 @@ def keywords = ["package", "import", "class", "this", "super", "null", "new",
                 "void", "int", "float", "double", "boolean", "char", "byte",
                 "public", "protected", "private", "static", "final", "extends",
                 "if", "else", "for", "while", "do", "switch", "case",
-                "default", "synchronized", "volatile", "return",
+                "default", "synchronized", "volatile", "return", "wait",
                 obj, blk, bln, num, str, lst, ret, "GraceVoid"]
 
 method escape(ident: String) -> String {
