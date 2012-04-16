@@ -1208,7 +1208,7 @@ method compile(vl, of, mn, rm, bt) {
                         if (util.verbosity > 30) then {
                             cmd := cmd ++ " --verbose"
                         }
-                        if (util.vtag) then {
+                        if (false != util.vtag) then {
                             cmd := cmd ++ " --vtag " ++ util.vtag
                         }
                         cmd := cmd ++ " --noexec --no-recurse"

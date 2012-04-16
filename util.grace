@@ -133,7 +133,7 @@ method parseargs {
 method log_verbose(s) {
     if (verbosityv >= 40) then {
         io.error.write("minigrace")
-        if (vtagv) then {
+        if (false != vtagv) then {
             io.error.write("[" ++ vtagv ++ "]")
         }
         io.error.write(": ")
