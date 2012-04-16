@@ -276,7 +276,12 @@ void grace_run_shutdown_functions() {
 int istrue(Object o) {
     if (o == undefined)
         die("Undefined value used in boolean test.");
-    return o != NULL && o != BOOLEAN_FALSE && o != undefined;
+    if (o == NULL || o == BOOLEAN_FALSE)
+        return 0;
+    if (o == BOOLEAN_TRUE)
+        return 1;
+    if (o->flags & FLAG_USEROBJ)
+        return istrue(((struct UserObject *)o)->super);
 }
 int isclass(Object o, const char *class) {
     return (strcmp(o->class->name, class) == 0);

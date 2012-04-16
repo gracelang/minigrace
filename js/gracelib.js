@@ -390,7 +390,12 @@ GraceList.prototype = {
 };
 
 function Grace_isTrue(o) {
-    return (o._value != false);
+    if (o._value === false)
+        return false;
+    if (o._value === true)
+        return true;
+    if (o.superobj != null)
+        return Grace_isTrue(o.superobj);
 }
 
 function Grace_print(obj) {
