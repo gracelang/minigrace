@@ -2369,6 +2369,8 @@ ClassData alloc_class(const char *name, int nummethods) {
     c->name = glmalloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
+    c->flags = 3;
+    c->class = NULL;
     c->nummethods = 0;
     c->mark = NULL;
     c->release = NULL;
@@ -2384,6 +2386,8 @@ ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
     c->name = glmalloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
+    c->flags = 3;
+    c->class = NULL;
     c->nummethods = 0;
     c->mark = mark;
     c->release = NULL;
@@ -2397,6 +2401,8 @@ ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
 ClassData alloc_class3(const char *name, int nummethods, void (*mark)(void*),
         void (*release)(void*)) {
     ClassData c = alloc_class(name, nummethods);
+    c->flags = 3;
+    c->class = NULL;
     c->mark = mark;
     c->release = release;
     return c;

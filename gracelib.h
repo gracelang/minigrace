@@ -11,13 +11,16 @@ typedef struct Method {
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
 
-typedef struct ClassData {
+typedef struct ClassData* ClassData;
+struct ClassData {
+    int32_t flags;
+    ClassData class;
     char *name;
     Method *methods;
     int nummethods;
     void (*mark)(void *);
     void (*release)(void *);
-}* ClassData;
+};
 
 struct Object {
     int32_t flags;
