@@ -181,6 +181,7 @@ struct GC_Root *GC_roots;
 #define FLAG_REACHABLE 4
 #define FLAG_DEAD 8
 #define FLAG_USEROBJ 16
+#define FLAG_BLOCK 32
 int gc_dofree = 1;
 int gc_dowarn = 0;
 int gc_enabled = 1;
@@ -1533,16 +1534,18 @@ Object Boolean_AndAnd(Object self, int nparams,
     if (!myval) {
         return self;
     }
-    Object o = callmethod(args[0], "apply", 0, NULL);
-    return o;
+    if (args[0]->flags & FLAG_BLOCK)
+        return callmethod(args[0], "apply", 0, NULL);
+    return alloc_Boolean(istrue(args[0]));
 }
 Object Boolean_OrOr(Object self, int nparams,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     if (myval)
         return self;
-    Object o = callmethod(args[0], "apply", 0, NULL);
-    return o;
+    if (args[0]->flags & FLAG_BLOCK)
+        return callmethod(args[0], "apply", 0, NULL);
+    return alloc_Boolean(istrue(args[0]));
 }
 Object Boolean_ifTrue(Object self, int nparams,
         Object *args, int flags) {
@@ -2709,6 +2712,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 2, c));
     o->super = NULL;
+    o->flags |= FLAG_BLOCK;
     return (Object)o;
 }
 void set_type(Object o, int16_t t) {
