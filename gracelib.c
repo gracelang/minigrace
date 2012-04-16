@@ -2789,16 +2789,10 @@ Object process_varargs(Object *args, int fixed, int nargs) {
 }
 int find_gso(const char *name, char *buf) {
     // Try:
-    // 1) .
-    // 2) dirname(argv[0])
-    // 3) GRACE_MODULE_PATH
+    // 1) dirname(argv[0])
+    // 2) GRACE_MODULE_PATH
+    // 3) .
     struct stat st;
-    strcpy(buf, "./");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
-    }
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
@@ -2819,6 +2813,12 @@ int find_gso(const char *name, char *buf) {
         if (stat(buf, &st) == 0) {
             return 1;
         }
+    }
+    strcpy(buf, "./");
+    strcat(buf, name);
+    strcat(buf, ".gso");
+    if (stat(buf, &st) == 0) {
+        return 1;
     }
     return 0;
 }
