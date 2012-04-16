@@ -33,3 +33,13 @@ if (x == true) then {
 } else {
     print "OK"
 }
+if (true == !y) then {
+    print "OK"
+} else {
+    print "Not OK; !y should be true."
+}
+if (false == !x) then {
+    print "OK"
+} else {
+    print "Not OK; !x should be false."
+}
