@@ -248,24 +248,30 @@ GraceBoolean.prototype = {
         "&&": function(other) {
             if (!this._value)
                 return this;
+            if (other instanceof GraceBoolean)
+                return other;
             var o = callmethod(other, "apply");
             return o;
         },
         "||": function(other) {
             if (this._value)
                 return this;
+            if (other instanceof GraceBoolean)
+                return other;
             var o = callmethod(other, "apply");
             return o;
         },
-        "ifTrue": function(other) {
+        "andAlso": function(other) {
             if (this._value) {
                 return callmethod(other, "apply");
             }
+            return this;
         },
-        "ifFalse": function(other) {
+        "orElse": function(other) {
             if (!this._value) {
                 return callmethod(other, "apply");
             }
+            return this;
         },
         "asString": function() {
             return new GraceString("" + this._value)
