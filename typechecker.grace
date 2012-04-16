@@ -96,6 +96,10 @@ def VoidType = ast.asttype("Void", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
 ])
+def NothingType = ast.asttype("Nothing", [
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
+])
 def BlockType = ast.asttype("Block", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
@@ -1255,6 +1259,9 @@ method typecheck(values) {
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))
     bindName("void", Binding.new("def"))
+    btmp := Binding.new("def")
+    btmp.dtype := NothingType
+    bindName("nothing", btmp)
     bindName("true", Binding.new("def"))
     bindName("false", Binding.new("def"))
     bindName("...", Binding.new("def"))
@@ -1281,6 +1288,9 @@ method typecheck(values) {
     btmp := Binding.new("type")
     btmp.value := VoidType
     bindName("Void", btmp)
+    btmp := Binding.new("type")
+    btmp.value := NothingType
+    bindName("Nothing", btmp)
     btmp := Binding.new("type")
     btmp.value := BlockType
     bindName("Block", btmp)

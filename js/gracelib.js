@@ -847,7 +847,7 @@ function dbg(o) {
     stderr_txt.value += dbgp(o, 0) + "\n";
 }
 var extensionsMap = callmethod(var_HashMap, "new");
-var var_void = new GraceObject();
+var var_nothing = new GraceObject();
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var Grace_prelude = Grace_allocObject();
@@ -855,7 +855,7 @@ Grace_prelude.methods["while()do"] = function(c,b) {
     while (Grace_isTrue(callmethod(c, "apply"))) {
         callmethod(b, "apply");
     }
-    return var_void;
+    return var_nothing;
 }
 Grace_prelude.methods["for()do"] = function(c,b) {
     var iter = callmethod(c, "iterator");
@@ -863,7 +863,7 @@ Grace_prelude.methods["for()do"] = function(c,b) {
         var val = callmethod(iter, "next");
         callmethod(b, "apply", val);
     }
-    return var_void;
+    return var_nothing;
 }
 function Grace_allocModule(modname) {
     var mod = Grace_allocObject();

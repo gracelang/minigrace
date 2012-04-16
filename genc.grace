@@ -1258,6 +1258,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_MatchFailed = alloc_MatchFailed();")
     out("  Object *var_void = alloc_var();")
     out("  *var_void = none;")
+    out("  Object *var_nothing = alloc_var();")
+    out("  *var_nothing = none;")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")

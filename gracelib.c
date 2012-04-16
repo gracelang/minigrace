@@ -1956,7 +1956,7 @@ Object module_sys_init() {
 Object alloc_none() {
     if (none != NULL)
         return none;
-    noneClass = alloc_class("void", 3);
+    noneClass = alloc_class("nothing", 3);
     add_Method(noneClass, "==", &Object_Equals);
     add_Method(noneClass, "!=", &Object_NotEquals);
     add_Method(noneClass, "asString", &Object_asString);
