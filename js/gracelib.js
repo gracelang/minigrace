@@ -404,6 +404,43 @@ function Grace_isTrue(o) {
         return Grace_isTrue(o.superobj);
 }
 
+function Grace_egal(o1, o2) {
+    if (o1 == o2)
+        return new GraceBoolean(true);
+    if (o1.mutable || o2.mutable)
+        return new GraceBoolean(false);
+    var t1 = classType(o1);
+    var t2 = classType(o2);
+    var tm = callmethod(callmethod(t1, "match", o2),
+            "&&", callmethod(t2, "match", o1));
+    if (!Grace_isTrue(tm))
+        return new GraceBoolean(false);
+    for (d in o1.methods) {
+        if (d == "outer")
+            continue;
+        var meth = o1.methods[d];
+        var tmp = o2;
+        while (tmp != null && tmp != undefined
+                && typeof(tmp.methods[d]) != "function")
+            tmp = tmp.superobj;
+        if (tmp == null || tmp == undefined)
+            return new GraceBoolean(false);
+        if (meth == tmp.methods[d])
+            continue;
+        if (meth.def && !tmp.methods[d].def)
+            return new GraceBoolean(false);
+        if (!meth.def && meth != tmp.methods[d])
+            return new GraceBoolean(false);
+        if (o1.data[d] && !tmp.data[d])
+            return new GraceBoolean(false);
+        var leftdata = o1.data[d];
+        var rightdata = tmp.data[d];
+        if (!Grace_isTrue(callmethod(leftdata, "==", rightdata)))
+            return new GraceBoolean(false);
+    }
+    return new GraceBoolean(true);
+}
+
 function Grace_print(obj) {
     var s = callmethod(obj, "asString");
     stdout_txt.value += s._value + "\n";
@@ -437,35 +474,38 @@ GraceObject.prototype = {
     },
     data: {}
 };
+GraceObjectMethods = {
+    "==": function(o) {
+        return Grace_egal(this, o);
+    },
+    "!=": function(other) {
+        var t = callmethod(this, "==", other);
+        return callmethod(t, "not");
+    },
+    "/=": function(other) {
+        var t = callmethod(this, "==", other);
+        return callmethod(t, "not");
+    },
+    "asString": function() {
+        var s = "object {";
+        for (var i in this.data) {
+            s += "var " + i + " = " + this.data[i]._value + " ";
+        }
+        return new GraceString(s + "}");
+    },
+};
 function Grace_allocObject() {
     return {
         methods: {
-            "==": function(o) {
-                return new GraceBoolean(this == o);
-            },
-            "!=": function(other) {
-                var t = callmethod(this, "==", other);
-                return callmethod(t, "not");
-            },
-            "/=": function(other) {
-                var t = callmethod(this, "==", other);
-                return callmethod(t, "not");
-            },
-            "asString": function() {
-                var s = "object {";
-                for (var i in this.data) {
-                    s += "var " + i + " = " + this.data[i]._value + " ";
-                }
-                return new GraceString(s + "}");
-            },
-            "match()matchesBinding()else": function(pat, b, e) {
-                return callmethod(pat, "matchObject()matchesBinding()else",
-                        this, b, e);
-            },
+            "==": GraceObjectMethods["=="],
+            "!=": GraceObjectMethods["!="],
+            "/=": GraceObjectMethods["/="],
+            "asString": GraceObjectMethods["asString"],
         },
         superobj: null,
         data: {},
         className: "Object",
+        mutable: false,
     };
 }
 function GraceType(name) {

@@ -106,6 +106,7 @@ method compileobjdefdec(o, selfr, pos) {
     out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
+    out("  reader_{modname}_{nmi}{myc}.def = true;")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
 }
@@ -176,6 +177,7 @@ method compileobject(o, outerRef) {
             compilemethod(e, selfr)
         } elseif (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
+            out("{selfr}.mutable = true;")
             pos := pos + 1
         } elseif (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
