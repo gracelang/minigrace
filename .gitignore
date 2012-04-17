@@ -29,3 +29,4 @@ c/bin
 Makefile.conf
 c/configure
 java/*.grace
+.directory-environ

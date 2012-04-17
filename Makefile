@@ -7,6 +7,13 @@ all: minigrace
 REALSOURCEFILES = compiler.grace util.grace ast.grace genllvm29.grace genllvm30.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace genjava.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
+ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
+MINIGRACE_BUILD_SUBPROCESSES = 2
+endif
+
+echo:
+	echo $(MINIGRACE_BUILD_SUBPROCESSES)
+
 buildinfo.grace: $(REALSOURCEFILES) gracelib.c
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
@@ -24,7 +31,7 @@ l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) unicode.gso 
 	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ln -sf ../known-good/$(ARCH)/$(STABLE)/unicode.gso . ; ../known-good/$(ARCH)/$(STABLE)/minigrace --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/$(STABLE) --vtag kg compiler.grace )
 
 l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o gracelib.h
-	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ln -sf ../l1/unicode.gso . ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 compiler.grace ; ln -sf ../unicode.gso . )
+	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ln -sf ../l1/unicode.gso . ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace ; ln -sf ../unicode.gso . )
 
 js: js/index.html
 
@@ -64,11 +71,11 @@ selftest: minigrace
 	rm -rf selftest
 	mkdir -p selftest
 	for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f selftest ; done
-	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest compiler.grace )
+	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 	rm -rf selftest
 
 minigrace: l2/minigrace $(SOURCEFILES) unicode.gso gracelib.o
-	./l2/minigrace --vtag l2 --make --native --module minigrace --verbose compiler.grace
+	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 unicode.gco: unicode.c unicodedata.h
 	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
@@ -121,4 +128,4 @@ known-good/%:
 Makefile.conf: configure
 	./configure
 
-.PHONY: all clean selfhost-stats selfhost-rec test js c java
+.PHONY: all clean selfhost-stats selfhost-rec test js c java selftest
