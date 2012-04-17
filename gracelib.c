@@ -86,6 +86,7 @@ ClassData ellipsisClass;
 ClassData File;
 ClassData IOModule;
 ClassData SysModule;
+ClassData Type;
 
 struct StringObject {
     int32_t flags;
@@ -155,6 +156,13 @@ struct BlockObject {
     jmp_buf *retpoint;
     Object super;
     Object data[1];
+};
+struct TypeObject {
+    int32_t flags;
+    ClassData class;
+    char *name;
+    Method *methods;
+    int nummethods;
 };
 
 struct SFLinkList *shutdown_functions;
@@ -2393,6 +2401,37 @@ Object alloc_obj(int additional_size, ClassData class) {
 Object alloc_newobj(int additional_size, ClassData class) {
     return alloc_obj(additional_size, class);
 }
+Object Type_match(Object self, int argc, Object *argv, int flags) {
+    Object obj = argv[0];
+    if (obj->class == (ClassData)self)
+        return alloc_Boolean(1);
+    struct TypeObject *t = (struct TypeObject *)self;
+    int i;
+    for (i=0; i<t->nummethods; i++) {
+        Method m = t->methods[i];
+        if (!findmethodsimple(obj, m.name))
+            return alloc_Boolean(0);
+    }
+    return alloc_Boolean(1);
+}
+Object alloc_Type(const char *name, int nummethods) {
+    if (Type == NULL) {
+        char buf[strlen(name) + 7];
+        strcpy(buf, "Type<");
+        strcat(buf, name);
+        strcat(buf, ">");
+        Type = alloc_class(buf, 4);
+        add_Method(Type, "==", &Object_Equals);
+        add_Method(Type, "!=", &Object_NotEquals);
+        add_Method(Type, "asString", &Object_asString);
+        add_Method(Type, "match", &Type_match);
+    }
+    Object o = alloc_obj(sizeof(struct TypeObject)
+            - sizeof(int32_t) - sizeof(ClassData), Type);
+    struct TypeObject *t = (struct TypeObject *)o;
+    t->methods = glmalloc(sizeof(Method) * nummethods);
+    return (Object)t;
+}
 ClassData alloc_class(const char *name, int nummethods) {
     ClassData c = glmalloc(sizeof(struct ClassData));
     c->name = glmalloc(strlen(name) + 1);
@@ -2438,7 +2477,6 @@ ClassData alloc_class3(const char *name, int nummethods, void (*mark)(void*),
     c->release = release;
     return c;
 }
-
 Object Integer32_Equals(Object self, int nargs, Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);

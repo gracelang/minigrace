@@ -64,7 +64,7 @@ method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
         if ((n.kind == "vardec") | (n.kind == "defdec")
-            | (n.kind == "class")) then {
+            | (n.kind == "class") | (n.kind == "type")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -87,10 +87,22 @@ method definebindings(l, slot) {
                 out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
                 slot := slot + 1
             }
-        } elseif (n.kind == "if") then {
-            slot := definebindings(n.thenblock, slot)
-            slot := definebindings(n.elseblock, slot)
-            n.handledIdentifiers := true
+        } else {
+            if (n.kind == "if") then {
+                slot := definebindings(n.thenblock, slot)
+                slot := definebindings(n.elseblock, slot)
+                n.handledIdentifiers := true
+            } else {
+                if (n.kind == "type") then {
+                    var tnm := escapeident(n.value)
+                    if (!declaredvars.contains(tnm)) then {
+                        declaredvars.push(tnm)
+                        out("  Object *var_{tnm} = "
+                            ++ "&(stackframe->slots[{slot}]);")
+                        slot := slot + 1
+                    }
+                }
+            }
         }
     }
     slot
@@ -395,6 +407,20 @@ method compileblock(o) {
     compilemethod(applymeth, obj, 0)
     o.register := obj
     inBlock := origInBlock
+}
+method compiletype(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def escName = escapestring2(o.value)
+    def idName = escapeident(o.value)
+    out("// Type {o.value}")
+    out("Object type{myc} = alloc_Type(\"{escName}\", {o.methods.size});")
+    out("*var_{idName} = type{myc};")
+    for (o.methods) do {meth->
+        def mnm = escapestring2(meth.value)
+        out("add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
+    }
+    o.register := "none"
 }
 method compilefor(o) {
     var myc := auto_count
@@ -1090,6 +1116,9 @@ method compilenode(o) {
     }
     if (o.kind == "object") then {
         compileobject(o, "self")
+    }
+    if (o.kind == "type") then {
+        compiletype(o)
     }
     if (o.kind == "member") then {
         compilemember(o)
