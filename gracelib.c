@@ -3038,6 +3038,8 @@ void gracelib_argv(char **argv) {
         gc_dofree = 0;
     srand(time(NULL));
     hash_init = rand();
+    alloc_Float64(1);
+    alloc_Boolean(0);
 }
 void setline(int l) {
     linenumber = l;
