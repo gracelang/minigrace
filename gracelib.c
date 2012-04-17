@@ -87,6 +87,7 @@ ClassData File;
 ClassData IOModule;
 ClassData SysModule;
 ClassData Type;
+ClassData Class;
 
 struct StringObject {
     int32_t flags;
@@ -2434,13 +2435,27 @@ Object alloc_Type(const char *name, int nummethods) {
     t->methods = glmalloc(sizeof(Method) * nummethods);
     return (Object)t;
 }
+inline void initialise_Class() {
+    if (Class == NULL) {
+        Class = glmalloc(sizeof(struct ClassData));
+        Class->flags = 3;
+        Class->class = Class;
+        Class->name = "ClassOf<Class>";
+        Class->methods = glmalloc(sizeof(Method));
+        Class->nummethods = 1;
+        Class->mark = NULL;
+        Class->release = NULL;
+        add_Method(Class, "match", &Type_match);
+    }
+}
 ClassData alloc_class(const char *name, int nummethods) {
+    initialise_Class();
     ClassData c = glmalloc(sizeof(struct ClassData));
     c->name = glmalloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
     c->flags = 3;
-    c->class = NULL;
+    c->class = Class;
     c->nummethods = 0;
     c->mark = NULL;
     c->release = NULL;
@@ -2453,12 +2468,13 @@ ClassData alloc_class(const char *name, int nummethods) {
     return c;
 }
 ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
+    initialise_Class();
     ClassData c = glmalloc(sizeof(struct ClassData));
     c->name = glmalloc(strlen(name) + 1);
     strcpy(c->name, name);
     c->methods = glmalloc(sizeof(Method) * nummethods);
     c->flags = 3;
-    c->class = NULL;
+    c->class = Class;
     c->nummethods = 0;
     c->mark = mark;
     c->release = NULL;
