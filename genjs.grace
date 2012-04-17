@@ -228,6 +228,18 @@ method compileblock(o) {
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
+method compiletype(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def escName = escapestring(o.value)
+    def idName = escapeident(o.value)
+    out("var var_{idName} = new GraceType(\"{escName}\");")
+    for (o.methods) do {meth->
+        def mnm = escapestring(meth.value)
+        out("var_{idName}.typeMethods.push(\"{mnm}\");")
+    }
+    o.register := "none"
+}
 method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
@@ -661,6 +673,9 @@ method compilenode(o) {
     }
     if (o.kind == "object") then {
         compileobject(o, "this")
+    }
+    if (o.kind == "type") then {
+        compiletype(o)
     }
     if (o.kind == "member") then {
         compilemember(o)

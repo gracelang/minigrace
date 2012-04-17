@@ -468,6 +468,52 @@ function Grace_allocObject() {
         className: "Object",
     };
 }
+function GraceType(name) {
+    this.name = name;
+    this.className = "Type<" + name + ">";
+    this.typeMethods = [];
+}
+GraceType.prototype = {
+    methods: {
+        "match": function(other) {
+            var i;
+            for (i=0; i<this.typeMethods.length; i++) {
+                var m = this.typeMethods[i];
+                if (!other.methods[m]) {
+                    var tmp = other;
+                    var found = false;
+                    while (tmp.superobj != null) {
+                        tmp = tmp.superobj;
+                        if (tmp.methods[m]) {
+                            found = true;
+                            break
+                        }
+                    }
+                    if (!found)
+                        return new GraceBoolean(false);
+                }
+            }
+            return new GraceBoolean(true);
+        },
+    },
+    typeMethods: [],
+    className: "Type",
+};
+function classType(obj) {
+    var t = new GraceType(obj.className);
+    var o = obj;
+    while (o != null) {
+        var i;
+        for (m in o.methods)
+            t.typeMethods.push(m);
+        o = o.superobj;
+    }
+    return t;
+}
+var var_String = classType(new GraceString(""));
+var var_Number = classType(new GraceNum(1));
+var var_Boolean = classType(new GraceBoolean(true));
+var var_Type = classType(var_Boolean);
 var var_MatchFailed = Grace_allocObject();
 var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
 function GraceHashMap() {
