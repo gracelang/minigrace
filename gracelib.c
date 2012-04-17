@@ -871,9 +871,16 @@ Object String_asNumber(Object self, int argc, Object *argv, int flags) {
     char *c = grcstring(self);
     return alloc_Float64(atof(c));
 }
+Object String_encode(Object self, int nparams,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    grcstring(self);
+    return alloc_Octets(sself->flat,
+            sself->blen);
+}
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 19,
+        ConcatString = alloc_class3("ConcatString", 20,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -887,6 +894,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
+        add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "replace()with", &String_replace_with);
@@ -978,12 +986,6 @@ Object String_size(Object self, int nparams,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->size);
-}
-Object String_encode(Object self, int nparams,
-        Object *args, int flags) {
-    struct StringObject* sself = (struct StringObject*)self;
-    return alloc_Octets(sself->body,
-            sself->blen);
 }
 Object String_substringFrom_to(Object self,
         int nparams, Object *args, int flags) {
