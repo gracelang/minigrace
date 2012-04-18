@@ -24,7 +24,7 @@ gracelib.bc: gracelib.c gracelib.h
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -o gracelib-basic.o -c gracelib.c
 
-gracelib.o: gracelib-basic.o l1/minigrace
+gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
 	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
 
