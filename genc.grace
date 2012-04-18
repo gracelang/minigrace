@@ -1244,6 +1244,9 @@ method compile(vl, of, mn, rm, bt) {
                 var exists := false
                 if (io.exists(nm ++ ".gso")) then {
                     exists := true
+                } elseif(nm == "StandardPrelude") then {
+                    exists := true
+                    staticmodules.push(nm)
                 } elseif (io.exists(nm ++ ".gcn")) then {
                     if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
                         exists := true
@@ -1304,19 +1307,27 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
     outprint("extern Object none;")
-    outprint("extern Object prelude;")
+    outprint("extern Object _prelude;")
     outprint("extern Object String;")
     outprint("extern Object Number;")
     outprint("extern Object Boolean;")
     outprint("extern Object Type;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
+    outprint("static Object prelude;")
     outprint("static const char modulename[] = \"{modname}\";");
+    outprint("Object module_StandardPrelude_init();");
     out("Object module_{escmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
-    out("  adddatum2(self, grace_prelude(), 0);")
+    if (util.extensions.contains("NativePrelude")) then {
+        out("  prelude = grace_prelude();")
+        out("  adddatum2(self, grace_prelude(), 0);")
+    } else {
+        out("  prelude = module_StandardPrelude_init();")
+        out("  adddatum2(self, module_StandardPrelude_init(), 0);")
+    }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
     out("  gc_root(self);")
     var modn := "Module<{modname}>"
@@ -1337,6 +1348,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_Boolean = Boolean;")
     out("  Object *var_Type = alloc_var();")
     out("  *var_Type = Type;")
+    out("  Object *var__prelude = alloc_var();")
+    out("  *var__prelude = grace_prelude();")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
@@ -1349,6 +1362,10 @@ method compile(vl, of, mn, rm, bt) {
     output := []
     definebindings(values, 1)
     for (values) do { o ->
+        if (o.kind == "inherits") then {
+            def superobj = compilenode(o.value)
+            out("  setsuperobj(self, {superobj});")
+        }
         compilenode(o)
     }
     for (globals) do {e->
@@ -1364,27 +1381,32 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_frame_end(frame);")
     out("  return self;")
     out("}")
-    out("int main(int argc, char **argv) \{")
-    out("  initprofiling();")
-    if (util.extensions.contains("LogCallGraph")) then {
-        var lcgfile := util.extensions.get("LogCallGraph")
-        out("  enable_callgraph(\"{lcgfile}\");")
+    if (!util.extensions.contains("NoMain")) then {
+        out("int main(int argc, char **argv) \{")
+        out("  initprofiling();")
+        if (util.extensions.contains("LogCallGraph")) then {
+            var lcgfile := util.extensions.get("LogCallGraph")
+            out("  enable_callgraph(\"{lcgfile}\");")
+        }
+        if (!util.extensions.contains("NativePrelude")) then {
+            //out("  prelude = module_StandardPrelude_init();")
+        }
+        out("  gracelib_argv(argv);")
+        out("  Object params[1];")
+        out("  undefined = alloc_Undefined();")
+        out("  none = alloc_none();")
+        out("  Object tmp_argv = alloc_List();")
+        out("  gc_root(tmp_argv);")
+        out("  int i; for (i=0; i<argc; i++) \{")
+        out("    params[0] = alloc_String(argv[i]);")
+        out("    callmethod(tmp_argv, \"push\", 1,params);")
+        out("  \}")
+        out("  module_sys_init_argv(tmp_argv);")
+        out("  module_{escmodname}_init();")
+        out("  gracelib_stats();")
+        out("  return 0;")
+        out("}")
     }
-    out("  gracelib_argv(argv);")
-    out("  Object params[1];")
-    out("  undefined = alloc_Undefined();")
-    out("  none = alloc_none();")
-    out("  Object tmp_argv = alloc_List();")
-    out("  gc_root(tmp_argv);")
-    out("  int i; for (i=0; i<argc; i++) \{")
-    out("    params[0] = alloc_String(argv[i]);")
-    out("    callmethod(tmp_argv, \"push\", 1,params);")
-    out("  \}")
-    out("  module_sys_init_argv(tmp_argv);")
-    out("  module_{escmodname}_init();")
-    out("  gracelib_stats();")
-    out("  return 0;")
-    out("}")
     log_verbose("writing file.")
     for (topOutput) do { x ->
         outprint(x)

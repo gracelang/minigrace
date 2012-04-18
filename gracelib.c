@@ -3305,6 +3305,7 @@ Object grace_octets(Object self, int argc, Object *argv, int flags) {
     return alloc_Octets(buf, len);
 }
 Object prelude = NULL;
+Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
@@ -3317,7 +3318,16 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "octets", &grace_octets);
-    prelude = alloc_userobj2(0, 7, c);
+    _prelude = alloc_userobj2(0, 7, c);
+    gc_root(_prelude);
+    prelude = _prelude;
+    return _prelude;
+}
+/*Object grace_prelude2() {
+    if (prelude != NULL)
+        return prelude;
+    grace__prelude();
+    prelude = module_StandardPrelude_init();
     gc_root(prelude);
     return prelude;
-}
+}*/

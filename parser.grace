@@ -1628,6 +1628,7 @@ method parse(toks) {
     }
     while {tokens.size > 0} do {
         methoddec
+        inheritsdec
         statement
         if (tokens.size == oldlength) then {
             var nxtToks := ""

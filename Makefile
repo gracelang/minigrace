@@ -21,8 +21,12 @@ buildinfo.grace: $(REALSOURCEFILES) gracelib.c
 gracelib.bc: gracelib.c gracelib.h
 	clang -emit-llvm -c -o gracelib.bc gracelib.c
 
-gracelib.o: gracelib.c gracelib.h
-	gcc -g -o gracelib.o -c gracelib.c
+gracelib-basic.o: gracelib.c gracelib.h
+	gcc -g -o gracelib-basic.o -c gracelib.c
+
+gracelib.o: gracelib-basic.o l1/minigrace
+	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
