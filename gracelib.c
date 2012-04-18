@@ -88,6 +88,7 @@ ClassData IOModule;
 ClassData SysModule;
 ClassData Type;
 ClassData Class;
+ClassData MatchResult;
 
 struct StringObject {
     int32_t flags;
@@ -375,6 +376,66 @@ Object Object_NotEquals(Object receiver, int nparams,
 Object Object_Equals(Object receiver, int nparams,
         Object* params, int flags) {
     return alloc_Boolean(receiver == params[0]);
+}
+Object MatchResult_result(Object self, int argc, Object *argv, int flags) {
+    return ((struct UserObject *)self)->data[0];
+}
+Object MatchResult_bindings(Object self, int argc, Object *argv, int flags) {
+    return ((struct UserObject *)self)->data[1];
+}
+Object MatchResult_asString(Object self, int argc, Object *argv, int flags) {
+    struct UserObject *uo = (struct UserObject *)self;
+    gc_pause();
+    Object str;
+    if (uo->super == BOOLEAN_TRUE)
+        str = alloc_String("SuccessfulMatch(result = ");
+    else
+        str = alloc_String("FailedMatch(result = ");
+    Object tmpstr = callmethod(uo->data[0], "asString", 0, NULL);
+    str = callmethod(str, "++", 1, &tmpstr);
+    tmpstr = alloc_String(", bindings = ");
+    str = callmethod(str, "++", 1, &tmpstr);
+    tmpstr = callmethod(uo->data[1], "asString", 0, NULL);
+    str = callmethod(str, "++", 1, &tmpstr);
+    tmpstr = alloc_String(")");
+    str = callmethod(str, "++", 1, &tmpstr);
+    gc_unpause();
+    return str;
+}
+Object alloc_MatchResult(Object result, Object bindings) {
+    gc_pause();
+    if (bindings == NULL)
+        bindings = alloc_List();
+    Object o = alloc_userobj2(3, 2, MatchResult);
+    if (!MatchResult) {
+        MatchResult = o->class;
+        add_Method(MatchResult, "result", &MatchResult_result);
+        add_Method(MatchResult, "bindings", &MatchResult_bindings);
+        add_Method(MatchResult, "asString", &MatchResult_asString);
+    }
+    struct UserObject *uo = (struct UserObject *)o;
+    uo->data[0] = result;
+    uo->data[1] = bindings;
+    gc_unpause();
+    return o;
+}
+Object alloc_SuccessfulMatch(Object result, Object bindings) {
+    Object o = alloc_MatchResult(result, bindings);
+    ((struct UserObject *)o)->super = alloc_Boolean(1);
+    return o;
+}
+Object alloc_FailedMatch(Object result, Object bindings) {
+    Object o = alloc_MatchResult(result, bindings);
+    ((struct UserObject *)o)->super = alloc_Boolean(0);
+    return o;
+}
+Object literal_match(Object self, int argc, Object *argv, int flags) {
+    if (argc < 1)
+        die("match requires an argument");
+    Object other = argv[0];
+    if (!istrue(callmethod(self, "==", 1, argv)))
+        return alloc_FailedMatch(other, NULL);
+    return alloc_SuccessfulMatch(other, NULL);
 }
 Object String_Equals(Object self, int nparams,
         Object *params, int flags) {
