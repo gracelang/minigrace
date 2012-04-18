@@ -3304,12 +3304,32 @@ Object grace_octets(Object self, int argc, Object *argv, int flags) {
     }
     return alloc_Octets(buf, len);
 }
+Object prelude__methods(Object self, int argc, Object *argv, int flags) {
+    ClassData c = self->class;
+    gc_pause();
+    Object l = alloc_List();
+    while (c != NULL) {
+        int i;
+        for (i=0; i<c->nummethods; i++) {
+            Object str = alloc_String(c->methods[i].name);
+            callmethod(l, "push", 1, &str);
+        }
+        c = NULL;
+        if (self->flags & FLAG_USEROBJ) {
+            self = ((struct UserObject *)self)->super;
+            if (self != NULL)
+                c = self->class;
+        }
+    }
+    gc_unpause();
+    return l;
+}
 Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("Prelude", 8, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 9, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3318,16 +3338,9 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "octets", &grace_octets);
+    add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
     return _prelude;
 }
-/*Object grace_prelude2() {
-    if (prelude != NULL)
-        return prelude;
-    grace__prelude();
-    prelude = module_StandardPrelude_init();
-    gc_root(prelude);
-    return prelude;
-}*/
