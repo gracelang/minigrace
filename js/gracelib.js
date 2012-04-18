@@ -942,7 +942,9 @@ var extensionsMap = callmethod(var_HashMap, "new");
 var var_nothing = new GraceObject();
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
-var Grace_prelude = Grace_allocObject();
+var Grace_native_prelude = Grace_allocObject();
+var Grace_prelude = Grace_native_prelude;
+var var___95__prelude = Grace_native_prelude;
 Grace_prelude.methods["while()do"] = function(c,b) {
     while (Grace_isTrue(callmethod(c, "apply"))) {
         callmethod(b, "apply");
@@ -956,6 +958,13 @@ Grace_prelude.methods["for()do"] = function(c,b) {
         callmethod(b, "apply", val);
     }
     return var_nothing;
+}
+Grace_prelude.methods["_methods"] = function() {
+    var meths = [];
+    for (m in this.methods)
+        meths.push(new GraceString(m));
+    var l = new GraceList(meths);
+    return l;
 }
 function Grace_allocModule(modname) {
     var mod = Grace_allocObject();

@@ -745,7 +745,16 @@ method compile(vl, of, mn, rm, bt, glpath) {
     util.log_verbose("generating ECMAScript code.")
     util.setline(1)
     out("function gracecode_" ++ modname ++ "() \{")
+    if (util.extensions.contains("NativePrelude")) then {
+        out("var Grace_prelude = window.Grace_native_prelude;")
+    }
     for (values) do { o ->
+        if (o.kind == "inherits") then {
+            def sup = compilenode(o.value)
+            out("  this.superobj = {sup};")
+            out("  this.data = {sup}.data;")
+            out("  this._value = {sup}._value;")
+        }
         compilenode(o)
     }
     out("  return this;")

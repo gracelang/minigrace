@@ -39,10 +39,14 @@ l2/minigrace: l1/minigrace $(SOURCEFILES) unicode.gso gracelib.o gracelib.h
 
 js: js/index.html
 
+js/StandardPrelude.js: StandardPrelude.grace minigrace
+	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
+	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
+
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
 
-js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES))
+js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES)) js/StandardPrelude.js
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
