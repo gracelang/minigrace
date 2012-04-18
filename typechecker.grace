@@ -39,7 +39,8 @@ def NumberType = ast.asttype("Number", [
     ast.astmethodtype("asString", [], StringIdentifier),
     ast.astmethodtype("prefix-", [], NumberIdentifier),
     ast.astmethodtype("inBase", [NumberOther], StringIdentifier),
-    ast.astmethodtype("truncate", [], NumberIdentifier)
+    ast.astmethodtype("truncate", [], NumberIdentifier),
+    ast.astmethodtype("match", [TopOther], DynamicIdentifier)
 ])
 def StringType = ast.asttype("String", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),
@@ -57,7 +58,8 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("hashcode", [], NumberIdentifier),
     ast.astmethodtype("indices", [], ListIdentifier),
     ast.astmethodtype("asString", [], StringIdentifier),
-    ast.astmethodtype("asNumber", [], NumberIdentifier)
+    ast.astmethodtype("asNumber", [], NumberIdentifier),
+    ast.astmethodtype("match", [TopOther], DynamicIdentifier)
 ])
 def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("++", [TopOther], StringIdentifier),
@@ -71,7 +73,8 @@ def BooleanType = ast.asttype("Boolean", [
     ast.astmethodtype("prefix!", [], BooleanIdentifier),
     ast.astmethodtype("not", [], BooleanIdentifier),
     ast.astmethodtype("ifTrue", [TopOther], BooleanIdentifier),
-    ast.astmethodtype("asString", [], StringIdentifier)
+    ast.astmethodtype("asString", [], StringIdentifier),
+    ast.astmethodtype("match", [TopOther], DynamicIdentifier)
 ])
 def ListType = ast.asttype("List", [
     ast.astmethodtype("size", [], NumberIdentifier),

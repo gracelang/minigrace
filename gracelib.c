@@ -1122,7 +1122,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 20);
+        String = alloc_class("String", 21);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1141,6 +1141,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
+        add_Method(String, "match", &literal_match);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
@@ -1527,7 +1528,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 20, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 21, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -1547,6 +1548,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
         add_Method(Number, "truncate", &Float64_truncate);
+        add_Method(Number, "match", &literal_match);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
@@ -1661,7 +1663,7 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 12);
+        Boolean = alloc_class("Boolean", 13);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "&", &Boolean_And);
         add_Method(Boolean, "|", &Boolean_Or);
@@ -1674,6 +1676,7 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "!=", &Boolean_NotEquals);
         add_Method(Boolean, "/=", &Boolean_NotEquals);
         add_Method(Boolean, "orElse", &Boolean_orElse);
+        add_Method(Boolean, "match", &literal_match);
     }
     Object o = alloc_obj(sizeof(int8_t), Boolean);
     int8_t *d = (int8_t*)o->data;
