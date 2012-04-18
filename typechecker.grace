@@ -1286,13 +1286,15 @@ method resolveIdentifiersList(lst) {
 preludeObj.put("while()do", Binding.new("method"))
 preludeObj.put("for()do", Binding.new("method"))
 preludeObj.put("octets", Binding.new("method"))
-util.runOnNew {
-    for (prelude._methods) do {mn->
-        preludeObj.put(mn, Binding.new("method"))
-    }
-} else { }
 method typecheck(values) {
     util.log_verbose("typechecking.")
+    util.runOnNew {
+        if (!util.extensions.contains("NativePrelude")) then {
+            for (prelude._methods) do {mn->
+                preludeObj.put(mn, Binding.new("method"))
+            }
+        }
+    } else { }
     var btmp
     bindName("print", Binding.new("method"))
     bindName("length", Binding.new("method"))
