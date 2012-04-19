@@ -842,16 +842,22 @@ method compilematchcase(o) {
     out("  int frame{myc} = gc_frame_new();")
     out("  gc_frame_newslot({matchee});")
     var i := 0
+    def params = []
     for (cases) do {c->
         def e = compilenode(c)
         out("  gc_frame_newslot({e});")
-        out("  params[{i}] = {e};")
+        params.push([i, e])
         i := i + 1
     }
     var elsecase := "NULL"
     if (false != o.elsecase) then {
         elsecase := compilenode(o.elsecase)
         out("  gc_frame_newslot({elsecase});")
+    }
+    for (params) do {ie->
+        def idx = ie[1]
+        def e = ie[2]
+        out("  params[{idx}] = {e};")
     }
     out("  Object matchres{myc} = matchCase({matchee}, params, {cases.size},"
         ++ "{elsecase});")

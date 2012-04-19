@@ -748,6 +748,16 @@ method callrest {
                 params.push(tmp)
                 next
                 expectConsume {expression}
+                if (accept("colon")) then {
+                    tmp := values.pop
+                    if (tmp.kind != "identifier") then {
+                        util.syntax_error("colon must follow identifier")
+                    }
+                    next
+                    expectConsume {expression}
+                    tmp.dtype := values.pop
+                    values.push(tmp)
+                }
             }
             tmp := values.pop
             params.push(tmp)

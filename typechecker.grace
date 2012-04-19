@@ -627,7 +627,6 @@ method rewritematchblockterm2(arg) {
             def tmp = rewritematchblockterm2(a)
             subpats.push(tmp[1])
             for (tmp[2]) do {b->
-                print "pushing binding {b.value}"
                 bindings.push(b)
             }
         }
@@ -643,6 +642,23 @@ method rewritematchblockterm2(arg) {
         return [callpat, bindings]
     }
     if (arg.kind == "identifier") then {
+        if (arg.dtype != false) then {
+            def tmp = rewritematchblockterm2(arg.dtype)
+            def bindings = [arg]
+            for (tmp[2]) do {b->
+                bindings.push(b)
+            }
+            def bindingpat = ast.astcall(
+                ast.astmember(
+                    "new",
+                    ast.astmember("BindingPattern",
+                        ast.astidentifier("prelude", false)
+                    )
+                ),
+                [tmp[1]]
+            )
+            return [bindingpat, bindings]
+        }
         def varpat = ast.astcall(
             ast.astmember(
                 "new",
