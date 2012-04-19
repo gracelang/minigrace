@@ -610,21 +610,31 @@ method resolveIdentifier(node) {
     }
     node
 }
+method rewritematchblockterm2(arg) {
+    if (arg.kind == "num") then {
+        return [arg, []]
+    }
+    if (arg.kind == "string") then {
+        return [arg, []]
+    }
+    if (arg.kind == "boolean") then {
+        return [arg, []]
+    }
+}
 method rewritematchblock2(blk) {
     def arg = blk.params[1]
     var pattern := false
     var newparams := blk.params
-    if (arg.kind == "num") then {
-        pattern := arg
-        newparams := []
+    if ((arg.kind == "num") || (arg.kind == "string") ||
+        (arg.kind == "boolean")) then {
+        def tmp = rewritematchblockterm2(arg)
+        pattern := tmp[1]
+        newparams := tmp[2]
     }
-    if (arg.kind == "string") then {
-        pattern := arg
-        newparams := []
-    }
-    if (arg.kind == "boolean") then {
-        pattern := arg
-        newparams := []
+    if (arg.kind == "identifier") then {
+        if (arg.dtype != false) then {
+            pattern := arg.dtype
+        }
     }
     def newblk = ast.astblock(newparams, blk.body)
     newblk.matchingPattern := pattern
