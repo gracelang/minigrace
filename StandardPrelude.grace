@@ -19,18 +19,27 @@ class FailedMatch.new(result') {
     }
 }
 
+type Extractable = {
+    extract
+}
+
 class MatchAndDestructuringPattern.new(pat, items') {
     def pattern = pat
     def items = items'
     method match(o) {
         def m = pat.match(o)
         if (m) then{
+            var mbindings := m.bindings
             def bindings = []
-            if (m.bindings.size < items.size) then {
-                return FailedMatch.new(o)
+            if (mbindings.size < items.size) then {
+                if (Extractable.match(o)) then {
+                    mbindings := o.extract
+                } else {
+                    return FailedMatch.new(o)
+                }
             }
             for (items.indices) do {i->
-                def b = items[i].match(m.bindings[i])
+                def b = items[i].match(mbindings[i])
                 if (!b) then {
                     return FailedMatch.new(o)
                 }
