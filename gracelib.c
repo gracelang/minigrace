@@ -2470,16 +2470,19 @@ Object alloc_newobj(int additional_size, ClassData class) {
 }
 Object Type_match(Object self, int argc, Object *argv, int flags) {
     Object obj = argv[0];
+    Object bindings = alloc_List();
+    gc_frame_newslot(bindings);
+    callmethod(bindings, "push", 1, &obj);
     if (obj->class == (ClassData)self)
-        return alloc_Boolean(1);
+        return alloc_SuccessfulMatch(obj, bindings);
     struct TypeObject *t = (struct TypeObject *)self;
     int i;
     for (i=0; i<t->nummethods; i++) {
         Method m = t->methods[i];
         if (!findmethodsimple(obj, m.name))
-            return alloc_Boolean(0);
+            return alloc_FailedMatch(obj, NULL);
     }
-    return alloc_Boolean(1);
+    return alloc_SuccessfulMatch(obj, bindings);
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
