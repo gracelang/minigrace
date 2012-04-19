@@ -743,11 +743,23 @@ method callrest {
         methn := meth.value
         next
         ifConsume {expression} then {
+            // For matching blocks - same as below
+            if (accept("colon")) then {
+                tmp := values.pop
+                if (tmp.kind != "identifier") then {
+                    util.syntax_error("colon must follow identifier")
+                }
+                next
+                expectConsume {expression}
+                tmp.dtype := values.pop
+                values.push(tmp)
+            }
             while {accept("comma")} do {
                 tmp := values.pop
                 params.push(tmp)
                 next
                 expectConsume {expression}
+                // For matching blocks - same as above
                 if (accept("colon")) then {
                     tmp := values.pop
                     if (tmp.kind != "identifier") then {
