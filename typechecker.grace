@@ -620,6 +620,40 @@ method rewritematchblockterm2(arg) {
     if (arg.kind == "boolean") then {
         return [arg, []]
     }
+    if (arg.kind == "call") then {
+        def bindings = []
+        def subpats = []
+        for (arg.with) do {a->
+            def tmp = rewritematchblockterm2(a)
+            subpats.push(tmp[1])
+            for (tmp[2]) do {b->
+                print "pushing binding {b.value}"
+                bindings.push(b)
+            }
+        }
+        def callpat = ast.astcall(
+            ast.astmember(
+                "new",
+                ast.astmember("MatchAndDestructuringPattern",
+                    ast.astidentifier("prelude", false)
+                )
+            ),
+            [arg.value, ast.astarray(subpats)]
+        )
+        return [callpat, bindings]
+    }
+    if (arg.kind == "identifier") then {
+        def varpat = ast.astcall(
+            ast.astmember(
+                "new",
+                ast.astmember("VariablePattern",
+                    ast.astidentifier("prelude", false)
+                )
+            ),
+            [ast.aststring(arg.value)]
+        )
+        return [varpat, [arg]]
+    }
 }
 method rewritematchblock2(blk) {
     def arg = blk.params[1]
@@ -633,7 +667,24 @@ method rewritematchblock2(blk) {
     }
     if (arg.kind == "identifier") then {
         if (arg.dtype != false) then {
-            pattern := arg.dtype
+            if (arg.dtype.kind == "identifier") then {
+                pattern := arg.dtype
+            } else {
+                def tmp = rewritematchblockterm2(arg.dtype)
+                def bindingpat = ast.astcall(
+                    ast.astmember(
+                        "new",
+                        ast.astmember("BindingPattern",
+                            ast.astidentifier("prelude", false)
+                        )
+                    ),
+                    [tmp[1]]
+                )
+                pattern := bindingpat
+                for (tmp[2]) do {p->
+                    newparams.push(p)
+                }
+            }
         }
     }
     def newblk = ast.astblock(newparams, blk.body)
