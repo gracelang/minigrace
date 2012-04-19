@@ -101,6 +101,7 @@ method astblock(params', body') {
         def body = body'
         def selfclosure = true
         var register := ""
+        var matchingPattern := false
         def line = util.linenum
         method pretty(depth) {
             var spc := ""

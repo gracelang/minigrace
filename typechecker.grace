@@ -610,7 +610,26 @@ method resolveIdentifier(node) {
     }
     node
 }
-
+method rewritematchblock2(blk) {
+    def arg = blk.params[1]
+    var pattern := false
+    var newparams := blk.params
+    if (arg.kind == "num") then {
+        pattern := arg
+        newparams := []
+    }
+    if (arg.kind == "string") then {
+        pattern := arg
+        newparams := []
+    }
+    if (arg.kind == "boolean") then {
+        pattern := arg
+        newparams := []
+    }
+    def newblk = ast.astblock(newparams, blk.body)
+    newblk.matchingPattern := pattern
+    return newblk
+}
 method rewritematchblockterm(param, body) {
     if (param.kind == "identifier") then {
         bindIdentifier(param)
@@ -874,6 +893,9 @@ method resolveIdentifiers(node) {
         return tmp
     }
     if (node.kind == "block") then {
+        if (node.params.size == 1) then {
+            node := rewritematchblock2(node)
+        }
         pushScope
         for (node.params) do {e->
             if (e.kind == "identifier") then {
@@ -882,6 +904,7 @@ method resolveIdentifiers(node) {
         }
         l := resolveIdentifiersList(node.body)
         tmp := ast.astblock(node.params, l)
+        tmp.matchingPattern := node.matchingPattern
         popScope
         return tmp
     }

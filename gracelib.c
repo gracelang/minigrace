@@ -157,7 +157,7 @@ struct BlockObject {
     ClassData class;
     jmp_buf *retpoint;
     Object super;
-    Object data[1];
+    Object data[2];
 };
 struct TypeObject {
     int32_t flags;
@@ -2305,13 +2305,13 @@ Object alloc_MatchFailed() {
 Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     int i;
     for (i=0; i<ncases; i++) {
-        Object ret = callmethod(cases[i], "apply", 1, &matchee);
-        if (ret != MatchFailed)
-            return ret;
+        Object ret = callmethod(cases[i], "match", 1, &matchee);
+        if (istrue(ret))
+            return callmethod(ret, "result", 0, NULL);
     }
     if (elsecase)
         return callmethod(elsecase, "apply", 1, &matchee);
-    return MatchFailed;
+    return alloc_FailedMatch(matchee, NULL);
 }
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {
@@ -2852,14 +2852,27 @@ Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
     }
     return callmethod(self, "_apply", sz, rargs);
 }
+Object Block_match(Object self, int nargs, Object *args, int flags) {
+    struct BlockObject *bo = (struct BlockObject*)self;
+    if (!bo->data[1])
+        die("block is not a matching block");
+    Object pattern = bo->data[1];
+    Object match = callmethod(pattern, "match", 1, args);
+    if (!istrue(match))
+        return match;
+    Object bindings = callmethod(match, "bindings", 0, NULL);
+    Object rv = callmethod(self, "applyIndirectly", 1, &bindings);
+    return alloc_SuccessfulMatch(rv, NULL);
+}
 void Block__mark(struct BlockObject *o) {
     gc_mark(o->data[0]);
+    gc_mark(o->data[1]);
 }
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class2(buf, 8, (void*)&Block__mark);
+    ClassData c = alloc_class2(buf, 9, (void*)&Block__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -2867,8 +2880,9 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "apply", &Block_apply);
     add_Method(c, "applyIndirectly", &Block_applyIndirectly);
+    add_Method(c, "match", &Block_match);
     struct BlockObject *o = (struct BlockObject*)(
-            alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 2, c));
+            alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 3, c));
     o->super = NULL;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
