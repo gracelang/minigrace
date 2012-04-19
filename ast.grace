@@ -118,6 +118,11 @@ method astblock(params', body') {
             for (self.body) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
+            if (matchingPattern != false) then {
+                s := s ++ "\n"
+                s := s ++ spc ++ "Pattern:"
+                s := s ++ "\n  "++ spc ++ matchingPattern.pretty(depth+2)
+            }
             s
         }
     }
