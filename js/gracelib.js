@@ -260,6 +260,8 @@ GraceBoolean.prototype = {
                 return this;
             if (other instanceof GraceBoolean)
                 return other;
+            if (other.superobj instanceof GraceBoolean)
+                return other;
             var o = callmethod(other, "apply");
             return o;
         },
@@ -267,6 +269,8 @@ GraceBoolean.prototype = {
             if (this._value)
                 return this;
             if (other instanceof GraceBoolean)
+                return other;
+            if (other.superobj instanceof GraceBoolean)
                 return other;
             var o = callmethod(other, "apply");
             return o;
