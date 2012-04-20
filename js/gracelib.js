@@ -175,7 +175,7 @@ GraceNum.prototype = {
         "==": function(other) {
             if (this == other)
                 return new GraceBoolean(true);
-            if (this.prototype == other.prototype
+            if (this.className == other.className
                     && this._value == other._value)
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
