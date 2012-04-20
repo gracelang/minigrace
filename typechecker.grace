@@ -643,6 +643,9 @@ method rewritematchblockterm2(arg) {
     }
     if (arg.kind == "identifier") then {
         if (arg.dtype != false) then {
+            if (arg.dtype.kind == "identifier") then {
+                return [arg.dtype, [arg]]
+            }
             def tmp = rewritematchblockterm2(arg.dtype)
             def bindings = [arg]
             for (tmp[2]) do {b->
