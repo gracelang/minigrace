@@ -464,6 +464,10 @@ method bindIdentifier(ident) {
         } elseif (ident.dtype.kind == "identifier") then {
             def tdb = findName(ident.dtype.value)
             tdtype := tdb.value
+        } elseif (ident.dtype.kind == "generic") then {
+            tdtype := findType(resolveIdentifiers(ident.dtype))
+        } elseif (ident.dtype.kind == "type") then {
+            tdtype := ident.dtype
         }
         tmpb.dtype := tdtype
         scopes.last.put(ident.value, tmpb)
@@ -936,11 +940,14 @@ method resolveIdentifiers(node) {
     if (node.kind == "method") then {
         pushScope
         for (node.params) do {e->
-            bindIdentifier(e)
             // Ensure parameter type exists
             if (false != e.dtype) then {
-                resolveIdentifier(e.dtype)
+                e.dtype := resolveIdentifiers(e.dtype)
+                if (e.dtype.kind == "generic") then {
+                    e.dtype := findType(e.dtype)
+                }
             }
+            bindIdentifier(e)
         }
         tmp2 := resolveIdentifiersList(node.params)
         if (node.varargs) then {
