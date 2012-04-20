@@ -102,6 +102,11 @@ GraceString.prototype = {
         "asNumber": function() {
             return new GraceNum(0 + this._value);
         },
+        "match": function(o) {
+            if (Grace_isTrue(callmethod(this, "==", o)))
+                return new GraceSuccessfulMatch(o);
+            return new GraceFailedMatch(o);
+        },
     },
     className: "String"
 };
@@ -221,7 +226,12 @@ GraceNum.prototype = {
             if (this._value < 0)
                 return new GraceNum(Math.ceil(this._value));
             return new GraceNum(Math.floor(this._value));
-        }
+        },
+        "match": function(o) {
+            if (Grace_isTrue(callmethod(this, "==", o)))
+                return new GraceSuccessfulMatch(o);
+            return new GraceFailedMatch(o);
+        },
     },
     className: "Number",
 };
@@ -295,6 +305,11 @@ GraceBoolean.prototype = {
         "match()matchesBinding()else": function(pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", this,
                     b, e);
+        },
+        "match": function(o) {
+            if (Grace_isTrue(callmethod(this, "==", o)))
+                return new GraceSuccessfulMatch(o);
+            return new GraceFailedMatch(o);
         },
     },
     className: "Boolean",
@@ -444,6 +459,7 @@ function Grace_egal(o1, o2) {
 function Grace_print(obj) {
     var s = callmethod(obj, "asString");
     stdout_txt.value += s._value + "\n";
+    return var_nothing;
 }
 function Grace_length(obj) {
     return new GraceNum(obj._value.length);
@@ -508,6 +524,53 @@ function Grace_allocObject() {
         mutable: false,
     };
 }
+function GraceMatchResult(result, bindings) {
+    this.data["result"] = result;
+    if (bindings == undefined)
+        bindings = new GraceList([]);
+    this.data["bindings"] = bindings;
+    this._value = this.superobj._value;
+}
+GraceMatchResult.prototype = Grace_allocObject();
+GraceMatchResult.prototype.methods.result = function() {
+    return this.data["result"];
+}
+GraceMatchResult.prototype.methods.bindings = function() {
+    return this.data["bindings"];
+}
+GraceMatchResult.prototype.methods.asString = function() {
+    var s = ""
+    if (Grace_isTrue(this))
+        s = "SuccessfulMatch(result = ";
+    else
+        s = "FailedMatch(result = ";
+    s += callmethod(this.data["result"], "asString")._value;
+    s += ", bindings = ";
+    s += callmethod(this.data["bindings"], "asString")._value;
+    s += ")";
+    return new GraceString(s);
+}
+function GraceSuccessfulMatch(result, bindings) {
+    this.superobj = new GraceBoolean(true);
+    this.data = {};
+    this.data["result"] = result;
+    if (bindings == undefined)
+        bindings = new GraceList([]);
+    this.data["bindings"] = bindings;
+    this._value = this.superobj._value;
+}
+function GraceFailedMatch(result, bindings) {
+    this.superobj = new GraceBoolean(false);
+    this.data = {};
+    this.data["result"] = result;
+    if (bindings == undefined)
+        bindings = new GraceList([]);
+    this.data["bindings"] = bindings;
+    this._value = this.superobj._value;
+}
+GraceSuccessfulMatch.prototype = GraceMatchResult.prototype;
+GraceFailedMatch.prototype = GraceMatchResult.prototype;
+
 function GraceType(name) {
     this.name = name;
     this.className = "Type<" + name + ">";
@@ -530,10 +593,10 @@ GraceType.prototype = {
                         }
                     }
                     if (!found)
-                        return new GraceBoolean(false);
+                        return new GraceFailedMatch(other);
                 }
             }
-            return new GraceBoolean(true);
+            return new GraceSuccessfulMatch(other);
         },
     },
     typeMethods: [],
@@ -886,13 +949,13 @@ function callmethod(obj, methname) {
 function matchCase(obj, cases, elsecase) {
     var i = 0;
     for (i = 0; i<cases.length; i++) {
-        var ret = callmethod(cases[i], "apply", obj);
-        if (ret != var_MatchFailed)
-            return ret;
+        var ret = callmethod(cases[i], "match", obj);
+        if (Grace_isTrue(ret))
+            return callmethod(ret, "result");
     }
     if (elsecase != false)
         return callmethod(elsecase, "apply", obj);
-    return var_MatchFailed;
+    return new GraceFailedMatch(obj);
 }
 function ReturnException(v, target) {
     this.returnvalue = v;
@@ -940,6 +1003,7 @@ function dbg(o) {
 }
 var extensionsMap = callmethod(var_HashMap, "new");
 var var_nothing = new GraceObject();
+var_nothing.methods.asString = function() {return new GraceString("nothing");}
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var Grace_native_prelude = Grace_allocObject();
