@@ -942,7 +942,7 @@ Object String_encode(Object self, int nparams,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 20,
+        ConcatString = alloc_class3("ConcatString", 21,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -964,6 +964,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "asNumber", &String_asNumber);
+        add_Method(ConcatString, "match", &literal_match);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
