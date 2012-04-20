@@ -596,7 +596,8 @@ GraceType.prototype = {
                         return new GraceFailedMatch(other);
                 }
             }
-            return new GraceSuccessfulMatch(other);
+            return new GraceSuccessfulMatch(other,
+                    new GraceList([other]));
         },
     },
     typeMethods: [],
