@@ -90,6 +90,8 @@ ClassData Type;
 ClassData Class;
 ClassData MatchResult;
 
+Object Dynamic;
+
 struct StringObject {
     int32_t flags;
     ClassData class;
@@ -346,11 +348,12 @@ void addmethod2(Object o, char *name,
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
 }
-void addmethod2pos(Object o, char *name,
+Method *addmethod2pos(Object o, char *name,
         Object (*func)(Object, int, Object*, int), int pos) {
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
     m->pos = pos;
+    return m;
 }
 Object identity_function(Object receiver, int nparams,
         Object* params, int flags) {
@@ -2185,6 +2188,20 @@ Method *findmethodsimple(Object self, const char *name) {
     int i = 0;
     return findmethod(&self, &self, name, 0, &i);
 }
+int checkmethodcall(Method *m, int argc, Object *argv) {
+    int i;
+    struct MethodType *t = m->type;
+    for (i=0; i<argc, i<t->nparams; i++) {
+        if (t->types[i])
+            if (!istrue(callmethod(t->types[i], "match", 1, &argv[i]))) {
+                die("Type error: expected %s for argument %s (%i) of %s",
+                        ((struct TypeObject *)t->types[i])->name,
+                        (struct TypeObject *)t->names[i], i + 1,
+                        m->name);
+            }
+    }
+    return 1;
+}
 FILE *callgraph;
 int track_callgraph = 0;
 int callcount = 0;
@@ -2217,6 +2234,10 @@ start:
     calldepth++;
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
+    }
+    if (m != NULL && m->type != NULL) {
+        if (!checkmethodcall(m, argc, argv))
+            die("Type error.");
     }
     Object ret = NULL;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
@@ -2450,6 +2471,13 @@ Method* add_Method(ClassData c, const char *name,
     c->nummethods++;
     return &c->methods[i];
 }
+struct MethodType *alloc_MethodType(int size) {
+    struct MethodType *t = glmalloc(sizeof(struct MethodType));
+    t->nparams = size;
+    t->types = glmalloc(sizeof(ClassData) * size);
+    t->names = glmalloc(sizeof(char *) * size);
+    return t;
+}
 Object alloc_obj(int additional_size, ClassData class) {
     Object o = glmalloc(sizeof(struct Object) + additional_size);
     o->class = class;
@@ -2487,11 +2515,7 @@ Object Type_match(Object self, int argc, Object *argv, int flags) {
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        char buf[strlen(name) + 7];
-        strcpy(buf, "Type<");
-        strcat(buf, name);
-        strcat(buf, ">");
-        Type = alloc_class(buf, 4);
+        Type = alloc_class("Type", 4);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
         add_Method(Type, "asString", &Object_asString);
@@ -2501,6 +2525,8 @@ Object alloc_Type(const char *name, int nummethods) {
             - sizeof(int32_t) - sizeof(ClassData), Type);
     struct TypeObject *t = (struct TypeObject *)o;
     t->methods = glmalloc(sizeof(Method) * nummethods);
+    t->name = glmalloc(strlen(name) + 1);
+    strcpy(t->name, name);
     return (Object)t;
 }
 inline void initialise_Class() {
@@ -3122,6 +3148,7 @@ void gracelib_argv(char **argv) {
     hash_init = rand();
     alloc_Float64(1);
     alloc_Boolean(0);
+    Dynamic = alloc_Type("Dynamic", 0);
 }
 void setline(int l) {
     linenumber = l;

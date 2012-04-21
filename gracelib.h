@@ -3,11 +3,18 @@
 
 typedef struct Object* Object;
 
+typedef struct ClassData* ClassData;
+struct MethodType {
+    int nparams;
+    Object *types;
+    char **names;
+};
 typedef struct Method {
     char *name;
     int32_t flags;
     Object(*func)(Object, int, Object*, int);
     int pos;
+    struct MethodType *type;
 } Method;
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
@@ -15,7 +22,6 @@ typedef struct Method {
 
 #define OFLAG_MUTABLE 64
 
-typedef struct ClassData* ClassData;
 struct ClassData {
     int32_t flags;
     ClassData class;
@@ -68,6 +74,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *, int);
 Method* add_Method(ClassData, const char *,
         Object(*func)(Object, int, Object*, int));
+struct MethodType *alloc_MethodType(int);
 Object alloc_obj(int, ClassData);
 Object alloc_newobj(int, ClassData);
 ClassData alloc_class(const char *, int);
@@ -112,7 +119,7 @@ void gracelib_stats();
 void addtoclosure(Object, Object *);
 Object *getfromclosure(Object, int);
 void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
-void addmethod2pos(Object, char *, Object (*)(Object, int, Object*, int), int);
+Method *addmethod2pos(Object, char *, Object (*)(Object, int, Object*, int), int);
 void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
 void addmethodrealflags(Object, char *, Object (*)(Object, int, Object*, int), int);
 void adddatum2(Object, Object, int);

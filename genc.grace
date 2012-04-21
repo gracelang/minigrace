@@ -37,6 +37,7 @@ var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
+def topLevelTypes = HashMap.new
 
 method out(s) {
     output.push(s)
@@ -473,12 +474,20 @@ method compilemethod(o, selfobj, pos) {
     var i := o.params.size
     var numslots := o.params.size + 1
     var slot := 0
+    var haveTypedParams := false
     for (o.params) do {p->
         var pn := escapeident(p.value)
         out("Object *var_{pn} = &(stackframe->slots[{slot}]);")
         out("*var_{pn} = args[{slot}];")
         declaredvars.push(pn)
         slot := slot + 1
+        if (p.dtype != false) then {
+            if ((p.dtype.value != "Dynamic")
+                && ((p.dtype.kind == "identifier")
+                    || (p.dtype.kind == "type"))) then {
+                haveTypedParams := true
+            }
+        }
     }
     out("Object *selfslot = &(stackframe->slots[{slot}]);")
     out("*selfslot = self;")
@@ -613,7 +622,10 @@ method compilemethod(o, selfobj, pos) {
         var uo2 := "uo{myc}"
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
-        out("  addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        if (haveTypedParams) then {
+            compilemethodtypes(litname, o)
+        }
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
@@ -630,10 +642,34 @@ method compilemethod(o, selfobj, pos) {
         var uo := "uo{myc}"
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
-        out("  addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        if (haveTypedParams) then {
+            compilemethodtypes(litname, o)
+        }
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
+}
+method compilemethodtypes(litname, o) {
+    out("meth_{litname}->type = alloc_MethodType({o.params.size});")
+    var pi := 0
+    for (o.params) do {p->
+        // We store information for static top-level types only:
+        // absent information is treated as Dynamic (and unchecked).
+        if (false != p.dtype) then {
+            if ((p.dtype.kind == "identifier")
+                || (p.dtype.kind == "type")) then {
+                def typeid = escapeident(p.dtype.value)
+                if (topLevelTypes.contains(typeid)) then {
+                    out("meth_{litname}->type->types[{pi}] "
+                        ++ "= type_{typeid};")
+                    out("meth_{litname}->type->names[{pi}] "
+                        ++ "= \"{escapestring2(p.value)}\";")
+                }
+            }
+        }
+        pi := pi + 1
+    }
 }
 method compilewhile(o) {
     var myc := auto_count
@@ -1317,12 +1353,26 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object String;")
     outprint("extern Object Number;")
     outprint("extern Object Boolean;")
+    outprint("extern Object Dynamic;")
     outprint("extern Object Type;")
+    outprint("static Object type_String;")
+    outprint("static Object type_Number;")
+    outprint("static Object type_Boolean;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static Object prelude;")
     outprint("static const char modulename[] = \"{modname}\";");
     outprint("Object module_StandardPrelude_init();");
+    topLevelTypes.put("String", true)
+    topLevelTypes.put("Number", true)
+    topLevelTypes.put("Boolean", true)
+    for (values) do {v->
+        if (v.kind == "type") then {
+            def typeid = escapeident(v.value)
+            outprint("static Object type_{typeid};")
+            topLevelTypes.put(typeid, true)
+        }
+    }
     out("Object module_{escmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
@@ -1348,10 +1398,15 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_nothing = none;")
     out("  Object *var_String = alloc_var();")
     out("  *var_String = String;")
+    out("  type_String = String;")
     out("  Object *var_Number = alloc_var();")
     out("  *var_Number = Number;")
+    out("  type_Number = Number;")
     out("  Object *var_Boolean = alloc_var();")
     out("  *var_Boolean = Boolean;")
+    out("  type_Boolean = Boolean;")
+    out("  Object *var_Dynamic = alloc_var();")
+    out("  *var_Dynamic = Dynamic;")
     out("  Object *var_Type = alloc_var();")
     out("  *var_Type = Type;")
     out("  Object *var__prelude = alloc_var();")
@@ -1373,6 +1428,10 @@ method compile(vl, of, mn, rm, bt) {
             out("  setsuperobj(self, {superobj});")
         }
         compilenode(o)
+        if (o.kind == "type") then {
+            def typeid = escapeident(o.value)
+            out("type_{typeid} = *var_{typeid};")
+        }
     }
     for (globals) do {e->
         outprint(e)
