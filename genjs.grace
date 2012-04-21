@@ -23,6 +23,7 @@ var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
 var compilationDepth := 0
+def topLevelTypes = HashMap.new
 
 method out(s) {
     output.push(s)
@@ -282,6 +283,16 @@ method compilemethod(o, selfobj) {
     var name := escapestring(o.value.value)
     var nm := name ++ myc
     var closurevars := []
+    var haveTypedParams := false
+    for (o.params) do {p->
+        if (p.dtype != false) then {
+            if ((p.dtype.value != "Dynamic")
+                && ((p.dtype.kind == "identifier")
+                    || (p.dtype.kind == "type"))) then {
+                haveTypedParams := true
+            }
+        }
+    }
     out("var func" ++ myc ++ " = function(")
     var first := true
     for (o.params) do { p ->
@@ -314,7 +325,35 @@ method compilemethod(o, selfobj) {
     out("\}")
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
+    if (haveTypedParams) then {
+        compilemethodtypes("func{myc}", o)
+    }
     out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
+}
+method compilemethodtypes(func, o) {
+    out("{func}.paramTypes = [];")
+    var pi := 0
+    for (o.params) do {p->
+        // We store information for static top-level types only:
+        // absent information is treated as Dynamic (and unchecked).
+        if (false != p.dtype) then {
+            if ((p.dtype.kind == "identifier")
+                || (p.dtype.kind == "type")) then {
+                def typeid = escapeident(p.dtype.value)
+                if (topLevelTypes.contains(typeid)) then {
+                    out("{func}.paramTypes.push(["
+                        ++ "type_{typeid}, \"{escapestring(p.value)}\"]);")
+                } else {
+                    out("{func}.paramTypes.push([]);")
+                }
+            } else {
+                out("{func}.paramTypes.push([]);")
+            }
+        } else {
+            out("{func}.paramTypes.push([]);")
+        }
+        pi := pi + 1
+    }
 }
 method compilewhile(o) {
     var myc := auto_count
@@ -757,6 +796,15 @@ method compile(vl, of, mn, rm, bt, glpath) {
     buildtype := bt
     gracelibPath := glpath
     util.log_verbose("generating ECMAScript code.")
+    topLevelTypes.put("String", true)
+    topLevelTypes.put("Number", true)
+    topLevelTypes.put("Boolean", true)
+    for (values) do {v->
+        if (v.kind == "type") then {
+            def typeid = escapeident(v.value)
+            topLevelTypes.put(typeid, true)
+        }
+    }
     util.setline(1)
     out("function gracecode_" ++ modname ++ "() \{")
     if (util.extensions.contains("NativePrelude")) then {
@@ -770,6 +818,10 @@ method compile(vl, of, mn, rm, bt, glpath) {
             out("  this._value = {sup}._value;")
         }
         compilenode(o)
+        if (o.kind == "type") then {
+            def typeid = escapeident(o.value)
+            out("var type_{typeid} = var_{typeid};")
+        }
     }
     out("  return this;")
     out("\}")

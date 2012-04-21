@@ -577,7 +577,7 @@ GraceFailedMatch.prototype = GraceMatchResult.prototype;
 
 function GraceType(name) {
     this.name = name;
-    this.className = "Type<" + name + ">";
+    this.className = name;
     this.typeMethods = [];
 }
 GraceType.prototype = {
@@ -622,6 +622,9 @@ var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(new GraceBoolean(true));
 var var_Type = classType(var_Boolean);
+var type_String = var_String;
+var type_Number = var_Number;
+var type_Boolean = var_Boolean;
 var var_MatchFailed = Grace_allocObject();
 var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
 function GraceHashMap() {
@@ -907,6 +910,22 @@ function gracecode_util() {
     util_module = this;
     return this;
 }
+function checkmethodcall(func, methname, obj, args) {
+    var i = 0;
+    var pt = func.paramTypes;
+    for (i=0; i<args.length, i<pt.length; i++) {
+        var p = pt[i];
+        if (!p || p.length == 0)
+            continue;
+        var t = p[0];
+        if (!Grace_isTrue(callmethod(t, "match", args[i]))) {
+            stderr_txt.value += "Runtime type error: expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + ", called at line " + lineNumber + ".\n";
+            for (var i=callStack.length; i>0; i--)
+                stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
+            throw "Runtime type error";
+        }
+    }
+}
 var callStack = [];
 var overrideReceiver = null;
 function callmethodsuper(obj, methname) {
@@ -946,6 +965,8 @@ function callmethod(obj, methname) {
     }
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
     var args = Array.prototype.slice.call(arguments, 2);
+    if (meth.paramTypes)
+        checkmethodcall(meth, methname, obj, args);
     var ret = meth.apply(obj, args);
     superDepth = origSuperDepth;
     callStack.pop();
