@@ -1485,8 +1485,8 @@ method compile(vl, of, mn, rm, bt) {
         outfile.close
         cmd := "gcc -g -o {modname}.gcn -c {modname}.c"
         if ((io.system(cmd)).not) then {
-            io.error.write("Failed C compilation")
-            raise("Fatal.")
+            io.error.write("Fatal error: Failed C compilation of {modname}.\n")
+            sys.exit(1)
         }
         if (util.noexec.not) then {
             log_verbose("linking.")
