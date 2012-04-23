@@ -708,6 +708,7 @@ method rewritematchblock2(blk) {
                     newparams.push(p)
                 }
             }
+            pattern := resolveIdentifiers(pattern)
         }
     }
     def newblk = ast.astblock(newparams, blk.body)
