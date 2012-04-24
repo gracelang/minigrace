@@ -2894,6 +2894,12 @@ Object Block_match(Object self, int nargs, Object *args, int flags) {
     Object rv = callmethod(self, "applyIndirectly", 1, &bindings);
     return alloc_SuccessfulMatch(rv, NULL);
 }
+Object Block_pattern(Object self, int argc, Object *argv, int flags) {
+    struct BlockObject *o = (struct BlockObject *)self;
+    if (!o->data[1])
+        return none;
+    return o->data[1];
+}
 void Block__mark(struct BlockObject *o) {
     gc_mark(o->data[0]);
     gc_mark(o->data[1]);
@@ -2902,7 +2908,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class2(buf, 9, (void*)&Block__mark);
+    ClassData c = alloc_class2(buf, 10, (void*)&Block__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -2911,6 +2917,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "apply", &Block_apply);
     add_Method(c, "applyIndirectly", &Block_applyIndirectly);
     add_Method(c, "match", &Block_match);
+    add_Method(c, "pattern", &Block_pattern);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 3, c));
     o->super = NULL;
