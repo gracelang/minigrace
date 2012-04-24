@@ -601,7 +601,7 @@ GraceType.prototype = {
                 }
             }
             return new GraceSuccessfulMatch(other,
-                    new GraceList([other]));
+                    new GraceList([]));
         },
     },
     typeMethods: [],
