@@ -646,26 +646,6 @@ method rewritematchblockterm2(arg) {
         return [callpat, bindings]
     }
     if (arg.kind == "identifier") then {
-        if (arg.dtype != false) then {
-            if (arg.dtype.kind == "identifier") then {
-                return [arg.dtype, [arg]]
-            }
-            def tmp = rewritematchblockterm2(arg.dtype)
-            def bindings = [arg]
-            for (tmp[2]) do {b->
-                bindings.push(b)
-            }
-            def bindingpat = ast.astcall(
-                ast.astmember(
-                    "new",
-                    ast.astmember("BindingPattern",
-                        ast.astidentifier("prelude", false)
-                    )
-                ),
-                [tmp[1]]
-            )
-            return [bindingpat, bindings]
-        }
         def varpat = ast.astcall(
             ast.astmember(
                 "new",
@@ -675,6 +655,34 @@ method rewritematchblockterm2(arg) {
             ),
             [ast.aststring(arg.value)]
         )
+        if (arg.dtype != false) then {
+            if (arg.dtype.kind == "identifier") then {
+                return [ast.astcall(
+                    ast.astmember(
+                        "new",
+                        ast.astmember("AndPattern",
+                            ast.astidentifier("prelude", false)
+                        )
+                    ),
+                    [varpat, arg.dtype]
+                ), [arg]]
+            }
+            def tmp = rewritematchblockterm2(arg.dtype)
+            def bindings = [arg]
+            for (tmp[2]) do {b->
+                bindings.push(b)
+            }
+            def bindingpat = ast.astcall(
+                ast.astmember(
+                    "new",
+                    ast.astmember("AndPattern",
+                        ast.astidentifier("prelude", false)
+                    )
+                ),
+                [varpat, tmp[1]]
+            )
+            return [bindingpat, bindings]
+        }
         return [varpat, [arg]]
     }
 }
@@ -689,19 +697,33 @@ method rewritematchblock2(blk) {
         newparams := tmp[2]
     }
     if (arg.kind == "identifier") then {
+        def varpat = ast.astcall(
+            ast.astmember(
+                "new",
+                ast.astmember("VariablePattern",
+                    ast.astidentifier("prelude", false)
+                )
+            ),
+            [ast.aststring(arg.value)]
+        )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
-                pattern := arg.dtype
+                pattern := ast.astcall(
+                    ast.astmember("new",
+                        ast.astmember("AndPattern",
+                            ast.astidentifier("prelude", false)
+                            )
+                        ),
+                    [varpat, arg.dtype])
             } else {
                 def tmp = rewritematchblockterm2(arg.dtype)
                 def bindingpat = ast.astcall(
-                    ast.astmember(
-                        "new",
-                        ast.astmember("BindingPattern",
+                    ast.astmember("new",
+                        ast.astmember("AndPattern",
                             ast.astidentifier("prelude", false)
-                        )
-                    ),
-                    [tmp[1]]
+                            )
+                        ),
+                    [varpat, tmp[1]]
                 )
                 pattern := bindingpat
                 for (tmp[2]) do {p->

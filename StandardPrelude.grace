@@ -80,3 +80,23 @@ class WildcardPattern.new {
     }
 }
 
+class AndPattern.new(p1, p2) {
+    method match(o) {
+        def m1 = p1.match(o)
+        if (!m1) then {
+            return m1
+        }
+        def m2 = p2.match(o)
+        if (!m2) then {
+            return m2
+        }
+        def bindings = []
+        for (m1.bindings) do {b->
+            bindings.push(b)
+        }
+        for (m2.bindings) do {b->
+            bindings.push(b)
+        }
+        SuccessfulMatch.new(o, bindings)
+    }
+}

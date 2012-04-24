@@ -2499,11 +2499,8 @@ Object alloc_newobj(int additional_size, ClassData class) {
 }
 Object Type_match(Object self, int argc, Object *argv, int flags) {
     Object obj = argv[0];
-    Object bindings = alloc_List();
-    gc_frame_newslot(bindings);
-    callmethod(bindings, "push", 1, &obj);
     if (obj->class == (ClassData)self)
-        return alloc_SuccessfulMatch(obj, bindings);
+        return alloc_SuccessfulMatch(obj, NULL);
     struct TypeObject *t = (struct TypeObject *)self;
     int i;
     for (i=0; i<t->nummethods; i++) {
@@ -2511,7 +2508,7 @@ Object Type_match(Object self, int argc, Object *argv, int flags) {
         if (!findmethodsimple(obj, m.name))
             return alloc_FailedMatch(obj, NULL);
     }
-    return alloc_SuccessfulMatch(obj, bindings);
+    return alloc_SuccessfulMatch(obj, NULL);
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
