@@ -100,3 +100,15 @@ class AndPattern.new(p1, p2) {
         SuccessfulMatch.new(o, bindings)
     }
 }
+
+class OrPattern.new(p1, p2) {
+    method match(o) {
+        if (p1.match(o)) then {
+            return SuccessfulMatch.new(o, [])
+        }
+        if (p2.match(o)) then {
+            return SuccessfulMatch.new(o, [])
+        }
+        FailedMatch.new(o)
+    }
+}
