@@ -21,7 +21,9 @@ EOT
 ( cd $(git rev-parse --show-toplevel) && git archive --prefix=tmp-$$/ $COMMIT ) | tar xf - -X EXCLUDE
 cd tmp-$$
 ln -s .. known-good
+GEN=$( ( cd $(git rev-parse --show-toplevel) && tools/git-calculate-generation "$COMMIT" ) )
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
+echo "method gitgeneration() { \"$GEN\" }" > buildinfo.gc
 cp buildinfo.gc buildinfo.grace
 $MAKE l2/minigrace
 cd ..
