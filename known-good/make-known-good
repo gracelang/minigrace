@@ -23,7 +23,7 @@ cd tmp-$$
 ln -s .. known-good
 GEN=$( ( cd $(git rev-parse --show-toplevel) && tools/git-calculate-generation "$COMMIT" ) )
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
-echo "method gitgeneration() { \"$GEN\" }" > buildinfo.gc
+echo "method gitgeneration() { \"$GEN\" }" >> buildinfo.gc
 cp buildinfo.gc buildinfo.grace
 $MAKE l2/minigrace
 cd ..
@@ -39,6 +39,7 @@ else
     mv tmp-$$/l2/minigrace $ARCH/$COMMIT
     cp tmp-$$/l2/gracelib.o $ARCH/$COMMIT/gracelib.o
     cp tmp-$$/l2/gracelib.h $ARCH/$COMMIT/gracelib.h
+    [ -e tmp-$$/l2/gracelib.a ] && cp tmp-$$/l2/gracelib.a $ARCH/$COMMIT/gracelib.a
     cp tmp-$$/l2/unicode.gso $ARCH/$COMMIT
 fi
 for x in tmp-$$/l2/*.c
