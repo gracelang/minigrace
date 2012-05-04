@@ -6,6 +6,41 @@ PREFIX=.
 LDFLAGS=
 UNICODE_LDFLAGS=
 
+ADVISE_END=
+advise() {
+    why=$1
+    ADVISE_END=$why
+    echo
+    echo "Problem configuring $why."
+    if [ -e "environ-$PLATFORM" ]
+    then
+        echo
+        echo Running the environ-$PLATFORM script may help to diagnose or
+        echo solve this problem.
+        echo
+        if ! [ "$IN_ENVIRON_SCRIPT" ]
+        then
+            echo Re-running configure inside environ-$PLATFORM.
+            echo
+            if ./environ-$PLATFORM ./configure
+            then
+                echo
+                echo As configure succeeded, launching a suitable environment
+                echo in which to run other programs. To obtain this environment
+                echo in future, run ./environ-$PLATFORM.
+                echo
+                exec ./environ-$PLATFORM
+            fi
+            exit $?
+        fi
+    fi
+}
+fail() {
+    advise "$@"
+    echo Failed.
+    exit 1
+}
+
 while [ $# -gt 0 ]
 do
     if [ "$1" = "--prefix" ]
@@ -23,6 +58,16 @@ do
     fi
     shift
 done
+
+echo -n "Locating linker... "
+LD_PATH=$(which ld 2>/dev/null)
+if [ "$LD_PATH" ]
+then
+    echo $LD_PATH
+else
+    echo "none."
+    fail "linker"
+fi
 
 echo -n "Checking linker... "
 case "$(ld -v 2>&1)" in
@@ -55,11 +100,21 @@ else
     echo no.
 fi
 
-cat <<EOT > Makefile.conf
-PREFIX = $PREFIX
-LDFLAGS = $LDFLAGS -lm
-UNICODE_LDFLAGS = $UNICODE_LDFLAGS
-EOT
+echo -n "Locating GNU make... "
+GMAKE_PATH=$(which gmake 2>/dev/null)
+if [ "$GMAKE_PATH" ]
+then
+    echo $GMAKE_PATH
+else
+    GMAKE_PATH=$(which make 2>/dev/null)
+    if [ "$GMAKE_PATH" ]
+    then
+        echo $GMAKE_PATH
+    else
+        echo "none."
+        advise "GNU make"
+    fi
+fi
 
 MK=make
 if gmake -v 2>&1 | grep -q GNU
@@ -73,9 +128,50 @@ else
     echo "Substitute the path to your GNU make below."
 fi
 
+echo -n "Locating gcc... "
+GCC_PATH=$(which gcc 2>/dev/null)
+if [ "$GCC_PATH" ]
+then
+    echo $GCC_PATH
+else
+    echo "none."
+    fail "gcc"
+fi
+
+echo -n "Checking GCC search paths... "
+cat <<EOT >> tmp-$$.c
+#include <setjmp.h>
+int main() {
+    return 0;
+}
+EOT
+if ! gcc -o tmp-$$ tmp-$$.c
+then
+    fail "gcc"
+else
+    echo "OK."
+fi
+rm -f tmp-$${.c,}
+
+
 if [ "$DISTRIB" = "tarball" ]
 then
     echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
 else
     echo "Run '$MK' to build."
+fi
+
+cat <<EOT > Makefile.conf
+PREFIX = $PREFIX
+LDFLAGS = $LDFLAGS -lm
+UNICODE_LDFLAGS = $UNICODE_LDFLAGS
+EOT
+
+if [ "$ADVISE_END" ]
+then
+    echo configure encountered a non-fatal configuration problem.
+    advise "$ADVISE_END"
+    echo
+    echo This issue did not cause configure to fail, but you may wish to
+    echo investigate it.
 fi
