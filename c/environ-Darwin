@@ -18,23 +18,33 @@ then
     esac
 fi
 
-if ! [ -e /Applications/Xcode.app ]
+if [ -e /Developer ]
+then
+    DEVELOPER_PATH=/Developer
+    SDKS_PATH=/Developer/SDKs
+elif [ -e /Applications/Xcode.app ]
+then
+    DEVELOPER_PATH=/Applications/Xcode.app/Contents/Developer
+    SDKS_PATH=$DEVELOPER_PATH/Platforms/MacOSX.platform/Developer/SDKs
+fi
+
+if ! [ "$DEVELOPER_PATH" ]
 then
     echo "You need to install Xcode to compile."
     echo "It is available from the Mac App Store."
     exit 1
 fi
 
-export PATH=/Applications/Xcode.app/Contents/Developer/usr/bin:"$PATH"
+export PATH=$DEVELOPER_PATH/usr/bin:"$PATH"
 
-SDK=$(ls /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/|sort|tail -n 1)
+SDK=$(ls $SDKS_PATH|sort|tail -n 1)
 if ! [ "$SDK" ]
 then
     echo Could not find Mac OS X SDK. This script may need updating.
     exit 1
 fi
 echo "Found $SDK."
-SDK_PATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/$SDK
+SDK_PATH=$SDKS_PATH/$SDK
 
 export C_INCLUDE_PATH=$SDK_PATH/usr/include
 export LIBRARY_PATH=$SDK_PATH/usr/lib
