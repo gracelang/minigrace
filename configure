@@ -31,6 +31,11 @@ case "$(ld -v 2>&1)" in
     echo GNU LD.
     LDFLAGS="-Wl,--export-dynamic"
     ;;
+    *PROJECT:ld*)
+    LLVM_LD=1
+    echo LLVM LD.
+    UNICODE_LDFLAGS="-Wl,-undefined -Wl,dynamic_lookup"
+    ;;
     *llvm*)
     LLVM_LD=1
     echo LLVM LD.
