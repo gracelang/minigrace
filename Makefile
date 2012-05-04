@@ -59,7 +59,7 @@ tarball: minigrace
 	make c
 	sed -e 's/DISTRIB=tree/DISTRIB=tarball/' < configure > c/configure
 	chmod 755 c/configure
-	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
+	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp c/* minigrace-$$VER ; mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
 jar: java
 	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) && cd java && jar cvfe minigrace-$$VER.jar minigrace . && mv minigrace-$$VER.jar ../..
