@@ -11,7 +11,7 @@ def bln = "GraceBoolean"
 def num = "GraceNumber"
 def str = "GraceString"
 def lst = "GraceList"
-def vdv = "GraceVoid.value"
+def vdv = "$void"
 def ret = "GraceReturn"
 
 
@@ -24,42 +24,38 @@ type ImmutableIndexedCollection = {
 
 method compile(nodes: List, outFile, modName: String, runMode: String,
                buildType: String, libPath: String | Boolean) {
-    if (runMode == "make") then {
+    if(runMode == "make") then {
         util.log_verbose("checking imports.")
 
         def imports = filter(nodes) with { node ->
             (node.kind == "import") && {
                 def name = node.value.value
 
-                (libs.contains(name) || {
-                    io.exists("{name}.java") && {
-                        io.newer("{name}.java", "{name}.grace")
+                io.exists("{name}.grace") && {
+                    io.exists("{name}.java").not || {
+                        io.newer("{name}.java", "{name}.grace").not
                     }
-                }).not
+                }
             }
         }
 
-        for (imports) do { node ->
+        for(imports) do { node ->
             def name = node.value.value
-
-            if (io.exists("{name}.grace").not) then {
-                util.syntax_error("failed finding import of {name}.")
-            }
 
             var cmd := "{sys.argv.first} --target java --make " ++
                     "{name}.grace --gracelib \"{util.gracelibPath}\""
 
-            if (util.verbosity > 30) then {
+            if(util.verbosity > 30) then {
                 cmd := "{cmd} --verbose"
             }
 
-            if (util.vtag) then {
+            if(util.vtag) then {
                 cmd := "{cmd} --vtag " ++ util.vtag
             }
 
             cmd := "{cmd} --noexec"
 
-            if (io.system(cmd).not) then {
+            if(io.system(cmd).not) then {
                 util.syntax_error("failed processing import of {name}.")
             }
         }
@@ -68,18 +64,18 @@ method compile(nodes: List, outFile, modName: String, runMode: String,
     compileModule(nodes, modName)
     util.outfile.close
 
-    if (runMode == "make") then {
+    if(runMode == "make") then {
         util.log_verbose("compiling Java code.")
 
         def cmd = "javac -cp \".:{util.gracelibPath}\" {modName}.java"
-        if (io.system(cmd).not) then {
+        if(io.system(cmd).not) then {
             util.syntax_error("failed Java compilation of {modName}.")
         }
     }
 
     util.log_verbose("done.")
 
-    if (buildType == "run") then {
+    if(buildType == "run") then {
         io.system("java -cp \".:{util.gracelibPath}\" {modName}")
     }
 }
@@ -89,8 +85,8 @@ method compileModule(nodes: List, modName: String) {
 
     def packages = []
     var name := ""
-    for (modName) do { c ->
-        if (c == "/") then {
+    for(modName) do { c ->
+        if(c == "/") then {
             packages.push(name)
             name := ""
         } else {
@@ -101,7 +97,7 @@ method compileModule(nodes: List, modName: String) {
     def scope = moduleScope
 
     // Top-level modules are in the default Java package.
-    util.outfile.write(if (packages.size == 0) then { "" } else {
+    util.outfile.write(if(packages.size == 0) then { "" } else {
             scope.line("package {join(packages) separatedBy(".")}")
         } ++ scope.line("import grace.lang.*") ++
         scope.line("import grace.lib.*") ++
@@ -143,13 +139,13 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
         scope.line(compileImportDecl(node, scope))
     }.kinds(["vardec", "defdec", "class"]) do { node ->
         def name = compileFieldName(node)
-        if (scope.hasVariable(name).not) then {
+        if(scope.hasVariable(name).not) then {
             scope.addVariable(name)
             scope.line(compileField(node, scope)) ++
-                if ((scope.isModule & (node.kind == "class")) |
+                if((scope.isModule & (node.kind == "class")) |
                         scope.isDecl) then {
                     scope.indent ++ compileGetter(node, scope) ++
-                        if (node.kind == "vardec") then {
+                        if(node.kind == "vardec") then {
                             scope.indent ++ compileSetter(node, scope)
                         } else { "" }
             } else { "" }
@@ -163,7 +159,7 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
         compileDeclarations(node.body, scope)
     }.kind("for") do { node ->
         def params = node.body.params
-        if (params.size == 0) then { "" } else {
+        if(params.size == 0) then { "" } else {
             def param = [ast.astdefdec(params[1], void, void)]
 
             compileDeclarations(param, scope) ++
@@ -179,7 +175,7 @@ method compileExecution(nodes: List, scope: Scope) -> String {
         k.stop
         scope.line(compileReturn(node, scope))
     }.kind("vardec") do { node ->
-        if (node.value /= false) then {
+        if(node.value /= false) then {
             scope.line(compileBindDecl(node, scope))
         } else { false }
     }.kind("defdec") do { node ->
@@ -187,7 +183,7 @@ method compileExecution(nodes: List, scope: Scope) -> String {
     }.kind("bind") do { node ->
         scope.line(compileBind(node, scope))
     }.kind("if") do { node ->
-        scope.stmt(compileIf(node, scope))
+        scope.line(compileIf(node, scope))
     }.kind("member") do { node ->
         scope.line(compileMember(node, scope))
     }.kind("call") do { node ->
@@ -201,7 +197,7 @@ method compileExecution(nodes: List, scope: Scope) -> String {
     }.kind("matchcase") do { node ->
         scope.stmt(compileMatch(node, scope))
     }.else { node ->
-        if ([ "method","type", "inherits"].contains(node.kind).not) then {
+        if([ "method","type", "inherits"].contains(node.kind).not) then {
             util.log_verbose("Unknown statement: {node.kind}")
             scope.stmt("/* {node.kind} */")
         } else {
@@ -213,37 +209,37 @@ method compileExecution(nodes: List, scope: Scope) -> String {
 }
 
 method compileExpression(node, scope: Scope) -> String {
-    if (node.kind == "identifier") then {
+    if(node.kind == "identifier") then {
         compileIdentifier(node, scope)
-    } elseif (node.kind == "num") then {
+    } elseif(node.kind == "num") then {
         compileNumber(node, scope)
-    } elseif (node.kind == "string") then {
+    } elseif(node.kind == "string") then {
         compileString(node, scope)
-    } elseif (node.kind == "bind") then {
+    } elseif(node.kind == "bind") then {
         "({compileBind(node, scope)})"
-    } elseif (node.kind == "member") then {
+    } elseif(node.kind == "member") then {
         compileMember(node, scope)
-    } elseif (node.kind == "call") then {
+    } elseif(node.kind == "call") then {
         compileCall(node, scope)
-    } elseif (node.kind == "if") then {
+    } elseif(node.kind == "if") then {
         compileTernary(node, scope)
-    } elseif (node.kind == "for") then {
+    } elseif(node.kind == "for") then {
         compileClosure([node, literal(vdv)], scope)
-    } elseif (node.kind == "index") then {
+    } elseif(node.kind == "index") then {
         compileIndex(node, scope)
-    } elseif (node.kind == "op") then {
+    } elseif(node.kind == "op") then {
         compileOp(node, scope)
-    } elseif (node.kind == "array") then {
+    } elseif(node.kind == "array") then {
         compileArray(node, scope)
-    } elseif (node.kind == "block") then {
+    } elseif(node.kind == "block") then {
         compileBlock(node, scope)
-    } elseif (node.kind == "object") then {
+    } elseif(node.kind == "object") then {
         compileObject(node, scope)
-    } elseif (node.kind == "matchcase") then {
+    } elseif(node.kind == "matchcase") then {
         compileMatch(node, scope)
-    } elseif (node.kind == "generic") then {
+    } elseif(node.kind == "generic") then {
         compileIdentifier(node.value, scope)
-    } elseif (node.kind == "literal") then {
+    } elseif(node.kind == "literal") then {
         node.value
     } else {
         util.log_verbose("Unknown expression: {node.kind}")
@@ -269,7 +265,7 @@ method compileImportExec(node, scope: Scope) -> String {
 // have the assignment appear in the right place it must be in the execution.
 // Note the `def`s aren't final in order to accomodate for this.
 method compileField(node, scope: Scope) -> String {
-    def acc = if (scope.isModule | scope.isDecl)
+    def acc = if(scope.isModule | scope.isDecl)
         then { "private " } else { "" }
     
     "{acc}{obj} {compileFieldName(node)}"
@@ -297,7 +293,7 @@ method compileSetter(node, scope: Scope) -> String {
 
 // Compiles a field's name. Accounts for a generic declaration.
 method compileFieldName(node) -> String {
-    escape(if (node.name.kind == "generic") then {
+    escape(if(node.name.kind == "generic") then {
         node.name.value.value
     } else {
         node.name.value
@@ -305,11 +301,11 @@ method compileFieldName(node) -> String {
 }
 
 method compileMethod(node, scope: Scope) -> String {
-    def acc = if (scope.isModule | scope.isDecl) then { "public " } else { "" }
+    def acc = if(scope.isModule | scope.isDecl) then { "public " } else { "" }
     def name = escape(node.value.value)
     def params = join(map(node.params) with { param ->
         "final {obj} _{escape(param.value)}"
-    }) separatedBy(", ") ++ if (node.varargs) then {
+    }) separatedBy(", ") ++ if(node.varargs) then {
         ", final {obj}... _"
     } else { "" }
     
@@ -317,7 +313,7 @@ method compileMethod(node, scope: Scope) -> String {
             "{name}({params}) \{", { scope' ->
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
-        if (node.body.size == 0) then {
+        if(node.body.size == 0) then {
             scope'.line("return {vdv}")
         } else {
             scope'.line("final {obj} $outer = this") ++
@@ -345,14 +341,14 @@ method compileParamClosure(node, scope: Scope) -> String {
                       ast.astidentifier("_{name}", void), void)
     }
 
-    if ((node.kind == "method") && { node.varargs }) then {
+    if((node.kind == "method") && { node.varargs }) then {
         def name = escape(node.vararg.value)
 
         body.push(ast.astvardec(ast.astidentifier(name, void),
                   ast.astarray([ast.astidentifier("_", void)]), void))
     }
 
-    for (node.body) do { node' ->
+    for(node.body) do { node' ->
         body.push(node')
     }
 
@@ -370,13 +366,13 @@ method compileClosure(body: List, scope: Scope) -> String {
 
 // Safely turns the last expression of the given body into a return stmt.
 method forceReturn(body: List) -> List {
-    if (body.size == 0) then {
+    if(body.size == 0) then {
         return [generateReturn(literal(vdv))]
     }
 
     def last = body[body.size]
 
-    if (last.kind /= "return") then {
+    if(last.kind /= "return") then {
         body[body.size] := generateReturn(last)
     }
 
@@ -391,7 +387,7 @@ method generateReturn(node) {
 
 
 method compileReturn(node, scope: Scope) -> String {
-    if (node.register == "generated") then {
+    if(node.register == "generated") then {
         "return {compileExpression(node.value, scope)}"
     } else {
         "throw new $Return({compileExpression(node.value, scope)})"
@@ -409,12 +405,12 @@ method compileBind(node, scope: Scope) -> String {
     def dest = node.dest
     def value = compileExpression(node.value, scope)
 
-    if (dest.kind == "member") then {
+    if(dest.kind == "member") then {
         def name = dest.value
         def on = compileExpression(dest.in, scope)
 
         "{on}.invoke(\"{name}:=\", {value})"
-    } elseif (dest.kind == "index") then {
+    } elseif(dest.kind == "index") then {
         def on = compileExpression(dest.value, scope)
         def in = compileExpression(dest.index, scope)
 
@@ -428,52 +424,20 @@ method compileBind(node, scope: Scope) -> String {
 
 method compileIf(node, scope: Scope) -> String {
     def condition = compileExpression(node.value, scope)
+    def then = compileBlock(ast.astblock([], node.thenblock), scope)
 
-    scope.block("if ((({bln}) {condition}).value) \{", { scope' ->
-        compileExecution(node.thenblock, scope')
-    }, if (node.elseblock.size > 0) then {
-        def else = node.elseblock
-        if ((else.size == 1) && { (else[1]).kind == "if" }) then {
-            // Flatten out the else ifs.
-            "\} else {compileIf(else[1], scope)}"
-        } else {
-            scope.block("\} else \{", { scope' ->
-                compileExecution(else, scope')
-            }, "\}")
-        }
-    } else { "\}" })
+    if(node.elseblock.size > 0) then {
+        def else = compileBlock(ast.astblock([], node.elseblock), scope)
+
+        "({condition}).ifTrue$else({then}, {else})"
+    } else {
+        "({condition}).ifTrue({then})"
+    }
 }
 
-// method compileWhile(node, scope: Scope) -> String {
-//     def block = compileExpression(node.value, scope)
-
-//     scope.block("while ((({bln}) {block}).value) \{", { scope' ->
-//         compileExecution(node.body, scope')
-//     }, "\}")
-// }
-
-// method compileFor(node, scope: Scope) -> String {
-//     def over = compileExpression(node.value, scope)
-//     def params = node.body.params
-//     def param = params.size > 0
-//     def name = if (param) then {
-//         escape(params[1].value)
-//     } else {
-//         scope.newVariable("for")
-//     }
-
-//     scope.block("for (final {obj} _{name} : {over}) \{", { scope' ->
-//         if (param) then {
-//             scope'.line("{name} = _{name}")
-//         } else {
-//             ""
-//         } ++ compileExecution(node.body.body, scope')
-//     }, "\}")
-// }
-
 method compileMember(node, scope: Scope) -> String {
-    if (node.value == "outer") then {
-        if ((node.in.kind == "identifier") && {
+    if(node.value == "outer") then {
+        if((node.in.kind == "identifier") && {
             node.in.value == "self"
         }) then {
             "self.outer"
@@ -490,8 +454,8 @@ method compileCall(node, scope: Scope) -> String {
     def args = map(node.with) with { a -> compileExpression(a, scope) }
     def rest = join(args) separatedBy(", ")
 
-    if (node.value.kind == "member") then {
-        def comma = if (args.size > 0) then { ", " } else { "" }
+    if(node.value.kind == "member") then {
+        def comma = if(args.size > 0) then { ", " } else { "" }
         def in = compileExpression(node.value.in, scope)
 
         "{in}.invoke(\"{name}\"{comma}{rest})"
@@ -501,7 +465,7 @@ method compileCall(node, scope: Scope) -> String {
 }
 
 method compileClass(node, scope: Scope) -> String {
-    def name = escape(if (node.name.kind == "generic") then {
+    def name = escape(if(node.name.kind == "generic") then {
         node.name.value.value
     } else {
         node.name.value
@@ -541,7 +505,7 @@ method compileString(node, scope: Scope) -> String {
             .replace("\r") with("\\r")) with { char ->
         def ord = char.ord
 
-        if ((ord < 31) | (ord > 126)) then {
+        if((ord < 31) | (ord > 126)) then {
             var hex := util.hex(ord)
             while { hex.size < 4 } do {
                 hex := "0" ++ hex
@@ -570,7 +534,7 @@ method compileTernary(node, scope: Scope) -> String {
     def then = compileBlockExpression(node.thenblock, scope)
     def else = compileBlockExpression(node.elseblock, scope)
 
-    "((({bln}) {cond}).value ? {then} : {else})"
+    "({cond}).ifTrue$else({then}, {else})"
 }
 
 method compileOp(node, scope: Scope) -> String {
@@ -607,7 +571,7 @@ method compileArray(node, scope: Scope) -> String {
 
 method compileObject(node, scope: Scope) -> String {
     def body = node.value
-    def extends = if ((body.size > 0) && {
+    def extends = if((body.size > 0) && {
         body[1].kind == "inherits"
     }) then {
         compileInherits(body[1], scope)
@@ -615,7 +579,7 @@ method compileObject(node, scope: Scope) -> String {
         false
     }
 
-    def args = if (extends == false) then {
+    def args = if(extends == false) then {
         "$outer, false"
     } else {
         "{extends}, $outer"
@@ -635,7 +599,7 @@ method compileMatch(node, scope: Scope) -> String {
     def params = join(map(node.cases) with { case ->
         compileExpression(case, scope)
     }) separatedBy(", ")
-    def else = if (node.elsecase /= false) then {
+    def else = if(node.elsecase /= false) then {
         compileExpression(node.elsecase, scope)
     } else { "null" }
 
@@ -646,11 +610,11 @@ method compileMatch(node, scope: Scope) -> String {
 // Note that this may cause the block to be evaluated early,
 // so it should only be used in cases where this will not occur.
 method compileBlockExpression(block: List, scope: Scope) -> String {
-    if ((block.size == 1) && {
+    if((block.size == 1) && {
         block[1].kind /= "return"
     }) then {
         compileExpression(block[1], scope)
-    } elseif (block.size > 0) then {
+    } elseif(block.size > 0) then {
         def expr = ast.astblock([], block)
         compileExpression(ast.astmember("apply", expr), scope)
     } else {
@@ -663,13 +627,13 @@ method compileBlockExpression(block: List, scope: Scope) -> String {
 method compileIdentifier(node, scope: Scope) -> String {
     def name = node.value
 
-    if (name == "self") then {
+    if(name == "self") then {
         return "self.getSelf()"
-    } elseif (name == "super") then {
+    } elseif(name == "super") then {
         return "$super"
-    } elseif (name == "true") then {
+    } elseif(name == "true") then {
         return "{bln}.graceTrue"
-    } elseif (name == "false") then {
+    } elseif(name == "false") then {
         return "{bln}.graceFalse"
     }
 
@@ -749,7 +713,7 @@ class ScopeFactory { ind: Number, outer', module': Boolean, decl': Boolean ->
     def variables = []
 
     method addVariable(name: String) {
-        if (variables.contains(name).not) then {
+        if(variables.contains(name).not) then {
             variables.push(name)
         }
     }
@@ -776,7 +740,7 @@ class ScopeFactory { ind: Number, outer', module': Boolean, decl': Boolean ->
 
     var indent' := false
     method indent -> String {
-        if (indent' == false) then {
+        if(indent' == false) then {
             var string := ""
             var i := 0
 
@@ -840,7 +804,7 @@ class Kinds {
     }
 
     method kinds(kinds': List) do(block: Block) {
-        for (kinds') do { kind' ->
+        for(kinds') do { kind' ->
             map.put(kind', block)
         }
         self
@@ -854,12 +818,12 @@ class Kinds {
     method in(nodes: List) -> List {
         def else' = elseBlock /= false
 
-        map(if (else') then {nodes} else {
+        map(if(else') then {nodes} else {
             filter(nodes) with { node -> map.contains(node.kind) }
         }) with { node ->
-            if (stopped) then {
+            if(stopped) then {
                 false
-            } elseif (map.contains(node.kind)) then {
+            } elseif(map.contains(node.kind)) then {
                 map.get(node.kind).apply(node)
             } else {
                 elseBlock.apply(node)
@@ -881,29 +845,29 @@ def keywords = ["package", "import", "class", "this", "super", "null", "new",
                 obj, blk, bln, num, str, lst, ret, "GraceVoid"]
 
 method escape(ident: String) -> String {
-    if (keywords.contains(ident)) then {
+    if(keywords.contains(ident)) then {
         return "$" ++ ident
     }
 
     // This is either an ignored identifier or generated by the compiler.
-    if (ident[1] == "_") then {
+    if(ident[1] == "_") then {
         return ident
     }
 
-    if (unicode.isLetter(ident[1])) then {
+    if(unicode.isLetter(ident[1])) then {
         def ignore = ["$", "_"]
         var inParens := false
 
         join(map(ident) with { c ->
-            if (inParens) then {
+            if(inParens) then {
                 inParens := c /= ")"
                 ""
-            } elseif (c == "(") then {
+            } elseif(c == "(") then {
                 inParens := true
                 "$"
-            } elseif (c == "'") then {
+            } elseif(c == "'") then {
                 "_"
-            } elseif (isValidIdentifierCharacter(c)) then {
+            } elseif(isValidIdentifierCharacter(c)) then {
                 c
             } else {
                 "${c.ord}"
@@ -933,7 +897,7 @@ method literal(value': String) {
 method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
     def list' = []
     var i := 1
-    for (list) do { e ->
+    for(list) do { e ->
         list'.push(with.apply(e, i))
         i := i + 1
     }
@@ -944,8 +908,8 @@ method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
 // Filters out elements from a list with the given block.
 method filter(list: List) with(choice: Block) -> List {
     def list' = []
-    for (list) do { e ->
-        if (choice.apply(e)) then {
+    for(list) do { e ->
+        if(choice.apply(e)) then {
             list'.push(e)
         }
     }
@@ -958,9 +922,9 @@ method filter(list: List) with(choice: Block) -> List {
 method map(list: List) with(with: Block) filter(filter: Block) -> List {
     def list' = []
     var i := 1
-    for (list) do { e ->
+    for(list) do { e ->
         def result = with.apply(e, i)
-        if (filter.apply(result)) then {
+        if(filter.apply(result)) then {
             list'.push(result)
         }
         i := i + 1
@@ -978,8 +942,8 @@ method join(list: ImmutableIndexedCollection) -> String {
 method join(list: ImmutableIndexedCollection) separatedBy(by: String) -> String {
     var once := false
     var string := ""
-    for (list) do { val ->
-        if (once) then {
+    for(list) do { val ->
+        if(once) then {
             string := string ++ by
         }
         string := string ++ val
@@ -991,8 +955,8 @@ method join(list: ImmutableIndexedCollection) separatedBy(by: String) -> String 
 
 // In-place concatenation of lists. Modifies and returns the first list.
 method concat(list: List, *attach: List) -> List {
-    for (attach) do { list' ->
-        for (list') do { el ->
+    for(attach) do { list' ->
+        for(list') do { el ->
             list.push(el)
         }
     }

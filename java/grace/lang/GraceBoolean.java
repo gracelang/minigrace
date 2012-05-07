@@ -16,12 +16,20 @@ public class GraceBoolean extends GraceObject {
   }
 
   private static boolean bool(GraceObject obj) {
-    return ((GraceBoolean) obj).value;
+    return obj.invoke("ifTrue$else", new GraceBlock(null) {
+      public GraceObject apply(GraceObject... params) {
+        return graceTrue;
+      }
+    }, new GraceBlock(null) {
+      public GraceObject apply(GraceObject... params) {
+        return graceFalse;
+      }
+    }) == graceTrue;
   }
 
   // ==
   public GraceObject bin$61$61(GraceObject o) {
-    return evaluate(o instanceof GraceBoolean && bool(o) == value);
+    return value ? o : o.invoke("not");
   }
 
   public GraceObject not() {
@@ -45,20 +53,24 @@ public class GraceBoolean extends GraceObject {
 
   // &&
   public GraceObject bin$38$38(GraceObject other) {
-    return !value ? graceFalse : (GraceBoolean) ((GraceBlock) other).apply();
+    return value ? other.invoke("apply") : graceFalse;
   }
 
   // ||
   public GraceObject bin$124$124(GraceObject other) {
-    return value ? graceTrue : (GraceBoolean) ((GraceBlock) other).apply();
+    return value ? graceTrue : other.invoke("apply");
   }
 
   public GraceObject ifTrue(GraceObject block) {
-    return value ? ((GraceBlock) block).apply() : GraceVoid.value;
+    return value ? block.invoke("apply") : GraceVoid.value;
   }
 
   public GraceObject ifFalse(GraceObject block) {
-    return value ? GraceVoid.value : ((GraceBlock) block).apply();
+    return value ? GraceVoid.value : block.invoke("apply");
+  }
+
+  public GraceObject ifTrue$else(GraceObject a, GraceObject b) {
+    return (value ? a : b).invoke("apply");
   }
 
   public GraceObject asString() {
