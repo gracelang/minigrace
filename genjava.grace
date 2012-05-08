@@ -11,7 +11,6 @@ def bln = "GraceBoolean"
 def num = "GraceNumber"
 def str = "GraceString"
 def lst = "GraceList"
-def vdv = "$void"
 def ret = "GraceReturn"
 
 
@@ -223,8 +222,6 @@ method compileExpression(node, scope: Scope) -> String {
         compileCall(node, scope)
     } elseif(node.kind == "if") then {
         compileTernary(node, scope)
-    } elseif(node.kind == "for") then {
-        compileClosure([node, literal(vdv)], scope)
     } elseif(node.kind == "index") then {
         compileIndex(node, scope)
     } elseif(node.kind == "op") then {
@@ -243,7 +240,7 @@ method compileExpression(node, scope: Scope) -> String {
         node.value
     } else {
         util.log_verbose("Unknown expression: {node.kind}")
-        "/* {node.kind} */ {vdv}"
+        "/* {node.kind} */ $void"
     }
 }
 
@@ -287,7 +284,7 @@ method compileSetter(node, scope: Scope) -> String {
     scope.block("public {obj} {name}$58$61" ++
             "({obj} $) \{", { scope' ->
         scope'.line("this.{name} = $") ++
-            scope'.line("return {vdv}")
+            scope'.line("return $void")
     }, "\}\n")
 }
 
@@ -314,7 +311,7 @@ method compileMethod(node, scope: Scope) -> String {
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
         if(node.body.size == 0) then {
-            scope'.line("return {vdv}")
+            scope'.line("return $void")
         } else {
             scope'.line("final {obj} $outer = this") ++
                 scope'.stmt(scope'.block("class $Return " ++
@@ -367,7 +364,7 @@ method compileClosure(body: List, scope: Scope) -> String {
 // Safely turns the last expression of the given body into a return stmt.
 method forceReturn(body: List) -> List {
     if(body.size == 0) then {
-        return [generateReturn(literal(vdv))]
+        return [generateReturn(literal("$void"))]
     }
 
     def last = body[body.size]
@@ -618,7 +615,7 @@ method compileBlockExpression(block: List, scope: Scope) -> String {
         def expr = ast.astblock([], block)
         compileExpression(ast.astmember("apply", expr), scope)
     } else {
-        vdv
+        "$void"
     }
 }
 
@@ -629,12 +626,6 @@ method compileIdentifier(node, scope: Scope) -> String {
 
     if(name == "self") then {
         return "self.getSelf()"
-    } elseif(name == "super") then {
-        return "$super"
-    } elseif(name == "true") then {
-        return "{bln}.graceTrue"
-    } elseif(name == "false") then {
-        return "{bln}.graceFalse"
     }
 
     escape(name)
@@ -669,7 +660,7 @@ type Scope = {
     isDecl -> Boolean
 
     // Introduces a variable name into this scope.
-    addVariable(name: String)
+    addVariable(name: String) -> Void
 
     // Evaluates whether a variable is in this scope.
     hasVariable(name: String) -> Boolean
@@ -712,7 +703,7 @@ class ScopeFactory { ind: Number, outer', module': Boolean, decl': Boolean ->
 
     def variables = []
 
-    method addVariable(name: String) {
+    method addVariable(name: String) -> Void {
         if(variables.contains(name).not) then {
             variables.push(name)
         }
@@ -842,7 +833,7 @@ def keywords = ["package", "import", "class", "this", "super", "null", "new",
                 "public", "protected", "private", "static", "final", "extends",
                 "if", "else", "for", "while", "do", "switch", "case",
                 "default", "synchronized", "volatile", "return", "wait",
-                obj, blk, bln, num, str, lst, ret, "GraceVoid"]
+                "true", "false", obj, blk, bln, num, str, lst, ret]
 
 method escape(ident: String) -> String {
     if(keywords.contains(ident)) then {

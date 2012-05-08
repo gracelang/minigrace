@@ -12,6 +12,9 @@ public class GraceObject implements Iterable<GraceObject>,
 
   public static final GraceObject $void = GraceVoid.value;
 
+  public static final GraceObject $true = GraceBoolean.graceTrue;
+  public static final GraceObject $false = GraceBoolean.graceFalse;
+
   public static final GraceObject MatchFailed = new GraceObject();
 
   public static final GraceObject HashMap = new GraceObject() {
