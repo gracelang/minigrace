@@ -221,7 +221,7 @@ method compileExpression(node, scope: Scope) -> String {
     } elseif(node.kind == "call") then {
         compileCall(node, scope)
     } elseif(node.kind == "if") then {
-        compileTernary(node, scope)
+        compileIf(node, scope)
     } elseif(node.kind == "index") then {
         compileIndex(node, scope)
     } elseif(node.kind == "op") then {
@@ -426,9 +426,9 @@ method compileIf(node, scope: Scope) -> String {
     if(node.elseblock.size > 0) then {
         def else = compileBlock(ast.astblock([], node.elseblock), scope)
 
-        "({condition}).ifTrue$else({then}, {else})"
+        "({condition}).invoke(\"ifTrue$else\", {then}, {else})"
     } else {
-        "({condition}).ifTrue({then})"
+        "({condition}).invoke(\"ifTrue\", {then})"
     }
 }
 
@@ -523,15 +523,6 @@ method compileIndex(node, scope: Scope) -> String {
         def value = "[]"
         def in = node.value
     }, [node.index]), scope)
-}
-
-// A call to if as an expression.
-method compileTernary(node, scope: Scope) -> String {
-    def cond = compileExpression(node.value, scope)
-    def then = compileBlockExpression(node.thenblock, scope)
-    def else = compileBlockExpression(node.elseblock, scope)
-
-    "({cond}).ifTrue$else({then}, {else})"
 }
 
 method compileOp(node, scope: Scope) -> String {
