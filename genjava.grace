@@ -136,7 +136,7 @@ method compileModule(nodes: List, modName: String) {
 method compileDeclarations(nodes: List, scope: Scope) -> String {
     join(kind("import") do { node ->
         scope.line(compileImportDecl(node, scope))
-    }.kinds(["vardec", "defdec", "class"]) do { node ->
+    }.kinds(["vardec", "defdec", "class", "type"]) do { node ->
         def name = compileFieldName(node)
         if(scope.hasVariable(name).not) then {
             scope.addVariable(name)
@@ -179,6 +179,8 @@ method compileExecution(nodes: List, scope: Scope) -> String {
         } else { false }
     }.kind("defdec") do { node ->
         scope.line(compileBindDecl(node, scope))
+    }.kind("type") do { node ->
+        scope.line(compileType(node, scope))
     }.kind("bind") do { node ->
         scope.line(compileBind(node, scope))
     }.kind("if") do { node ->
@@ -290,7 +292,9 @@ method compileSetter(node, scope: Scope) -> String {
 
 // Compiles a field's name. Accounts for a generic declaration.
 method compileFieldName(node) -> String {
-    escape(if(node.name.kind == "generic") then {
+    escape(if (node.kind == "type") then {
+        node.value
+    } elseif(node.name.kind == "generic") then {
         node.name.value.value
     } else {
         node.name.value
@@ -328,6 +332,12 @@ method compileMethod(node, scope: Scope) -> String {
                 }, "\}")))
         }
     }, "\}"))
+}
+
+method compileType(node, scope: Scope) -> String {
+    "{node.value} = new GraceType(" ++ join(map(node.methods) with { meth ->
+        "new GraceMethod(\"{meth.value}\")"
+    }) separatedBy(", ") ++ ")"
 }
 
 method compileParamClosure(node, scope: Scope) -> String {
