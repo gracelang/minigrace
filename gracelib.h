@@ -5,14 +5,15 @@ typedef struct Object* Object;
 
 typedef struct ClassData* ClassData;
 struct MethodType {
-    int nparams;
+    int nparts;
+    int *argcv;
     Object *types;
     char **names;
 };
 typedef struct Method {
     char *name;
     int32_t flags;
-    Object(*func)(Object, int, Object*, int);
+    Object(*func)(Object, int, int*, Object*, int);
     int pos;
     struct MethodType *type;
 } Method;
@@ -57,10 +58,10 @@ struct StackFrameObject {
 Object alloc_Float64(double);
 Object alloc_List();
 Object alloc_String(const char*);
-Object tailcall(Object, const char *, int, Object *, int);
-Object callmethod3(Object, const char *, int, Object *, int);
+Object tailcall(Object, const char *, int, int *, Object *, int);
+Object callmethod3(Object, const char *, int, int *, Object *, int);
 Object callmethod(Object receiver, const char *name,
-        int nparams, Object *args);
+        int nparts, int *nparams, Object *args);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
@@ -73,8 +74,8 @@ Object alloc_Integer32(int);
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *, int);
 Method* add_Method(ClassData, const char *,
-        Object(*func)(Object, int, Object*, int));
-struct MethodType *alloc_MethodType(int);
+        Object(*func)(Object, int, int*, Object*, int));
+struct MethodType *alloc_MethodType(int, int*);
 Object alloc_obj(int, ClassData);
 Object alloc_newobj(int, ClassData);
 ClassData alloc_class(const char *, int);
@@ -118,10 +119,10 @@ void module_sys_init_argv(Object);
 void gracelib_stats();
 void addtoclosure(Object, Object *);
 Object *getfromclosure(Object, int);
-void addmethod2(Object, char *, Object (*)(Object, int, Object*, int));
-Method *addmethod2pos(Object, char *, Object (*)(Object, int, Object*, int), int);
-void addmethodreal(Object, char *, Object (*)(Object, int, Object*, int));
-void addmethodrealflags(Object, char *, Object (*)(Object, int, Object*, int), int);
+void addmethod2(Object, char *, Object (*)(Object, int, int*, Object*, int));
+Method *addmethod2pos(Object, char *, Object (*)(Object, int, int*, Object*, int), int);
+void addmethodreal(Object, char *, Object (*)(Object, int, int*, Object*, int));
+void addmethodrealflags(Object, char *, Object (*)(Object, int, int*, Object*, int), int);
 void adddatum2(Object, Object, int);
 Object getdatum(Object, int, int);
 void set_type(Object, int16_t);
@@ -132,5 +133,5 @@ void setclassname(Object, char*);
 void gracelib_stats();
 int istrue(Object);
 void setmodule(const char *);
-Object grace_userobj_outer(Object, int, Object*, int);
+Object grace_userobj_outer(Object, int, int*, Object*, int);
 Object grace_prelude();

@@ -152,11 +152,23 @@ method astmatchcase(matchee, cases', elsecase') {
         }
     }
 }
-method astmethodtype(name', params', rtype') {
+method astmethodtype(name', signature', rtype') {
+    // [signature]
+    //     [part1]
+    //         name
+    //         [params]
+    //         vararg
+    //     [part2]
+    //         name
+    //         [params]
+    //         vararg
+    //     ...
+    //     [partn]
+    //         ...
     object {
         def kind = "methodtype"
         def value = name'
-        def params = params'
+        def signature = signature'
         def rtype = rtype'
         def line = util.linenum
         var register := ""
@@ -171,12 +183,12 @@ method astmethodtype(name', params', rtype') {
                 s := "{s}{spc}Returns:\n  {spc}{rtype.value}\n"
             }
             s := s ++ spc ++ "Parameters:"
-            for (params) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-                if (mx.dtype /= false) then {
-                    s := "{s} : {mx.dtype.value}"
-                }
-            }
+            // for (params) do { mx ->
+            //     s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            //     if (mx.dtype /= false) then {
+            //         s := "{s} : {mx.dtype.value}"
+            //     }
+            // }
             s
         }
     }
@@ -220,15 +232,26 @@ method asttype(name', methods') {
         }
     }
 }
-method astmethod(name', params', body', dtype') {
+method astmethod(name', signature', body', dtype') {
+    // [signature]
+    //     [part1]
+    //         name
+    //         [params]
+    //         vararg
+    //     [part2]
+    //         name
+    //         [params]
+    //         vararg
+    //     ...
+    //     [partn]
+    //         ...
     object {
         def kind = "method"
         def value = name'
-        def params = params'
+        def signature = signature'
         def body = body'
         var dtype := dtype'
         var varargs := false
-        var vararg := false
         var selfclosure := false
         var register := ""
         def line = util.linenum
@@ -254,10 +277,21 @@ method astmethod(name', params', body', dtype') {
     }
 }
 method astcall(what, with') {
+    // [with]
+    //     [part1]
+    //         param1
+    //         param2
+    //         vararg1
+    //         vararg2
+    //         ...
+    //     [part2]
+    //     ...
+    //     [partn]
     object {
         def kind = "call"
         def value = what
         def with = with'
+        var meth := false
         def line = 0 + util.linenum
         var register := ""
         method pretty(depth) {
@@ -277,13 +311,13 @@ method astcall(what, with') {
         }
     }
 }
-method astclass(name', params', body', superclass', constructor') {
+method astclass(name', signature', body', superclass', constructor') {
     object {
         def kind = "class"
         def value = body'
         def name = name'
         def constructor = constructor'
-        def params = params'
+        def signature = signature'
         var register := ""
         def line = util.linenum
         def superclass = superclass'

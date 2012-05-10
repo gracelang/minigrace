@@ -15,27 +15,27 @@
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
-Object Float64_asString(Object, int nparams,
+Object Float64_asString(Object, int nparts, int *argcv,
         Object*, int flags);
-Object Float64_Add(Object, int nparams,
+Object Float64_Add(Object, int nparts, int *argcv,
         Object*, int flags);
-Object Object_asString(Object, int nparams,
+Object Object_asString(Object, int nparts, int *argcv,
         Object*, int flags);
-Object Object_Equals(Object, int,
+Object Object_Equals(Object, int, int*,
         Object*, int flags);
-Object Object_NotEquals(Object, int,
+Object Object_NotEquals(Object, int, int*,
         Object*, int);
-Object String_concat(Object, int nparams,
+Object String_concat(Object, int nparts, int *argcv,
         Object*, int flags);
-Object String_index(Object, int nparams,
+Object String_index(Object, int nparts, int *argcv,
         Object*, int flags);
 FILE *debugfp;
 int debug_enabled = 0;
 
-Object String_size(Object , int, Object *, int flags);
-Object String_at(Object , int, Object *, int flags);
-Object String_replace_with(Object , int, Object *, int flags);
-Object String_substringFrom_to(Object , int, Object *, int flags);
+Object String_size(Object , int, int*, Object *, int flags);
+Object String_at(Object , int, int*, Object *, int flags);
+Object String_replace_with(Object , int, int*, Object *, int flags);
+Object String_substringFrom_to(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
@@ -330,64 +330,67 @@ int integerfromAny(Object p) {
         int j = *d;
         return j;
     }
-    p = callmethod(p, "asString", 0, NULL);
+    p = callmethod(p, "asString", 0, NULL, NULL);
     char *c = grcstring(p);
     int i = atoi(c);
     return i;
 }
 void addmethodrealflags(Object o, char *name,
-        Object (*func)(Object, int, Object*, int), int flags) {
+        Object (*func)(Object, int, int*, Object*, int), int flags) {
     Method *m = add_Method(o->class, name, func);
     m->flags |= flags;
 }
 void addmethodreal(Object o, char *name,
-        Object (*func)(Object, int, Object*, int)) {
+        Object (*func)(Object, int, int*, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
 }
 void addmethod2(Object o, char *name,
-        Object (*func)(Object, int, Object*, int)) {
+        Object (*func)(Object, int, int*, Object*, int)) {
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
 }
 Method *addmethod2pos(Object o, char *name,
-        Object (*func)(Object, int, Object*, int), int pos) {
+        Object (*func)(Object, int, int*, Object*, int), int pos) {
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
     m->pos = pos;
     return m;
 }
-Object identity_function(Object receiver, int nparams,
+Object identity_function(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     return receiver;
 }
-Object Object_asString(Object receiver, int nparams,
+Object Object_asString(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     char buf[40];
     sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
     return alloc_String(buf);
 }
 
-Object Object_concat(Object receiver, int nparams,
+Object Object_concat(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
-    Object a = callmethod(receiver, "asString", 0, NULL);
-    return callmethod(a, "++", nparams, params);
+    Object a = callmethod(receiver, "asString", 0, NULL, NULL);
+    return callmethod(a, "++", 1, argcv, params);
 }
-Object Object_NotEquals(Object receiver, int nparams,
+Object Object_NotEquals(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
-    Object b = callmethod(receiver, "==", nparams, params);
-    return callmethod(b, "not", 0, NULL);
+    Object b = callmethod(receiver, "==", 1, argcv, params);
+    return callmethod(b, "not", 0, NULL, NULL);
 }
-Object Object_Equals(Object receiver, int nparams,
+Object Object_Equals(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     return alloc_Boolean(receiver == params[0]);
 }
-Object MatchResult_result(Object self, int argc, Object *argv, int flags) {
+Object MatchResult_result(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     return ((struct UserObject *)self)->data[0];
 }
-Object MatchResult_bindings(Object self, int argc, Object *argv, int flags) {
+Object MatchResult_bindings(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     return ((struct UserObject *)self)->data[1];
 }
-Object MatchResult_asString(Object self, int argc, Object *argv, int flags) {
+Object MatchResult_asString(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct UserObject *uo = (struct UserObject *)self;
     gc_pause();
     Object str;
@@ -395,14 +398,15 @@ Object MatchResult_asString(Object self, int argc, Object *argv, int flags) {
         str = alloc_String("SuccessfulMatch(result = ");
     else
         str = alloc_String("FailedMatch(result = ");
-    Object tmpstr = callmethod(uo->data[0], "asString", 0, NULL);
-    str = callmethod(str, "++", 1, &tmpstr);
+    int argcv2[] = {1};
+    Object tmpstr = callmethod(uo->data[0], "asString", 0, NULL, NULL);
+    str = callmethod(str, "++", 1, argcv2, &tmpstr);
     tmpstr = alloc_String(", bindings = ");
-    str = callmethod(str, "++", 1, &tmpstr);
-    tmpstr = callmethod(uo->data[1], "asString", 0, NULL);
-    str = callmethod(str, "++", 1, &tmpstr);
+    str = callmethod(str, "++", 1, argcv2, &tmpstr);
+    tmpstr = callmethod(uo->data[1], "asString", 0, NULL, NULL);
+    str = callmethod(str, "++", 1, argcv2, &tmpstr);
     tmpstr = alloc_String(")");
-    str = callmethod(str, "++", 1, &tmpstr);
+    str = callmethod(str, "++", 1, argcv2, &tmpstr);
     gc_unpause();
     return str;
 }
@@ -433,15 +437,17 @@ Object alloc_FailedMatch(Object result, Object bindings) {
     ((struct UserObject *)o)->super = alloc_Boolean(0);
     return o;
 }
-Object literal_match(Object self, int argc, Object *argv, int flags) {
-    if (argc < 1)
+Object literal_match(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
         die("match requires an argument");
     Object other = argv[0];
-    if (!istrue(callmethod(self, "==", 1, argv)))
+    int argcv2[] = {1};
+    if (!istrue(callmethod(self, "==", 1, argcv2, argv)))
         return alloc_FailedMatch(other, NULL);
     return alloc_SuccessfulMatch(other, NULL);
 }
-Object String_Equals(Object self, int nparams,
+Object String_Equals(Object self, int nparts, int *argcv,
         Object *params, int flags) {
     Object other = params[0];
     if ((other->class != String) && (other->class != ConcatString))
@@ -456,7 +462,7 @@ Object String_Equals(Object self, int nparams,
     }
     return alloc_Boolean(1);
 }
-Object ListIter_next(Object self, int nparams,
+Object ListIter_next(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int *pos = (int*)self->data;
     Object *arr = (Object*)(self->data + sizeof(int));
@@ -465,7 +471,7 @@ Object ListIter_next(Object self, int nparams,
     *pos  = *pos + 1;
     return lst->items[rpos];
 }
-Object ListIter_havemore(Object self, int nparams,
+Object ListIter_havemore(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int *pos = (int*)self->data;
     Object *arr = (Object*)(self->data + sizeof(int));
@@ -492,7 +498,7 @@ Object alloc_ListIter(Object array) {
     *lst = array;
     return o;
 }
-Object List_pop(Object self, int nparams,
+Object List_pop(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     sself->size--;
@@ -500,7 +506,7 @@ Object List_pop(Object self, int nparams,
         die("popped from negative value: %i", sself->size);
     return sself->items[sself->size];
 }
-Object List_push(Object self, int nparams,
+Object List_push(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     Object other = args[0];
@@ -517,7 +523,7 @@ Object List_push(Object self, int nparams,
     sself->size++;
     return alloc_Boolean(1);
 }
-Object List_indexAssign(Object self, int nparams,
+Object List_indexAssign(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     Object idx = args[0];
@@ -535,7 +541,7 @@ Object List_indexAssign(Object self, int nparams,
     sself->items[index] = val;
     return val;
 }
-Object List_contains(Object self, int nparams,
+Object List_contains(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     Object other = args[0];
@@ -543,13 +549,14 @@ Object List_contains(Object self, int nparams,
     int index;
     for (index=0; index<sself->size; index++) {
         my = sself->items[index];
-        b = callmethod(other, "==", 1, &my);
+        int argcv2[] = {1};
+        b = callmethod(other, "==", 1, argcv2, &my);
         if (istrue(b))
             return b;
     }
     return alloc_Boolean(0);
 }
-Object List_index(Object self, int nparams,
+Object List_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     int index = integerfromAny(args[0]);
@@ -564,67 +571,70 @@ Object List_index(Object self, int nparams,
     index--;
     return sself->items[index];
 }
-Object List_iter(Object self, int nparams,
+Object List_iter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     return alloc_ListIter(self);
 }
-Object List_length(Object self, int nparams,
+Object List_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     return alloc_Float64(sself->size);
 }
-Object List_asString(Object self, int nparams,
+Object List_asString(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     int len = sself->size;
     int i = 0;
+    int argcv2[] = {1};
     Object other;
     gc_pause();
     Object s = alloc_String("[");
     Object c = alloc_String(",");
     for (i=0; i<len; i++) {
-        other = callmethod(sself->items[i], "asString", 0, NULL);
-        s = callmethod(s, "++", 1, &other);
+        other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
+        s = callmethod(s, "++", 1, argcv2, &other);
         if (i != len-1)
-            s = callmethod(s, "++", 1, &c);
+            s = callmethod(s, "++", 1, argcv2, &c);
     }
     Object cb = alloc_String("]");
-    s = callmethod(s, "++", 1, &cb);
+    s = callmethod(s, "++", 1, argcv2, &cb);
     gc_unpause();
     return s;
 }
-Object List_indices(Object self, int nparams,
+Object List_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     Object o = alloc_List();
     int slot = gc_frame_newslot(o);
     int i;
     Object f;
+    int argcv2[] = {1};
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
-        List_push(o, 1, &f, 0);
+        List_push(o, 1, argcv2, &f, 0);
     }
     gc_frame_setslot(slot, undefined);
     return o;
 }
-Object List_first(Object self, int nparams,
+Object List_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     return sself->items[0];
 }
-Object List_last(Object self, int nparams,
+Object List_last(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     return sself->items[sself->size-1];
 }
-Object List_prepended(Object self, int nparams,
+Object List_prepended(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ListObject *sself = (struct ListObject*)self;
     int i;
     Object nl = alloc_List();
-    callmethod(nl, "push", 1, args);
+    int argcv2[] = {1};
+    callmethod(nl, "push", 1, argcv2, args);
     for (i = 0; i < sself->size; i++) {
-        List_push(nl, 1, sself->items + i, 0);
+        List_push(nl, 1, argcv2, sself->items + i, 0);
     }
     return nl;
 }
@@ -726,7 +736,7 @@ int getutf8char(const char *s, char buf[5]) {
     }
     return 0;
 }
-Object StringIter_next(Object self, int nparams,
+Object StringIter_next(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int *pos = (int*)self->data;
     Object o = *(Object *)(self->data + sizeof(int));
@@ -740,7 +750,7 @@ Object StringIter_next(Object self, int nparams,
     getutf8char(cstr + rpos, buf);
     return alloc_String(buf);
 }
-Object StringIter_havemore(Object self, int nparams,
+Object StringIter_havemore(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int *pos = (int*)self->data;
     Object *strp = (Object*)(self->data + sizeof(int));
@@ -779,8 +789,9 @@ char *ConcatString__Flatten(Object self) {
 }
 
 char *grcstring(Object self) {
-    if (self->class != ConcatString && self->class != String)
-        self = callmethod(self, "asString", 0, NULL);
+    if (self->class != ConcatString && self->class != String) {
+        self = callmethod(self, "asString", 0, NULL, NULL);
+    }
     struct StringObject *sself = (struct StringObject *)self;
     if (sself->flat)
         return sself->flat;
@@ -816,21 +827,22 @@ void ConcatString__FillBuffer(Object self, char *buf, int len) {
     }
     buf[rights->blen] = 0;
 }
-Object String_indices(Object self, int nparams,
+Object String_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject *sself = (struct StringObject*)self;
     Object o = alloc_List();
     int i;
     Object f;
     gc_pause();
+    int argcv2[] = {1};
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
-        List_push(o, 1, &f, 0);
+        List_push(o, 1, argcv2, &f, 0);
     }
     gc_unpause();
     return o;
 }
-Object ConcatString_Equals(Object self, int nparams,
+Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == args[0])
         return alloc_Boolean(1);
@@ -844,26 +856,26 @@ Object ConcatString_Equals(Object self, int nparams,
     char *b = grcstring(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
-Object ConcatString__escape(Object self, int nparams,
+Object ConcatString__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = grcstring(self);
     Object o = makeEscapedString(c);
     return o;
 }
-Object ConcatString_ord(Object self, int nparams,
+Object ConcatString_ord(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     if (sself->flat)
-        return callmethod(alloc_String(sself->flat), "ord", 0, NULL);
+        return callmethod(alloc_String(sself->flat), "ord", 0, NULL, NULL);
     Object left = sself->left;
     struct StringObject *lefts = (struct StringObject*)left;
     int ls = lefts->size;
     if (ls > 0)
-        return callmethod(left, "ord", 0, NULL);
+        return callmethod(left, "ord", 0, NULL, NULL);
     Object right = sself->right;
-    return callmethod(right, "ord", 0, NULL);
+    return callmethod(right, "ord", 0, NULL, NULL);
 }
-Object ConcatString_at(Object self, int nparams,
+Object ConcatString_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     int p = integerfromAny(args[0]);
@@ -871,30 +883,30 @@ Object ConcatString_at(Object self, int nparams,
     if (ms == 1 && p == 1)
         return self;
     ConcatString__Flatten(self);
-    return String_at(self, nparams, args, flags);
+    return String_at(self, nparts, argcv, args, flags);
 }
-Object ConcatString_length(Object self, int nparams,
+Object ConcatString_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     return alloc_Float64(sself->blen);
 }
-Object ConcatString_iter(Object self, int nparams,
+Object ConcatString_iter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = ConcatString__Flatten(self);
     Object o = alloc_String(c);
-    return callmethod(o, "iter", 0, NULL);
+    return callmethod(o, "iter", 0, NULL, NULL);
 }
 Object ConcatString_substringFrom_to(Object self,
-        int nparams, Object *args, int flags) {
+        int nparts, int *argcv, Object *args, int flags) {
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
     st--;
     en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
-    return String_substringFrom_to(self, nparams, args, flags);
+    return String_substringFrom_to(self, nparts, argcv, args, flags);
 }
-Object String_hashcode(Object self, int nparams,
+Object String_hashcode(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     if (!sself->hashcode) {
@@ -933,11 +945,12 @@ void ConcatString__mark(Object o) {
     gc_mark(s->left);
     gc_mark(s->right);
 }
-Object String_asNumber(Object self, int argc, Object *argv, int flags) {
+Object String_asNumber(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     char *c = grcstring(self);
     return alloc_Float64(atof(c));
 }
-Object String_encode(Object self, int nparams,
+Object String_encode(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     grcstring(self);
@@ -1001,13 +1014,13 @@ Object alloc_ConcatString(Object left, Object right) {
     so->hashcode = 0;
     return o;
 }
-Object String__escape(Object, int, Object*, int flags);
-Object String_length(Object, int, Object*, int flags);
-Object String_iter(Object receiver, int nparams,
+Object String__escape(Object, int, int*, Object*, int flags);
+Object String_length(Object, int, int*, Object*, int flags);
+Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
     return alloc_StringIter(receiver);
 }
-Object String_at(Object self, int nparams,
+Object String_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object idxobj = args[0];
     int idx = integerfromAny(idxobj);
@@ -1027,7 +1040,7 @@ Object String_at(Object self, int nparams,
     getutf8char(ptr, buf);
     return alloc_String(buf);
 }
-Object String_ord(Object self, int nparams,
+Object String_ord(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     char buf[5];
@@ -1049,13 +1062,13 @@ Object String_ord(Object self, int nparams,
     }
     return alloc_Float64(codepoint);
 }
-Object String_size(Object self, int nparams,
+Object String_size(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->size);
 }
 Object String_substringFrom_to(Object self,
-        int nparams, Object *args, int flags) {
+        int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
     int en = integerfromAny(args[1]);
@@ -1085,7 +1098,7 @@ Object String_substringFrom_to(Object self,
     return alloc_String(buf);
 }
 Object String_replace_with(Object self,
-        int nparams, Object *args, int flags) {
+        int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     int *ml = &sself->blen;
     char *what = grcstring(args[0]);
@@ -1217,18 +1230,18 @@ Object makeEscapedString(char *p) {
     buf[op] = 0;
     return alloc_String(buf);
 }
-Object String__escape(Object self, int nparams,
+Object String__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     char *p = sself->body;
     return makeEscapedString(p);
 }
-Object String_length(Object self, int nparams,
+Object String_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->blen);
 }
-Object String_index(Object self, int nparams,
+Object String_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int index = integerfromAny(args[0]);
     struct StringObject* sself = (struct StringObject*)self;
@@ -1238,21 +1251,21 @@ Object String_index(Object self, int nparams,
     buf[1] = '\0';
     return alloc_String(buf);
 }
-Object String_concat(Object self, int nparams,
+Object String_concat(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int frame = gc_frame_new();
-    Object asStr = callmethod(args[0], "asString", 0, NULL);
+    Object asStr = callmethod(args[0], "asString", 0, NULL, NULL);
     gc_frame_newslot(asStr);
     Object r = alloc_ConcatString(self, asStr);
     gc_frame_end(frame);
     return r;
 }
-Object Octets_size(Object receiver, int nparams,
+Object Octets_size(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     return alloc_Float64(self->blen);
 }
-Object Octets_asString(Object receiver, int nparams,
+Object Octets_asString(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     char *data = self->body;
@@ -1268,7 +1281,7 @@ Object Octets_asString(Object receiver, int nparams,
     dt[3 + size * 2] = 0;
     return alloc_String(dt);
 }
-Object Octets_at(Object receiver, int nparams,
+Object Octets_at(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     char *data = self->body;
@@ -1278,7 +1291,7 @@ Object Octets_at(Object receiver, int nparams,
         die("Octets index out of bounds: %i/%i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
-Object Octets_Equals(Object receiver, int nparams,
+Object Octets_Equals(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     struct OctetsObject *other = (struct OctetsObject*)args[0];
@@ -1290,7 +1303,7 @@ Object Octets_Equals(Object receiver, int nparams,
             return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-Object Octets_Concat(Object receiver, int nparams,
+Object Octets_Concat(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     struct OctetsObject *other = (struct OctetsObject*)args[0];
@@ -1301,7 +1314,7 @@ Object Octets_Concat(Object receiver, int nparams,
     memcpy(newdata + self->blen, other->body, other->blen);
     return alloc_Octets(newdata, newsize);
 }
-Object Octets_decode(Object receiver, int nparams,
+Object Octets_decode(Object receiver, int nparts, int *argcv,
         Object *args, int flags) {
     struct OctetsObject *self = (struct OctetsObject*)receiver;
     Object codec = args[0];
@@ -1328,7 +1341,7 @@ Object alloc_Octets(const char *data, int len) {
     memcpy(oo->body, data, len);
     return o;
 }
-Object Float64_Range(Object self, int nparams,
+Object Float64_Range(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1337,14 +1350,15 @@ Object Float64_Range(Object self, int nparams,
     int j = b;
     gc_pause();
     Object arr = alloc_List();
+    int argcv2[] = {1};
     for (; i<=b; i++) {
         Object v = alloc_Float64(i);
-        List_push(arr, 1, &v, 0);
+        List_push(arr, 1, argcv2, &v, 0);
     }
     gc_unpause();
     return (Object)arr;
 }
-Object Float64_Add(Object self, int nparams,
+Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *((double*)self->data);
@@ -1355,7 +1369,7 @@ Object Float64_Add(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Float64(a+b);
 }
-Object Float64_Sub(Object self, int nparams,
+Object Float64_Sub(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1366,7 +1380,7 @@ Object Float64_Sub(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Float64(a-b);
 }
-Object Float64_Mul(Object self, int nparams,
+Object Float64_Mul(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1377,7 +1391,7 @@ Object Float64_Mul(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Float64(a*b);
 }
-Object Float64_Div(Object self, int nparams,
+Object Float64_Div(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1388,7 +1402,7 @@ Object Float64_Div(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Float64(a/b);
 }
-Object Float64_Mod(Object self, int nparams,
+Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1401,7 +1415,7 @@ Object Float64_Mod(Object self, int nparams,
     unsigned int j = (unsigned int)b;
     return alloc_Float64(i % j);
 }
-Object Float64_Equals(Object self, int nparams,
+Object Float64_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1413,7 +1427,7 @@ Object Float64_Equals(Object self, int nparams,
     }
     return alloc_Boolean(a == b);
 }
-Object Float64_LessThan(Object self, int nparams,
+Object Float64_LessThan(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1424,7 +1438,7 @@ Object Float64_LessThan(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a < b);
 }
-Object Float64_GreaterThan(Object self, int nparams,
+Object Float64_GreaterThan(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1435,7 +1449,7 @@ Object Float64_GreaterThan(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a > b);
 }
-Object Float64_LessOrEqual(Object self, int nparams,
+Object Float64_LessOrEqual(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1446,7 +1460,7 @@ Object Float64_LessOrEqual(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a <= b);
 }
-Object Float64_GreaterOrEqual(Object self, int nparams,
+Object Float64_GreaterOrEqual(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
     double a = *(double*)self->data;
@@ -1457,17 +1471,17 @@ Object Float64_GreaterOrEqual(Object self, int nparams,
         b = integerfromAny(other);
     return alloc_Boolean(a >= b);
 }
-Object Float64_Negate(Object self, int nparams,
+Object Float64_Negate(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     double a = *(double*)self->data;
     return alloc_Float64(-a);
 }
-Object Float64_asInteger32(Object self, int nparams,
+Object Float64_asInteger32(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int i = integerfromAny(self);
     return alloc_Integer32(i);
 }
-Object Float64_hashcode(Object self, int nparams,
+Object Float64_hashcode(Object self, int nparts, int *argcv,
         Object *args) {
     double *d = (double*)self->data;
     uint32_t *w1 = (uint32_t*)d;
@@ -1475,7 +1489,8 @@ Object Float64_hashcode(Object self, int nparams,
     uint32_t hc = *w1 ^ *w2;
     return alloc_Float64(hc);
 }
-Object Float64_inBase(Object self, int nparams, Object *args, int flags) {
+Object Float64_inBase(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     Object basenum = args[0];
     double based = *((double*)args[0]->data);
     double mined = *((double*)self->data);
@@ -1504,7 +1519,8 @@ Object Float64_inBase(Object self, int nparams, Object *args, int flags) {
         *(--b) = before;
     return alloc_String(b); 
 }
-Object Float64_truncate(Object self, int nparams, Object *args, int flags) {
+Object Float64_truncate(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     double *d = (double*)self->data;
     double r;
     if (*d < 0)
@@ -1573,7 +1589,7 @@ Object alloc_Float64(double num) {
         FLOAT64_TWO = o;
     return o;
 }
-Object Float64_asString(Object self, int nparams,
+Object Float64_asString(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -1590,7 +1606,7 @@ Object Float64_asString(Object self, int nparams,
     *strp = str;
     return str;
 }
-Object Boolean_asString(Object self, int nparams,
+Object Boolean_asString(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int myval = *(int8_t*)self->data;
     if (myval) {
@@ -1599,7 +1615,7 @@ Object Boolean_asString(Object self, int nparams,
         return alloc_String("false");
     }
 }
-Object Boolean_And(Object self, int nparams,
+Object Boolean_And(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     int8_t otherval = *(int8_t*)args[0]->data;
@@ -1609,7 +1625,7 @@ Object Boolean_And(Object self, int nparams,
         return alloc_Boolean(0);
     }
 }
-Object Boolean_Or(Object self, int nparams,
+Object Boolean_Or(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     int8_t otherval = *(int8_t*)args[0]->data;
@@ -1619,46 +1635,48 @@ Object Boolean_Or(Object self, int nparams,
         return alloc_Boolean(0);
     }
 }
-Object Boolean_AndAnd(Object self, int nparams,
+Object Boolean_AndAnd(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     if (!myval) {
         return self;
     }
     if (args[0]->flags & FLAG_BLOCK)
-        return callmethod(args[0], "apply", 0, NULL);
+        return callmethod(args[0], "apply", 0, NULL, NULL);
     return alloc_Boolean(istrue(args[0]));
 }
-Object Boolean_OrOr(Object self, int nparams,
+Object Boolean_OrOr(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int8_t myval = *(int8_t*)self->data;
     if (myval)
         return self;
     if (args[0]->flags & FLAG_BLOCK)
-        return callmethod(args[0], "apply", 0, NULL);
+        return callmethod(args[0], "apply", 0, NULL, NULL);
     return alloc_Boolean(istrue(args[0]));
 }
-Object Boolean_andAlso(Object self, int argc, Object *argv, int flags) {
+Object Boolean_andAlso(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     if (self == BOOLEAN_TRUE)
-        return callmethod(argv[0], "apply", 0, NULL);
+        return callmethod(argv[0], "apply", 0, NULL, NULL);
     return self;
 }
-Object Boolean_orElse(Object self, int argc, Object *argv, int flags) {
+Object Boolean_orElse(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     if (self == BOOLEAN_FALSE)
-        return callmethod(argv[0], "apply", 0, NULL);
+        return callmethod(argv[0], "apply", 0, NULL, NULL);
     return self;
 }
-Object Boolean_not(Object self, int nparams,
+Object Boolean_not(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == BOOLEAN_TRUE)
         return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-Object Boolean_Equals(Object self, int nparams,
+Object Boolean_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     return alloc_Boolean(self == args[0]);
 }
-Object Boolean_NotEquals(Object self, int nparams,
+Object Boolean_NotEquals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     return alloc_Boolean(self != args[0]);
 }
@@ -1693,13 +1711,13 @@ Object alloc_Boolean(int val) {
     gc_root(o);
     return o;
 }
-Object File_close(Object self, int nparams,
+Object File_close(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     int rv = fclose(s->file);
     return alloc_Boolean(1);
 }
-Object File_write(Object self, int nparams,
+Object File_write(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
@@ -1712,7 +1730,7 @@ Object File_write(Object self, int nparams,
     }
     return alloc_Boolean(1);
 }
-Object File_readline(Object self, int nparams,
+Object File_readline(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
@@ -1723,7 +1741,7 @@ Object File_readline(Object self, int nparams,
     Object ret = alloc_String(buf);
     return ret;
 }
-Object File_read(Object self, int nparams,
+Object File_read(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
@@ -1741,7 +1759,8 @@ Object File_read(Object self, int nparams,
     free(buf);
     return str;
 }
-Object File_readBinary(Object self, int argc, Object *argv, int flags) {
+Object File_readBinary(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     int size = integerfromAny(argv[0]);
@@ -1751,44 +1770,51 @@ Object File_readBinary(Object self, int argc, Object *argv, int flags) {
     free(buf);
     return ret;
 }
-Object File_writeBinary(Object self, int argc, Object *argv, int flags) {
+Object File_writeBinary(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     Object oct = argv[0];
     struct OctetsObject *octo = (struct OctetsObject *)oct;
-    int size = integerfromAny(callmethod(oct, "size", 0, NULL));
+    int size = integerfromAny(callmethod(oct, "size", 0, NULL, NULL));
     int pos = fwrite(octo->body, sizeof(char), size, file);
     return alloc_Float64(pos);
 }
-Object File_seek(Object self, int argc, Object *argv, int flags) {
+Object File_seek(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     int loc = integerfromAny(argv[0]);
     fseek(file, loc, SEEK_SET);
     return self;
 }
-Object File_seekForward(Object self, int argc, Object *argv, int flags) {
+Object File_seekForward(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     int loc = integerfromAny(argv[0]);
     fseek(file, loc, SEEK_CUR);
     return self;
 }
-Object File_seekBackward(Object self, int argc, Object *argv, int flags) {
+Object File_seekBackward(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     int loc = integerfromAny(argv[0]);
     fseek(file, -loc, SEEK_CUR);
     return self;
 }
-Object File_iter(Object self, int argc, Object *argv, int flags) {
+Object File_iter(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     return self;
 }
-Object File_havemore(Object self, int argc, Object *argv, int flags) {
+Object File_havemore(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     return alloc_Boolean(!feof(s->file));
 }
-Object File_next(Object self, int argc, Object *argv, int flags) {
+Object File_next(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
     char c = getc(s->file);
@@ -1801,11 +1827,13 @@ Object File_next(Object self, int argc, Object *argv, int flags) {
     *b = 0;
     return alloc_String(buf);
 }
-Object File_eof(Object self, int argc, Object *argv, int flags) {
+Object File_eof(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     return alloc_Boolean(feof(s->file));
 }
-Object File_isatty(Object self, int argc, Object *argv, int flags) {
+Object File_isatty(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     return alloc_Boolean(isatty(fileno(s->file)));
 }
@@ -1843,22 +1871,22 @@ Object alloc_File(const char *filename, const char *mode) {
     }
     return alloc_File_from_stream(file);
 }
-Object io_input(Object self, int nparams,
+Object io_input(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct IOModuleObject *s = (struct IOModuleObject*)self;
     return s->_stdin;
 }
-Object io_output(Object self, int nparams,
+Object io_output(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct IOModuleObject *s = (struct IOModuleObject*)self;
     return s->_stdout;
 }
-Object io_error(Object self, int nparams,
+Object io_error(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct IOModuleObject *s = (struct IOModuleObject*)self;
     return s->_stderr;
 }
-Object io_open(Object self, int nparams,
+Object io_open(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object fnstr = args[0];
     Object modestr = args[1];
@@ -1867,7 +1895,7 @@ Object io_open(Object self, int nparams,
     Object ret = alloc_File(fn, mode);
     return ret;
 }
-Object io_system(Object self, int nparams,
+Object io_system(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object cmdstr = args[0];
     char *cmd = grcstring(cmdstr);
@@ -1877,7 +1905,7 @@ Object io_system(Object self, int nparams,
         ret = alloc_Boolean(1);
     return ret;
 }
-Object io_newer(Object self, int nparams,
+Object io_newer(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *ba = grcstring(args[0]);
     char *bb = grcstring(args[1]);
@@ -1889,7 +1917,7 @@ Object io_newer(Object self, int nparams,
         return alloc_Boolean(1);
     return alloc_Boolean(sta.st_mtime > stb.st_mtime);
 }
-Object io_exists(Object self, int nparams,
+Object io_exists(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object so = args[0];
     struct StringObject *ss = (struct StringObject*)args[0];
@@ -1906,7 +1934,8 @@ struct ProcessObject {
     int done;
 };
 ClassData Process;
-Object Process_wait(Object self, int argc, Object *argv, int flags) {
+Object Process_wait(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct ProcessObject *p = (struct ProcessObject *)self;
     waitpid(p->pid, &(p->status), 0);
     p->done = 1;
@@ -1915,23 +1944,26 @@ Object Process_wait(Object self, int argc, Object *argv, int flags) {
     }
     return alloc_Float64(-WTERMSIG(p->status));
 }
-Object Process_status(Object self, int argc, Object *argv, int flags) {
+Object Process_status(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct ProcessObject *p = (struct ProcessObject *)self;
     if (!p->done)
-        callmethod(self, "wait", 0, NULL);
+        callmethod(self, "wait", 0, NULL, NULL);
     if (WIFEXITED(p->status)) {
         return alloc_Float64(WEXITSTATUS(p->status));
     }
     return alloc_Float64(-WTERMSIG(p->status));
 }
-Object Process_success(Object self, int argc, Object *argv, int flags) {
+Object Process_success(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct ProcessObject *p = (struct ProcessObject *)self;
     waitpid(p->pid, &(p->status), 0);
     if (WIFEXITED(p->status))
         return alloc_Boolean(WEXITSTATUS(p->status) == 0);
     return alloc_Boolean(0);
 }
-Object Process_terminated(Object self, int argc, Object *argv, int flags) {
+Object Process_terminated(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct ProcessObject *p = (struct ProcessObject *)self;
     if (p->done)
         return alloc_Boolean(1);
@@ -1957,10 +1989,11 @@ Object alloc_Process(pid_t pid) {
     p->done = 0;
     return o;
 }
-Object io_spawn(Object self, int argc, Object *argv, int flags) {
-    char *args[argc + 1];
+Object io_spawn(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    char *args[argcv[0] + 1];
     int i;
-    for (i=0; i<argc; i++)
+    for (i=0; i<argcv[0]; i++)
         args[i] = grcstring(argv[i]);
     args[i] = NULL;
     pid_t pid;
@@ -1995,7 +2028,7 @@ Object module_io_init() {
     gc_root(o);
     return o;
 }
-Object sys_argv(Object self, int nparams,
+Object sys_argv(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct SysModule *so = (struct SysModule*)self;
     return so->argv;
@@ -2004,14 +2037,14 @@ Object argv_List = NULL;
 void module_sys_init_argv(Object argv) {
     argv_List = argv;
 }
-Object sys_cputime(Object self, int nparams,
+Object sys_cputime(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int i = clock() - start_clocks;
     double d = i;
     d /= CLOCKS_PER_SEC;
     return alloc_Float64(d);
 }
-Object sys_elapsed(Object self, int nparams,
+Object sys_elapsed(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct timeval ar;
     gettimeofday(&ar, NULL);
@@ -2019,7 +2052,7 @@ Object sys_elapsed(Object self, int nparams,
     double d = now - start_time;
     return alloc_Float64(d);
 }
-Object sys_exit(Object self, int nparams,
+Object sys_exit(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int i = integerfromAny(args[0]);
     if (i == 0)
@@ -2027,7 +2060,7 @@ Object sys_exit(Object self, int nparams,
     exit(i);
     return NULL;
 }
-Object sys_execPath(Object self, int nparams,
+Object sys_execPath(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
@@ -2103,22 +2136,28 @@ struct TailCallObject {
     ClassData class;
     Object self;
     const char *name;
-    int argc;
+    int nparts;
+    int *argcv;
     Object *argv;
     int superdepth;
 };
 ClassData TailCall = NULL;
 void TailCall__mark(struct TailCallObject *t) {
     gc_mark(t->self);
-    int i;
-    for (i=0; i<t->argc; i++)
-        gc_mark(t->argv[i]);
+    int i, j;
+    int n = 0;
+    for (i = 0; i < t->nparts; i++) {
+        for (j = 0; j < t->argcv[i]; j++) {
+            gc_mark(t->argv[n]);
+            n++;
+        }
+    }
 }
 void TailCall__release(struct TailCallObject *t) {
     glfree(t->argv);
 }
-Object tailcall(Object self, const char *name, int argc, Object *argv,
-        int superdepth) {
+Object tailcall(Object self, const char *name, int nparts, int *argcv,
+        Object *argv, int superdepth) {
     if (TailCall == NULL) {
         TailCall = alloc_class3("TailCall", 0, (void*)&TailCall__mark,
                 (void*)&TailCall__release);
@@ -2130,11 +2169,23 @@ Object tailcall(Object self, const char *name, int argc, Object *argv,
     o->class = TailCall;
     o->self = self;
     o->name = name;
-    o->argc = argc;
-    o->argv = glmalloc(sizeof(Object) * argc);
-    int i;
-    for (i=0; i<argc; i++)
-        o->argv[i] = argv[i];
+    o->nparts = nparts;
+    o->argcv = argcv;
+    int i, j;
+    int n = 0;
+    for (i = 0; i < nparts; i++) {
+        for (j = 0; j < argcv[i]; j++) {
+            n++;
+        }
+    }
+    o->argv = glmalloc(sizeof(Object) * n);
+    n = 0;
+    for (i = 0; i < nparts; i++) {
+        for (j = 0; j < argcv[i]; j++) {
+            o->argv[n] = argv[n];
+            n++;
+        }
+    }
     o->superdepth = superdepth;
     return (Object)o;
 }
@@ -2194,17 +2245,22 @@ Method *findmethodsimple(Object self, const char *name) {
     int i = 0;
     return findmethod(&self, &self, name, 0, &i);
 }
-int checkmethodcall(Method *m, int argc, Object *argv) {
-    int i;
+int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
+    int i, j;
+    int k = 0;
     struct MethodType *t = m->type;
-    for (i=0; i<argc, i<t->nparams; i++) {
-        if (t->types[i])
-            if (!istrue(callmethod(t->types[i], "match", 1, &argv[i]))) {
-                die("Type error: expected %s for argument %s (%i) of %s",
-                        ((struct TypeObject *)t->types[i])->name,
-                        (struct TypeObject *)t->names[i], i + 1,
-                        m->name);
-            }
+    int argcv2[] = {1};
+    for (i = 0; i < nparts, i < t->nparts; i++) {
+        for (j = 0; j < argcv[i], j < t->argcv[i]; j++) {
+            if (t->types[k])
+                if (!istrue(callmethod(t->types[k], "match", 1, argcv2, &argv[k]))) {
+                    die("Type error: expected %s for argument %s (%i) of %s",
+                            ((struct TypeObject *)t->types[k])->name,
+                            (struct TypeObject *)t->names[k], k + 1,
+                            m->name);
+                }
+            k++;
+        }
     }
     return 1;
 }
@@ -2213,15 +2269,20 @@ int track_callgraph = 0;
 int callcount = 0;
 int tailcount = 0;
 Object callmethod3(Object self, const char *name,
-        int argc, Object *argv, int superdepth) {
+        int partc, int *argcv, Object *argv, int superdepth) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
     int frame = gc_frame_new();
     int istail = 0;
 start:
     callcount++;
-    int i = 0;
-    for (i=0; i<argc; i++)
-        debug("  arg: %p (%s)", argv[i], argv[i]->class->name);
+    int i, j;
+    int k = 0;
+    for (i = 0; i < partc; i++) {
+        for (j = 0; j < argcv[i]; j++) {
+            debug("  arg: %p (%s)", argv[k], argv[k]->class->name);
+            k++;
+        }
+    }
     int slot = gc_frame_newslot(self);
     ClassData c = self->class;
     Object realself = self;
@@ -2242,17 +2303,17 @@ start:
         die("Maximum call stack depth exceeded.");
     }
     if (m != NULL && m->type != NULL) {
-        if (!checkmethodcall(m, argc, argv))
+        if (!checkmethodcall(m, partc, argcv, argv))
             die("Type error.");
     }
     Object ret = NULL;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         calldepth--;
-        Object(*func)(Object, Object, int, Object*, int);
-        func = (Object(*)(Object, Object, int, Object*, int))m->func;
-        ret = func(self, realself, argc, argv, callflags);
+        Object(*func)(Object, Object, int, int*, Object*, int);
+        func = (Object(*)(Object, Object, int, int*, Object*, int))m->func;
+        ret = func(self, realself, partc, argcv, argv, callflags);
     } else if (m != NULL) {
-        ret = m->func(self, argc, argv, callflags);
+        ret = m->func(self, partc, argcv, argv, callflags);
         calldepth--;
         if (ret != NULL && (ret->flags & FLAG_DEAD)) {
             debug("returned freed object %p from %s.%s",
@@ -2268,7 +2329,8 @@ start:
             struct TailCallObject *t = (struct TailCallObject*)ret;
             self = t->self;
             name = t->name;
-            argc = t->argc;
+            partc = t->nparts;
+            argcv = t->argcv;
             argv = t->argv;
             superdepth = t->superdepth;
             debug("tailcall to %s on %p (%s)", name, self, self->class->name);
@@ -2286,12 +2348,13 @@ start:
             name, self->class->name);
     exit(1);
 }
-Object callmethod2(Object self, const char *name, int argc, Object *argv) {
-   return callmethod3(self, name, argc, argv, 0);
+Object callmethod2(Object self, const char *name,
+        int partc, int *argcv, Object *argv) {
+    return callmethod3(self, name, partc, argcv, argv, 0);
 }
 Object callmethod(Object receiver, const char *name,
-        int nparams, Object *args) {
-    int i;
+        int nparts, int *nparamsv, Object *args) {
+    int i, j;
     int start_calldepth = calldepth;
     if (receiver->flags & FLAG_DEAD) {
         debug("called method on freed object %p: %s.%s",
@@ -2312,10 +2375,15 @@ Object callmethod(Object receiver, const char *name,
     if (receiver == undefined) {
         die("method call on undefined value");
     }
-    for (i=0; i<nparams; i++)
-        if (args[i] == undefined)
-            die("undefined value used as argument to %s", name);
-    return callmethod2(receiver, name, nparams, (Object*)args);
+    int n = 0;
+    for (i = 0; i < nparts; i++) {
+        for (j = 0; j < nparamsv[i]; j++) {
+            if (args[n] == undefined)
+                die("undefined value used as argument to %s", name);
+            n++;
+        }
+    }
+    return callmethod2(receiver, name, nparts, nparamsv, (Object*)args);
 }
 void enable_callgraph(char *filename) {
     callgraph = fopen(filename, "w");
@@ -2332,13 +2400,14 @@ Object alloc_MatchFailed() {
 }
 Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     int i;
+    int argcv[] = {1};
     for (i=0; i<ncases; i++) {
-        Object ret = callmethod(cases[i], "match", 1, &matchee);
+        Object ret = callmethod(cases[i], "match", 1, argcv, &matchee);
         if (istrue(ret))
-            return callmethod(ret, "result", 0, NULL);
+            return callmethod(ret, "result", 0, NULL, NULL);
     }
     if (elsecase)
-        return callmethod(elsecase, "apply", 1, &matchee);
+        return callmethod(elsecase, "apply", 1, argcv, &matchee);
     return alloc_FailedMatch(matchee, NULL);
 }
 Object gracelib_print(Object receiver, int nparams,
@@ -2349,7 +2418,7 @@ Object gracelib_print(Object receiver, int nparams,
         Object o = args[i];
         if (i == nparams - 1)
             sp = "";
-        o = callmethod(o, "asString", 0, NULL);
+        o = callmethod(o, "asString", 0, NULL, NULL);
         char *s = grcstring(o);
         printf("%s%s", s, sp);
     }
@@ -2452,18 +2521,18 @@ Object gracelib_length(Object self) {
         die("null passed to gracelib_length()");
         exit(1);
     } else {
-        return callmethod(self, "length", 0, NULL);
+        return callmethod(self, "length", 0, NULL, NULL);
     }
 }
 Object *alloc_var() {
     return glmalloc(sizeof(Object));
 }
 Method* add_Method(ClassData c, const char *name,
-        Object(*func)(Object, int, Object*, int)) {
+        Object(*func)(Object, int, int*, Object*, int)) {
     int i;
     for (i=0; c->methods[i].name != NULL; i++) {
         if (strcmp(name, c->methods[i].name) == 0) {
-            Object(*tmpf)(Object, int, Object*, int) = func;
+            Object(*tmpf)(Object, int, int*, Object*, int) = func;
             func = c->methods[i].func;
             c->methods[i].func = tmpf;
             c->methods[i].flags = MFLAG_REALSELFONLY;
@@ -2477,9 +2546,15 @@ Method* add_Method(ClassData c, const char *name,
     c->nummethods++;
     return &c->methods[i];
 }
-struct MethodType *alloc_MethodType(int size) {
+struct MethodType *alloc_MethodType(int nparts, int *argcv) {
     struct MethodType *t = glmalloc(sizeof(struct MethodType));
-    t->nparams = size;
+    int size = 0;
+    int i;
+    for (i = 0; i < nparts; i++) {
+        size += argcv[i];
+    }
+    t->nparts = nparts;
+    t->argcv = argcv;
     t->types = glmalloc(sizeof(ClassData) * size);
     t->names = glmalloc(sizeof(char *) * size);
     return t;
@@ -2503,7 +2578,8 @@ Object alloc_obj(int additional_size, ClassData class) {
 Object alloc_newobj(int additional_size, ClassData class) {
     return alloc_obj(additional_size, class);
 }
-Object Type_match(Object self, int argc, Object *argv, int flags) {
+Object Type_match(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     Object obj = argv[0];
     if (obj->class == (ClassData)self)
         return alloc_SuccessfulMatch(obj, NULL);
@@ -2592,17 +2668,20 @@ ClassData alloc_class3(const char *name, int nummethods, void (*mark)(void*),
     c->release = release;
     return c;
 }
-Object Integer32_Equals(Object self, int nargs, Object *args, int flags) {
+Object Integer32_Equals(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return (Object)alloc_Boolean(ival == oval);
 }
-Object Integer32_NotEquals(Object self, int nargs, Object *args, int flags) {
+Object Integer32_NotEquals(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return (Object)alloc_Boolean(ival /= oval);
 }
-Object Integer32_Plus(Object self, int nargs, Object *args, int flags) {
+Object Integer32_Plus(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval;
     if (self->class == args[0]->class) {
@@ -2612,7 +2691,8 @@ Object Integer32_Plus(Object self, int nargs, Object *args, int flags) {
     oval = integerfromAny(args[0]);
     return (Object)alloc_Float64(ival + oval);
 }
-Object Integer32_Times(Object self, int nargs, Object *args, int flags) {
+Object Integer32_Times(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval;
     if (self->class == args[0]->class) {
@@ -2622,7 +2702,8 @@ Object Integer32_Times(Object self, int nargs, Object *args, int flags) {
     oval = integerfromAny(args[0]);
     return (Object)alloc_Float64(ival * oval);
 }
-Object Integer32_Minus(Object self, int nargs, Object *args, int flags) {
+Object Integer32_Minus(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval;
     if (self->class == args[0]->class) {
@@ -2632,7 +2713,8 @@ Object Integer32_Minus(Object self, int nargs, Object *args, int flags) {
     oval = integerfromAny(args[0]);
     return (Object)alloc_Float64(ival - oval);
 }
-Object Integer32_DividedBy(Object self, int nargs, Object *args, int flags) {
+Object Integer32_DividedBy(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval;
     if (self->class == args[0]->class) {
@@ -2642,43 +2724,51 @@ Object Integer32_DividedBy(Object self, int nargs, Object *args, int flags) {
     oval = integerfromAny(args[0]);
     return (Object)alloc_Float64(ival / oval);
 }
-Object Integer32_LShift(Object self, int nargs, Object *args, int flags) {
+Object Integer32_LShift(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return alloc_Integer32(ival << oval);
 }
-Object Integer32_RShift(Object self, int nargs, Object *args, int flags) {
+Object Integer32_RShift(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return alloc_Integer32(ival >> oval);
 }
-Object Integer32_And(Object self, int nargs, Object *args, int flags) {
+Object Integer32_And(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return alloc_Integer32(ival & oval);
 }
-Object Integer32_Or(Object self, int nargs, Object *args, int flags) {
+Object Integer32_Or(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return alloc_Integer32(ival | oval);
 }
-Object Integer32_LessThan(Object self, int nargs, Object *args, int flags) {
+Object Integer32_LessThan(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return (Object)alloc_Boolean(ival < oval);
 }
-Object Integer32_GreaterThan(Object self, int nargs, Object *args, int flags) {
+Object Integer32_GreaterThan(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     int oval = integerfromAny(args[0]);
     return (Object)alloc_Boolean(ival > oval);
 }
-Object Integer32_asString(Object self, int nargs, Object *args, int flags) {
+Object Integer32_asString(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     int ival = *(int*)self->data;
     char buf[12];
     sprintf(buf, "%i", ival);
     return (Object)alloc_String(buf);
 }
-Object Integer32_isInteger32(Object self, int nargs, Object *args, int flags) {
+Object Integer32_isInteger32(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     return (Object)alloc_Boolean(1);
 }
 ClassData Integer32 = NULL;
@@ -2720,11 +2810,12 @@ struct HashMap {
     struct HashMapPair *table;
 };
 int HashMap__findSlot(struct HashMap* h, Object key) {
-    Object ko = callmethod(key, "hashcode", 0, NULL);
+    Object ko = callmethod(key, "hashcode", 0, NULL, NULL);
     unsigned int hc = integerfromAny(ko);
     unsigned int s = hc % h->nslots;
+    int argcv[] = {1};
     while (h->table[s].key != HashMap_undefined) {
-        if (istrue(callmethod(h->table[s].key, "==", 1, &key)))
+        if (istrue(callmethod(h->table[s].key, "==", 1, argcv, &key)))
             return s;
         s = (s + 1) % h->nslots;
     }
@@ -2745,7 +2836,7 @@ int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
         for (i=0; i < oslots; i++) {
             struct HashMapPair p = old[i];
             if (p.key != HashMap_undefined) {
-                unsigned int th = integerfromAny(callmethod(p.key, "hashcode", 0, NULL));
+                unsigned int th = integerfromAny(callmethod(p.key, "hashcode", 0, NULL, NULL));
                 th %= h->nslots;
                 while (h->table[th].key != HashMap_undefined)
                     th = (th + 1) % h->nslots;
@@ -2754,7 +2845,7 @@ int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
             }
         }
         glfree(old);
-        hc = integerfromAny(callmethod(key, "hashcode", 0, NULL));
+        hc = integerfromAny(callmethod(key, "hashcode", 0, NULL, NULL));
         hc %= h->nslots;
         while (h->table[hc].key != HashMap_undefined)
             hc = (hc + 1) % h->nslots;
@@ -2762,7 +2853,8 @@ int HashMap__ensureSize(struct HashMap *h, Object key, unsigned int hc) {
     }
     return hc;
 }
-Object HashMap_contains(Object self, int nargs, Object *args, int flags) {
+Object HashMap_contains(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     unsigned int s = HashMap__findSlot(h, args[0]);
     Object tk = h->table[s].key;
@@ -2770,18 +2862,20 @@ Object HashMap_contains(Object self, int nargs, Object *args, int flags) {
         return alloc_Boolean(0);
     return alloc_Boolean(1);
 }
-Object HashMap_get(Object self, int nargs, Object *args, int flags) {
+Object HashMap_get(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     unsigned int s = HashMap__findSlot(h, args[0]);
     Object tk = h->table[s].key;
     if (tk == HashMap_undefined) {
-        Object p = callmethod(args[0], "asString", 0, NULL);
+        Object p = callmethod(args[0], "asString", 0, NULL, NULL);
         char *c = grcstring(p);
         die("key '%s' not found in HashMap.", c);
     }
     return h->table[s].value;
 }
-Object HashMap_put(Object self, int nargs, Object *args, int flags) {
+Object HashMap_put(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     unsigned int s = HashMap__findSlot(h, args[0]);
     if (h->table[s].key == HashMap_undefined) {
@@ -2792,7 +2886,8 @@ Object HashMap_put(Object self, int nargs, Object *args, int flags) {
     h->table[s].value = args[1];
     return self;
 }
-Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
+Object HashMap_asString(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     struct HashMap *h = (struct HashMap*)self;
     int i;
     gc_pause();
@@ -2800,19 +2895,20 @@ Object HashMap_asString(Object self, int nargs, Object *args, int flags) {
     Object colon = alloc_String(": ");
     Object str = alloc_String("[{");
     int first = 1;
+    int argcv2[] = {1};
     for (i=0; i<h->nslots; i++) {
         struct HashMapPair p = h->table[i];
         if (p.key == HashMap_undefined)
             continue;
         if (!first)
-            str = callmethod(str, "++", 1, &comma);
+            str = callmethod(str, "++", 1, argcv2, &comma);
         first = 0;
-        str = callmethod(str, "++", 1, &p.key);
-        str = callmethod(str, "++", 1, &colon);
-        str = callmethod(str, "++", 1, &p.value);
+        str = callmethod(str, "++", 1, argcv2, &p.key);
+        str = callmethod(str, "++", 1, argcv2, &colon);
+        str = callmethod(str, "++", 1, argcv2, &p.value);
     }
     Object cls = alloc_String("}]");
-    str = callmethod(str, "++", 1, &cls);
+    str = callmethod(str, "++", 1, argcv2, &cls);
     gc_unpause();
     return str;
 }
@@ -2850,7 +2946,8 @@ Object alloc_HashMap() {
     }
     return o;
 }
-Object HashMapClassObject_new(Object self, int nargs, Object *args, int flags) {
+Object HashMapClassObject_new(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     return alloc_HashMap();
 }
 Object HashMapClassObject;
@@ -2867,25 +2964,32 @@ Object alloc_HashMapClassObject() {
     HashMapClassObject = o;
     return o;
 }
-Object Block_apply(Object self, int nargs, Object *args, int flags) {
+Object Block_apply(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
     memcpy(return_stack[calldepth - 1], bo->retpoint,
             sizeof(return_stack[calldepth - 1]));
-    return callmethod(self, "_apply", nargs, args);
+    if (argcv != NULL)
+        return callmethod(self, "_apply", 1, argcv, args);
+    else
+        return callmethod(self, "_apply", 0, argcv, args);
 }
-Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
+Object Block_applyIndirectly(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     Object tuple = args[0];
-    Object size = callmethod(tuple, "size", 0, NULL);
+    Object size = callmethod(tuple, "size", 0, NULL, NULL);
     int sz = integerfromAny(size);
     int i;
+    int argcv2[] = {1};
     Object rargs[sz];
     for (i=0; i<sz; i++) {
         Object flt = alloc_Float64(i + 1);
-        rargs[i] = callmethod(tuple, "[]", 1, &flt);
+        rargs[i] = callmethod(tuple, "[]", 1, argcv2, &flt);
     }
-    return callmethod(self, "_apply", sz, rargs);
+    argcv2[0] = sz;
+    return callmethod(self, "_apply", 1, argcv2, rargs);
 }
-Object Block_match(Object self, int nargs, Object *args, int flags) {
+Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
     if (!bo->data[1]) {
         if (nargs != 1)
@@ -2894,14 +2998,16 @@ Object Block_match(Object self, int nargs, Object *args, int flags) {
         return alloc_SuccessfulMatch(r, NULL);
     }
     Object pattern = bo->data[1];
-    Object match = callmethod(pattern, "match", 1, args);
+    int argcv2[] = {1};
+    Object match = callmethod(pattern, "match", 1, argcv2, args);
     if (!istrue(match))
         return match;
-    Object bindings = callmethod(match, "bindings", 0, NULL);
-    Object rv = callmethod(self, "applyIndirectly", 1, &bindings);
+    Object bindings = callmethod(match, "bindings", 0, NULL, NULL);
+    Object rv = callmethod(self, "applyIndirectly", 1, argcv2, &bindings);
     return alloc_SuccessfulMatch(rv, NULL);
 }
-Object Block_pattern(Object self, int argc, Object *argv, int flags) {
+Object Block_pattern(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
     struct BlockObject *o = (struct BlockObject *)self;
     if (!o->data[1])
         return none;
@@ -2951,7 +3057,8 @@ void UserObj__mark(struct UserObject *o) {
     if (o->super)
         gc_mark(o->super);
 }
-Object UserObj_Equals(Object self, int nargs, Object *args, int flags) {
+Object UserObj_Equals(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     Object other = args[0];
     if (self == other)
         return alloc_Boolean(1);
@@ -2971,9 +3078,10 @@ Object UserObj_Equals(Object self, int nargs, Object *args, int flags) {
             Method *om = findmethodsimple(other, m->name);
             if (!om || !(om->flags & MFLAG_DEF))
                 return alloc_Boolean(0);
-            Object myval = callmethod(self, m->name, 0, NULL);
-            Object otval = callmethod(other, m->name, 0, NULL);
-            if (!istrue(callmethod(myval, "==", 1, &otval)))
+            Object myval = callmethod(self, m->name, 0, NULL, NULL);
+            Object otval = callmethod(other, m->name, 0, NULL, NULL);
+            int argcv2[] = {1};
+            if (!istrue(callmethod(myval, "==", 1, argcv2, &otval)))
                 return alloc_Boolean(0);
         } else {
             Object realself = other;
@@ -3046,8 +3154,9 @@ Object getdatum2(Object o, int index) {
 Object process_varargs(Object *args, int fixed, int nargs) {
     int i = fixed;
     Object lst = alloc_List();
+    int argcv[] = {1};
     for (; i<nargs; i++) {
-        callmethod(lst, "push", 1, &args[i]);
+        callmethod(lst, "push", 1, argcv, &args[i]);
     }
     return lst;
 }
@@ -3305,35 +3414,40 @@ int rungc() {
     }
     return freednow;
 }
-Object grace_userobj_outer(Object self, int argc, Object *argv, int flags) {
+Object grace_userobj_outer(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
     struct UserObject *o = (struct UserObject *)self;
     return o->data[0];
 }
-Object grace_while_do(Object self, int argc, Object *argv, int flags) {
-    if (argc != 2)
+Object grace_while_do(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         die("while-do requires exactly two arguments");
-    while (istrue(callmethod(argv[0], "apply", 0, NULL))) {
-        callmethod(argv[1], "apply", 0, NULL);
+    while (istrue(callmethod(argv[0], "apply", 0, NULL, NULL))) {
+        callmethod(argv[1], "apply", 0, NULL, NULL);
     }
     return none;
 }
-Object grace_for_do(Object self, int argc, Object *argv, int flags) {
-    if (argc != 2)
+Object grace_for_do(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         die("for-do requires exactly two arguments");
-    Object iter = callmethod(argv[0], "iter", 0, NULL);
+    Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
     gc_frame_newslot(iter);
-    while (istrue(callmethod(iter, "havemore", 0, NULL))) {
-        Object val = callmethod(iter, "next", 0, NULL);
-        callmethod(argv[1], "apply", 1, &val);
+    int argcv2[] = {1};
+    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL, NULL);
+        callmethod(argv[1], "apply", 1, argcv2, &val);
     }
     return none;
 }
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
-Object grace_octets(Object self, int argc, Object *argv, int flags) {
-    if (argc != 1)
+Object grace_octets(Object self, int npart, int *argcv,
+        Object *argv, int flags) {
+    if (argcv[0] != 1)
         die("octets requires exactly one argument");
     char *str = grcstring(argv[0]);
-    int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL));
+    int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL, NULL));
     if (slen % 2 != 0)
         die("octets requires an even-length string");
     int len = slen / 2;
@@ -3348,15 +3462,17 @@ Object grace_octets(Object self, int argc, Object *argv, int flags) {
     }
     return alloc_Octets(buf, len);
 }
-Object prelude__methods(Object self, int argc, Object *argv, int flags) {
+Object prelude__methods(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
     ClassData c = self->class;
     gc_pause();
     Object l = alloc_List();
     while (c != NULL) {
         int i;
+        int argcv2[] = {1};
         for (i=0; i<c->nummethods; i++) {
             Object str = alloc_String(c->methods[i].name);
-            callmethod(l, "push", 1, &str);
+            callmethod(l, "push", 1, argcv2, &str);
         }
         c = NULL;
         if (self->flags & FLAG_USEROBJ) {

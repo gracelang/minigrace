@@ -40,45 +40,45 @@ Object unicode_module = NULL;
 // Return a Grace String containing the Unicode name of the first 
 // character in the String argument (e.g.,
 // "LATIN SMALL LETTER A WITH DIARESIS").
-Object unicode_name(Object self, int nparams,
+Object unicode_name(Object self, int nparts, int *argcv,
          Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL);
+    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
     int v = integerfromAny(o);
     const char *name = Unicode_Names[v];
     return alloc_String(name);
 }
 // Return a Grace string containing the Unicode category of the first
 // character in the String argument (e.g., "Nd").
-Object unicode_category(Object self, int nparams,
+Object unicode_category(Object self, int nparts, int *argcv,
          Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, 0);
+    Object o = callmethod(args[0], "ord", 0, NULL, 0);
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
     return alloc_String(Unicode_Categories[cindex]);
 }
 // Return a Grace Number containing the Unicode combining class of
 // the first character in the String argument (e.g. 10).
-Object unicode_combining(Object self, int nparams,
+Object unicode_combining(Object self, int nparts, int *argcv,
          Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL);
+    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
     int v = integerfromAny(o);
     int cval = UnicodeRecords[v].combining;
     return alloc_Float64(cval);
 }
 // Return a Grace Boolean indicating whether the first character in
 // the argument String is marked as mirrored in the Unicode database.
-Object unicode_mirrored(Object self, int nparams,
+Object unicode_mirrored(Object self, int nparts, int *argcv,
          Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL);
+    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
     int v = integerfromAny(o);
     int cval = UnicodeRecords[v].mirrored;
     return alloc_Boolean(cval == 'Y');
 }
 // Return a Grace String indicating the bidirectionality of the first
 // character in the argument String as provided in the Unicode.
-Object unicode_bidirectional(Object self, int nparams,
+Object unicode_bidirectional(Object self, int nparts, int *argcv,
          Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL);
+    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].bidirectional;
     return alloc_String(Unicode_Bidirectionals[cindex]);
@@ -87,9 +87,9 @@ Object unicode_bidirectional(Object self, int nparams,
 // argument String is in the Unicode category given by the second. The second
 // can be either one or two characters in length, testing for either a broad
 // category (like "N") or a specific one (like "Nd").
-Object unicode_iscategory(Object self, int nparams,
+Object unicode_iscategory(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL);
+    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
     Object co = args[1];
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -105,11 +105,11 @@ Object unicode_iscategory(Object self, int nparams,
     return ret;
 }
 // Return a Grace Boolean indicating whether the argument is a separator.
-Object unicode_isSeparator(Object self, int nparams,
+Object unicode_isSeparator(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     if (strcmp(args[0]->class->name, "String") == 0) {
-        o = callmethod(args[0], "ord", 0, 0);
+        o = callmethod(args[0], "ord", 0, NULL, 0);
     }
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -118,11 +118,11 @@ Object unicode_isSeparator(Object self, int nparams,
 }
 // Return a Grace Boolean indicating whether the argument is a control
 // character.
-Object unicode_isControl(Object self, int nparams,
+Object unicode_isControl(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     if (strcmp(args[0]->class->name, "String") == 0) {
-        o = callmethod(args[0], "ord", 0, 0);
+        o = callmethod(args[0], "ord", 0, NULL, 0);
     }
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -130,11 +130,11 @@ Object unicode_isControl(Object self, int nparams,
     return alloc_Boolean(cat[0] == 'C');
 }
 // Return a Grace Boolean indicating whether the argument is a letter.
-Object unicode_isLetter(Object self, int nparams,
+Object unicode_isLetter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     if (strcmp(args[0]->class->name, "String") == 0) {
-        o = callmethod(args[0], "ord", 0, 0);
+        o = callmethod(args[0], "ord", 0, NULL, 0);
     }
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -142,11 +142,11 @@ Object unicode_isLetter(Object self, int nparams,
     return alloc_Boolean(cat[0] == 'L');
 }
 // Return a Grace Boolean indicating whether the argument is a Number.
-Object unicode_isNumber(Object self, int nparams,
+Object unicode_isNumber(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     if (strcmp(args[0]->class->name, "String") == 0) {
-        o = callmethod(args[0], "ord", 0, 0);
+        o = callmethod(args[0], "ord", 0, NULL, 0);
     }
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -155,11 +155,11 @@ Object unicode_isNumber(Object self, int nparams,
 }
 // Return a Grace Boolean indicating whether the argument is a
 // Symbol, Mathematical.
-Object unicode_isSymbolMathematical(Object self, int nparams,
+Object unicode_isSymbolMathematical(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object o = args[0];
     if (strcmp(args[0]->class->name, "String") == 0) {
-        o = callmethod(args[0], "ord", 0, 0);
+        o = callmethod(args[0], "ord", 0, NULL, 0);
     }
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
@@ -170,7 +170,7 @@ Object unicode_isSymbolMathematical(Object self, int nparams,
 // the Number argument. Strings are stored in UTF-8, so the function
 // constructs a buffer and fills it with the appropriate bytes, then
 // calls the String constructur with it.
-Object unicode_create(Object self, int nparams,
+Object unicode_create(Object self, int nparts, int *argcv,
          Object *args, int flags) {
     Object o = args[0];
     int cp = integerfromAny(o);
@@ -224,7 +224,8 @@ Object unicode_create(Object self, int nparams,
 // Find and return the character named by the String argument. Uses a
 // binary search over the Unicode_Lookups array of codepoints, which
 // is ordered lexicographically by name.
-Object unicode_lookup(Object self, int nparams, Object *args, int flags) {
+Object unicode_lookup(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
     char *target = grcstring(args[0]);
     unsigned int bot = 0;
     unsigned int top = Unicode_Lookups_Size;
@@ -235,7 +236,8 @@ Object unicode_lookup(Object self, int nparams, Object *args, int flags) {
         int c = strcmp(target, name);
         if (c == 0) {
             Object cp = alloc_Float64(codepoint);
-            return unicode_create(self, 1, &cp, 0);
+            int argcv2[] = {1};
+            return unicode_create(self, 1, argcv2, &cp, 0);
         }
         if (bot == mid) {
             bot++;

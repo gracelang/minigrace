@@ -3,6 +3,7 @@ import sys
 import ast
 import util
 import buildinfo
+import typechecker
 import subtype
 
 // genc produces C code from the AST, and optionally links and
@@ -159,10 +160,13 @@ method compilearray(o) {
     var r
     out("  Object array" ++ myc ++ " = alloc_List();")
     out("  gc_pause();")
+    var i := 0
     for (o.value) do {a ->
         r := compilenode(a)
         out("  params[0] = {r};")
-        out("  callmethod(array{myc}, \"push\", 1, params);")
+        out("  int argcv{myc}_{i}[] = \{1\};")
+        out("  callmethod(array{myc}, \"push\", 1, argcv{myc}_{i}, params);")
+        i := i + 1
     }
     out("  gc_unpause();")
     o.register := "array" ++ myc
@@ -170,7 +174,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     var l := []
-    var c := ast.astcall(o, l)
+    var c := ast.astcall(o, [l])
     var r := compilenode(c)
     o.register := r
 }
@@ -183,7 +187,7 @@ method compileobjouter(selfr, outerRef) {
     out("// OBJECT OUTER DEC " ++ enm)
     out("  adddatum2({selfr}, {outerRef}, 0);")
     outprint("Object reader_{escmodname}_{enm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject*)self;")
     outprint("  return uo->data[0];")
@@ -210,7 +214,7 @@ method compileobjdefdecmeth(o, selfr, pos) {
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -236,7 +240,7 @@ method compileobjdefdec(o, selfr, pos) {
     out("// OBJECT CONST DEC " ++ enm)
     out("  adddatum2({selfr}, {val}, {pos});")
     outprint("Object reader_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -258,7 +262,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -268,7 +272,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     len := length(nmw) + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  uo->data[{pos}] = args[0];")
@@ -290,7 +294,7 @@ method compileobjvardec(o, selfr, pos) {
     out("// OBJECT VAR DEC " ++ nm)
     out("  adddatum2({selfr}, {val}, {pos});")
     outprint("Object reader_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -300,7 +304,7 @@ method compileobjvardec(o, selfr, pos) {
     len := length(nmw) + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
-        ++ "(Object self, int nparams, "
+        ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  uo->data[{pos}] = args[0];")
@@ -309,17 +313,16 @@ method compileobjvardec(o, selfr, pos) {
     out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
 method compileclass(o) {
-    var params := o.params
+    var signature := o.signature
     def obj = ast.astobject(o.value, o.superclass)
     obj.classname := o.name.value
     var mbody := [obj]
-    var newmeth := ast.astmethod(o.constructor, params, mbody,
-        false)
+    var newmeth := ast.astmethod(o.constructor, signature, mbody, false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.astmethod(o.name, [], [o.name], false)
+        def meth = ast.astmethod(o.name, [[o.name, [], false]], [o.name], false)
         compilenode(meth)
     }
     o.register := compilenode(con)
@@ -402,8 +405,8 @@ method compileblock(o) {
     var obj := "block{myc}"
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
-    var applymeth := ast.astmethod(ast.astidentifier("_apply", false),
-        o.params, o.body, false)
+    var id := ast.astidentifier("_apply", false)
+    var applymeth := ast.astmethod(id, [[id, o.params, false]], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -438,15 +441,16 @@ method compilefor(o) {
     var obj := compilenode(blk)
     out("  gc_frame_newslot({obj});")
     out("  params[0] = {over};")
-    out("  Object iter{myc} = callmethod({over}, \"iter\", 1, params);")
+    out("  int argcv{myc}[] = \{1\};")
+    out("  Object iter{myc} = callmethod({over}, \"iter\", 1, argcv{myc}, params);")
     out("  gc_frame_newslot(iter{myc});")
     out("  int forvalslot{myc} = gc_frame_newslot(NULL);")
     out("  while(1) \{")
-    out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL);")
+    out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL, NULL);")
     out("    if (!istrue(cond{myc})) break;")
-    out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL);")
+    out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL, NULL);")
     out("    gc_frame_setslot(forvalslot{myc}, params[0]);")
-    out("    callmethod({obj}, \"apply\", 1, params);")
+    out("    callmethod({obj}, \"apply\", 1, argcv{myc}, params);")
     out("  \}")
     out("  gc_frame_end(forframe{myc});")
     o.register := "none"
@@ -471,36 +475,48 @@ method compilemethod(o, selfobj, pos) {
     auto_count := auto_count + 1
     var name := o.value.value
     var nm := name ++ myc
-    var i := o.params.size
-    var numslots := o.params.size + 1
+    var numslots := 0
     var slot := 0
     var haveTypedParams := false
-    for (o.params) do {p->
-        var pn := escapeident(p.value)
-        out("Object *var_{pn} = &(stackframe->slots[{slot}]);")
-        out("*var_{pn} = args[{slot}];")
-        declaredvars.push(pn)
-        slot := slot + 1
-        if (p.dtype != false) then {
-            if ((p.dtype.value != "Dynamic")
-                && ((p.dtype.kind == "identifier")
-                    || (p.dtype.kind == "type"))) then {
-                haveTypedParams := true
+    out("  int i;")
+    out("  int curarg = 0;")
+    out("  int pushcv[] = \{1\};")
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        for (part[2]) do { param ->
+            var pn := escapeident(param.value)
+            out("  Object *var_{pn} = &(stackframe->slots[{slot}]);")
+            out("  *var_{pn} = args[curarg];")
+            out("  curarg++;")
+            declaredvars.push(pn)
+            slot := slot + 1
+            numslots := numslots + 1
+            if (param.dtype != false) then {
+                if ((param.dtype.value != "Dynamic")
+                    && ((param.dtype.kind == "identifier")
+                        || (param.dtype.kind == "type"))) then {
+                    haveTypedParams := true
+                }
             }
         }
+        if (part[3] != false) then { // part has vararg
+            var van := escapeident(part[3].value)
+            out("  Object var_init_{van} = alloc_List();")
+            out("  for (i = {part[2].size}; i < argcv[{partnr - 1}]; i++) \{")
+            out("    callmethod(var_init_{van}, \"push\", 1, pushcv, &args[curarg]);")
+            out("    curarg++;")
+            out("  \}")
+            out("  Object *var_{van} = &(stackframe->slots[{slot}]);")
+            out("  *var_{van} = var_init_{van};")
+            declaredvars.push(van)
+            slot := slot + 1
+            numslots := numslots + 1
+        }
     }
-    out("Object *selfslot = &(stackframe->slots[{slot}]);")
-    out("*selfslot = self;")
+    out("  Object *selfslot = &(stackframe->slots[{slot}]);")
+    out("  *selfslot = self;")
     slot := slot + 1
-    if (o.varargs) then {
-        var van := escapeident(o.vararg.value)
-        out("  Object var_init_{van} = process_varargs(args, {i}, nparams);")
-        out("  Object *var_{van} = &(stackframe->slots[{slot}]);")
-        out("  *var_{van} = var_init_{van};")
-        declaredvars.push(van)
-        slot := slot + 1
-        numslots := numslots + 1
-    }
+    numslots := numslots + 1
     var ret := "none"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)
@@ -551,35 +567,42 @@ method compilemethod(o, selfobj, pos) {
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}")
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
-            out("Object {litname}(Object realself, int nparams, "
+            out("Object {litname}(Object realself, int nparts, int *argcv, "
                 ++ "Object *args, int32_t flags) \{")
             out("  struct UserObject *uo = (struct UserObject*)realself;")
         } else {
-            out("Object {litname}(Object self, int nparams, Object *args, "
+            out("Object {litname}(Object self, int nparts, int *argcv, Object *args, "
                 ++ "int32_t flags) \{")
             out("  struct UserObject *uo = (struct UserObject*)self;")
         }
         out("  Object closure = getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, getclosureframe(closure));")
     } else {
-        out("Object {litname}(Object self, int nparams, Object *args, "
+        out("Object {litname}(Object self, int nparts, int *argcv, Object *args, "
             ++ "int32_t flags) \{")
-        out("struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
+        out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
     }
     out("  int frame = gc_frame_new();")
-    out("gc_frame_newslot((Object)stackframe);")
-    out("  if (nparams < {o.params.size})")
-    out("    gracedie(\"insufficient arguments to method\");")
+    out("  gc_frame_newslot((Object)stackframe);")
+    for (o.signature.indices) do { partnr ->
+        def part = o.signature[partnr]
+        if (part[2].size > 0) then {
+            out("  if (nparts > 0 && argcv[{partnr - 1}] < {part[2].size})")
+            out("    gracedie(\"insufficient arguments to method\");")
+        }
+    }
     // We need to detect which parameters are used in a closure, and
     // treat those specially. As params[] is stack-allocated, references
     // to those variables would fail once the method was out of scope
     // unless we copied them onto the heap.
-    i := 0
+    var i := 0
     def toremove = []
-    for (o.params) do { p ->
-        var pn := escapeident(p.value)
-        if (closurevars.contains(pn)) then {
-            toremove.push(pn)
+    for (o.signature) do { part ->
+        for (part[2]) do { p ->
+            var pn := escapeident(p.value)
+            if (closurevars.contains(pn)) then {
+                toremove.push(pn)
+            }
         }
     }
     def origclosurevars = closurevars
@@ -651,24 +674,36 @@ method compilemethod(o, selfobj, pos) {
     paramsUsed := origParamsUsed
 }
 method compilemethodtypes(litname, o) {
-    out("meth_{litname}->type = alloc_MethodType({o.params.size});")
+    var argcv := "int argcv_{litname}[] = \{"
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        argcv := argcv ++ part[2].size
+        if (partnr < o.signature.size) then {
+            argcv := argcv ++ ", "
+        }
+    }
+    argcv := argcv ++ "\};"
+    out(argcv)
+    out("meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
     var pi := 0
-    for (o.params) do {p->
-        // We store information for static top-level types only:
-        // absent information is treated as Dynamic (and unchecked).
-        if (false != p.dtype) then {
-            if ((p.dtype.kind == "identifier")
-                || (p.dtype.kind == "type")) then {
-                def typeid = escapeident(p.dtype.value)
-                if (topLevelTypes.contains(typeid)) then {
-                    out("meth_{litname}->type->types[{pi}] "
-                        ++ "= type_{typeid};")
-                    out("meth_{litname}->type->names[{pi}] "
-                        ++ "= \"{escapestring2(p.value)}\";")
+    for (o.signature) do { part ->
+        for (part[2]) do { p ->
+            // We store information for static top-level types only:
+            // absent information is treated as Dynamic (and unchecked).
+            if (false != p.dtype) then {
+                if ((p.dtype.kind == "identifier")
+                    || (p.dtype.kind == "type")) then {
+                    def typeid = escapeident(p.dtype.value)
+                    if (topLevelTypes.contains(typeid)) then {
+                        out("meth_{litname}->type->types[{pi}] "
+                            ++ "= type_{typeid};")
+                        out("meth_{litname}->type->names[{pi}] "
+                            ++ "= \"{escapestring2(p.value)}\";")
+                    }
                 }
             }
+            pi := pi + 1
         }
-        pi := pi + 1
     }
 }
 method compilewhile(o) {
@@ -795,17 +830,17 @@ method compilebind(o) {
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
-        out("    callmethod(none, \"assignment\", 0, NULL);")
+        out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
         auto_count := auto_count + 1
         o.register := val
     } elseif (dest.kind == "member") then {
         dest.value := dest.value ++ ":="
-        c := ast.astcall(dest, [o.value])
+        c := ast.astcall(dest, [[o.value]])
         r := compilenode(c)
         o.register := r
     } elseif (dest.kind == "index") then {
         var imem := ast.astmember("[]:=", dest.value)
-        c := ast.astcall(imem, [dest.index, o.value])
+        c := ast.astcall(imem, [[dest.index, o.value]])
         r := compilenode(c)
         o.register := r
     }
@@ -827,9 +862,9 @@ method compiledefdec(o) {
     }
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
-    out("    callmethod(none, \"assignment\", 0, NULL);")
+    out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        compilenode(ast.astmethod(o.name, [[o.name, [], false]], [o.name], false))
     }
     o.register := "none"
 }
@@ -847,13 +882,13 @@ method compilevardec(o) {
     out("  *var_{nm} = {val};")
     if (hadval) then {
         out("  if ({val} == undefined)")
-        out("    callmethod(none, \"assignment\", 0, NULL);")
+        out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        compilenode(ast.astmethod(o.name, [[o.name, [], false]], [o.name], false))
         def assignID = ast.astidentifier(o.name.value ++ ":=", false)
         def tmpID = ast.astidentifier("_var_assign_tmp", false)
-        compilenode(ast.astmethod(assignID, [tmpID],
+        compilenode(ast.astmethod(assignID, [[assignID, [tmpID], false]],
             [ast.astbind(o.name, tmpID)], false))
     }
     o.register := "none"
@@ -863,7 +898,8 @@ method compileindex(o) {
     var index := compilenode(o.index)
     out("  params[0] = {index};")
     out("  gc_frame_newslot(params[0]);")
-    out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, params);")
+    out("  int argcv{auto_count}[] = \{1\};")
+    out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, argcv{auto_count}, params);")
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
@@ -924,8 +960,9 @@ method compileop(o) {
             rnm := "modulus"
         }
         out("  params[0] = {right};")
+        out("  int argcv{auto_count}[] = \{1\};")
         out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.value}\", "
-            ++ "1, params);")
+            ++ "1, argcv{auto_count}, params);")
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
     } else {
@@ -934,8 +971,9 @@ method compileop(o) {
         var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         out("  params[0] = {right};")
+        out("  int argcv{auto_count}[] = \{1\};")
         out("  Object opresult{auto_count} = "
-            ++ "callmethod({left}, \"{o.value}\", 1, params);")
+            ++ "callmethod({left}, \"{o.value}\", 1, argcv{auto_count}, params);")
         o.register := "opresult" ++ auto_count
         auto_count := auto_count + 1
     }
@@ -949,10 +987,12 @@ method compilecall(o, tailcall) {
     var evl
     var i := 0
     out("  int callframe{myc} = gc_frame_new();")
-    for (o.with) do { p ->
-        var r := compilenode(p)
-        args.push(r)
-        out("  gc_frame_newslot({r});")
+    for (o.with) do { part ->
+        for (part) do { p ->
+            var r := compilenode(p)
+            args.push(r)
+            out("  gc_frame_newslot({r});")
+        }
     }
     if (args.size > paramsUsed) then {
         paramsUsed := args.size
@@ -960,52 +1000,88 @@ method compilecall(o, tailcall) {
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "super")}) then {
+        var argcv := "  int argcv{auto_count}[] = \{"
+        for (1..o.with.size) do { partnr ->
+            argcv := argcv ++ o.with[partnr].size
+            if (partnr < o.with.size) then {
+                argcv := argcv ++ ", "
+            }
+        }
+        argcv := argcv ++ "\};"
+        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "{args.size}, params, ((flags >> 24) & 0xff) + 1);")
+            ++ "{o.with.size}, argcv{auto_count}, params, ((flags >> 24) & 0xff) + 1);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "self") & (o.value.value == "outer")}
         ) then {
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "0, NULL, ((flags >> 24) & 0xff));")
+            ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
+        var argcv := "  int argcv{auto_count}[] = \{"
+        for (1..o.with.size) do { partnr ->
+            argcv := argcv ++ o.with[partnr].size
+            if (partnr < o.with.size) then {
+                argcv := argcv ++ ", "
+            }
+        }
+        argcv := argcv ++ "\};"
+        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
         out("  Object call{auto_count} = callmethod(prelude, \"{evl}\", "
-            ++ "{args.size}, params);")
+            ++ "{o.with.size}, argcv{auto_count}, params);")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
+        var argcv := "  int argcv{auto_count}[] = \{"
+        for (1..o.with.size) do { partnr ->
+            argcv := argcv ++ o.with[partnr].size
+            if (partnr < o.with.size) then {
+                argcv := argcv ++ ", "
+            }
+        }
+        argcv := argcv ++ "\};"
+        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
-            out("    {args.size}, params, 0);")
+            out("    {o.with.size}, argcv{auto_count}, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-            out("    {args.size}, params);")
+            out("    {o.with.size}, argcv{auto_count}, params);")
         }
     } else {
         obj := "self"
         len := length(o.value.value) + 1
+        var argcv := "  int argcv{auto_count}[] = \{"
+        for (1..o.with.size) do { partnr ->
+            argcv := argcv ++ o.with[partnr].size
+            if (partnr < o.with.size) then {
+                argcv := argcv ++ ", "
+            }
+        }
+        argcv := argcv ++ "\};"
+        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
-            out("    {args.size}, params, 0);")
+            out("    {o.with.size}, argcv{auto_count}, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {args.size}, params);")
+            out("    {o.with.size}, argcv{auto_count}, arams);")
         }
     }
     out("  gc_frame_end(callframe{myc});")
@@ -1176,7 +1252,7 @@ method compilenode(o) {
     if ((o.kind == "call")) then {
         if (o.value.value == "print") then {
             var args := []
-            for (o.with) do { prm ->
+            for (o.with[1]) do { prm ->
                 var r := compilenode(prm)
                 args.push(r)
             }
@@ -1193,18 +1269,18 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "length")}) then {
-            tmp := compilenode(o.with.first)
+            tmp := compilenode(o.with[1].first)
             out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
-            if (o.with.size == 0) then {
+            if (o.with[1].size == 0) then {
                 out("; PP FOLLOWS")
                 out(o.pretty(0))
                 tmp := "null"
             } else {
-                tmp := compilenode(o.with.first)
+                tmp := compilenode(o.with[1].first)
             }
             out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
@@ -1213,15 +1289,15 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "escapestring")}) then {
-            tmp := o.with.first
+            tmp := o.with[1].first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [])
+            tmp := ast.astcall(tmp, [[]])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
-            tmp := o.with.first
+            tmp := o.with[1].first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [])
+            tmp := ast.astcall(tmp, [[]])
             o.register := compilenode(tmp)
         } else {
             compilecall(o, false)
@@ -1495,9 +1571,10 @@ method compile(vl, of, mn, rm, bt) {
         out("  none = alloc_none();")
         out("  Object tmp_argv = alloc_List();")
         out("  gc_root(tmp_argv);")
+        out("  int argcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
         out("    params[0] = alloc_String(argv[i]);")
-        out("    callmethod(tmp_argv, \"push\", 1,params);")
+        out("    callmethod(tmp_argv, \"push\", 1, argcv_push, params);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
         out("  module_{escmodname}_init();")

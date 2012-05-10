@@ -180,18 +180,21 @@ method checkThat(a)mayBeSubtypeOf(b) {
                 if (simpleCheckThat(findType(am.rtype))mayBeSubtypeOf(findType(bm.rtype)).not) then {
                     return false
                 }
-                if (am.params.size /= bm.params.size) then {
+                if (am.signature.size != bm.signature.size) then {
                     return false
                 }
-                if (am.params.size > 0) then {
-                    def mini = am.params.indices.first
-                    def maxi = am.params.indices.last
-                    def range = mini..maxi
-                    for (range) do {i->
-                        def ap = am.params.at(i)
-                        def bp = bm.params.at(i)
-                        if (simpleCheckThat(findType(bp.dtype))mayBeSubtypeOf(findType(ap.dtype)).not) then {
+                if (am.signature.first[2].size > 0) then {
+                    for (am.signature.indices) do { partnr ->
+                        if (am.signature[partnr].size != bm.signature[partnr].size) then {
                             return false
+                        }
+                        var part := am.signature[partnr]
+                        for (part[2].indices) do { i ->
+                            def ap = am.signature[partnr][2][i]
+                            def bp = bm.signature[partnr][2][i]
+                            if (simpleCheckThat(findType(bp.dtype))mayBeSubtypeOf(findType(ap.dtype)).not) then {
+                                return false
+                            }
                         }
                     }
                 }
