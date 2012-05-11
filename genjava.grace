@@ -630,7 +630,7 @@ method compileIdentifier(node, scope: Scope) -> String {
 
 method compileSelf(scope: Scope) -> String {
     scope.line("private final {obj} self = this") ++
-        scope.line("private final {obj} $super = this.$super")
+        scope.line("private final {obj} $super = getSuper()")
 }
 
 method makeInvoke(scope: Scope) -> String {
