@@ -24,7 +24,7 @@ install: minigrace
 	cp minigrace gracelib.h gracelib.o unicode.gso $(PREFIX)/bin
 
 test: minigrace
-	./tests/harness "$(shell pwd)/minigrace" tests ""
+	./tests/harness "../minigrace" tests ""
 
 buildclean:
 	rm -rf *.gcn minigrace unicode.gso gracelib.o bin Makefile.conf

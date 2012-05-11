@@ -91,12 +91,12 @@ unicode.gco: unicode.c unicodedata.h
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
-	./tests/harness "$(shell pwd)/minigrace" tests ""
+	./tests/harness "../minigrace" tests ""
 fulltest: gencheck clean selfhost-rec selftest test llvmtest
 javatest: minigrace
-	./tests/harness "$(shell pwd)/minigrace --target java --gracelib $(shell pwd)/java" tests "java -classpath .:$(shell pwd)/java"
+	./tests/harness "../minigrace --target java --gracelib ../java" tests "java -classpath .:../java"
 javajavatest: java
-	./tests/harness "$(shell pwd)/java/minigracej" tests "java -classpath .:$(shell pwd)/java"
+	./tests/harness "../java/minigracej" tests "java -classpath .:../java"
 backendtests: test javatest
 
 java: minigrace $(SOURCEFILES)
