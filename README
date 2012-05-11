@@ -1,8 +1,9 @@
 A compiler for the Grace language.
 
 Minigrace compiles Grace to C and JavaScript, and experimentally to
-Java. It supports most of the specified language to date. The compiler
-is written in Grace itself.
+Java. The compiler is written in Grace itself. It supports most of the
+specified language to date: for details on current language feature
+support see <doc/errata>.
 
 Minigrace should work on POSIX-compliant systems, and is known to work
 on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
@@ -74,3 +75,15 @@ be required in many cases:
   LIBRARY_PATH
 The script c/environ-Darwin attempts to detect and set up these
 variables correctly.
+
+It is unknown whether the compiler works under Cygwin, but any failures
+there should be considered bugs and reported.
+
+
+Interoperability
+----------------
+None.
+
+No backend or platform provides foreign functions or access to the
+underlying platform. Manual platform glue code may be possible to bind
+particular functionality; see <doc/interop> for details.

@@ -1,0 +1,55 @@
+Minigrace supports most of the specified dynamically-typed language, and
+a static structural type-checker. It does not yet support:
+- Exceptions (catch/case)
+- Generics
+- Anonymous types
+- Overriding the if-then-else construct: only the built-in construct may
+  begin with "if()". for()do and while()do can be used as any ordinary
+  method.
+- Parenthesised patterns
+
+Some functionality is incomplete:
+- Runtime type checks use only method names and not any other type
+  information. This applies both to pattern-matching and to gradual
+  checks at method boundaries.
+- Variadic parameters and arguments may only appear after the final word
+  of a method name.
+
+The compiler also supports the following extensions used internally,
+which are not part of the language and are subject to change:
+- Lists, constructed with [] and supporting indexing with [] and []:=
+  and methods length, push, pop, first, last, and indices.
+- Maps, created using HashMap.new, and supporting methods put(key,
+  value), get(key), and contains(key).
+- Multiple modules with separate compilation. A file foo.grace defines a
+  module foo, which can be accessed in another module using "import
+  foo". Types do not cross module boundaries. All methods and top-level
+  var and def statements bind methods on the module object.
+- Methods defined in the prelude can always be accessed through the
+  implicitly-bound "prelude" object.
+- Character codes for length-one strings can be obtained with the "ord"
+  method.
+- Access to the filesystem through the io module. io contains these
+  methods:
+  * input returning a file object for standard input
+  * output returning a file object for standard output
+  * error returning a file object for standard error
+  * open(path, modestr) returning a file object for path
+  * system(command) executing command as a subprocess, returning true
+    if the command exited successfully and false otherwise
+  * spawn(*cmd) executes cmd as a possibly-asynchronous subprocess,
+    returning a Process object
+  * exists(path) returning true if the given path exists
+  * newer(x, y) returning true if x is newer than y
+  File objects have these methods:
+  * read returns the contents of the file as a string
+  * write writes the given string to the file
+  * seek seeks to the given position
+  * eof is true if the file is at EOF
+  * File objects are also iterable by character
+  Process objects have these methods:
+  * wait returns the exit code when the subprocess terminates
+  * status returns the exit code
+  * success returns true if the process exited 0
+  * terminated returns true if the process has terminated
+- if-then-elseif-elseif-...-else with the standard C-like syntax
