@@ -183,15 +183,15 @@ method checkThat(a)mayBeSubtypeOf(b) {
                 if (am.signature.size != bm.signature.size) then {
                     return false
                 }
-                if (am.signature.first[2].size > 0) then {
+                if (am.signature.first.params.size > 0) then {
                     for (am.signature.indices) do { partnr ->
-                        if (am.signature[partnr].size != bm.signature[partnr].size) then {
+                        if (am.signature[partnr].params.size != bm.signature[partnr].params.size) then {
                             return false
                         }
                         var part := am.signature[partnr]
-                        for (part[2].indices) do { i ->
-                            def ap = am.signature[partnr][2][i]
-                            def bp = bm.signature[partnr][2][i]
+                        for (part.params.indices) do { i ->
+                            def ap = am.signature[partnr].params[i]
+                            def bp = bm.signature[partnr].params[i]
                             if (simpleCheckThat(findType(bp.dtype))mayBeSubtypeOf(findType(ap.dtype)).not) then {
                                 return false
                             }

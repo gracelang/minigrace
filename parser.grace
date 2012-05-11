@@ -1213,7 +1213,7 @@ method doclassOld {
                 var p := rbody.pop
                 body.push(p)
             }
-            var o := ast.astclass(cname, [[cname.value, params, false]],
+            var o := ast.astclass(cname, [ast.SignaturePart.new(cname.value, params)],
                 body, superclass, ast.astidentifier("new", false))
             values.push(o)
         } else {
@@ -1288,15 +1288,12 @@ method parsempmndecrest(tm) {
     var nxt
     while {accept("identifier")} do {
         methname := methname ++ "()"
-        var part := []
+        var part := ast.SignaturePart.new
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
-        part.push(nxt.value)
-        var params := []
-        part.push(params)
+        part.name := nxt.value
         var vararg := false
-        part.push(false)
         if ((accept("lparen")).not) then {
             util.syntax_error("multi-part method name parameters require ().")
         }
@@ -1320,11 +1317,11 @@ method parsempmndecrest(tm) {
                 nxt.dtype := tp
             }
             if (vararg) then {
-                part[3] := nxt
+                part.vararg := nxt
                 tm.varargs := true
                 expect("rparen")
             } else {
-                params.push(nxt)
+                part.params.push(nxt)
             }
             if (accept("comma")) then {
                 next
@@ -1343,10 +1340,10 @@ method methodsignature {
     pushidentifier
     var meth := ast.astidentifier("", false)
     var signature := []
-    var part := []
+    var part := ast.SignaturePart.new
     signature.push(part)
-    part.push(values.pop)
-    meth.value := meth.value ++ part[1].value
+    part.name := values.pop
+    meth.value := meth.value ++ part.name.value
     if (meth.value == "[") then {
         expect("rsquare")
         next
@@ -1359,12 +1356,9 @@ method methodsignature {
         meth.value := meth.value ++ sym.value
         next
     }
-    var params := []
-    part.push(params)
     var dtype := false
     var varargs := false
     var vararg := false
-    part.push(false)
     if (accept("lparen")) then {
         next
         var id
@@ -1391,10 +1385,10 @@ method methodsignature {
             }
             id.dtype := dtype
             if (vararg) then {
-                part[3] := id
+                part.vararg := id
                 expect("rparen")
             } else {
-                params.push(id)
+                part.params.push(id)
             }
             if (accept("comma")) then {
                 next

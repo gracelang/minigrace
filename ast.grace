@@ -291,7 +291,6 @@ method astcall(what, with') {
         def kind = "call"
         def value = what
         def with = with'
-        var meth := false
         def line = 0 + util.linenum
         var register := ""
         method pretty(depth) {
@@ -642,3 +641,39 @@ method astinherits(expr) {
         }
     }
 }
+
+method SignaturePart {
+    object {
+        method new(*values) {
+            object {
+                var name := ""
+                var params := []
+                var vararg := false
+                if (values.size > 0) then {
+                    name := values[1]
+                }
+                if (values.size > 1) then {
+                    params := values[2]
+                }
+                if (values.size > 2) then {
+                    vararg := values[3]
+                }
+            }
+        }
+    }
+}
+
+// class SignaturePart.new(*values) {
+//     var name := ""
+//     var params := []
+//     var vararg := false
+//     if (values.size > 0) then {
+//         name := values[1]
+//     }
+//     if (values.size > 1) then {
+//         params := values[2]
+//     }
+//     if (values.size > 2) then {
+//         vararg := values[3]
+//     }
+// }

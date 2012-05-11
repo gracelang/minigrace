@@ -3,7 +3,6 @@ import sys
 import ast
 import util
 import buildinfo
-import typechecker
 import subtype
 
 // genc produces C code from the AST, and optionally links and
@@ -322,7 +321,7 @@ method compileclass(o) {
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.astmethod(o.name, [[o.name, [], false]], [o.name], false)
+        def meth = ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false)
         compilenode(meth)
     }
     o.register := compilenode(con)
@@ -406,7 +405,7 @@ method compileblock(o) {
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
     var id := ast.astidentifier("_apply", false)
-    var applymeth := ast.astmethod(id, [[id, o.params, false]], o.body, false)
+    var applymeth := ast.astmethod(id, [ast.SignaturePart.new(id, o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -483,7 +482,7 @@ method compilemethod(o, selfobj, pos) {
     out("  int pushcv[] = \{1\};")
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
-        for (part[2]) do { param ->
+        for (part.params) do { param ->
             var pn := escapeident(param.value)
             out("  Object *var_{pn} = &(stackframe->slots[{slot}]);")
             out("  *var_{pn} = args[curarg];")
@@ -499,10 +498,10 @@ method compilemethod(o, selfobj, pos) {
                 }
             }
         }
-        if (part[3] != false) then { // part has vararg
-            var van := escapeident(part[3].value)
+        if (part.vararg != false) then { // part has vararg
+            var van := escapeident(part.vararg.value)
             out("  Object var_init_{van} = alloc_List();")
-            out("  for (i = {part[2].size}; i < argcv[{partnr - 1}]; i++) \{")
+            out("  for (i = {part.params.size}; i < argcv[{partnr - 1}]; i++) \{")
             out("    callmethod(var_init_{van}, \"push\", 1, pushcv, &args[curarg]);")
             out("    curarg++;")
             out("  \}")
@@ -586,8 +585,8 @@ method compilemethod(o, selfobj, pos) {
     out("  gc_frame_newslot((Object)stackframe);")
     for (o.signature.indices) do { partnr ->
         def part = o.signature[partnr]
-        if (part[2].size > 0) then {
-            out("  if (nparts > 0 && argcv[{partnr - 1}] < {part[2].size})")
+        if (part.params.size > 0) then {
+            out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
             out("    gracedie(\"insufficient arguments to method\");")
         }
     }
@@ -598,7 +597,7 @@ method compilemethod(o, selfobj, pos) {
     var i := 0
     def toremove = []
     for (o.signature) do { part ->
-        for (part[2]) do { p ->
+        for (part.params) do { p ->
             var pn := escapeident(p.value)
             if (closurevars.contains(pn)) then {
                 toremove.push(pn)
@@ -677,7 +676,7 @@ method compilemethodtypes(litname, o) {
     var argcv := "int argcv_{litname}[] = \{"
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
-        argcv := argcv ++ part[2].size
+        argcv := argcv ++ part.params.size
         if (partnr < o.signature.size) then {
             argcv := argcv ++ ", "
         }
@@ -687,7 +686,7 @@ method compilemethodtypes(litname, o) {
     out("meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
     var pi := 0
     for (o.signature) do { part ->
-        for (part[2]) do { p ->
+        for (part.params) do { p ->
             // We store information for static top-level types only:
             // absent information is treated as Dynamic (and unchecked).
             if (false != p.dtype) then {
@@ -864,7 +863,7 @@ method compiledefdec(o) {
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [[o.name, [], false]], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false))
     }
     o.register := "none"
 }
@@ -885,10 +884,10 @@ method compilevardec(o) {
         out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [[o.name, [], false]], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false))
         def assignID = ast.astidentifier(o.name.value ++ ":=", false)
         def tmpID = ast.astidentifier("_var_assign_tmp", false)
-        compilenode(ast.astmethod(assignID, [[assignID, [tmpID], false]],
+        compilenode(ast.astmethod(assignID, [ast.SignaturePart.new(assignID, [tmpID])],
             [ast.astbind(o.name, tmpID)], false))
     }
     o.register := "none"
