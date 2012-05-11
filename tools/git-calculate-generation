@@ -1,28 +1,40 @@
 #!/bin/bash
 
 set -e
+. "$(dirname $0)"/generations.dat
 mkdir -p .git-generation-cache
 ct=0
 RV=$1
 [ "$RV" ] || RV=HEAD
-h=$(git rev-parse $RV)
-if [ -e .git-generation-cache/$h ]
-then
-    cat .git-generation-cache/$h
-    exit 0
-fi
-for par in $(git show --format=%P -s $h)
-do
-    if [ -e .git-generation-cache/$par ]
+
+findgen() {
+    local RV=$1
+    h=$(git rev-parse $RV)
+    if [ "${known[$h]}" ]
     then
-        nct=$(cat .git-generation-cache/$par)
-    else
-        nct=$($0 $par)
+        echo ${known[$h]}
+        return 0
     fi
-    if [ $nct -ge $ct ]
+    if [ -e .git-generation-cache/$h ]
     then
-        ct=$((nct + 1))
+        cat .git-generation-cache/$h
+        return 0
     fi
-done
-echo $ct > .git-generation-cache/$h
-echo $ct
+    for par in $(git show --format=%P -s $h)
+    do
+        if [ -e .git-generation-cache/$par ]
+        then
+            nct=$(cat .git-generation-cache/$par)
+        else
+            nct=$($0 $par)
+        fi
+        if [ $nct -ge $ct ]
+        then
+            ct=$((nct + 1))
+        fi
+    done
+    echo $ct > .git-generation-cache/$h
+    echo $ct
+}
+
+findgen "$RV"
