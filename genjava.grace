@@ -332,7 +332,7 @@ method compileMethod(node, scope: Scope) -> String {
 
 method compileType(node, scope: Scope) -> String {
     "{node.value} = new GraceType(" ++ join(map(node.methods) with { meth ->
-        "new GraceMethod(\"{meth.value}\")"
+        "\"{meth.value}\""
     }) separatedBy(", ") ++ ")"
 }
 
@@ -630,7 +630,7 @@ method compileIdentifier(node, scope: Scope) -> String {
 
 method compileSelf(scope: Scope) -> String {
     scope.line("private final {obj} self = this") ++
-        scope.line("private final {obj} $super = getSuper()")
+        scope.line("private final {obj} $super = this.$super")
 }
 
 method makeInvoke(scope: Scope) -> String {
