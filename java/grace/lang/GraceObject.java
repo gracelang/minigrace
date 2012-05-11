@@ -2,10 +2,9 @@ package grace.lang;
 
 import grace.lib.prelude;
 
-import java.lang.reflect.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.HashMap;
 
 public class GraceObject implements Iterable<GraceObject>,
                                     Iterator<GraceObject> {
@@ -14,11 +13,24 @@ public class GraceObject implements Iterable<GraceObject>,
 
   public static final GraceObject $true = GraceBoolean.graceTrue;
   public static final GraceObject $false = GraceBoolean.graceFalse;
+  
+  public static final GraceObject $num(double num) {
+  	return new GraceNumber(num);
+  }
+  
+  public static final GraceObject $str(String str) {
+  	return new GraceString(str);
+  }
+  
+  public static final GraceObject $list(GraceObject... els) {
+  	return new GraceList(els);
+  }
 
   public static final GraceObject MatchFailed = new GraceObject();
 
   public static final GraceObject HashMap = new GraceObject() {
-    public GraceObject $new() {
+    @SuppressWarnings("unused")
+		public GraceObject $new() {
       return new GraceHashMap();
     }
   };
@@ -86,7 +98,7 @@ public class GraceObject implements Iterable<GraceObject>,
 
   private GraceObject self;
 
-  private final GraceObject $super;
+  public final GraceObject $super;
 
   public final GraceObject outer;
 
@@ -127,10 +139,6 @@ public class GraceObject implements Iterable<GraceObject>,
 
   public GraceObject getSelf() {
     return self;
-  }
-
-  public GraceObject getSuper() {
-    return $super;
   }
 
   public GraceObject $match(GraceObject m, GraceBlock e, GraceBlock... cs) {

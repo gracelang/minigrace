@@ -222,8 +222,6 @@ public final class io extends GraceObject {
     private FileReader reader = null;
     private FileWriter writer = null;
 
-    private boolean closed = false;
-
     private GraceFile(File file, String mode) {
       if (!file.exists()) {
         if (mode.startsWith("r")) {

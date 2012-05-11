@@ -7,10 +7,6 @@ import util
 
 def obj = "GraceObject"
 def blk = "GraceBlock"
-def bln = "GraceBoolean"
-def num = "GraceNumber"
-def str = "GraceString"
-def lst = "GraceList"
 def ret = "GraceReturn"
 
 
@@ -501,7 +497,7 @@ method compileInherits(node, scope: Scope) -> String {
 }
 
 method compileNumber(node, scope: Scope) -> String {
-    "new {num}({node.value})"
+    "$num({node.value})"
 }
 
 method compileString(node, scope: Scope) -> String {
@@ -524,7 +520,7 @@ method compileString(node, scope: Scope) -> String {
         }
     })
 
-    "new {str}(\"{value}\")"
+    "$str(\"{value}\")"
 }
 
 method compileIndex(node, scope: Scope) -> String {
@@ -564,7 +560,7 @@ method compileArray(node, scope: Scope) -> String {
         compileExpression(value, scope)
     }) separatedBy(", ")
 
-    "new {lst}({values})"
+    "$list({values})"
 }
 
 method compileObject(node, scope: Scope) -> String {
@@ -834,7 +830,7 @@ def keywords = ["package", "import", "class", "this", "super", "null", "new",
                 "public", "protected", "private", "static", "final", "extends",
                 "if", "else", "for", "while", "do", "switch", "case",
                 "default", "synchronized", "volatile", "return", "wait",
-                "true", "false", obj, blk, bln, num, str, lst, ret]
+                "true", "false", obj, blk, ret]
 
 method escape(ident: String) -> String {
     if(keywords.contains(ident)) then {
