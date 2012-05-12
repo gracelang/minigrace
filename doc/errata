@@ -15,6 +15,8 @@ Some functionality is incomplete:
 - Variadic parameters and arguments may only appear after the final word
   of a method name.
 - Numeric literals in non-decimal bases may only be integral.
+- Interpolated code inside string literals may not contain a right brace
+  in any context.
 
 The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:
