@@ -15,7 +15,7 @@ import subtype
 
 util.parseargs
 
-def targets = ["lex", "parse", "subtypematrix", "llvm29", "c", "js", "java"]
+def targets = ["lex", "parse", "processed-ast", "subtypematrix", "c", "js", "java"]
 
 if (util.target == "help") then {
     print("Valid targets:")
