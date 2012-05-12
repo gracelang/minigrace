@@ -17,6 +17,8 @@ bootstrap from one of the release tarballs. Running
 tools/tarball-bootstrap will provide instructions on finding and using
 this tarball.
 
+A tarball distribution can be compiled using `./configure` and `make`.
+
 After building there will be a `minigrace` executable in the root. This
 executable supports a few different modes and options:
 - Execute a script in the simplest way possible:
