@@ -1,0 +1,103 @@
+Minigrace supports Unicode programs and data. This document describes
+the intended behaviour of the compiler and runtime relating to this
+feature.
+
+The JavaScript runtime does not have access to the Unicode Character
+Database, and so does not support any of these functionalities.
+
+Grace source code is written in Unicode. Minigrace recognises only the
+UTF-8 encoding, which is compatible with US-ASCII. Source text should
+not contain byte-order marks.
+
+String data is stored in a Unicode format. The ord method on strings
+returns the first codepoint in the string as a number. The length of the
+string is the number of codepoints. Combining characters are regarded as
+separate codepoints for this purpose and for iteration and indexing.
+Minigrace does not normalise any input and does not currently provide
+any means for doing so.
+
+String literals may contain escape sequences referring to Unicode
+characters. The following escape sequences are supported:
+ \n       LINE FEED (U+000a)
+ \t       CHARACTER TABULATION (U+0009)
+ \r       CARRIAGE RETURN (U+000d)
+ \l       LINE SEPARATOR (U+2028)
+ \b       BACKSPACE (U+0008)
+ \f       FORM FEED (U+000c)
+ \e       ESCAPE (U+001b)
+ \\       REVERSE SOLIDUS (U+005c)
+ \"       QUOTATION MARK (U+0022)
+ \{       LEFT CURLY BRACKET (U+007b)
+ \uXXXX   BMP character with hexadecimal codepoint U+XXXX (lower case)
+ \UXXXXXX Character with hexadecimal codepoint U+XXXXXX (lower case)
+Literal instances of any character except those with one-character
+escapes are also permitted.
+
+Ordinary identifiers must begin with members of one of the following
+Unicode categories:
+  LC Letter, Cased
+  Ll Letter, Lowercase
+  Lm Letter, Modifier
+  Lo Letter, Other
+  Lt Letter, Titlecase
+  Lu Letter, Uppercase
+Ordinary identifiers may also contain members of the following Unicode
+categories:
+  Nd Number, Decimal Digit
+  Nl Number, Letter
+  No Number, Other
+Identifiers may also contain these characters:
+  ' APOSTROPHE (U+0027)
+  _ LOW LINE (U+005f)
+Method names may additionally:
+- Contain the sequence ":=" at the end of any otherwise valid
+  single-word name.
+- Be "[]" or "[]:=".
+
+Operators consist of one or more characters drawn from the following:
+  - HYPHEN-MINUS (U+002d)
+  & AMPERSAND (U+0036)
+  | VERTICAL LINE (U+007c)
+  : COLON (U+003a)
+  % PERCENT SIGN (U+0025)
+  ^ CIRCUMFLEX ACCENT (U+005e)
+  * ASTERISK (U+002a)
+  / SOLIDUS (U+002f)
+  + PLUS SIGN (U+002b)
+  ! EXCLAMATION MARK (U+0021)
+    Any member of the Unicode category Sm Symbol, Mathematical
+The sequence ".." is also an operator.
+
+Ordinary numeric literals may contain only the ASCII digits 0-9 and
+U+002e FULL STOP. No other Unicode digits or numeric values are
+permitted or interpreted. Literals in non-standard bases may be written
+in the form:
+  BxNNNNN...
+where B is the base in decimal and N is drawn from the first B
+characters of "0123456789abcdefghijklmnopqrstuvwxyz", all the ASCII
+digits in order followed by all the lower-case ASCII letters in order.
+B may range from 0 to 36 but not be 1. The special base of 0 is
+equivalent to 16.
+
+Programs may not contain any control or separator characters other than:
+  U+000a LINE FEED
+  U+000d CARRIAGE RETURN
+  U+0020 SPACE
+  U+2028 LINE SEPARATOR
+
+The unicode module contains methods for dealing with Unicode data:
+  category(char : String) -> String
+  bidirectional(char : String) -> String
+  combining(char : String) -> Number
+  mirrored(char : String) -> Boolean
+  name(char : String) -> String
+  iscategory(char : String, category : String) -> Boolean
+  isSeparator(char : String) -> Boolean
+  isControl(char : String) -> Boolean
+  isLetter(char : String) -> Boolean
+  isNumber(char : String) -> Boolean
+  isSymbolMathematical(char : String) -> Boolean
+  create(codepoint : Number) -> String
+All methods return the corresponding property from the Unicode Character
+Database, or in the case of create return a string of size 1 consisting
+of the character with the given code-point.
