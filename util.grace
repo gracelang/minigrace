@@ -100,15 +100,13 @@ method parseargs {
                 var filename := arg
                 infilev := io.open(filename, "r")
                 if (modnamev == "main") then {
+                    var accum := ""
                     modnamev := ""
-                    var seendot := false
                     for (filename) do { c->
                         if (c == ".") then {
-                            seendot := true
+                            modnamev := accum
                         }
-                        if (seendot.not) then {
-                            modnamev := modnamev ++ c
-                        }
+                        accum := accum ++ c
                     }
                 }
                 if (outfilev == io.output) then {

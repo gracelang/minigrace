@@ -41,10 +41,9 @@ executable supports a few different modes and options:
 - Enable tail call support:
   ./minigrace -XTailCall [...]
 
-In all cases the Grace file to be compiled must be in the current
-working directory, and the resulting output will be generated in the
-same location. The minigrace executable may be located elsewhere, and
-will find its support files alongside itself.
+The resulting output will be generated in the same directory as the input. The
+minigrace executable may be located elsewhere, and will find its support files
+alongside itself.
 
 Some other Makefile targets may also be of interest:
 - make test
