@@ -220,11 +220,42 @@ Object unicode_create(Object self, int nparams,
     }
     return alloc_String((char*)buf);
 }
+
+// Find and return the character named by the String argument. Uses a
+// binary search over the Unicode_Lookups array of codepoints, which
+// is ordered lexicographically by name.
+Object unicode_lookup(Object self, int nparams, Object *args, int flags) {
+    char *target = grcstring(args[0]);
+    unsigned int bot = 0;
+    unsigned int top = Unicode_Lookups_Size;
+    while (bot <= top) {
+        unsigned int mid = bot + (top - bot) / 2;
+        unsigned int codepoint = Unicode_Lookups[mid];
+        const char *name = Unicode_Names[codepoint];
+        int c = strcmp(target, name);
+        if (c == 0) {
+            Object cp = alloc_Float64(codepoint);
+            return unicode_create(self, 1, &cp, 0);
+        }
+        if (bot == mid) {
+            bot++;
+            continue;
+        } else if (bot == top)
+            break;
+        if (c < 0) {
+            top = mid;
+        } else {
+            bot = mid;
+        }
+    }
+    return alloc_none();
+}
+
 // Create and return a Grace object with all the above functions as methods.
 Object module_unicode_init() {
     if (unicode_module != NULL)
         return unicode_module;
-    ClassData c = alloc_class("Module<unicode>", 12);
+    ClassData c = alloc_class("Module<unicode>", 13);
     add_Method(c, "category", &unicode_category);
     add_Method(c, "bidirectional", &unicode_bidirectional);
     add_Method(c, "combining", &unicode_combining);
@@ -237,6 +268,7 @@ Object module_unicode_init() {
     add_Method(c, "isLetter", &unicode_isLetter);
     add_Method(c, "isNumber", &unicode_isNumber);
     add_Method(c, "isSymbolMathematical", &unicode_isSymbolMathematical);
+    add_Method(c, "lookup", &unicode_lookup);
     Object o = alloc_newobj(0, c);
     unicode_module = o;
     return o;

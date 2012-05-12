@@ -98,6 +98,8 @@ The unicode module contains methods for dealing with Unicode data:
   isNumber(char : String) -> Boolean
   isSymbolMathematical(char : String) -> Boolean
   create(codepoint : Number) -> String
+  lookup(name : String) -> String
+
 All methods return the corresponding property from the Unicode Character
-Database, or in the case of create return a string of size 1 consisting
-of the character with the given code-point.
+Database, or in the case of create and lookup return a string of size 1
+consisting of the character with the given code-point or name.
