@@ -53,3 +53,11 @@ which are not part of the language and are subject to change:
   * success returns true if the process exited 0
   * terminated returns true if the process has terminated
 - if-then-elseif-elseif-...-else with the standard C-like syntax
+
+Certain environment variables affect the behaviour of running Grace
+programs:
+- GRACE_STACK sets the allocated stack size (default 1024).
+- GRACE_STATS causes various runtime statistics to be printed to
+  standard error when the program terminates, if set.
+- GRACE_GC_DISABLE prevents garbage collection, if set.
+- GRACE_MODULE_PATH is used to find dynamic modules.
