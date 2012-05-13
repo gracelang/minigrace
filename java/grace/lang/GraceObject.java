@@ -90,6 +90,17 @@ public class GraceObject implements Iterable<GraceObject>,
     return new GraceString(builder.toString());
   }
 
+  public static void printException(Exception ex) {
+    System.err.println(ex);
+    for (StackTraceElement el : ex.getStackTrace()) {
+      String cl = el.getClassName();
+      if (!(cl.startsWith("grace.lang") || cl.startsWith("sun.reflect") || cl
+          .startsWith("java.lang.reflect"))) {
+        System.err.println("\tat " + el);
+      }
+    }
+  }
+
   public static GraceObject length(GraceObject obj) {
     return obj.invoke("size");
   }

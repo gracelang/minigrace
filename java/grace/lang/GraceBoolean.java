@@ -27,11 +27,6 @@ public class GraceBoolean extends GraceObject {
     }) == graceTrue;
   }
 
-  // ==
-  public GraceObject bin$61$61(GraceObject o) {
-    return value ? o : o.invoke("not");
-  }
-
   public GraceObject not() {
     return this == graceTrue ? graceFalse : graceTrue;
   }

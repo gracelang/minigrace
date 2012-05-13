@@ -124,7 +124,11 @@ method compileModule(nodes: List, modName: String) {
                 scope'.stmt(scope'.block("public static void " ++
                         "main(String[] args) \{", { scope'' ->
                     scope''.line("grace.lib.sys.setArgs(args, \"{name}\")") ++
-                        scope''.line("$module()")
+                        scope''.block("try \{", { scope''' ->
+                            scope'''.line("$module()")
+                        }, scope''.block("\} catch (Exception e) \{", { s ->
+                            s.line("GraceObject.printException(e)")
+                        }, "\}"))
                 }, "\}"))
         }, "\}")))
 }
