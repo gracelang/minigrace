@@ -141,10 +141,6 @@ public class GraceObject implements Iterable<GraceObject>,
     return self;
   }
 
-  protected GraceObject getSuper() {
-    return $super;
-  }
-
   public GraceObject $match(GraceObject m, GraceBlock e, GraceBlock... cs) {
     for (GraceBlock c : cs) {
       GraceObject result = c.apply(m);

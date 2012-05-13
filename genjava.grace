@@ -623,14 +623,15 @@ method compileIdentifier(node, scope: Scope) -> String {
 
     if(name == "self") then {
         return "self.getSelf()"
+    } elseif(name == "super") then {
+        return "self.$super"
     }
 
     escape(name)
 }
 
 method compileSelf(scope: Scope) -> String {
-    scope.line("private final {obj} self = this") ++
-        scope.line("private final {obj} $super = getSuper()")
+    scope.line("private final {obj} self = this")
 }
 
 method makeInvoke(scope: Scope) -> String {
