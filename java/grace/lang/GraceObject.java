@@ -7,32 +7,34 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 
 public class GraceObject implements Iterable<GraceObject>,
-                                    Iterator<GraceObject> {
+    Iterator<GraceObject> {
 
   public static final GraceObject $void = GraceVoid.value;
 
   public static final GraceObject $true = GraceBoolean.graceTrue;
   public static final GraceObject $false = GraceBoolean.graceFalse;
-  
+
   public static final GraceObject $num(double num) {
-  	return new GraceNumber(num);
+    return new GraceNumber(num);
   }
-  
+
   public static final GraceObject $str(String str) {
-  	return new GraceString(str);
+    return new GraceString(str);
   }
-  
+
   public static final GraceObject $list(GraceObject... els) {
-  	return new GraceList(els);
+    return new GraceList(els);
   }
 
   public static final GraceObject MatchFailed = new GraceObject();
 
   public static final GraceObject HashMap = new GraceObject() {
+
     @SuppressWarnings("unused")
-		public GraceObject $new() {
+    public GraceObject $new() {
       return new GraceHashMap();
     }
+
   };
 
   public static final GraceObject prelude = new prelude();
@@ -63,7 +65,7 @@ public class GraceObject implements Iterable<GraceObject>,
         if (b2.length < 2) {
           b2 = new char[] { b2[0], 0 };
         }
-        
+
         if (b2[1] == 0) {
           buf[op++] = '0';
           buf[op] = b2[0];
@@ -156,7 +158,6 @@ public class GraceObject implements Iterable<GraceObject>,
     return MatchFailed;
   }
 
-
   public GraceObject invoke(String which, GraceObject... args) {
     return invoke(escapeInvokeName(which), which, "method", args);
   }
@@ -191,7 +192,7 @@ public class GraceObject implements Iterable<GraceObject>,
   }
 
   private GraceObject invoke(String which, String name, String kind,
-                             GraceObject... args) {
+      GraceObject... args) {
     GraceObject self = this;
 
     while (self != null) {
@@ -231,8 +232,8 @@ public class GraceObject implements Iterable<GraceObject>,
             a[length - 1] = varargs;
 
             for (Class<?> type : types) {
-              if (!(type.equals(GraceObject.class) || type.isArray() &&
-                  type.getComponentType().equals(GraceObject.class))) {
+              if (!(type.equals(GraceObject.class) || type.isArray()
+                  && type.getComponentType().equals(GraceObject.class))) {
                 break methods;
               }
             }
@@ -253,7 +254,7 @@ public class GraceObject implements Iterable<GraceObject>,
 
           try {
             return (GraceObject) self.invoke(method, a);
-          } catch(InvocationTargetException itx) {
+          } catch (InvocationTargetException itx) {
             Throwable th = itx.getTargetException();
             if (th instanceof RuntimeException) {
               throw (RuntimeException) th;
@@ -261,7 +262,7 @@ public class GraceObject implements Iterable<GraceObject>,
 
             th.printStackTrace();
             throw new RuntimeException(itx.getTargetException().getMessage());
-          } catch(Exception ex) {
+          } catch (Exception ex) {
             throw new RuntimeException(ex.getMessage());
           }
         }
@@ -276,7 +277,6 @@ public class GraceObject implements Iterable<GraceObject>,
   protected Object invoke(Method method, Object[] args) throws Exception {
     return method.invoke(this, args);
   }
-
 
   public GraceObject print(GraceObject o) {
     System.out.println(o.asString());
@@ -320,7 +320,7 @@ public class GraceObject implements Iterable<GraceObject>,
   }
 
   public String toString() {
-    return ((GraceString) self.asString()).value;
+    return ((GraceString) self.invoke("asString")).value;
   }
 
   public boolean equals(Object o) {
