@@ -210,40 +210,40 @@ method compileExecution(nodes: List, scope: Scope) -> String {
 }
 
 method compileExpression(node, scope: Scope) -> String {
-    if(node.kind == "identifier") then {
+    kind("identifier") do {
         compileIdentifier(node, scope)
-    } elseif(node.kind == "num") then {
+    }.kind("num") do {
         compileNumber(node, scope)
-    } elseif(node.kind == "string") then {
+    }.kind("string") do {
         compileString(node, scope)
-    } elseif(node.kind == "bind") then {
+    }.kind("bind") do {
         "({compileBind(node, scope)})"
-    } elseif(node.kind == "member") then {
+    }.kind("member") do {
         compileMember(node, scope)
-    } elseif(node.kind == "call") then {
+    }.kind("call") do {
         compileCall(node, scope)
-    } elseif(node.kind == "if") then {
+    }.kind("if") do {
         compileIf(node, scope)
-    } elseif(node.kind == "index") then {
+    }.kind("index") do {
         compileIndex(node, scope)
-    } elseif(node.kind == "op") then {
+    }.kind("op") do {
         compileOp(node, scope)
-    } elseif(node.kind == "array") then {
+    }.kind("array") do {
         compileArray(node, scope)
-    } elseif(node.kind == "block") then {
+    }.kind("block") do {
         compileBlock(node, scope)
-    } elseif(node.kind == "object") then {
+    }.kind("object") do {
         compileObject(node, scope)
-    } elseif(node.kind == "matchcase") then {
+    }.kind("matchcase") do {
         compileMatch(node, scope)
-    } elseif(node.kind == "generic") then {
+    }.kind("generic") do {
         compileIdentifier(node.value, scope)
-    } elseif(node.kind == "literal") then {
+    }.kind("literal") do {
         node.value
-    } else {
+    }.else {
         util.log_verbose("Unknown expression: {node.kind}")
         "/* {node.kind} */ $void"
-    }
+    }.of(node)
 }
 
 method compileImportDecl(node, scope: Scope) -> String {
@@ -822,6 +822,10 @@ class Kinds {
                 elseBlock.apply(node)
             }
         } filter { node -> node /= false }
+    }
+
+    method of(node) {
+        in([node]).at(1)
     }
 
     method stop {
