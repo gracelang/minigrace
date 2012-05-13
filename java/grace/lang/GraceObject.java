@@ -92,12 +92,21 @@ public class GraceObject implements Iterable<GraceObject>,
 
   public static void printException(Exception ex) {
     System.err.println(ex);
+    boolean first = false;
+    StackTraceElement previous = null;
     for (StackTraceElement el : ex.getStackTrace()) {
       String cl = el.getClassName();
-      if (!(cl.startsWith("grace.lang") || cl.startsWith("sun.reflect") || cl
-          .startsWith("java.lang.reflect"))) {
+      String mt = el.getMethodName();
+      if (!(cl.startsWith("grace.lang") || cl.startsWith("sun.reflect")
+          || cl.startsWith("java.lang.reflect") || cl.contains("$")
+          || mt.equals("$module") || mt.equals("<init>"))) {
+        if (!first && previous != null) {
+          System.err.println("\tat " + previous);
+          first = true;
+        }
         System.err.println("\tat " + el);
       }
+      previous = el;
     }
   }
 

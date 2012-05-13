@@ -48,12 +48,20 @@ public class GraceBoolean extends GraceObject {
 
   // &&
   public GraceObject bin$38$38(GraceObject other) {
-    return value ? other.invoke("apply") : graceFalse;
+    try {
+      return value ? other.invoke("apply") : graceFalse;
+    } catch (RuntimeException rex) {
+      return bin$124(other);
+    }
   }
 
   // ||
   public GraceObject bin$124$124(GraceObject other) {
-    return value ? graceTrue : other.invoke("apply");
+    try {
+      return value ? graceTrue : other.invoke("apply");
+    } catch (RuntimeException rex) {
+      return bin$124(other);
+    }
   }
 
   public GraceObject ifTrue(GraceObject block) {
