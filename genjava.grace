@@ -825,7 +825,7 @@ class Kinds {
     }
 
     method of(node) {
-        in([node]).at(1)
+        in([node])[1]
     }
 
     method stop {
