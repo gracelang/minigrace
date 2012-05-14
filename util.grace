@@ -137,6 +137,14 @@ method parseargs {
             gracelibPathv := sys.execPath
         }
     }
+    if (infilev == io.input) then {
+        if (infilev.isatty) then {
+            print("minigrace {versionNumber}.{buildinfo.gitgeneration} / "
+                ++ buildinfo.gitrevision)
+            print "Enter a program and press Ctrl-D to execute it."
+            print ""
+        }
+    }
 }
 
 method log_verbose(s) {
