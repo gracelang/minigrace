@@ -6,7 +6,7 @@ var __compilerRevision := false
 var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
-var modnamev := "main"
+var modnamev := "stdin_minigrace"
 var runmodev := "make"
 var buildtypev := "run"
 var gracelibPathv := false
@@ -31,6 +31,7 @@ method runOnNew(b)else(e) {
 
 method parseargs {
     var argv := sys.argv
+    var toStdout := false
     if (argv.size > 1) then {
         var indices := argv.indices
         var arg
@@ -63,6 +64,8 @@ method parseargs {
                     buildtypev := "native"
                 } elseif (arg == "--noexec") then {
                     noexecv := true
+                } elseif (arg == "--stdout") then {
+                    toStdout := true
                 } elseif (arg == "--module") then {
                     skip := true
                     modnamev := argv.at(ai + 1)
@@ -113,16 +116,16 @@ method parseargs {
                         accum := accum ++ c
                     }
                 }
-                if (outfilev == io.output) then {
-                    if (targetv == "c") then {
-                        outfilev := io.open(modnamev ++ ".c", "w")
-                    } elseif (targetv == "java") then {
-                        outfilev := io.open(modnamev ++ ".java", "w")
-                    } else {
-                        outfilev := io.open(modnamev ++ ".ll", "w")
-                    }
-                }
             }
+        }
+    }
+    if ((outfilev == io.output) && {!toStdout}) then {
+        if (targetv == "c") then {
+            outfilev := io.open(modnamev ++ ".c", "w")
+        } elseif (targetv == "java") then {
+            outfilev := io.open(modnamev ++ ".java", "w")
+        } else {
+            outfilev := io.open(modnamev ++ ".ll", "w")
         }
     }
     if (gracelibPathv == false) then {
