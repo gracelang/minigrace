@@ -1804,9 +1804,13 @@ Object File_eof(Object self, int argc, Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     return alloc_Boolean(feof(s->file));
 }
+Object File_isatty(Object self, int argc, Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    return alloc_Boolean(isatty(fileno(s->file)));
+}
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 15);
+        File = alloc_class("File", 16);
         add_Method(File, "read", &File_read);
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
@@ -1819,6 +1823,7 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "readBinary", &File_readBinary);
         add_Method(File, "writeBinary", &File_writeBinary);
         add_Method(File, "eof", &File_eof);
+        add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
         add_Method(File, "/=", &Object_NotEquals);
