@@ -22,7 +22,7 @@ A tarball distribution can be compiled using `./configure` and `make`.
 After building there will be a `minigrace` executable in the root. This
 executable supports a few different modes and options:
 - Execute a script in the simplest way possible:
-  ./minigrace --run file.grace
+  ./minigrace file.grace
   In most cases, this command will be all that is required.
 - Produce a native executable:
   ./minigrace --make file.grace
