@@ -106,7 +106,7 @@ method parseargs {
             } else {
                 var filename := arg
                 infilev := io.open(filename, "r")
-                if (modnamev == "main") then {
+                if (modnamev == "stdin_minigrace") then {
                     var accum := ""
                     modnamev := ""
                     for (filename) do { c->
