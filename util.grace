@@ -7,8 +7,8 @@ var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
 var modnamev := "main"
-var runmodev := "build"
-var buildtypev := "bc"
+var runmodev := "make"
+var buildtypev := "run"
 var gracelibPathv := false
 var linenumv := 1
 var lineposv := 1
@@ -50,11 +50,15 @@ method parseargs {
                     vtagv := argv.at(ai + 1)
                 } elseif (arg == "--make") then {
                     runmodev := "make"
+                    buildtypev := "bc"
                 } elseif (arg == "--no-recurse") then {
                     recurse := false
                 } elseif (arg == "--run") then {
                     buildtypev := "run"
                     runmodev := "make"
+                } elseif (arg == "--source") then {
+                    buildtypev := "source"
+                    runmodev := "build"
                 } elseif (arg == "--native") then {
                     buildtypev := "native"
                 } elseif (arg == "--noexec") then {
