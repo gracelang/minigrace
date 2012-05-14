@@ -23,101 +23,101 @@ def ListIdentifier = ast.astidentifier("List", false)
 def ListOther = ast.astidentifier("other", ListIdentifier)
 def DynamicType = ast.asttype("Dynamic", [])
 def NumberType = ast.asttype("Number", [
-    ast.astmethodtype("+", [ast.SignaturePart.new("+", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("*", [ast.SignaturePart.new("*", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("-", [ast.SignaturePart.new("-", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("/", [ast.SignaturePart.new("/", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("%", [ast.SignaturePart.new("%", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.SignaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("++", [ast.SignaturePart.new("++", [TopOther])], DynamicIdentifier),
-    ast.astmethodtype("<", [ast.SignaturePart.new("<", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype("<=", [ast.SignaturePart.new("<=", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype(">", [ast.SignaturePart.new(">", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype(">=", [ast.SignaturePart.new(">=", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype("..", [ast.SignaturePart.new("..", [NumberOther])], DynamicIdentifier),
-    ast.astmethodtype("asString", [ast.SignaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("prefix-", [ast.SignaturePart.new("prefix-")], NumberIdentifier),
-    ast.astmethodtype("inBase", [ast.SignaturePart.new("inBase", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("truncate", [ast.SignaturePart.new("truncate")], NumberIdentifier),
-    ast.astmethodtype("match", [ast.SignaturePart.new("match", [TopOther])], DynamicIdentifier)
+    ast.astmethodtype("+", [ast.signaturePart.new("+", [NumberOther])], NumberIdentifier),
+    ast.astmethodtype("*", [ast.signaturePart.new("*", [NumberOther])], NumberIdentifier),
+    ast.astmethodtype("-", [ast.signaturePart.new("-", [NumberOther])], NumberIdentifier),
+    ast.astmethodtype("/", [ast.signaturePart.new("/", [NumberOther])], NumberIdentifier),
+    ast.astmethodtype("%", [ast.signaturePart.new("%", [NumberOther])], NumberIdentifier),
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], DynamicIdentifier),
+    ast.astmethodtype("<", [ast.signaturePart.new("<", [NumberOther])], BooleanIdentifier),
+    ast.astmethodtype("<=", [ast.signaturePart.new("<=", [NumberOther])], BooleanIdentifier),
+    ast.astmethodtype(">", [ast.signaturePart.new(">", [NumberOther])], BooleanIdentifier),
+    ast.astmethodtype(">=", [ast.signaturePart.new(">=", [NumberOther])], BooleanIdentifier),
+    ast.astmethodtype("..", [ast.signaturePart.new("..", [NumberOther])], DynamicIdentifier),
+    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.astmethodtype("prefix-", [ast.signaturePart.new("prefix-")], NumberIdentifier),
+    ast.astmethodtype("inBase", [ast.signaturePart.new("inBase", [NumberOther])], StringIdentifier),
+    ast.astmethodtype("truncate", [ast.signaturePart.new("truncate")], NumberIdentifier),
+    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
 def StringType = ast.asttype("String", [
-    ast.astmethodtype("++", [ast.SignaturePart.new("++", [TopOther])], StringIdentifier),
-    ast.astmethodtype("size", [ast.SignaturePart.new("size")], NumberIdentifier),
-    ast.astmethodtype("ord", [ast.SignaturePart.new("ord")], NumberIdentifier),
-    ast.astmethodtype("at", [ast.SignaturePart.new("at", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("[]", [ast.SignaturePart.new("[]", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.SignaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("iter", [ast.SignaturePart.new("iter")], DynamicIdentifier),
+    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
+    ast.astmethodtype("size", [ast.signaturePart.new("size")], NumberIdentifier),
+    ast.astmethodtype("ord", [ast.signaturePart.new("ord")], NumberIdentifier),
+    ast.astmethodtype("at", [ast.signaturePart.new("at", [NumberOther])], StringIdentifier),
+    ast.astmethodtype("[]", [ast.signaturePart.new("[]", [NumberOther])], StringIdentifier),
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
     ast.astmethodtype("substringFrom()to",
-        [ast.SignaturePart.new("substringFrom", [NumberOther]),
-        ast.SignaturePart.new("to", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("replace()with", [ast.SignaturePart.new("replace", [StringOther]),
-        ast.SignaturePart.new("with", [StringOther])], StringIdentifier),
-    ast.astmethodtype("hashcode", [ast.SignaturePart.new("hashcode")], NumberIdentifier),
-    ast.astmethodtype("indices", [ast.SignaturePart.new("indices")], ListIdentifier),
-    ast.astmethodtype("asString", [ast.SignaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("asNumber", [ast.SignaturePart.new("asNumber")], NumberIdentifier),
-    ast.astmethodtype("match", [ast.SignaturePart.new("match", [TopOther])], DynamicIdentifier)
+        [ast.signaturePart.new("substringFrom", [NumberOther]),
+        ast.signaturePart.new("to", [NumberOther])], StringIdentifier),
+    ast.astmethodtype("replace()with", [ast.signaturePart.new("replace", [StringOther]),
+        ast.signaturePart.new("with", [StringOther])], StringIdentifier),
+    ast.astmethodtype("hashcode", [ast.signaturePart.new("hashcode")], NumberIdentifier),
+    ast.astmethodtype("indices", [ast.signaturePart.new("indices")], ListIdentifier),
+    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.astmethodtype("asNumber", [ast.signaturePart.new("asNumber")], NumberIdentifier),
+    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
 def BooleanType = ast.asttype("Boolean", [
-    ast.astmethodtype("++", [ast.SignaturePart.new("++", [TopOther])], StringIdentifier),
-    ast.astmethodtype("&", [ast.SignaturePart.new("&", [BooleanOther])], BooleanIdentifier),
-    ast.astmethodtype("|", [ast.SignaturePart.new("|", [BooleanOther])], BooleanIdentifier),
-    ast.astmethodtype("&&", [ast.SignaturePart.new("&&", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("||", [ast.SignaturePart.new("||", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.SignaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("prefix!", [ast.SignaturePart.new("prefix!")], BooleanIdentifier),
-    ast.astmethodtype("not", [ast.SignaturePart.new("not")], BooleanIdentifier),
-    ast.astmethodtype("ifTrue", [ast.SignaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("asString", [ast.SignaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("match", [ast.SignaturePart.new("match", [TopOther])], DynamicIdentifier)
+    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
+    ast.astmethodtype("&", [ast.signaturePart.new("&", [BooleanOther])], BooleanIdentifier),
+    ast.astmethodtype("|", [ast.signaturePart.new("|", [BooleanOther])], BooleanIdentifier),
+    ast.astmethodtype("&&", [ast.signaturePart.new("&&", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("||", [ast.signaturePart.new("||", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("prefix!", [ast.signaturePart.new("prefix!")], BooleanIdentifier),
+    ast.astmethodtype("not", [ast.signaturePart.new("not")], BooleanIdentifier),
+    ast.astmethodtype("ifTrue", [ast.signaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
 def ListType = ast.asttype("List", [
-    ast.astmethodtype("size", [ast.SignaturePart.new("size", [])], NumberIdentifier),
-    ast.astmethodtype("at", [ast.SignaturePart.new("at", [NumberOther])], TopOther),
-    ast.astmethodtype("[]", [ast.SignaturePart.new("[]", [NumberOther])], TopOther),
-    ast.astmethodtype("[]:=", [ast.SignaturePart.new("[]:=", [NumberOther, TopOther])], TopOther),
-    ast.astmethodtype("at()put", [ast.SignaturePart.new("at", [NumberOther]),
-        ast.SignaturePart.new("put", [TopOther])], TopOther),
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.SignaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("contains", [ast.SignaturePart.new("contains", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("iter", [ast.SignaturePart.new("iter")], DynamicIdentifier),
-    ast.astmethodtype("push", [ast.SignaturePart.new("push", [TopOther])], TopOther),
-    ast.astmethodtype("pop", [ast.SignaturePart.new("pop")], TopOther),
-    ast.astmethodtype("first", [ast.SignaturePart.new("first")], NumberIdentifier),
-    ast.astmethodtype("last", [ast.SignaturePart.new("last")], NumberIdentifier),
-    ast.astmethodtype("prepended", [ast.SignaturePart.new("prepended", [TopOther])], ListIdentifier),
-    ast.astmethodtype("indices", [ast.SignaturePart.new("indices")], ListIdentifier),
-    ast.astmethodtype("asString", [ast.SignaturePart.new("asString")], StringIdentifier)
+    ast.astmethodtype("size", [ast.signaturePart.new("size", [])], NumberIdentifier),
+    ast.astmethodtype("at", [ast.signaturePart.new("at", [NumberOther])], TopOther),
+    ast.astmethodtype("[]", [ast.signaturePart.new("[]", [NumberOther])], TopOther),
+    ast.astmethodtype("[]:=", [ast.signaturePart.new("[]:=", [NumberOther, TopOther])], TopOther),
+    ast.astmethodtype("at()put", [ast.signaturePart.new("at", [NumberOther]),
+        ast.signaturePart.new("put", [TopOther])], TopOther),
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("contains", [ast.signaturePart.new("contains", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
+    ast.astmethodtype("push", [ast.signaturePart.new("push", [TopOther])], TopOther),
+    ast.astmethodtype("pop", [ast.signaturePart.new("pop")], TopOther),
+    ast.astmethodtype("first", [ast.signaturePart.new("first")], NumberIdentifier),
+    ast.astmethodtype("last", [ast.signaturePart.new("last")], NumberIdentifier),
+    ast.astmethodtype("prepended", [ast.signaturePart.new("prepended", [TopOther])], ListIdentifier),
+    ast.astmethodtype("indices", [ast.signaturePart.new("indices")], ListIdentifier),
+    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier)
 ])
 def VoidType = ast.asttype("Void", [
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier)
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
 def NothingType = ast.asttype("Nothing", [
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier)
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
 def NoneType = ast.asttype("None", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
 ])
 def BlockType = ast.asttype("Block", [
-    ast.astmethodtype("==", [ast.SignaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.SignaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("apply", [ast.SignaturePart.new("apply")], TopOther),
-    ast.astmethodtype("match", [ast.SignaturePart.new("match")], TopOther)
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("apply", [ast.signaturePart.new("apply")], TopOther),
+    ast.astmethodtype("match", [ast.signaturePart.new("match")], TopOther)
 ])
-def outerMethod = ast.astmethodtype("outer", [], DynamicType)
+def outerMethod = ast.astmethodtype("outer", [ast.signaturePart.new("outer")], DynamicType)
 var currentReturnType := false
 
 class Binding { kind' ->
@@ -356,17 +356,17 @@ method expressionType(expr) {
         }
         for (callmeth.signature.indices) do { partnr ->
             var part := callmeth.signature[partnr]
-            if (part.params.size > expr.with[partnr].size) then {
+            if (part.params.size > expr.with[partnr].args.size) then {
                 util.type_error("method '{callname}' in {callreceivertype.value} "
-                    ++ "requires {part.params.size} arguments for part {partnr}, not "
-                    ++ "{expr.with[partnr].size}")
+                    ++ "requires {part.args.size} arguments for part {partnr}, not "
+                    ++ "{expr.with[partnr].args.size}")
             }
         }
         def callsig = callmeth.signature
         def callparts = expr.with
         for (callparts.indices) do { partnr ->
             def callparams = callsig[partnr].params
-            def callargs = callparts[partnr]
+            def callargs = callparts[partnr].args
             if (callparams.size > 0) then {
                 for (callparams.indices) do { i ->
                     def arg = callargs.at(i)
@@ -400,16 +400,16 @@ method expressionType(expr) {
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
                 objectmeths.push(ast.astmethodtype(e.name.value,
-                    [ast.SignaturePart.new(e.name.value)], findType(e.dtype)))
+                    [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
             } elseif (e.kind == "method") then {
                 objectmeths.push(ast.astmethodtype(e.value.value, e.signature,
                     findType(e.dtype)))
             } elseif (e.kind == "vardec") then {
                 def vtype = findType(e.dtype)
                 objectmeths.push(ast.astmethodtype(e.name.value,
-                    [ast.SignaturePart.new(e.name.value)], vtype))
+                    [ast.signaturePart.new(e.name.value)], vtype))
                 objectmeths.push(ast.astmethodtype(e.name.value ++ ":=",
-                    [ast.SignaturePart.new(e.name.value ++ ":=",
+                    [ast.signaturePart.new(e.name.value ++ ":=",
                         [ast.astidentifier("_", vtype)])], false))
             } elseif (e.kind == "inherits") then {
                 def stype = expressionType(resolveIdentifiers(e.value))
@@ -516,7 +516,7 @@ method betaReduceType(tp, typevar, concrete) {
         }
         var tmpsig := []
         for (m.signature) do { part ->
-            var tmppart := ast.SignaturePart.new(part.name)
+            var tmppart := ast.signaturePart.new(part.name)
             var tmpparams := []
             for (part.params) do {pp->
                 if (pp.dtype == false) then {
@@ -641,7 +641,8 @@ method resolveIdentifier(node) {
         }
         return node
     } elseif (b.kind == "method") then {
-        return ast.astcall(findDeepMethod(nm), [[]])
+        def meth = findDeepMethod(nm)
+        return ast.astcall(meth, [ast.callWithPart.new(meth.value)])
     }
     node
 }
@@ -659,7 +660,7 @@ method rewritematchblockterm2(arg) {
         def bindings = []
         def subpats = []
         for (arg.with) do { part ->
-            for (part) do { a ->
+            for (part.args) do { a ->
                 def tmp = rewritematchblockterm2(a)
                 subpats.push(tmp[1])
                 for (tmp[2]) do {b->
@@ -674,7 +675,7 @@ method rewritematchblockterm2(arg) {
                     ast.astidentifier("prelude", false)
                 )
             ),
-            [[arg.value, ast.astarray(subpats)]]
+            [ast.callWithPart.new("new", [arg.value, ast.astarray(subpats)])]
         )
         return [callpat, bindings]
     }
@@ -686,7 +687,7 @@ method rewritematchblockterm2(arg) {
                     ast.astidentifier("prelude", false)
                 )
             ),
-            [[ast.aststring(arg.value)]]
+            [ast.callWithPart.new("new", [ast.aststring(arg.value)])]
         )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
@@ -697,7 +698,7 @@ method rewritematchblockterm2(arg) {
                             ast.astidentifier("prelude", false)
                         )
                     ),
-                    [[varpat, arg.dtype]]
+                    [ast.callWithPart.new("new", [varpat, arg.dtype])]
                 ), [arg]]
             }
             def tmp = rewritematchblockterm2(arg.dtype)
@@ -712,7 +713,7 @@ method rewritematchblockterm2(arg) {
                         ast.astidentifier("prelude", false)
                     )
                 ),
-                [[varpat, tmp[1]]]
+                [ast.callWithPart.new("new", [varpat, tmp[1]])]
             )
             return [bindingpat, bindings]
         }
@@ -737,7 +738,7 @@ method rewritematchblock2(blk) {
                     ast.astidentifier("prelude", false)
                 )
             ),
-            [[ast.aststring(arg.value)]]
+            [ast.callWithPart.new("new", [ast.aststring(arg.value)])]
         )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
@@ -747,7 +748,7 @@ method rewritematchblock2(blk) {
                             ast.astidentifier("prelude", false)
                             )
                         ),
-                    [[varpat, arg.dtype]])
+                    [ast.callWithPart.new("new", [varpat, arg.dtype])])
             } else {
                 def tmp = rewritematchblockterm2(arg.dtype)
                 def bindingpat = ast.astcall(
@@ -756,7 +757,7 @@ method rewritematchblock2(blk) {
                             ast.astidentifier("prelude", false)
                             )
                         ),
-                    [[varpat, tmp[1]]]
+                    [ast.callWithPart.new("new", [varpat, tmp[1]])]
                 )
                 pattern := bindingpat
                 for (tmp[2]) do {p->
@@ -794,7 +795,7 @@ method rewritematchblockterm(param, body) {
                 ast.astmember(
                     "match",
                     pat.value),
-                [[newname]]),
+                [ast.callWithPart.new("match", [newname])]),
             body,
             [ast.astidentifier("MatchFailed", false)]
         )
@@ -802,7 +803,7 @@ method rewritematchblockterm(param, body) {
         pat := pat.dtype
         param.dtype := false
         st := ast.astcall(ast.astidentifier("print"),
-            [[ast.aststring("Recursively binding pattern matches unimplemented")]])
+            [ast.callWithPart.new("print", [ast.aststring("Recursively binding pattern matches unimplemented")])])
     } else {
         st := ast.astif(
             ast.astop("==", pat, newname),
@@ -835,29 +836,35 @@ method rewritematchblock(o) {
         params := [newname]
         nparams := []
         for (pat.with) do { part ->
-            for (part.indices) do { pwi ->
-                def pw = part[pwi]
+            for (part.args.indices) do { pwi ->
+                def pw = part.args[pwi]
                 def rw2 = rewritematchblockterm(pw, inbody)
-                part[pwi] := rw2[1]
+                part.args[pwi] := rw2[1]
                 inbody := rw2[2]
             }
         }
         inbody := resolveIdentifiersList(inbody)
+        var args := []
+        for (pat.with) do { part ->
+            for (part.args) do { arg ->
+                args.push(arg)
+            }
+        }
         body := [ast.astif(
                     ast.astcall(
                         ast.astmember(
                             "match",
                             pat.value),
-                        [[newname]]),
+                        [ast.callWithPart.new("match", [newname])]),
                     [
                         ast.astcall(
                             ast.astmember("applyIndirectly",
-                                ast.astblock(flatten(pat.with), inbody)
+                                ast.astblock(args, inbody)
                             ),
-                            [[ast.astcall(
+                            [ast.callWithPart.new("applyIndirectly", [ast.astcall(
                                 ast.astmember("try", pat.value),
-                                [[newname]]
-                            )]])
+                                [ast.callWithPart.new("try", [newname])]
+                            )])])
                     ],
                     [ast.astidentifier("MatchFailed", false)]
                     )
@@ -874,7 +881,7 @@ method rewritematchblock(o) {
                             ast.astmember("apply",
                                 ast.astblock([], inbody)
                             ),
-                            [[]])
+                            [ast.callWithPart.new("apply")])
                     ],
                     [ast.astidentifier("MatchFailed", false)]
                     )
@@ -886,10 +893,10 @@ method rewritematchblock(o) {
             nparams := []
             params := [newname]
             for (pat.with) do { part ->
-                for (part.indices) do { pwi ->
-                    def pw = part[pwi]
+                for (part.args.indices) do { pwi ->
+                    def pw = part.args[pwi]
                     def rw2 = rewritematchblockterm(pw, inbody)
-                    part[pwi] := rw2[1]
+                    part.args[pwi] := rw2[1]
                     inbody := rw2[2]
                 }
             }
@@ -899,24 +906,24 @@ method rewritematchblock(o) {
                             ast.astmember(
                                 "match",
                                 pat.value),
-                            [[newname]]),
+                            [ast.callWithPart.new("match", [newname])]),
                         [
                             ast.astcall(
                                 ast.astmember("applyIndirectly",
-                                    ast.astblock(pat.with.first.prepended(fst),
+                                    ast.astblock(pat.with.args.first.prepended(fst),
                                                 inbody)
                                 ),
-                                [[ast.astcall(
+                                [ast.callWithPart.new("applyIndirectly", [ast.astcall(
                                     ast.astmember(
                                         "prepended",
                                         ast.astcall(
                                             ast.astmember("try", pat.value),
-                                            [[newname]]
+                                            [ast.callWithPart.new("try", [newname])]
                                         )
                                     ),
-                                    [newname]
+                                    [ast.callWithPart.new("prepended", [newname])]
                                 )
-                                ]])
+                                ])])
                         ],
                         [ast.astidentifier("MatchFailed", false)]
                         )
@@ -931,13 +938,13 @@ method rewritematchblock(o) {
                                 ast.astmember(
                                     "match",
                                     pat),
-                                [[newname]]),
+                                [ast.callWithPart.new("match", [newname])]),
                             [
                                 ast.astcall(
                                     ast.astmember("apply",
                                         ast.astblock(o.params, inbody)
                                     ),
-                                    [[newname]])
+                                    [ast.callWithPart.new("apply", [newname])])
                             ],
                             [ast.astidentifier("MatchFailed", false)]
                             )
@@ -976,15 +983,17 @@ method resolveIdentifiers(node) {
     if (node.kind == "call") then {
         var p := resolveIdentifiers(node.value)
         if (p.kind == "call") then {
-            tmp := []
-            for (node.with) do { lst ->
-                tmp.push(resolveIdentifiersList(lst))
+            tmp := node.with
+            for (node.with.indices) do { partnr ->
+                var part := node.with[partnr]
+                tmp[partnr].args := resolveIdentifiersList(part.args)
             }
             return ast.astcall(p.value, tmp)
         }
-        tmp := []
-        for (node.with) do { lst ->
-            tmp.push(resolveIdentifiersList(lst))
+        tmp := node.with
+        for (node.with.indices) do { partnr ->
+            var part := node.with[partnr]
+            tmp[partnr].args := resolveIdentifiersList(part.args)
         }
         return ast.astcall(p, tmp)
     }
@@ -1391,7 +1400,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
             selftypes.last.methods.push(
-                ast.astmethodtype(e.name.value, [ast.SignaturePart.new(e.name.value)], findType(e.dtype)))
+                ast.astmethodtype(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
             if ((tpb == false) || {tpb.kind /= "type"}) then {
@@ -1499,13 +1508,13 @@ method typecheck(values) {
     bindName("escapestring", Binding.new("method"))
     def modtype = selftypes.last
     modtype.methods.push(ast.astmethodtype("print",
-        [ast.SignaturePart.new("print", [TopOther])], NoneType))
+        [ast.signaturePart.new("print", [TopOther])], NoneType))
     modtype.methods.push(ast.astmethodtype("length",
-        [ast.SignaturePart.new("length", [TopOther])], NumberType))
+        [ast.signaturePart.new("length", [TopOther])], NumberType))
     modtype.methods.push(ast.astmethodtype("escapestring",
-        [ast.SignaturePart.new("escapestring", [StringOther])], StringType))
+        [ast.signaturePart.new("escapestring", [StringOther])], StringType))
     modtype.methods.push(ast.astmethodtype("raise",
-        [ast.SignaturePart.new("raise", [TopOther])], NoneType))
+        [ast.signaturePart.new("raise", [TopOther])], NoneType))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))
     bindName("void", Binding.new("def"))
@@ -1557,15 +1566,4 @@ method typecheck(values) {
     subtype.addType(NothingType)
     subtype.addType(BlockType)
     resolveIdentifiersList(values)
-}
-
-// TODO: does only one level of flattening, how to detect lists?
-method flatten(lst) {
-    var ret := []
-    for (lst) do { l ->
-        for (l) do { ll ->
-            ret.push(ll)
-        }
-    }
-    ret
 }

@@ -172,8 +172,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
-    var l := []
-    var c := ast.astcall(o, [l])
+    var c := ast.astcall(o, [ast.callWithPart.new(o.value)])
     var r := compilenode(c)
     o.register := r
 }
@@ -321,7 +320,7 @@ method compileclass(o) {
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false)
+        def meth = ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
         compilenode(meth)
     }
     o.register := compilenode(con)
@@ -405,7 +404,7 @@ method compileblock(o) {
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
     var id := ast.astidentifier("_apply", false)
-    var applymeth := ast.astmethod(id, [ast.SignaturePart.new(id, o.params)], o.body, false)
+    var applymeth := ast.astmethod(id, [ast.signaturePart.new(id, o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -834,12 +833,12 @@ method compilebind(o) {
         o.register := val
     } elseif (dest.kind == "member") then {
         dest.value := dest.value ++ ":="
-        c := ast.astcall(dest, [[o.value]])
+        c := ast.astcall(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
         o.register := r
     } elseif (dest.kind == "index") then {
         var imem := ast.astmember("[]:=", dest.value)
-        c := ast.astcall(imem, [[dest.index, o.value]])
+        c := ast.astcall(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
         r := compilenode(c)
         o.register := r
     }
@@ -863,7 +862,7 @@ method compiledefdec(o) {
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
     }
     o.register := "none"
 }
@@ -884,10 +883,10 @@ method compilevardec(o) {
         out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [ast.SignaturePart.new(o.name)], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
         def assignID = ast.astidentifier(o.name.value ++ ":=", false)
         def tmpID = ast.astidentifier("_var_assign_tmp", false)
-        compilenode(ast.astmethod(assignID, [ast.SignaturePart.new(assignID, [tmpID])],
+        compilenode(ast.astmethod(assignID, [ast.signaturePart.new(assignID, [tmpID])],
             [ast.astbind(o.name, tmpID)], false))
     }
     o.register := "none"
@@ -987,7 +986,7 @@ method compilecall(o, tailcall) {
     var i := 0
     out("  int callframe{myc} = gc_frame_new();")
     for (o.with) do { part ->
-        for (part) do { p ->
+        for (part.args) do { p ->
             var r := compilenode(p)
             args.push(r)
             out("  gc_frame_newslot({r});")
@@ -1000,8 +999,8 @@ method compilecall(o, tailcall) {
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "super")}) then {
         var argcv := "  int argcv{auto_count}[] = \{"
-        for (1..o.with.size) do { partnr ->
-            argcv := argcv ++ o.with[partnr].size
+        for (o.with.indices) do { partnr ->
+            argcv := argcv ++ o.with[partnr].args.size
             if (partnr < o.with.size) then {
                 argcv := argcv ++ ", "
             }
@@ -1022,8 +1021,8 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
         var argcv := "  int argcv{auto_count}[] = \{"
-        for (1..o.with.size) do { partnr ->
-            argcv := argcv ++ o.with[partnr].size
+        for (o.with.indices) do { partnr ->
+            argcv := argcv ++ o.with[partnr].args.size
             if (partnr < o.with.size) then {
                 argcv := argcv ++ ", "
             }
@@ -1040,8 +1039,8 @@ method compilecall(o, tailcall) {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
         var argcv := "  int argcv{auto_count}[] = \{"
-        for (1..o.with.size) do { partnr ->
-            argcv := argcv ++ o.with[partnr].size
+        for (o.with.indices) do { partnr ->
+            argcv := argcv ++ o.with[partnr].args.size
             if (partnr < o.with.size) then {
                 argcv := argcv ++ ", "
             }
@@ -1063,8 +1062,8 @@ method compilecall(o, tailcall) {
         obj := "self"
         len := length(o.value.value) + 1
         var argcv := "  int argcv{auto_count}[] = \{"
-        for (1..o.with.size) do { partnr ->
-            argcv := argcv ++ o.with[partnr].size
+        for (o.with.indices) do { partnr ->
+            argcv := argcv ++ o.with[partnr].args.size
             if (partnr < o.with.size) then {
                 argcv := argcv ++ ", "
             }
@@ -1080,7 +1079,7 @@ method compilecall(o, tailcall) {
             out("    {o.with.size}, argcv{auto_count}, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {o.with.size}, argcv{auto_count}, arams);")
+            out("    {o.with.size}, argcv{auto_count}, params);")
         }
     }
     out("  gc_frame_end(callframe{myc});")
@@ -1251,7 +1250,7 @@ method compilenode(o) {
     if ((o.kind == "call")) then {
         if (o.value.value == "print") then {
             var args := []
-            for (o.with[1]) do { prm ->
+            for (o.with.first.args) do { prm ->
                 var r := compilenode(prm)
                 args.push(r)
             }
@@ -1268,18 +1267,18 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "length")}) then {
-            tmp := compilenode(o.with[1].first)
+            tmp := compilenode(o.with.first.args.first)
             out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
-            if (o.with[1].size == 0) then {
+            if (o.with.first.args.size == 0) then {
                 out("; PP FOLLOWS")
                 out(o.pretty(0))
                 tmp := "null"
             } else {
-                tmp := compilenode(o.with[1].first)
+                tmp := compilenode(o.with.first.args.first)
             }
             out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
@@ -1288,15 +1287,15 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "escapestring")}) then {
-            tmp := o.with[1].first
+            tmp := o.with.first.args.first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [[]])
+            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
-            tmp := o.with[1].first
+            tmp := o.with.first.args.first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [[]])
+            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } else {
             compilecall(o, false)

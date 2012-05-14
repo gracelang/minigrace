@@ -465,7 +465,7 @@ method prefixop {
         postfixsquare
         val := values.pop
         var mem := ast.astmember("prefix" ++ op, val)
-        var call := ast.astcall(mem, [[]])
+        var call := ast.astcall(mem, [ast.callWithPart.new(mem.value)])
         values.push(call)
     }
 }
@@ -755,9 +755,9 @@ method callrest {
     var methn
     var tmp
     var ln := false
-    var params := []
-    var part := []
-    params.push(part)
+    var signature := []
+    var part := ast.callWithPart.new
+    signature.push(part)
     var hadcall := false
     var tok := lastToken
     var startInd := minIndentLevel
@@ -765,6 +765,7 @@ method callrest {
         tok := sym
         hadcall := true
         methn := meth.value
+        part.name := methn
         next
         ifConsume {expression} then {
             // For matching blocks - same as below
@@ -780,7 +781,7 @@ method callrest {
             }
             while {accept("comma")} do {
                 tmp := values.pop
-                part.push(tmp)
+                part.args.push(tmp)
                 next
                 expectConsume {expression}
                 // For matching blocks - same as above
@@ -796,7 +797,7 @@ method callrest {
                 }
             }
             tmp := values.pop
-            part.push(tmp)
+            part.args.push(tmp)
         }
         expect("rparen")
         ln := linenum
@@ -808,10 +809,11 @@ method callrest {
         tok := sym
         hadcall := true
         methn := meth.value
+        part.name := methn
         ln := linenum
         term
         var ar := values.pop
-        part.push(ar)
+        part.args.push(ar)
     } elseif (meth.kind == "identifier") then {
         values.push(meth)
     } elseif (meth.kind == "member") then {
@@ -832,7 +834,7 @@ method callrest {
     if (hadcall) then {
         if (accept("identifier")onLineOfLastOr(tok)) then {
             // Multi-part method name
-            methn := callmprest(ast.astidentifier(methn, false), params, tok)
+            methn := callmprest(ast.astidentifier(methn, false), signature, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
                 // the member lookup (for x.between(3)and(10)-type
@@ -842,7 +844,7 @@ method callrest {
                 meth := methn
             }
         }
-        tmp := ast.astcall(meth, params)
+        tmp := ast.astcall(meth, signature)
         values.push(tmp)
     }
     minIndentLevel := startInd
@@ -852,7 +854,7 @@ method callrest {
 // Process the rest of a multi-part method name. Returns an identifier
 // to replace the one passed in, in which each word is joined by "",
 // and updates params in place.
-method callmprest(meth, params, tok) {
+method callmprest(meth, signature, tok) {
     var methname := meth.value
     var nxt
     var ln := linenum
@@ -861,12 +863,13 @@ method callmprest(meth, params, tok) {
            | accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
-        part := []
-        params.push(part)
+        part := ast.callWithPart.new
+        signature.push(part)
         methname := methname ++ "()"
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
+        part.name := nxt.value
         var isTerm := false
         if ((accept("lparen")).not & (accept("lbrace")).not
             & accept("string").not & accept("num").not) then {
@@ -889,13 +892,13 @@ method callmprest(meth, params, tok) {
             expression
             while {accept("comma")} do {
                 nxt := values.pop
-                part.push(nxt)
+                part.args.push(nxt)
                 next
                 expectConsume {expression}
             }
         }
         nxt := values.pop
-        part.push(nxt)
+        part.args.push(nxt)
         if (isTerm.not) then {
             expect("rparen")
         }
@@ -1025,7 +1028,8 @@ method doobject {
                 }
                 next
             }
-            superclass := ast.astcall(ast.astmember(mn.value, nm), [scargs])
+            superclass := ast.astcall(ast.astmember(mn.value, nm),
+                [ast.callWithPart.new(mn.value, scargs)])
         }
         expect("lbrace")
         values.push(object {
@@ -1147,7 +1151,8 @@ method doclassOld {
                 }
                 next
             }
-            superclass := ast.astcall(ast.astmember(mn.value, nm), [scargs])
+            superclass := ast.astcall(ast.astmember(mn.value, nm),
+                [ast.callWithPart.new(mn.value, scargs)])
         }
         var cname := values.pop
         if (accept("lbrace")) then {
@@ -1213,7 +1218,7 @@ method doclassOld {
                 var p := rbody.pop
                 body.push(p)
             }
-            var o := ast.astclass(cname, [ast.SignaturePart.new(cname.value, params)],
+            var o := ast.astclass(cname, [ast.signaturePart.new(cname.value, params)],
                 body, superclass, ast.astidentifier("new", false))
             values.push(o)
         } else {
@@ -1288,7 +1293,7 @@ method parsempmndecrest(tm) {
     var nxt
     while {accept("identifier")} do {
         methname := methname ++ "()"
-        var part := ast.SignaturePart.new
+        var part := ast.signaturePart.new
         pushidentifier
         nxt := values.pop
         methname := methname ++ nxt.value
@@ -1340,7 +1345,7 @@ method methodsignature {
     pushidentifier
     var meth := ast.astidentifier("", false)
     var signature := []
-    var part := ast.SignaturePart.new
+    var part := ast.signaturePart.new
     signature.push(part)
     part.name := values.pop
     meth.value := meth.value ++ part.name.value

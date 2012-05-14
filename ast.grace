@@ -154,17 +154,20 @@ method astmatchcase(matchee, cases', elsecase') {
 }
 method astmethodtype(name', signature', rtype') {
     // [signature]
-    //     [part1]
-    //         name
-    //         [params]
-    //         vararg
-    //     [part2]
-    //         name
-    //         [params]
-    //         vararg
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
     //     ...
-    //     [partn]
+    //     object {
     //         ...
+    //     }
     object {
         def kind = "methodtype"
         def value = name'
@@ -234,17 +237,20 @@ method asttype(name', methods') {
 }
 method astmethod(name', signature', body', dtype') {
     // [signature]
-    //     [part1]
-    //         name
-    //         [params]
-    //         vararg
-    //     [part2]
-    //         name
-    //         [params]
-    //         vararg
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
     //     ...
-    //     [partn]
+    //     object {
     //         ...
+    //     }
     object {
         def kind = "method"
         def value = name'
@@ -278,15 +284,18 @@ method astmethod(name', signature', body', dtype') {
 }
 method astcall(what, with') {
     // [with]
-    //     [part1]
-    //         param1
-    //         param2
-    //         vararg1
-    //         vararg2
-    //         ...
-    //     [part2]
+    //     object {
+    //         name := ""
+    //         args := []
+    //     }
+    //     object {
+    //         name := ""
+    //         args := []
+    //     }
     //     ...
-    //     [partn]
+    //     object {
+    //         ...
+    //     }
     object {
         def kind = "call"
         def value = what
@@ -311,6 +320,21 @@ method astcall(what, with') {
     }
 }
 method astclass(name', signature', body', superclass', constructor') {
+    // [signature]
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
+    //     object {
+    //         name := ""
+    //         params := []
+    //         vararg := false/identifier
+    //     }
+    //     ...
+    //     object {
+    //         ...
+    //     }
     object {
         def kind = "class"
         def value = body'
@@ -642,7 +666,7 @@ method astinherits(expr) {
     }
 }
 
-method SignaturePart {
+method signaturePart {
     object {
         method new(*values) {
             object {
@@ -663,7 +687,7 @@ method SignaturePart {
     }
 }
 
-// class SignaturePart.new(*values) {
+// class signaturePart.new(*values) {
 //     var name := ""
 //     var params := []
 //     var vararg := false
@@ -677,3 +701,20 @@ method SignaturePart {
 //         vararg := values[3]
 //     }
 // }
+
+method callWithPart {
+    object {
+        method new(*values) {
+            object {
+                var name := ""
+                var args := []
+                if (values.size > 0) then {
+                    name := values[1]
+                }
+                if (values.size > 1) then {
+                    args := values[2]
+                }
+            }
+        }
+    }
+}
