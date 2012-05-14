@@ -1634,6 +1634,9 @@ method statement {
 method parse(toks) {
     util.log_verbose("processing tokens.")
     var otoks := toks
+    if (toks.size == 0) then {
+        return toks
+    }
     sym := toks.first
     tokens := []
     for (otoks.indices) do { i ->
