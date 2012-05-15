@@ -5,7 +5,7 @@ minigrace: $(CFILES:.c=.gcn) minigrace.gcn $(STATIC_MODULES) $(UNICODE_MODULE) g
 	gcc -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn) $(STATIC_MODULES)
 
 selfhost: minigrace $(CFILES:.c=.grace)
-	rm -f *.gcn
+	rm -f $(CFILES:.c=.gcn)
 	./minigrace --make --verbose --target c --module minigrace compiler.grace
 
 %.gcn: %.c
