@@ -31,6 +31,9 @@ gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
+unicode.gcn: unicode.c unicodedata.h gracelib.h
+	gcc -g -fPIC -c -o unicode.gco unicode.c
+
 l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) unicode.gso gracelib.c gracelib.h
 	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ln -sf ../known-good/$(ARCH)/$(STABLE)/unicode.gso . ; ../known-good/$(ARCH)/$(STABLE)/minigrace --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/$(STABLE) --vtag kg compiler.grace )
 
