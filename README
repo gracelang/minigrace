@@ -77,8 +77,8 @@ be required in many cases:
 The script c/environ-Darwin attempts to detect and set up these
 variables correctly.
 
-It is unknown whether the compiler works under Cygwin, but any failures
-there should be considered bugs and reported.
+The compiler does not currently work under Cygwin, but any assistance in
+resolving the remaining problems there would be welcome.
 
 
 Interoperability
