@@ -1313,7 +1313,7 @@ method compile(vl, of, mn, rm, bt) {
                         if (false != util.vtag) then {
                             cmd := cmd ++ " --vtag " ++ util.vtag
                         }
-                        cmd := cmd ++ " --noexec --no-recurse"
+                        cmd := cmd ++ " --noexec --no-recurse -XNoMain"
                         if (util.recurse) then {
                             spawnSubprocess(subprocesses, nm, cmd)
                         }
@@ -1346,7 +1346,6 @@ method compile(vl, of, mn, rm, bt) {
     }
     outprint("#include \"{util.gracelibPath}/gracelib.h\"")
     outprint("#include <stdlib.h>")
-    outprint("#pragma weak main")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
     outprint("extern Object none;")
