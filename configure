@@ -68,8 +68,7 @@ if grep -qi CYGWIN <<<"$PLATFORM"
 then
     if [ "$distrib" = "tree" ]
     then
-        echo "Building on Cygwin is currently not supported."
-        echo "Compilation fails less badly from tarballs."
+        echo "Building on Cygwin is currently only supported from tarballs."
         echo "Tarballs available from http://ecs.vuw.ac.nz/~mwh/minigrace/dist/"
         exit 1
     fi
