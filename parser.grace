@@ -1343,12 +1343,10 @@ method parsempmndecrest(tm) {
 method methodsignature {
     expect("identifier")or("op")or("lsquare")
     pushidentifier
-    var meth := ast.astidentifier("", false)
+    var meth := values.pop
     var signature := []
-    var part := ast.signaturePart.new
+    var part := ast.signaturePart.new(meth.value)
     signature.push(part)
-    part.name := values.pop
-    meth.value := meth.value ++ part.name.value
     if (meth.value == "[") then {
         expect("rsquare")
         next
@@ -1476,9 +1474,9 @@ method domethodtype {
         next
     } else {
         if (!accept("rbrace")) then {
-            if (id.line == sym.line) then {
+            if (meth.line == sym.line) then {
                 util.syntax_error("multiple methods on same line in type, "
-                    ++ "after {mn}")
+                    ++ "after {meth.value}")
             }
         }
     }

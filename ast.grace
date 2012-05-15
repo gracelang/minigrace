@@ -185,13 +185,20 @@ method astmethodtype(name', signature', rtype') {
             if (rtype /= false) then {
                 s := "{s}{spc}Returns:\n  {spc}{rtype.value}\n"
             }
-            s := s ++ spc ++ "Parameters:"
-            // for (params) do { mx ->
-            //     s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-            //     if (mx.dtype /= false) then {
-            //         s := "{s} : {mx.dtype.value}"
-            //     }
-            // }
+            s := "{s}{spc}Signature:"
+            for (signature) do { part ->
+                s := "{s}\n  {spc}Part: {part.name}"
+                s := "{s}\n    {spc}Parameters:"
+                for (part.params) do { p ->
+                    s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                    if (p.dtype != false) then {
+                        s := "{s} : {p.dtype.value}"
+                    }
+                }
+                if (part.vararg != false) then {
+                    s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
+                }
+            }
             s
         }
     }
@@ -269,9 +276,19 @@ method astmethod(name', signature', body', dtype') {
             var s := "Method\n"
             s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
             s := s ++ "\n"
-            s := s ++ spc ++ "Parameters:"
-            for (self.params) do { mx ->
-                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            s := "{s}{spc}Signature:"
+            for (signature) do { part ->
+                s := "{s}\n  {spc}Part: {part.name}"
+                s := "{s}\n    {spc}Parameters:"
+                for (part.params) do { p ->
+                    s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                    if (p.dtype != false) then {
+                        s := "{s} : {p.dtype.value}"
+                    }
+                }
+                if (part.vararg != false) then {
+                    s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
+                }
             }
             s := s ++ "\n"
             s := s ++ spc ++ "Body:"
@@ -308,12 +325,14 @@ method astcall(what, with') {
                 spc := spc ++ "  "
             }
             var s := "Call\n"
-            s := s ++ spc ++ "Method:\n"
-            s := s ++ "  " ++ spc ++ self.value.pretty(depth+2)
+            s := s ++ spc ++ "Method: {self.value.pretty(depth + 1)}"
             s := s ++ "\n"
-            s := s ++ spc ++ "Parameters:"
-            for (self.with) do { x ->
-                s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
+            s := s ++ spc ++ "Arguments:"
+            for (self.with) do { part ->
+                s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name
+                for (part.args) do { arg ->
+                    s := s ++ "\n    " ++ spc ++ arg.pretty(depth + 3)
+                }
             }
             s
         }
@@ -354,9 +373,20 @@ method astclass(name', signature', body', superclass', constructor') {
                 s := s ++ "\n" ++ spc ++ "Superclass:"
                 s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
             }
-            s := s ++ "\n" ++ spc ++ "Parameters:"
-            for (self.params) do {x->
-                s := s ++ "\n  " ++ spc ++ x.pretty(depth+2)
+            s := s ++ "\n"
+            s := "{s}{spc}Signature:"
+            for (signature) do { part ->
+                s := "{s}\n  {spc}Part: {part.name}"
+                s := "{s}\n    {spc}Parameters:"
+                for (part.params) do { p ->
+                    s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                    if (p.dtype != false) then {
+                        s := "{s} : {p.dtype.value}"
+                    }
+                }
+                if (part.vararg != false) then {
+                    s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
+                }
             }
             s := s ++ "\n" ++ spc ++ "Body:"
             for (self.value) do { x ->
