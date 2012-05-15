@@ -47,10 +47,14 @@ do
     then
         PREFIX=$2
         shift
+    elif [ "$1" = "--static" ]
+    then
+        STATIC=y
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
         echo " --prefix <path>"
+        echo " --static {tarball only}"
         exit 0
     else
         echo "Unknown argument '$1'."
@@ -69,6 +73,11 @@ then
         echo "Tarballs available from http://ecs.vuw.ac.nz/~mwh/minigrace/dist/"
         exit 1
     fi
+    STATIC=y
+fi
+
+if [ "$STATIC" ]
+then
     UNICODE_MODULE=unicode.gcn
     STATIC_MODULES=unicode.gcn
     if [ -e minigrace.c ]
