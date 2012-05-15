@@ -1466,9 +1466,6 @@ method domethodtype {
         dtype := ast.astidentifier("Unit", false)
     }
     var o := ast.astmethodtype(meth.value, signature, dtype)
-    if (varargs) then {
-        o.varargs := true
-    }
     values.push(o)
     if (accept("semicolon")) then {
         next
