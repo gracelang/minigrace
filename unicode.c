@@ -271,5 +271,6 @@ Object module_unicode_init() {
     add_Method(c, "lookup", &unicode_lookup);
     Object o = alloc_newobj(0, c);
     unicode_module = o;
+    gc_root(o);
     return o;
 }
