@@ -1,8 +1,8 @@
 include Makefile.conf
 CFILES = ast.c buildinfo.c genc.c genjs.c genllvm30.c typechecker.c lexer.c parser.c subtype.c util.c genjava.c
 
-minigrace: $(CFILES:.c=.gcn) minigrace.gcn unicode.gso gracelib.o
-	gcc -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn)
+minigrace: $(CFILES:.c=.gcn) minigrace.gcn $(STATIC_MODULES) $(UNICODE_MODULE) gracelib.o
+	gcc -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn) $(STATIC_MODULES)
 
 selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f *.gcn
@@ -13,6 +13,9 @@ selfhost: minigrace $(CFILES:.c=.grace)
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
+
+unicode.gcn: unicode.c unicodedata.h gracelib.h
+	gcc -g -c -o unicode.gcn unicode.c
 
 gracelib.o: gracelib.c StandardPrelude.c
 	gcc -c -o gracelib-basic.o gracelib.c

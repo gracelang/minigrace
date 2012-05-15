@@ -59,6 +59,25 @@ do
     shift
 done
 
+UNICODE_MODULE=unicode.gso
+if grep -qi CYGWIN <<<"$PLATFORM"
+then
+    if [ "$distrib" = "tree" ]
+    then
+        echo "Building on Cygwin is currently not supported."
+        echo "Compilation fails less badly from tarballs."
+        echo "Tarballs available from http://ecs.vuw.ac.nz/~mwh/minigrace/dist/"
+        exit 1
+    fi
+    UNICODE_MODULE=unicode.gcn
+    STATIC_MODULES=unicode.gcn
+    if [ -e minigrace.c ]
+    then
+        echo "Patching minigrace.c for static build..."
+        sed -i 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
+    fi
+fi
+
 echo -n "Locating linker... "
 LD_PATH=$(which ld 2>/dev/null)
 if [ "$LD_PATH" ]
@@ -153,7 +172,6 @@ else
 fi
 rm -f tmp-$${.c,}
 
-
 if [ "$DISTRIB" = "tarball" ]
 then
     echo "Run '$MK' to build, and '$MK selfhost' to have it compile itself."
@@ -165,6 +183,8 @@ cat <<EOT > Makefile.conf
 PREFIX = $PREFIX
 LDFLAGS = $LDFLAGS -lm
 UNICODE_LDFLAGS = $UNICODE_LDFLAGS
+UNICODE_MODULE = $UNICODE_MODULE
+STATIC_MODULES = $STATIC_MODULES
 EOT
 
 if [ "$ADVISE_END" ]
