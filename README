@@ -77,8 +77,9 @@ be required in many cases:
 The script c/environ-Darwin attempts to detect and set up these
 variables correctly.
 
-The compiler does not currently work under Cygwin, but any assistance in
-resolving the remaining problems there would be welcome.
+Under Cygwin, only building from a tarball is currently supported. All
+builds will be static, because of limitations in dynamic libraries in
+the PE format.
 
 
 Interoperability
