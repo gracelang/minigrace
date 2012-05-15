@@ -305,11 +305,16 @@ def LexerClass = object {
                 for (str) do {c->
                     def n = c.ord
                     val := val * base
+                    var inc := 0
                     if ((n >= 48) & (n <= 57)) then {
-                        val := val + n - 48 // 0
+                        inc := n - 48 // 0
                     } else {
-                        val := val + n - 87 // 'a' - 10
+                        inc := n - 87 // 'a' - 10
                     }
+                    if (inc >= base) then {
+                        util.syntax_error("no such digit '{c}' in base {base}")
+                    }
+                    val := val + inc
                 }
                 val
             }
