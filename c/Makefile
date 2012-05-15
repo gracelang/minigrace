@@ -2,7 +2,7 @@ include Makefile.conf
 CFILES = ast.c buildinfo.c genc.c genjs.c genllvm30.c typechecker.c lexer.c parser.c subtype.c util.c genjava.c
 
 minigrace: $(CFILES:.c=.gcn) minigrace.gcn $(STATIC_MODULES) $(UNICODE_MODULE) gracelib.o
-	gcc -o minigrace $(LDFLAGS) -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn) $(STATIC_MODULES)
+	gcc -o minigrace -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn) $(STATIC_MODULES) $(LDFLAGS)
 
 selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f $(CFILES:.c=.gcn)
