@@ -218,7 +218,11 @@ method block {
         var found := false
         var i := 0
         var toks := tokens
+        var isMatchingBlock := false
         statementToken := sym
+        if (sym.kind == "lparen") then {
+            isMatchingBlock := true
+        }
         ifConsume {expression} then {
             if (accept("comma") | accept("arrow") | accept("colon")) then {
                 // This block has parameters
@@ -231,6 +235,13 @@ method block {
                     ident1.dtype := values.pop
                 }
                 params.push(ident1)
+                if (ident1.kind != "identifier") then {
+                    isMatchingBlock := true
+                }
+                if (isMatchingBlock && {accept("comma")}) then {
+                    util.syntax_error("matching blocks can have only "
+                        ++ "one parameter")
+                }
                 while {accept("comma")} do {
                     // Keep doing the above for the rest of the parameters.
                     next
