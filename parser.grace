@@ -1092,7 +1092,7 @@ method doclass {
         }
         def cname = values.pop
         next
-        var s := methodsignature
+        var s := methodsignature(false)
         var csig := s.sig
         var constructorName := s.m
         if (!accept("lbrace")) then {
@@ -1234,7 +1234,7 @@ method methoddec {
         checkIndent
         var stok := sym
         next
-        var m := methodsignature
+        var m := methodsignature(false)
         var meth := m.m
         var signature := m.sig
         var dtype := m.rtype
@@ -1340,7 +1340,7 @@ method parsempmndecrest(tm) {
 }
 
 // Accept a method signature
-method methodsignature {
+method methodsignature(sameline) {
     expect("identifier")or("op")or("lsquare")
     pushidentifier
     var meth := values.pop
@@ -1401,7 +1401,8 @@ method methodsignature {
         }
         expect("rparen")
         next
-        if (accept("identifier")) then {
+        if ((!sameline & accept("identifier")) |
+            acceptSameLine("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
             var tm := ast.astmethod(meth, signature, [], false)
@@ -1457,7 +1458,7 @@ method doreturn {
 }
 
 method domethodtype {
-    var m := methodsignature
+    var m := methodsignature(true)
     var meth := m.m
     var signature := m.sig
     var dtype := m.rtype
