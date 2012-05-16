@@ -287,6 +287,11 @@ method block {
         statementIndent := startIndent
         next
         var o := ast.astblock(params, body)
+        if (isMatchingBlock) then {
+            if (params.size > 0) then {
+                o.matchingPattern := params.first
+            }
+        }
         values.push(o)
     }
 }

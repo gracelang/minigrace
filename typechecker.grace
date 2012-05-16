@@ -731,6 +731,11 @@ method rewritematchblock2(blk) {
                 }
             }
             pattern := resolveIdentifiers(pattern)
+        } else {
+            if (blk.matchingPattern == arg) then {
+                pattern := resolveIdentifiers(arg)
+                newparams := []
+            }
         }
     }
     def newblk = ast.astblock(newparams, blk.body)
