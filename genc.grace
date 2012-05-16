@@ -1290,6 +1290,10 @@ method compile(vl, of, mn, rm, bt) {
                 } elseif(nm == "StandardPrelude") then {
                     exists := true
                     staticmodules.push(nm)
+                } elseif (io.exists("{sys.execPath}/{nm}.gcn")) then {
+                    exists := true
+                    linkfiles.push("{sys.execPath}/{nm}.gcn")
+                    staticmodules.push(nm)
                 } elseif (io.exists(nm ++ ".gcn")) then {
                     if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
                         exists := true
