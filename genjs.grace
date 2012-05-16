@@ -219,10 +219,17 @@ method compileblock(o) {
         out("    if (Grace_isTrue(match)) \{")
         out("      var bindings = callmethod(match, \"bindings\");")
         out("      var rv = callmethod(this, \"applyIndirectly\", bindings);")
-        out("      return new GraceSuccessfulMatch(rv, bindings);")
+        out("      return new GraceSuccessfulMatch(rv, []);")
         out("    \}")
         out("    return new GraceFailedMatch(rv);")
         out("  \}")
+    } else {
+        if (o.params.size == 1) then {
+            out("  block{myc}.methods[\"match\"] = function(o) \{")
+            out("    var r = this.real.apply(this.receiver, arguments);")
+            out("    return new GraceSuccessfulMatch(r, []);")
+            out("  \}")
+        }
     }
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block{myc}.className = 'block<{modname}:{o.line}>';")

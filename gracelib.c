@@ -2886,8 +2886,12 @@ Object Block_applyIndirectly(Object self, int nargs, Object *args, int flags) {
 }
 Object Block_match(Object self, int nargs, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
-    if (!bo->data[1])
-        die("block is not a matching block");
+    if (!bo->data[1]) {
+        if (nargs != 1)
+            die("block is not a matching block");
+        Object r = callmethod(self, "apply", nargs, args);
+        return alloc_SuccessfulMatch(r, NULL);
+    }
     Object pattern = bo->data[1];
     Object match = callmethod(pattern, "match", 1, args);
     if (!istrue(match))
