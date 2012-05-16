@@ -18,6 +18,7 @@ known-good
 tests
 EOT
 
+STATIC_BUILD=$(grep UNICODE_MODULE "$(git rev-parse --show-toplevel)/Makefile.conf" | grep gcn ; true)
 ( cd $(git rev-parse --show-toplevel) && git archive --prefix=tmp-$$/ $COMMIT ) | tar xf - -X EXCLUDE
 cd tmp-$$
 ln -s .. known-good
@@ -25,6 +26,7 @@ GEN=$( ( cd $(git rev-parse --show-toplevel) && tools/git-calculate-generation "
 echo "method gitrevision() { \"$COMMIT\" }" > buildinfo.gc
 echo "method gitgeneration() { \"$GEN\" }" >> buildinfo.gc
 cp buildinfo.gc buildinfo.grace
+./configure ${STATIC_BUILD:+--static}
 $MAKE l2/minigrace
 cd ..
 
@@ -39,8 +41,10 @@ else
     mv tmp-$$/l2/minigrace $ARCH/$COMMIT
     cp tmp-$$/l2/gracelib.o $ARCH/$COMMIT/gracelib.o
     cp tmp-$$/l2/gracelib.h $ARCH/$COMMIT/gracelib.h
-    [ -e tmp-$$/l2/gracelib.a ] && cp tmp-$$/l2/gracelib.a $ARCH/$COMMIT/gracelib.a
-    cp tmp-$$/l2/unicode.gso $ARCH/$COMMIT
+    for x in gracelib.a unicode.gso unicode.gcn
+    do
+        [ -e tmp-$$/l2/$x ] && cp tmp-$$/l2/$x $ARCH/$COMMIT/$x
+    done
 fi
 for x in tmp-$$/l2/*.c
 do
