@@ -1290,7 +1290,11 @@ method compile(vl, of, mn, rm, bt) {
                 } elseif(nm == "StandardPrelude") then {
                     exists := true
                     staticmodules.push(nm)
-                } elseif (io.exists("{sys.execPath}/{nm}.gcn")) then {
+                } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
+                        !io.exists("{nm}.grace")
+                    }) then {
+                    // Find static modules like unicode alongside compiler,
+                    // but not modules compiled from Grace code here.
                     exists := true
                     linkfiles.push("{sys.execPath}/{nm}.gcn")
                     staticmodules.push(nm)
