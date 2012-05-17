@@ -2992,9 +2992,9 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
     if (!bo->data[1]) {
-        if (nargs != 1)
+        if (nparts != 1 || argcv == NULL || argcv[0] != 1)
             die("block is not a matching block");
-        Object r = callmethod(self, "apply", nargs, args);
+        Object r = callmethod(self, "apply", nparts, argcv, args);
         return alloc_SuccessfulMatch(r, NULL);
     }
     Object pattern = bo->data[1];
