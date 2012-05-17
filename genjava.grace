@@ -99,7 +99,7 @@ method compileModule(nodes: List, modName: String) {
         scope.line("import java.lang.reflect.Method") ++
 
         // Each module is placed in a single class.
-        scope.stmt(scope.module("public final class " ++
+        scope.stmt(scope.decl("public final class " ++
                 "{name} extends {obj} \{", { scope' ->
             scope'.line("private static {name} $module") ++
                 scope'.stmt(scope'.block("public static " ++
@@ -141,8 +141,7 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
         if(scope.hasVariable(name).not) then {
             scope.addVariable(name)
             scope.line(compileField(node, scope)) ++
-                if((scope.isModule & (node.kind == "class")) |
-                        scope.isDecl) then {
+                if(scope.isDecl) then {
                     scope.indent ++ compileGetter(node, scope) ++
                         if(node.kind == "vardec") then {
                             scope.indent ++ compileSetter(node, scope)
@@ -264,8 +263,7 @@ method compileImportExec(node, scope: Scope) -> String {
 // have the assignment appear in the right place it must be in the execution.
 // Note the `def`s aren't final in order to accomodate for this.
 method compileField(node, scope: Scope) -> String {
-    def acc = if(scope.isModule | scope.isDecl)
-        then { "private " } else { "" }
+    def acc = if(scope.isDecl) then { "private " } else { "" }
     
     "{acc}{obj} {compileFieldName(node)}"
 }
@@ -302,7 +300,7 @@ method compileFieldName(node) -> String {
 }
 
 method compileMethod(node, scope: Scope) -> String {
-    def acc = if(scope.isModule | scope.isDecl) then { "public " } else { "" }
+    def acc = if(scope.isDecl) then { "public " } else { "" }
     def name = escape(node.value.value)
     def params = join(map(node.params) with { param ->
         "final {obj} _{escape(param.value)}"
@@ -655,9 +653,6 @@ type Scope = {
     // The scope encompassing this one.
     up -> Scope
 
-    // Whether the scope is in a module declaration.
-    isModule -> Boolean
-
     // Whether the scope is in an object declaration.
     isDecl -> Boolean
 
@@ -677,9 +672,6 @@ type Scope = {
     // Helper for generating correct indentation.
     block(left: String, inner: Block, right: String) -> String
 
-    // As for block, but sets isModule to true.
-    module(left: String, inner: Block, right: String) -> String
-
     // As for block, but sets isDecl to true.
     decl(left: String, inner: Block, right: String) -> String
 
@@ -694,12 +686,11 @@ type Scope = {
 // This should be used to initialise a scope, and the rest should be generated
 // by calling one of the 'enter' methods on the resulting scopes.
 method moduleScope -> Scope {
-    ScopeFactory.new(0, void, true, false)
+    ScopeFactory.new(0, void, true)
 }
 
-class ScopeFactory { ind: Number, outer', module': Boolean, decl': Boolean ->
-    
-    def isModule = module'
+class ScopeFactory.new(ind: Number, outer', decl': Boolean) {
+
     def isDecl = decl'
     def up = outer'
 
@@ -749,17 +740,12 @@ class ScopeFactory { ind: Number, outer', module': Boolean, decl': Boolean ->
     }
 
     method block(left: String, inner: Block, right: String) -> String {
-        def scope = ScopeFactory.new(indentAmount + 1, self, false, false)
-        left ++ "\n" ++ inner.apply(scope) ++ indent ++ right
-    }
-
-    method module(left: String, inner: Block, right: String) -> String {
-        def scope = ScopeFactory.new(indentAmount + 1, self, true, false)
+        def scope = ScopeFactory.new(indentAmount + 1, self, false)
         left ++ "\n" ++ inner.apply(scope) ++ indent ++ right
     }
 
     method decl(left: String, inner: Block, right: String) -> String {
-        def scope = ScopeFactory.new(indentAmount + 1, self, false, true)
+        def scope = ScopeFactory.new(indentAmount + 1, self, true)
         left ++ "\n" ++ inner.apply(scope) ++ indent ++ right
     }
 
