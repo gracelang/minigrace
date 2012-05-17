@@ -1441,6 +1441,8 @@ method typecheck(values) {
     btmp.value := NothingType
     bindName("Nothing", btmp)
     btmp := Binding.new("type")
+    bindName("None", btmp)
+    btmp := Binding.new("type")
     btmp.value := BlockType
     bindName("Block", btmp)
     subtype.addType(DynamicType)
