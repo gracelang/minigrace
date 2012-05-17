@@ -10,7 +10,7 @@ public class GraceType extends GraceObject {
     this.methods = methods;
   }
   
-  public GraceObject matches(GraceObject o) {
+  public GraceObject matches(GraceObject self, GraceObject o) {
   	names: for (String name : methods) {
   		GraceObject s = o;
   		
@@ -29,7 +29,7 @@ public class GraceType extends GraceObject {
   				}
   			}
   			
-  			s = s.$super;
+  			s = s.$super();
   		}
   		
   		return new MatchFailed(o);
@@ -38,47 +38,44 @@ public class GraceType extends GraceObject {
   	return new MatchSucceeded(o, $list());
   }
   
-  private class MatchSucceeded extends GraceObject {
+  protected class MatchSucceeded extends GraceObject {
   	
   	private final GraceObject result;
   	private final GraceObject bindings;
   	
   	public MatchSucceeded(GraceObject result, GraceObject bindings) {
-  		super($true, true);
+  		inherits($true);
   		
   		this.result = result;
   		this.bindings = bindings;
   	}
   	
-  	@SuppressWarnings("unused")
-		public GraceObject result() {
+		public GraceObject result(GraceObject self) {
   		return result;
   	}
   	
-  	@SuppressWarnings("unused")
-		public GraceObject bindings() {
+		public GraceObject bindings(GraceObject self) {
   		return bindings;
   	}
   	
-  	public GraceObject asString() {
+  	public GraceObject asString(GraceObject self) {
   		return $str("SuccessfulMatch(result = " + result +
   				", bindings = " + bindings + ")");
   	}
   	
   }
   
-  private class MatchFailed extends GraceObject {
+  protected class MatchFailed extends GraceObject {
   	
   	private final GraceObject result;
   	
   	public MatchFailed(GraceObject result) {
-  		super($false, true);
+  		inherits($false);
   		
   		this.result = result;
   	}
   	
-  	@SuppressWarnings("unused")
-		public GraceObject result() {
+		public GraceObject result(GraceObject self) {
   		return result;
   	}
   	

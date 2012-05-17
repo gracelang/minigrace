@@ -27,31 +27,31 @@ public final class sys extends GraceObject {
     sys.args = vargs;
   }
 
-  public GraceObject argv() {
+  public GraceList argv(GraceObject self) {
     GraceList list = new GraceList();
 
     for (String arg : args) {
-      list.push(new GraceString(arg));
+      list.push(list, new GraceString(arg));
     }
 
     return list;
   }
 
-  public GraceObject exit(GraceObject status) {
+  public GraceNothing exit(GraceObject self, GraceObject status) {
     System.exit((int) ((GraceNumber) status).value);
 
-    return GraceVoid.value;
+    return nothing;
   }
 
-  public GraceObject cputime() {
+  public GraceNumber cputime(GraceObject self) {
     return new GraceNumber(0);
   }
 
-  public GraceObject elapsed() {
+  public GraceNumber elapsed(GraceObject self) {
     return new GraceNumber(0);
   }
 
-  public GraceObject execPath() {
+  public GraceString execPath(GraceObject self) {
     return new GraceString(System.getProperty("user.dir"));
   }
 

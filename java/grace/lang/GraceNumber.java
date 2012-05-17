@@ -17,87 +17,82 @@ public class GraceNumber extends GraceObject {
   }
 
   // - (Negative)
-  public GraceObject prefix$45() {
+  public GraceNumber prefix$45(GraceObject self) {
     return new GraceNumber(-value);
   }
 
   // ==
-  public GraceObject bin$61$61(GraceObject o) {
+  public GraceBoolean bin$61$61(GraceObject self, GraceObject o) {
     return GraceBoolean.evaluate(o instanceof GraceNumber &&
         value == num(o));
   }
 
   // +
-  public GraceObject bin$43(GraceObject other) {
+  public GraceNumber bin$43(GraceObject self, GraceObject other) {
     return new GraceNumber(value + num(other));
   }
 
   // -
-  public GraceObject bin$45(GraceObject other) {
+  public GraceNumber bin$45(GraceObject self, GraceObject other) {
     return new GraceNumber(value - num(other));
   }
 
   // *
-  public GraceObject bin$42(GraceObject other) {
+  public GraceNumber bin$42(GraceObject self, GraceObject other) {
     return new GraceNumber(value * num(other));
   }
 
   // /
-  public GraceObject bin$47(GraceObject other) {
+  public GraceNumber bin$47(GraceObject self, GraceObject other) {
     return new GraceNumber(value / num(other));
   }
 
   // %
-  public GraceObject bin$37(GraceObject other) {
+  public GraceNumber bin$37(GraceObject self, GraceObject other) {
     return new GraceNumber(value % num(other));
   }
 
   // ++
-  public GraceObject bin$43$43(GraceObject other) {
-    return new GraceString(str(asString()) + str(other.asString()));
+  public GraceString bin$43$43(GraceObject self, GraceObject other) {
+    return new GraceString(str(asString(self)) + str(other.asString(other)));
   }
 
   // ..
-  public GraceObject bin$46$46(GraceObject other) {
+  public GraceList bin$46$46(GraceObject self, GraceObject other) {
     GraceList list = new GraceList();
     int to = (int) num(other);
     for (int i = (int) value; i <= to; i++) {
-      list.push(new GraceNumber(i));
+      list.push(list, new GraceNumber(i));
     }
 
     return list;
   }
 
   // <
-  public GraceObject bin$60(GraceObject other) {
+  public GraceBoolean bin$60(GraceObject self, GraceObject other) {
     return GraceBoolean.evaluate(value < num(other));
   }
 
   // >
-  public GraceObject bin$62(GraceObject other) {
+  public GraceBoolean bin$62(GraceObject self, GraceObject other) {
     return GraceBoolean.evaluate(value > num(other));
   }
 
   // <=
-  public GraceObject bin$60$61(GraceObject other) {
+  public GraceBoolean bin$60$61(GraceObject self, GraceObject other) {
     return GraceBoolean.evaluate(value <= num(other));
   }
 
   // >=
-  public GraceObject bin$62$61(GraceObject other) {
+  public GraceBoolean bin$62$61(GraceObject self, GraceObject other) {
     return GraceBoolean.evaluate(value >= num(other));
   }
 
-  // -
-  public GraceObject pre$45() {
-    return new GraceNumber(-value);
-  }
-
-  public GraceObject asString() {
+  public GraceString asString(GraceObject self) {
     if (Math.floor(value) == value) {
-      return new GraceString("" + (int) value);
+      return new GraceString(Integer.toString((int) value));
     }
-    return new GraceString("" + value);
+    return new GraceString(Double.toString(value));
   }
 
 }
