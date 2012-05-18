@@ -103,6 +103,10 @@ def NothingType = ast.asttype("Nothing", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
 ])
+def NoneType = ast.asttype("None", [
+    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
+    ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
+])
 def BlockType = ast.asttype("Block", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
@@ -1451,5 +1455,8 @@ method typecheck(values) {
     subtype.addType(BooleanType)
     subtype.addType(ListType)
     subtype.addType(VoidType)
+    subtype.addType(NoneType)
+    subtype.addType(NothingType)
+    subtype.addType(BlockType)
     resolveIdentifiersList(values)
 }

@@ -77,11 +77,12 @@ ClassData Boolean;
 ClassData String;
 ClassData ConcatString;
 ClassData StringIter;
+ClassData Block;
 ClassData Octets;
 ClassData List;
 ClassData ListIter;
 ClassData Undefined;
-ClassData noneClass;
+ClassData None;
 ClassData ellipsisClass;
 ClassData File;
 ClassData IOModule;
@@ -2056,11 +2057,11 @@ Object module_sys_init() {
 Object alloc_none() {
     if (none != NULL)
         return none;
-    noneClass = alloc_class("nothing", 3);
-    add_Method(noneClass, "==", &Object_Equals);
-    add_Method(noneClass, "!=", &Object_NotEquals);
-    add_Method(noneClass, "asString", &Object_asString);
-    Object o = alloc_obj(0, noneClass);
+    None = alloc_class("noSuchValue", 3);
+    add_Method(None, "==", &Object_Equals);
+    add_Method(None, "!=", &Object_NotEquals);
+    add_Method(None, "asString", &Object_asString);
+    Object o = alloc_obj(0, None);
     none = o;
     gc_root(o);
     return o;
@@ -2915,6 +2916,8 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
     ClassData c = alloc_class2(buf, 10, (void*)&Block__mark);
+    if (!Block)
+        Block = c;
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
