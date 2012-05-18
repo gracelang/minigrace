@@ -1534,7 +1534,7 @@ method compile(vl, of, mn, rm, bt) {
             }
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed linking")
-                raise("Fatal.")
+                sys.exit(1)
             }
         }
         log_verbose("done.")
