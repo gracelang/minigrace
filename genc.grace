@@ -1393,15 +1393,15 @@ method compile(vl, of, mn, rm, bt) {
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
+    out("  gc_root(self);")
     if (util.extensions.contains("NativePrelude")) then {
         out("  prelude = grace_prelude();")
         out("  adddatum2(self, grace_prelude(), 0);")
     } else {
         out("  prelude = module_StandardPrelude_init();")
-        out("  adddatum2(self, module_StandardPrelude_init(), 0);")
+        out("  adddatum2(self, prelude, 0);")
     }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
-    out("  gc_root(self);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_HashMap = alloc_var();")
