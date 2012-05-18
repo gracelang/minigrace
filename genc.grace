@@ -1354,6 +1354,9 @@ method compile(vl, of, mn, rm, bt) {
     }
     outprint("#include \"{util.gracelibPath}/gracelib.h\"")
     outprint("#include <stdlib.h>")
+    outprint("#ifndef __CYGWIN__")
+    outprint("#pragma weak main")
+    outprint("#endif")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
     outprint("extern Object none;")
