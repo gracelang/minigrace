@@ -116,7 +116,7 @@ method compileModule(nodes: List, modName: String) {
 
                 // Top level code ends up in the module's constructor.
                 scope'.stmt(scope'.block("private {name}() \{", { scope'' ->
-                    scope''.line("final {obj} $outer = this") ++
+                    scope''.line("final {obj} outer = this") ++
                         compileExecution(nodes, scope'')
                 }, "\}")) ++
 
@@ -138,16 +138,15 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
         scope.line(compileImportDecl(node, scope))
     }.kinds(["vardec", "defdec", "class", "type"]) do { node ->
         def name = compileFieldName(node)
-        if(scope.hasVariable(name).not) then {
+        strIf(scope.hasVariable(name).not) then {
             scope.addVariable(name)
-            scope.line(compileField(node, scope)) ++
-                if(scope.isDecl) then {
-                    scope.indent ++ compileGetter(node, scope) ++
-                        if(node.kind == "vardec") then {
-                            scope.indent ++ compileSetter(node, scope)
-                        } else { "" }
-            } else { "" }
-        } else { "" }
+            scope.line(compileField(node, scope)) ++ strIf(scope.isDecl) then {
+                scope.indent ++ compileGetter(node, scope) ++
+                    strIf(node.kind == "vardec") then {
+                        scope.indent ++ compileSetter(node, scope)
+                    }
+            }
+        }
     }.kind("method") do { node ->
         compileMethod(node, scope)
     }.kind("if") do { node ->
@@ -241,7 +240,7 @@ method compileExpression(node, scope: Scope) -> String {
         node.value
     }.else {
         util.log_verbose("Unknown expression: {node.kind}")
-        "/* {node.kind} */ $void"
+        "/* {node.kind} */ nothing"
     }.of(node)
 }
 
@@ -263,7 +262,7 @@ method compileImportExec(node, scope: Scope) -> String {
 // have the assignment appear in the right place it must be in the execution.
 // Note the `def`s aren't final in order to accomodate for this.
 method compileField(node, scope: Scope) -> String {
-    def acc = if(scope.isDecl) then { "private " } else { "" }
+    def acc = strIf(scope.isDecl) then("private ")
     
     "{acc}{obj} {compileFieldName(node)}"
 }
@@ -273,7 +272,7 @@ method compileField(node, scope: Scope) -> String {
 method compileGetter(node, scope: Scope) -> String {
     def name = compileFieldName(node)
     
-    scope.block("public {obj} {name}() \{", { scope' ->
+    scope.block("public {obj} {name}({obj} self) \{", { scope' ->
         scope'.line("return {name}")
     }, "\}\n")
 }
@@ -282,9 +281,9 @@ method compileSetter(node, scope: Scope) -> String {
     def name = compileFieldName(node)
     
     scope.block("public {obj} {name}$58$61" ++
-            "({obj} $) \{", { scope' ->
-        scope'.line("this.{name} = $") ++
-            scope'.line("return $void")
+            "({obj} self, {obj} value) \{", { scope' ->
+        scope'.line("this.{name} = value") ++
+            scope'.line("return nothing")
     }, "\}\n")
 }
 
@@ -300,22 +299,22 @@ method compileFieldName(node) -> String {
 }
 
 method compileMethod(node, scope: Scope) -> String {
-    def acc = if(scope.isDecl) then { "public " } else { "" }
+    def acc = strIf(scope.isDecl) then("public ")
     def name = escape(node.value.value)
-    def params = join(map(node.params) with { param ->
-        "final {obj} _{escape(param.value)}"
-    }) separatedBy(", ") ++ if(node.varargs) then {
-        ", final {obj}... _"
-    } else { "" }
+    def params = "final {obj} self" ++ strIf(node.params.size > 0) then {
+        ", " ++ join(map(node.params) with { param ->
+            "final {obj} _{escape(param.value)}"
+        }) separatedBy(", ") ++ strIf(node.varargs) then(", final {obj}... _")
+    }
     
     scope.stmt(scope.block("{acc}{obj} " ++
-            "{name}({params}) \{", { scope' ->
+            "{name}(final {obj} self, {params}) \{", { scope' ->
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
         if(node.body.size == 0) then {
-            scope'.line("return $void")
+            scope'.line("return nothing")
         } else {
-            scope'.line("final {obj} $outer = this") ++
+            scope'.line("final {obj} outer = this") ++
                 scope'.stmt(scope'.block("class $Return " ++
                         "extends {ret} \{", { scope'' ->
                     scope''.stmt(scope''.block("public $Return" ++
@@ -372,7 +371,7 @@ method compileClosure(body: List, scope: Scope) -> String {
 // Safely turns the last expression of the given body into a return stmt.
 method forceReturn(body: List) -> List {
     if(body.size == 0) then {
-        return [generateReturn(literal("$void"))]
+        return [generateReturn(literal("nothing"))]
     }
 
     def last = body[body.size]
@@ -434,9 +433,9 @@ method compileIf(node, scope: Scope) -> String {
     if(node.elseblock.size > 0) then {
         def else = compileBlock(ast.astblock([], node.elseblock), scope)
 
-        "({condition}).invoke(\"ifTrue$else\", {then}, {else})"
+        "{condition}.invoke(\"ifTrue$else\", {then}, {else})"
     } else {
-        "({condition}).invoke(\"ifTrue\", {then})"
+        "{condition}.invoke(\"ifTrue\", {then})"
     }
 }
 
@@ -460,12 +459,12 @@ method compileCall(node, scope: Scope) -> String {
     def rest = join(args) separatedBy(", ")
 
     if(node.value.kind == "member") then {
-        def comma = if(args.size > 0) then { ", " } else { "" }
+        def comma = strIf(args.size > 0) then(", ")
         def in = compileExpression(node.value.in, scope)
 
         "{in}.invoke(\"{name}\"{comma}{rest})"
     } else {
-        "{name}({rest})"
+        "{name}(self, {rest})"
     }
 }
 
@@ -484,9 +483,9 @@ method compileClass(node, scope: Scope) -> String {
     def body = [ast.astobject(node.value, void)]
     def meth = ast.astmethod(void, node.params, body, void)
 
-    scope.line(scope.block("{name} = new {obj}($outer, false) \{", { scope' ->
+    scope.line(scope.block("{name} = new {obj}(outer) \{", { scope' ->
         // This outer is a hack until the outer class problem is fixed.
-        scope'.line("private final {obj} $outer = this") ++
+        scope'.line("private final {obj} outer = this") ++
         scope'.stmt(scope'.block("public {obj} {constructor}({params}) \{",
             { scope'' ->
                 scope''.line("return {compileParamClosure(meth, scope'')}")
@@ -543,13 +542,13 @@ method compileOp(node, scope: Scope) -> String {
 method compileBlock(node, scope: Scope) -> String {
     def body = forceReturn(node.body)
 
-    scope.block("new {blk}($outer) \{", { scope' ->
+    scope.block("new {blk}(outer) \{", { scope' ->
         join(map(node.params) with { p ->
             scope'.line("{obj} {escape(p.value)}")
         }) ++
             compileDeclarations(body, scope') ++
             scope'.stmt(scope'.block("public {obj} apply" ++
-                    "({obj}... $params) \{", { scope'' ->
+                    "({obj} self, {obj}... $params) \{", { scope'' ->
                 join(map(node.params) with { p, i ->
                     scope''.line("{escape(p.value)} = $params[{i - 1}]")
                 }) ++ compileExecution(body, scope'')
@@ -567,24 +566,11 @@ method compileArray(node, scope: Scope) -> String {
 
 method compileObject(node, scope: Scope) -> String {
     def body = node.value
-    def extends = if((body.size > 0) && {
-        body[1].kind == "inherits"
-    }) then {
-        compileInherits(body[1], scope)
-    } else {
-        false
-    }
 
-    def args = if(extends == false) then {
-        "$outer, false"
-    } else {
-        "{extends}, $outer"
-    }
-
-    scope.decl("new {obj}({args}) \{", { scope' ->
+    scope.decl("new {obj}(outer) \{", { scope' ->
         compileSelf(scope') ++ compileDeclarations(node.value, scope') ++
             scope'.stmt(scope'.block("\{", { scope'' ->
-                scope''.line("final {obj} $outer = this") ++
+                scope''.line("final {obj} outer = this") ++
                     compileExecution(node.value, scope'')
             }, "\}")) ++ makeInvoke(scope')
     }, "\}")
@@ -614,7 +600,7 @@ method compileBlockExpression(block: List, scope: Scope) -> String {
         def expr = ast.astblock([], block)
         compileExpression(ast.astmember("apply", expr), scope)
     } else {
-        "$void"
+        "nothing"
     }
 }
 
@@ -623,10 +609,8 @@ method compileBlockExpression(block: List, scope: Scope) -> String {
 method compileIdentifier(node, scope: Scope) -> String {
     def name = node.value
 
-    if(name == "self") then {
-        return "self.getSelf()"
-    } elseif(name == "super") then {
-        return "self.$super"
+    if(name == "super") then {
+        return "self.$super()"
     }
 
     escape(name)
@@ -775,7 +759,7 @@ class Kinds {
 
     def map = HashMap.new
     var elseBlock := false
-    var stopped := false
+    var stopped: Boolean := false
     
     method kind(kind': String) do(block: Block) {
         map.put(kind', block)
@@ -814,7 +798,7 @@ class Kinds {
         in([node])[1]
     }
 
-    method stop {
+    method stop -> Void {
         stopped := true
     }
 
@@ -945,4 +929,15 @@ method concat(list: List, *attach: List) -> List {
     }
 
     list
+}
+
+type StringOrBlock = String | Block
+
+// Returns the given string if the condition is true, otherwise an empty string.
+method strIf(condition: Boolean) then(then: StringOrBlock) -> String {
+    if(condition) then {
+        match(then)
+            case { _ : String -> then }
+            case { _ : Block  -> then.apply }
+    } else { "" }
 }
