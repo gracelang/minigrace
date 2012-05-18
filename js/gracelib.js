@@ -625,6 +625,17 @@ var var_Type = classType(var_Boolean);
 var type_String = var_String;
 var type_Number = var_Number;
 var type_Boolean = var_Boolean;
+var var_Block = new GraceType("Block");
+var_Block.typeMethods.push("apply");
+var_Block.typeMethods.push("applyIndirectly");
+var_Block.typeMethods.push("match");
+var type_Block = var_Block;
+var var_None = new GraceType("None");
+var_None.typeMethods.push("==");
+var_None.typeMethods.push("!=");
+var type_None = var_None;
+var var_Void = var_None;
+var type_Void = var_None;
 var var_MatchFailed = Grace_allocObject();
 var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
 function GraceHashMap() {
@@ -1029,7 +1040,8 @@ function dbg(o) {
 }
 var extensionsMap = callmethod(var_HashMap, "new");
 var var_nothing = new GraceObject();
-var_nothing.methods.asString = function() {return new GraceString("nothing");}
+var_nothing.methods.asString = function() {return new GraceString("noSuchValue");}
+var var_noSuchValue = var_nothing;
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var Grace_native_prelude = Grace_allocObject();

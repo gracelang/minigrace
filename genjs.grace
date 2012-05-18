@@ -806,6 +806,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     topLevelTypes.put("String", true)
     topLevelTypes.put("Number", true)
     topLevelTypes.put("Boolean", true)
+    topLevelTypes.put("Block", true)
+    topLevelTypes.put("None", true)
     for (values) do {v->
         if (v.kind == "type") then {
             def typeid = escapeident(v.value)
