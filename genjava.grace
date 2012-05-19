@@ -931,10 +931,8 @@ method concat(list: List, *attach: List) -> List {
     list
 }
 
-type StringOrBlock = String | Block
-
 // Returns the given string if the condition is true, otherwise an empty string.
-method strIf(condition: Boolean) then(then: StringOrBlock) -> String {
+method strIf(condition: Boolean) then(then) -> String {
     if(condition) then {
         match(then)
             case { _ : String -> then }
