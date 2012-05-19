@@ -2,8 +2,10 @@ package grace.lang;
 
 public final class GraceNothing extends GraceObject {
   
-  public static final GraceNothing value = new GraceNothing();
+  public static final GraceNothing nothing = new GraceNothing();
 
-  private GraceNothing() {};
+  private GraceNothing() {
+    super(Egal.Value);
+  }
 
 }

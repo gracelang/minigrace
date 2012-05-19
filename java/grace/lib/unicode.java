@@ -2,7 +2,7 @@ package grace.lib;
 
 import grace.lang.*;
 
-public final class unicode extends GraceObject {
+public final class unicode extends GracePrelude {
 	
 	private static unicode $module;
 	

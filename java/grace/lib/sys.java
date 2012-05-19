@@ -2,7 +2,7 @@ package grace.lib;
 
 import grace.lang.*;
 
-public final class sys extends GraceObject {
+public final class sys extends GracePrelude {
   
   private static sys $module;
   public static sys $module() {
@@ -39,7 +39,6 @@ public final class sys extends GraceObject {
 
   public GraceNothing exit(GraceObject self, GraceObject status) {
     System.exit((int) ((GraceNumber) status).value);
-
     return nothing;
   }
 

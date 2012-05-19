@@ -2,8 +2,12 @@ package grace.lang;
 
 public abstract class GraceBlock extends GraceObject {
   
-  public GraceBlock(final GraceObject outer) {
-    super(outer);
+  public GraceBlock() {
+    super(Egal.Closure);
+  }
+  
+  public GraceBlock(GraceObject outer) {
+    super(Egal.Closure, outer);
   }
 
   public abstract GraceObject apply(GraceObject self, GraceObject... params);

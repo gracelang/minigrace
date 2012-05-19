@@ -56,7 +56,13 @@ method compile(nodes: List, outFile, modName: String, runMode: String,
         }
     }
 
-    compileModule(nodes, modName)
+    util.log_verbose("compiling to Java.")
+
+    def output = compileModule(nodes, modName)
+
+    util.log_verbose("writing file.")
+
+    util.outfile.write(output)
     util.outfile.close
 
     if(runMode == "make") then {
@@ -76,8 +82,6 @@ method compile(nodes: List, outFile, modName: String, runMode: String,
 }
 
 method compileModule(nodes: List, modName: String) {
-    util.log_verbose("writing file.")
-
     def packages = []
     var name := ""
     for(modName) do { c ->
@@ -92,45 +96,45 @@ method compileModule(nodes: List, modName: String) {
     def scope = moduleScope
 
     // Top-level modules are in the default Java package.
-    util.outfile.write(if(packages.size == 0) then { "" } else {
-            scope.line("package {join(packages) separatedBy(".")}")
-        } ++ scope.line("import grace.lang.*") ++
-        scope.line("import grace.lib.*") ++
-        scope.line("import java.lang.reflect.Method") ++
+    if(packages.size == 0) then { "" } else {
+        scope.line("package {join(packages) separatedBy(".")}")
+    } ++ scope.line("import grace.lang.*") ++
+    scope.line("import grace.lib.*") ++
+    scope.line("import java.lang.reflect.Method") ++
 
-        // Each module is placed in a single class.
-        scope.stmt(scope.decl("public final class " ++
-                "{name} extends {obj} \{", { scope' ->
-            scope'.line("private static {name} $module") ++
-                scope'.stmt(scope'.block("public static " ++
-                        "{name} $module() \{", { scope'' ->
-                    scope''.line("return $module == null ? $module = " ++
-                        "new {name}() : $module")
-                }, "\}")) ++
+    // Each module is placed in a single class.
+    scope.stmt(scope.decl("public final class " ++
+            "{name} extends {obj} \{", { scope' ->
+        scope'.line("private static {name} $module") ++
+            scope'.stmt(scope'.block("public static " ++
+                    "{name} $module() \{", { scope'' ->
+                scope''.line("return $module == null ? $module = " ++
+                    "new {name}() : $module")
+            }, "\}")) ++
 
-                scope'.line("private final {obj} self = this") ++
+            scope'.line("private final {obj} self = this") ++
 
-                // Methods appear as expected, and classes are objects assigned
-                // to fields with an inner Java class to represent it.
-                compileDeclarations(nodes, scope') ++
+            // Methods appear as expected, and classes are objects assigned
+            // to fields with an inner Java class to represent it.
+            compileDeclarations(nodes, scope') ++
 
-                // Top level code ends up in the module's constructor.
-                scope'.stmt(scope'.block("private {name}() \{", { scope'' ->
-                    scope''.line("final {obj} outer = this") ++
-                        compileExecution(nodes, scope'')
-                }, "\}")) ++
+            // Top level code ends up in the module's constructor.
+            scope'.stmt(scope'.block("private {name}() \{", { scope'' ->
+                scope''.line("final {obj} outer = this") ++
+                    compileExecution(nodes, scope'')
+            }, "\}")) ++
 
-                // Allows the module to be run from Java.
-                scope'.stmt(scope'.block("public static void " ++
-                        "main(String[] args) \{", { scope'' ->
-                    scope''.line("grace.lib.sys.setArgs(args, \"{name}\")") ++
-                        scope''.stmt(scope''.block("try \{", { scope''' ->
-                            scope'''.line("$module()")
-                        }, scope''.block("\} catch (Exception e) \{", { s ->
-                            s.line("GraceObject.printException(e)")
-                        }, "\}")))
-                }, "\}"))
-        }, "\}")))
+            // Allows the module to be run from Java.
+            scope'.stmt(scope'.block("public static void " ++
+                    "main(String[] args) \{", { scope'' ->
+                scope''.line("grace.lib.sys.setArgs(args, \"{name}\")") ++
+                    scope''.stmt(scope''.block("try \{", { scope''' ->
+                        scope'''.line("$module()")
+                    }, scope''.block("\} catch (Exception e) \{", { s ->
+                        s.line("GraceObject.printException(e)")
+                    }, "\}")))
+            }, "\}"))
+    }, "\}"))
 }
 
 method compileDeclarations(nodes: List, scope: Scope) -> String {
@@ -195,6 +199,8 @@ method compileExecution(nodes: List, scope: Scope) -> String {
         scope.line(compileObject(node, scope))
     }.kind("matchcase") do { node ->
         scope.stmt(compileMatch(node, scope))
+    }.kind("inherits") do { node ->
+        scope.line(compileInherits(node, scope))
     }.else { node ->
         if([ "method","type", "inherits"].contains(node.kind).not) then {
             util.log_verbose("Unknown statement: {node.kind}")
@@ -458,6 +464,8 @@ method compileCall(node, scope: Scope) -> String {
     def args = map(node.with) with { a -> compileExpression(a, scope) }
     def rest = join(args) separatedBy(", ")
 
+    print node.value.kind
+
     if(node.value.kind == "member") then {
         def comma = strIf(args.size > 0) then(", ")
         def in = compileExpression(node.value.in, scope)
@@ -494,7 +502,7 @@ method compileClass(node, scope: Scope) -> String {
 }
 
 method compileInherits(node, scope: Scope) -> String {
-    compileExpression(node.value, scope)
+    "self.inherits({compileExpression(node.value, scope)})"
 }
 
 method compileNumber(node, scope: Scope) -> String {
