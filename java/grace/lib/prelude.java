@@ -2,7 +2,7 @@ package grace.lib;
 
 import grace.lang.*;
 
-public final class prelude extends GracePrelude {
+public final class prelude extends Prelude {
 
   private static prelude $module;
   public static prelude $module() {
@@ -11,16 +11,16 @@ public final class prelude extends GracePrelude {
   
   private prelude() {}
 
-  public GraceNothing while$do(GraceObject self, GraceObject w, GraceObject d) {
-    while (((GraceBoolean) w.invoke("apply")).value) {
+  public Nothing while$do(Value self, Value w, Value d) {
+    while (((Bool) w.invoke("apply")).value) {
       d.invoke("apply");
     }
 
     return nothing;
   }
 
-  public GraceNothing for$do(GraceObject self, GraceObject f, GraceObject d) {
-    for (GraceObject item : f) {
+  public Nothing for$do(Value self, Value f, Value d) {
+    for (Value item : f) {
       d.invoke("apply", item);
     }
 

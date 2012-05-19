@@ -1,24 +1,24 @@
 package grace.lang;
 
-import static grace.lang.GraceBoolean.$false;
-import static grace.lang.GraceBoolean.$true;
-import static grace.lang.GracePrelude.$list;
-import static grace.lang.GracePrelude.$string;
+import static grace.lang.Bool.$false;
+import static grace.lang.Bool.$true;
+import static grace.lang.Prelude.$list;
+import static grace.lang.Prelude.$string;
 
 import java.lang.reflect.Method;
 
-public class GraceType extends GraceObject {
+public class Type extends Value {
 
   private String[] methods;
 
-  public GraceType(String... methods) {
+  public Type(String... methods) {
     super(Egal.Value);
     this.methods = methods;
   }
 
-  public GraceObject matches(GraceObject self, GraceObject o) {
+  public Value matches(Value self, Value o) {
     names: for (String name : methods) {
-      GraceObject s = o;
+      Value s = o;
 
       while (s != null) {
         Method[] methods;
@@ -44,12 +44,12 @@ public class GraceType extends GraceObject {
     return new MatchSucceeded(o, $list());
   }
 
-  protected class MatchSucceeded extends GraceObject {
+  protected class MatchSucceeded extends Value {
 
-    private final GraceObject result;
-    private final GraceObject bindings;
+    private final Value result;
+    private final Value bindings;
 
-    public MatchSucceeded(GraceObject result, GraceObject bindings) {
+    public MatchSucceeded(Value result, Value bindings) {
       super(Egal.Value);
       inherits($true);
 
@@ -57,33 +57,33 @@ public class GraceType extends GraceObject {
       this.bindings = bindings;
     }
 
-    public GraceObject result(GraceObject self) {
+    public Value result(Value self) {
       return result;
     }
 
-    public GraceObject bindings(GraceObject self) {
+    public Value bindings(Value self) {
       return bindings;
     }
 
-    public GraceObject asString(GraceObject self) {
+    public Value asString(Value self) {
       return $string("SuccessfulMatch(result = " + result + ", bindings = "
           + bindings + ")");
     }
 
   }
 
-  protected class MatchFailed extends GraceObject {
+  protected class MatchFailed extends Value {
 
-    private final GraceObject result;
+    private final Value result;
 
-    public MatchFailed(GraceObject result) {
+    public MatchFailed(Value result) {
       super(Egal.Value);
       inherits($false);
 
       this.result = result;
     }
 
-    public GraceObject result(GraceObject self) {
+    public Value result(Value self) {
       return result;
     }
 

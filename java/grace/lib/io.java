@@ -4,7 +4,7 @@ import grace.lang.*;
 
 import java.io.*;
 
-public final class io extends GracePrelude {
+public final class io extends Prelude {
 
   private static io $module;
 
@@ -12,20 +12,20 @@ public final class io extends GracePrelude {
     return $module == null ? $module = new io() : $module;
   }
 
-  private static File file(GraceObject path) {
-    return new File(((GraceString) path).value);
+  private static File file(Value path) {
+    return new File(((Str) path).value);
   }
 
-  public GraceBoolean exists(GraceObject self, GraceObject path) {
+  public Bool exists(Value self, Value path) {
     return $boolean(file(path).exists());
   }
 
-  public GraceBoolean newer(GraceObject self, GraceObject path1,
-      GraceObject path2) {
+  public Bool newer(Value self, Value path1,
+      Value path2) {
     return $boolean(file(path1).lastModified() > file(path2).lastModified());
   }
 
-  public final class GraceProcess extends GraceObject {
+  public final class GraceProcess extends Value {
 
     Process process;
     int status;
@@ -36,15 +36,15 @@ public final class io extends GracePrelude {
       this.process = process;
     }
 
-    public GraceNumber $wait(GraceObject self) {
+    public Num $wait(Value self) {
       try {
         process.waitFor();
       } catch (Exception ex) {}
       status = process.exitValue();
-      return new GraceNumber(status);
+      return $number(status);
     }
 
-    public GraceBoolean success(GraceObject self) {
+    public Bool success(Value self) {
       this.$wait(self);
 
       if (status == 0) {
@@ -54,23 +54,23 @@ public final class io extends GracePrelude {
       return $false;
     }
 
-    public GraceBoolean terminated(GraceObject self) {
+    public Bool terminated(Value self) {
       this.$wait(self);
 
       return $true;
     }
 
-    public GraceNumber status(GraceObject self) {
+    public Num status(Value self) {
       return this.$wait(self);
     }
   }
 
-  public GraceObject spawn(GraceObject self, GraceObject... parts) {
+  public Value spawn(Value self, Value... parts) {
     Process process;
 
     String[] tokens = new String[parts.length];
     for (int i = 0; i < parts.length; i++)
-      tokens[i] = ((GraceString) parts[i]).value;
+      tokens[i] = ((Str) parts[i]).value;
 
     try {
       process = Runtime.getRuntime().exec(tokens);
@@ -99,8 +99,8 @@ public final class io extends GracePrelude {
     return new GraceProcess(process);
   }
 
-  public GraceBoolean system(GraceObject self, GraceObject cmd) {
-    String exec = ((GraceString) cmd).value;
+  public Bool system(Value self, Value cmd) {
+    String exec = ((Str) cmd).value;
     Process process;
 
     String[] tokens = { "/bin/bash", "-c", exec };
@@ -173,11 +173,11 @@ public final class io extends GracePrelude {
 
   }
 
-  public final class Input extends GraceObject {
+  public final class Input extends Value {
 
     private Input() {}
 
-    public GraceString read(GraceObject self) {
+    public Str read(Value self) {
       int b;
       String out = "";
 
@@ -189,17 +189,17 @@ public final class io extends GracePrelude {
         throw new RuntimeException("Failed to read input.");
       }
 
-      return new GraceString(out);
+      return $string(out);
     }
   }
 
   private Input input = new Input();
 
-  public Input input(GraceObject self) {
+  public Input input(Value self) {
     return input;
   }
 
-  public final class Output extends GraceObject {
+  public final class Output extends Value {
 
     private final PrintStream stream;
 
@@ -207,8 +207,8 @@ public final class io extends GracePrelude {
       this.stream = stream;
     }
 
-    public GraceNothing write(GraceObject self, GraceObject string) {
-      stream.print(((GraceString) string).value);
+    public Nothing write(Value self, Value string) {
+      stream.print(((Str) string).value);
       return nothing;
     }
 
@@ -216,21 +216,21 @@ public final class io extends GracePrelude {
 
   private Output output = new Output(System.out);
 
-  public Output output(GraceObject self) {
+  public Output output(Value self) {
     return output;
   }
 
   private Output error = new Output(System.err);
 
-  public Output error(GraceObject self) {
+  public Output error(Value self) {
     return error;
   }
 
-  public GraceFile open(GraceObject self, GraceObject path, GraceObject mode) {
-    return new GraceFile(file(path), ((GraceString) mode).value);
+  public GraceFile open(Value self, Value path, Value mode) {
+    return new GraceFile(file(path), ((Str) mode).value);
   }
 
-  public final class GraceFile extends GraceObject {
+  public final class GraceFile extends Value {
 
     private FileReader reader = null;
     private FileWriter writer = null;
@@ -262,7 +262,7 @@ public final class io extends GracePrelude {
       }
     }
 
-    public GraceString read(GraceObject self) {
+    public Str read(Value self) {
       if (reader == null) {
         throw new RuntimeException("Failed to read file.");
       }
@@ -278,16 +278,16 @@ public final class io extends GracePrelude {
         throw new RuntimeException("Failed to read file.");
       }
 
-      return new GraceString(out);
+      return $string(out);
     }
 
-    public GraceBoolean write(GraceObject self, GraceObject string) {
+    public Bool write(Value self, Value string) {
       if (writer == null) {
         throw new RuntimeException("Failed to write file.");
       }
 
       try {
-        writer.write(((GraceString) string).value);
+        writer.write(((Str) string).value);
         writer.flush();
       } catch (IOException iox) {
         throw new RuntimeException("Failed to write file.");
@@ -296,7 +296,7 @@ public final class io extends GracePrelude {
       return $true;
     }
 
-    public GraceNothing close(GraceObject self) {
+    public Nothing close(Value self) {
       if (reader != null) {
         try {
           reader.close();

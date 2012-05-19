@@ -1,33 +1,32 @@
 package grace.lang;
 
-import static grace.lang.GraceBoolean.$false;
-import static grace.lang.GraceNothing.nothing;
-import static grace.lang.GracePrelude.$boolean;
-import static grace.lang.GracePrelude.$javaBoolean;
+import static grace.lang.Bool.$false;
+import static grace.lang.Nothing.nothing;
+import static grace.lang.Prelude.$boolean;
+import static grace.lang.Prelude.$javaBoolean;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
-public class GraceObject implements Iterable<GraceObject>,
-    Iterator<GraceObject> {
+public class Value implements Iterable<Value>, Iterator<Value> {
 
   // The super object that this object inherits from. It's not clear whether
   // this value is changeable, but this is allowed mostly to let the inherits
   // declaration appear anywhere within an object declaration.
-  private GraceObject $super = nothing;
+  private Value $super = nothing;
 
   // Which technique to use to compare this object to others.
   private final Egal egal;
 
   // The enclosing scope of this object's creation. Methods defined on this
   // specific object (not its inherited ones) will see this as `outer`.
-  public final GraceObject outer;
+  public final Value outer;
   
   /**
    * Makes a Grace object with pointer comparison equality and no closure.
    */
-  public GraceObject() {
+  public Value() {
     this.egal = Egal.Pointer;
     this.outer = nothing;
   }
@@ -37,7 +36,7 @@ public class GraceObject implements Iterable<GraceObject>,
    * 
    * @param egal The egal technique to use for equality.
    */
-  public GraceObject(Egal egal) {
+  public Value(Egal egal) {
     this.egal = egal;
     this.outer = nothing;
   }
@@ -47,7 +46,7 @@ public class GraceObject implements Iterable<GraceObject>,
    * 
    * @param outer The object's enclosing scope.
    */
-  public GraceObject(GraceObject outer) {
+  public Value(Value outer) {
     this.egal = Egal.Pointer;
     this.outer = nothing;
   }
@@ -58,7 +57,7 @@ public class GraceObject implements Iterable<GraceObject>,
    * @param egal The egal technique to use for equality.
    * @param outer The object's enclosing scope.
    */
-  public GraceObject(Egal egal, GraceObject outer) {
+  public Value(Egal egal, Value outer) {
     this.egal = egal;
     this.outer = outer;
   }
@@ -66,7 +65,7 @@ public class GraceObject implements Iterable<GraceObject>,
   /**
    * @return The super object of this object.
    */
-  public final GraceObject $super() {
+  public final Value $super() {
     return $super;
   }
 
@@ -77,7 +76,7 @@ public class GraceObject implements Iterable<GraceObject>,
    * 
    * @return The Grace void value.
    */
-  public final GraceNothing inherits(GraceObject $super) {
+  public final Nothing inherits(Value $super) {
     this.$super = $super;
     return nothing;
   }
@@ -103,7 +102,7 @@ public class GraceObject implements Iterable<GraceObject>,
   }
 
   // ==
-  public GraceObject bin$61$61(GraceObject self, GraceObject o) {
+  public Value bin$61$61(Value self, Value o) {
     Egal egal = self.$egal();
     if (egal != o.$egal()) {
       return $false;
@@ -119,30 +118,30 @@ public class GraceObject implements Iterable<GraceObject>,
     }
   }
   
-  private boolean equal(GraceObject self, GraceObject o) {
+  private boolean equal(Value self, Value o) {
     // To be implemented. Will need to use reflection.
     return self == o;
   }
 
   // !=
-  public GraceObject bin$33$61(GraceObject self, GraceObject o) {
+  public Value bin$33$61(Value self, Value o) {
     return self.bin$61$61(self, o).invoke("not");
   }
 
   // /=
-  public GraceObject bin$47$61(GraceObject self, GraceObject o) {
+  public Value bin$47$61(Value self, Value o) {
     return self.bin$61$61(self, o).invoke("not");
   }
 
-  public GraceObject asString(GraceObject self) {
-    return new GraceString(super.toString());
+  public Value asString(Value self) {
+    return new Str(super.toString());
   }
 
-  public GraceObject next() {
+  public Value next() {
     throw new RuntimeException("No such method: next");
   }
 
-  public Iterator<GraceObject> iterator() {
+  public Iterator<Value> iterator() {
     return invoke("iter");
   }
 
@@ -159,8 +158,8 @@ public class GraceObject implements Iterable<GraceObject>,
   }
 
   public boolean equals(Object o) {
-    if (o instanceof GraceObject) {
-      return ((GraceBoolean) bin$61$61(this, (GraceObject) o)).value;
+    if (o instanceof Value) {
+      return ((Bool) bin$61$61(this, (Value) o)).value;
     }
 
     return false;
@@ -177,7 +176,7 @@ public class GraceObject implements Iterable<GraceObject>,
    * 
    * @return The result of the invocation.
    */
-  public GraceObject invoke(String name, GraceObject... args) {
+  public Value invoke(String name, Value... args) {
     return invoke(escapeInvokeName(name), name, "method", args);
   }
 
@@ -198,7 +197,7 @@ public class GraceObject implements Iterable<GraceObject>,
     return javaName;
   }
 
-  public GraceObject binop(String name, GraceObject o) {
+  public Value binop(String name, Value o) {
     return invoke(makeOpName(name), name, "binary operator", o);
   }
 
@@ -211,9 +210,9 @@ public class GraceObject implements Iterable<GraceObject>,
     return javaName;
   }
 
-  private GraceObject invoke(String javaName, String graceName, String kind,
-      GraceObject... args) {
-    GraceObject self = this;
+  private Value invoke(String javaName, String graceName, String kind,
+      Value... args) {
+    Value self = this;
 
     while (self != null) {
       Method[] methods;
@@ -230,7 +229,7 @@ public class GraceObject implements Iterable<GraceObject>,
           int length = types.length;
 
           // Confirm that the return type is at least a GraceObject.
-          if (!GraceObject.class.isAssignableFrom(method.getReturnType())) {
+          if (!Value.class.isAssignableFrom(method.getReturnType())) {
             break methods;
           }
 
@@ -238,7 +237,7 @@ public class GraceObject implements Iterable<GraceObject>,
           // exactly GraceObjects.
           int tlength = length - (method.isVarArgs() ? 2 : 1);
           for (int i = 0; i < tlength; i++) {
-            if (!types[i].equals(GraceObject.class)) {
+            if (!types[i].equals(Value.class)) {
               break methods;
             }
           }
@@ -248,7 +247,7 @@ public class GraceObject implements Iterable<GraceObject>,
 
           if (method.isVarArgs()) {
             // Check that the vararg type is correct as above.
-            if (!types[alength].getComponentType().equals(GraceObject.class)) {
+            if (!types[alength].getComponentType().equals(Value.class)) {
               break methods;
             }
           }
@@ -275,7 +274,7 @@ public class GraceObject implements Iterable<GraceObject>,
 
             int rlength = args.length;
 
-            Object[] varargs = new GraceObject[rlength - tlength];
+            Object[] varargs = new Value[rlength - tlength];
 
             for (int i = alength - 1; i < rlength; i++) {
               varargs[(i - alength) + 1] = args[i];
@@ -288,7 +287,7 @@ public class GraceObject implements Iterable<GraceObject>,
             // For permission purposes, there needs to be an invoke method
             // that
             // does the actual reflection invoke on the given method for us.
-            return (GraceObject) self.invoke(method, a);
+            return (Value) self.invoke(method, a);
           } catch (InvocationTargetException itx) {
             Throwable th = itx.getTargetException();
             if (th instanceof RuntimeException) {

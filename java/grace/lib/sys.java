@@ -2,7 +2,7 @@ package grace.lib;
 
 import grace.lang.*;
 
-public final class sys extends GracePrelude {
+public final class sys extends Prelude {
   
   private static sys $module;
   public static sys $module() {
@@ -27,31 +27,31 @@ public final class sys extends GracePrelude {
     sys.args = vargs;
   }
 
-  public GraceList argv(GraceObject self) {
-    GraceList list = new GraceList();
+  public List argv(Value self) {
+    List list = new List();
 
     for (String arg : args) {
-      list.push(list, new GraceString(arg));
+      list.push(list, $string(arg));
     }
 
     return list;
   }
 
-  public GraceNothing exit(GraceObject self, GraceObject status) {
-    System.exit((int) ((GraceNumber) status).value);
+  public Nothing exit(Value self, Value status) {
+    System.exit((int) ((Num) status).value);
     return nothing;
   }
 
-  public GraceNumber cputime(GraceObject self) {
-    return new GraceNumber(0);
+  public Num cputime(Value self) {
+    return $number(0);
   }
 
-  public GraceNumber elapsed(GraceObject self) {
-    return new GraceNumber(0);
+  public Num elapsed(Value self) {
+    return $number(0);
   }
 
-  public GraceString execPath(GraceObject self) {
-    return new GraceString(System.getProperty("user.dir"));
+  public Str execPath(Value self) {
+    return $string(System.getProperty("user.dir"));
   }
 
 }
