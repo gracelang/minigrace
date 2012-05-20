@@ -20,8 +20,9 @@ public final class prelude extends Prelude {
   }
 
   public Nothing for$do(Value self, Value f, Value d) {
-    for (Value item : f) {
-      d.invoke("apply", item);
+    Value iter = f.invoke("iter");
+    while ($javaBoolean(iter.invoke("havemore"))) {
+      d.invoke("apply", iter.invoke("next"));
     }
 
     return nothing;

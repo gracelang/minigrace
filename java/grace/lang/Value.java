@@ -3,13 +3,11 @@ package grace.lang;
 import static grace.lang.Bool.$false;
 import static grace.lang.Nothing.nothing;
 import static grace.lang.Prelude.$boolean;
-import static grace.lang.Prelude.$javaBoolean;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
 
-public class Value implements Iterable<Value>, Iterator<Value> {
+public class Value {
 
   // The super object that this object inherits from. It's not clear whether
   // this value is changeable, but this is allowed mostly to let the inherits
@@ -22,7 +20,7 @@ public class Value implements Iterable<Value>, Iterator<Value> {
   // The enclosing scope of this object's creation. Methods defined on this
   // specific object (not its inherited ones) will see this as `outer`.
   public final Value outer;
-  
+
   /**
    * Makes a Grace object with pointer comparison equality and no closure.
    */
@@ -40,7 +38,7 @@ public class Value implements Iterable<Value>, Iterator<Value> {
     this.egal = egal;
     this.outer = nothing;
   }
-  
+
   /**
    * Makes a GraceObject with pointer comparison equality and a closure.
    * 
@@ -80,7 +78,7 @@ public class Value implements Iterable<Value>, Iterator<Value> {
     this.$super = $super;
     return nothing;
   }
-  
+
   /**
    * @return The egal technique to decide equality with this object.
    */
@@ -88,16 +86,16 @@ public class Value implements Iterable<Value>, Iterator<Value> {
     if (egal == Egal.Pointer) {
       return Egal.Pointer;
     }
-    
+
     if ($super == nothing) {
       return egal;
     }
-    
+
     Egal worst = $super.$egal();
     if (worst != Egal.Value) {
       return worst;
     }
-    
+
     return egal;
   }
 
@@ -107,17 +105,22 @@ public class Value implements Iterable<Value>, Iterator<Value> {
     if (egal != o.$egal()) {
       return $false;
     }
-    
+
     switch (egal) {
-    case Pointer: return $boolean(self == o);
-    // This definition isn't correct. This should check the outer value for
-    // each method. At the moment it's not possible to retrieve the outer value
-    // for a specific method, so this is a close enough approximation.
-    case Closure: return $boolean(self.outer == o.outer && equal(self, o));
-    case Value: default: return $boolean(equal(self, o));
+    case Pointer:
+      return $boolean(self == o);
+      // This definition isn't correct. This should check the outer value for
+      // each method. At the moment it's not possible to retrieve the outer
+      // value
+      // for a specific method, so this is a close enough approximation.
+    case Closure:
+      return $boolean(self.outer == o.outer && equal(self, o));
+    case Value:
+    default:
+      return $boolean(equal(self, o));
     }
   }
-  
+
   private boolean equal(Value self, Value o) {
     // To be implemented. Will need to use reflection.
     return self == o;
@@ -135,22 +138,6 @@ public class Value implements Iterable<Value>, Iterator<Value> {
 
   public Value asString(Value self) {
     return new Str(super.toString());
-  }
-
-  public Value next() {
-    throw new RuntimeException("No such method: next");
-  }
-
-  public Iterator<Value> iterator() {
-    return invoke("iter");
-  }
-
-  public boolean hasNext() {
-    return $javaBoolean(invoke("havemore"));
-  }
-
-  public void remove() {
-    throw new UnsupportedOperationException("Cannot remove elements");
   }
 
   public String toString() {
@@ -228,13 +215,13 @@ public class Value implements Iterable<Value>, Iterator<Value> {
 
           int length = types.length;
 
-          // Confirm that the return type is at least a GraceObject.
+          // Confirm that the return type is at least a Grace object.
           if (!Value.class.isAssignableFrom(method.getReturnType())) {
             break methods;
           }
 
           // Confirm that the arguments before the vararg are all typed as
-          // exactly GraceObjects.
+          // exactly Grace objects.
           int tlength = length - (method.isVarArgs() ? 2 : 1);
           for (int i = 0; i < tlength; i++) {
             if (!types[i].equals(Value.class)) {
@@ -262,8 +249,8 @@ public class Value implements Iterable<Value>, Iterator<Value> {
           // Put the self object into the argument array.
           Object[] a = new Object[length];
           a[0] = this;
-          for (int i = 1; i < length; i++) {
-            a[i] = args[i];
+          for (int i = 0; i < tlength; i++) {
+            a[i + 1] = args[i];
           }
 
           if (method.isVarArgs()) {

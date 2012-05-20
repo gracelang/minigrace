@@ -11,7 +11,7 @@ package grace.lang;
  * @author Timothy Jones
  */
 public abstract class Prelude extends Value {
-  
+
   public Prelude() {
     super(Egal.Value);
   }
@@ -24,7 +24,7 @@ public abstract class Prelude extends Value {
   public static Bool $boolean(boolean bool) {
     return bool ? $true : $false;
   }
-  
+
   public static Num $number(double number) {
     return new Num(number);
   }
@@ -97,16 +97,16 @@ public abstract class Prelude extends Value {
     throw new RuntimeException("Used non-string as a string.");
   }
 
-  public static Nothing print(Value value) {
+  public static Nothing print(Value self, Value value) {
     System.out.println(value.asString(value));
     return nothing;
   }
 
-  public static Value length(Value obj) {
+  public static Value length(Value self, Value obj) {
     return obj.invoke("size");
   }
 
-  public static Value raise(Value message) {
+  public static Value raise(Value self, Value message) {
     throw new RuntimeException($javaString(message.asString(message)));
   }
 
@@ -126,27 +126,7 @@ public abstract class Prelude extends Value {
 
   public static final Value prelude = grace.lib.prelude.$module();
 
-  public static void printException(Exception ex) {
-    System.err.println(ex);
-    boolean first = false;
-    StackTraceElement previous = null;
-    for (StackTraceElement el : ex.getStackTrace()) {
-      String cl = el.getClassName();
-      String mt = el.getMethodName();
-      if (!(cl.startsWith("grace.lang") || cl.startsWith("sun.reflect")
-          || cl.startsWith("java.lang.reflect") || cl.contains("$")
-          || mt.equals("$module") || mt.equals("<init>"))) {
-        if (!first && previous != null) {
-          System.err.println("\tat " + previous);
-          first = true;
-        }
-        System.err.println("\tat " + el);
-      }
-      previous = el;
-    }
-  }
-
-  public static Value escapestring(Value str) {
+  public static Value escapestring(Value self, Value str) {
     final String p = ((Str) str).value;
 
     int len = p.length();
@@ -195,6 +175,25 @@ public abstract class Prelude extends Value {
     }
 
     return new Str(builder.toString());
+  }
+
+  public static void printException(Exception ex) {
+    System.err.println(ex);
+
+    StackTraceElement[] trace = ex.getStackTrace();
+    final int length = trace.length - 1;
+    for (int i = 0; i < length; i++) {
+      StackTraceElement el = trace[i];
+      String cl = el.getClassName();
+      String mt = el.getMethodName();
+
+      if (!(cl.equals("grace.lang.Value")
+          && (mt.equals("invoke") || mt.equals("binop"))
+          || cl.startsWith("sun.reflect") || cl.startsWith("java.lang.reflect")
+          || cl.contains("$") || mt.equals("$module"))) {
+        System.err.println("\tat " + el);
+      }
+    }
   }
 
 }

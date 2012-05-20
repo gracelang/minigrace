@@ -5,9 +5,9 @@ import unicode
 import util
 
 
-def obj = "GraceObject"
-def blk = "GraceBlock"
-def ret = "GraceReturn"
+def obj = "Value"
+def blk = "Block"
+def ret = "Return"
 
 
 def libs = ["io", "sys", "unicode"]
@@ -104,7 +104,7 @@ method compileModule(nodes: List, modName: String) {
 
     // Each module is placed in a single class.
     scope.stmt(scope.decl("public final class " ++
-            "{name} extends {obj} \{", { scope' ->
+            "{name} extends Prelude \{", { scope' ->
         scope'.line("private static {name} $module") ++
             scope'.stmt(scope'.block("public static " ++
                     "{name} $module() \{", { scope'' ->
@@ -131,7 +131,7 @@ method compileModule(nodes: List, modName: String) {
                     scope''.stmt(scope''.block("try \{", { scope''' ->
                         scope'''.line("$module()")
                     }, scope''.block("\} catch (Exception e) \{", { s ->
-                        s.line("GraceObject.printException(e)")
+                        s.line("Prelude.printException(e)")
                     }, "\}")))
             }, "\}"))
     }, "\}"))
@@ -162,7 +162,6 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
         def params = node.body.params
         if(params.size == 0) then { "" } else {
             def param = [ast.astdefdec(params[1], void, void)]
-
             compileDeclarations(param, scope) ++
                 compileDeclarations(node.body.body, scope)
         }
@@ -295,7 +294,7 @@ method compileSetter(node, scope: Scope) -> String {
 
 // Compiles a field's name. Accounts for a generic declaration.
 method compileFieldName(node) -> String {
-    escape(if (node.kind == "type") then {
+    escape(if(node.kind == "type") then {
         node.value
     } elseif(node.name.kind == "generic") then {
         node.name.value.value
@@ -314,7 +313,7 @@ method compileMethod(node, scope: Scope) -> String {
     }
     
     scope.stmt(scope.block("{acc}{obj} " ++
-            "{name}(final {obj} self, {params}) \{", { scope' ->
+            "{name}({params}) \{", { scope' ->
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
         if(node.body.size == 0) then {
@@ -338,7 +337,7 @@ method compileMethod(node, scope: Scope) -> String {
 }
 
 method compileType(node, scope: Scope) -> String {
-    "{node.value} = new GraceType(" ++ join(map(node.methods) with { meth ->
+    "{node.value} = new Type(" ++ join(map(node.methods) with { meth ->
         "\"{meth.value}\""
     }) separatedBy(", ") ++ ")"
 }
@@ -434,15 +433,19 @@ method compileBind(node, scope: Scope) -> String {
 
 method compileIf(node, scope: Scope) -> String {
     def condition = compileExpression(node.value, scope)
-    def then = compileBlock(ast.astblock([], node.thenblock), scope)
 
-    if(node.elseblock.size > 0) then {
-        def else = compileBlock(ast.astblock([], node.elseblock), scope)
-
-        "{condition}.invoke(\"ifTrue$else\", {then}, {else})"
-    } else {
-        "{condition}.invoke(\"ifTrue\", {then})"
-    }
+    scope.block("if ($javaBoolean({condition})) \{", { scope' ->
+        compileExecution(node.thenblock, scope')
+    }, "\}" ++ strIf(node.elseblock.size > 0) then {
+        if ((node.elseblock.size == 1) &
+                (node.elseblock[1].kind == "if")) then {
+            " else " ++ compileIf(node.elseblock[1], scope)
+        } else {
+            scope.block(" else \{", { scope' ->
+                compileExecution(node.elseblock, scope')
+            }, "\}")
+        }
+    })
 }
 
 method compileMember(node, scope: Scope) -> String {
@@ -462,17 +465,16 @@ method compileMember(node, scope: Scope) -> String {
 method compileCall(node, scope: Scope) -> String {
     def name = escape(node.value.value)
     def args = map(node.with) with { a -> compileExpression(a, scope) }
+    def comma = strIf(args.size > 0) then(", ")
     def rest = join(args) separatedBy(", ")
+    def direct = (node.value.kind /= "member") | (name == "print")
 
-    print node.value.kind
-
-    if(node.value.kind == "member") then {
-        def comma = strIf(args.size > 0) then(", ")
+    if(direct) then {
+        "{name}(self{comma}{rest})"
+    } else {
         def in = compileExpression(node.value.in, scope)
 
         "{in}.invoke(\"{name}\"{comma}{rest})"
-    } else {
-        "{name}(self, {rest})"
     }
 }
 
@@ -506,7 +508,7 @@ method compileInherits(node, scope: Scope) -> String {
 }
 
 method compileNumber(node, scope: Scope) -> String {
-    "$num({node.value})"
+    "$number({node.value})"
 }
 
 method compileString(node, scope: Scope) -> String {
@@ -529,7 +531,7 @@ method compileString(node, scope: Scope) -> String {
         }
     })
 
-    "$str(\"{value}\")"
+    "$string(\"{value}\")"
 }
 
 method compileIndex(node, scope: Scope) -> String {
@@ -549,6 +551,8 @@ method compileOp(node, scope: Scope) -> String {
 
 method compileBlock(node, scope: Scope) -> String {
     def body = forceReturn(node.body)
+    def size = node.params.size
+    def rt = "throw new RuntimeException(\"Insufficient arguments to block\")"
 
     scope.block("new {blk}(outer) \{", { scope' ->
         join(map(node.params) with { p ->
@@ -558,7 +562,12 @@ method compileBlock(node, scope: Scope) -> String {
             scope'.stmt(scope'.block("public {obj} apply" ++
                     "({obj} self, {obj}... $params) \{", { scope'' ->
                 join(map(node.params) with { p, i ->
-                    scope''.line("{escape(p.value)} = $params[{i - 1}]")
+                    scope''.stmt(scope''.block("if ($params.length < " ++
+                            node.params.size ++ ") \{", { scope''' ->
+                        scope'''.line("throw new RuntimeException(\"" ++
+                            "Insufficient arguments to block\")")
+                    }, "\}")) ++
+                        scope''.line("{escape(p.value)} = $params[{i - 1}]")
                 }) ++ compileExecution(body, scope'')
             }, "\}")) ++ makeInvoke(scope')
     }, "\}")
@@ -791,15 +800,15 @@ class Kinds {
 
         map(if(else') then {nodes} else {
             filter(nodes) with { node -> map.contains(node.kind) }
-        }) with { node ->
+        }) with { node, _, break ->
             if(stopped) then {
-                false
+                break.apply
             } elseif(map.contains(node.kind)) then {
                 map.get(node.kind).apply(node)
             } else {
                 elseBlock.apply(node)
             }
-        } filter { node -> node /= false }
+        }
     }
 
     method of(node) {
@@ -871,10 +880,11 @@ method literal(value': String) {
 // Maps a list to a new one with the given block.
 method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
     def list' = []
-    var i := 1
+    var index := 1
+    def break = { return list' }
     for(list) do { e ->
-        list'.push(with.apply(e, i))
-        i := i + 1
+        list'.push(with.apply(e, index, break))
+        index := index + 1
     }
 
     list'
@@ -883,8 +893,9 @@ method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
 // Filters out elements from a list with the given block.
 method filter(list: List) with(choice: Block) -> List {
     def list' = []
+    def break = { return list' }
     for(list) do { e ->
-        if(choice.apply(e)) then {
+        if(choice.apply(e, break)) then {
             list'.push(e)
         }
     }
@@ -896,13 +907,14 @@ method filter(list: List) with(choice: Block) -> List {
 // More efficient but equivalent to filter(map(list) with(with)) with(filter).
 method map(list: List) with(with: Block) filter(filter: Block) -> List {
     def list' = []
-    var i := 1
+    var index := 1
+    def break = { return list' }
     for(list) do { e ->
-        def result = with.apply(e, i)
+        def result = with.apply(e, index, break)
         if(filter.apply(result)) then {
             list'.push(result)
         }
-        i := i + 1
+        index := index + 1
     }
 
     list'
@@ -940,10 +952,8 @@ method concat(list: List, *attach: List) -> List {
 }
 
 // Returns the given string if the condition is true, otherwise an empty string.
-method strIf(condition: Boolean) then(then) -> String {
+method strIf(condition: Boolean) then(result) -> String {
     if(condition) then {
-        match(then)
-            case { _ : String -> then }
-            case { _ : Block  -> then.apply }
+        if(String.match(result)) then { result } else { result.apply }
     } else { "" }
 }
