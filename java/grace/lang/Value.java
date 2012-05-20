@@ -12,7 +12,7 @@ public class Value {
   // The super object that this object inherits from. It's not clear whether
   // this value is changeable, but this is allowed mostly to let the inherits
   // declaration appear anywhere within an object declaration.
-  private Value $super = nothing;
+  private Value $super = getClass().equals(Value.class) ? nothing : new Value();
 
   // Which technique to use to compare this object to others.
   private final Egal egal;

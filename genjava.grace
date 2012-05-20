@@ -174,10 +174,10 @@ method compileExecution(nodes: List, scope: Scope) -> String {
     }.kind("return") do { node ->
         k.stop
         scope.line(compileReturn(node, scope))
-    }.kind("vardec") do { node ->
+    }.kind("vardec") do { node, continue ->
         if(node.value /= false) then {
             scope.line(compileBindDecl(node, scope))
-        } else { false }
+        } else { continue.apply }
     }.kind("defdec") do { node ->
         scope.line(compileBindDecl(node, scope))
     }.kind("type") do { node ->
@@ -200,12 +200,12 @@ method compileExecution(nodes: List, scope: Scope) -> String {
         scope.stmt(compileMatch(node, scope))
     }.kind("inherits") do { node ->
         scope.line(compileInherits(node, scope))
-    }.else { node ->
+    }.else { node, continue ->
         if([ "method","type", "inherits"].contains(node.kind).not) then {
             util.log_verbose("Unknown statement: {node.kind}")
             scope.stmt("/* {node.kind} */")
         } else {
-            ""
+            continue.apply
         }
     }
 
@@ -226,7 +226,7 @@ method compileExpression(node, scope: Scope) -> String {
     }.kind("call") do {
         compileCall(node, scope)
     }.kind("if") do {
-        compileIf(node, scope)
+        compileTernary(node, scope)
     }.kind("index") do {
         compileIndex(node, scope)
     }.kind("op") do {
@@ -448,6 +448,14 @@ method compileIf(node, scope: Scope) -> String {
     })
 }
 
+method compileTernary(node, scope: Scope) -> String {
+    def condition = compileExpression(node.value, scope)
+    def then = compileBlockExpression(node.thenblock, scope)
+    def else = compileBlockExpression(node.elseblock, scope)
+
+    "$javaBoolean({condition}) ? {then} : {else}"
+}
+
 method compileMember(node, scope: Scope) -> String {
     if(node.value == "outer") then {
         if((node.in.kind == "identifier") && {
@@ -485,21 +493,13 @@ method compileClass(node, scope: Scope) -> String {
         node.name.value
     })
 
-    def params = join(map(node.params) with { param ->
-        "final {obj} _{escape(param.value)}"
-    }) separatedBy(", ")
-
-    def constructor = escape(node.constructor.value)
     def body = [ast.astobject(node.value, void)]
-    def meth = ast.astmethod(void, node.params, body, void)
+    def meth = ast.astmethod(node.constructor, node.params, body, void)
 
     scope.line(scope.block("{name} = new {obj}(outer) \{", { scope' ->
         // This outer is a hack until the outer class problem is fixed.
         scope'.line("private final {obj} outer = this") ++
-        scope'.stmt(scope'.block("public {obj} {constructor}({params}) \{",
-            { scope'' ->
-                scope''.line("return {compileParamClosure(meth, scope'')}")
-            }, "\}")) ++ makeInvoke(scope')
+        compileMethod(meth, scope') ++ makeInvoke(scope')
     }, "\}"))
 }
 
@@ -606,8 +606,8 @@ method compileMatch(node, scope: Scope) -> String {
 }
 
 // A helper for condensing block expressions.
-// Note that this may cause the block to be evaluated early,
-// so it should only be used in cases where this will not occur.
+// Note that this may cause the block to be evaluated early, so it should only
+// be used in cases where Java is lazy (boolean operator or a ternary).
 method compileBlockExpression(block: List, scope: Scope) -> String {
     if((block.size == 1) && {
         block[1].kind /= "return"
@@ -800,13 +800,13 @@ class Kinds {
 
         map(if(else') then {nodes} else {
             filter(nodes) with { node -> map.contains(node.kind) }
-        }) with { node, _, break ->
+        }) with { node, _, break, continue ->
             if(stopped) then {
                 break.apply
             } elseif(map.contains(node.kind)) then {
-                map.get(node.kind).apply(node)
+                map.get(node.kind).apply(node, continue)
             } else {
-                elseBlock.apply(node)
+                elseBlock.apply(node, continue)
             }
         }
     }
@@ -883,7 +883,11 @@ method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
     var index := 1
     def break = { return list' }
     for(list) do { e ->
-        list'.push(with.apply(e, index, break))
+        var add := true
+        def result = with.apply(e, index, break, { add := false })
+        if(add) then {
+            list'.push(result)
+        }
         index := index + 1
     }
 
@@ -910,8 +914,9 @@ method map(list: List) with(with: Block) filter(filter: Block) -> List {
     var index := 1
     def break = { return list' }
     for(list) do { e ->
-        def result = with.apply(e, index, break)
-        if(filter.apply(result)) then {
+        var add := true
+        def result = with.apply(e, index, break, { add := false })
+        if(add & filter.apply(result)) then {
             list'.push(result)
         }
         index := index + 1
