@@ -585,8 +585,9 @@ method compileObject(node, scope: Scope) -> String {
     def body = node.value
 
     scope.decl("new {obj}(outer) \{", { scope' ->
-        compileSelf(scope') ++ compileDeclarations(node.value, scope') ++
+        compileDeclarations(node.value, scope') ++
             scope'.stmt(scope'.block("\{", { scope'' ->
+                scope''.line("final {obj} self = this") ++
                 scope''.line("final {obj} outer = this") ++
                     compileExecution(node.value, scope'')
             }, "\}")) ++ makeInvoke(scope')
@@ -631,10 +632,6 @@ method compileIdentifier(node, scope: Scope) -> String {
     }
 
     escape(name)
-}
-
-method compileSelf(scope: Scope) -> String {
-    scope.line("private final {obj} self = this")
 }
 
 method makeInvoke(scope: Scope) -> String {
