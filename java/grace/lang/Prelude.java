@@ -79,6 +79,10 @@ public abstract class Prelude extends Value {
 
     throw new RuntimeException("Used non-number as a number.");
   }
+  
+  public static float $javaFloat(Value number) {
+  	return (float) $javaNumber(number);
+  }
 
   public static int $javaInteger(Value number) {
     return (int) $javaNumber(number);

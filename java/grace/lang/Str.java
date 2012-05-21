@@ -18,7 +18,11 @@ public class Str extends Value {
   // ==
   public Bool bin$61$61(Value self, Value o) {
     if (o instanceof Str) {
-      return $boolean(value.equals(((Str) o).value));
+      if (!value.equals(((Str) o).value)) {
+      	return $false;
+      }
+      
+      return (Bool) super.bin$61$61(self, o);
     }
 
     Value $super = o.$super();

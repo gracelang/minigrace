@@ -12,11 +12,11 @@ public class Type extends Value {
   private String[] methods;
 
   public Type(String... methods) {
-    super(Egal.Value);
+    super(Egal.Pointer);
     this.methods = methods;
   }
 
-  public Value matches(Value self, Value o) {
+  public Value match(Value self, Value o) {
     names: for (String name : methods) {
       Value s = o;
 

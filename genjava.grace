@@ -112,7 +112,8 @@ method compileModule(nodes: List, modName: String) {
                     "new {name}() : $module")
             }, "\}")) ++
 
-            scope'.line("private final {obj} self = this") ++
+            scope'.line("private final {obj} $self = this") ++
+            scope'.line("private final {obj} $closure = this") ++
 
             // Methods appear as expected, and classes are objects assigned
             // to fields with an inner Java class to represent it.
@@ -120,7 +121,7 @@ method compileModule(nodes: List, modName: String) {
 
             // Top level code ends up in the module's constructor.
             scope'.stmt(scope'.block("private {name}() \{", { scope'' ->
-                scope''.line("final {obj} outer = this") ++
+                scope''.line("final {obj} self = this") ++
                     compileExecution(nodes, scope'')
             }, "\}")) ++
 
@@ -319,19 +320,18 @@ method compileMethod(node, scope: Scope) -> String {
         if(node.body.size == 0) then {
             scope'.line("return nothing")
         } else {
-            scope'.line("final {obj} outer = this") ++
-                scope'.stmt(scope'.block("class $Return " ++
-                        "extends {ret} \{", { scope'' ->
-                    scope''.stmt(scope''.block("public $Return" ++
-                            "({obj} value) \{", { scope''' ->
-                        scope'''.line("super(value)")
-                    }, "\}"))
-                }, "\}")) ++
-                scope'.stmt(scope'.block("try \{", { scope'' ->
-                    scope''.line("return {compileParamClosure(node, scope'')}")
-                }, scope'.block("\} catch ($Return $return) \{", { scope'' ->
-                    scope''.line("return $return.value")
-                }, "\}")))
+            scope'.stmt(scope'.block("class $Return " ++
+                    "extends {ret} \{", { scope'' ->
+                scope''.stmt(scope''.block("public $Return" ++
+                        "({obj} value) \{", { scope''' ->
+                    scope'''.line("super(value)")
+                }, "\}"))
+            }, "\}")) ++
+            scope'.stmt(scope'.block("try \{", { scope'' ->
+                scope''.line("return {compileParamClosure(node, scope'')}")
+            }, scope'.block("\} catch ($Return $return) \{", { scope'' ->
+                scope''.line("return $return.value")
+            }, "\}")))
         }
     }, "\}"))
 }
@@ -365,8 +365,9 @@ method compileParamClosure(node, scope: Scope) -> String {
 }
 
 method compileClosure(body: List, scope: Scope) -> String {
-    scope.block("new {obj}() \{", { scope' ->
-        compileDeclarations(body, scope') ++
+    scope.block("new {obj}($self, $closure) \{", { scope' ->
+        scope'.line("final Value $closure = this") ++
+            compileDeclarations(body, scope') ++
             scope'.stmt(scope'.block("{obj} execute() \{", { scope'' ->
                 join(compileExecution(forceReturn(body), scope''))
             }, "\}"))
@@ -461,7 +462,14 @@ method compileMember(node, scope: Scope) -> String {
         if((node.in.kind == "identifier") && {
             node.in.value == "self"
         }) then {
-            "self.outer"
+            // The use of self above is misleading. This reference needs to
+            // access the outer value of the *local* self: if self is actually
+            // using the local object as a super object, then the self variable
+            // will refer to the sub object, which will give the wrong scope.
+            // $self is a variable created for passing the current scope into
+            // new objects so they can reference the outer scope correctly, and
+            // this is also the correct local object.
+            "$self.outer"
         } else {
             "{compileExpression(node.in, scope)}.outer"
         }
@@ -496,10 +504,10 @@ method compileClass(node, scope: Scope) -> String {
     def body = [ast.astobject(node.value, void)]
     def meth = ast.astmethod(node.constructor, node.params, body, void)
 
-    scope.line(scope.block("{name} = new {obj}(outer) \{", { scope' ->
+    scope.line(scope.block("{name} = new {obj}($self, $closure) \{", { s' ->
         // This outer is a hack until the outer class problem is fixed.
-        scope'.line("private final {obj} outer = this") ++
-        compileMethod(meth, scope') ++ makeInvoke(scope')
+        s'.line("private final {obj} $self = this") ++
+            compileMethod(meth, s') ++ makeInvoke(s')
     }, "\}"))
 }
 
@@ -554,13 +562,13 @@ method compileBlock(node, scope: Scope) -> String {
     def size = node.params.size
     def rt = "throw new RuntimeException(\"Insufficient arguments to block\")"
 
-    scope.block("new {blk}(outer) \{", { scope' ->
+    scope.block("new {blk}($self, $closure) \{", { scope' ->
         join(map(node.params) with { p ->
             scope'.line("{obj} {escape(p.value)}")
         }) ++
             compileDeclarations(body, scope') ++
             scope'.stmt(scope'.block("public {obj} apply" ++
-                    "({obj} self, {obj}... $params) \{", { scope'' ->
+                    "({obj} _, {obj}... $params) \{", { scope'' ->
                 join(map(node.params) with { p, i ->
                     scope''.stmt(scope''.block("if ($params.length < " ++
                             node.params.size ++ ") \{", { scope''' ->
@@ -582,16 +590,32 @@ method compileArray(node, scope: Scope) -> String {
 }
 
 method compileObject(node, scope: Scope) -> String {
+    def egal = compileEgal(node.value)
     def body = node.value
 
-    scope.decl("new {obj}(outer) \{", { scope' ->
-        compileDeclarations(node.value, scope') ++
+    scope.decl("new {obj}({egal}, $self, $closure) \{", { scope' ->
+        scope'.line("private final {obj} $self = this") ++
+            scope'.line("private final {obj} $closure = this") ++
+            compileDeclarations(node.value, scope') ++
             scope'.stmt(scope'.block("\{", { scope'' ->
                 scope''.line("final {obj} self = this") ++
-                scope''.line("final {obj} outer = this") ++
                     compileExecution(node.value, scope'')
             }, "\}")) ++ makeInvoke(scope')
     }, "\}")
+}
+
+method compileEgal(body: List) -> String {
+    var closure := false
+
+    for(body) do { node ->
+        if(node.kind == "vardec") then {
+            return "Egal.Pointer"
+        } elseif(node.kind == "method") then {
+            closure := true
+        }
+    }
+
+    if(closure) then { "Egal.Closure" } else { "Egal.Value" }
 }
 
 method compileMatch(node, scope: Scope) -> String {

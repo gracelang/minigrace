@@ -23,7 +23,11 @@ public class Num extends Value {
   // ==
   public Bool bin$61$61(Value self, Value o) {
     if (o instanceof Num) {
-      return $boolean(value == ((Num) o).value);
+      if (value != ((Num) o).value) {
+      	return $false;
+      }
+      
+      return (Bool) super.bin$61$61(self, o);
     }
 
     Value $super = o.$super();

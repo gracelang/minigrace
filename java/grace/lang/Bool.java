@@ -19,6 +19,15 @@ public class Bool extends Value {
   public Bool not(Value self) {
     return value ? $false : $true;
   }
+  
+  // ==
+  public Bool bin$61$61(Value self, Value o) {
+  	if ($javaBoolean(o) != value) {
+  		return $false;
+  	}
+  	
+  	return (Bool) super.bin$61$61(self, o);
+  }
 
   // !
   public Bool prefix$33(Value self) {
@@ -40,6 +49,7 @@ public class Bool extends Value {
     try {
       return value ? other.invoke("apply") : $false;
     } catch (RuntimeException rex) {
+    	System.out.println(rex.getMessage());
       return bin$124(self, other);
     }
   }

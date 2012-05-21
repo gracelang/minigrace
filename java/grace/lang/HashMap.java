@@ -19,7 +19,11 @@ public class HashMap extends Value {
   // ==
   public Bool bin$61$61(Value self, Value o) {
     if (o instanceof HashMap) {
-      return $boolean(value.equals(((HashMap) o).value));
+      if (!value.equals(((HashMap) o).value)) {
+      	return $false;
+      }
+      
+      return (Bool) super.bin$61$61(self, o);
     }
     
     Value $super = o.$super();
