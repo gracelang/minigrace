@@ -12,20 +12,20 @@ public final class io extends Prelude {
     return $module == null ? $module = new io() : $module;
   }
 
-  private static File file(Value path) {
+  private static File file(Obj path) {
     return new File(((Str) path).value);
   }
 
-  public Bool exists(Value self, Value path) {
+  public Bool exists(Obj self, Obj path) {
     return $boolean(file(path).exists());
   }
 
-  public Bool newer(Value self, Value path1,
-      Value path2) {
+  public Bool newer(Obj self, Obj path1,
+      Obj path2) {
     return $boolean(file(path1).lastModified() > file(path2).lastModified());
   }
 
-  public final class GraceProcess extends Value {
+  public final class GraceProcess extends Obj {
 
     Process process;
     int status;
@@ -36,7 +36,7 @@ public final class io extends Prelude {
       this.process = process;
     }
 
-    public Num $wait(Value self) {
+    public Num $wait(Obj self) {
       try {
         process.waitFor();
       } catch (Exception ex) {}
@@ -44,7 +44,7 @@ public final class io extends Prelude {
       return $number(status);
     }
 
-    public Bool success(Value self) {
+    public Bool success(Obj self) {
       this.$wait(self);
 
       if (status == 0) {
@@ -54,18 +54,18 @@ public final class io extends Prelude {
       return $false;
     }
 
-    public Bool terminated(Value self) {
+    public Bool terminated(Obj self) {
       this.$wait(self);
 
       return $true;
     }
 
-    public Num status(Value self) {
+    public Num status(Obj self) {
       return this.$wait(self);
     }
   }
 
-  public Value spawn(Value self, Value... parts) {
+  public Obj spawn(Obj self, Obj... parts) {
     Process process;
 
     String[] tokens = new String[parts.length];
@@ -99,7 +99,7 @@ public final class io extends Prelude {
     return new GraceProcess(process);
   }
 
-  public Bool system(Value self, Value cmd) {
+  public Bool system(Obj self, Obj cmd) {
     String exec = ((Str) cmd).value;
     Process process;
 
@@ -173,11 +173,11 @@ public final class io extends Prelude {
 
   }
 
-  public final class Input extends Value {
+  public final class Input extends Obj {
 
     private Input() {}
 
-    public Str read(Value self) {
+    public Str read(Obj self) {
       int b;
       String out = "";
 
@@ -195,11 +195,11 @@ public final class io extends Prelude {
 
   private Input input = new Input();
 
-  public Input input(Value self) {
+  public Input input(Obj self) {
     return input;
   }
 
-  public final class Output extends Value {
+  public final class Output extends Obj {
 
     private final PrintStream stream;
 
@@ -207,7 +207,7 @@ public final class io extends Prelude {
       this.stream = stream;
     }
 
-    public Nothing write(Value self, Value string) {
+    public Nothing write(Obj self, Obj string) {
       stream.print(((Str) string).value);
       return nothing;
     }
@@ -216,21 +216,21 @@ public final class io extends Prelude {
 
   private Output output = new Output(System.out);
 
-  public Output output(Value self) {
+  public Output output(Obj self) {
     return output;
   }
 
   private Output error = new Output(System.err);
 
-  public Output error(Value self) {
+  public Output error(Obj self) {
     return error;
   }
 
-  public GraceFile open(Value self, Value path, Value mode) {
+  public GraceFile open(Obj self, Obj path, Obj mode) {
     return new GraceFile(file(path), ((Str) mode).value);
   }
 
-  public final class GraceFile extends Value {
+  public final class GraceFile extends Obj {
 
     private FileReader reader = null;
     private FileWriter writer = null;
@@ -262,7 +262,7 @@ public final class io extends Prelude {
       }
     }
 
-    public Str read(Value self) {
+    public Str read(Obj self) {
       if (reader == null) {
         throw new RuntimeException("Failed to read file.");
       }
@@ -281,7 +281,7 @@ public final class io extends Prelude {
       return $string(out);
     }
 
-    public Bool write(Value self, Value string) {
+    public Bool write(Obj self, Obj string) {
       if (writer == null) {
         throw new RuntimeException("Failed to write file.");
       }
@@ -296,7 +296,7 @@ public final class io extends Prelude {
       return $true;
     }
 
-    public Nothing close(Value self) {
+    public Nothing close(Obj self) {
       if (reader != null) {
         try {
           reader.close();

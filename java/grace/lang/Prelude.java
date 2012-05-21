@@ -10,11 +10,7 @@ package grace.lang;
  * 
  * @author Timothy Jones
  */
-public abstract class Prelude extends Value {
-
-  public Prelude() {
-    super(Egal.Value);
-  }
+public abstract class Prelude extends Types {
 
   public static final Nothing nothing = Nothing.nothing;
 
@@ -33,32 +29,32 @@ public abstract class Prelude extends Value {
     return new Str(string);
   }
 
-  public static List $list(Value... elements) {
+  public static List $list(Obj... elements) {
     return new List(elements);
   }
 
   protected static final class ValueBlock extends Block {
 
-    private Value value;
+    private Obj value;
 
-    private ValueBlock(Value value) {
+    private ValueBlock(Obj value) {
       super(nothing);
 
       this.value = value;
     }
 
-    public Value apply(Value self, Value... params) {
+    public Obj apply(Obj self, Obj... params) {
       return value;
     }
 
   }
 
-  public static boolean $javaBoolean(Value bool) {
+  public static boolean $javaBoolean(Obj bool) {
     if (bool instanceof Bool) {
       return ((Bool) bool).value;
     }
 
-    Value $super = bool.$super();
+    Obj $super = bool.$super();
     if ($super != nothing) {
       return $javaBoolean($super);
     }
@@ -67,33 +63,33 @@ public abstract class Prelude extends Value {
         $false)) == $true;
   }
 
-  public static double $javaNumber(Value number) {
+  public static double $javaNumber(Obj number) {
     if (number instanceof Num) {
       return ((Num) number).value;
     }
 
-    Value $super = number.$super();
+    Obj $super = number.$super();
     if ($super != nothing) {
       return $javaNumber($super);
     }
 
     throw new RuntimeException("Used non-number as a number.");
   }
-  
-  public static float $javaFloat(Value number) {
-  	return (float) $javaNumber(number);
+
+  public static float $javaFloat(Obj number) {
+    return (float) $javaNumber(number);
   }
 
-  public static int $javaInteger(Value number) {
+  public static int $javaInteger(Obj number) {
     return (int) $javaNumber(number);
   }
 
-  public static String $javaString(Value string) {
+  public static String $javaString(Obj string) {
     if (string instanceof Str) {
       return ((Str) string).value;
     }
 
-    Value $super = string.$super();
+    Obj $super = string.$super();
     if ($super != nothing) {
       return $javaString($super);
     }
@@ -101,26 +97,26 @@ public abstract class Prelude extends Value {
     throw new RuntimeException("Used non-string as a string.");
   }
 
-  public static Nothing print(Value self, Value value) {
+  public static Nothing print(Obj self, Obj value) {
     System.out.println(value.invoke("asString"));
     return nothing;
   }
 
-  public static Value length(Value self, Value obj) {
+  public static Obj length(Obj self, Obj obj) {
     return obj.invoke("size");
   }
 
-  public static Value raise(Value self, Value message) {
-    throw new RuntimeException($javaString(message.asString(message)));
+  public static Obj raise(Obj self, Obj message) {
+    throw new RuntimeException($javaString(message.invoke("asString")));
   }
 
-  public static final class HashMapClass extends Value {
+  public static final class HashMapClass extends Obj {
 
     private HashMapClass() {
       super(Egal.Value);
     }
 
-    public Value $new() {
+    public Obj $new() {
       return new HashMap();
     }
 
@@ -128,9 +124,9 @@ public abstract class Prelude extends Value {
 
   public static final HashMapClass HashMap = new HashMapClass();
 
-  public static final Value prelude = grace.lib.prelude.$module();
+  public static final Obj prelude = grace.lib.prelude.$module();
 
-  public static Value escapestring(Value self, Value str) {
+  public static Obj escapestring(Obj self, Obj str) {
     final String p = ((Str) str).value;
 
     int len = p.length();
@@ -151,7 +147,8 @@ public abstract class Prelude extends Value {
         buf[op] = c;
       } else {
         buf[op++] = '\\';
-        char[] b2 = String.format("%x", (int) (c & 255)).toCharArray();
+        char[] b2 =
+            java.lang.String.format("%x", (int) (c & 255)).toCharArray();
 
         if (b2.length < 2) {
           b2 = new char[] { b2[0], 0 };

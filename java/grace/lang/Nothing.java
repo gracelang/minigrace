@@ -1,7 +1,7 @@
 package grace.lang;
 
-public final class Nothing extends Value {
-  
+public class Nothing extends Obj {
+
   public static final Nothing nothing = new Nothing();
 
   private Nothing() {

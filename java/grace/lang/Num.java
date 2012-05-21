@@ -6,7 +6,7 @@ import static grace.lang.Prelude.$boolean;
 import static grace.lang.Prelude.$javaNumber;
 import static grace.lang.Prelude.$javaString;
 
-public class Num extends Value {
+public class Num extends Top {
 
   public final double value;
 
@@ -16,21 +16,21 @@ public class Num extends Value {
   }
 
   // - (Negative)
-  public Num prefix$45(Value self) {
+  public Num prefix$45(Obj self) {
     return new Num(-value);
   }
 
   // ==
-  public Bool bin$61$61(Value self, Value o) {
+  public Bool bin$61$61(Obj self, Obj o) {
     if (o instanceof Num) {
       if (value != ((Num) o).value) {
-      	return $false;
+        return $false;
       }
-      
+
       return (Bool) super.bin$61$61(self, o);
     }
 
-    Value $super = o.$super();
+    Obj $super = o.$super();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }
@@ -39,38 +39,38 @@ public class Num extends Value {
   }
 
   // +
-  public Num bin$43(Value self, Value other) {
+  public Num bin$43(Obj self, Obj other) {
     return new Num(value + $javaNumber(other));
   }
 
   // -
-  public Num bin$45(Value self, Value other) {
+  public Num bin$45(Obj self, Obj other) {
     return new Num(value - $javaNumber(other));
   }
 
   // *
-  public Num bin$42(Value self, Value other) {
+  public Num bin$42(Obj self, Obj other) {
     return new Num(value * $javaNumber(other));
   }
 
   // /
-  public Num bin$47(Value self, Value other) {
+  public Num bin$47(Obj self, Obj other) {
     return new Num(value / $javaNumber(other));
   }
 
   // %
-  public Num bin$37(Value self, Value other) {
+  public Num bin$37(Obj self, Obj other) {
     return new Num(value % $javaNumber(other));
   }
 
   // ++
-  public Str bin$43$43(Value self, Value other) {
+  public Str bin$43$43(Obj self, Obj other) {
     return new Str($javaString(asString(self))
-        + $javaString(other.asString(other)));
+        + $javaString(other.invoke("asString")));
   }
 
   // ..
-  public List bin$46$46(Value self, Value other) {
+  public List bin$46$46(Obj self, Obj other) {
     List list = new List();
     int to = (int) $javaNumber(other);
     for (int i = (int) value; i <= to; i++) {
@@ -81,26 +81,26 @@ public class Num extends Value {
   }
 
   // <
-  public Bool bin$60(Value self, Value other) {
+  public Bool bin$60(Obj self, Obj other) {
     return $boolean(value < $javaNumber(other));
   }
 
   // >
-  public Bool bin$62(Value self, Value other) {
+  public Bool bin$62(Obj self, Obj other) {
     return $boolean(value > $javaNumber(other));
   }
 
   // <=
-  public Bool bin$60$61(Value self, Value other) {
+  public Bool bin$60$61(Obj self, Obj other) {
     return $boolean(value <= $javaNumber(other));
   }
 
   // >=
-  public Bool bin$62$61(Value self, Value other) {
+  public Bool bin$62$61(Obj self, Obj other) {
     return $boolean(value >= $javaNumber(other));
   }
 
-  public Str asString(Value self) {
+  public Str asString(Obj self) {
     if (Math.floor(value) == value) {
       return new Str(Integer.toString((int) value));
     }

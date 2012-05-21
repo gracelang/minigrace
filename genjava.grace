@@ -5,7 +5,7 @@ import unicode
 import util
 
 
-def obj = "Value"
+def obj = "Obj"
 def blk = "Block"
 def ret = "Return"
 
@@ -305,7 +305,6 @@ method compileFieldName(node) -> String {
 }
 
 method compileMethod(node, scope: Scope) -> String {
-    def acc = strIf(scope.isDecl) then("public ")
     def name = escape(node.value.value)
     def params = "final {obj} self" ++ strIf(node.params.size > 0) then {
         ", " ++ join(map(node.params) with { param ->
@@ -313,7 +312,7 @@ method compileMethod(node, scope: Scope) -> String {
         }) separatedBy(", ") ++ strIf(node.varargs) then(", final {obj}... _")
     }
     
-    scope.stmt(scope.block("{acc}{obj} " ++
+    scope.stmt(scope.block("public {obj} " ++
             "{name}({params}) \{", { scope' ->
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
@@ -366,7 +365,7 @@ method compileParamClosure(node, scope: Scope) -> String {
 
 method compileClosure(body: List, scope: Scope) -> String {
     scope.block("new {obj}($self, $closure) \{", { scope' ->
-        scope'.line("final Value $closure = this") ++
+        scope'.line("final {obj} $closure = this") ++
             compileDeclarations(body, scope') ++
             scope'.stmt(scope'.block("{obj} execute() \{", { scope'' ->
                 join(compileExecution(forceReturn(body), scope''))

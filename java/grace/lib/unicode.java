@@ -10,44 +10,44 @@ public final class unicode extends Prelude {
 		return $module == null ? $module = new unicode() : $module;
 	}
 	
-	private static boolean isStr(Value str) {
+	private static boolean isStr(Obj str) {
 		return str instanceof Str;
 	}
 	
-	private static char c(Value str) {
+	private static char c(Obj str) {
 		return ((Str) str).value.charAt(0);
 	}
 	
-	private static int i(Value num) {
+	private static int i(Obj num) {
 		return (int) ((Num) num).value;
 	}
 	
-	public Str name(Value self, Value str) {
+	public Str name(Obj self, Obj str) {
 		return $string("");
 	}
 	
-	public Str category(Value self, Value str) {
+	public Str category(Obj self, Obj str) {
 		return $string("");
 	}
 	
-	public Num combining(Value self, Value str) {
+	public Num combining(Obj self, Obj str) {
 		return $number(0);
 	}
 	
-	public Bool mirrored(Value self, Value str) {
+	public Bool mirrored(Obj self, Obj str) {
 		return Character.isMirrored(c(str)) ? $true : $false;
 	}
 	
-	public Str bidirectional(Value self, Value str) {
+	public Str bidirectional(Obj self, Obj str) {
 		return $string("");
 	}
 	
-	public Bool iscategory(Value self, Value str,
-	    Value cat) {
+	public Bool iscategory(Obj self, Obj str,
+	    Obj cat) {
 		return $false;
 	}
 	
-	public Bool isSeparator(Value self, Value str) {
+	public Bool isSeparator(Obj self, Obj str) {
 		if (isStr(str)) {
 			char c = c(str);
 			if (c == '\n' || c == '\r') {
@@ -65,35 +65,35 @@ public final class unicode extends Prelude {
 		return Character.isWhitespace(i(str)) ? $true : $false;
 	}
 	
-	public Bool isControl(Value self, Value str) {
+	public Bool isControl(Obj self, Obj str) {
 		if (isStr(str)) {
 			return Character.getType(c(str)) == Character.CONTROL ? $true : $false;
 		}
 		return Character.getType(i(str)) == Character.CONTROL ? $true : $false;
 	}
 	
-	public Bool isLetter(Value self, Value str) {
+	public Bool isLetter(Obj self, Obj str) {
 		if (isStr(str)) {
 			return Character.isLetter(c(str)) ? $true : $false;
 		}
 		return Character.isLetter(i(str)) ? $true : $false;
 	}
 	
-	public Bool isNum(Value self, Value str) {
+	public Bool isNum(Obj self, Obj str) {
 		if (isStr(str)) {
 			return Character.isDigit(c(str)) ? $true : $false;
 		}
 		return Character.isDigit(i(str)) ? $true : $false;
 	}
 	
-	public Bool isSymbolMathematical(Value self, Value str) {
+	public Bool isSymbolMathematical(Obj self, Obj str) {
 		if (isStr(str)) {
 			return Character.getType(c(str)) == Character.MATH_SYMBOL ? $true : $false;
 		}
 		return Character.getType(i(str)) == Character.MATH_SYMBOL ? $true : $false;
 	}
 	
-	public Str create(Value self, Value code) {
+	public Str create(Obj self, Obj code) {
 		return $string(new String(
 		    Character.toChars((int) ((Num) code).value)));
 	}

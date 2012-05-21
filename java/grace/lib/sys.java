@@ -27,7 +27,7 @@ public final class sys extends Prelude {
     sys.args = vargs;
   }
 
-  public List argv(Value self) {
+  public List argv(Obj self) {
     List list = new List();
 
     for (String arg : args) {
@@ -37,20 +37,20 @@ public final class sys extends Prelude {
     return list;
   }
 
-  public Nothing exit(Value self, Value status) {
+  public Nothing exit(Obj self, Obj status) {
     System.exit((int) ((Num) status).value);
     return nothing;
   }
 
-  public Num cputime(Value self) {
+  public Num cputime(Obj self) {
     return $number(0);
   }
 
-  public Num elapsed(Value self) {
+  public Num elapsed(Obj self) {
     return $number(0);
   }
 
-  public Str execPath(Value self) {
+  public Str execPath(Obj self) {
     return $string(System.getProperty("user.dir"));
   }
 

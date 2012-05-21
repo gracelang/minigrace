@@ -7,71 +7,69 @@ import static grace.lang.Prelude.$javaInteger;
 
 import java.util.ArrayList;
 
-public class List extends Value {
+public class List extends Top {
 
-  private final java.util.List<Value> value = new ArrayList<Value>();
+  private final java.util.List<Obj> value = new ArrayList<Obj>();
 
   public List() {
     super(Egal.Value);
   }
 
-  public List(Value... items) {
+  public List(Obj... items) {
     super(Egal.Value);
 
-    for (Value item : items) {
+    for (Obj item : items) {
       value.add(item);
     }
   }
 
   // ==
-  public Bool bin$61$61(Value self, Value o) {
+  public Bool bin$61$61(Obj self, Obj o) {
     if (o instanceof List) {
       if (!value.equals(((List) o).value)) {
-      	return $false;
+        return $false;
       }
-      
+
       return (Bool) super.bin$61$61(self, o);
     }
-    
-    Value $super = o.$super();
+
+    Obj $super = o.$super();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }
-    
+
     return $false;
   }
 
-  public Nothing push(Value self, Value item) {
+  public Nothing push(Obj self, Obj item) {
     value.add(item);
     return nothing;
   }
 
-  public Num size(Value self) {
+  public Num size(Obj self) {
     return new Num(value.size());
   }
 
-  public Value pop(Value self) {
+  public Obj pop(Obj self) {
     return value.remove(value.size() - 1);
   }
 
-  public Value at(Value self, Value index) {
+  public Obj at(Obj self, Obj index) {
     return value.get($javaInteger(index));
   }
 
   // []
-  public Value bin$91$93(Value self, Value index) {
+  public Obj bin$91$93(Obj self, Obj index) {
     return value.get($javaInteger(index) - 1);
   }
 
-  public Nothing at$put(Value self, Value index,
-      Value item) {
+  public Nothing at$put(Obj self, Obj index, Obj item) {
     value.add($javaInteger(index), item);
     return nothing;
   }
 
   // []:=
-  public Nothing $91$93$58$61(Value self, Value index,
-      Value item) {
+  public Nothing $91$93$58$61(Obj self, Obj index, Obj item) {
     int i = $javaInteger(index) - 1;
 
     if (i == value.size()) {
@@ -83,8 +81,8 @@ public class List extends Value {
     return nothing;
   }
 
-  public Bool contains(Value self, Value item) {
-    for (final Value val : value) {
+  public Bool contains(Obj self, Obj item) {
+    for (final Obj val : value) {
       if (val.equals(item)) {
         return Bool.$true;
       }
@@ -93,7 +91,7 @@ public class List extends Value {
     return Bool.$false;
   }
 
-  public List indices(Value self) {
+  public List indices(Obj self) {
     List list = new List();
     int length = value.size();
     for (int i = 0; i < length; i++) {
@@ -103,11 +101,11 @@ public class List extends Value {
     return list;
   }
 
-  public GraceListIterator iter(Value self) {
+  public GraceListIterator iter(Obj self) {
     return new GraceListIterator();
   }
 
-  public class GraceListIterator extends Value {
+  public class GraceListIterator extends Obj {
 
     private int i = 0;
 
@@ -115,29 +113,29 @@ public class List extends Value {
       super(Egal.Value);
     }
 
-    public Value next(Value self) {
+    public Obj next(Obj self) {
       return value.get(i++);
     }
 
-    public Bool havemore(Value self) {
+    public Bool havemore(Obj self) {
       return $boolean(i < value.size());
     }
 
   }
 
-  public Value first(Value self) {
+  public Obj first(Obj self) {
     return value.get(0);
   }
 
-  public Value last(Value self) {
+  public Obj last(Obj self) {
     return value.get(value.size() - 1);
   }
 
-  public Str asString(Value self) {
+  public Str asString(Obj self) {
     String out = "[" + value.size() + ": ";
     boolean first = true;
-    for (Value item : value) {
-      out += (first ? "" : ", ") + item.asString(item);
+    for (Obj item : value) {
+      out += (first ? "" : ", ") + item.invoke("asString");
       first = false;
     }
 

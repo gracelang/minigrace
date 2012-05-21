@@ -11,7 +11,7 @@ public final class prelude extends Prelude {
   
   private prelude() {}
 
-  public Nothing while$do(Value self, Value w, Value d) {
+  public Nothing while$do(Obj self, Obj w, Obj d) {
     while (((Bool) w.invoke("apply")).value) {
       d.invoke("apply");
     }
@@ -19,8 +19,8 @@ public final class prelude extends Prelude {
     return nothing;
   }
 
-  public Nothing for$do(Value self, Value f, Value d) {
-    Value iter = f.invoke("iter");
+  public Nothing for$do(Obj self, Obj f, Obj d) {
+    Obj iter = f.invoke("iter");
     while ($javaBoolean(iter.invoke("havemore"))) {
       d.invoke("apply", iter.invoke("next"));
     }

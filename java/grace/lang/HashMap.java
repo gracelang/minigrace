@@ -7,34 +7,33 @@ import static grace.lang.Prelude.$javaBoolean;
 
 import java.util.Map;
 
-public class HashMap extends Value {
+public class HashMap extends Top {
 
-  private final Map<Value, Value> value =
-      new java.util.HashMap<Value, Value>();
-  
+  private final Map<Obj, Obj> value = new java.util.HashMap<Obj, Obj>();
+
   public HashMap() {
     super(Egal.Value);
   }
 
   // ==
-  public Bool bin$61$61(Value self, Value o) {
+  public Bool bin$61$61(Obj self, Obj o) {
     if (o instanceof HashMap) {
       if (!value.equals(((HashMap) o).value)) {
-      	return $false;
+        return $false;
       }
-      
+
       return (Bool) super.bin$61$61(self, o);
     }
-    
-    Value $super = o.$super();
+
+    Obj $super = o.$super();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }
-    
+
     return $false;
   }
 
-  public Value get(Value self, Value key) {
+  public Obj get(Obj self, Obj key) {
     key = getKey(key);
 
     if (key == null) {
@@ -44,8 +43,8 @@ public class HashMap extends Value {
     return value.get(key);
   }
 
-  public Nothing put(Value self, Value key, Value item) {
-    Value other = getKey(key);
+  public Nothing put(Obj self, Obj key, Obj item) {
+    Obj other = getKey(key);
 
     if (other != null) {
       value.remove(other);
@@ -56,13 +55,13 @@ public class HashMap extends Value {
     return nothing;
   }
 
-  public Bool contains(Value self, Value key) {
+  public Bool contains(Obj self, Obj key) {
     return $boolean(getKey(key) != null);
   }
 
-  private Value getKey(Value eq) {
-    for (Value key : value.keySet()) {
-      if ($javaBoolean(key.bin$61$61(key, eq))) {
+  private Obj getKey(Obj eq) {
+    for (Obj key : value.keySet()) {
+      if ($javaBoolean(key.invoke("bin$61$61", eq))) {
         return key;
       }
     }
@@ -70,13 +69,13 @@ public class HashMap extends Value {
     return null;
   }
 
-  public Str asString(Value self) {
+  public Str asString(Obj self) {
     String out = "[{";
     boolean first = true;
-    for (Value key : value.keySet()) {
+    for (Obj key : value.keySet()) {
       out +=
-          (first ? "" : ", ") + key.asString(key) + ": "
-              + value.get(key).asString(key);
+          (first ? "" : ", ") + key.invoke("asString") + ": "
+              + value.get(key).invoke("asString");
       first = false;
     }
 

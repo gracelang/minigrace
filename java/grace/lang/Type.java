@@ -7,7 +7,7 @@ import static grace.lang.Prelude.$string;
 
 import java.lang.reflect.Method;
 
-public class Type extends Value {
+public class Type extends Obj {
 
   private String[] methods;
 
@@ -16,9 +16,9 @@ public class Type extends Value {
     this.methods = methods;
   }
 
-  public Value match(Value self, Value o) {
+  public Obj match(Obj self, Obj against) {
     names: for (String name : methods) {
-      Value s = o;
+      Obj s = against;
 
       while (s != null) {
         Method[] methods;
@@ -38,18 +38,18 @@ public class Type extends Value {
         s = s.$super();
       }
 
-      return new MatchFailed(o);
+      return new MatchFailed(against);
     }
 
-    return new MatchSucceeded(o, $list());
+    return new MatchSucceeded(against, $list());
   }
 
-  protected class MatchSucceeded extends Value {
+  protected class MatchSucceeded extends Obj {
 
-    private final Value result;
-    private final Value bindings;
+    private final Obj result;
+    private final Obj bindings;
 
-    public MatchSucceeded(Value result, Value bindings) {
+    public MatchSucceeded(Obj result, Obj bindings) {
       super(Egal.Value);
       inherits($true);
 
@@ -57,33 +57,33 @@ public class Type extends Value {
       this.bindings = bindings;
     }
 
-    public Value result(Value self) {
+    public Obj result(Obj self) {
       return result;
     }
 
-    public Value bindings(Value self) {
+    public Obj bindings(Obj self) {
       return bindings;
     }
 
-    public Value asString(Value self) {
+    public Obj asString(Obj self) {
       return $string("SuccessfulMatch(result = " + result + ", bindings = "
           + bindings + ")");
     }
 
   }
 
-  protected class MatchFailed extends Value {
+  protected class MatchFailed extends Obj {
 
-    private final Value result;
+    private final Obj result;
 
-    public MatchFailed(Value result) {
+    public MatchFailed(Obj result) {
       super(Egal.Value);
       inherits($false);
 
       this.result = result;
     }
 
-    public Value result(Value self) {
+    public Obj result(Obj self) {
       return result;
     }
 
