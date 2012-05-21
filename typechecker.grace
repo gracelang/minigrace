@@ -108,8 +108,8 @@ def NothingType = ast.asttype("Nothing", [
     ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
 def NoneType = ast.asttype("None", [
-    ast.astmethodtype("==", [TopOther], BooleanIdentifier),
-    ast.astmethodtype("!=", [TopOther], BooleanIdentifier)
+    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
 def BlockType = ast.asttype("Block", [
     ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
