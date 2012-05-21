@@ -102,7 +102,7 @@ public abstract class Prelude extends Value {
   }
 
   public static Nothing print(Value self, Value value) {
-    System.out.println(value.asString(value));
+    System.out.println(value.invoke("asString"));
     return nothing;
   }
 
