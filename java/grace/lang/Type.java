@@ -41,10 +41,10 @@ public class Type extends Obj {
       return new MatchFailed(against);
     }
 
-    return new MatchSucceeded(against, $list());
+    return new MatchSucceeded(against, $list(against));
   }
 
-  protected class MatchSucceeded extends Obj {
+  protected static class MatchSucceeded extends Obj {
 
     private final Obj result;
     private final Obj bindings;
@@ -72,7 +72,7 @@ public class Type extends Obj {
 
   }
 
-  protected class MatchFailed extends Obj {
+  protected static class MatchFailed extends Obj {
 
     private final Obj result;
 

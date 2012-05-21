@@ -3,8 +3,10 @@ package grace.lang;
 import static grace.lang.Bool.$false;
 import static grace.lang.Nothing.nothing;
 import static grace.lang.Prelude.$boolean;
+import static grace.lang.Prelude.$javaBoolean;
 import static grace.lang.Prelude.$javaNumber;
 import static grace.lang.Prelude.$javaString;
+import static grace.lang.Prelude.$list;
 
 public class Num extends Top {
 
@@ -106,6 +108,19 @@ public class Num extends Top {
     }
 
     return new Str(Double.toString(value));
+  }
+  
+  public Obj match(Obj self, Obj against) {
+    Obj match = Types.Number.match(Types.Number, against);
+    if (!$javaBoolean(match)) {
+      return match;
+    }
+    
+    if ($javaNumber(against) == value) {
+      return new Type.MatchSucceeded(against, $list(against));
+    }
+    
+    return new Type.MatchFailed(against);
   }
 
 }
