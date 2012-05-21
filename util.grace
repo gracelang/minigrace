@@ -143,7 +143,7 @@ method parseargs {
                 ++ buildinfo.gitrevision)
             print "Copyright (C) 2011, 2012 Michael Homer"
             print("This is free software with ABSOLUTELY NO WARRANTY. "
-                ++ "See the readme for details.")
+                ++ "Say minigrace.w for details.")
             print ""
             print "Enter a program and press Ctrl-D to execute it."
             print ""

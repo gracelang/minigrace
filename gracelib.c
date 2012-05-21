@@ -3368,12 +3368,50 @@ Object prelude__methods(Object self, int argc, Object *argv, int flags) {
     gc_unpause();
     return l;
 }
+Object minigrace_obj;
+Object minigrace_warranty(Object self, int argc, Object *argv, int flags) {
+    char *w =
+    "Copyright (C) 2011, 2012 Michael Homer and authors\n"
+    "This program is free software: you can redistribute it and/or modify\n"
+    "it under the terms of the GNU General Public License as published by\n"
+    "the Free Software Foundation, either version 3 of the License, or\n"
+    "(at your option) any later version.\n"
+    "\n"
+    "This program is distributed in the hope that it will be useful,\n"
+    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    "GNU General Public License for more details.\n"
+    "\n"
+    "You should have received a copy of the GNU General Public License\n"
+    "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n";
+    fprintf(stdout, "%s", w);
+    return none;
+}
+Object minigrace_credits(Object self, int argc, Object *argv, int flags) {
+    char *w =
+    "Minigrace contains code by:\n"
+    " * Michael Homer\n"
+    " * Timothy Jones\n";
+    fprintf(stdout, "%s", w);
+    return none;
+}
+Object grace_minigrace(Object self, int argc, Object *argv, int flags) {
+    if (!minigrace_obj) {
+        ClassData c = alloc_class("Minigrace", 3);
+        add_Method(c, "warranty", &minigrace_warranty);
+        add_Method(c, "w", &minigrace_warranty);
+        add_Method(c, "credits", &minigrace_credits);
+        minigrace_obj = alloc_userobj2(0, 0, c);
+        gc_root(minigrace_obj);
+    }
+    return minigrace_obj;
+}
 Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 9, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 10, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3382,6 +3420,7 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "octets", &grace_octets);
+    add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
