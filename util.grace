@@ -83,6 +83,10 @@ method parseargs {
                     print("git revision " ++ buildinfo.gitrevision)
                     print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
                     sys.exit(0)
+                } elseif (arg == "--help") then {
+                    print "Usage: minigrace <file>.grace"
+                    print "See the documentation for more options."
+                    sys.exit(0)
                 } elseif (arg.at(2) == "X") then {
                     var ext := arg.substringFrom(3)to(arg.size)
                     var extn := ""
