@@ -1411,6 +1411,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
+    out("  Object *var_noSuchValue = alloc_var();")
+    out("  *var_noSuchValue = none;")
     out("  Object *var_void = alloc_var();")
     out("  *var_void = none;")
     out("  Object *var_nothing = alloc_var();")
