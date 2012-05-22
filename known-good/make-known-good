@@ -33,10 +33,10 @@ EOT
         echo "yes."
         echo "Cygwin systems must bootstrap from a tarball."
         echo "Use the tools/tarball-bootstrap script to do this."
+        exit 1
     else
         echo "no."
     fi
-
 fi
 
 if which gmake >/dev/null 2>&1
