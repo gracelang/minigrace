@@ -8,6 +8,7 @@ import util
 def obj = "Obj"
 def blk = "Block"
 def ret = "Return"
+def bln = "$javaBoolean"
 
 
 def libs = ["io", "sys", "unicode"]
@@ -106,11 +107,10 @@ method compileModule(nodes: List, modName: String) {
     scope.stmt(scope.decl("public final class " ++
             "{name} extends Prelude \{", { scope' ->
         scope'.line("private static {name} $module") ++
-            scope'.stmt(scope'.block("public static " ++
-                    "{name} $module() \{", { scope'' ->
+            scope'.stbl("public static {name} $module() \{", { scope'' ->
                 scope''.line("return $module == null ? $module = " ++
                     "new {name}() : $module")
-            }, "\}")) ++
+            }, "\}") ++
 
             scope'.line("private final {obj} $self = this") ++
             scope'.line("private final {obj} $closure = this") ++
@@ -120,21 +120,21 @@ method compileModule(nodes: List, modName: String) {
             compileDeclarations(nodes, scope') ++
 
             // Top level code ends up in the module's constructor.
-            scope'.stmt(scope'.block("private {name}() \{", { scope'' ->
+            scope'.stbl("private {name}() \{", { scope'' ->
                 scope''.line("final {obj} self = this") ++
                     compileExecution(nodes, scope'')
-            }, "\}")) ++
+            }, "\}") ++
 
             // Allows the module to be run from Java.
-            scope'.stmt(scope'.block("public static void " ++
+            scope'.stbl("public static void " ++
                     "main(String[] args) \{", { scope'' ->
                 scope''.line("grace.lib.sys.setArgs(args, \"{name}\")") ++
-                    scope''.stmt(scope''.block("try \{", { scope''' ->
+                    scope''.stbl("try \{", { scope''' ->
                         scope'''.line("$module()")
                     }, scope''.block("\} catch (Exception e) \{", { s ->
                         s.line("Prelude.printException(e)")
-                    }, "\}")))
-            }, "\}"))
+                    }, "\}"))
+            }, "\}")
     }, "\}"))
 }
 
@@ -312,27 +312,24 @@ method compileMethod(node, scope: Scope) -> String {
         }) separatedBy(", ") ++ strIf(node.varargs) then(", final {obj}... _")
     }
     
-    scope.stmt(scope.block("public {obj} " ++
-            "{name}({params}) \{", { scope' ->
+    scope.stbl("public {obj} {name}({params}) \{", { scope' ->
         // This is a minor optimisation that should be subsumed by analysing
         // when a closure is required.
         if(node.body.size == 0) then {
             scope'.line("return nothing")
         } else {
-            scope'.stmt(scope'.block("class $Return " ++
-                    "extends {ret} \{", { scope'' ->
-                scope''.stmt(scope''.block("public $Return" ++
-                        "({obj} value) \{", { scope''' ->
+            scope'.stbl("class $Return extends {ret} \{", { scope'' ->
+                scope''.stbl("public $Return({obj} value) \{", { scope''' ->
                     scope'''.line("super(value)")
-                }, "\}"))
-            }, "\}")) ++
-            scope'.stmt(scope'.block("try \{", { scope'' ->
+                }, "\}")
+            }, "\}") ++
+            scope'.stbl("try \{", { scope'' ->
                 scope''.line("return {compileParamClosure(node, scope'')}")
             }, scope'.block("\} catch ($Return $return) \{", { scope'' ->
                 scope''.line("return $return.value")
-            }, "\}")))
+            }, "\}"))
         }
-    }, "\}"))
+    }, "\}")
 }
 
 method compileType(node, scope: Scope) -> String {
@@ -367,9 +364,9 @@ method compileClosure(body: List, scope: Scope) -> String {
     scope.block("new {obj}($self, $closure) \{", { scope' ->
         scope'.line("final {obj} $closure = this") ++
             compileDeclarations(body, scope') ++
-            scope'.stmt(scope'.block("{obj} execute() \{", { scope'' ->
+            scope'.stbl("{obj} execute() \{", { scope'' ->
                 join(compileExecution(forceReturn(body), scope''))
-            }, "\}"))
+            }, "\}")
     }, "\}.execute()")
 }
 
@@ -434,7 +431,7 @@ method compileBind(node, scope: Scope) -> String {
 method compileIf(node, scope: Scope) -> String {
     def condition = compileExpression(node.value, scope)
 
-    scope.block("if ($javaBoolean({condition})) \{", { scope' ->
+    scope.block("if ({bln}({condition})) \{", { scope' ->
         compileExecution(node.thenblock, scope')
     }, "\}" ++ strIf(node.elseblock.size > 0) then {
         if ((node.elseblock.size == 1) &
@@ -453,7 +450,7 @@ method compileTernary(node, scope: Scope) -> String {
     def then = compileBlockExpression(node.thenblock, scope)
     def else = compileBlockExpression(node.elseblock, scope)
 
-    "$javaBoolean({condition}) ? {then} : {else}"
+    "{bln}({condition}) ? {then} : {else}"
 }
 
 method compileMember(node, scope: Scope) -> String {
@@ -566,17 +563,26 @@ method compileBlock(node, scope: Scope) -> String {
             scope'.line("{obj} {escape(p.value)}")
         }) ++
             compileDeclarations(body, scope') ++
-            scope'.stmt(scope'.block("public {obj} apply" ++
-                    "({obj} _, {obj}... $params) \{", { scope'' ->
-                join(map(node.params) with { p, i ->
-                    scope''.stmt(scope''.block("if ($params.length < " ++
-                            node.params.size ++ ") \{", { scope''' ->
-                        scope'''.line("throw new RuntimeException(\"" ++
-                            "Insufficient arguments to block\")")
-                    }, "\}")) ++
-                        scope''.line("{escape(p.value)} = $params[{i - 1}]")
-                }) ++ compileExecution(body, scope'')
-            }, "\}")) ++ makeInvoke(scope')
+            scope'.stbl("public {obj} apply" ++
+                    "({obj} _, {obj}... $args) \{", { scope'' ->
+                def matchCheck = strIf(node.matchingPattern /= false) then {
+                    def patt = compileExpression(node.matchingPattern, scope'')
+                    scope''.line("{obj} $match = " ++
+                        patt ++ ".invoke(\"match\", $args[0])") ++
+                        scope''.stbl("if (!{bln}($match)) \{", { scope''' ->
+                            scope'''.line("return $match")
+                        }, "\}")
+                }
+
+                scope''.stbl("if ($args.length < " ++
+                        node.params.size ++ ") \{", { scope''' ->
+                    scope'''.line("throw new RuntimeException(\"" ++
+                        "Insufficient arguments to block\")")
+                }, "\}") ++ matchCheck ++
+                    join(map(node.params) with { p, i ->
+                        scope''.line("{escape(p.value)} = $args[{i - 1}]")
+                    }) ++ compileExecution(body, scope'')
+            }, "\}") ++ makeInvoke(scope')
     }, "\}")
 }
 
@@ -596,10 +602,10 @@ method compileObject(node, scope: Scope) -> String {
         scope'.line("private final {obj} $self = this") ++
             scope'.line("private final {obj} $closure = this") ++
             compileDeclarations(node.value, scope') ++
-            scope'.stmt(scope'.block("\{", { scope'' ->
+            scope'.stbl("\{", { scope'' ->
                 scope''.line("final {obj} self = this") ++
                     compileExecution(node.value, scope'')
-            }, "\}")) ++ makeInvoke(scope')
+            }, "\}") ++ makeInvoke(scope')
     }, "\}")
 }
 
@@ -658,10 +664,10 @@ method compileIdentifier(node, scope: Scope) -> String {
 }
 
 method makeInvoke(scope: Scope) -> String {
-    scope.stmt(scope.block("protected Object invoke(Method method, " ++
+    scope.stbl("protected Object invoke(Method method, " ++
             "Object[] args) throws Exception \{", { scope' ->
         scope'.line("return method.invoke(this, args)")
-    }, "\}"))
+    }, "\}")
 }
 
 
@@ -701,6 +707,8 @@ type Scope = {
 
     // Adds an indent, a semicolon and a line break to the given line.
     line(string: String) -> String
+
+    stbl(left: String, inner: Block, right: String) -> String
 
 }
 
@@ -776,6 +784,10 @@ class ScopeFactory.new(ind: Number, outer', decl': Boolean) {
 
     method line(string: String) -> String {
         "{indent}{string};\n"
+    }
+
+    method stbl(left: String, inner: Block, right: String) -> String {
+        stmt(block(left, inner, right))
     }
 
 }

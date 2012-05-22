@@ -1,5 +1,6 @@
 package grace.lang;
 
+
 /**
  * A lower level prelude than the one defined in grace.lib which brings
  * together definitions in other classes and supplies methods for coercing
@@ -95,6 +96,21 @@ public abstract class Prelude extends Types {
     }
 
     throw new RuntimeException("Used non-string as a string.");
+  }
+  
+  public static Obj $match(Obj matchee, Obj elseCase, Obj... cases) {
+    for (Obj block : cases) {
+      Obj result = block.invoke("apply", matchee);
+      if ($javaBoolean(result)) {
+        return new Type.MatchSucceeded(result, new List());
+      }
+    }
+    
+    if (elseCase != null) {
+      return elseCase.invoke("apply");
+    }
+    
+    return new Type.MatchFailed(matchee);
   }
 
   public static Nothing print(Obj self, Obj value) {
