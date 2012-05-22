@@ -5,6 +5,40 @@ COMMIT=$1
 ARCH=$2
 FORM=$3
 
+if [ "$COMMIT" = 33ff5ca19bfc5542fed0f22072676862660bf315 ]
+then
+    echo -n "Checking for default -Wl,--as-needed... "
+    cat <<EOT >configure-$$.c
+#include <dlfcn.h>
+
+int main() {
+dlopen(0, 0);
+return 0;
+}
+EOT
+    if ! gcc -o configure-$$.x -ldl configure-$$.c >/dev/null 2>&1
+    then
+        echo "yes."
+        echo "Your system defaults to using -Wl,--as-needed. These systems"
+        echo "must bootstrap from a tarball."
+        echo "Use the tools/tarball-bootstrap script to do this."
+        rm -f configure-$$.*
+        exit 1
+    else
+        echo "no."
+    fi
+    echo -n "Checking for Cygwin..."
+    if uname | grep -qi CYGWIN
+    then
+        echo "yes."
+        echo "Cygwin systems must bootstrap from a tarball."
+        echo "Use the tools/tarball-bootstrap script to do this."
+    else
+        echo "no."
+    fi
+
+fi
+
 if which gmake >/dev/null 2>&1
 then
     MAKE=gmake

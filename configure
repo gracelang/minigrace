@@ -66,12 +66,6 @@ done
 UNICODE_MODULE=unicode.gso
 if grep -qi CYGWIN <<<"$PLATFORM"
 then
-    if [ "$distrib" = "tree" ]
-    then
-        echo "Building on Cygwin is currently only supported from tarballs."
-        echo "Tarballs available from http://ecs.vuw.ac.nz/~mwh/minigrace/dist/"
-        exit 1
-    fi
     STATIC=y
 fi
 
@@ -123,31 +117,6 @@ if ld -o /dev/null -ldl >/dev/null 2>&1
 then
     echo yes.
     LDFLAGS="$LDFLAGS -ldl"
-    if [ "$DISTRIB" = tree ]
-    then
-        echo -n "Checking for default -Wl,--as-needed... "
-        cat <<EOT >configure-$$.c
-#include <dlfcn.h>
-
-int main() {
-    dlopen(0, 0);
-    return 0;
-}
-EOT
-        if ! gcc -o configure-$$.x -ldl configure-$$.c >/dev/null 2>&1
-        then
-            echo "yes."
-            echo "Your system defaults to using -Wl,--as-needed. These systems"
-            echo "are currently only supported from tarball builds."
-            echo "Tarballs are available from:"
-            echo "    http://ecs.vuw.ac.nz/~mwh/minigrace/dist/"
-            rm -f configure-$$.*
-            exit 1
-        else
-            echo "no."
-        fi
-        rm -f configure-$$.*
-    fi
 else
     echo no.
 fi
