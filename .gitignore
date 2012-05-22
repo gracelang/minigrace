@@ -6,7 +6,8 @@
 *.gso
 *.gcn
 *.c
-*.java
+java/*.java
+tests/*.java
 *.class
 l1
 l2
