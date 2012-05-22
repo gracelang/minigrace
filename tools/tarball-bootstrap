@@ -32,9 +32,9 @@ make || die "Failed to build"
 hash=$(./minigrace --version | awk '/git revision/ { print $3 }')
 kgdir=../known-good/$(uname -s)-$(uname -m)/$hash
 mkdir -p "$kgdir"
-for f in gracelib.h gracelib.o minigrace unicode.gso
+for f in gracelib.h gracelib.o minigrace unicode.gso unicode.gcn
 do
-    cp $f "$kgdir/$f"
+    [ -e "$f" ] && cp $f "$kgdir/$f"
 done
 popd
 rm -rf "$dir"
