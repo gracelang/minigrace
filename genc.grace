@@ -1284,7 +1284,10 @@ method compile(vl, of, mn, rm, bt) {
             if (v.kind == "import") then {
                 var nm := v.value.value
                 var exists := false
-                if (io.exists(nm ++ ".gso") &&
+                if (io.exists("{sys.execPath}/{nm}.gso") &&
+                    {!util.extensions.contains("Static")}) then {
+                    exists := true
+                } elseif (io.exists(nm ++ ".gso") &&
                     {!util.extensions.contains("Static")}) then {
                     exists := true
                 } elseif(nm == "StandardPrelude") then {
