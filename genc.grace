@@ -33,6 +33,7 @@ var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
 var paramsUsed := 1
+var partsUsed := 1
 var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
@@ -163,8 +164,8 @@ method compilearray(o) {
     for (o.value) do {a ->
         r := compilenode(a)
         out("  params[0] = {r};")
-        out("  int argcv{myc}_{i}[] = \{1\};")
-        out("  callmethod(array{myc}, \"push\", 1, argcv{myc}_{i}, params);")
+        out("  partcv[0] = 1;")
+        out("  callmethod(array{myc}, \"push\", 1, partcv, params);")
         i := i + 1
     }
     out("  gc_unpause();")
@@ -439,8 +440,8 @@ method compilefor(o) {
     var obj := compilenode(blk)
     out("  gc_frame_newslot({obj});")
     out("  params[0] = {over};")
-    out("  int argcv{myc}[] = \{1\};")
-    out("  Object iter{myc} = callmethod({over}, \"iter\", 1, argcv{myc}, params);")
+    out("  partcv[0] = 1;")
+    out("  Object iter{myc} = callmethod({over}, \"iter\", 1, partcv, params);")
     out("  gc_frame_newslot(iter{myc});")
     out("  int forvalslot{myc} = gc_frame_newslot(NULL);")
     out("  while(1) \{")
@@ -448,7 +449,7 @@ method compilefor(o) {
     out("    if (!istrue(cond{myc})) break;")
     out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL, NULL);")
     out("    gc_frame_setslot(forvalslot{myc}, params[0]);")
-    out("    callmethod({obj}, \"apply\", 1, argcv{myc}, params);")
+    out("    callmethod({obj}, \"apply\", 1, partcv, params);")
     out("  \}")
     out("  gc_frame_end(forframe{myc});")
     o.register := "none"
@@ -460,6 +461,8 @@ method compilemethod(o, selfobj, pos) {
     // set to pointer from the additional closure parameter.
     var origParamsUsed := paramsUsed
     paramsUsed := 1
+    var origPartsUsed := partsUsed
+    partsUsed := 1
     var origInBlock := inBlock
     inBlock := o.selfclosure
     var oldout := output
@@ -613,6 +616,7 @@ method compilemethod(o, selfobj, pos) {
         }
     }
     out("  Object params[{paramsUsed}];")
+    out("  int partcv[{partsUsed}];")
     var j := 0
     for (closurevars) do { cv ->
         if (cv == "self") then {
@@ -670,6 +674,7 @@ method compilemethod(o, selfobj, pos) {
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
+    partsUsed := origPartsUsed
 }
 method compilemethodtypes(litname, o) {
     var argcv := "int argcv_{litname}[] = \{"
@@ -896,8 +901,8 @@ method compileindex(o) {
     var index := compilenode(o.index)
     out("  params[0] = {index};")
     out("  gc_frame_newslot(params[0]);")
-    out("  int argcv{auto_count}[] = \{1\};")
-    out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, argcv{auto_count}, params);")
+    out("  partcv[0] = 1;")
+    out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, partcv, params);")
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
@@ -958,9 +963,9 @@ method compileop(o) {
             rnm := "modulus"
         }
         out("  params[0] = {right};")
-        out("  int argcv{auto_count}[] = \{1\};")
+        out("  partcv[0] = 1;")
         out("  Object {rnm}{auto_count} = callmethod({left}, \"{o.value}\", "
-            ++ "1, argcv{auto_count}, params);")
+            ++ "1, partcv, params);")
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
     } else {
@@ -969,9 +974,9 @@ method compileop(o) {
         var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         out("  params[0] = {right};")
-        out("  int argcv{auto_count}[] = \{1\};")
+        out("  partcv[0] = 1;")
         out("  Object opresult{auto_count} = "
-            ++ "callmethod({left}, \"{o.value}\", 1, argcv{auto_count}, params);")
+            ++ "callmethod({left}, \"{o.value}\", 1, partcv, params);")
         o.register := "opresult" ++ auto_count
         auto_count := auto_count + 1
     }
@@ -995,24 +1000,21 @@ method compilecall(o, tailcall) {
     if (args.size > paramsUsed) then {
         paramsUsed := args.size
     }
+    if (o.with.size > partsUsed) then {
+        partsUsed := o.with.size
+    }
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "super")}) then {
-        var argcv := "  int argcv{auto_count}[] = \{"
-        for (o.with.indices) do { partnr ->
-            argcv := argcv ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                argcv := argcv ++ ", "
-            }
-        }
-        argcv := argcv ++ "\};"
-        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "{o.with.size}, argcv{auto_count}, params, ((flags >> 24) & 0xff) + 1);")
+            ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "self") & (o.value.value == "outer")}
         ) then {
@@ -1020,66 +1022,48 @@ method compilecall(o, tailcall) {
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
-        var argcv := "  int argcv{auto_count}[] = \{"
-        for (o.with.indices) do { partnr ->
-            argcv := argcv ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                argcv := argcv ++ ", "
-            }
-        }
-        argcv := argcv ++ "\};"
-        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
         out("  Object call{auto_count} = callmethod(prelude, \"{evl}\", "
-            ++ "{o.with.size}, argcv{auto_count}, params);")
+            ++ "{o.with.size}, partcv, params);")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := length(o.value.value) + 1
-        var argcv := "  int argcv{auto_count}[] = \{"
-        for (o.with.indices) do { partnr ->
-            argcv := argcv ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                argcv := argcv ++ ", "
-            }
-        }
-        argcv := argcv ++ "\};"
-        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
-            out("    {o.with.size}, argcv{auto_count}, params, 0);")
+            out("    {o.with.size}, partcv, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-            out("    {o.with.size}, argcv{auto_count}, params);")
+            out("    {o.with.size}, partcv, params);")
         }
     } else {
         obj := "self"
         len := length(o.value.value) + 1
-        var argcv := "  int argcv{auto_count}[] = \{"
-        for (o.with.indices) do { partnr ->
-            argcv := argcv ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                argcv := argcv ++ ", "
-            }
-        }
-        argcv := argcv ++ "\};"
-        out(argcv)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
         }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
-            out("    {o.with.size}, argcv{auto_count}, params, 0);")
+            out("    {o.with.size}, partcv, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {o.with.size}, argcv{auto_count}, params);")
+            out("    {o.with.size}, partcv, params);")
         }
     }
     out("  gc_frame_end(callframe{myc});")
@@ -1521,11 +1505,10 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
-    out("struct StackFrameObject *stackframe = alloc_StackFrame({nummethods}, ")
-    out("  NULL);")
-    out("gc_root((Object)stackframe);")
-    out("Object *selfslot = &(stackframe->slots[0]);")
-    out("*selfslot = self;")
+    out("  struct StackFrameObject *stackframe = alloc_StackFrame({nummethods}, NULL);")
+    out("  gc_root((Object)stackframe);")
+    out("  Object *selfslot = &(stackframe->slots[0]);")
+    out("  *selfslot = self;")
     var tmpo := output
     output := []
     definebindings(values, 1)
@@ -1546,10 +1529,12 @@ method compile(vl, of, mn, rm, bt) {
     var tmpo2 := output
     output := tmpo
     out("  Object params[{paramsUsed}];")
+    out("  int partcv[{partsUsed}];")
     for (tmpo2) do { l->
         out(l)
     }
     paramsUsed := 1
+    partsUsed := 1
     out("  gc_frame_end(frame);")
     out("  return self;")
     out("}")
@@ -1569,10 +1554,10 @@ method compile(vl, of, mn, rm, bt) {
         out("  none = alloc_none();")
         out("  Object tmp_argv = alloc_List();")
         out("  gc_root(tmp_argv);")
-        out("  int argcv_push[] = \{1\};")
+        out("  int partcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
         out("    params[0] = alloc_String(argv[i]);")
-        out("    callmethod(tmp_argv, \"push\", 1, argcv_push, params);")
+        out("    callmethod(tmp_argv, \"push\", 1, partcv_push, params);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
         out("  module_{escmodname}_init();")

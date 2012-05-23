@@ -398,15 +398,15 @@ Object MatchResult_asString(Object self, int nparts, int *argcv,
         str = alloc_String("SuccessfulMatch(result = ");
     else
         str = alloc_String("FailedMatch(result = ");
-    int argcv2[] = {1};
+    int partcv[] = {1};
     Object tmpstr = callmethod(uo->data[0], "asString", 0, NULL, NULL);
-    str = callmethod(str, "++", 1, argcv2, &tmpstr);
+    str = callmethod(str, "++", 1, partcv, &tmpstr);
     tmpstr = alloc_String(", bindings = ");
-    str = callmethod(str, "++", 1, argcv2, &tmpstr);
+    str = callmethod(str, "++", 1, partcv, &tmpstr);
     tmpstr = callmethod(uo->data[1], "asString", 0, NULL, NULL);
-    str = callmethod(str, "++", 1, argcv2, &tmpstr);
+    str = callmethod(str, "++", 1, partcv, &tmpstr);
     tmpstr = alloc_String(")");
-    str = callmethod(str, "++", 1, argcv2, &tmpstr);
+    str = callmethod(str, "++", 1, partcv, &tmpstr);
     gc_unpause();
     return str;
 }
@@ -442,8 +442,8 @@ Object literal_match(Object self, int nparts, int *argcv,
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
         die("match requires an argument");
     Object other = argv[0];
-    int argcv2[] = {1};
-    if (!istrue(callmethod(self, "==", 1, argcv2, argv)))
+    int partcv[] = {1};
+    if (!istrue(callmethod(self, "==", 1, partcv, argv)))
         return alloc_FailedMatch(other, NULL);
     return alloc_SuccessfulMatch(other, NULL);
 }
@@ -549,8 +549,8 @@ Object List_contains(Object self, int nparts, int *argcv,
     int index;
     for (index=0; index<sself->size; index++) {
         my = sself->items[index];
-        int argcv2[] = {1};
-        b = callmethod(other, "==", 1, argcv2, &my);
+        int partcv[] = {1};
+        b = callmethod(other, "==", 1, partcv, &my);
         if (istrue(b))
             return b;
     }
@@ -585,19 +585,19 @@ Object List_asString(Object self, int nparts, int *argcv,
     struct ListObject *sself = (struct ListObject*)self;
     int len = sself->size;
     int i = 0;
-    int argcv2[] = {1};
+    int partcv[] = {1};
     Object other;
     gc_pause();
     Object s = alloc_String("[");
     Object c = alloc_String(",");
     for (i=0; i<len; i++) {
         other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
-        s = callmethod(s, "++", 1, argcv2, &other);
+        s = callmethod(s, "++", 1, partcv, &other);
         if (i != len-1)
-            s = callmethod(s, "++", 1, argcv2, &c);
+            s = callmethod(s, "++", 1, partcv, &c);
     }
     Object cb = alloc_String("]");
-    s = callmethod(s, "++", 1, argcv2, &cb);
+    s = callmethod(s, "++", 1, partcv, &cb);
     gc_unpause();
     return s;
 }
@@ -608,10 +608,10 @@ Object List_indices(Object self, int nparts, int *argcv,
     int slot = gc_frame_newslot(o);
     int i;
     Object f;
-    int argcv2[] = {1};
+    int partcv[] = {1};
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
-        List_push(o, 1, argcv2, &f, 0);
+        List_push(o, 1, partcv, &f, 0);
     }
     gc_frame_setslot(slot, undefined);
     return o;
@@ -631,10 +631,10 @@ Object List_prepended(Object self, int nparts, int *argcv,
     struct ListObject *sself = (struct ListObject*)self;
     int i;
     Object nl = alloc_List();
-    int argcv2[] = {1};
-    callmethod(nl, "push", 1, argcv2, args);
+    int partcv[] = {1};
+    callmethod(nl, "push", 1, partcv, args);
     for (i = 0; i < sself->size; i++) {
-        List_push(nl, 1, argcv2, sself->items + i, 0);
+        List_push(nl, 1, partcv, sself->items + i, 0);
     }
     return nl;
 }
@@ -834,10 +834,10 @@ Object String_indices(Object self, int nparts, int *argcv,
     int i;
     Object f;
     gc_pause();
-    int argcv2[] = {1};
+    int partcv[] = {1};
     for (i=1; i<=sself->size; i++) {
         f = alloc_Float64(i);
-        List_push(o, 1, argcv2, &f, 0);
+        List_push(o, 1, partcv, &f, 0);
     }
     gc_unpause();
     return o;
@@ -1350,10 +1350,10 @@ Object Float64_Range(Object self, int nparts, int *argcv,
     int j = b;
     gc_pause();
     Object arr = alloc_List();
-    int argcv2[] = {1};
+    int partcv[] = {1};
     for (; i<=b; i++) {
         Object v = alloc_Float64(i);
-        List_push(arr, 1, argcv2, &v, 0);
+        List_push(arr, 1, partcv, &v, 0);
     }
     gc_unpause();
     return (Object)arr;
@@ -2249,11 +2249,11 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     int i, j;
     int k = 0;
     struct MethodType *t = m->type;
-    int argcv2[] = {1};
+    int partcv[] = {1};
     for (i = 0; i < nparts, i < t->nparts; i++) {
         for (j = 0; j < argcv[i], j < t->argcv[i]; j++) {
             if (t->types[k])
-                if (!istrue(callmethod(t->types[k], "match", 1, argcv2, &argv[k]))) {
+                if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
                     die("Type error: expected %s for argument %s (%i) of %s",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
@@ -2400,14 +2400,14 @@ Object alloc_MatchFailed() {
 }
 Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     int i;
-    int argcv[] = {1};
+    int partcv[] = {1};
     for (i=0; i<ncases; i++) {
-        Object ret = callmethod(cases[i], "match", 1, argcv, &matchee);
+        Object ret = callmethod(cases[i], "match", 1, partcv, &matchee);
         if (istrue(ret))
             return callmethod(ret, "result", 0, NULL, NULL);
     }
     if (elsecase)
-        return callmethod(elsecase, "apply", 1, argcv, &matchee);
+        return callmethod(elsecase, "apply", 1, partcv, &matchee);
     return alloc_FailedMatch(matchee, NULL);
 }
 Object gracelib_print(Object receiver, int nparams,
@@ -2813,9 +2813,9 @@ int HashMap__findSlot(struct HashMap* h, Object key) {
     Object ko = callmethod(key, "hashcode", 0, NULL, NULL);
     unsigned int hc = integerfromAny(ko);
     unsigned int s = hc % h->nslots;
-    int argcv[] = {1};
+    int partcv[] = {1};
     while (h->table[s].key != HashMap_undefined) {
-        if (istrue(callmethod(h->table[s].key, "==", 1, argcv, &key)))
+        if (istrue(callmethod(h->table[s].key, "==", 1, partcv, &key)))
             return s;
         s = (s + 1) % h->nslots;
     }
@@ -2895,20 +2895,20 @@ Object HashMap_asString(Object self, int nparts, int *argcv,
     Object colon = alloc_String(": ");
     Object str = alloc_String("[{");
     int first = 1;
-    int argcv2[] = {1};
+    int partcv[] = {1};
     for (i=0; i<h->nslots; i++) {
         struct HashMapPair p = h->table[i];
         if (p.key == HashMap_undefined)
             continue;
         if (!first)
-            str = callmethod(str, "++", 1, argcv2, &comma);
+            str = callmethod(str, "++", 1, partcv, &comma);
         first = 0;
-        str = callmethod(str, "++", 1, argcv2, &p.key);
-        str = callmethod(str, "++", 1, argcv2, &colon);
-        str = callmethod(str, "++", 1, argcv2, &p.value);
+        str = callmethod(str, "++", 1, partcv, &p.key);
+        str = callmethod(str, "++", 1, partcv, &colon);
+        str = callmethod(str, "++", 1, partcv, &p.value);
     }
     Object cls = alloc_String("}]");
-    str = callmethod(str, "++", 1, argcv2, &cls);
+    str = callmethod(str, "++", 1, partcv, &cls);
     gc_unpause();
     return str;
 }
@@ -2980,14 +2980,14 @@ Object Block_applyIndirectly(Object self, int nparts, int *argcv,
     Object size = callmethod(tuple, "size", 0, NULL, NULL);
     int sz = integerfromAny(size);
     int i;
-    int argcv2[] = {1};
+    int partcv[] = {1};
     Object rargs[sz];
     for (i=0; i<sz; i++) {
         Object flt = alloc_Float64(i + 1);
-        rargs[i] = callmethod(tuple, "[]", 1, argcv2, &flt);
+        rargs[i] = callmethod(tuple, "[]", 1, partcv, &flt);
     }
-    argcv2[0] = sz;
-    return callmethod(self, "_apply", 1, argcv2, rargs);
+    partcv[0] = sz;
+    return callmethod(self, "_apply", 1, partcv, rargs);
 }
 Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags) {
     struct BlockObject *bo = (struct BlockObject*)self;
@@ -2998,12 +2998,12 @@ Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags)
         return alloc_SuccessfulMatch(r, NULL);
     }
     Object pattern = bo->data[1];
-    int argcv2[] = {1};
-    Object match = callmethod(pattern, "match", 1, argcv2, args);
+    int partcv[] = {1};
+    Object match = callmethod(pattern, "match", 1, partcv, args);
     if (!istrue(match))
         return match;
     Object bindings = callmethod(match, "bindings", 0, NULL, NULL);
-    Object rv = callmethod(self, "applyIndirectly", 1, argcv2, &bindings);
+    Object rv = callmethod(self, "applyIndirectly", 1, partcv, &bindings);
     return alloc_SuccessfulMatch(rv, NULL);
 }
 Object Block_pattern(Object self, int argc, int *argcv,
@@ -3080,8 +3080,8 @@ Object UserObj_Equals(Object self, int nparts, int *argcv,
                 return alloc_Boolean(0);
             Object myval = callmethod(self, m->name, 0, NULL, NULL);
             Object otval = callmethod(other, m->name, 0, NULL, NULL);
-            int argcv2[] = {1};
-            if (!istrue(callmethod(myval, "==", 1, argcv2, &otval)))
+            int partcv[] = {1};
+            if (!istrue(callmethod(myval, "==", 1, partcv, &otval)))
                 return alloc_Boolean(0);
         } else {
             Object realself = other;
@@ -3154,9 +3154,9 @@ Object getdatum2(Object o, int index) {
 Object process_varargs(Object *args, int fixed, int nargs) {
     int i = fixed;
     Object lst = alloc_List();
-    int argcv[] = {1};
+    int partcv[] = {1};
     for (; i<nargs; i++) {
-        callmethod(lst, "push", 1, argcv, &args[i]);
+        callmethod(lst, "push", 1, partcv, &args[i]);
     }
     return lst;
 }
@@ -3434,10 +3434,10 @@ Object grace_for_do(Object self, int nparts, int *argcv,
         die("for-do requires exactly two arguments");
     Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
     gc_frame_newslot(iter);
-    int argcv2[] = {1};
+    int partcv[] = {1};
     while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
-        callmethod(argv[1], "apply", 1, argcv2, &val);
+        callmethod(argv[1], "apply", 1, partcv, &val);
     }
     return none;
 }
@@ -3469,10 +3469,10 @@ Object prelude__methods(Object self, int argc, int *argcv,
     Object l = alloc_List();
     while (c != NULL) {
         int i;
-        int argcv2[] = {1};
+        int partcv[] = {1};
         for (i=0; i<c->nummethods; i++) {
             Object str = alloc_String(c->methods[i].name);
-            callmethod(l, "push", 1, argcv2, &str);
+            callmethod(l, "push", 1, partcv, &str);
         }
         c = NULL;
         if (self->flags & FLAG_USEROBJ) {
