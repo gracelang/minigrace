@@ -3485,7 +3485,8 @@ Object prelude__methods(Object self, int argc, int *argcv,
     return l;
 }
 Object minigrace_obj;
-Object minigrace_warranty(Object self, int argc, Object *argv, int flags) {
+Object minigrace_warranty(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
     char *w =
     "Copyright (C) 2011, 2012 Michael Homer and authors\n"
     "This program is free software: you can redistribute it and/or modify\n"
@@ -3503,7 +3504,8 @@ Object minigrace_warranty(Object self, int argc, Object *argv, int flags) {
     fprintf(stdout, "%s", w);
     return none;
 }
-Object minigrace_credits(Object self, int argc, Object *argv, int flags) {
+Object minigrace_credits(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
     char *w =
     "Minigrace contains code by:\n"
     " * Michael Homer\n"
@@ -3511,7 +3513,8 @@ Object minigrace_credits(Object self, int argc, Object *argv, int flags) {
     fprintf(stdout, "%s", w);
     return none;
 }
-Object grace_minigrace(Object self, int argc, Object *argv, int flags) {
+Object grace_minigrace(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
     if (!minigrace_obj) {
         ClassData c = alloc_class("Minigrace", 3);
         add_Method(c, "warranty", &minigrace_warranty);
