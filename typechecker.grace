@@ -110,7 +110,8 @@ def NoneType = ast.asttype("None", [
 def BlockType = ast.asttype("Block", [
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
-    ast.astmethodtype("apply", [], TopOther)
+    ast.astmethodtype("apply", [], TopOther),
+    ast.astmethodtype("match", [], TopOther)
 ])
 var currentReturnType := false
 
@@ -247,6 +248,9 @@ method expressionType(expr) {
     }
     if (expr.kind == "array") then {
         return ListType
+    }
+    if (expr.kind == "block") then {
+        return BlockType
     }
     if (expr.kind == "op") then {
         def opname = expr.value
