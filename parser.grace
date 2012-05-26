@@ -1653,6 +1653,14 @@ method statement {
         if (sym.line == oldLine) then {
             indentFreePass := true
         }
+    } else {
+        if (sym.line == lastToken.line) then {
+            if (sym.kind != "rbrace") then {
+                util.syntax_error("unexpected token after statement ended; "
+                    ++ "got {sym.kind}:'{sym.value}', expected "
+                    ++ "new line or semicolon")
+            }
+        }
     }
 }
 
