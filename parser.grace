@@ -1526,6 +1526,16 @@ method domethodtype {
         rtype := values.pop
     }
     values.push(ast.astmethodtype(mn, params, rtype))
+    if (accept("semicolon")) then {
+        next
+    } else {
+        if (!accept("rbrace")) then {
+            if (id.line == sym.line) then {
+                util.syntax_error("multiple methods on same line in type, "
+                    ++ "after {mn}")
+            }
+        }
+    }
 }
 
 // Accept a type declaration.
