@@ -746,6 +746,12 @@ method callrest {
         return 0
     }
     var meth := values.pop
+    if (meth.kind != "identifier") then {
+        if (meth.kind != "member") then {
+            values.push(meth)
+            return 0
+        }
+    }
     var methn
     var tmp
     var ln := false
