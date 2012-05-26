@@ -1486,6 +1486,7 @@ method doreturn {
 }
 
 method domethodtype {
+    expect("identifier")or("op")
     pushidentifier
     var id := values.pop
     var mn := id.value
