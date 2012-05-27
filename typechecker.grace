@@ -8,6 +8,7 @@ def moduleScope = HashMap.new
 moduleScope.put("___is_object", true)
 preludeObj.put("___is_prelude", true)
 var scopes := [HashMap.new, preludeObj, moduleScope]
+var selftypes := [ast.asttype("module", [])]
 var auto_count := 0
 
 def DynamicIdentifier = ast.astidentifier("Dynamic", false)
@@ -47,6 +48,7 @@ def StringType = ast.asttype("String", [
     ast.astmethodtype("size", [], NumberIdentifier),
     ast.astmethodtype("ord", [], NumberIdentifier),
     ast.astmethodtype("at", [NumberOther], StringIdentifier),
+    ast.astmethodtype("[]", [NumberOther], StringIdentifier),
     ast.astmethodtype("==", [TopOther], BooleanIdentifier),
     ast.astmethodtype("!=", [TopOther], BooleanIdentifier),
     ast.astmethodtype("/=", [TopOther], BooleanIdentifier),
@@ -113,6 +115,7 @@ def BlockType = ast.asttype("Block", [
     ast.astmethodtype("apply", [], TopOther),
     ast.astmethodtype("match", [], TopOther)
 ])
+def outerMethod = ast.astmethodtype("outer", [], DynamicType)
 var currentReturnType := false
 
 class Binding { kind' ->
@@ -237,6 +240,9 @@ method expressionType(expr) {
                     return gitype
                 }
             }
+        }
+        if (expr.value == "self") then {
+            return selftypes.last
         }
         return expr.dtype
     }
@@ -603,6 +609,10 @@ method resolveIdentifier(node) {
     }
     if (nm == "outer") then {
         return ast.astmember("outer", ast.astidentifier("self", false))
+    }
+    if (nm == "self") then {
+        node.dtype := selftypes.last
+        return node
     }
     var b := findName(nm)
     if (b.kind == "var") then {
@@ -1032,13 +1042,19 @@ method resolveIdentifiers(node) {
         return tmp
     }
     if (node.kind == "object") then {
+        def selftype = ast.asttype("<Object>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
+            def stb = Binding.new("def")
+            stb.dtype := selftype
+            scopes.last.put("self", stb)
         }
+        selftypes.push(selftype)
         l := resolveIdentifiersList(node.value)withBlock(tmp)
         tmp2 := ast.astobject(l,
             resolveIdentifiers(node.superclass))
+        selftypes.pop
         return tmp2
     }
     if (node.kind == "inherits") then {
@@ -1049,11 +1065,16 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "class") then {
         pushScope
+        def selftype = ast.asttype("<Object>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("___is_class", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
+            def stb = Binding.new("def")
+            stb.dtype := selftype
+            scopes.last.put("self", stb)
         }
+        selftypes.push(selftype)
         if (node.name.kind == "generic") then {
             for (node.name.params) do {gp->
                 def nomnm = gp.value
@@ -1075,6 +1096,7 @@ method resolveIdentifiers(node) {
             resolveIdentifiers(node.superclass),
             node.constructor)
         popScope
+        selftypes.pop
     }
     if (node.kind == "bind") then {
         tmp := resolveIdentifiers(node.dest)
@@ -1224,11 +1246,12 @@ method resolveIdentifiers(node) {
         tmp2 := resolveIdentifiers(tmp)
         tmp4 := resolveIdentifiers(node.dtype)
         tmp3 := findType(tmp4)
-        if (conformsType(expressionType(tmp2))to(tmp3).not) then {
+        def tmp5 = expressionType(tmp2)
+        if (conformsType(tmp5)to(tmp3).not) then {
             util.type_error("initialising def of type "
                 ++ subtype.nicename(tmp3)
                 ++ " with expression of type "
-                ++ subtype.nicename(expressionType(tmp2)))
+                ++ subtype.nicename(tmp5))
         }
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
@@ -1322,6 +1345,8 @@ method resolveIdentifiersList(lst)withBlock(bk) {
     for (lst) do {e->
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
+            selftypes.last.methods.push(
+                ast.astmethodtype(e.name.value, [], findType(e.dtype)))
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
             if ((tpb == false) || {tpb.kind /= "type"}) then {
@@ -1339,7 +1364,17 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             tmp.dtype := tpb
             bindName(e.name.value, tmp)
         } elseif (e.kind == "method") then {
-            bindName(e.value.value, Binding.new("method"))
+            def mt = Binding.new("method")
+            mt.dtype := findType(e.dtype)
+            bindName(e.value.value, mt)
+            selftypes.last.methods.push(
+                ast.astmethodtype(e.value.value, e.params, mt.dtype))
+        } elseif (e.kind == "inherits") then {
+            def stype = expressionType(resolveIdentifiers(e.value))
+            def st = selftypes.last.methods
+            for (stype.methods) do { m->
+                st.push(m)
+            }
         } elseif (e.kind == "class") then {
             tmp := Binding.new("def")
             var className
@@ -1412,6 +1447,12 @@ method typecheck(values) {
     bindName("print", Binding.new("method"))
     bindName("length", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
+    def modtype = selftypes.last
+    modtype.methods.push(ast.astmethodtype("print", [TopOther], NoneType))
+    modtype.methods.push(ast.astmethodtype("length", [TopOther], NumberType))
+    modtype.methods.push(ast.astmethodtype("escapestring", [StringOther],
+        StringType))
+    modtype.methods.push(ast.astmethodtype("raise", [TopOther], NoneType))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))
     bindName("void", Binding.new("def"))
