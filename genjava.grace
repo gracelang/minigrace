@@ -17,6 +17,11 @@ def ret = "GraceReturn"
 
 def libs = ["io", "sys", "unicode"]
 
+type ImmutableIndexedCollection = {
+    [](_ : Number)
+    at(_ : Number)
+}
+
 method compile(nodes: List, outFile, modName: String, runMode: String,
                buildType: String, libPath: String | Boolean) {
     if (runMode == "make") then {
@@ -925,7 +930,7 @@ method literal(value': String) {
 // General utilities.
 
 // Maps a list to a new one with the given block.
-method map(list: List) with(with: Block) -> List {
+method map(list: ImmutableIndexedCollection) with(with: Block) -> List {
     def list' = []
     var i := 1
     for (list) do { e ->
@@ -965,12 +970,12 @@ method map(list: List) with(with: Block) filter(filter: Block) -> List {
 }
 
 // Joins the elements of the given list together into a string.
-method join(list: List) -> String {
+method join(list: ImmutableIndexedCollection) -> String {
     join(list) separatedBy("")
 }
 
 // Joins the elements of the given list together into a string, with separator.
-method join(list: List) separatedBy(by: String) -> String {
+method join(list: ImmutableIndexedCollection) separatedBy(by: String) -> String {
     var once := false
     var string := ""
     for (list) do { val ->
