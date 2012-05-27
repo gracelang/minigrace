@@ -1492,10 +1492,15 @@ method doreturn {
 }
 
 method domethodtype {
-    expect("identifier")or("op")
+    expect("identifier")or("op")or("lsquare")
     pushidentifier
     var id := values.pop
     var mn := id.value
+    if (mn == "[") then {
+        expect("rsquare")
+        next
+        mn := "[]"
+    }
     if (accept("bind")) then {
         mn := "{mn}:="
     }
