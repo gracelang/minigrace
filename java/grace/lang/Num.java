@@ -6,7 +6,6 @@ import static grace.lang.Prelude.$boolean;
 import static grace.lang.Prelude.$javaBoolean;
 import static grace.lang.Prelude.$javaNumber;
 import static grace.lang.Prelude.$javaString;
-import static grace.lang.Prelude.$list;
 
 public class Num extends Top {
 
@@ -117,10 +116,10 @@ public class Num extends Top {
     }
     
     if ($javaNumber(against) == value) {
-      return new Type.MatchSucceeded(against, $list(against));
+      return new Match.MatchSucceeded(against);
     }
     
-    return new Type.MatchFailed(against);
+    return new Match.MatchFailed(against);
   }
 
 }

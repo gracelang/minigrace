@@ -39,12 +39,12 @@ public abstract class Prelude extends Types {
     private Obj value;
 
     private ValueBlock(Obj value) {
-      super(nothing);
+      super(1, nothing);
 
       this.value = value;
     }
 
-    public Obj apply(Obj self, Obj... params) {
+    protected Obj $apply(Obj self, Obj... params) {
       return value;
     }
 
@@ -98,11 +98,11 @@ public abstract class Prelude extends Types {
     throw new RuntimeException("Used non-string as a string.");
   }
   
-  public static Obj $match(Obj matchee, Obj elseCase, Obj... cases) {
+  public static Obj $matchCase(Obj matchee, Obj elseCase, Obj... cases) {
     for (Obj block : cases) {
-      Obj result = block.invoke("apply", matchee);
+      Obj result = block.invoke("match", matchee);
       if ($javaBoolean(result)) {
-        return new Type.MatchSucceeded(result, new List());
+        return result.invoke("result");
       }
     }
     
@@ -110,7 +110,7 @@ public abstract class Prelude extends Types {
       return elseCase.invoke("apply");
     }
     
-    return new Type.MatchFailed(matchee);
+    return new Match.MatchFailed(matchee);
   }
 
   public static Nothing print(Obj self, Obj value) {
@@ -139,8 +139,8 @@ public abstract class Prelude extends Types {
   }
 
   public static final HashMapClass HashMap = new HashMapClass();
-
-  public static final Obj prelude = grace.lib.prelude.$module();
+  
+  public static final Obj _prelude = grace.lib.prelude.$module();
 
   public static Obj escapestring(Obj self, Obj str) {
     final String p = ((Str) str).value;

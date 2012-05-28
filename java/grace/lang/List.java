@@ -94,7 +94,7 @@ public class List extends Top {
   public List indices(Obj self) {
     List list = new List();
     int length = value.size();
-    for (int i = 0; i < length; i++) {
+    for (int i = 1; i <= length; i++) {
       list.push(list, new Num(i));
     }
 
@@ -140,6 +140,10 @@ public class List extends Top {
     }
 
     return new Str(out + "]");
+  }
+  
+  public Obj[] toArray() {
+    return value.toArray(new Obj[value.size()]);
   }
 
 }

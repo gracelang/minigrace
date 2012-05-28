@@ -1,9 +1,6 @@
 package grace.lang;
 
-import static grace.lang.Bool.$false;
-import static grace.lang.Bool.$true;
 import static grace.lang.Prelude.$list;
-import static grace.lang.Prelude.$string;
 
 import java.lang.reflect.Method;
 
@@ -38,55 +35,10 @@ public class Type extends Obj {
         s = s.$super();
       }
 
-      return new MatchFailed(against);
+      return new Match.MatchFailed(against);
     }
 
-    return new MatchSucceeded(against, $list(against));
-  }
-
-  protected static class MatchSucceeded extends Obj {
-
-    private final Obj result;
-    private final Obj bindings;
-
-    public MatchSucceeded(Obj result, Obj bindings) {
-      super(Egal.Value);
-      inherits($true);
-
-      this.result = result;
-      this.bindings = bindings;
-    }
-
-    public Obj result(Obj self) {
-      return result;
-    }
-
-    public Obj bindings(Obj self) {
-      return bindings;
-    }
-
-    public Obj asString(Obj self) {
-      return $string("SuccessfulMatch(result = " + result + ", bindings = "
-          + bindings + ")");
-    }
-
-  }
-
-  protected static class MatchFailed extends Obj {
-
-    private final Obj result;
-
-    public MatchFailed(Obj result) {
-      super(Egal.Value);
-      inherits($false);
-
-      this.result = result;
-    }
-
-    public Obj result(Obj self) {
-      return result;
-    }
-
+    return new Match.MatchSucceeded(against, $list());
   }
 
 }

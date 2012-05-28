@@ -2,7 +2,6 @@ package grace.lang;
 
 import static grace.lang.Nothing.nothing;
 import static grace.lang.Prelude.$javaBoolean;
-import static grace.lang.Prelude.$list;
 
 public class Bool extends Top {
 
@@ -88,10 +87,10 @@ public class Bool extends Top {
     }
     
     if ($javaBoolean(against) == value) {
-      return new Type.MatchSucceeded(against, $list(against));
+      return new Match.MatchSucceeded(against);
     }
     
-    return new Type.MatchFailed(against);
+    return new Match.MatchFailed(against);
   }
 
 }

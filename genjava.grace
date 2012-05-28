@@ -95,6 +95,8 @@ method compileModule(nodes: List, modName: String) {
     }
 
     def scope = moduleScope
+    def mod = "$module"
+    def std = "StandardPrelude"
 
     // Top-level modules are in the default Java package.
     if(packages.size == 0) then { "" } else {
@@ -106,11 +108,14 @@ method compileModule(nodes: List, modName: String) {
     // Each module is placed in a single class.
     scope.stmt(scope.decl("public final class " ++
             "{name} extends Prelude \{", { scope' ->
-        scope'.line("private static {name} $module") ++
-            scope'.stbl("public static {name} $module() \{", { scope'' ->
-                scope''.line("return $module == null ? $module = " ++
-                    "new {name}() : $module")
+        scope'.line("private static final {obj} prelude = {std}.{mod}()") ++
+            scope'.line("private static {name} {mod}") ++
+            scope'.stbl("public static {name} {mod}() \{", { scope'' ->
+                scope''.line("return {mod} == null ? {mod} = " ++
+                    "new {name}() : {mod}")
             }, "\}") ++
+
+            scope'.line("private static int $ret = 0") ++
 
             scope'.line("private final {obj} $self = this") ++
             scope'.line("private final {obj} $closure = this") ++
@@ -318,15 +323,18 @@ method compileMethod(node, scope: Scope) -> String {
         if(node.body.size == 0) then {
             scope'.line("return nothing")
         } else {
+            scope'.line("final int $scope = $ret++") ++
             scope'.stbl("class $Return extends {ret} \{", { scope'' ->
                 scope''.stbl("public $Return({obj} value) \{", { scope''' ->
-                    scope'''.line("super(value)")
+                    scope'''.line("super($scope, value)")
                 }, "\}")
             }, "\}") ++
             scope'.stbl("try \{", { scope'' ->
                 scope''.line("return {compileParamClosure(node, scope'')}")
             }, scope'.block("\} catch ($Return $return) \{", { scope'' ->
-                scope''.line("return $return.value")
+                scope''.stbl("if ($return.scope != $scope) \{", { scope''' ->
+                    scope'''.line("throw $return")
+                }, "\}") ++ scope''.line("return $return.value")
             }, "\}"))
         }
     }, "\}")
@@ -555,33 +563,22 @@ method compileOp(node, scope: Scope) -> String {
 
 method compileBlock(node, scope: Scope) -> String {
     def body = forceReturn(node.body)
-    def size = node.params.size
-    def rt = "throw new RuntimeException(\"Insufficient arguments to block\")"
+    def params = map(node.params) with { param -> escape(param.value) }
 
-    scope.block("new {blk}($self, $closure) \{", { scope' ->
-        join(map(node.params) with { p ->
-            scope'.line("{obj} {escape(p.value)}")
-        }) ++
+    scope.block("new {blk}({params.size}, $self, $closure) \{", { scope' ->
+        join(map(params) with { param -> scope'.line("{obj} {param}") }) ++
             compileDeclarations(body, scope') ++
-            scope'.stbl("public {obj} apply" ++
-                    "({obj} _, {obj}... $args) \{", { scope'' ->
-                def matchCheck = strIf(node.matchingPattern /= false) then {
+            strIf(false /= node.matchingPattern) then {
+                scope'.stbl("public {obj} match" ++
+                        "({obj} _, {obj}... $args) \{", { scope'' ->
                     def patt = compileExpression(node.matchingPattern, scope'')
-                    scope''.line("{obj} $match = " ++
-                        patt ++ ".invoke(\"match\", $args[0])") ++
-                        scope''.stbl("if (!{bln}($match)) \{", { scope''' ->
-                            scope'''.line("return $match")
-                        }, "\}")
-                }
-
-                scope''.stbl("if ($args.length < " ++
-                        node.params.size ++ ") \{", { scope''' ->
-                    scope'''.line("throw new RuntimeException(\"" ++
-                        "Insufficient arguments to block\")")
-                }, "\}") ++ matchCheck ++
-                    join(map(node.params) with { p, i ->
-                        scope''.line("{escape(p.value)} = $args[{i - 1}]")
-                    }) ++ compileExecution(body, scope'')
+                    scope''.line("return $match(self, {patt}, $args)")
+                }, "\}")
+            } ++ scope'.stbl("public {obj} $apply" ++
+                    "({obj} _, {obj}... $args) \{", { scope'' ->
+                join(map(params) with { param, i ->
+                    scope''.line("{param} = $args[{i - 1}]")
+                }) ++ compileExecution(body, scope'')
             }, "\}") ++ makeInvoke(scope')
     }, "\}")
 }
@@ -632,7 +629,7 @@ method compileMatch(node, scope: Scope) -> String {
         compileExpression(node.elsecase, scope)
     } else { "null" }
 
-    "$match({matchee}, {else}, {params})"
+    "$matchCase({matchee}, {else}, {params})"
 }
 
 // A helper for condensing block expressions.

@@ -1,6 +1,6 @@
 package grace.lang;
 
-import static grace.lang.Bool.$true;
+import static grace.lang.Prelude.$list;
 
 public abstract class Types extends Obj {
 
@@ -20,7 +20,7 @@ public abstract class Types extends Obj {
 
     public Obj match(Obj self, Obj against) {
       if (against.getClass().equals(test)) {
-        return $true;
+        return new Match.MatchSucceeded(against, $list(against));
       }
 
       Obj $super = against.$super();
