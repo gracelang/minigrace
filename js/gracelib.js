@@ -11,28 +11,28 @@ function GraceString(s) {
 
 GraceString.prototype = {
     methods: {
-        "++": function(other) {
-            var o = callmethod(other, "asString");
+        "++": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
             return new GraceString(this._value + o._value);
         },
-        "at": function(other) {
-            var o = callmethod(other, 'asString');
+        "at": function(argcv, other) {
+            var o = callmethod(other, 'asString', [0]);
             var idx = parseInt(o._value) - 1;
             return new GraceString(this._value.charAt(idx));
         },
-        "size": function() {
+        "size": function(argcv) {
             return new GraceNum(this._value.length);
         },
-        "_escape": function() {
-            var tmp = callmethod(this, "replace()with",
+        "_escape": function(argcv) {
+            var tmp = callmethod(this, "replace()with", [2],
                     new GraceString("\\"), new GraceString("\\\\"));
-            tmp = callmethod(tmp, "replace()with",
+            tmp = callmethod(tmp, "replace()with", [2],
                     new GraceString("\""), new GraceString("\\\""));
-            tmp = callmethod(tmp, "replace()with",
+            tmp = callmethod(tmp, "replace()with", [2],
                     new GraceString("\n"), new GraceString("\\n"));
             return tmp;
         },
-        "replace()with": function(what, wth) {
+        "replace()with": function(argcv, what, wth) {
             var s = this._value;
             var os = "";
             var sl = what._value.length;
@@ -44,13 +44,13 @@ GraceString.prototype = {
             os += s;
             return new GraceString(os);
         },
-        "substringFrom()to": function(from, to) {
+        "substringFrom()to": function(argcv, from, to) {
             var s = this._value;
             return new GraceString(s.substring(from._value - 1, to._value));
         },
-        "asString": function() { return this ; },
-        "encode": function() { return this ; }, // TODO this is a hack
-        "==": function(other) {
+        "asString": function(argcv) { return this ; },
+        "encode": function(argcv) { return this ; }, // TODO this is a hack
+        "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
             if (this.prototype == other.prototype
@@ -58,21 +58,21 @@ GraceString.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
-        "!=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "/=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "iterator": function() {
+        "iterator": function(argcv) {
             return new GraceStringIterator(this);
         },
-        "ord": function() {
+        "ord": function(argcv) {
             return new GraceNum(this._value.charCodeAt(0));
         },
-        "hashcode": function() {
+        "hashcode": function(argcv) {
             var hc = 0;
             for (var i=0; i<this._value.length; i++) {
                 hc *= 23;
@@ -81,29 +81,29 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
-        "match()matchesBinding()else": function(pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", this,
-                    b, e);
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
         },
-        "matchObject()matchesBinding()else": function(obj, b, e) {
-            var bl = callmethod(this, "==", obj);
+        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
+            var bl = callmethod(this, "==", [1], obj);
             if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", obj);
+                return callmethod(b, "apply", [1], obj);
             } else {
-                return callmethod(e, "apply", obj);
+                return callmethod(e, "apply", [1], obj);
             }
         },
-        "indices": function() {
+        "indices": function(argcv) {
             var l = [];
             for (var i=1; i<=this._value.length; i++)
                 l.push(new GraceNum(i));
             return new GraceList(l);
         },
-        "asNumber": function() {
+        "asNumber": function(argcv) {
             return new GraceNum(0 + this._value);
         },
-        "match": function(o) {
-            if (Grace_isTrue(callmethod(this, "==", o)))
+        "match": function(argcv, o) {
+            if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
@@ -118,61 +118,61 @@ function GraceNum(n) {
 
 GraceNum.prototype = {
     methods: {
-        "+": function(other) {
+        "+": function(argcv, other) {
             var s = this._value + other._value;
             return new GraceNum(s)
         },
-        "*": function(other) {
+        "*": function(argcv, other) {
             var s = this._value * other._value;
             return new GraceNum(s)
         },
-        "/": function(other) {
+        "/": function(argcv, other) {
             var s = this._value / other._value;
             return new GraceNum(s)
         },
-        "-": function(other) {
+        "-": function(argcv, other) {
             var s = this._value - other._value;
             return new GraceNum(s)
         },
-        "%": function(other) {
+        "%": function(argcv, other) {
             var s = this._value % other._value;
             return new GraceNum(s)
         },
-        "++": function(other) {
-            var t = callmethod(this, "asString");
-            return callmethod(t, "++", other);
+        "++": function(argcv, other) {
+            var t = callmethod(this, "asString", [0]);
+            return callmethod(t, "++", [1], other);
         },
-        "..": function(other) {
-            var o = callmethod(other, "asString");
+        "..": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
             var ub = parseInt(o._value);
             var l = [];
             for (var i=this._value; i<=ub; i++)
                 l.push(new GraceNum(i));
             return new GraceList(l);
         },
-        "<": function(other) {
+        "<": function(argcv, other) {
             var s = this._value < other._value;
             return new GraceBoolean(s)
         },
-        ">": function(other) {
+        ">": function(argcv, other) {
             var s = this._value > other._value;
             return new GraceBoolean(s)
         },
-        "<=": function(other) {
+        "<=": function(argcv, other) {
             var s = this._value <= other._value;
             return new GraceBoolean(s)
         },
-        ">=": function(other) {
+        ">=": function(argcv, other) {
             var s = this._value >= other._value;
             return new GraceBoolean(s)
         },
-        "prefix-": function() {
+        "prefix-": function(argcv) {
             return new GraceNum(-this._value)
         },
-        "asString": function() {
+        "asString": function(argcv) {
             return new GraceString("" + this._value)
         },
-        "==": function(other) {
+        "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
             if (this.className == other.className
@@ -180,30 +180,30 @@ GraceNum.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
-        "!=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "/=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "hashcode": function() {
+        "hashcode": function(argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
-        "match()matchesBinding()else": function(pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", this,
-                    b, e);
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
         },
-        "matchObject()matchesBinding()else": function(obj, b, e) {
-            var bl = callmethod(this, "==", obj);
+        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
+            var bl = callmethod(this, "==", [1], obj);
             if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", obj);
+                return callmethod(b, "apply", [1], obj);
             } else {
-                return callmethod(e, "apply", obj);
+                return callmethod(e, "apply", [1], obj);
             }
         },
-        "inBase": function(other) {
+        "inBase": function(argcv, other) {
             var mine = this._value;
             var base = other._value;
             var symbols = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -222,13 +222,13 @@ GraceNum.prototype = {
                 str = before + str;
             return new GraceString(str); 
         },
-        "truncate": function() {
+        "truncate": function(argcv) {
             if (this._value < 0)
                 return new GraceNum(Math.ceil(this._value));
             return new GraceNum(Math.floor(this._value));
         },
-        "match": function(o) {
-            if (Grace_isTrue(callmethod(this, "==", o)))
+        "match": function(argcv, o) {
+            if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
@@ -241,56 +241,56 @@ function GraceBoolean(b) {
 }
 GraceBoolean.prototype = {
     methods: {
-        "not": function() {
+        "not": function(argcv) {
             return new GraceBoolean(!this._value)
         },
-        "prefix!": function() {
+        "prefix!": function(argcv) {
             return new GraceBoolean(!this._value)
         },
-        "&": function(other) {
+        "&": function(argcv, other) {
             var s = this._value && other._value;
             return new GraceBoolean(s)
         },
-        "|": function(other) {
+        "|": function(argcv, other) {
             var s = this._value || other._value;
             return new GraceBoolean(s)
         },
-        "&&": function(other) {
+        "&&": function(argcv, other) {
             if (!this._value)
                 return this;
             if (other instanceof GraceBoolean)
                 return other;
             if (other.superobj instanceof GraceBoolean)
                 return other;
-            var o = callmethod(other, "apply");
+            var o = callmethod(other, "apply", [0]);
             return o;
         },
-        "||": function(other) {
+        "||": function(argcv, other) {
             if (this._value)
                 return this;
             if (other instanceof GraceBoolean)
                 return other;
             if (other.superobj instanceof GraceBoolean)
                 return other;
-            var o = callmethod(other, "apply");
+            var o = callmethod(other, "apply", [0]);
             return o;
         },
-        "andAlso": function(other) {
+        "andAlso": function(argcv, other) {
             if (this._value) {
-                return callmethod(other, "apply");
+                return callmethod(other, "apply", [0]);
             }
             return this;
         },
-        "orElse": function(other) {
+        "orElse": function(argcv, other) {
             if (!this._value) {
-                return callmethod(other, "apply");
+                return callmethod(other, "apply", [0]);
             }
             return this;
         },
-        "asString": function() {
+        "asString": function(argcv) {
             return new GraceString("" + this._value)
         },
-        "==": function(other) {
+        "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
             if (this.prototype == other.prototype
@@ -298,20 +298,20 @@ GraceBoolean.prototype = {
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
-        "!=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "/=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "match()matchesBinding()else": function(pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", this,
-                    b, e);
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
         },
-        "match": function(o) {
-            if (Grace_isTrue(callmethod(this, "==", o)))
+        "match": function(argcv, o) {
+            if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
@@ -323,39 +323,39 @@ function GraceList(l) {
 }
 GraceList.prototype = {
     methods: {
-        "push": function(val) {
+        "push": function(argcv, val) {
             this._value.push(val);
         },
-        "size": function() {
+        "size": function(argcv) {
             //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
         },
-        "pop": function() {
+        "pop": function(argcv) {
             return this._value.pop();
         },
-        "at": function(other) {
-            var o = callmethod(other, "asString");
+        "at": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
             var idx = parseInt(o._value);
             return this._value[idx-1];
         },
-        "[]": function(other) {
-            var o = callmethod(other, "asString");
+        "[]": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
             var idx = parseInt(o._value);
             return this._value[idx-1];
         },
-        "at()put": function(idx, val) {
+        "at()put": function(argcv, idx, val) {
             this._value[idx._value-1] = val;
         },
-        "[]:=": function(idx, val) {
+        "[]:=": function(argcv, idx, val) {
             this._value[idx._value-1] = val;
         },
-        "asString": function() {
+        "asString": function(argcv) {
             var s = "[";
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 if (v.methods["asString"])
-                    s += callmethod(v, "asString")._value + ", ";
+                    s += callmethod(v, "asString", [0])._value + ", ";
                 else {
                     var q = dbgp(v, 2);
                     s += "((" + q + ")), "
@@ -364,50 +364,50 @@ GraceList.prototype = {
             s += "]";
             return new GraceString(s);
         },
-        "contains": function(other) {
+        "contains": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
-                if (Grace_isTrue(callmethod(v, "==", other)))
+                if (Grace_isTrue(callmethod(v, "==", [1], other)))
                     return new GraceBoolean(true);
             }
             return new GraceBoolean(false);
         },
-        "==": function(other) {
+        "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
             return new GraceBoolean(false);
         },
-        "!=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "/=": function(other) {
-            var t = callmethod(this, "==", other);
-            return callmethod(t, "not");
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
         },
-        "match()matchesBinding()else": function(pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", this,
-                    b, e);
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
         },
-        "prepended": function(item) {
+        "prepended": function(argcv, item) {
             var l = [item];
             for (var i=0; i<this._value.length; i++)
                 l.push(this._value[i]);
             return new GraceList(l);
         },
-        "iterator": function() {
+        "iterator": function(argcv) {
             return new GraceListIterator(this._value);
         },
-        "indices": function() {
+        "indices": function(argcv) {
             var l = [];
             for (var i=1; i<=this._value.length; i++)
                 l.push(new GraceNum(i));
             return new GraceList(l);
         },
-        "first": function() {
+        "first": function(argcv) {
             return this._value[0];
         },
-        "last": function() {
+        "last": function(argcv) {
             return this._value[this._value.length-1];
         },
     },
@@ -430,8 +430,8 @@ function Grace_egal(o1, o2) {
         return new GraceBoolean(false);
     var t1 = classType(o1);
     var t2 = classType(o2);
-    var tm = callmethod(callmethod(t1, "match", o2),
-            "&&", callmethod(t2, "match", o1));
+    var tm = callmethod(callmethod(t1, "match", [1], o2),
+            "&&", [1], callmethod(t2, "match", [1], o1));
     if (!Grace_isTrue(tm))
         return new GraceBoolean(false);
     for (d in o1.methods) {
@@ -454,14 +454,14 @@ function Grace_egal(o1, o2) {
             return new GraceBoolean(false);
         var leftdata = o1.data[d];
         var rightdata = tmp.data[d];
-        if (!Grace_isTrue(callmethod(leftdata, "==", rightdata)))
+        if (!Grace_isTrue(callmethod(leftdata, "==", [1], rightdata)))
             return new GraceBoolean(false);
     }
     return new GraceBoolean(true);
 }
 
 function Grace_print(obj) {
-    var s = callmethod(obj, "asString");
+    var s = callmethod(obj, "asString", [0]);
     stdout_txt.value += s._value + "\n";
     return var_nothing;
 }
@@ -473,18 +473,18 @@ function GraceObject() {
 }
 GraceObject.prototype = {
     methods: {
-        "==": function(o) {
+        "==": function(argcv, o) {
             return new GraceBoolean(this == o);
         },
-        "!=": function(o) {
+        "!=": function(argcv, o) {
             var b = this.methods["=="].call(this, o);
             return b.methods["not"].call(b);
         },
-        "/=": function(o) {
+        "/=": function(argcv, o) {
             var b = this.methods["=="].call(this, o);
             return b.methods["not"].call(b);
         },
-        "asString": function() {
+        "asString": function(argcv) {
             var s = "object {";
             for (var i in this.data) {
                 s += "var " + i + " = " + this.data[i]._value;
@@ -495,18 +495,18 @@ GraceObject.prototype = {
     data: {}
 };
 GraceObjectMethods = {
-    "==": function(o) {
+    "==": function(argcv, o) {
         return Grace_egal(this, o);
     },
-    "!=": function(other) {
-        var t = callmethod(this, "==", other);
-        return callmethod(t, "not");
+    "!=": function(argcv, other) {
+        var t = callmethod(this, "==", [1], other);
+        return callmethod(t, "not", [0]);
     },
-    "/=": function(other) {
-        var t = callmethod(this, "==", other);
-        return callmethod(t, "not");
+    "/=": function(argcv, other) {
+        var t = callmethod(this, "==", [1], other);
+        return callmethod(t, "not", [0]);
     },
-    "asString": function() {
+    "asString": function(argcv) {
         var s = "object {";
         for (var i in this.data) {
             s += "var " + i + " = " + this.data[i]._value + " ";
@@ -548,9 +548,9 @@ GraceMatchResult.prototype.methods.asString = function() {
         s = "SuccessfulMatch(result = ";
     else
         s = "FailedMatch(result = ";
-    s += callmethod(this.data["result"], "asString")._value;
+    s += callmethod(this.data["result"], "asString", [0])._value;
     s += ", bindings = ";
-    s += callmethod(this.data["bindings"], "asString")._value;
+    s += callmethod(this.data["bindings"], "asString", [0])._value;
     s += ")";
     return new GraceString(s);
 }
@@ -582,7 +582,7 @@ function GraceType(name) {
 }
 GraceType.prototype = {
     methods: {
-        "match": function(other) {
+        "match": function(argcv, other) {
             var i;
             for (i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
@@ -643,11 +643,11 @@ function GraceHashMap() {
     this.size = 0;
 }
 GraceHashMap.prototype = Grace_allocObject();
-GraceHashMap.prototype.methods.put = function(k, v) {
-    var hc = callmethod(k, "hashcode");
+GraceHashMap.prototype.methods.put = function(argcv, k, v) {
+    var hc = callmethod(k, "hashcode", [0]);
     hc = hc._value;
     while (this.table[hc]) {
-        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", [1], k)))
             break;
         hc++;
     }
@@ -655,11 +655,11 @@ GraceHashMap.prototype.methods.put = function(k, v) {
     this.table[hc] = {key: k, value: v};
     return this;
 }
-GraceHashMap.prototype.methods.get = function(k) {
-    var hc = callmethod(k, "hashcode");
+GraceHashMap.prototype.methods.get = function(argcv, k) {
+    var hc = callmethod(k, "hashcode", [0]);
     hc = hc._value;
     while (this.table[hc]) {
-        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", [1], k)))
             return this.table[hc].value;
         hc++;
     }
@@ -668,11 +668,11 @@ GraceHashMap.prototype.methods.get = function(k) {
         stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
     throw "Key not found in HashMap";
 }
-GraceHashMap.prototype.methods.contains = function(k) {
-    var hc = callmethod(k, "hashcode");
+GraceHashMap.prototype.methods.contains = function(argcv, k) {
+    var hc = callmethod(k, "hashcode", [0]);
     hc = hc._value;
     while (this.table[hc]) {
-        if (Grace_isTrue(callmethod(this.table[hc].key, "==", k)))
+        if (Grace_isTrue(callmethod(this.table[hc].key, "==", [1], k)))
             return new GraceBoolean(true);
         hc++;
     }
@@ -687,9 +687,9 @@ GraceHashMap.prototype.methods.asString = function() {
             first = false;
         else
             s += ", ";
-        s += callmethod(p.key, "asString")._value;
+        s += callmethod(p.key, "asString", [0])._value;
         s += ": ";
-        s += callmethod(p.value, "asString")._value;
+        s += callmethod(p.value, "asString", [0])._value;
     }
     s += "}]";
     return new GraceString(s);
@@ -732,7 +732,7 @@ stdin.methods.read = function() {
     return new GraceString(stdin_txt.value);
 }
 stdin.methods.iterator = function() {
-    return callmethod(new GraceString(stdin_txt.value), "iterator");
+    return callmethod(new GraceString(stdin_txt.value), "iterator", [0]);
 }
 var stderr = Grace_allocObject();
 stderr.methods.write = function(s) {
@@ -773,21 +773,21 @@ function gracecode_sys() {
 
 function gracecode_unicode() {
     this.methods = {
-        isLetter: function(s) {
+        isLetter: function(argcv, s) {
             if (typeof s._value == "string")
                 var i = s._value.charCodeAt(0);
             else
                 var i = s._value;
             return new GraceBoolean((i >= 65 && i <= 90) || (i >= 97 && i <= 122));
         },
-        isNumber: function(s) {
+        isNumber: function(argcv, s) {
             if (typeof s._value == "string")
                 var i = s._value.charCodeAt(0);
             else
                 var i = s._value;
             return new GraceBoolean((i >= 48 && i <= 57));
         },
-        isSymbolMathematical: function(ord) {
+        isSymbolMathematical: function(argcv, ord) {
             var s = ord._value
             if ((s == 45) || (s == 43) || (s == 47) || (s == 42)
                     || s == 62 || s == 60 || s == 61 || s == 126) {
@@ -795,19 +795,19 @@ function gracecode_unicode() {
             }
             return new GraceBoolean(false);
         },
-        isSeparator: function(s) {
+        isSeparator: function(argcv, s) {
             if (s == " ") {
                 return new GraceBoolean(true);
             }
             return new GraceBoolean(false);
         },
-        isControl: function(s) {
+        isControl: function(argcv, s) {
             return new GraceBoolean(false);
         },
-        name: function(s) {
+        name: function(argcv, s) {
             return new GraceString("UNICODE CHARACTER " + s.methods["ord"].call(s)._value + " (no Unicode character database; names unknown)");
         },
-        create: function(n) {
+        create: function(argcv, n) {
             return new GraceString(String.fromCharCode(n._value));
         },
     };
@@ -819,74 +819,74 @@ function gracecode_util() {
     if (util_module != false)
         return util_module;
     this.methods = {
-        outfile: function() {
+        outfile: function(argcv) {
             return stdout;
         },
-        infile: function() {
+        infile: function(argcv) {
             return stdin;
         },
-        parseargs: function() {
+        parseargs: function(argcv) {
         },
-        target: function() {
+        target: function(argcv) {
             return new GraceString(document.getElementById('mode').value);
         },
-        modname: function() {
+        modname: function(argcv) {
             return new GraceString("USER");
         },
-        setline: function(i) {
+        setline: function(argcv, i) {
             lineNumber = i._value;
             this._linenum = i;
         },
-        linenum: function() {
+        linenum: function(argcv) {
             return this._linenum;
         },
-        linepos: function() {
+        linepos: function(argcv) {
             return this._linepos;
         },
-        setPosition: function(l, p) {
+        setPosition: function(argcv, l, p) {
             lineNumber = l._value;
             this._linenum = l;
             this._linepos = p;
         },
-        buildtype: function() {
+        buildtype: function(argcv) {
             return new GraceString("normal");
         },
-        runmode: function() {
+        runmode: function(argcv) {
             return new GraceString("normal");
         },
-        gracelibPath: function() {
+        gracelibPath: function(argcv) {
             return new GraceString("gracelib.h");
         },
-        verbosity: function() {
+        verbosity: function(argcv) {
             return new GraceNum(30);
         },
-        log_verbose: function(s) {
+        log_verbose: function(argcv, s) {
             stderr_txt.value += "minigrace: " + s._value + "\n";
         },
-        outprint: function(s) {
+        outprint: function(argcv, s) {
             stdout_txt.value += s._value + "\n";
         },
-        engine: function() {
+        engine: function(argcv) {
             return new GraceString("js");
         },
-        debug: function(s) {
+        debug: function(argcv, s) {
             dbg(s._value);
         },
-        type_error: function(s) {
+        type_error: function(argcv, s) {
             stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
                 this._linepos._value + ": type error: " + s._value;
             throw "ErrorExit";
         },
-        syntax_error: function(s) {
+        syntax_error: function(argcv, s) {
             stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
                 this._linepos._value + ": syntax error: " + s._value;
             throw "ErrorExit";
         },
-        warning: function(s) {
+        warning: function(argcv, s) {
             stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
                 this._linepos._value + ": warning: " + s._value;
         },
-        hex: function(n) {
+        hex: function(argcv, n) {
             var hexdigits = "0123456789abcdef"
             var s = ""
             var num = n._value
@@ -898,21 +898,21 @@ function gracecode_util() {
             }
             return new GraceString(s)
         },
-        join: function(joiner, iterable) {
+        join: function(argcv, joiner, iterable) {
             var s = "";
-            var ind = callmethod(iterable, "indices");
+            var ind = callmethod(iterable, "indices", [0]);
             for (var i=0; i<ind._value.length; i++) {
                 if (i > 0)
                     s += ",";
-                s += callmethod(callmethod(iterable, "at", new GraceNum(i + 1)),
-                        "asString")._value;
+                s += callmethod(callmethod(iterable, "at", [1], new GraceNum(i + 1)),
+                        "asString", [0])._value;
             }
             return new GraceString(s);
         },
-        "runOnNew()else": function(b,e) {
-            return callmethod(b, "apply");
+        "runOnNew()else": function(argcv, b,e) {
+            return callmethod(b, "apply", [0]);
         },
-        "extensions": function() {
+        "extensions": function(argcv) {
             return extensionsMap;
         }
     };
@@ -929,7 +929,7 @@ function checkmethodcall(func, methname, obj, args) {
         if (!p || p.length == 0)
             continue;
         var t = p[0];
-        if (!Grace_isTrue(callmethod(t, "match", args[i]))) {
+        if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
             stderr_txt.value += "Runtime type error: expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + ", called at line " + lineNumber + ".\n";
             for (var i=callStack.length; i>0; i--)
                 stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
@@ -939,13 +939,13 @@ function checkmethodcall(func, methname, obj, args) {
 }
 var callStack = [];
 var overrideReceiver = null;
-function callmethodsuper(obj, methname) {
+function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
     var args = Array.prototype.slice.call(arguments, 1);
     args.splice(0, 0, superDepth.superobj);
     return callmethod.apply(null, args);
 }
-function callmethod(obj, methname) {
+function callmethod(obj, methname, argcv) {
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     superDepth = obj;
@@ -975,9 +975,10 @@ function callmethod(obj, methname) {
         overrideReceiver = null;
     }
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
-    var args = Array.prototype.slice.call(arguments, 2);
+    var args = Array.prototype.slice.call(arguments, 3);
     if (meth.paramTypes)
         checkmethodcall(meth, methname, obj, args);
+    args.unshift(argcv)
     var ret = meth.apply(obj, args);
     superDepth = origSuperDepth;
     callStack.pop();
@@ -986,12 +987,12 @@ function callmethod(obj, methname) {
 function matchCase(obj, cases, elsecase) {
     var i = 0;
     for (i = 0; i<cases.length; i++) {
-        var ret = callmethod(cases[i], "match", obj);
+        var ret = callmethod(cases[i], "match", [1], obj);
         if (Grace_isTrue(ret))
-            return callmethod(ret, "result");
+            return callmethod(ret, "result", [0]);
     }
     if (elsecase != false)
-        return callmethod(elsecase, "apply", obj);
+        return callmethod(elsecase, "apply", [1], obj);
     return new GraceFailedMatch(obj);
 }
 function ReturnException(v, target) {
@@ -1038,7 +1039,7 @@ function dbgp(o, d) {
 function dbg(o) {
     stderr_txt.value += dbgp(o, 0) + "\n";
 }
-var extensionsMap = callmethod(var_HashMap, "new");
+var extensionsMap = callmethod(var_HashMap, "new", [0]);
 var var_nothing = new GraceObject();
 var_nothing.methods.asString = function() {return new GraceString("noSuchValue");}
 var var_noSuchValue = var_nothing;
@@ -1047,17 +1048,17 @@ ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var Grace_native_prelude = Grace_allocObject();
 var Grace_prelude = Grace_native_prelude;
 var var___95__prelude = Grace_native_prelude;
-Grace_prelude.methods["while()do"] = function(c,b) {
-    while (Grace_isTrue(callmethod(c, "apply"))) {
-        callmethod(b, "apply");
+Grace_prelude.methods["while()do"] = function(argcv, c, b) {
+    while (Grace_isTrue(callmethod(c, "apply", [0]))) {
+        callmethod(b, "apply", [0]);
     }
     return var_nothing;
 }
-Grace_prelude.methods["for()do"] = function(c,b) {
-    var iter = callmethod(c, "iterator");
-    while (Grace_isTrue(callmethod(iter, "havemore"))) {
-        var val = callmethod(iter, "next");
-        callmethod(b, "apply", val);
+Grace_prelude.methods["for()do"] = function(argcv, c, b) {
+    var iter = callmethod(c, "iterator", [0]);
+    while (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
+        var val = callmethod(iter, "next", [0]);
+        callmethod(b, "apply", [1], val);
     }
     return var_nothing;
 }

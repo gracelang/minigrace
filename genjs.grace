@@ -72,8 +72,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
-    var l := []
-    var c := ast.astcall(o, l)
+    var c := ast.astcall(o, [ast.callWithPart.new(o.value)])
     var r := compilenode(c)
     o.register := r
 }
@@ -127,22 +126,23 @@ method compileobjvardec(o, selfr, pos) {
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
     out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
-    out("  var writer_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function(o) \{")
+    out("  var writer_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function(argcv, o) \{")
     out("    this.data[\"" ++ nm ++ "\"] = o;")
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
 }
 method compileclass(o) {
-    var params := o.params
+    var signature := o.signature
     var mbody := [ast.astobject(o.value, o.superclass)]
-    var newmeth := ast.astmethod(o.constructor, params, mbody,
+    var newmeth := ast.astmethod(o.constructor, signature, mbody,
         false)
     var obody := [newmeth]
     var cobj := ast.astobject(obody, false)
     var con := ast.astdefdec(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.astmethod(o.name, [], [o.name], false)
+        def meth = ast.astmethod(o.name, [ast.signaturePart.new(o.name.value)],
+            [o.name], false)
         compilenode(meth)
     }
     o.register := compilenode(con)
@@ -203,30 +203,32 @@ method compileblock(o) {
     auto_count := auto_count + 1
     out("  var block" ++ myc ++ " = Grace_allocObject();")
     out("  block" ++ myc ++ ".methods[\"apply\"] = function() \{")
-    out("    return this.real.apply(this.receiver, arguments);")
+    out("    var args = Array.prototype.slice.call(arguments, 1);")
+    out("    return this.real.apply(this.receiver, args);")
     out("  \}")
-    out("  block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(a) \{")
+    out("  block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(argcv, a) \{")
     out("    return this.real.apply(this.receiver, a._value);")
     out("  \}")
     out("  block" ++ myc ++ ".methods[\"outer\"] = function() \{")
-    out("    return callmethod(this.receiver, 'outer');")
+    out("    return callmethod(this.receiver, 'outer', [0]);")
     out("  \}")
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out("  block{myc}.pattern = {pat};")
-        out("  block{myc}.methods[\"match\"] = function(o) \{")
-        out("    var match = callmethod(this.pattern, \"match\", o);")
+        out("  block{myc}.methods[\"match\"] = function(argcv, o) \{")
+        out("    var match = callmethod(this.pattern, \"match\", [1], o);")
         out("    if (Grace_isTrue(match)) \{")
-        out("      var bindings = callmethod(match, \"bindings\");")
-        out("      var rv = callmethod(this, \"applyIndirectly\", bindings);")
+        out("      var bindings = callmethod(match, \"bindings\", [0]);")
+        out("      var rv = callmethod(this, \"applyIndirectly\", [1], bindings);")
         out("      return new GraceSuccessfulMatch(rv, []);")
         out("    \}")
         out("    return new GraceFailedMatch(rv);")
         out("  \}")
     } else {
         if (o.params.size == 1) then {
-            out("  block{myc}.methods[\"match\"] = function(o) \{")
-            out("    var r = this.real.apply(this.receiver, arguments);")
+            out("  block{myc}.methods[\"match\"] = function(argcv, o) \{")
+            out("    var args = Array.prototype.slice.call(arguments, 1);")
+            out("    var r = this.real.apply(this.receiver, args);")
             out("    return new GraceSuccessfulMatch(r, []);")
             out("  \}")
         }
@@ -271,12 +273,13 @@ method compilefor(o) {
     var blk := o.body
     var blko := compilenode(blk)
     out("  var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
-        ++ over ++ ");")
+        ++ over ++ ", [0]);")
     out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"havemore\"].call("
-        ++ "it" ++ myc ++ "))) \{")
+        ++ "it" ++ myc ++ ", [0]))) \{")
     out("    var fv" ++ myc ++ " = it" ++ myc ++ ".methods[\"next\"].call("
-        ++ "it" ++ myc ++ ");")
-    out("    "++blko++".methods[\"apply\"].call("++blko++", fv" ++ myc ++ ");")
+        ++ "it" ++ myc ++ ", [0]);")
+    out("    " ++ blko ++ ".methods[\"apply\"].call("
+        ++ blko ++ ", [1], fv" ++ myc ++ ");")
     out("  \}")
     o.register := over
 }
@@ -291,28 +294,31 @@ method compilemethod(o, selfobj) {
     var nm := name ++ myc
     var closurevars := []
     var haveTypedParams := false
-    for (o.params) do {p->
-        if (p.dtype != false) then {
-            if ((p.dtype.value != "Dynamic")
-                && ((p.dtype.kind == "identifier")
-                    || (p.dtype.kind == "type"))) then {
-                haveTypedParams := true
+    for (o.signature) do { part ->
+        for (part.params) do {p->
+            if (p.dtype != false) then {
+                if ((p.dtype.value != "Dynamic")
+                    && ((p.dtype.kind == "identifier")
+                        || (p.dtype.kind == "type"))) then {
+                    haveTypedParams := true
+                }
             }
         }
     }
-    out("var func" ++ myc ++ " = function(")
-    var first := true
-    for (o.params) do { p ->
-        if (first.not) then {
-            out(",")
+    out("var func" ++ myc ++ " = function(argcv) \{")
+    out("  var curarg = 1;")
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        for (part.params) do { p ->
+            out("  var {varf(p.value)} = arguments[curarg];")
+            out("  curarg++;")
         }
-        out(varf(p.value))
-        first := false
-    }
-    out(") \{")
-    if (o.varargs) then {
-        out("  var {varf(o.vararg.value)} = new GraceList(Array.prototype.slice"
-            ++ ".call(arguments, {o.params.size}));")
+        if (part.vararg != false) then {
+            out("  var {varf(part.vararg.value)} = new GraceList("
+                ++ "Array.prototype.slice.call(arguments, curarg, "
+                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
+            out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
+        }
     }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
@@ -340,26 +346,28 @@ method compilemethod(o, selfobj) {
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
     var pi := 0
-    for (o.params) do {p->
-        // We store information for static top-level types only:
-        // absent information is treated as Dynamic (and unchecked).
-        if (false != p.dtype) then {
-            if ((p.dtype.kind == "identifier")
-                || (p.dtype.kind == "type")) then {
-                def typeid = escapeident(p.dtype.value)
-                if (topLevelTypes.contains(typeid)) then {
-                    out("{func}.paramTypes.push(["
-                        ++ "type_{typeid}, \"{escapestring(p.value)}\"]);")
+    for (o.signature) do { part ->
+        for (part.params) do {p->
+            // We store information for static top-level types only:
+            // absent information is treated as Dynamic (and unchecked).
+            if (false != p.dtype) then {
+                if ((p.dtype.kind == "identifier")
+                    || (p.dtype.kind == "type")) then {
+                    def typeid = escapeident(p.dtype.value)
+                    if (topLevelTypes.contains(typeid)) then {
+                        out("{func}.paramTypes.push(["
+                            ++ "type_{typeid}, \"{escapestring(p.value)}\"]);")
+                    } else {
+                        out("{func}.paramTypes.push([]);")
+                    }
                 } else {
                     out("{func}.paramTypes.push([]);")
                 }
             } else {
                 out("{func}.paramTypes.push([]);")
             }
-        } else {
-            out("{func}.paramTypes.push([]);")
+            pi := pi + 1
         }
-        pi := pi + 1
     }
 }
 method compilewhile(o) {
@@ -428,12 +436,12 @@ method compilebind(o) {
         o.register := val
     } elseif (dest.kind == "member") then {
         dest.value := dest.value ++ ":="
-        c := ast.astcall(dest, [o.value])
+        c := ast.astcall(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
         o.register := r
     } elseif (dest.kind == "index") then {
         var imem := ast.astmember("[]:=", dest.value)
-        c := ast.astcall(imem, [dest.index, o.value])
+        c := ast.astcall(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
         r := compilenode(c)
         o.register := r
     }
@@ -454,7 +462,8 @@ method compiledefdec(o) {
     }
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name.value)],
+            [o.name], false))
     }
     o.register := val
 }
@@ -470,10 +479,12 @@ method compilevardec(o) {
         val := "false"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [], [o.name], false))
+        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name.value)],
+            [o.name], false))
         def assignID = ast.astidentifier(o.name.value ++ ":=", false)
         def tmpID = ast.astidentifier("_var_assign_tmp", false)
-        compilenode(ast.astmethod(assignID, [tmpID],
+        compilenode(ast.astmethod(assignID,
+            [ast.signaturePart.new(assignID.value, [tmpID])],
             [ast.astbind(o.name, tmpID)], false))
     }
     o.register := val
@@ -482,7 +493,7 @@ method compileindex(o) {
     var of := compilenode(o.value)
     var index := compilenode(o.index)
     out("  var idxres" ++ auto_count ++ " = " ++ of ++ ".methods[\"[]\"]"
-        ++ ".call(" ++ of ++ ", " ++ index ++ ");")
+        ++ ".call(" ++ of ++ ", [1], " ++ index ++ ");")
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
@@ -521,8 +532,7 @@ method compileop(o) {
         rnm := "modulus"
     }
     out("  var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-        ++ ", \"" ++ o.value ++ "\", "
-        ++ right ++ ");")
+        ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
 }
@@ -531,47 +541,81 @@ method compilecall(o) {
     var obj := ""
     var len := 0
     var con := ""
-    for (o.with) do { p ->
-        var r := compilenode(p)
-        args.push(r)
+    for (o.with) do { part ->
+        for (part.args) do { p ->
+            var r := compilenode(p)
+            args.push(r)
+        }
     }
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "super")}) then {
-        out("  var call" ++ auto_count ++ " = callmethodsuper(this"
-            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
-        for (args) do { arg ->
-            out(", " ++ arg)
+        var call := "  var call" ++ auto_count ++ " = callmethodsuper(this"
+            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+        for (o.with.indices) do { partnr ->
+            call := call ++ o.with[partnr].args.size
+            if (partnr < o.with.size) then {
+                call := call ++ ", "
+            }
         }
-        out(");")
+        call := call ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "self") & (o.value.value == "outer")}
         ) then {
         out("  var call{auto_count} = callmethod(superDepth, "
-            ++ "\"outer\");")
+            ++ "\"outer\", [0]);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
-        out("  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
-            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
-        for (args) do { arg ->
-            out(", " ++ arg)
+        var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
+            ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
+        for (o.with.indices) do { partnr ->
+            call := call ++ o.with[partnr].args.size
+            if (partnr < o.with.size) then {
+                call := call ++ ", "
+            }
         }
-        out(");")
+        call := call ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out(call)
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
-        out("  var call" ++ auto_count ++ " = callmethod(" ++ obj
-            ++ ",\"" ++ escapestring(o.value.value) ++ "\"")
-        for (args) do { arg ->
-            out(", " ++ arg)
+        var call := "  var call" ++ auto_count ++ " = callmethod(" ++ obj
+            ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
+        for (o.with.indices) do { partnr ->
+            call := call ++ o.with[partnr].args.size
+            if (partnr < o.with.size) then {
+                call := call ++ ", "
+            }
         }
-        out(");")
+        call := call ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out(call)
     } else {
         obj := "this"
-        out("  var call" ++ auto_count ++ " = callmethod(this,"
-            ++ "\"" ++ escapestring(o.value.value) ++ "\"")
-        for (args) do { arg->
-            out(", " ++ arg)
+        var call := "  var call" ++ auto_count ++ " = callmethod(this,"
+            ++ "\"" ++ escapestring(o.value.value) ++ "\", ["
+        for (o.with.indices) do { partnr ->
+            call := call ++ o.with[partnr].args.size
+            if (partnr < o.with.size) then {
+                call := call ++ ", "
+            }
         }
-        out(");")
+        call := call ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out(call)
     }
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
@@ -748,9 +792,11 @@ method compilenode(o) {
     if ((o.kind == "call")) then {
         if (o.value.value == "print") then {
             var args := []
-            for (o.with) do { prm ->
-                var r := compilenode(prm)
-                args.push(r)
+            for (o.with) do { part ->
+                for (part.args) do { prm ->
+                    var r := compilenode(prm)
+                    args.push(r)
+                }
             }
             out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
             o.register := "call" ++ auto_count
@@ -759,13 +805,13 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "length")}) then {
-            tmp := compilenode(o.with.first)
+            tmp := compilenode(o.with.first.args.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "length")) then {
-            tmp := compilenode(o.with.first)
+            tmp := compilenode(o.with.first.args.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
@@ -773,15 +819,15 @@ method compilenode(o) {
                 { (o.value.in.kind == "identifier")
                     & (o.value.in.value == "self")
                     & (o.value.value == "escapestring")}) then {
-            tmp := o.with.first
+            tmp := o.with.first.args.first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [])
+            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
-            tmp := o.with.first
+            tmp := o.with.first.args.first
             tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [])
+            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } else {
             compilecall(o)
