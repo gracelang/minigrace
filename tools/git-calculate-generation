@@ -1,7 +1,11 @@
 #!/bin/bash
 
 set -e
-. "$(dirname $0)"/generations.dat
+if [ ${BASH_VERSINFO[0]} -ge 4 ]
+then
+    . "$(dirname $0)"/generations.dat
+    KNOWN=y
+fi
 mkdir -p .git-generation-cache
 ct=0
 RV=$1
@@ -10,7 +14,12 @@ RV=$1
 findgen() {
     local RV=$1
     h=$(git rev-parse $RV)
-    if [ "${known[$h]}" ]
+    if [ "cc2ded6be7e705924e6a331ed01d8c3240ceb688" = "$h" ]
+    then
+        echo 857
+        return 0
+    fi
+    if [ "$KNOWN" ] && [ "${known[$h]}" ]
     then
         echo ${known[$h]}
         return 0
