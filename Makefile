@@ -103,7 +103,7 @@ javajavatest: java
 backendtests: test javatest
 
 java: minigrace $(SOURCEFILES)
-	cd java && for x in $(SOURCEFILES) ; do ln -sf ../$$x . ; done && ../minigrace --make --verbose --target java --module minigrace compiler.grace
+	cd java && for x in $(SOURCEFILES) StandardPrelude.grace ; do ln -sf ../$$x . ; done && ../minigrace --make --verbose --target java -XNativePrelude StandardPrelude.grace && ../minigrace --make --verbose --target java --module minigrace compiler.grace
 
 javaclean:
 	rm -f $(SOURCEFILES:.grace=.java) minigrace.java
