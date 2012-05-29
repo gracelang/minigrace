@@ -26,7 +26,7 @@ public class Str extends Top {
       return (Bool) super.bin$61$61(self, o);
     }
 
-    Obj $super = o.$super();
+    Obj $super = o.getSuper();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }
@@ -72,6 +72,10 @@ public class Str extends Top {
 
   public Str asString(Obj self) {
     return this;
+  }
+  
+  public Num asNumber(Obj self) {
+  	return new Num(Double.parseDouble(value));
   }
 
   public List indices(Obj self) {

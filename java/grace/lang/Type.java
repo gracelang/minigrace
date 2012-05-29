@@ -32,7 +32,7 @@ public class Type extends Obj {
           }
         }
 
-        s = s.$super();
+        s = s.getSuper();
       }
 
       return new Match.MatchFailed(against);

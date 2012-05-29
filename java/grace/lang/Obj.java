@@ -21,7 +21,7 @@ public abstract class Obj {
   public final Obj outer;
 
   // The method or object environment around this object's creation.
-  public final Obj closure;
+  private final Obj closure;
 
   /**
    * Makes a Grace object with pointer comparison equality and no closure.
@@ -86,8 +86,15 @@ public abstract class Obj {
   /**
    * @return The super object of this object.
    */
-  public final Obj $super() {
+  public final Obj getSuper() {
     return $super;
+  }
+  
+  /**
+   * @return The local closure of this object.
+   */
+  public final Obj getClosure() {
+  	return closure;
   }
 
   /**

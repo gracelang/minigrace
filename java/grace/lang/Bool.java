@@ -2,6 +2,7 @@ package grace.lang;
 
 import static grace.lang.Nothing.nothing;
 import static grace.lang.Prelude.$javaBoolean;
+import grace.lang.Prelude.ValueBlock;
 
 public class Bool extends Top {
 
@@ -22,6 +23,10 @@ public class Bool extends Top {
   
   // ==
   public Bool bin$61$61(Obj self, Obj o) {
+  	if (!(o instanceof Bool)) {
+      return $false;
+    }
+  	
   	if ($javaBoolean(o) != value) {
   		return $false;
   	}

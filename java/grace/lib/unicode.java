@@ -79,7 +79,7 @@ public final class unicode extends Prelude {
 		return Character.isLetter(i(str)) ? $true : $false;
 	}
 	
-	public Bool isNum(Obj self, Obj str) {
+	public Bool isNumber(Obj self, Obj str) {
 		if (isStr(str)) {
 			return Character.isDigit(c(str)) ? $true : $false;
 		}

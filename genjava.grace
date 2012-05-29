@@ -11,8 +11,6 @@ def ret = "Return"
 def bln = "$javaBoolean"
 
 
-def libs = ["io", "sys", "unicode"]
-
 type ImmutableIndexedCollection = {
     [](_ : Number)
     at(_ : Number)
@@ -167,7 +165,7 @@ method compileDeclarations(nodes: List, scope: Scope) -> String {
     }.kind("for") do { node ->
         def params = node.body.params
         if(params.size == 0) then { "" } else {
-            def param = [ast.astdefdec(params[1], void, void)]
+            def param = [ast.astdefdec(params[1], nothing, nothing)]
             compileDeclarations(param, scope) ++
                 compileDeclarations(node.body.body, scope)
         }
@@ -350,15 +348,15 @@ method compileParamClosure(node, scope: Scope) -> String {
     def body = map(node.params) with { param ->
         def name = escape(param.value)
 
-        ast.astvardec(ast.astidentifier(name, void),
-                      ast.astidentifier("_{name}", void), void)
+        ast.astvardec(ast.astidentifier(name, nothing),
+                      ast.astidentifier("_{name}", nothing), nothing)
     }
 
     if((node.kind == "method") && { node.varargs }) then {
         def name = escape(node.vararg.value)
 
-        body.push(ast.astvardec(ast.astidentifier(name, void),
-                  ast.astarray([ast.astidentifier("_", void)]), void))
+        body.push(ast.astvardec(ast.astidentifier(name, nothing),
+                  ast.astarray([ast.astidentifier("_", nothing)]), nothing))
     }
 
     for(node.body) do { node' ->
@@ -458,7 +456,7 @@ method compileTernary(node, scope: Scope) -> String {
     def then = compileBlockExpression(node.thenblock, scope)
     def else = compileBlockExpression(node.elseblock, scope)
 
-    "{bln}({condition}) ? {then} : {else}"
+    "({bln}({condition}) ? {then} : {else})"
 }
 
 method compileMember(node, scope: Scope) -> String {
@@ -505,8 +503,8 @@ method compileClass(node, scope: Scope) -> String {
         node.name.value
     })
 
-    def body = [ast.astobject(node.value, void)]
-    def meth = ast.astmethod(node.constructor, node.params, body, void)
+    def body = [ast.astobject(node.value, nothing)]
+    def meth = ast.astmethod(node.constructor, node.params, body, nothing)
 
     scope.line(scope.block("{name} = new {obj}($self, $closure) \{", { s' ->
         // This outer is a hack until the outer class problem is fixed.
@@ -654,7 +652,7 @@ method compileIdentifier(node, scope: Scope) -> String {
     def name = node.value
 
     if(name == "super") then {
-        return "self.$super()"
+        return "self.getSuper()"
     }
 
     escape(name)
@@ -712,7 +710,7 @@ type Scope = {
 // This should be used to initialise a scope, and the rest should be generated
 // by calling one of the 'enter' methods on the resulting scopes.
 method moduleScope -> Scope {
-    ScopeFactory.new(0, void, true)
+    ScopeFactory.new(0, nothing, true)
 }
 
 class ScopeFactory.new(ind: Number, outer', decl': Boolean) {
@@ -855,7 +853,7 @@ def keywords = ["package", "import", "class", "this", "super", "null", "new",
                 "public", "protected", "private", "static", "final", "extends",
                 "if", "else", "for", "while", "do", "switch", "case",
                 "default", "synchronized", "volatile", "return", "wait",
-                "true", "false", obj, blk, ret]
+                "true", "false", "break", "continue", obj, blk, ret]
 
 method escape(ident: String) -> String {
     if(keywords.contains(ident)) then {

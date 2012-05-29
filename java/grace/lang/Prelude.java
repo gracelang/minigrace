@@ -55,7 +55,7 @@ public abstract class Prelude extends Types {
       return ((Bool) bool).value;
     }
 
-    Obj $super = bool.$super();
+    Obj $super = bool.getSuper();
     if ($super != nothing) {
       return $javaBoolean($super);
     }
@@ -69,7 +69,7 @@ public abstract class Prelude extends Types {
       return ((Num) number).value;
     }
 
-    Obj $super = number.$super();
+    Obj $super = number.getSuper();
     if ($super != nothing) {
       return $javaNumber($super);
     }
@@ -90,7 +90,7 @@ public abstract class Prelude extends Types {
       return ((Str) string).value;
     }
 
-    Obj $super = string.$super();
+    Obj $super = string.getSuper();
     if ($super != nothing) {
       return $javaString($super);
     }
@@ -132,7 +132,7 @@ public abstract class Prelude extends Types {
       super(Egal.Value);
     }
 
-    public Obj $new() {
+    public Obj $new(Obj self) {
       return new HashMap();
     }
 

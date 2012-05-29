@@ -23,7 +23,7 @@ public abstract class Types extends Obj {
         return new Match.MatchSucceeded(against, $list(against));
       }
 
-      Obj $super = against.$super();
+      Obj $super = against.getSuper();
       if (!$super.getClass().equals(Top.class)) {
         return match(self, $super);
       }

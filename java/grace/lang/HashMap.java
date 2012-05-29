@@ -25,7 +25,7 @@ public class HashMap extends Top {
       return (Bool) super.bin$61$61(self, o);
     }
 
-    Obj $super = o.$super();
+    Obj $super = o.getSuper();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }

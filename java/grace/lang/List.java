@@ -33,7 +33,7 @@ public class List extends Top {
       return (Bool) super.bin$61$61(self, o);
     }
 
-    Obj $super = o.$super();
+    Obj $super = o.getSuper();
     if ($super != nothing) {
       return bin$61$61(self, $super);
     }
@@ -55,7 +55,7 @@ public class List extends Top {
   }
 
   public Obj at(Obj self, Obj index) {
-    return value.get($javaInteger(index));
+    return value.get($javaInteger(index) - 1);
   }
 
   // []
@@ -64,7 +64,14 @@ public class List extends Top {
   }
 
   public Nothing at$put(Obj self, Obj index, Obj item) {
-    value.add($javaInteger(index), item);
+  	int i = $javaInteger(index) - 1;
+
+    if (i == value.size()) {
+      value.add(item);
+    } else {
+      value.set(i, item);
+    }
+
     return nothing;
   }
 
@@ -132,6 +139,10 @@ public class List extends Top {
   }
 
   public Str asString(Obj self) {
+  	if (value.size() == 0) {
+  		return new Str("[]");
+  	}
+  	
     String out = "[" + value.size() + ": ";
     boolean first = true;
     for (Obj item : value) {
