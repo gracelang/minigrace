@@ -29,6 +29,13 @@ install: minigrace
 test: minigrace
 	./tests/harness "../minigrace" tests ""
 
+java:
+	cd java && javac minigrace.java
+javatest: java
+	./tests/harness "../minigrace --target java --gracelib ../java" tests "java -classpath .:../java"
+javajavatest: java
+	./tests/harness "../java/minigracej" tests "java -classpath .:../java"
+
 buildclean:
 	rm -rf *.gcn minigrace unicode.gso gracelib.o bin Makefile.conf
 
@@ -37,3 +44,5 @@ fullclean: buildclean
 
 Makefile.conf:
 	./configure
+
+.PHONY: selfhost test buildclean fullclean java javatest javajavatest
