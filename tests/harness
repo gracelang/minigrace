@@ -63,11 +63,12 @@ do
                 pass
                 rm -f test-$$.out
             else
+                NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
                 echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
                 fail "wrong output"
             fi
         else
-            NUM_COMPILE_ERROR=$((NUM_COMPILER_ERROR + 1))
+            NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
             echo "${NUM_TESTS} ERROR: $tcase failed to compile"
             fail "compile error"
         fi
