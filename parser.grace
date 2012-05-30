@@ -116,21 +116,21 @@ method ifConsume(ablock)then(tblock) {
 
 // Push the current token onto the output stack as a number
 method pushnum {
-    var o := ast.astnum(sym.value)
+    var o := ast.numNode.new(sym.value)
     values.push(o)
     next
 }
 
 // Push the current token onto the output stack as an octet literal
 method pushoctets {
-    var o := ast.astoctets(sym.value)
+    var o := ast.octetsNode.new(sym.value)
     values.push(o)
     next
 }
 
 // Push the current token onto the output stack as a string
 method pushstring {
-    var o := ast.aststring(sym.value)
+    var o := ast.stringNode.new(sym.value)
     values.push(o)
     next
 }
@@ -138,7 +138,7 @@ method pushstring {
 // Push the current token onto the output stack as an identifier.
 // false means that this identifier has not been assigned a dtype (yet).
 method pushidentifier {
-    var o := ast.astidentifier(sym.value, false)
+    var o := ast.identifierNode.new(sym.value, false)
     if (o.value == "_") then {
         o.value := "__" ++ auto_count
         auto_count := auto_count + 1
@@ -172,7 +172,7 @@ method dotyperef {
             unionName := "{unionName}|{ut.value}"
         }
         unionName := "{unionName}|>"
-        overallType := ast.asttype(unionName, [])
+        overallType := ast.typeNode.new(unionName, [])
         for (unionTypes) do {ut->
             overallType.unionTypes.push(ut)
         }
@@ -194,7 +194,7 @@ method dotyperef {
             intersectionName := "{intersectionName}&{it.value}"
         }
         intersectionName := intersectionName ++ "&>"
-        overallType := ast.asttype(intersectionName, [])
+        overallType := ast.typeNode.new(intersectionName, [])
         for (intersectionTypes) do {it->
             overallType.intersectionTypes.push(it)
         }
@@ -263,7 +263,7 @@ method block {
                 next
                 expression
                 var rhs := values.pop
-                body.push(ast.astbind(lhs, rhs))
+                body.push(ast.bindNode.new(lhs, rhs))
             } else {
                 body.push(values.pop)
             }
@@ -286,7 +286,7 @@ method block {
         minIndentLevel := minInd - 1
         statementIndent := startIndent
         next
-        var o := ast.astblock(params, body)
+        var o := ast.blockNode.new(params, body)
         if (isMatchingBlock) then {
             if (params.size > 0) then {
                 o.matchingPattern := params.first
@@ -367,7 +367,7 @@ method doif {
                 }
                 next
                 newelse := []
-                eif := ast.astif(econd, ebody, newelse)
+                eif := ast.ifNode.new(econd, ebody, newelse)
                 // Construct the inner "if" AST node, and then push it
                 // inside the current "else" block.
                 curelse.push(eif)
@@ -394,7 +394,7 @@ method doif {
                     next
                 }
             }
-            var o := ast.astif(cond, body, elseblock)
+            var o := ast.ifNode.new(cond, body, elseblock)
             values.push(o)
         } else {
             // Raise an error here, or it will spin nastily forever.
@@ -423,7 +423,7 @@ method dofor {
             expect("lbrace")
             block
             var blk := values.pop
-            var o := ast.astfor(over, blk)
+            var o := ast.forNode.new(over, blk)
             values.push(o)
             minIndentLevel := minInd - 1
         } else {
@@ -464,8 +464,8 @@ method prefixop {
         callrest
         postfixsquare
         val := values.pop
-        var mem := ast.astmember("prefix" ++ op, val)
-        var call := ast.astcall(mem, [ast.callWithPart.new(mem.value)])
+        var mem := ast.memberNode.new("prefix" ++ op, val)
+        var call := ast.callNode.new(mem, [ast.callWithPart.new(mem.value)])
         values.push(call)
     }
 }
@@ -487,7 +487,7 @@ method generic {
         }
         expect("rgeneric")
         next
-        values.push(ast.astgeneric(id, gens))
+        values.push(ast.genericNode.new(id, gens))
     }
 }
 method matchcase {
@@ -532,7 +532,7 @@ method matchcase {
         }
         elsecase := values.pop
     }
-    values.push(ast.astmatchcase(matchee, cases, elsecase))
+    values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
     minIndentLevel := localmin
 }
 // Accept a term. Terms consist only of single syntactic units and
@@ -595,7 +595,7 @@ method postfixsquare {
         var index := values.pop
         expect("rsquare")
         next
-        var o := ast.astindex(expr, index)
+        var o := ast.indexNode.new(expr, index)
         values.push(o)
         dotrest
         callrest
@@ -669,7 +669,7 @@ method expressionrest {
                 o2 := ops.pop
                 tmp2 := terms.pop
                 tmp := terms.pop
-                tmp := ast.astop(o2, tmp, tmp2)
+                tmp := ast.opNode.new(o2, tmp, tmp2)
                 terms.push(tmp)
             }
             ops.push(o)
@@ -706,7 +706,7 @@ method expressionrest {
             o := ops.pop
             tmp2 := terms.pop
             tmp := terms.pop
-            tmp := ast.astop(o, tmp, tmp2)
+            tmp := ast.opNode.new(o, tmp, tmp2)
             terms.push(tmp)
         }
         tmp := terms.pop
@@ -725,7 +725,7 @@ method dotrest {
         var lookuptarget := values.pop
         next
         if (accept("identifier")) then {
-            var dro := ast.astmember(sym.value, lookuptarget)
+            var dro := ast.memberNode.new(sym.value, lookuptarget)
             values.push(dro)
             next
             if (accept("dot")) then {
@@ -834,17 +834,17 @@ method callrest {
     if (hadcall) then {
         if (accept("identifier")onLineOfLastOr(tok)) then {
             // Multi-part method name
-            methn := callmprest(ast.astidentifier(methn, false), signature, tok)
+            methn := callmprest(ast.identifierNode.new(methn, false), signature, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
                 // the member lookup (for x.between(3)and(10)-type
                 // calls).
-                meth := ast.astmember(methn.value, meth.in)
+                meth := ast.memberNode.new(methn.value, meth.in)
             } else {
                 meth := methn
             }
         }
-        tmp := ast.astcall(meth, signature)
+        tmp := ast.callNode.new(meth, signature)
         values.push(tmp)
     }
     minIndentLevel := startInd
@@ -907,7 +907,7 @@ method callmprest(meth, signature, tok) {
             next
         }
     }
-    ast.astidentifier(methname, false)
+    ast.identifierNode.new(methname, false)
 }
 
 // Accept a const declaration
@@ -916,7 +916,7 @@ method defdec {
         next
         pushidentifier
         var val := false
-        var dtype := ast.astidentifier("Dynamic", false)
+        var dtype := ast.identifierNode.new("Dynamic", false)
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -932,7 +932,7 @@ method defdec {
         } else {
             util.syntax_error("def declaration requires value")
         }
-        var o := ast.astdefdec(name, val, dtype)
+        var o := ast.defDecNode.new(name, val, dtype)
         values.push(o)
     }
 }
@@ -943,7 +943,7 @@ method vardec {
         next
         pushidentifier
         var val := false
-        var dtype := ast.astidentifier("Dynamic", false)
+        var dtype := ast.identifierNode.new("Dynamic", false)
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -958,7 +958,7 @@ method vardec {
         if (accept("op") & (sym.value == "=")) then {
             util.syntax_error("var declaration uses ':=', not '='")
         }
-        var o := ast.astvardec(name, val, dtype)
+        var o := ast.varDecNode.new(name, val, dtype)
         values.push(o)
     }
 }
@@ -980,7 +980,7 @@ method doarray {
             params.push(tmp)
         }
         expect("rsquare")
-        var o := ast.astarray(params)
+        var o := ast.arrayNode.new(params)
         values.push(o)
         next
     }
@@ -995,7 +995,7 @@ method inheritsdec {
             expression
         }
         var tmp := values.pop
-        values.push(ast.astinherits(tmp))
+        values.push(ast.inheritsNode.new(tmp))
     }
 }
 
@@ -1028,7 +1028,7 @@ method doobject {
                 }
                 next
             }
-            superclass := ast.astcall(ast.astmember(mn.value, nm),
+            superclass := ast.callNode.new(ast.memberNode.new(mn.value, nm),
                 [ast.callWithPart.new(mn.value, scargs)])
         }
         expect("lbrace")
@@ -1069,7 +1069,7 @@ method doobject {
             var p := rbody.pop
             body.push(p)
         }
-        var o := ast.astobject(body, superclass)
+        var o := ast.objectNode.new(body, superclass)
         values.push(o)
         minIndentLevel := localMinIndentLevel
     }
@@ -1117,7 +1117,7 @@ method doclass {
             }
         }
         next
-        var o := ast.astclass(cname, csig, body, false, constructorName)
+        var o := ast.classNode.new(cname, csig, body, false, constructorName)
         values.push(o)
         minIndentLevel := localMinIndentLevel
     }
@@ -1151,7 +1151,7 @@ method doclassOld {
                 }
                 next
             }
-            superclass := ast.astcall(ast.astmember(mn.value, nm),
+            superclass := ast.callNode.new(ast.memberNode.new(mn.value, nm),
                 [ast.callWithPart.new(mn.value, scargs)])
         }
         var cname := values.pop
@@ -1218,8 +1218,8 @@ method doclassOld {
                 var p := rbody.pop
                 body.push(p)
             }
-            var o := ast.astclass(cname, [ast.signaturePart.new(cname.value, params)],
-                body, superclass, ast.astidentifier("new", false))
+            var o := ast.classNode.new(cname, [ast.signaturePart.new(cname.value, params)],
+                body, superclass, ast.identifierNode.new("new", false))
             values.push(o)
         } else {
             util.syntax_error("class definition without body")
@@ -1274,7 +1274,7 @@ method methoddec {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
         }
-        var o := ast.astmethod(meth, signature, body, dtype)
+        var o := ast.methodNode.new(meth, signature, body, dtype)
         if (varargs) then {
             o.varargs := true
         }
@@ -1336,7 +1336,7 @@ method parsempmndecrest(tm) {
         next
         signature.push(part)
     }
-    ast.astidentifier(methname, false)
+    ast.identifierNode.new(methname, false)
 }
 
 // Accept a method signature
@@ -1405,7 +1405,7 @@ method methodsignature(sameline) {
             acceptSameLine("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
-            var tm := ast.astmethod(meth, signature, [], false)
+            var tm := ast.methodNode.new(meth, signature, [], false)
             meth := parsempmndecrest(tm)
             varargs := varargs | tm.varargs
         }
@@ -1435,7 +1435,7 @@ method doimport {
         expect("identifier")
         identifier
         var p := values.pop
-        var o := ast.astimport(p)
+        var o := ast.importNode.new(p)
         values.push(o)
     }
 }
@@ -1450,9 +1450,9 @@ method doreturn {
             expectConsume {expression}
             retval := values.pop
         } else {
-            retval := ast.astidentifier("void", false)
+            retval := ast.identifierNode.new("void", false)
         }
-        var o := ast.astreturn(retval)
+        var o := ast.returnNode.new(retval)
         values.push(o)
     }
 }
@@ -1464,9 +1464,9 @@ method domethodtype {
     var dtype := m.rtype
     var varargs := m.v
     if (dtype == false) then {
-        dtype := ast.astidentifier("Unit", false)
+        dtype := ast.identifierNode.new("Unit", false)
     }
-    var o := ast.astmethodtype(meth.value, signature, dtype)
+    var o := ast.methodTypeNode.new(meth.value, signature, dtype)
     values.push(o)
     if (accept("semicolon")) then {
         next
@@ -1506,13 +1506,13 @@ method dotype {
                 methods.push(values.pop)
             }
             next
-            def t = ast.asttype(p.value, methods)
+            def t = ast.typeNode.new(p.value, methods)
             t.generics := gens
             values.push(t)
         } else {
             dotyperef
             def ot = values.pop
-            def nt = ast.asttype(p.value, ot.methods)
+            def nt = ast.typeNode.new(p.value, ot.methods)
             nt.generics := nt.generics
             for (ot.unionTypes) do {ut->
                 nt.unionTypes.push(ut)
@@ -1579,7 +1579,7 @@ method statement {
             next
             expression
             var val := values.pop
-            var o := ast.astbind(dest, val)
+            var o := ast.bindNode.new(dest, val)
             if (dest.kind == "call") then {
                 if (dest.value.kind /= "member") then {
                     util.syntax_error("assignment to method call")

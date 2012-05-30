@@ -8,116 +8,116 @@ def moduleScope = HashMap.new
 moduleScope.put("___is_object", true)
 preludeObj.put("___is_prelude", true)
 var scopes := [HashMap.new, preludeObj, moduleScope]
-var selftypes := [ast.asttype("module", [])]
+var selftypes := [ast.typeNode.new("module", [])]
 var auto_count := 0
 
-def DynamicIdentifier = ast.astidentifier("Dynamic", false)
-def TopOther = ast.astidentifier("other", ast.astidentifier("Dynamic", false))
-def StringIdentifier = ast.astidentifier("String", false)
-def StringOther = ast.astidentifier("other", StringIdentifier)
-def BooleanIdentifier = ast.astidentifier("Boolean", false)
-def BooleanOther = ast.astidentifier("other", BooleanIdentifier)
-def NumberIdentifier = ast.astidentifier("Number", false)
-def NumberOther = ast.astidentifier("other", NumberIdentifier)
-def ListIdentifier = ast.astidentifier("List", false)
-def ListOther = ast.astidentifier("other", ListIdentifier)
-def DynamicType = ast.asttype("Dynamic", [])
-def NumberType = ast.asttype("Number", [
-    ast.astmethodtype("+", [ast.signaturePart.new("+", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("*", [ast.signaturePart.new("*", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("-", [ast.signaturePart.new("-", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("/", [ast.signaturePart.new("/", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("%", [ast.signaturePart.new("%", [NumberOther])], NumberIdentifier),
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], DynamicIdentifier),
-    ast.astmethodtype("<", [ast.signaturePart.new("<", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype("<=", [ast.signaturePart.new("<=", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype(">", [ast.signaturePart.new(">", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype(">=", [ast.signaturePart.new(">=", [NumberOther])], BooleanIdentifier),
-    ast.astmethodtype("..", [ast.signaturePart.new("..", [NumberOther])], DynamicIdentifier),
-    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("prefix-", [ast.signaturePart.new("prefix-")], NumberIdentifier),
-    ast.astmethodtype("inBase", [ast.signaturePart.new("inBase", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("truncate", [ast.signaturePart.new("truncate")], NumberIdentifier),
-    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
+def DynamicIdentifier = ast.identifierNode.new("Dynamic", false)
+def TopOther = ast.identifierNode.new("other", ast.identifierNode.new("Dynamic", false))
+def StringIdentifier = ast.identifierNode.new("String", false)
+def StringOther = ast.identifierNode.new("other", StringIdentifier)
+def BooleanIdentifier = ast.identifierNode.new("Boolean", false)
+def BooleanOther = ast.identifierNode.new("other", BooleanIdentifier)
+def NumberIdentifier = ast.identifierNode.new("Number", false)
+def NumberOther = ast.identifierNode.new("other", NumberIdentifier)
+def ListIdentifier = ast.identifierNode.new("List", false)
+def ListOther = ast.identifierNode.new("other", ListIdentifier)
+def DynamicType = ast.typeNode.new("Dynamic", [])
+def NumberType = ast.typeNode.new("Number", [
+    ast.methodTypeNode.new("+", [ast.signaturePart.new("+", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("*", [ast.signaturePart.new("*", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("-", [ast.signaturePart.new("-", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("/", [ast.signaturePart.new("/", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("%", [ast.signaturePart.new("%", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], DynamicIdentifier),
+    ast.methodTypeNode.new("<", [ast.signaturePart.new("<", [NumberOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("<=", [ast.signaturePart.new("<=", [NumberOther])], BooleanIdentifier),
+    ast.methodTypeNode.new(">", [ast.signaturePart.new(">", [NumberOther])], BooleanIdentifier),
+    ast.methodTypeNode.new(">=", [ast.signaturePart.new(">=", [NumberOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("..", [ast.signaturePart.new("..", [NumberOther])], DynamicIdentifier),
+    ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.methodTypeNode.new("prefix-", [ast.signaturePart.new("prefix-")], NumberIdentifier),
+    ast.methodTypeNode.new("inBase", [ast.signaturePart.new("inBase", [NumberOther])], StringIdentifier),
+    ast.methodTypeNode.new("truncate", [ast.signaturePart.new("truncate")], NumberIdentifier),
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
-def StringType = ast.asttype("String", [
-    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
-    ast.astmethodtype("size", [ast.signaturePart.new("size")], NumberIdentifier),
-    ast.astmethodtype("ord", [ast.signaturePart.new("ord")], NumberIdentifier),
-    ast.astmethodtype("at", [ast.signaturePart.new("at", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("[]", [ast.signaturePart.new("[]", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
-    ast.astmethodtype("substringFrom()to",
+def StringType = ast.typeNode.new("String", [
+    ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
+    ast.methodTypeNode.new("size", [ast.signaturePart.new("size")], NumberIdentifier),
+    ast.methodTypeNode.new("ord", [ast.signaturePart.new("ord")], NumberIdentifier),
+    ast.methodTypeNode.new("at", [ast.signaturePart.new("at", [NumberOther])], StringIdentifier),
+    ast.methodTypeNode.new("[]", [ast.signaturePart.new("[]", [NumberOther])], StringIdentifier),
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
+    ast.methodTypeNode.new("substringFrom()to",
         [ast.signaturePart.new("substringFrom", [NumberOther]),
         ast.signaturePart.new("to", [NumberOther])], StringIdentifier),
-    ast.astmethodtype("replace()with", [ast.signaturePart.new("replace", [StringOther]),
+    ast.methodTypeNode.new("replace()with", [ast.signaturePart.new("replace", [StringOther]),
         ast.signaturePart.new("with", [StringOther])], StringIdentifier),
-    ast.astmethodtype("hashcode", [ast.signaturePart.new("hashcode")], NumberIdentifier),
-    ast.astmethodtype("indices", [ast.signaturePart.new("indices")], ListIdentifier),
-    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("asNumber", [ast.signaturePart.new("asNumber")], NumberIdentifier),
-    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
+    ast.methodTypeNode.new("hashcode", [ast.signaturePart.new("hashcode")], NumberIdentifier),
+    ast.methodTypeNode.new("indices", [ast.signaturePart.new("indices")], ListIdentifier),
+    ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.methodTypeNode.new("asNumber", [ast.signaturePart.new("asNumber")], NumberIdentifier),
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
-def BooleanType = ast.asttype("Boolean", [
-    ast.astmethodtype("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
-    ast.astmethodtype("&", [ast.signaturePart.new("&", [BooleanOther])], BooleanIdentifier),
-    ast.astmethodtype("|", [ast.signaturePart.new("|", [BooleanOther])], BooleanIdentifier),
-    ast.astmethodtype("&&", [ast.signaturePart.new("&&", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("||", [ast.signaturePart.new("||", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("prefix!", [ast.signaturePart.new("prefix!")], BooleanIdentifier),
-    ast.astmethodtype("not", [ast.signaturePart.new("not")], BooleanIdentifier),
-    ast.astmethodtype("ifTrue", [ast.signaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier),
-    ast.astmethodtype("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
+def BooleanType = ast.typeNode.new("Boolean", [
+    ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
+    ast.methodTypeNode.new("&", [ast.signaturePart.new("&", [BooleanOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("|", [ast.signaturePart.new("|", [BooleanOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("&&", [ast.signaturePart.new("&&", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("||", [ast.signaturePart.new("||", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("prefix!", [ast.signaturePart.new("prefix!")], BooleanIdentifier),
+    ast.methodTypeNode.new("not", [ast.signaturePart.new("not")], BooleanIdentifier),
+    ast.methodTypeNode.new("ifTrue", [ast.signaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])
-def ListType = ast.asttype("List", [
-    ast.astmethodtype("size", [ast.signaturePart.new("size", [])], NumberIdentifier),
-    ast.astmethodtype("at", [ast.signaturePart.new("at", [NumberOther])], TopOther),
-    ast.astmethodtype("[]", [ast.signaturePart.new("[]", [NumberOther])], TopOther),
-    ast.astmethodtype("[]:=", [ast.signaturePart.new("[]:=", [NumberOther, TopOther])], TopOther),
-    ast.astmethodtype("at()put", [ast.signaturePart.new("at", [NumberOther]),
+def ListType = ast.typeNode.new("List", [
+    ast.methodTypeNode.new("size", [ast.signaturePart.new("size", [])], NumberIdentifier),
+    ast.methodTypeNode.new("at", [ast.signaturePart.new("at", [NumberOther])], TopOther),
+    ast.methodTypeNode.new("[]", [ast.signaturePart.new("[]", [NumberOther])], TopOther),
+    ast.methodTypeNode.new("[]:=", [ast.signaturePart.new("[]:=", [NumberOther, TopOther])], TopOther),
+    ast.methodTypeNode.new("at()put", [ast.signaturePart.new("at", [NumberOther]),
         ast.signaturePart.new("put", [TopOther])], TopOther),
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("contains", [ast.signaturePart.new("contains", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
-    ast.astmethodtype("push", [ast.signaturePart.new("push", [TopOther])], TopOther),
-    ast.astmethodtype("pop", [ast.signaturePart.new("pop")], TopOther),
-    ast.astmethodtype("first", [ast.signaturePart.new("first")], NumberIdentifier),
-    ast.astmethodtype("last", [ast.signaturePart.new("last")], NumberIdentifier),
-    ast.astmethodtype("prepended", [ast.signaturePart.new("prepended", [TopOther])], ListIdentifier),
-    ast.astmethodtype("indices", [ast.signaturePart.new("indices")], ListIdentifier),
-    ast.astmethodtype("asString", [ast.signaturePart.new("asString")], StringIdentifier)
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("contains", [ast.signaturePart.new("contains", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
+    ast.methodTypeNode.new("push", [ast.signaturePart.new("push", [TopOther])], TopOther),
+    ast.methodTypeNode.new("pop", [ast.signaturePart.new("pop")], TopOther),
+    ast.methodTypeNode.new("first", [ast.signaturePart.new("first")], NumberIdentifier),
+    ast.methodTypeNode.new("last", [ast.signaturePart.new("last")], NumberIdentifier),
+    ast.methodTypeNode.new("prepended", [ast.signaturePart.new("prepended", [TopOther])], ListIdentifier),
+    ast.methodTypeNode.new("indices", [ast.signaturePart.new("indices")], ListIdentifier),
+    ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier)
 ])
-def VoidType = ast.asttype("Void", [
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
+def VoidType = ast.typeNode.new("Void", [
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
-def NothingType = ast.asttype("Nothing", [
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
+def NothingType = ast.typeNode.new("Nothing", [
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
-def NoneType = ast.asttype("None", [
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
+def NoneType = ast.typeNode.new("None", [
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier)
 ])
-def BlockType = ast.asttype("Block", [
-    ast.astmethodtype("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.astmethodtype("apply", [ast.signaturePart.new("apply")], TopOther),
-    ast.astmethodtype("match", [ast.signaturePart.new("match")], TopOther)
+def BlockType = ast.typeNode.new("Block", [
+    ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("apply", [ast.signaturePart.new("apply")], TopOther),
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match")], TopOther)
 ])
-def outerMethod = ast.astmethodtype("outer", [ast.signaturePart.new("outer")], DynamicType)
+def outerMethod = ast.methodTypeNode.new("outer", [ast.signaturePart.new("outer")], DynamicType)
 var currentReturnType := false
 
 class Binding { kind' ->
@@ -149,25 +149,25 @@ method findName(name) {
     ret
 }
 method findDeepMethod(name) {
-    var mem := ast.astidentifier("self", false)
+    var mem := ast.identifierNode.new("self", false)
     var lv := scopes.indices.last
     var min := scopes.indices.first
     while {scopes.at(lv).contains(name).not} do {
         if (scopes.at(lv).contains("___is_object")) then {
-            mem := ast.astmember("outer", mem)
+            mem := ast.memberNode.new("outer", mem)
         }
         if (scopes.at(lv).contains("___is_class")) then {
-            mem := ast.astmember("outer", mem)
+            mem := ast.memberNode.new("outer", mem)
         }
         lv := lv - 1
         if (lv == min) then {
-            return ast.astidentifier(name, false)
+            return ast.identifierNode.new(name, false)
         }
     }
     if (scopes.at(lv).contains("___is_prelude")) then {
-        ast.astmember(name, ast.astidentifier("prelude", false))
+        ast.memberNode.new(name, ast.identifierNode.new("prelude", false))
     } else {
-        ast.astmember(name, mem)
+        ast.memberNode.new(name, mem)
     }
 }
 
@@ -390,7 +390,7 @@ method expressionType(expr) {
     }
     if (expr.kind == "object") then {
         def objectmeths = []
-        def objecttp = ast.asttype("<Object_{expr.line}>", objectmeths)
+        def objecttp = ast.typeNode.new("<Object_{expr.line}>", objectmeths)
         if (expr.superclass /= false) then {
             def supertype = expressionType(expr.superclass)
             for (supertype.methods) do {e->
@@ -399,18 +399,18 @@ method expressionType(expr) {
         }
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
-                objectmeths.push(ast.astmethodtype(e.name.value,
+                objectmeths.push(ast.methodTypeNode.new(e.name.value,
                     [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
             } elseif (e.kind == "method") then {
-                objectmeths.push(ast.astmethodtype(e.value.value, e.signature,
+                objectmeths.push(ast.methodTypeNode.new(e.value.value, e.signature,
                     findType(e.dtype)))
             } elseif (e.kind == "vardec") then {
                 def vtype = findType(e.dtype)
-                objectmeths.push(ast.astmethodtype(e.name.value,
+                objectmeths.push(ast.methodTypeNode.new(e.name.value,
                     [ast.signaturePart.new(e.name.value)], vtype))
-                objectmeths.push(ast.astmethodtype(e.name.value ++ ":=",
+                objectmeths.push(ast.methodTypeNode.new(e.name.value ++ ":=",
                     [ast.signaturePart.new(e.name.value ++ ":=",
-                        [ast.astidentifier("_", vtype)])], false))
+                        [ast.identifierNode.new("_", vtype)])], false))
             } elseif (e.kind == "inherits") then {
                 def stype = expressionType(resolveIdentifiers(e.value))
                 for (stype.methods) do { m->
@@ -442,7 +442,7 @@ method expressionType(expr) {
             def ct = findType(expr.params.at(i))
             gtype := betaReduceType(gtype, tv, ct)
         }
-        def nt = ast.asttype(gname, gtype.methods)
+        def nt = ast.typeNode.new(gname, gtype.methods)
         nt.generics := expr.params
         subtype.addType(nt)
         return nt
@@ -522,7 +522,7 @@ method betaReduceType(tp, typevar, concrete) {
                 if (pp.dtype == false) then {
                     tmpparams.push(pp)
                 } elseif (pp.dtype.value == typevar.value) then {
-                    tmpparams.push(ast.astidentifier(pp.value, concrete))
+                    tmpparams.push(ast.identifierNode.new(pp.value, concrete))
                     changed := true
                 } elseif (pp.dtype.value.at(1) == "<") then {
                     def otype = findType(pp.dtype)
@@ -530,10 +530,10 @@ method betaReduceType(tp, typevar, concrete) {
                     if (otype == tryrep) then {
                         tmpparams.push(pp)
                     } else {
-                        def trynamed = ast.asttype(tryrep.value
+                        def trynamed = ast.typeNode.new(tryrep.value
                             ++ "<{typevar.value}={concrete.value}>",
                             tryrep.methods)
-                        tmpparams.push(ast.astidentifier(pp.value, trynamed))
+                        tmpparams.push(ast.identifierNode.new(pp.value, trynamed))
                         changed := true
                     }
                 } else {
@@ -544,17 +544,17 @@ method betaReduceType(tp, typevar, concrete) {
             tmppart.vararg := part.vararg
             tmpsig.push(tmppart)
         }
-        newmeth.push(ast.astmethodtype(m.value, tmpsig, tmprt))
+        newmeth.push(ast.methodTypeNode.new(m.value, tmpsig, tmprt))
     }
     if (changed) then {
         var tmp
         if (tp.value.substringFrom(1)to(11) == "InstanceOf<") then {
-            tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+            tmp := ast.typeNode.new("{tp.value}<{typevar.value}={concrete.value}>",
                 newmeth)
         } else {
-            tmp := ast.asttype(tp.value, newmeth)
+            tmp := ast.typeNode.new(tp.value, newmeth)
         }
-        tmp := ast.asttype("{tp.value}<{typevar.value}={concrete.value}>",
+        tmp := ast.typeNode.new("{tp.value}<{typevar.value}={concrete.value}>",
             newmeth)
         subtype.addType(tmp)
         return tmp
@@ -605,7 +605,7 @@ method findType(tp) {
             tmptp := betaReduceType(tmptp, tv, ct)
         }
         gnm := gnm ++ util.join(",", gnms) ++ ">"
-        def nt = ast.asttype(gnm, tmptp.methods)
+        def nt = ast.typeNode.new(gnm, tmptp.methods)
         subtype.addType(nt)
         subtype.addType(gtg)
         return nt
@@ -621,7 +621,7 @@ method resolveIdentifier(node) {
         util.syntax_error("use of undefined identifier {nm}")
     }
     if (nm == "outer") then {
-        return ast.astmember("outer", ast.astidentifier("self", false))
+        return ast.memberNode.new("outer", ast.identifierNode.new("self", false))
     }
     if (nm == "self") then {
         node.dtype := selftypes.last
@@ -642,7 +642,7 @@ method resolveIdentifier(node) {
         return node
     } elseif (b.kind == "method") then {
         def meth = findDeepMethod(nm)
-        return ast.astcall(meth, [ast.callWithPart.new(meth.value)])
+        return ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
     }
     node
 }
@@ -668,34 +668,34 @@ method rewritematchblockterm2(arg) {
                 }
             }
         }
-        def callpat = ast.astcall(
-            ast.astmember(
+        def callpat = ast.callNode.new(
+            ast.memberNode.new(
                 "new",
-                ast.astmember("MatchAndDestructuringPattern",
-                    ast.astidentifier("prelude", false)
+                ast.memberNode.new("MatchAndDestructuringPattern",
+                    ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [arg.value, ast.astarray(subpats)])]
+            [ast.callWithPart.new("new", [arg.value, ast.arrayNode.new(subpats)])]
         )
         return [callpat, bindings]
     }
     if (arg.kind == "identifier") then {
-        def varpat = ast.astcall(
-            ast.astmember(
+        def varpat = ast.callNode.new(
+            ast.memberNode.new(
                 "new",
-                ast.astmember("VariablePattern",
-                    ast.astidentifier("prelude", false)
+                ast.memberNode.new("VariablePattern",
+                    ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [ast.aststring(arg.value)])]
+            [ast.callWithPart.new("new", [ast.stringNode.new(arg.value)])]
         )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
-                return [ast.astcall(
-                    ast.astmember(
+                return [ast.callNode.new(
+                    ast.memberNode.new(
                         "new",
-                        ast.astmember("AndPattern",
-                            ast.astidentifier("prelude", false)
+                        ast.memberNode.new("AndPattern",
+                            ast.identifierNode.new("prelude", false)
                         )
                     ),
                     [ast.callWithPart.new("new", [varpat, arg.dtype])]
@@ -706,11 +706,11 @@ method rewritematchblockterm2(arg) {
             for (tmp[2]) do {b->
                 bindings.push(b)
             }
-            def bindingpat = ast.astcall(
-                ast.astmember(
+            def bindingpat = ast.callNode.new(
+                ast.memberNode.new(
                     "new",
-                    ast.astmember("AndPattern",
-                        ast.astidentifier("prelude", false)
+                    ast.memberNode.new("AndPattern",
+                        ast.identifierNode.new("prelude", false)
                     )
                 ),
                 [ast.callWithPart.new("new", [varpat, tmp[1]])]
@@ -731,30 +731,30 @@ method rewritematchblock2(blk) {
         newparams := tmp[2]
     }
     if (arg.kind == "identifier") then {
-        def varpat = ast.astcall(
-            ast.astmember(
+        def varpat = ast.callNode.new(
+            ast.memberNode.new(
                 "new",
-                ast.astmember("VariablePattern",
-                    ast.astidentifier("prelude", false)
+                ast.memberNode.new("VariablePattern",
+                    ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [ast.aststring(arg.value)])]
+            [ast.callWithPart.new("new", [ast.stringNode.new(arg.value)])]
         )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
-                pattern := ast.astcall(
-                    ast.astmember("new",
-                        ast.astmember("AndPattern",
-                            ast.astidentifier("prelude", false)
+                pattern := ast.callNode.new(
+                    ast.memberNode.new("new",
+                        ast.memberNode.new("AndPattern",
+                            ast.identifierNode.new("prelude", false)
                             )
                         ),
                     [ast.callWithPart.new("new", [varpat, arg.dtype])])
             } else {
                 def tmp = rewritematchblockterm2(arg.dtype)
-                def bindingpat = ast.astcall(
-                    ast.astmember("new",
-                        ast.astmember("AndPattern",
-                            ast.astidentifier("prelude", false)
+                def bindingpat = ast.callNode.new(
+                    ast.memberNode.new("new",
+                        ast.memberNode.new("AndPattern",
+                            ast.identifierNode.new("prelude", false)
                             )
                         ),
                     [ast.callWithPart.new("new", [varpat, tmp[1]])]
@@ -772,7 +772,7 @@ method rewritematchblock2(blk) {
             }
         }
     }
-    def newblk = ast.astblock(newparams, blk.body)
+    def newblk = ast.blockNode.new(newparams, blk.body)
     newblk.matchingPattern := pattern
     return newblk
 }
@@ -783,32 +783,32 @@ method rewritematchblockterm(param, body) {
             return [param, body]
         }
     }
-    var newname := ast.astidentifier("__matchterm" ++ auto_count,
+    var newname := ast.identifierNode.new("__matchterm" ++ auto_count,
         false)
     auto_count := auto_count + 1
     bindIdentifier(newname)
     var pat := param
     var st
     if (pat.kind == "call") then {
-        st := ast.astif(
-            ast.astcall(
-                ast.astmember(
+        st := ast.ifNode.new(
+            ast.callNode.new(
+                ast.memberNode.new(
                     "match",
                     pat.value),
                 [ast.callWithPart.new("match", [newname])]),
             body,
-            [ast.astidentifier("MatchFailed", false)]
+            [ast.identifierNode.new("MatchFailed", false)]
         )
     } elseif (pat.kind == "identifier") then {
         pat := pat.dtype
         param.dtype := false
-        st := ast.astcall(ast.astidentifier("print"),
-            [ast.callWithPart.new("print", [ast.aststring("Recursively binding pattern matches unimplemented")])])
+        st := ast.callNode.new(ast.identifierNode.new("print"),
+            [ast.callWithPart.new("print", [ast.stringNode.new("Recursively binding pattern matches unimplemented")])])
     } else {
-        st := ast.astif(
-            ast.astop("==", pat, newname),
+        st := ast.ifNode.new(
+            ast.opNode.new("==", pat, newname),
             body,
-            [ast.astidentifier("MatchFailed", false)]
+            [ast.identifierNode.new("MatchFailed", false)]
         )
     }
     return [newname, [st]]
@@ -818,14 +818,14 @@ method rewritematchblock(o) {
     var params := o.params
     if (params.size /= 1) then {
         def skipListBody = resolveIdentifiersList(o.body)
-        return ast.astblock(o.params, skipListBody)
+        return ast.blockNode.new(o.params, skipListBody)
     }
     var body := o.body
     var inbody := body
     var pat
     var tmpp
     var nparams
-    var newname := ast.astidentifier("__matchvar" ++ auto_count,
+    var newname := ast.identifierNode.new("__matchvar" ++ auto_count,
         false)
     auto_count := auto_count + 1
     bindIdentifier(newname)
@@ -850,23 +850,23 @@ method rewritematchblock(o) {
                 args.push(arg)
             }
         }
-        body := [ast.astif(
-                    ast.astcall(
-                        ast.astmember(
+        body := [ast.ifNode.new(
+                    ast.callNode.new(
+                        ast.memberNode.new(
                             "match",
                             pat.value),
                         [ast.callWithPart.new("match", [newname])]),
                     [
-                        ast.astcall(
-                            ast.astmember("applyIndirectly",
-                                ast.astblock(args, inbody)
+                        ast.callNode.new(
+                            ast.memberNode.new("applyIndirectly",
+                                ast.blockNode.new(args, inbody)
                             ),
-                            [ast.callWithPart.new("applyIndirectly", [ast.astcall(
-                                ast.astmember("try", pat.value),
+                            [ast.callWithPart.new("applyIndirectly", [ast.callNode.new(
+                                ast.memberNode.new("try", pat.value),
                                 [ast.callWithPart.new("try", [newname])]
                             )])])
                     ],
-                    [ast.astidentifier("MatchFailed", false)]
+                    [ast.identifierNode.new("MatchFailed", false)]
                     )
                 ]
     } elseif (fst.kind /= "identifier") then {
@@ -874,16 +874,16 @@ method rewritematchblock(o) {
         pat := fst
         params := [newname]
         inbody := resolveIdentifiersList(inbody)
-        body := [ast.astif(
-                    ast.astop("==", pat, newname),
+        body := [ast.ifNode.new(
+                    ast.opNode.new("==", pat, newname),
                     [
-                        ast.astcall(
-                            ast.astmember("apply",
-                                ast.astblock([], inbody)
+                        ast.callNode.new(
+                            ast.memberNode.new("apply",
+                                ast.blockNode.new([], inbody)
                             ),
                             [ast.callWithPart.new("apply")])
                     ],
-                    [ast.astidentifier("MatchFailed", false)]
+                    [ast.identifierNode.new("MatchFailed", false)]
                     )
                 ]
     } elseif (fst.dtype /= false) then {
@@ -901,23 +901,23 @@ method rewritematchblock(o) {
                 }
             }
             inbody := resolveIdentifiersList(inbody)
-            body := [ast.astif(
-                        ast.astcall(
-                            ast.astmember(
+            body := [ast.ifNode.new(
+                        ast.callNode.new(
+                            ast.memberNode.new(
                                 "match",
                                 pat.value),
                             [ast.callWithPart.new("match", [newname])]),
                         [
-                            ast.astcall(
-                                ast.astmember("applyIndirectly",
-                                    ast.astblock(pat.with.args.first.prepended(fst),
+                            ast.callNode.new(
+                                ast.memberNode.new("applyIndirectly",
+                                    ast.blockNode.new(pat.with.args.first.prepended(fst),
                                                 inbody)
                                 ),
-                                [ast.callWithPart.new("applyIndirectly", [ast.astcall(
-                                    ast.astmember(
+                                [ast.callWithPart.new("applyIndirectly", [ast.callNode.new(
+                                    ast.memberNode.new(
                                         "prepended",
-                                        ast.astcall(
-                                            ast.astmember("try", pat.value),
+                                        ast.callNode.new(
+                                            ast.memberNode.new("try", pat.value),
                                             [ast.callWithPart.new("try", [newname])]
                                         )
                                     ),
@@ -925,7 +925,7 @@ method rewritematchblock(o) {
                                 )
                                 ])])
                         ],
-                        [ast.astidentifier("MatchFailed", false)]
+                        [ast.identifierNode.new("MatchFailed", false)]
                         )
                     ]
         } else {
@@ -933,20 +933,20 @@ method rewritematchblock(o) {
             def binding = findName(pat.value)
             if (binding.kind != "type") then {
                 params := [newname]
-                body := [ast.astif(
-                            ast.astcall(
-                                ast.astmember(
+                body := [ast.ifNode.new(
+                            ast.callNode.new(
+                                ast.memberNode.new(
                                     "match",
                                     pat),
                                 [ast.callWithPart.new("match", [newname])]),
                             [
-                                ast.astcall(
-                                    ast.astmember("apply",
-                                        ast.astblock(o.params, inbody)
+                                ast.callNode.new(
+                                    ast.memberNode.new("apply",
+                                        ast.blockNode.new(o.params, inbody)
                                     ),
                                     [ast.callWithPart.new("apply", [newname])])
                             ],
-                            [ast.astidentifier("MatchFailed", false)]
+                            [ast.identifierNode.new("MatchFailed", false)]
                             )
                         ]
             }
@@ -954,7 +954,7 @@ method rewritematchblock(o) {
     } else {
         body := resolveIdentifiersList(body)
     }
-    o := ast.astblock(params, body)
+    o := ast.blockNode.new(params, body)
     return o
 }
 
@@ -974,10 +974,10 @@ method resolveIdentifiers(node) {
     if (node.kind == "generic") then {
         tmp := resolveIdentifier(node.value)
         tmp2 := resolveIdentifiersList(node.params)
-        return ast.astgeneric(tmp, tmp2)
+        return ast.genericNode.new(tmp, tmp2)
     }
     if (node.kind == "op") then {
-        return ast.astop(node.value, resolveIdentifiers(node.left),
+        return ast.opNode.new(node.value, resolveIdentifiers(node.left),
             resolveIdentifiers(node.right))
     }
     if (node.kind == "call") then {
@@ -988,23 +988,23 @@ method resolveIdentifiers(node) {
                 var part := node.with[partnr]
                 tmp[partnr].args := resolveIdentifiersList(part.args)
             }
-            return ast.astcall(p.value, tmp)
+            return ast.callNode.new(p.value, tmp)
         }
         tmp := node.with
         for (node.with.indices) do { partnr ->
             var part := node.with[partnr]
             tmp[partnr].args := resolveIdentifiersList(part.args)
         }
-        return ast.astcall(p, tmp)
+        return ast.callNode.new(p, tmp)
     }
     if (node.kind == "member") then {
         tmp := resolveIdentifiers(node.in)
-        return ast.astmember(node.value, tmp)
+        return ast.memberNode.new(node.value, tmp)
     }
     if (node.kind == "array") then {
         tmp := resolveIdentifiersList(node.value)
         if (node.value /= tmp) then {
-            return ast.astarray(tmp)
+            return ast.arrayNode.new(tmp)
         }
     }
     if (node.kind == "matchcase") then {
@@ -1013,7 +1013,7 @@ method resolveIdentifiers(node) {
         tmp3 := resolveIdentifiers(node.elsecase)
         if ((tmp != node.value) | (tmp2 != node.cases)
             | (tmp3 != node.elsecase)) then {
-            return ast.astmatchcase(tmp, tmp2, tmp3)
+            return ast.matchCaseNode.new(tmp, tmp2, tmp3)
         }
         return node
     }
@@ -1059,7 +1059,7 @@ method resolveIdentifiers(node) {
         }
         currentReturnType := oldReturnType
         popScope
-        tmp := ast.astmethod(node.value, tmp2, l,
+        tmp := ast.methodNode.new(node.value, tmp2, l,
             tmp4)
         tmp.varargs := node.varargs
         return tmp
@@ -1075,13 +1075,13 @@ method resolveIdentifiers(node) {
             }
         }
         l := resolveIdentifiersList(node.body)
-        tmp := ast.astblock(node.params, l)
+        tmp := ast.blockNode.new(node.params, l)
         tmp.matchingPattern := node.matchingPattern
         popScope
         return tmp
     }
     if (node.kind == "object") then {
-        def selftype = ast.asttype("<Object>", [outerMethod])
+        def selftype = ast.typeNode.new("<Object>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
@@ -1091,7 +1091,7 @@ method resolveIdentifiers(node) {
         }
         selftypes.push(selftype)
         l := resolveIdentifiersList(node.value)withBlock(tmp)
-        tmp2 := ast.astobject(l,
+        tmp2 := ast.objectNode.new(l,
             resolveIdentifiers(node.superclass))
         selftypes.pop
         return tmp2
@@ -1104,7 +1104,7 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "class") then {
         pushScope
-        def selftype = ast.asttype("<Object>", [outerMethod])
+        def selftype = ast.typeNode.new("<Object>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("___is_class", Binding.new("yes"))
@@ -1117,7 +1117,7 @@ method resolveIdentifiers(node) {
         if (node.name.kind == "generic") then {
             for (node.name.params) do {gp->
                 def nomnm = gp.value
-                def nom = ast.asttype(nomnm, [])
+                def nom = ast.typeNode.new(nomnm, [])
                 nom.nominal := true
                 subtype.addType(nom)
                 def tpb = Binding.new("type")
@@ -1142,7 +1142,7 @@ method resolveIdentifiers(node) {
             var part := node.signature[partnr]
             tmp3[partnr].params := resolveIdentifiersList(part.params)
         }
-        node := ast.astclass(node.name, tmp3, tmp2,
+        node := ast.classNode.new(node.name, tmp3, tmp2,
             resolveIdentifiers(node.superclass), node.constructor)
         popScope
         selftypes.pop
@@ -1170,14 +1170,14 @@ method resolveIdentifiers(node) {
             tmp := tmp.value
         }
         if ((tmp /= node.dest) | (tmp2 /= node.value)) then {
-            return ast.astbind(tmp, tmp2)
+            return ast.bindNode.new(tmp, tmp2)
         }
     }
     if (node.kind == "type") then {
         if (node.generics.size > 0) then {
             pushScope
             for (node.generics) do {g->
-                def nom = ast.asttype(g.value, [])
+                def nom = ast.typeNode.new(g.value, [])
                 nom.nominal := true
                 def tpb = Binding.new("type")
                 tpb.value := nom
@@ -1198,17 +1198,17 @@ method resolveIdentifiers(node) {
                     tmp2[partnr].params := tmpparams
                 }
                 tmp3 := resolveIdentifiers(mt.rtype)
-                tmp.push(ast.astmethodtype(mt.value, tmp2, tmp3))
+                tmp.push(ast.methodTypeNode.new(mt.value, tmp2, tmp3))
                 popScope
             }
             popScope
-            tmp := ast.asttype(node.value, tmp)
+            tmp := ast.typeNode.new(node.value, tmp)
             tmp.generics := node.generics
             tmp.nominal := node.nominal
             return tmp
         } elseif (node.unionTypes.size > 0) then {
             tmp := resolveIdentifiersList(node.unionTypes)
-            tmp2 := ast.asttype(node.value, node.methods)
+            tmp2 := ast.typeNode.new(node.value, node.methods)
             for (tmp) do {ut->
                 tmp2.unionTypes.push(findType(ut))
             }
@@ -1229,7 +1229,7 @@ method resolveIdentifiers(node) {
                 }
             }
             if (tmp4 /= false) then {
-                tmp3 := ast.asttype(node.value, tmp4)
+                tmp3 := ast.typeNode.new(node.value, tmp4)
                 for (tmp2.unionTypes) do {ut->
                     tmp3.unionTypes.push(ut)
                 }
@@ -1238,7 +1238,7 @@ method resolveIdentifiers(node) {
             subtype.resetType(tmp2)
         } elseif (node.intersectionTypes.size > 0) then {
             tmp := resolveIdentifiersList(node.intersectionTypes)
-            tmp2 := ast.asttype(node.value, node.methods)
+            tmp2 := ast.typeNode.new(node.value, node.methods)
             for (tmp) do {it->
                 tmp2.intersectionTypes.push(findType(it))
             }
@@ -1264,7 +1264,7 @@ method resolveIdentifiers(node) {
                 }
             }
             if (tmp4 /= false) then {
-                tmp3 := ast.asttype(node.value, tmp4)
+                tmp3 := ast.typeNode.new(node.value, tmp4)
                 for (tmp2.intersectionTypes) do {ut->
                     tmp3.intersectionTypes.push(ut)
                 }
@@ -1292,7 +1292,7 @@ method resolveIdentifiers(node) {
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
-            return ast.astvardec(node.name, tmp2, tmp4)
+            return ast.varDecNode.new(node.name, tmp2, tmp4)
         }
     }
     if (node.kind == "defdec") then {
@@ -1312,7 +1312,7 @@ method resolveIdentifiers(node) {
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
-            return ast.astdefdec(node.name, tmp2, tmp4)
+            return ast.defDecNode.new(node.name, tmp2, tmp4)
         }
     }
     if (node.kind == "return") then {
@@ -1328,7 +1328,7 @@ method resolveIdentifiers(node) {
                 ++ currentReturnType.value)
         }
         if (tmp2 /= tmp) then {
-            return ast.astreturn(tmp2)
+            return ast.returnNode.new(tmp2)
         }
     }
     if (node.kind == "index") then {
@@ -1336,14 +1336,14 @@ method resolveIdentifiers(node) {
         tmp2 := resolveIdentifiers(tmp)
         tmp3 := resolveIdentifiers(node.index)
         if ((tmp2 /= tmp) | (tmp3 /= node.index)) then {
-            return ast.astindex(tmp2, tmp3)
+            return ast.indexNode.new(tmp2, tmp3)
         }
     }
     if (node.kind == "op") then {
         tmp := resolveIdentifiers(node.left)
         tmp2 := resolveIdentifiers(node.right)
         if ((tmp /= node.left) | (tmp2 /= node.right)) then {
-            return ast.astop(node.value, tmp, tmp2)
+            return ast.opNode.new(node.value, tmp, tmp2)
         }
     }
     if (node.kind == "if") then {
@@ -1352,21 +1352,21 @@ method resolveIdentifiers(node) {
         tmp3 := resolveIdentifiersList(node.elseblock)
         if ((tmp /= node.value) | (tmp2 /= node.thenblock)
             | (tmp3 /= node.elseblock)) then {
-            return ast.astif(tmp, tmp2, tmp3)
+            return ast.ifNode.new(tmp, tmp2, tmp3)
         }
     }
     if (node.kind == "while") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.body)
         if ((tmp /= node.value) | (tmp2 /= node.body)) then {
-            return ast.astwhile(tmp, tmp2)
+            return ast.whileNode.new(tmp, tmp2)
         }
     }
     if (node.kind == "for") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiers(node.body)
         if ((tmp /= node.value) | (tmp2 /= node.body)) then {
-            return ast.astfor(tmp, tmp2)
+            return ast.forNode.new(tmp, tmp2)
         }
     }
     node
@@ -1400,7 +1400,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
             selftypes.last.methods.push(
-                ast.astmethodtype(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
+                ast.methodTypeNode.new(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
             if ((tpb == false) || {tpb.kind /= "type"}) then {
@@ -1422,7 +1422,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             mt.dtype := findType(e.dtype)
             bindName(e.value.value, mt)
             selftypes.last.methods.push(
-                ast.astmethodtype(e.value.value, e.signature, mt.dtype))
+                ast.methodTypeNode.new(e.value.value, e.signature, mt.dtype))
         } elseif (e.kind == "inherits") then {
             def stype = expressionType(resolveIdentifiers(e.value))
             def st = selftypes.last.methods
@@ -1441,7 +1441,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
                 classGenerics := e.name.params
                 for (classGenerics) do {gp->
                     def nomnm = gp.value
-                    def nom = ast.asttype(nomnm, [])
+                    def nom = ast.typeNode.new(nomnm, [])
                     nom.nominal := true
                     subtype.addType(nom)
                     def gtpb = Binding.new("type")
@@ -1457,13 +1457,13 @@ method resolveIdentifiersList(lst)withBlock(bk) {
                     bindIdentifier(part.vararg)
                 }
             }
-            def classInstanceType' = expressionType(ast.astobject(e.value,
+            def classInstanceType' = expressionType(ast.objectNode.new(e.value,
                 e.superclass))
             popScope
-            def classInstanceType = ast.asttype("InstanceOf<{className}>",
+            def classInstanceType = ast.typeNode.new("InstanceOf<{className}>",
                 classInstanceType'.methods)
-            def classItselfType = ast.asttype("ClassOf<{className}>", [
-                ast.astmethodtype(e.constructor.value, e.signature,
+            def classItselfType = ast.typeNode.new("ClassOf<{className}>", [
+                ast.methodTypeNode.new(e.constructor.value, e.signature,
                     classInstanceType)
             ])
             classItselfType.generics := classGenerics
@@ -1507,13 +1507,13 @@ method typecheck(values) {
     bindName("length", Binding.new("method"))
     bindName("escapestring", Binding.new("method"))
     def modtype = selftypes.last
-    modtype.methods.push(ast.astmethodtype("print",
+    modtype.methods.push(ast.methodTypeNode.new("print",
         [ast.signaturePart.new("print", [TopOther])], NoneType))
-    modtype.methods.push(ast.astmethodtype("length",
+    modtype.methods.push(ast.methodTypeNode.new("length",
         [ast.signaturePart.new("length", [TopOther])], NumberType))
-    modtype.methods.push(ast.astmethodtype("escapestring",
+    modtype.methods.push(ast.methodTypeNode.new("escapestring",
         [ast.signaturePart.new("escapestring", [StringOther])], StringType))
-    modtype.methods.push(ast.astmethodtype("raise",
+    modtype.methods.push(ast.methodTypeNode.new("raise",
         [ast.signaturePart.new("raise", [TopOther])], NoneType))
     bindName("HashMap", Binding.new("def"))
     bindName("MatchFailed", Binding.new("def"))

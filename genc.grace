@@ -173,7 +173,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
-    var c := ast.astcall(o, [ast.callWithPart.new(o.value)])
+    var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)])
     var r := compilenode(c)
     o.register := r
 }
@@ -313,15 +313,15 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o) {
     var signature := o.signature
-    def obj = ast.astobject(o.value, o.superclass)
+    def obj = ast.objectNode.new(o.value, o.superclass)
     obj.classname := o.name.value
     var mbody := [obj]
-    var newmeth := ast.astmethod(o.constructor, signature, mbody, false)
+    var newmeth := ast.methodNode.new(o.constructor, signature, mbody, false)
     var obody := [newmeth]
-    var cobj := ast.astobject(obody, false)
-    var con := ast.astdefdec(o.name, cobj, false)
+    var cobj := ast.objectNode.new(obody, false)
+    var con := ast.defDecNode.new(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
+        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
         compilenode(meth)
     }
     o.register := compilenode(con)
@@ -404,8 +404,8 @@ method compileblock(o) {
     var obj := "block{myc}"
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
-    var id := ast.astidentifier("_apply", false)
-    var applymeth := ast.astmethod(id, [ast.signaturePart.new(id, o.params)], o.body, false)
+    var id := ast.identifierNode.new("_apply", false)
+    var applymeth := ast.methodNode.new(id, [ast.signaturePart.new(id, o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -838,12 +838,12 @@ method compilebind(o) {
         o.register := val
     } elseif (dest.kind == "member") then {
         dest.value := dest.value ++ ":="
-        c := ast.astcall(dest, [ast.callWithPart.new(dest.value, [o.value])])
+        c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
         o.register := r
     } elseif (dest.kind == "index") then {
-        var imem := ast.astmember("[]:=", dest.value)
-        c := ast.astcall(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
+        var imem := ast.memberNode.new("[]:=", dest.value)
+        c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
         r := compilenode(c)
         o.register := r
     }
@@ -867,7 +867,7 @@ method compiledefdec(o) {
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
     }
     o.register := "none"
 }
@@ -888,11 +888,11 @@ method compilevardec(o) {
         out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.astmethod(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
-        def assignID = ast.astidentifier(o.name.value ++ ":=", false)
-        def tmpID = ast.astidentifier("_var_assign_tmp", false)
-        compilenode(ast.astmethod(assignID, [ast.signaturePart.new(assignID, [tmpID])],
-            [ast.astbind(o.name, tmpID)], false))
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
+        def assignID = ast.identifierNode.new(o.name.value ++ ":=", false)
+        def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
+        compilenode(ast.methodNode.new(assignID, [ast.signaturePart.new(assignID, [tmpID])],
+            [ast.bindNode.new(o.name, tmpID)], false))
     }
     o.register := "none"
 }
@@ -1272,14 +1272,14 @@ method compilenode(o) {
                     & (o.value.in.value == "self")
                     & (o.value.value == "escapestring")}) then {
             tmp := o.with.first.args.first
-            tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
+            tmp := ast.memberNode.new("_escape", tmp)
+            tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
                 & (o.value.value == "escapestring")) then {
             tmp := o.with.first.args.first
-            tmp := ast.astmember("_escape", tmp)
-            tmp := ast.astcall(tmp, [ast.callWithPart.new(tmp.value)])
+            tmp := ast.memberNode.new("_escape", tmp)
+            tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } else {
             compilecall(o, false)
