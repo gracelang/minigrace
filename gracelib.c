@@ -3196,7 +3196,7 @@ int find_gso(const char *name, char *buf) {
     return 0;
 }
 Object dlmodule(const char *name) {
-    int blen = strlen(name) + 13;
+    int blen = strlen(name) + strlen(ARGV[0]) + 13;
     if (getenv("GRACE_MODULE_PATH") != NULL)
         blen += strlen(getenv("GRACE_MODULE_PATH"));
     char buf[blen];
