@@ -68,7 +68,16 @@ method resetType(t) {
         matrix.get(d2).put(d, true)
         if (d2 == d) then {
             for (t.methods) do {tm->
-                t2.methods.push(tm)
+                // Sometimes recurses - don't add methods twice
+                var found := false
+                for (t2.methods) do {tm2->
+                    if (tm.value == tm2.value) then {
+                        found := true
+                    }
+                }
+                if (!found) then {
+                    t2.methods.push(tm)
+                }
             }
         }
     }
