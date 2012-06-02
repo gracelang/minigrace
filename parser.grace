@@ -147,23 +147,30 @@ method pushidentifier {
     next
 }
 
+method dotypeterm {
+    if (accept("identifier")) then {
+        pushidentifier
+        generic
+    } else {
+        if (accept("lbrace")) then {
+            doanontype
+        }
+    }
+}
+
 method dotyperef {
     var overallType := false
     var tp := false
     var op := false
     def unionTypes = []
-    if (accept("identifier")) then {
-        pushidentifier
-        generic
-        overallType := values.pop
-    }
+    dotypeterm
+    overallType := values.pop
     while {acceptSameLine("op") & (sym.value == "|")} do {
         if (unionTypes.size == 0) then {
             unionTypes.push(overallType)
         }
         next
-        pushidentifier
-        generic
+        dotypeterm
         unionTypes.push(values.pop)
     }
     if (unionTypes.size > 0) then {
@@ -184,8 +191,7 @@ method dotyperef {
             intersectionTypes.push(overallType)
         }
         next
-        pushidentifier
-        generic
+        dotypeterm
         intersectionTypes.push(values.pop)
     }
     if (intersectionTypes.size > 0) then {
@@ -1379,7 +1385,7 @@ method methodsignature(sameline) {
             dtype := false
             if (accept("colon")) then {
                 next
-                if (accept("identifier")) then {
+                if (accept("identifier") || {accept("lbrace")}) then {
                     dotyperef
                     dtype := values.pop
                 } else {
@@ -1480,6 +1486,21 @@ method domethodtype {
     }
 }
 
+method doanontype {
+    if (accept("lbrace")) then {
+        def methods = []
+        def mc = auto_count
+        auto_count := auto_count + 1
+        next
+        while {accept("rbrace").not} do {
+            expectConsume {domethodtype}
+            methods.push(values.pop)
+        }
+        next
+        def t = ast.typeNode.new("<Anon_{mc}>", methods)
+        values.push(t)
+    }
+}
 // Accept a type declaration.
 method dotype {
     if (accept("keyword") & (sym.value == "type")) then {

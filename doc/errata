@@ -2,7 +2,6 @@ Minigrace supports most of the specified dynamically-typed language, and
 a static structural type-checker. It does not yet support:
 - Exceptions (catch/case)
 - Generics
-- Anonymous types
 - Overriding the if-then-else construct: only the built-in construct may
   begin with "if()". for()do and while()do can be used as any ordinary
   method.
