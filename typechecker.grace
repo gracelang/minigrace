@@ -1081,7 +1081,7 @@ method resolveIdentifiers(node) {
         return tmp
     }
     if (node.kind == "object") then {
-        def selftype = ast.typeNode.new("<Object>", [outerMethod])
+        def selftype = ast.typeNode.new("<Object_{node.line}_self>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("outer", Binding.new("method"))
@@ -1104,7 +1104,11 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "class") then {
         pushScope
-        def selftype = ast.typeNode.new("<Object>", [outerMethod])
+        var nm := node.name.value
+        if (node.name.kind == "generic") then {
+            nm := node.name.value.value
+        }
+        def selftype = ast.typeNode.new("<{nm}_{node.line}_self>", [outerMethod])
         tmp := {
             scopes.last.put("___is_object", Binding.new("yes"))
             scopes.last.put("___is_class", Binding.new("yes"))
