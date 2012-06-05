@@ -2251,7 +2251,7 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     struct MethodType *t = m->type;
     int partcv[] = {1};
     for (i = 0; i < nparts, i < t->nparts; i++) {
-        for (j = 0; j < argcv[i], j < t->argcv[i]; j++) {
+        for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
                     die("Type error: expected %s for argument %s (%i) of %s",
