@@ -25,6 +25,12 @@ class forNode.new(over, body') {
     def body = body'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitFor(self)) then {
+            self.value.accept(visitor)
+            self.body.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -44,6 +50,14 @@ class whileNode.new(cond, body') {
     def body = body'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitWhile(self)) then {
+            self.value.accept(visitor)
+            for (self.body) do { x ->
+                x.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -67,6 +81,17 @@ class ifNode.new(cond, thenblock', elseblock') {
     var register := ""
     def line = util.linenum
     var handledIdentifiers := false
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitIf(self)) then {
+            self.value.accept(visitor)
+            for (self.thenblock) do { ix ->
+                ix.accept(visitor)
+            }
+            for (self.elseblock) do { ix ->
+                ix.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -96,6 +121,19 @@ class blockNode.new(params', body') {
     var register := ""
     var matchingPattern := false
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitBlock(self)) then {
+            for (self.params) do { mx ->
+                mx.accept(visitor)
+            }
+            for (self.body) do { mx ->
+                mx.accept(visitor)
+            }
+            if (self.matchingPattern != false) then {
+                self.matchingPattern.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -126,6 +164,17 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     def elsecase = elsecase'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitMatchCase(self)) then {
+            self.value.accept(visitor)
+            for (self.cases) do { mx ->
+                mx.accept(visitor)
+            }
+            if (self.elsecase != false) then {
+                self.elsecase.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -164,6 +213,21 @@ class methodTypeNode.new(name', signature', rtype') {
     def rtype = rtype'
     def line = util.linenum
     var register := ""
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitMethodType(self)) then {
+            if (self.rtype != false) then {
+                self.rtype.accept(visitor)
+            }
+            for (self.signature) do { part ->
+                for (part.params) do { p ->
+                    p.accept(visitor)
+                }
+                if (part.vararg != false) then {
+                    part.vararg.accept(visitor)
+                }
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -201,6 +265,23 @@ class typeNode.new(name', methods') {
     var generics := []
     var nominal := false
     var register := ""
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitType(self)) then {
+            if (self.unionTypes.size > 0) then {
+                for (self.unionTypes) do { ut ->
+                    ut.accept(visitor)
+                }
+            }
+            if (self.intersectionTypes.size > 0) then {
+                for (self.intersectionTypes) do { it ->
+                    it.accept(visitor)
+                }
+            }
+            for (self.methods) do { mx ->
+                mx.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -253,6 +334,25 @@ class methodNode.new(name', signature', body', dtype') {
     var selfclosure := false
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitMethod(self)) then {
+            self.value.accept(visitor)
+            if (self.dtype != false) then {
+                self.dtype.accept(visitor)
+            }
+            for (self.signature) do { part ->
+                for (part.params) do { p ->
+                    p.accept(visitor)
+                }
+                if (part.vararg != false) then {
+                    part.vararg.accept(visitor)
+                }
+            }
+            for (self.body) do { mx ->
+                mx.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -302,6 +402,16 @@ class callNode.new(what, with') {
     def with = with'
     def line = 0 + util.linenum
     var register := ""
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitCall(self)) then {
+            self.value.accept(visitor)
+            for (self.with) do { part ->
+                for (part.args) do { arg ->
+                    arg.accept(visitor)
+                }
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -344,6 +454,26 @@ class classNode.new(name', signature', body', superclass', constructor') {
     var register := ""
     def line = util.linenum
     def superclass = superclass'
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitClass(self)) then {
+            self.name.accept(visitor)
+            self.constructor.accept(visitor)
+            if (self.superclass != false) then {
+                self.superclass.accept(visitor)
+            }
+            for (self.signature) do { part ->
+                for (part.params) do { p ->
+                    p.accept(visitor)
+                }
+                if (part.vararg != false) then {
+                    part.vararg.accept(visitor)
+                }
+            }
+            for (self.value) do { x ->
+                x.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -384,6 +514,16 @@ class objectNode.new(body, superclass') {
     def superclass = superclass'
     var otype := false
     var classname := "object"
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitObject(self)) then {
+            if (self.superclass != false) then {
+                self.superclass.accept(visitor)
+            }
+            for (self.value) do { x ->
+                x.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -407,6 +547,13 @@ class arrayNode.new(values) {
     def value = values
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitArray(self)) then {
+            for (self.value) do { ax ->
+                ax.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { ai ->
@@ -425,6 +572,11 @@ class memberNode.new(what, in') {
     def in = in'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitMember(self)) then {
+            self.in.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -441,6 +593,14 @@ class genericNode.new(base, params') {
     def params = params'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitGeneric(self)) then {
+            self.value.accept(visitor)
+            for (self.params) do { p ->
+                p.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var s := "Generic(" ++ self.value.value ++ "<"
         for (params) do {p->
@@ -456,6 +616,13 @@ class identifierNode.new(n, dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitIdentifier(self)) then {
+            if (self.dtype != false) then {
+                self.dtype.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         "Identifier(" ++ self.value ++ ")"
     }
@@ -465,6 +632,9 @@ class octetsNode.new(n) {
     def value = n
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        visitor.visitOctets(self)
+    }
     method pretty(depth) {
         "Octets(" ++ self.value ++ ")"
     }
@@ -474,6 +644,9 @@ class stringNode.new(n) {
     var value := n
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        visitor.visitString(self)
+    }
     method pretty(depth) {
         "String(" ++ self.value ++ ")"
     }
@@ -483,6 +656,9 @@ class numNode.new(n) {
     def value = n
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        visitor.visitNum(self)
+    }
     method pretty(depth) {
         "Num(" ++ self.value ++ ")"
     }
@@ -494,6 +670,12 @@ class opNode.new(op, l, r) {
     def right = r
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitOp(self)) then {
+            self.left.accept(visitor)
+            self.right.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -513,6 +695,12 @@ class indexNode.new(expr, index') {
     def index = index'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitIndex(self)) then {
+            self.value.accept(visitor)
+            self.index.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -532,6 +720,12 @@ class bindNode.new(dest', val') {
     def value = val'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitBind(self)) then {
+            self.dest.accept(visitor)
+            self.value.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -552,6 +746,17 @@ class defDecNode.new(name', val, dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitDefDec(self)) then {
+            self.name.accept(visitor)
+            if (self.dtype != false) then {
+                self.dtype.accept(visitor)
+            }
+            if (self.value != false) then {
+                self.value.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -577,6 +782,17 @@ class varDecNode.new(name', val', dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitVarDec(self)) then {
+            self.name.accept(visitor)
+            if (self.dtype != false) then {
+                self.dtype.accept(visitor)
+            }
+            if (self.value != false) then {
+                self.value.accept(visitor)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for ((0..depth)) do { i ->
@@ -600,6 +816,11 @@ class importNode.new(name) {
     def value = name
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitImport(self)) then {
+            self.value.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -616,6 +837,11 @@ class returnNode.new(expr) {
     def value = expr
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitReturn(self)) then {
+            self.value.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -632,6 +858,11 @@ class inheritsNode.new(expr) {
     def value = expr
     var register := ""
     def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitInherits(self)) then {
+            self.value.accept(visitor)
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -695,4 +926,33 @@ method callWithPart {
             }
         }
     }
+}
+
+type ASTVisitor = {
+     visitFor -> Boolean
+     visitWhile -> Boolean
+     visitIf -> Boolean
+     visitBlock -> Boolean
+     visitMatchCase -> Boolean
+     visitMethodType -> Boolean
+     visitType -> Boolean
+     visitMethod -> Boolean
+     visitCall -> Boolean
+     visitClass -> Boolean
+     visitObject -> Boolean
+     visitArray -> Boolean
+     visitMember -> Boolean
+     visitGeneric -> Boolean
+     visitIdentifier -> Boolean
+     visitOctets -> Boolean
+     visitString -> Boolean
+     visitNum -> Boolean
+     visitOp -> Boolean
+     visitIndex -> Boolean
+     visitBind -> Boolean
+     visitDefDec -> Boolean
+     visitVarDec -> Boolean
+     visitImport -> Boolean
+     visitReturn -> Boolean
+     visitInherits -> Boolean
 }
