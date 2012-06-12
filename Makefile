@@ -100,6 +100,8 @@ javatest: minigrace
 	./tests/harness "../minigrace --target java --gracelib ../java" tests "java -classpath .:../java"
 javajavatest: java
 	./tests/harness "../java/minigracej" tests "java -classpath .:../java"
+togracetest: minigrace
+	./tests/harness "../minigrace" tests tograce
 backendtests: test javatest
 
 java: minigrace $(SOURCEFILES)

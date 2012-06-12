@@ -15,7 +15,7 @@ import subtype
 
 util.parseargs
 
-def targets = ["lex", "parse", "processed-ast", "subtypematrix", "c", "js", "java"]
+def targets = ["lex", "parse", "tograce", "processed-ast", "subtypematrix", "c", "js", "java"]
 
 if (util.target == "help") then {
     print("Valid targets:")
@@ -42,6 +42,12 @@ if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
     for (values) do { v ->
         print(v.pretty(0))
+    }
+    sys.exit(0)
+}
+if (util.target == "tograce") then {
+    for (values) do { v ->
+        print(v.toGrace(0))
     }
     sys.exit(0)
 }

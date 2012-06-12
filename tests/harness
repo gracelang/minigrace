@@ -17,7 +17,21 @@ shift
 shift
 cd "$TESTDIR"
 
-[ "$EXECUTOR" ] && EXECUTOR="$EXECUTOR " || EXECUTOR="./"
+TYPE="normal"
+
+# somewhat hacky way to make the tograce target work without too many changes
+if [ "$EXECUTOR" ]
+then
+    if [ "$EXECUTOR" = "tograce" ]
+    then
+        EXECUTOR="./"
+        TYPE="tograce"
+    else
+        EXECUTOR="$EXECUTOR "
+    fi
+else
+    EXECUTOR="./"
+fi
 
 if [ $# -gt 0 ]
 then
@@ -46,6 +60,20 @@ do
     if ! [ -e "$tcase" ]
     then
         tcase=$(echo $tcase*_test.grace)
+    fi
+    if [ "$TYPE" = "tograce" ]
+    then
+        # hack to allow tests that test for compilation failure
+        if ! $GRACE --target tograce $tcase > tg_$tcase 2>/dev/null
+        then
+            cp $tcase tg_$tcase
+        else
+            if [ -e "${tcase%_test.grace}.out" ]
+            then
+                cp ${tcase%_test.grace}.out tg_${tcase%_test.grace}.out
+            fi
+        fi
+        tcase=tg_$tcase
     fi
     echo ================================================== >> test-$$.log
     echo Beginning case "$tcase"... >>test-$$.log
@@ -93,6 +121,10 @@ do
         cat ${tcase%_test.grace}.out >> test.log
     fi
     rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class
+    if [ "$TYPE" = "tograce" ]
+    then
+        rm -f tg_t*
+    fi
 done
 
 echo Ran $NUM_TESTS tests.

@@ -43,6 +43,15 @@ class forNode.new(over, body') {
         s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
         s
     }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "for ({self.value.toGrace(0)}) do "
+        s := s ++ self.body.toGrace(depth)
+        s
+    }
 }
 class whileNode.new(cond, body') {
     def kind = "while"
@@ -70,6 +79,18 @@ class whileNode.new(cond, body') {
         for (self.body) do { x ->
             s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
         }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "while \{{self.value.toGrace(depth + 1)}\} do \{"
+        for (self.body) do { x ->
+            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
         s
     }
 }
@@ -109,6 +130,24 @@ class ifNode.new(cond, thenblock', elseblock') {
         for (self.elseblock) do { ix ->
             s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
         }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "if ({self.value.toGrace(0)}) then \{"
+        for (self.thenblock) do { ix ->
+            s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
+        }
+        if (self.elseblock.size > 0) then {
+            s := s ++ "\n" ++ spc ++ "\} else \{"
+            for (self.elseblock) do { ix ->
+                s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
+            }
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
         s
     }
 }
@@ -156,6 +195,30 @@ class blockNode.new(params', body') {
         }
         s
     }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "\{"
+        if (self.params.size > 0) then {
+            s := s ++ " "
+            for (self.params.indices) do { i ->
+                var p := self.params[i]
+                s := s ++ p.toGrace(0)
+                if (i < self.params.size) then {
+                    s := s ++ ", "
+                } else {
+                    s := s ++ " ->"
+                }
+            }
+        }
+        for (self.body) do { mx ->
+            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
+        s
+    }
 }
 class matchCaseNode.new(matchee, cases', elsecase') {
     def kind = "matchcase"
@@ -187,6 +250,20 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         }
         if (false != elsecase) then {
             s := s ++ "\n{spc}Else:\n{spc}  {elsecase.pretty(depth+2)}"
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "match(" ++ self.value.toGrace(0) ++ ")"
+        for (self.cases) do { case ->
+            s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
+        }
+        if (elsecase != false) then {
+            s := s ++ "\n" ++ spc ++ "    " ++ "else " ++ elsecase.toGrace(depth + 2)
         }
         s
     }
@@ -244,13 +321,34 @@ class methodTypeNode.new(name', signature', rtype') {
             s := "{s}\n    {spc}Parameters:"
             for (part.params) do { p ->
                 s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-                if (p.dtype != false) then {
-                    s := "{s} : {p.dtype.value}"
-                }
             }
             if (part.vararg != false) then {
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
             }
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var s := ""
+        for (self.signature) do { part ->
+            s := s ++ part.name
+            if ((part.params.length > 0) | (part.vararg != false)) then {
+                s := s ++ "("
+                for (part.params.indices) do { pnr ->
+                    var p := part.params[pnr]
+                    s := s ++ p.toGrace(depth + 1)
+                    if ((pnr < part.params.size) | (part.vararg != false)) then {
+                        s := s ++ ", "
+                    }
+                }
+                if (part.vararg != false) then {
+                    s := s ++ "*" ++ part.vararg.value
+                }
+                s := s ++ ")"
+            }
+        }
+        if (self.rtype != false) then {
+            s := s ++ " -> " ++ self.rtype.toGrace(depth + 1)
         }
         s
     }
@@ -306,6 +404,58 @@ class typeNode.new(name', methods') {
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
         }
         s := s ++ "\n"
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := ""
+        def isanon = self.value.substringFrom(2)to(6) == "Anon_"
+        def isadhoc = (self.value.substringFrom(1)to(6) == "Union<") |
+                      (self.value.substringFrom(1)to(13) == "Intersection<")
+        if (!isanon & !isadhoc) then {
+            s := "type {self.value}"
+            if (generics.size > 0) then {
+                s := s ++ "<"
+                for (generics.indices) do { i ->
+                    s := s ++ generics[i].value
+                    if (i < generics.size) then {
+                        s := s ++ ", "
+                    }
+                }
+                s := s ++ ">"
+            }
+            s := s ++ " = "
+        }
+        if (!isadhoc & (self.unionTypes.size == 0) &
+            (self.intersectionTypes.size == 0)) then {
+            s := s ++ "\{"
+        }
+        // TODO: what about e.g. "(A & B) | C"?
+        if (self.unionTypes.size > 0) then {
+            for (self.unionTypes.indices) do { i ->
+                s := s ++ self.unionTypes[i].toGrace(0)
+                if (i < self.unionTypes.size) then {
+                    s := s ++ " | "
+                }
+            }
+        } elseif (self.intersectionTypes.size > 0) then {
+            for (self.intersectionTypes.indices) do { i ->
+                s := s ++ self.intersectionTypes[i].toGrace(0)
+                if (i < self.intersectionTypes.size) then {
+                    s := s ++ " & "
+                }
+            }
+        }
+        for (self.methods) do { mx ->
+            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+        }
+        if (!isadhoc & (self.unionTypes.size == 0) &
+            (self.intersectionTypes.size == 0)) then {
+            s := s ++ "\n" ++ spc ++ "\}"
+        }
         s
     }
 }
@@ -367,9 +517,6 @@ class methodNode.new(name', signature', body', dtype') {
             s := "{s}\n    {spc}Parameters:"
             for (part.params) do { p ->
                 s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-                if (p.dtype != false) then {
-                    s := "{s} : {p.dtype.value}"
-                }
             }
             if (part.vararg != false) then {
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
@@ -380,6 +527,39 @@ class methodNode.new(name', signature', body', dtype') {
         for (self.body) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
         }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "method "
+        for (self.signature) do { part ->
+            s := s ++ part.name
+            if ((part.params.length > 0) | (part.vararg != false)) then {
+                s := s ++ "("
+                for (part.params.indices) do { pnr ->
+                    var p := part.params[pnr]
+                    s := s ++ p.toGrace(depth + 1)
+                    if ((pnr < part.params.size) | (part.vararg != false)) then {
+                        s := s ++ ", "
+                    }
+                }
+                if (part.vararg != false) then {
+                    s := s ++ "*" ++ part.vararg.value
+                }
+                s := s ++ ")"
+            }
+        }
+        if (self.dtype != false) then {
+            s := s ++ " -> {self.dtype.toGrace(0)}"
+        }
+        s := s ++ " \{"
+        for (self.body) do { mx ->
+            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
         s
     }
 }
@@ -425,6 +605,37 @@ class callNode.new(what, with') {
             s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name
             for (part.args) do { arg ->
                 s := s ++ "\n    " ++ spc ++ arg.pretty(depth + 3)
+            }
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := ""
+        // only the last member is the method call we need to handle
+        if (self.value.kind == "member") then {
+            var member := self.value
+            if (member.value.substringFrom(1)to(6) == "prefix") then {
+                s := member.value.substringFrom(7)to(member.value.size)
+                return s ++ member.in.toGrace(0)
+            }
+            s := member.in.toGrace(0) ++ "."
+        }
+        for (self.with) do { part ->
+            s := s ++ part.name
+            if (part.args.length > 0) then {
+                s := s ++ "("
+                for (part.args.indices) do { anr ->
+                    var arg := part.args[anr]
+                    s := s ++ arg.toGrace(depth + 1)
+                    if (anr < part.args.size) then {
+                        s := s ++ ", "
+                    }
+                }
+                s := s ++ ")"
             }
         }
         s
@@ -491,9 +702,6 @@ class classNode.new(name', signature', body', superclass', constructor') {
             s := "{s}\n    {spc}Parameters:"
             for (part.params) do { p ->
                 s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-                if (p.dtype != false) then {
-                    s := "{s} : {p.dtype.value}"
-                }
             }
             if (part.vararg != false) then {
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
@@ -503,6 +711,40 @@ class classNode.new(name', signature', body', superclass', constructor') {
         for (self.value) do { x ->
             s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
         }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "class {self.name.toGrace(0)}"
+        if (self.name.kind != "generic") then {
+            // TODO generics + new-style constructors aren't possible at the moment
+            s := s ++ "."
+            for (self.signature) do { part ->
+                s := s ++ part.name
+                if ((part.params.length > 0) | (part.vararg != false)) then {
+                    s := s ++ "("
+                    for (part.params.indices) do { pnr ->
+                        var p := part.params[pnr]
+                        s := s ++ p.toGrace(depth + 1)
+                        if ((pnr < part.params.size) | (part.vararg != false)) then {
+                            s := s ++ ", "
+                        }
+                    }
+                    if (part.vararg != false) then {
+                        s := s ++ "*" ++ part.vararg.value
+                    }
+                    s := s ++ ")"
+                }
+            }
+        }
+        s := s ++ " \{"
+        for (self.value) do { mx ->
+            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
         s
     }
 }
@@ -541,6 +783,18 @@ class objectNode.new(body, superclass') {
         }
         s
     }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "object \{"
+        for (self.value) do { x ->
+            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
+        }
+        s := s ++ "\n" ++ spc ++ "\}"
+        s
+    }
 }
 class arrayNode.new(values) {
     def kind = "array"
@@ -565,6 +819,17 @@ class arrayNode.new(values) {
         }
         s
     }
+    method toGrace(depth : Number) -> String {
+        var s := "["
+        for (self.value.indices) do { i ->
+            s := s ++ self.value[i].toGrace(0)
+            if (i < self.value.size) then {
+                s := s ++ ", "
+            }
+        }
+        s := s ++ "]"
+        s
+    }
 }
 class memberNode.new(what, in') {
     def kind = "member"
@@ -584,6 +849,22 @@ class memberNode.new(what, in') {
         }
         var s := "Member(" ++ self.value ++ ")\n"
         s := s ++ spc ++ self.in.pretty(depth+1)
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var s := ""
+        if (self.value.substringFrom(1)to(6) == "prefix") then {
+            s := self.value.substringFrom(7)to(self.value.size)
+            s := s ++ " " ++ self.in.toGrace(0)
+        } else {
+            s := self.in.toGrace(depth) ++ "."
+            for (self.value) do { c ->
+                if (c == " ") then {
+                    return s ++ "`" ++ self.value ++ "`"
+                }
+            }
+            s := s ++ self.value
+        }
         s
     }
 }
@@ -609,6 +890,17 @@ class genericNode.new(base, params') {
         }
         s ++ ">)"
     }
+    method toGrace(depth : Number) -> String {
+        var s := self.value.value ++ "<"
+        for (self.params.indices) do { i ->
+            s := s ++ self.params[i].toGrace(0)
+            if (i < self.params.size) then {
+                s := s ++ ", "
+            }
+        }
+        s := s ++ ">"
+        s
+    }
 }
 class identifierNode.new(n, dtype') {
     def kind = "identifier"
@@ -624,7 +916,35 @@ class identifierNode.new(n, dtype') {
         }
     }
     method pretty(depth) {
-        "Identifier(" ++ self.value ++ ")"
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Identifier(" ++ self.value ++ ")"
+        if (self.dtype != false) then {
+            s := s ++ "\n" ++ spc ++ "Type:"
+            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        // TODO: add backticks if identifier is reserved word
+        var hasspace := false
+        for (self.value) do { c ->
+            if (c == " ") then {
+                hasspace := true
+            }
+        }
+        var s
+        if (hasspace) then {
+            s := "`" ++ self.value ++ "`"
+        } else {
+            s := self.value
+        }
+        if (self.dtype != false) then {
+            s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
+        }
+        s
     }
 }
 class octetsNode.new(n) {
@@ -638,6 +958,9 @@ class octetsNode.new(n) {
     method pretty(depth) {
         "Octets(" ++ self.value ++ ")"
     }
+    method toGrace(depth : Number) -> String {
+        self.value
+    }
 }
 class stringNode.new(n) {
     def kind = "string"
@@ -650,6 +973,25 @@ class stringNode.new(n) {
     method pretty(depth) {
         "String(" ++ self.value ++ ")"
     }
+    method toGrace(depth : Number) -> String {
+        var s := "\""
+        for (self.value) do { c ->
+            // TODO: what escapes are missing?
+            if (c == "\n") then {
+                s := s ++ "\\n"
+            } elseif (c == "\t") then {
+                s := s ++ "\\t"
+            } elseif (c == "\"") then {
+                s := s ++ "\\\""
+            } elseif (c == "\\") then {
+                s := s ++ "\\\\"
+            } else {
+                s := s ++ c
+            }
+        }
+        s := s ++ "\""
+        s
+    }
 }
 class numNode.new(n) {
     def kind = "num"
@@ -661,6 +1003,9 @@ class numNode.new(n) {
     }
     method pretty(depth) {
         "Num(" ++ self.value ++ ")"
+    }
+    method toGrace(depth : Number) -> String {
+        self.value.asString
     }
 }
 class opNode.new(op, l, r) {
@@ -688,6 +1033,25 @@ class opNode.new(op, l, r) {
         s := s ++ spc ++ self.right.pretty(depth + 1)
         s
     }
+    method toGrace(depth : Number) -> String {
+        var s := ""
+        if ((self.left.kind == "op") & (self.left.value != self.value)) then {
+            s := "(" ++ self.left.toGrace(0) ++ ")"
+        } else {
+            s := self.left.toGrace(0)
+        }
+        if (self.value == "..") then {
+            s := s ++ self.value
+        } else {
+            s := s ++ " " ++ self.value ++ " "
+        }
+        if ((self.right.kind == "op") & (self.right.value != self.value)) then {
+            s := s ++ "(" ++ self.right.toGrace(0) ++ ")"
+        } else {
+            s := s ++ self.right.toGrace(0)
+        }
+        s
+    }
 }
 class indexNode.new(expr, index') {
     def kind = "index"
@@ -713,6 +1077,15 @@ class indexNode.new(expr, index') {
         s := s ++ spc ++ self.index.pretty(depth + 1)
         s
     }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := self.value.toGrace(depth + 1)
+        s := s ++ "[" ++ self.index.toGrace(depth + 1) ++ "]"
+        s
+    }
 }
 class bindNode.new(dest', val') {
     def kind = "bind"
@@ -736,6 +1109,15 @@ class bindNode.new(dest', val') {
         s := s ++ spc ++ self.dest.pretty(depth + 1)
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := self.dest.toGrace(depth + 1)
+        s := s ++ " := " ++ self.value.toGrace(depth + 1)
         s
     }
 }
@@ -765,12 +1147,27 @@ class defDecNode.new(name', val, dtype') {
         var s := "defdec"
         s := s ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth)
-        if (self.dtype) then {
-            s := s ++ " : " ++ self.dtype.pretty(0)
+        if (self.dtype != false) then {
+            s := s ++ "\n" ++ spc ++ "Type:"
+            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
         }
         if (false != self.value) then {
             s := s ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "def {self.name.toGrace(0)}"
+        if (self.dtype.value != "Dynamic") then {
+            s := s ++ " : " ++ self.dtype.toGrace(0)
+        }
+        if (self.value != false) then {
+            s := s ++ " = " ++ self.value.toGrace(depth)
         }
         s
     }
@@ -801,12 +1198,27 @@ class varDecNode.new(name', val', dtype') {
         var s := "VarDec"
         s := s ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
-        if (self.dtype) then {
-            s := s ++ " : " ++ self.dtype.pretty(0)
+        if (self.dtype != false) then {
+            s := s ++ "\n" ++ spc ++ "Type:"
+            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
         }
         if (false != self.value) then {
             s := s ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "var {self.name.toGrace(0)}"
+        if (self.dtype.value != "Dynamic") then {
+            s := s ++ " : " ++ self.dtype.toGrace(0)
+        }
+        if (self.value != false) then {
+            s := s ++ " := " ++ self.value.toGrace(depth)
         }
         s
     }
@@ -831,6 +1243,10 @@ class importNode.new(name) {
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
     }
+    method toGrace(depth : Number) -> String {
+        var s := "import " ++ self.value.toGrace(depth + 1)
+        s
+    }
 }
 class returnNode.new(expr) {
     def kind = "return"
@@ -852,6 +1268,9 @@ class returnNode.new(expr) {
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
     }
+    method toGrace(depth : Number) -> String {
+        "return " ++ self.value.toGrace(depth)
+    }
 }
 class inheritsNode.new(expr) {
     def kind = "inherits"
@@ -872,6 +1291,9 @@ class inheritsNode.new(expr) {
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
+    }
+    method toGrace(depth : Number) -> String {
+        "inherits {self.value.toGrace(0)}"
     }
 }
 
