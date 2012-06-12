@@ -1231,7 +1231,7 @@ method doclassOld {
                 var p := rbody.pop
                 body.push(p)
             }
-            var o := ast.classNode.new(cname, [ast.signaturePart.new(cname.value, params)],
+            var o := ast.classNode.new(cname, [ast.signaturePart.new("new", params)],
                 body, superclass, ast.identifierNode.new("new", false))
             values.push(o)
         } else {
@@ -1368,8 +1368,10 @@ method methodsignature(sameline) {
     if (accept("bind")) then {
         next
         meth.value := meth.value ++ ":="
+        part.name := part.name ++ ":="
     } elseif (accept("op") & (meth.value == "prefix")) then {
         meth.value := meth.value ++ sym.value
+        part.name := part.name ++ sym.value
         next
     }
     var dtype := false
