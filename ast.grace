@@ -205,7 +205,11 @@ class blockNode.new(params', body') {
             s := s ++ " "
             for (self.params.indices) do { i ->
                 var p := self.params[i]
-                s := s ++ p.toGrace(0)
+                if (matchingPattern != false) then {
+                    s := s ++ "(" ++ p.toGrace(0) ++ ")"
+                } else {
+                    s := s ++ p.toGrace(0)
+                }
                 if (i < self.params.size) then {
                     s := s ++ ", "
                 } else {
