@@ -18,3 +18,5 @@ returned by a function named gracecode_<module>.
 For the experimental Java backend, see the code in java/grace/lib. Any
 module will need to support a $module method returning an instance. Any
 arguments will be GraceObjects and any return values must be also.
+
+The Java backend is no longer functional or included in tarballs.

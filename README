@@ -1,9 +1,8 @@
 A compiler for the Grace language.
 
-Minigrace compiles Grace to C and JavaScript, and experimentally to
-Java. The compiler is written in Grace itself. It supports most of the
-specified language to date: for details on current language feature
-support see <doc/errata>.
+Minigrace compiles Grace to C and JavaScript. The compiler is written in
+Grace itself. It supports most of the specified language to date: for
+details on current language feature support see <doc/errata>.
 
 Minigrace should work on POSIX-compliant systems, and is known to work
 on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
@@ -30,7 +29,6 @@ executable supports a few different modes and options:
 - Describe what it is doing while it goes:
   ./minigrace --verbose [...]
 - Use another backend:
-  ./minigrace --target java file.grace
   ./minigrace --target js -o file.js file.grace
   There are also other targets for specialised purposes. Use
   --target help to list them.
@@ -49,11 +47,6 @@ Some other Makefile targets may also be of interest:
 - make test
   Runs the test suite. All tests are expected to pass; if any do not,
   please send the tests/test.log file to the author.
-- make java
-  Builds the compiler in Java. There is a java/minigracej script with
-  the same command syntax as the main minigrace executable to run the
-  compiler in the right environment. The Java backend is experimental
-  and not suitable for general use.
 - make js
   Builds the web frontend and JavaScript compiler, as used on
   <http://ecs.vuw.ac.nz/~mwh/minigrace/js/>. The frontend is accessible
