@@ -861,13 +861,7 @@ class memberNode.new(what, in') {
             s := self.value.substringFrom(7)to(self.value.size)
             s := s ++ " " ++ self.in.toGrace(0)
         } else {
-            s := self.in.toGrace(depth) ++ "."
-            for (self.value) do { c ->
-                if (c == " ") then {
-                    return s ++ "`" ++ self.value ++ "`"
-                }
-            }
-            s := s ++ self.value
+            s := self.in.toGrace(depth) ++ "." ++ self.value
         }
         s
     }
@@ -932,19 +926,7 @@ class identifierNode.new(n, dtype') {
         s
     }
     method toGrace(depth : Number) -> String {
-        // TODO: add backticks if identifier is reserved word
-        var hasspace := false
-        for (self.value) do { c ->
-            if (c == " ") then {
-                hasspace := true
-            }
-        }
-        var s
-        if (hasspace) then {
-            s := "`" ++ self.value ++ "`"
-        } else {
-            s := self.value
-        }
+        var s := self.value
         if (self.dtype != false) then {
             s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
         }
