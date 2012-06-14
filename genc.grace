@@ -1607,7 +1607,11 @@ method compile(vl, of, mn, rm, bt) {
         }
         log_verbose("done.")
         if (buildtype == "run") then {
-            cmd := "./" ++ modname
+            if (modname[1] != "/") then {
+                cmd := "./" ++ modname
+            } else {
+                cmd := modname
+            }
             if (!io.system(cmd)) then {
                 io.error.write("minigrace: Program exited with error: "
                     ++ modname ++ "\n")
