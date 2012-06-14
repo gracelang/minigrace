@@ -8,13 +8,10 @@ Minigrace should work on POSIX-compliant systems, and is known to work
 on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
 the path, which may require installing development tools.
 
-The Git repository is capable of bootstrapping itself. Simply running
-`make` should cause all required previous versions to be built along
-with the current trunk. This process may take some time, perhaps 10
-minutes, and requires GNU make. Alternatively, a script is provided to
-bootstrap from one of the release tarballs. Running
-tools/tarball-bootstrap will provide instructions on finding and using
-this tarball.
+The Git repository is capable of bootstrapping itself with `make`, but
+it is recommended to bootstrap from a recent tarball and is required on
+some platforms. Running tools/tarball-bootstrap will provide
+instructions on finding and using this tarball.
 
 A tarball distribution can be compiled using `./configure` and `make`.
 
