@@ -252,6 +252,12 @@ void debug(char *msg, ...) {
     va_end(args);
 }
 
+void assertClass(Object obj, ClassData cl) {
+    if (obj->class != cl)
+        gracedie("expected instance of %s; got a %s", cl->name,
+                obj->class->name);
+}
+
 void *glmalloc(size_t s) {
     heapsize += s;
     heapcurrent += s;
@@ -1023,6 +1029,7 @@ Object String_iter(Object receiver, int nparts, int *argcv,
 Object String_at(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object idxobj = args[0];
+    assertClass(idxobj, Number);
     int idx = integerfromAny(idxobj);
     idx--;
     int i = 0;
@@ -1361,6 +1368,7 @@ Object Float64_Range(Object self, int nparts, int *argcv,
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *((double*)self->data);
     double b;
     if (other->class == Number)
@@ -1372,6 +1380,7 @@ Object Float64_Add(Object self, int nparts, int *argcv,
 Object Float64_Sub(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1383,6 +1392,7 @@ Object Float64_Sub(Object self, int nparts, int *argcv,
 Object Float64_Mul(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1394,6 +1404,7 @@ Object Float64_Mul(Object self, int nparts, int *argcv,
 Object Float64_Div(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1405,6 +1416,7 @@ Object Float64_Div(Object self, int nparts, int *argcv,
 Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     unsigned int i = (unsigned int)a;
     double b;
@@ -1430,6 +1442,7 @@ Object Float64_Equals(Object self, int nparts, int *argcv,
 Object Float64_LessThan(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1441,6 +1454,7 @@ Object Float64_LessThan(Object self, int nparts, int *argcv,
 Object Float64_GreaterThan(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1452,6 +1466,7 @@ Object Float64_GreaterThan(Object self, int nparts, int *argcv,
 Object Float64_LessOrEqual(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
@@ -1463,6 +1478,7 @@ Object Float64_LessOrEqual(Object self, int nparts, int *argcv,
 Object Float64_GreaterOrEqual(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     double a = *(double*)self->data;
     double b;
     if (other->class == Number)
