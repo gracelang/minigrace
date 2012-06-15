@@ -197,10 +197,6 @@ method type_error(s) {
     sys.exit(1)
 }
 method warning(s) {
-    io.error.write("minigrace")
-    if (vtagv) then {
-        io.error.write("[" ++ vtagv ++ "]")
-    }
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
     io.error.write("\n")
 }
