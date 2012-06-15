@@ -264,6 +264,9 @@ method block {
                     util.syntax_error("block parameter list not terminated ->.")
                 }
                 next
+            } elseif (accept("semicolon")) then {
+                body.push(values.pop)
+                next
             } elseif (accept("bind")) then {
                 var lhs := values.pop
                 next
