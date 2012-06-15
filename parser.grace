@@ -1161,6 +1161,10 @@ method doclassOld {
                 [ast.callWithPart.new(mn.value, scargs)])
         }
         var cname := values.pop
+        if (cname.kind != "generic") then {
+            util.warning("old class syntax: should be 'class {cname.value}.new'"
+                ++ " or other factory method name")
+        }
         if (accept("lbrace")) then {
             values.push(object {
                 var kind := "lbrace"
