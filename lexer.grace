@@ -25,140 +25,140 @@ def LexerClass = object {
         var startPosition := 1
         var indentLevel := 0
 
-        class IdentifierToken { s ->
+        class IdentifierToken.new(s) {
             def kind = "identifier"
             def value = s
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class StringToken { s ->
+        class StringToken.new(s) {
             def kind = "string"
             def value = s
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class OctetsToken { s ->
+        class OctetsToken.new(s) {
             def kind = "octets"
             def value = s
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class LBraceToken {
+        class LBraceToken.new {
             def kind = "lbrace"
             def value = "\{"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class RBraceToken {
+        class RBraceToken.new {
             def kind = "rbrace"
             def value = "}"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class LParenToken {
+        class LParenToken.new {
             def kind = "lparen"
             def value = "("
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class RParenToken {
+        class RParenToken.new {
             def kind = "rparen"
             def value = ")"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class LSquareToken {
+        class LSquareToken.new {
             def kind = "lsquare"
             def value = "["
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class RSquareToken {
+        class RSquareToken.new {
             def kind = "rsquare"
             def value = "]"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class CommaToken {
+        class CommaToken.new {
             def kind = "comma"
             def value = ","
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class ColonToken {
+        class ColonToken.new {
             def kind = "colon"
             def value = ":"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class DotToken {
+        class DotToken.new {
             def kind = "dot"
             def value = "."
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class NumToken { v ->
+        class NumToken.new(v) {
             def kind = "num"
             def value = v
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class KeywordToken { v ->
+        class KeywordToken.new(v) {
             def kind = "keyword"
             def value = v
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class OpToken { v ->
+        class OpToken.new(v) {
             def kind = "op"
             def value = v
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class ArrowToken {
+        class ArrowToken.new {
             def kind = "arrow"
             def value = "->"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class BindToken {
+        class BindToken.new {
             def kind = "bind"
             def value = ":="
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class SemicolonToken {
+        class SemicolonToken.new {
             def kind = "semicolon"
             def value = ";"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class LGenericToken {
+        class LGenericToken.new {
             def kind = "lgeneric"
             def value = "<"
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
         }
-        class RGenericToken {
+        class RGenericToken.new {
             def kind = "rgeneric"
             def value = ">"
             def line = lineNumber

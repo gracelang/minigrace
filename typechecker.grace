@@ -120,7 +120,7 @@ def BlockType = ast.typeNode.new("Block", [
 def outerMethod = ast.methodTypeNode.new("outer", [ast.signaturePart.new("outer")], DynamicType)
 var currentReturnType := false
 
-class Binding { kind' ->
+class Binding.new(kind') {
     var kind := kind'
     var dtype := DynamicType
     var value := false

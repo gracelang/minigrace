@@ -799,7 +799,7 @@ method kinds(kinds': List) do(block: Block) {
     Kinds.new.kinds(kinds') do(block)
 }
 
-class Kinds {
+class Kinds.new {
 
     def map = HashMap.new
     var elseBlock := false
