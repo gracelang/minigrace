@@ -64,7 +64,7 @@ do
     if [ "$TYPE" = "tograce" ]
     then
         # hack to allow tests that test for compilation failure
-        if ! $GRACE --target tograce $tcase > tg_$tcase 2>/dev/null
+        if ! $GRACE --target grace $tcase > tg_$tcase 2>/dev/null
         then
             cp $tcase tg_$tcase
         else
