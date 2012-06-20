@@ -66,7 +66,12 @@ do
         # hack to allow tests that test for compilation failure
         if ! $GRACE --target grace $tcase > tg_$tcase 2>/dev/null
         then
-            cp $tcase tg_$tcase
+            if echo $tcase | grep -q _fail
+            then
+                cp $tcase tg_$tcase
+            else
+                echo "print \"failed to print\"" > tg_$tcase
+            fi
         else
             if [ -e "${tcase%_test.grace}.out" ]
             then
