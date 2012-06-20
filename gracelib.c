@@ -81,6 +81,7 @@ ClassData Block;
 ClassData Octets;
 ClassData List;
 ClassData ListIter;
+ClassData PrimitiveArray;
 ClassData Undefined;
 ClassData None;
 ClassData ellipsisClass;
@@ -122,6 +123,13 @@ struct OctetsObject {
     char body[];
 };
 struct ListObject {
+    int32_t flags;
+    ClassData class;
+    int size;
+    int space;
+    Object *items;
+};
+struct PrimitiveArrayObject {
     int32_t flags;
     ClassData class;
     int size;
@@ -682,6 +690,82 @@ Object alloc_List() {
     lo->size = 0;
     lo->space = 8;
     lo->items = glmalloc(sizeof(Object) * 8);
+    return o;
+}
+Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    Object idx = args[0];
+    Object val = args[1];
+    int index = integerfromAny(idx);
+    if (index >= sself->size) {
+        die("Error: array index out of bounds: %i/%i",
+                index, sself->size);
+    }
+    if (index < 0) {
+        die("Error: array index out of bounds: %i < 0",
+                index);
+    }
+    sself->items[index] = val;
+    return val;
+}
+Object PrimitiveArray_index(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    int index = integerfromAny(args[0]);
+    if (index >= sself->size) {
+        die("Error: array index out of bounds: %i/%i\n",
+                index, sself->size);
+    }
+    if (index < 0) {
+        die("Error: array index out of bounds: %i < 0",
+                index);
+    }
+    return sself->items[index];
+}
+Object alloc_PrimitiveArray(int size) {
+    if (PrimitiveArray == NULL) {
+        PrimitiveArray = alloc_class3("PrimitiveArray", 11, (void*)&List_mark,
+                (void*)&List__release);
+        add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
+        add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
+        add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
+        add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
+        add_Method(List, "asString", &List_asString);
+        add_Method(List, "size", &List_length);
+        add_Method(List, "iter", &List_iter);
+        add_Method(List, "contains", &List_contains);
+        add_Method(List, "==", &Object_Equals);
+        add_Method(List, "!=", &Object_NotEquals);
+    }
+    int i;
+    Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);
+    struct PrimitiveArrayObject *lo = (struct PrimitiveArrayObject*)o;
+    lo->size = size;
+    lo->space = size;
+    lo->items = glmalloc(sizeof(Object) * size);
+    for (i=0; i<size; i++)
+        lo->items[i] = undefined;
+    return o;
+}
+Object PrimitiveArrayClassObject_new(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    if (argcv[0] != 1)
+        die("array construction requires size argument");
+    return alloc_PrimitiveArray(integerfromAny(args[0]));
+}
+Object PrimitiveArrayClassObject;
+Object alloc_PrimitiveArrayClassObject() {
+    if (PrimitiveArrayClassObject)
+        return PrimitiveArrayClassObject;
+    ClassData c = alloc_class("Class<PrimitiveArray>", 5);
+    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "!=", &Object_NotEquals);
+    add_Method(c, "/=", &Object_NotEquals);
+    add_Method(c, "new", &PrimitiveArrayClassObject_new);
+    Object o = alloc_obj(0, c);
+    gc_root(o);
+    PrimitiveArrayClassObject = o;
     return o;
 }
 int getutf8charlen(const char *s) {
@@ -3541,12 +3625,16 @@ Object grace_minigrace(Object self, int argc, int *argcv,
     }
     return minigrace_obj;
 }
+Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    return alloc_PrimitiveArrayClassObject();
+}
 Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 10, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 11, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3557,6 +3645,7 @@ Object grace_prelude() {
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
+    add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
