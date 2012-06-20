@@ -336,7 +336,7 @@ class methodTypeNode.new(name', signature', rtype') {
         var s := ""
         for (self.signature) do { part ->
             s := s ++ part.name
-            if ((part.params.length > 0) | (part.vararg != false)) then {
+            if ((part.params.size > 0) | (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
                     var p := part.params[pnr]
@@ -541,7 +541,7 @@ class methodNode.new(name', signature', body', dtype') {
         var s := "method "
         for (self.signature) do { part ->
             s := s ++ part.name
-            if ((part.params.length > 0) | (part.vararg != false)) then {
+            if ((part.params.size > 0) | (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
                     var p := part.params[pnr]
@@ -630,7 +630,7 @@ class callNode.new(what, with') {
         }
         for (self.with) do { part ->
             s := s ++ part.name
-            if (part.args.length > 0) then {
+            if (part.args.size > 0) then {
                 s := s ++ "("
                 for (part.args.indices) do { anr ->
                     var arg := part.args[anr]
@@ -728,7 +728,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
             s := s ++ "."
             for (self.signature) do { part ->
                 s := s ++ part.name
-                if ((part.params.length > 0) | (part.vararg != false)) then {
+                if ((part.params.size > 0) | (part.vararg != false)) then {
                     s := s ++ "("
                     for (part.params.indices) do { pnr ->
                         var p := part.params[pnr]
