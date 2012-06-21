@@ -725,18 +725,16 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
 }
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("PrimitiveArray", 11, (void*)&List_mark,
+        PrimitiveArray = alloc_class3("PrimitiveArray", 9, (void*)&List_mark,
                 (void*)&List__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
-        add_Method(List, "asString", &List_asString);
-        add_Method(List, "size", &List_length);
-        add_Method(List, "iter", &List_iter);
-        add_Method(List, "contains", &List_contains);
-        add_Method(List, "==", &Object_Equals);
-        add_Method(List, "!=", &Object_NotEquals);
+        add_Method(PrimitiveArray, "asString", &List_asString);
+        add_Method(PrimitiveArray, "size", &List_length);
+        add_Method(PrimitiveArray, "==", &Object_Equals);
+        add_Method(PrimitiveArray, "!=", &Object_NotEquals);
     }
     int i;
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);
