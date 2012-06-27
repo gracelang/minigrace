@@ -1954,16 +1954,24 @@ Object File_write(Object self, int nparts, int *argcv,
     }
     return alloc_Boolean(1);
 }
-Object File_readline(Object self, int nparts, int *argcv,
+Object File_getline(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct FileObject *s = (struct FileObject*)self;
     FILE *file = s->file;
-    int bsize = 1024;
-    char buf[bsize];
-    buf[0] = 0;
-    char *cv = fgets(buf, bsize, file);
-    Object ret = alloc_String(buf);
-    return ret;
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    Object str;
+    if ((read = getline(&line, &len, file)) != -1) {
+        if (read > 0) {
+            line[read - 1] = '\0';
+        }
+        str = alloc_String(line);
+    } else {
+        str = alloc_String("");
+    }
+    free(line);
+    return str;
 }
 Object File_read(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2063,8 +2071,9 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 16);
+        File = alloc_class("File", 17);
         add_Method(File, "read", &File_read);
+        add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
         add_Method(File, "close", &File_close);
         add_Method(File, "seek", &File_seek);
