@@ -219,6 +219,8 @@ char **ARGV = NULL;
 
 int stack_size = 1024;
 #define STACK_SIZE stack_size
+static jmp_buf error_jump;
+static int error_jump_set;
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
@@ -240,6 +242,9 @@ void gracedie(char *msg, ...) {
     exit(1);
 }
 void die(char *msg, ...) {
+    if (error_jump_set) {
+        longjmp(error_jump, 1);
+    }
     va_list args;
     va_start(args, msg);
     fprintf(stderr, "Error around line %i: ", linenumber);
@@ -2438,6 +2443,9 @@ start:
         }
         return ret;
     }
+    if (error_jump_set) {
+        longjmp(error_jump, 1);
+    }
     fprintf(stderr, "Available methods are:\n");
     for (i=0; i<c->nummethods; i++) {
         fprintf(stderr, "  %s\n", c->methods[i].name);
@@ -3627,12 +3635,23 @@ Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     return alloc_PrimitiveArrayClassObject();
 }
+Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    error_jump_set = 1;
+    if (setjmp(error_jump)) {
+        error_jump_set = 0;
+        return callmethod(argv[1], "apply", 0, NULL, NULL);
+    }
+    Object rv = callmethod(argv[0], "apply", 0, NULL, NULL);
+    error_jump_set = 0;
+    return rv;
+}
 Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 11, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 12, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3644,6 +3663,7 @@ Object grace_prelude() {
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
+    add_Method(c, "try()else", &prelude_tryElse);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
