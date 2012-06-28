@@ -3646,12 +3646,18 @@ Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
     error_jump_set = 0;
     return rv;
 }
+Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    char *str = grcstring(argv[0]); 
+    die(str);
+    return NULL;
+}
 Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 12, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 13, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3664,6 +3670,7 @@ Object grace_prelude() {
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "try()else", &prelude_tryElse);
+    add_Method(c, "forceError", &prelude_forceError);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
