@@ -12,6 +12,11 @@ if ! [ "$TARBALL" ]
 then
     echo "Usage: $0 <tarball>"
     echo "Compiles <tarball> and installs it as known-good bootstrap version."
+    echo
+    echo "Download the tarball of a past bootstrap version and pass it to"
+    echo "this script as <tarball> to install it for bootstrapping. Afterwards"
+    echo "\`make\` will build the latest version from the source repository."
+    echo
     cd "$(git rev-parse --show-toplevel)"
     rev=$(awk -F= '/STABLE=/ { print $2 }' Makefile)
     gen=$(tools/git-calculate-generation "$rev")
