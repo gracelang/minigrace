@@ -34,7 +34,7 @@ tar xjvf "$TARBALL" || die "Failed to extract tarball"
 dir=$(sed 's/.tar.bz2//' < <(basename "$TARBALL"))
 pushd "$dir"
 ./configure || die "Failed to configure tarball"
-sed -i 's/-std=c99//' Makefile
+sed -i "" 's/-std=c99//' Makefile
 make || die "Failed to build"
 hash=$(./minigrace --version | awk '/git revision/ { print $3 }')
 kgdir=../known-good/$(uname -s)-$(uname -m)/$hash

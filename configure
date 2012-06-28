@@ -76,7 +76,7 @@ then
     if [ -e minigrace.c ]
     then
         echo "Patching minigrace.c for static build..."
-        sed -i 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
+        sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
 fi
 
