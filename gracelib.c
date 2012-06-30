@@ -941,6 +941,8 @@ Object ConcatString_Equals(Object self, int nparts, int *argcv,
         return alloc_Boolean(1);
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     struct ConcatStringObject *other = (struct ConcatStringObject*)args[0];
+    if (other->class != String && other->class != ConcatString)
+        return alloc_Boolean(0);
     if (sself->size != other->size)
         return alloc_Boolean(0);
     if (sself->blen != other->blen)
