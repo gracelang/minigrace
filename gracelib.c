@@ -2656,11 +2656,13 @@ struct MethodType *alloc_MethodType(int nparts, int *argcv) {
     struct MethodType *t = glmalloc(sizeof(struct MethodType));
     int size = 0;
     int i;
+    int *tmp = glmalloc(sizeof(int) * nparts);
     for (i = 0; i < nparts; i++) {
         size += argcv[i];
+        tmp[i] = argcv[i];
     }
     t->nparts = nparts;
-    t->argcv = argcv;
+    t->argcv = tmp;
     t->types = glmalloc(sizeof(ClassData) * size);
     t->names = glmalloc(sizeof(char *) * size);
     return t;
