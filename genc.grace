@@ -411,7 +411,6 @@ method compileblock(o) {
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out("((struct UserObject *){obj})->data[1] = {pat};")
-        out("((struct UserObject *){obj})->data[2] = {obj};")
     }
     o.register := obj
     inBlock := origInBlock

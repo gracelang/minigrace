@@ -1094,8 +1094,8 @@ Object alloc_ConcatString(Object left, Object right) {
         ConcatString__FillBuffer(right, buf + lefts->blen, len - lefts->blen);
         return alloc_String(buf);
     }
-    Object o = alloc_obj(sizeof(int) * 5 + sizeof(char*) * 1 +
-            sizeof(Object) * 2, ConcatString);
+    Object o = alloc_obj(sizeof(struct ConcatStringObject)
+            - sizeof(struct Object), ConcatString);
     struct ConcatStringObject *so = (struct ConcatStringObject*)o;
     so->left = left;
     so->right = right;
@@ -2546,8 +2546,8 @@ struct StackFrameObject *alloc_StackFrame(int size,
     if (StackFrame == NULL) {
         StackFrame = alloc_class2("StackFrame", 0, (void*)&StackFrame__mark);
     }
-    Object o = alloc_obj(sizeof(int) + sizeof(struct StackFrameObject *) +
-            size * sizeof(Object), StackFrame);
+    Object o = alloc_obj(sizeof(struct StackFrameObject) + sizeof(Object)*size
+            - sizeof(struct Object), StackFrame);
     struct StackFrameObject *s = (struct StackFrameObject *)o;
     s->size = size;
     s->parent = parent;
@@ -2583,8 +2583,8 @@ Object createclosure(int size, char *name) {
     if (ClosureEnv == NULL) {
         ClosureEnv = alloc_class2("ClosureEnv", 0, (void*)&ClosureEnv__mark);
     }
-    Object o = alloc_obj(sizeof(int) + 256 + sizeof(Object*) * size
-            + sizeof(Object), ClosureEnv);
+    Object o = alloc_obj(sizeof(struct ClosureEnvObject)
+            + sizeof(Object *) * size, ClosureEnv);
     struct ClosureEnvObject *oo = (struct ClosureEnvObject *)o;
     oo->size = size;
     oo->frame = NULL;
@@ -3142,7 +3142,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "match", &Block_match);
     add_Method(c, "pattern", &Block_pattern);
     struct BlockObject *o = (struct BlockObject*)(
-            alloc_obj(sizeof(jmp_buf*) + sizeof(Object) * 3, c));
+            alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
     o->super = NULL;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
@@ -3224,8 +3224,9 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         add_Method(c, "!=", &Object_NotEquals);
         add_Method(c, "/=", &Object_NotEquals);
     }
-    Object o = alloc_obj(sizeof(Object) * numFields + sizeof(jmp_buf *)
-            + sizeof(int) + sizeof(Object), c);
+    numFields++;
+    Object o = alloc_obj(sizeof(struct UserObject)
+            + sizeof(Object) * numFields - sizeof(struct Object), c);
     o->flags |= FLAG_USEROBJ;
     struct UserObject *uo = (struct UserObject *)o;
     int i;
