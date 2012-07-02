@@ -82,6 +82,8 @@
             req.open("GET", "./tests/" + testname + "_test.grace", false);
             req.send(null);
             if (req.status == 200) {
+                if (ace)
+                    editor.setValue(req.responseText);
                 document.getElementById("code_txt").value = req.responseText;
             }
             if (testname.indexOf("_fail") == -1) {
