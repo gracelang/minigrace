@@ -52,6 +52,32 @@ Object MirrorMethod_name(Object self, int nparams, int *argcv, Object *argv,
     return alloc_String(s->method->name);
 }
 
+Object MirrorMethod_partcount(Object self, int nparams, int *argcv,
+        Object *argv, int flags) {
+    struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
+    if (!s->method->type)
+        return alloc_Float64(-1);
+    return alloc_Float64(s->method->type->nparts);
+}
+
+Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
+        Object *argv, int flags) {
+    struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
+    int i;
+    if (!s->method->type)
+        return alloc_none();
+    gc_pause();
+    Object l = alloc_List();
+    int cargcv[] = {1};
+    Object carg;
+    for (i=0; i<s->method->type->nparts; i++) {
+        carg = alloc_Float64(s->method->type->argcv[i]);
+        callmethod(l, "push", 1, cargcv, &carg);
+    }
+    gc_unpause();
+    return l;
+}
+
 Object MirrorMethod_request(Object self, int nparams, int *argcv, Object *argv,
         int flags) {
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
@@ -80,10 +106,12 @@ Object MirrorMethod_request(Object self, int nparams, int *argcv, Object *argv,
 
 Object alloc_MirrorMethod(Method *method, Object obj) {
     if (MirrorMethodClass == NULL) {
-        MirrorMethodClass = alloc_class("MirrorMethod", 3);
+        MirrorMethodClass = alloc_class("MirrorMethod", 5);
         add_Method(MirrorMethodClass, "request", &MirrorMethod_request);
         add_Method(MirrorMethodClass, "name", &MirrorMethod_name);
         add_Method(MirrorMethodClass, "asString", &MirrorMethod_asString);
+        add_Method(MirrorMethodClass, "partcount", &MirrorMethod_partcount);
+        add_Method(MirrorMethodClass, "paramcounts", &MirrorMethod_paramcounts);
     }
     Object o = alloc_obj(sizeof(struct MirrorMethodObject)
             - sizeof(struct Object), MirrorMethodClass);
