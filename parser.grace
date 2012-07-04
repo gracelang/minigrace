@@ -1653,10 +1653,6 @@ method parse(toks) {
     linenum := 1
     next
     var oldlength := tokens.size + 0
-    if (tokens.size == 0) then {
-        // Single token is ignored otherwise
-        statement
-    }
     while {tokens.size > 0} do {
         methoddec
         inheritsdec
@@ -1684,5 +1680,6 @@ method parse(toks) {
         }
         oldlength := tokens.size + 0
     }
+    statement
     values
 }
