@@ -2354,6 +2354,8 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     int i, j;
     int k = 0;
     struct MethodType *t = m->type;
+    if (t == NULL || nparts == 0 || argcv == NULL || argv == NULL)
+        return 1;
     int partcv[] = {1};
     for (i = 0; i < nparts, i < t->nparts; i++) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
@@ -2407,7 +2409,7 @@ start:
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
-    if (m != NULL && m->type != NULL) {
+    if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
             die("Type error.");
     }
