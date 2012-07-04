@@ -3620,7 +3620,8 @@ Object minigrace_credits(Object self, int argc, int *argcv,
     char *w =
     "Minigrace contains code by:\n"
     " * Michael Homer\n"
-    " * Timothy Jones\n";
+    " * Timothy Jones\n"
+    " * Jan Larres\n";
     fprintf(stdout, "%s", w);
     return none;
 }
