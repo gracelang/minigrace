@@ -5,6 +5,11 @@ PLATFORM=$(uname)
 PREFIX=.
 LDFLAGS=
 UNICODE_LDFLAGS=
+OTHER_MODULES=
+
+other_modules=(
+    mirrors
+)
 
 ADVISE_END=
 advise() {
@@ -73,11 +78,20 @@ if [ "$STATIC" ]
 then
     UNICODE_MODULE=unicode.gcn
     STATIC_MODULES=unicode.gcn
+    for mod in ${other_modules[@]}
+    do
+        OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gcn)
+    done
     if [ -e minigrace.c ]
     then
         echo "Patching minigrace.c for static build..."
         sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
+else
+    for mod in ${other_modules[@]}
+    do
+        OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gso)
+    done
 fi
 
 echo -n "Locating linker... "
@@ -187,6 +201,7 @@ LDFLAGS = $LDFLAGS -lm
 UNICODE_LDFLAGS = $UNICODE_LDFLAGS
 UNICODE_MODULE = $UNICODE_MODULE
 STATIC_MODULES = $STATIC_MODULES
+OTHER_MODULES = ${OTHER_MODULES[@]}
 EOT
 
 if [ "$ADVISE_END" ]

@@ -28,6 +28,9 @@ gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
 	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
 
+mirrors.gso: mirrors.c
+	gcc -g $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
+
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
@@ -85,7 +88,7 @@ selftest: minigrace
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 	rm -rf selftest
 
-minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
+minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) $(OTHER_MODULES) gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 unicode.gco: unicode.c unicodedata.h
