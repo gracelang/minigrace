@@ -647,9 +647,7 @@ method compilemethod(o, selfobj, pos) {
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
         out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
-        if (haveTypedParams) then {
-            compilemethodtypes(litname, o)
-        }
+        compilemethodtypes(litname, o)
     } else {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
@@ -667,9 +665,7 @@ method compilemethod(o, selfobj, pos) {
         out("  struct UserObject *{uo} = (struct UserObject*){selfobj};")
         out("  {uo}->data[{pos}] = (Object)closure{myc};")
         out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
-        if (haveTypedParams) then {
-            compilemethodtypes(litname, o)
-        }
+        compilemethodtypes(litname, o)
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
