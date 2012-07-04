@@ -157,19 +157,12 @@ method parseargs {
 
 method log_verbose(s) {
     if (verbosityv >= 40) then {
-        io.error.write("minigrace")
+        var vtagw := ""
         if (false != vtagv) then {
-            io.error.write("[" ++ vtagv ++ "]")
+            vtagw := "[" ++ vtagv ++ "]"
         }
-        io.error.write(": ")
-        io.error.write(modnamev)
-        io.error.write(": ")
-        io.error.write(sys.cputime.asString)
-        io.error.write("/")
-        io.error.write(sys.elapsed.asString)
-        io.error.write(": ")
-        io.error.write(s)
-        io.error.write("\n")
+        io.error.write("minigrace{vtagw}: {modnamev}: {sys.cputime}/"
+            ++ "{sys.elapsed}: {s}\n")
     }
 }
 
