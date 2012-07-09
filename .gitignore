@@ -31,3 +31,6 @@ Makefile.conf
 c/configure
 java/*.grace
 .directory-environ
+stdin_minigrace
+java/grace/lib/StandardPrelude.java
+java/grace/lib/StandardPrelude.grace
