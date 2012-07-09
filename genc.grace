@@ -1321,6 +1321,8 @@ method compile(vl, of, mn, rm, bt) {
             nummethods := nummethods + 1
         } elseif (v.kind == "class") then {
             nummethods := nummethods + 1
+        } elseif (v.kind == "type") then {
+            nummethods := nummethods + 1
         }
     }
     outfile := of
