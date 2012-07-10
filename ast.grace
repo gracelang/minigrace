@@ -190,10 +190,10 @@ class blockNode.new(params', body') {
         for (self.body) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
         }
-        if (matchingPattern != false) then {
+        if (self.matchingPattern != false) then {
             s := s ++ "\n"
             s := s ++ spc ++ "Pattern:"
-            s := s ++ "\n  "++ spc ++ matchingPattern.pretty(depth+2)
+            s := s ++ "\n  "++ spc ++ self.matchingPattern.pretty(depth+2)
         }
         s
     }
@@ -207,7 +207,7 @@ class blockNode.new(params', body') {
             s := s ++ " "
             for (self.params.indices) do { i ->
                 var p := self.params[i]
-                if (matchingPattern != false) then {
+                if (self.matchingPattern != false) then {
                     s := s ++ "(" ++ p.toGrace(0) ++ ")"
                 } else {
                     s := s ++ p.toGrace(0)
@@ -254,8 +254,8 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
         }
-        if (false != elsecase) then {
-            s := s ++ "\n{spc}Else:\n{spc}  {elsecase.pretty(depth+2)}"
+        if (false != self.elsecase) then {
+            s := s ++ "\n{spc}Else:\n{spc}  {self.elsecase.pretty(depth+2)}"
         }
         s
     }
@@ -268,8 +268,8 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
         }
-        if (elsecase != false) then {
-            s := s ++ "\n" ++ spc ++ "    " ++ "else " ++ elsecase.toGrace(depth + 2)
+        if (self.elsecase != false) then {
+            s := s ++ "\n" ++ spc ++ "    " ++ "else " ++ self.elsecase.toGrace(depth + 2)
         }
         s
     }
@@ -423,11 +423,11 @@ class typeNode.new(name', methods') {
                       (self.value.substringFrom(1)to(13) == "Intersection<")
         if (!isanon && !isadhoc) then {
             s := "type {self.value}"
-            if (generics.size > 0) then {
+            if (self.generics.size > 0) then {
                 s := s ++ "<"
-                for (generics.indices) do { i ->
-                    s := s ++ generics[i].value
-                    if (i < generics.size) then {
+                for (self.generics.indices) do { i ->
+                    s := s ++ self.generics[i].value
+                    if (i < self.generics.size) then {
                         s := s ++ ", "
                     }
                 }
