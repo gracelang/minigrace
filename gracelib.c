@@ -3387,6 +3387,7 @@ void gracelib_argv(char **argv) {
     alloc_Float64(1);
     alloc_Boolean(0);
     Dynamic = alloc_Type("Dynamic", 0);
+    gc_root(Dynamic);
 }
 void setline(int l) {
     linenumber = l;
