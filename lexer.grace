@@ -289,6 +289,11 @@ def LexerClass = object {
                         done := true
                     } elseif (mode == "c") then {
                         done := true
+                    } elseif (mode == "p") then {
+                        if (accum.substringFrom(1)to(8) == "#pragma ") then {
+                            util.processExtension(
+                                accum.substringFrom(9)to(accum.size))
+                        }
                     } elseif (done) then {
                         //print(mode, accum, tokens)
                     } else {
@@ -408,7 +413,7 @@ def LexerClass = object {
                     }
                     if (atStart & (linePosition == 1)) then {
                         if (c == "#") then {
-                            mode := "c"
+                            mode := "p"
                             newmode := mode
                         } else {
                             atStart := false
@@ -416,7 +421,7 @@ def LexerClass = object {
                     }
                     if (instr | inBackticks) then {
 
-                    } elseif (mode /= "c") then {
+                    } elseif ((mode != "c") && (mode != "p")) then {
                         // Not in a comment, so look for a mode.
                         if ((c == " ") & (mode /= "d")) then {
                             newmode := "n"

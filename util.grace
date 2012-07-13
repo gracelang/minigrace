@@ -89,20 +89,7 @@ method parseargs {
                     sys.exit(0)
                 } elseif (arg.at(2) == "X") then {
                     var ext := arg.substringFrom(3)to(arg.size)
-                    var extn := ""
-                    var extv := true
-                    var seeneq := false
-                    for (ext) do {c->
-                        if (c == "=") then {
-                            seeneq := true
-                            extv := ""
-                        } elseif (!seeneq) then {
-                            extn := extn ++ c
-                        } else {
-                            extv := extv ++ c
-                        }
-                    }
-                    extensionsv.put(extn, extv)
+                    processExtension(ext)
                 } else {
                     io.error.write("minigrace: invalid argument {arg}.\n")
                     sys.exit(1)
@@ -242,6 +229,22 @@ method engine {
 }
 method extensions {
     extensionsv
+}
+method processExtension(ext) {
+    var extn := ""
+    var extv := true
+    var seeneq := false
+    for (ext) do {c->
+        if (c == "=") then {
+            seeneq := true
+            extv := ""
+        } elseif (!seeneq) then {
+            extn := extn ++ c
+        } else {
+            extv := extv ++ c
+        }
+    }
+    extensionsv.put(extn, extv)
 }
 method debug(s) {
 
