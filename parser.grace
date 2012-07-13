@@ -16,6 +16,7 @@ var statementToken
 var tokens := 0
 var values := []
 var auto_count := 0
+var don'tTakeBlock := false
 
 // Global object containing the current token
 var sym
@@ -156,12 +157,14 @@ method doannotation {
     }
     next
     def anns = collections.list.new
+    don'tTakeBlock := true
     expression
     while {accept("comma")} do {
         anns.push(values.pop)
         next
         expression
     }
+    don'tTakeBlock := false
     anns.push(values.pop)
     anns
 }
@@ -828,6 +831,8 @@ method callrest {
         expect("rparen")
         ln := linenum
         next
+    } elseif (don'tTakeBlock && {accept("lbrace")onLineOf(tok)}) then {
+        values.push(meth)
     } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
         | accept("lbrace")onLineOf(tok)
         | (accept("identifier")onLineOf(tok) & ((sym.value == "true")
@@ -1276,7 +1281,7 @@ method methoddec {
         var varargs := m.v
         var body := []
         var localMin
-        doannotation
+        def anns = doannotation
         if (accept("lbrace")) then {
             next
             localMin := minIndentLevel
@@ -1313,6 +1318,9 @@ method methoddec {
         var o := ast.methodNode.new(meth, signature, body, dtype)
         if (varargs) then {
             o.varargs := true
+        }
+        if (false != anns) then {
+            o.annotations.extend(anns)
         }
         values.push(o)
     }
