@@ -1061,6 +1061,7 @@ method resolveIdentifiers(node) {
         popScope
         tmp := ast.methodNode.new(node.value, tmp2, l,
             tmp4)
+        tmp.annotations.extend(node.annotations)
         tmp.varargs := node.varargs
         return tmp
     }
@@ -1296,7 +1297,9 @@ method resolveIdentifiers(node) {
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
-            return ast.varDecNode.new(node.name, tmp2, tmp4)
+            tmp := ast.varDecNode.new(node.name, tmp2, tmp4)
+            tmp.annotations.extend(node.annotations)
+            return tmp
         }
     }
     if (node.kind == "defdec") then {
@@ -1316,7 +1319,9 @@ method resolveIdentifiers(node) {
         }
         if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
             findName(node.name.value).dtype := tmp4
-            return ast.defDecNode.new(node.name, tmp2, tmp4)
+            tmp := ast.defDecNode.new(node.name, tmp2, tmp4)
+            tmp.annotations.extend(node.annotations)
+            return tmp
         }
     }
     if (node.kind == "return") then {
