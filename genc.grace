@@ -1029,6 +1029,11 @@ method compilecall(o, tailcall) {
             ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "self") & (o.value.value == "outer")}
+        ) then {
+        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
+            ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "self")}) then {
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1039,11 +1044,6 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
             ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "self") & (o.value.value == "outer")}
-        ) then {
-        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
         for (args) do { arg ->
