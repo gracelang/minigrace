@@ -985,7 +985,7 @@ method vardec {
             dotyperef
             dtype := values.pop
         }
-        doannotation
+        def anns = doannotation
         if (accept("bind")) then {
             next
             expression
@@ -995,6 +995,9 @@ method vardec {
             util.syntax_error("var declaration uses ':=', not '='")
         }
         var o := ast.varDecNode.new(name, val, dtype)
+        if (false != anns) then {
+            o.annotations.extend(anns)
+        }
         values.push(o)
     }
 }
