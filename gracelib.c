@@ -2300,7 +2300,7 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
     Object self = *selfp;
     Object realself = *realselfp;
     int i;
-    int callflags = 0;
+    int callflags = *cflags;
     Method *m = NULL;
     ClassData c = self->class;
     for (i=0; i < c->nummethods; i++) {
@@ -2375,8 +2375,8 @@ FILE *callgraph;
 int track_callgraph = 0;
 int callcount = 0;
 int tailcount = 0;
-Object callmethod3(Object self, const char *name,
-        int partc, int *argcv, Object *argv, int superdepth) {
+Object callmethod4(Object self, const char *name,
+        int partc, int *argcv, Object *argv, int superdepth, int callflags) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
     int frame = gc_frame_new();
     int istail = 0;
@@ -2393,7 +2393,6 @@ start:
     int slot = gc_frame_newslot(self);
     ClassData c = self->class;
     Object realself = self;
-    int callflags = 0;
     Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
     sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
             self->class->name, name, linenumber);
@@ -2458,12 +2457,16 @@ start:
             name, self->class->name);
     exit(1);
 }
+Object callmethod3(Object self, const char *name,
+        int partc, int *argcv, Object *argv, int superdepth) {
+    return callmethod4(self, name, partc, argcv, argv, superdepth, 0);
+}
 Object callmethod2(Object self, const char *name,
         int partc, int *argcv, Object *argv) {
     return callmethod3(self, name, partc, argcv, argv, 0);
 }
-Object callmethod(Object receiver, const char *name,
-        int nparts, int *nparamsv, Object *args) {
+Object callmethodflags(Object receiver, const char *name,
+        int nparts, int *nparamsv, Object *args, int callflags) {
     int i, j;
     int start_calldepth = calldepth;
     if (receiver->flags & FLAG_DEAD) {
@@ -2493,7 +2496,16 @@ Object callmethod(Object receiver, const char *name,
             n++;
         }
     }
-    return callmethod2(receiver, name, nparts, nparamsv, (Object*)args);
+    return callmethod4(receiver, name, nparts, nparamsv, (Object*)args,
+            0, callflags);
+}
+Object callmethod(Object receiver, const char *name,
+        int nparts, int *nparamsv, Object *args) {
+    return callmethodflags(receiver, name, nparts, nparamsv, args, 0);
+}
+Object callmethodself(Object receiver, const char *name,
+        int nparts, int *nparamsv, Object *args) {
+    return callmethodflags(receiver, name, nparts, nparamsv, args, CFLAG_SELF);
 }
 void enable_callgraph(char *filename) {
     callgraph = fopen(filename, "w");
