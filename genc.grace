@@ -215,10 +215,16 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
+    var flags := "MFLAG_DEF"
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
+            flags := "{flags} | MFLAG_CONFIDENTIAL"
+        }
+    }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
+    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
@@ -263,10 +269,16 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
+    var flags := "0"
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso {ann.value == "confidential"}) then {
+            flags := "{flags} | MFLAG_CONFIDENTIAL"
+        }
+    }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
+    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     nmw := escapestring2(nmw)
@@ -277,7 +289,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return none;");
     outprint("\}")
-    out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
+    out("  addmethodrealflags({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc}, {flags});")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -667,6 +679,11 @@ method compilemethod(o, selfobj, pos) {
         out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     }
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier") && {ann.value == "confidential"}) then {
+            out("  meth_{litname}->flags |= MFLAG_CONFIDENTIAL;");
+        }
+    }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
     partsUsed := origPartsUsed
@@ -1008,8 +1025,20 @@ method compilecall(o, tailcall) {
         for (o.with.indices) do { partnr ->
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
-        out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
-            ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1);")
+        out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
+            ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1, "
+            ++ "CFLAG_SELF);")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "self")}) then {
+        for (args) do { arg ->
+            out("  params[{i}] = {arg};")
+            i := i + 1
+        }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
+        out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
+            ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "self") & (o.value.value == "outer")}
         ) then {
