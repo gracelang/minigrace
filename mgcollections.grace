@@ -65,6 +65,9 @@ class list.new(*a) {
             }
         }
     }
+    method iterator {
+        iter
+    }
     method expand {
         def c = inner.size
         def n = c * 2
