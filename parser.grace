@@ -1761,6 +1761,7 @@ method statement {
 // corresponding to it.
 method parse(toks) {
     util.log_verbose("processing tokens.")
+    values := []
     if (util.extensions.contains("DefaultVisibility")) then {
         defaultDefVisibility := util.extensions.get("DefaultVisibility")
         defaultVarVisibility := util.extensions.get("DefaultVisibility")
