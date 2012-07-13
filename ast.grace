@@ -1,6 +1,9 @@
 var kwyj1 := 1
 var kwyj2 := 2
 import util
+import mgcollections
+
+def collections = mgcollections
 
 // This module contains pseudo-classes for all the AST nodes used
 // in the parser. The module predates the existence of classes in the
@@ -488,6 +491,7 @@ class methodNode.new(name', signature', body', dtype') {
     var selfclosure := false
     var register := ""
     def line = util.linenum
+    def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethod(self)) then {
             self.value.accept(visitor)
@@ -558,6 +562,11 @@ class methodNode.new(name', signature', body', dtype') {
         }
         if (self.dtype != false) then {
             s := s ++ " -> {self.dtype.toGrace(0)}"
+        }
+        if (self.annotations.size > 0) then {
+            s := s ++ " is "
+            s := s ++ self.annotations.reduce("", { a,b ->
+                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
         }
         s := s ++ " \{"
         for (self.body) do { mx ->
@@ -1114,6 +1123,7 @@ class defDecNode.new(name', val, dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitDefDec(self)) then {
             self.name.accept(visitor)
@@ -1152,6 +1162,11 @@ class defDecNode.new(name', val, dtype') {
         if (self.dtype.value != "Dynamic") then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
         }
+        if (self.annotations.size > 0) then {
+            s := s ++ " is "
+            s := s ++ self.annotations.reduce("", { a,b ->
+                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
+        }
         if (self.value != false) then {
             s := s ++ " = " ++ self.value.toGrace(depth)
         }
@@ -1165,6 +1180,7 @@ class varDecNode.new(name', val', dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
             self.name.accept(visitor)
@@ -1202,6 +1218,11 @@ class varDecNode.new(name', val', dtype') {
         var s := "var {self.name.toGrace(0)}"
         if (self.dtype.value != "Dynamic") then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
+        }
+        if (self.annotations.size > 0) then {
+            s := s ++ " is "
+            s := s ++ self.annotations.reduce("", { a,b ->
+                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
         }
         if (self.value != false) then {
             s := s ++ " := " ++ self.value.toGrace(depth)

@@ -2,6 +2,9 @@ import io
 import ast
 import util
 import subtype
+import mgcollections
+
+def collections = mgcollections
 
 var lastline := 0
 var linenum := 0
@@ -152,13 +155,15 @@ method doannotation {
         return false
     }
     next
+    def anns = collections.list.new
     expression
     while {accept("comma")} do {
-        values.pop
+        anns.push(values.pop)
         next
         expression
     }
-    values.pop
+    anns.push(values.pop)
+    anns
 }
 
 method dotypeterm {
@@ -944,7 +949,7 @@ method defdec {
             dotyperef
             dtype := values.pop
         }
-        doannotation
+        def anns = doannotation
         if (accept("op") & (sym.value == "=")) then {
             next
             expression
@@ -955,6 +960,9 @@ method defdec {
             util.syntax_error("def declaration requires value")
         }
         var o := ast.defDecNode.new(name, val, dtype)
+        if (false != anns) then {
+            o.annotations.extend(anns)
+        }
         values.push(o)
     }
 }

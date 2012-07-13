@@ -12,6 +12,7 @@ import genjava
 import genjs
 import buildinfo
 import subtype
+import mgcollections
 
 util.parseargs
 
