@@ -124,6 +124,7 @@ def BlockType = ast.typeNode.new("Block", [
 ])
 def outerMethod = ast.methodTypeNode.new("outer", [ast.signaturePart.new("outer")], DynamicType)
 var currentReturnType := false
+var initDone := false
 
 class Binding.new(kind') {
     var kind := kind'
@@ -1356,76 +1357,79 @@ preludeObj.put("for()do", Binding.new("method"))
 preludeObj.put("octets", Binding.new("method"))
 method typecheck(values) {
     util.log_verbose("typechecking.")
-    util.runOnNew {
-        if (!util.extensions.contains("NativePrelude")) then {
-            for (prelude._methods) do {mn->
-                preludeObj.put(mn, Binding.new("method"))
+    if (!initDone) then {
+        util.runOnNew {
+            if (!util.extensions.contains("NativePrelude")) then {
+                for (prelude._methods) do {mn->
+                    preludeObj.put(mn, Binding.new("method"))
+                }
             }
-        }
-    } else { }
-    var btmp
-    bindName("print", Binding.new("method"))
-    bindName("length", Binding.new("method"))
-    bindName("escapestring", Binding.new("method"))
-    def modtype = selftypes.last
-    modtype.methods.push(ast.methodTypeNode.new("print",
-        [ast.signaturePart.new("print", [TopOther])], NoneType))
-    modtype.methods.push(ast.methodTypeNode.new("length",
-        [ast.signaturePart.new("length", [TopOther])], NumberType))
-    modtype.methods.push(ast.methodTypeNode.new("escapestring",
-        [ast.signaturePart.new("escapestring", [StringOther])], StringType))
-    modtype.methods.push(ast.methodTypeNode.new("raise",
-        [ast.signaturePart.new("raise", [TopOther])], NoneType))
-    bindName("HashMap", Binding.new("def"))
-    bindName("MatchFailed", Binding.new("def"))
-    bindName("void", Binding.new("def"))
-    btmp := Binding.new("def")
-    btmp.dtype := NothingType
-    bindName("nothing", btmp)
-    bindName("true", Binding.new("def"))
-    bindName("false", Binding.new("def"))
-    bindName("...", Binding.new("def"))
-    bindName("self", Binding.new("def"))
-    bindName("super", Binding.new("def"))
-    bindName("raise", Binding.new("method"))
-    bindName("outer", Binding.new("method"))
-    bindName("platform", Binding.new("def"))
-    bindName("prelude", Binding.new("def"))
-    bindName("_prelude", Binding.new("def"))
-    btmp := Binding.new("type")
-    btmp.value := DynamicType
-    bindName("Dynamic", btmp)
-    btmp := Binding.new("type")
-    btmp.value := NumberType
-    bindName("Number", btmp)
-    btmp := Binding.new("type")
-    btmp.value := StringType
-    bindName("String", btmp)
-    btmp := Binding.new("type")
-    btmp.value := BooleanType
-    bindName("Boolean", btmp)
-    btmp := Binding.new("type")
-    btmp.value := ListType
-    bindName("List", btmp)
-    btmp := Binding.new("type")
-    btmp.value := VoidType
-    bindName("Void", btmp)
-    btmp := Binding.new("type")
-    btmp.value := NothingType
-    bindName("Nothing", btmp)
-    btmp := Binding.new("type")
-    bindName("None", btmp)
-    btmp := Binding.new("type")
-    btmp.value := BlockType
-    bindName("Block", btmp)
-    subtype.addType(DynamicType)
-    subtype.addType(NumberType)
-    subtype.addType(StringType)
-    subtype.addType(BooleanType)
-    subtype.addType(ListType)
-    subtype.addType(VoidType)
-    subtype.addType(NoneType)
-    subtype.addType(NothingType)
-    subtype.addType(BlockType)
+        } else { }
+        var btmp
+        bindName("print", Binding.new("method"))
+        bindName("length", Binding.new("method"))
+        bindName("escapestring", Binding.new("method"))
+        def modtype = selftypes.last
+        modtype.methods.push(ast.methodTypeNode.new("print",
+            [ast.signaturePart.new("print", [TopOther])], NoneType))
+        modtype.methods.push(ast.methodTypeNode.new("length",
+            [ast.signaturePart.new("length", [TopOther])], NumberType))
+        modtype.methods.push(ast.methodTypeNode.new("escapestring",
+            [ast.signaturePart.new("escapestring", [StringOther])], StringType))
+        modtype.methods.push(ast.methodTypeNode.new("raise",
+            [ast.signaturePart.new("raise", [TopOther])], NoneType))
+        bindName("HashMap", Binding.new("def"))
+        bindName("MatchFailed", Binding.new("def"))
+        bindName("void", Binding.new("def"))
+        btmp := Binding.new("def")
+        btmp.dtype := NothingType
+        bindName("nothing", btmp)
+        bindName("true", Binding.new("def"))
+        bindName("false", Binding.new("def"))
+        bindName("...", Binding.new("def"))
+        bindName("self", Binding.new("def"))
+        bindName("super", Binding.new("def"))
+        bindName("raise", Binding.new("method"))
+        bindName("outer", Binding.new("method"))
+        bindName("platform", Binding.new("def"))
+        bindName("prelude", Binding.new("def"))
+        bindName("_prelude", Binding.new("def"))
+        btmp := Binding.new("type")
+        btmp.value := DynamicType
+        bindName("Dynamic", btmp)
+        btmp := Binding.new("type")
+        btmp.value := NumberType
+        bindName("Number", btmp)
+        btmp := Binding.new("type")
+        btmp.value := StringType
+        bindName("String", btmp)
+        btmp := Binding.new("type")
+        btmp.value := BooleanType
+        bindName("Boolean", btmp)
+        btmp := Binding.new("type")
+        btmp.value := ListType
+        bindName("List", btmp)
+        btmp := Binding.new("type")
+        btmp.value := VoidType
+        bindName("Void", btmp)
+        btmp := Binding.new("type")
+        btmp.value := NothingType
+        bindName("Nothing", btmp)
+        btmp := Binding.new("type")
+        bindName("None", btmp)
+        btmp := Binding.new("type")
+        btmp.value := BlockType
+        bindName("Block", btmp)
+        subtype.addType(DynamicType)
+        subtype.addType(NumberType)
+        subtype.addType(StringType)
+        subtype.addType(BooleanType)
+        subtype.addType(ListType)
+        subtype.addType(VoidType)
+        subtype.addType(NoneType)
+        subtype.addType(NothingType)
+        subtype.addType(BlockType)
+        initDone := true
+    }
     resolveIdentifiersList(values)
 }
