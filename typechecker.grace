@@ -1232,11 +1232,22 @@ method resolveIdentifiers(node) {
 }
 
 method resolveIdentifiersList(lst)withBlock(bk) {
+    pushScope
+    var ret := resolveIdentifiersListReal(lst)withBlock(bk)
+    popScope
+    ret
+}
+method resolveIdentifiersList(lst)withScope(sc) {
+    scopes.push(sc)
+    var ret := resolveIdentifiersListReal(lst)withBlock { }
+    popScope
+    ret
+}
+method resolveIdentifiersListReal(lst)withBlock(bk) {
     var nl := []
     var isobj := false
     var tpb
     var tmp := false
-    pushScope
     bk.apply
     if (scopes.last.contains("___is_object")) then {
         isobj := true
@@ -1345,7 +1356,6 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         expressionType(tmp)
         nl.push(tmp)
     }
-    popScope
     nl
 }
 method resolveIdentifiersList(lst) {
@@ -1355,7 +1365,7 @@ method resolveIdentifiersList(lst) {
 preludeObj.put("while()do", Binding.new("method"))
 preludeObj.put("for()do", Binding.new("method"))
 preludeObj.put("octets", Binding.new("method"))
-method typecheck(values) {
+method typecheck(values, *sc) {
     util.log_verbose("typechecking.")
     if (!initDone) then {
         util.runOnNew {
@@ -1431,5 +1441,9 @@ method typecheck(values) {
         subtype.addType(BlockType)
         initDone := true
     }
-    resolveIdentifiersList(values)
+    if (sc.size > 0) then {
+        resolveIdentifiersList(values)withScope(sc[1])
+    } else {
+        resolveIdentifiersList(values)
+    }
 }
