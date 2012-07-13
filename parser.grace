@@ -147,6 +147,20 @@ method pushidentifier {
     next
 }
 
+method doannotation {
+    if ((!accept("keyword")).orElse {sym.value != "is"}) then {
+        return false
+    }
+    next
+    expression
+    while {accept("comma")} do {
+        values.pop
+        next
+        expression
+    }
+    values.pop
+}
+
 method dotypeterm {
     if (accept("identifier")) then {
         pushidentifier
@@ -650,7 +664,8 @@ method expressionrest {
         var allarith := true // Consists only of arithmetic operators
         var opcount := 0
         var opdtype := "" // The single operator being used in this expression
-        while {accept("op")onLineOfLastOr(statementToken)} do {
+        while {accept("op")onLineOfLastOr(statementToken).andAlso
+                {sym.value != "="}} do {
             opcount := opcount + 1
             o := sym.value
             next
@@ -664,9 +679,6 @@ method expressionrest {
                 // entirely arithmetic, raise a syntax error.
                 util.syntax_error("mixed operators without parentheses: "
                     ++ opdtype ++ " and " ++ o)
-            }
-            if (o == "=") then {
-                util.syntax_error("bare '=' outside of def declaration")
             }
             opdtype := o
             while {(ops.size > 0) & (prec <= toprec(ops))} do {
@@ -932,6 +944,7 @@ method defdec {
             dotyperef
             dtype := values.pop
         }
+        doannotation
         if (accept("op") & (sym.value == "=")) then {
             next
             expression
@@ -959,6 +972,7 @@ method vardec {
             dotyperef
             dtype := values.pop
         }
+        doannotation
         if (accept("bind")) then {
             next
             expression
@@ -1254,6 +1268,7 @@ method methoddec {
         var varargs := m.v
         var body := []
         var localMin
+        doannotation
         if (accept("lbrace")) then {
             next
             localMin := minIndentLevel
