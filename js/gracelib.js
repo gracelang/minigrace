@@ -981,6 +981,20 @@ function gracecode_util() {
         },
         "extensions": function(argcv) {
             return extensionsMap;
+        },
+        "processExtension": function(argcv, ext) {
+            var extn;
+            var extv;
+            ext = ext._value;
+            if (ext.indexOf("=") >= 0) {
+                var tmp = ext.split("=");
+                extn = new GraceString(tmp[0]);
+                extv = new GraceString(tmp[1]);
+            } else {
+                extn = new GraceString(ext);
+                extv = new GraceBoolean(true);
+            }
+            callmethod(extensionsMap, "put", [2], extn, extv);
         }
     };
     this._linenum = new GraceNum(1);
