@@ -1006,10 +1006,12 @@ function checkmethodcall(func, methname, obj, args) {
 }
 var callStack = [];
 var overrideReceiver = null;
+var onSelf = false;
 function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
     var args = Array.prototype.slice.call(arguments, 1);
     args.splice(0, 0, superDepth.superobj);
+    onSelf = true;
     return callmethod.apply(null, args);
 }
 function callmethod(obj, methname, argcv) {
@@ -1037,6 +1039,13 @@ function callmethod(obj, methname, argcv) {
         }
         throw "No such method '" + methname + "'";
     }
+    if (meth.confidential && !onSelf) {
+        stderr_txt.value += "Requested confidential method '" + methname + "' on " + obj.className + " from outside at line " + lineNumber + ".\n";
+        for (var i=callStack.length; i>0; i--)
+            stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
+        throw "Confidential method requested from outside";
+    }
+    onSelf = false;
     if (overrideReceiver != null) {
         obj = overrideReceiver;
         overrideReceiver = null;

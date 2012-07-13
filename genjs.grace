@@ -107,6 +107,12 @@ method compileobjdefdec(o, selfr, pos) {
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
     out("  reader_{modname}_{nmi}{myc}.def = true;")
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "confidential"}) then {
+            out("  reader_{modname}_{nmi}{myc}.confidential = true;")
+        }
+    }
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
 }
@@ -131,6 +137,13 @@ method compileobjvardec(o, selfr, pos) {
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "confidential"}) then {
+            out("  reader_{modname}_{nmi}{myc}.confidential = true;")
+            out("  writer_{modname}_{nmi}{myc}.confidential = true;")
+        }
+    }
 }
 method compileclass(o) {
     var signature := o.signature
@@ -340,6 +353,12 @@ method compilemethod(o, selfobj) {
     declaredvars := olddeclaredvars
     if (haveTypedParams) then {
         compilemethodtypes("func{myc}", o)
+    }
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "confidential"}) then {
+            out("func{myc}.confidential = true;")
+        }
     }
     out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
 }
@@ -568,6 +587,23 @@ method compilecall(o) {
         ) then {
         out("  var call{auto_count} = callmethod(superDepth, "
             ++ "\"outer\", [0]);")
+    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        & (o.value.in.value == "self")}) then {
+        var call := "  var call" ++ auto_count ++ " = callmethod(this"
+            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+        for (o.with.indices) do { partnr ->
+            call := call ++ o.with[partnr].args.size
+            if (partnr < o.with.size) then {
+                call := call ++ ", "
+            }
+        }
+        call := call ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out("onSelf = true;");
+        out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         & (o.value.in.value == "prelude")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
