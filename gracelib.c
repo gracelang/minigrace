@@ -2408,6 +2408,9 @@ start:
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
+    if (m->flags & MFLAG_CONFIDENTIAL && !(callflags & CFLAG_SELF)) {
+        gracedie("requested confidential method from outside.");
+    }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
             die("Type error.");

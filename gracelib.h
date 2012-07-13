@@ -20,8 +20,11 @@ typedef struct Method {
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
 #define MFLAG_DEF 8
+#define MFLAG_CONFIDENTIAL 16
 
 #define OFLAG_MUTABLE 64
+
+#define CFLAG_SELF 128
 
 struct ClassData {
     int32_t flags;
@@ -62,6 +65,8 @@ Object tailcall(Object, const char *, int, int *, Object *, int);
 Object callmethod3(Object, const char *, int, int *, Object *, int);
 Object callmethod(Object receiver, const char *name,
         int nparts, int *nparams, Object *args);
+Object callmethodflags(Object receiver, const char *name,
+        int nparts, int *nparams, Object *args, int callflags);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
