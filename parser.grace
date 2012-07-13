@@ -17,6 +17,9 @@ var tokens := 0
 var values := []
 var auto_count := 0
 var don'tTakeBlock := false
+var defaultDefVisibility := "public"
+var defaultVarVisibility := "public"
+var defaultMethodVisibility := "public"
 
 // Global object containing the current token
 var sym
@@ -967,6 +970,11 @@ method defdec {
         var o := ast.defDecNode.new(name, val, dtype)
         if (false != anns) then {
             o.annotations.extend(anns)
+        } else {
+            if (defaultDefVisibility == "confidential") then {
+                o.annotations.push(ast.identifierNode.new("confidential",
+                    false))
+            }
         }
         values.push(o)
     }
@@ -997,6 +1005,11 @@ method vardec {
         var o := ast.varDecNode.new(name, val, dtype)
         if (false != anns) then {
             o.annotations.extend(anns)
+        } else {
+            if (defaultVarVisibility == "confidential") then {
+                o.annotations.push(ast.identifierNode.new("confidential",
+                    false))
+            }
         }
         values.push(o)
     }
@@ -1324,6 +1337,11 @@ method methoddec {
         }
         if (false != anns) then {
             o.annotations.extend(anns)
+        } else {
+            if (defaultMethodVisibility == "confidential") then {
+                o.annotations.push(ast.identifierNode.new("confidential",
+                    false))
+            }
         }
         values.push(o)
     }
@@ -1673,6 +1691,11 @@ method statement {
 // corresponding to it.
 method parse(toks) {
     util.log_verbose("processing tokens.")
+    if (util.extensions.contains("DefaultVisibility")) then {
+        defaultDefVisibility := util.extensions.get("DefaultVisibility")
+        defaultVarVisibility := util.extensions.get("DefaultVisibility")
+        defaultMethodVisibility := util.extensions.get("DefaultVisibility")
+    }
     var otoks := toks
     if (toks.size == 0) then {
         return toks
