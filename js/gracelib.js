@@ -1246,7 +1246,7 @@ Grace_prelude.methods["_methods"] = function() {
     return l;
 }
 var PrimitiveArrayClass = new GraceObject();
-PrimitiveArrayClass.methods["new"] = function(n) {
+PrimitiveArrayClass.methods["new"] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
 };
 Grace_prelude.methods["PrimitiveArray"] = function() { return PrimitiveArrayClass; };
