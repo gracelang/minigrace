@@ -369,7 +369,7 @@ method compileobject(o, outerRef) {
         out("  {selfr}->class->name = \"{o.classname}\";")
         out("\}")
     }
-    if (o.superclass /= false) then {
+    if (o.superclass != false) then {
         superobj := compilenode(o.superclass)
         out("  setsuperobj({selfr}, {superobj});")
     }
@@ -647,7 +647,7 @@ method compilemethod(o, selfobj, pos) {
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     for (closurevars) do { cv ->
-        if (cv /= "self") then {
+        if (cv != "self") then {
             if ((usedvars.contains(cv)).not) then {
                 usedvars.push(cv)
             }
@@ -1164,7 +1164,7 @@ method compilenum(o) {
 }
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
-    if (linenum /= o.line) then {
+    if (linenum != o.line) then {
         linenum := o.line
         out("// Begin line " ++ linenum)
         out("  setline({linenum});")
@@ -1400,7 +1400,7 @@ method compile(vl, of, mn, rm, bt) {
                     if (io.exists(nm ++ ".grace")) then {
                         ext := ".grace"
                     }
-                    if (ext /= false) then {
+                    if (ext != false) then {
                         cmd := argv.first ++ " --target c --make " ++ nm ++ ext
                         cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
                         if (util.verbosity > 30) then {

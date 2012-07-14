@@ -117,7 +117,7 @@ method expectConsume(ablock) {
 method ifConsume(ablock)then(tblock) {
     var sz := tokens.size
     ablock.apply
-    if (tokens.size /= sz) then {
+    if (tokens.size != sz) then {
         tblock.apply
     }
 }
@@ -682,10 +682,10 @@ method expressionrest {
             o := sym.value
             next
             prec := oprec(o)
-            if ((o /= "*") & (o /= "/") & (o /= "+") & (o /= "-")) then {
+            if ((o != "*") & (o != "/") & (o != "+") & (o != "-")) then {
                 allarith := false
             }
-            if ((opdtype /= "") & (opdtype /= o) & (allarith.not)) then {
+            if ((opdtype != "") & (opdtype != o) & (allarith.not)) then {
                 // If: this is not the first operator, it is not the same
                 // as the last operator, and the expression has not been
                 // entirely arithmetic, raise a syntax error.
@@ -1112,7 +1112,7 @@ method doobject {
         next
         var rbody := []
         var n := values.pop
-        while {n.kind /= "lbrace"} do {
+        while {n.kind != "lbrace"} do {
             rbody.push(n)
             n := values.pop
         }
@@ -1266,7 +1266,7 @@ method doclassOld {
             next
             var rbody := []
             var n := values.pop
-            while {n.kind /= "lbrace"} do {
+            while {n.kind != "lbrace"} do {
                 rbody.push(n)
                 n := values.pop
             }
@@ -1313,7 +1313,7 @@ method methoddec {
             })
             statement
             var s := values.pop
-            while {s.kind /= "lbrace"} do {
+            while {s.kind != "lbrace"} do {
                 // The body is a sequence of statements, and
                 // the method ends when no further statement
                 // is found.
@@ -1577,7 +1577,7 @@ method dotype {
             p := p.value
         }
         expect("op")
-        if (sym.value /= "=") then {
+        if (sym.value != "=") then {
             util.syntax_error("type declarations require =.")
         }
         next
@@ -1617,7 +1617,7 @@ method checkIndent {
         | (sym.kind == "rsquare")) then {
         // pass
     } elseif (sym.indent < minIndentLevel) then {
-        if ((sym.linePos - 1) /= minIndentLevel) then {
+        if ((sym.linePos - 1) != minIndentLevel) then {
             util.syntax_error("block and indentation inconsistent "
                 ++ "for token " ++ sym.kind ++ ": " ++ sym.value ++ "; "
                 ++ "indentation is " ++ sym.indent ++ ", must be at least "
@@ -1664,7 +1664,7 @@ method statement {
             var val := values.pop
             var o := ast.bindNode.new(dest, val)
             if (dest.kind == "call") then {
-                if (dest.value.kind /= "member") then {
+                if (dest.value.kind != "member") then {
                     util.syntax_error("assignment to method call")
                 }
             }

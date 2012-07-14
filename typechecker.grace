@@ -31,7 +31,6 @@ def NumberType = ast.typeNode.new("Number", [
     ast.methodTypeNode.new("%", [ast.signaturePart.new("%", [NumberOther])], NumberIdentifier),
     ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], DynamicIdentifier),
     ast.methodTypeNode.new("<", [ast.signaturePart.new("<", [NumberOther])], BooleanIdentifier),
     ast.methodTypeNode.new("<=", [ast.signaturePart.new("<=", [NumberOther])], BooleanIdentifier),
@@ -52,7 +51,6 @@ def StringType = ast.typeNode.new("String", [
     ast.methodTypeNode.new("[]", [ast.signaturePart.new("[]", [NumberOther])], StringIdentifier),
     ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
     ast.methodTypeNode.new("substringFrom()to",
         [ast.signaturePart.new("substringFrom", [NumberOther]),
@@ -73,7 +71,6 @@ def BooleanType = ast.typeNode.new("Boolean", [
     ast.methodTypeNode.new("||", [ast.signaturePart.new("||", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("prefix!", [ast.signaturePart.new("prefix!")], BooleanIdentifier),
     ast.methodTypeNode.new("not", [ast.signaturePart.new("not")], BooleanIdentifier),
     ast.methodTypeNode.new("ifTrue", [ast.signaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
@@ -89,7 +86,6 @@ def ListType = ast.typeNode.new("List", [
         ast.signaturePart.new("put", [TopOther])], TopOther),
     ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
-    ast.methodTypeNode.new("/=", [ast.signaturePart.new("/=", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("contains", [ast.signaturePart.new("contains", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("iter", [ast.signaturePart.new("iter")], DynamicIdentifier),
     ast.methodTypeNode.new("push", [ast.signaturePart.new("push", [TopOther])], TopOther),
@@ -233,7 +229,7 @@ method expressionType(expr) {
         if ((expr.value == "true") | (expr.value == "false")) then {
             return BooleanType
         }
-        if (expr.dtype /= false) then {
+        if (expr.dtype != false) then {
             if (expr.dtype.kind == "type") then {
                 if (expr.dtype.generics.size > 0) then {
                     var gitype := findType(expr.dtype)
@@ -319,7 +315,7 @@ method expressionType(expr) {
         if (memfound.not) then {
             util.type_error("no such method '{memname}' in {memreceivertype.value}")
         }
-        if (memmeth.signature.first.params.size /= 0) then {
+        if (memmeth.signature.first.params.size != 0) then {
             util.type_error("method '{memname}' in {memreceivertype.value} "
                 ++ "requires {memmeth.signature.first.params.size} arguments, not 0")
         }
@@ -332,7 +328,7 @@ method expressionType(expr) {
     }
     if (expr.kind == "call") then {
         def callmem = expr.value
-        if (callmem.kind /= "member") then {
+        if (callmem.kind != "member") then {
             return DynamicType
         }
         def callname = callmem.value
@@ -392,7 +388,7 @@ method expressionType(expr) {
     if (expr.kind == "object") then {
         def objectmeths = []
         def objecttp = ast.typeNode.new("<Object_{expr.line}>", objectmeths)
-        if (expr.superclass /= false) then {
+        if (expr.superclass != false) then {
             def supertype = expressionType(expr.superclass)
             for (supertype.methods) do {e->
                 objectmeths.push(e)
@@ -510,7 +506,7 @@ method betaReduceType(tp, typevar, concrete) {
         } elseif (tmprt.value.substringFrom(1)to(11) == "InstanceOf<") then {
             def ortype = findType(tmprt)
             def tryrrep = betaReduceType(ortype, typevar, concrete)
-            if (ortype /= tryrrep) then {
+            if (ortype != tryrrep) then {
                 tmprt := tryrrep
                 changed := true
             }
@@ -574,7 +570,7 @@ method findType(tp) {
         def tpnm = tp.value
         def tpbd = findName(tpnm)
         var gtp := tpbd.value
-        if (gtp /= false) then {
+        if (gtp != false) then {
             if (gtp.generics.size > 0) then {
                 def gdyns = []
                 for (gtp.generics) do {gdt->
@@ -614,7 +610,7 @@ method findType(tp) {
     return DynamicType
 }
 method resolveIdentifier(node) {
-    if (node.kind /= "identifier") then {
+    if (node.kind != "identifier") then {
         return node
     }
     var nm := node.value
@@ -631,13 +627,13 @@ method resolveIdentifier(node) {
     var b := findName(nm)
     if (b.kind == "var") then {
         def vtp = findType(b.dtype)
-        if (node.dtype /= vtp) then {
+        if (node.dtype != vtp) then {
             node.dtype := vtp
         }
         return node
     } elseif (b.kind == "def") then {
         def dtp = findType(b.dtype)
-        if (node.dtype /= dtp) then {
+        if (node.dtype != dtp) then {
             node.dtype := dtp
         }
         return node
@@ -817,7 +813,7 @@ method rewritematchblockterm(param, body) {
 
 method rewritematchblock(o) {
     var params := o.params
-    if (params.size /= 1) then {
+    if (params.size != 1) then {
         def skipListBody = resolveIdentifiersList(o.body)
         return ast.blockNode.new(o.params, skipListBody)
     }
@@ -870,7 +866,7 @@ method rewritematchblock(o) {
                     [ast.identifierNode.new("MatchFailed", false)]
                     )
                 ]
-    } elseif (fst.kind /= "identifier") then {
+    } elseif (fst.kind != "identifier") then {
         auto_count := auto_count + 1
         pat := fst
         params := [newname]
@@ -887,7 +883,7 @@ method rewritematchblock(o) {
                     [ast.identifierNode.new("MatchFailed", false)]
                     )
                 ]
-    } elseif (fst.dtype /= false) then {
+    } elseif (fst.dtype != false) then {
         pat := fst.dtype
         tmpp := fst
         if (pat.kind == "call") then {
@@ -1004,7 +1000,7 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "array") then {
         tmp := resolveIdentifiersList(node.value)
-        if (node.value /= tmp) then {
+        if (node.value != tmp) then {
             return ast.arrayNode.new(tmp)
         }
     }
@@ -1172,10 +1168,10 @@ method resolveIdentifiers(node) {
                     ++ " to var of type "
                     ++ subtype.nicename(findType(tmp.dtype)))
             }
-        } elseif ((tmp.kind == "call") & (node.kind /= "call")) then {
+        } elseif ((tmp.kind == "call") & (node.kind != "call")) then {
             tmp := tmp.value
         }
-        if ((tmp /= node.dest) | (tmp2 /= node.value)) then {
+        if ((tmp != node.dest) | (tmp2 != node.value)) then {
             return ast.bindNode.new(tmp, tmp2)
         }
     }
@@ -1234,7 +1230,7 @@ method resolveIdentifiers(node) {
                     tmp4 := tmp3
                 }
             }
-            if (tmp4 /= false) then {
+            if (tmp4 != false) then {
                 tmp3 := ast.typeNode.new(node.value, tmp4)
                 for (tmp2.unionTypes) do {ut->
                     tmp3.unionTypes.push(ut)
@@ -1269,7 +1265,7 @@ method resolveIdentifiers(node) {
                     }
                 }
             }
-            if (tmp4 /= false) then {
+            if (tmp4 != false) then {
                 tmp3 := ast.typeNode.new(node.value, tmp4)
                 for (tmp2.intersectionTypes) do {ut->
                     tmp3.intersectionTypes.push(ut)
@@ -1286,7 +1282,7 @@ method resolveIdentifiers(node) {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         tmp4 := resolveIdentifiers(node.dtype)
-        if (tmp2 /= false) then {
+        if (tmp2 != false) then {
             tmp3 := findType(tmp4)
             tmp4 := tmp3
             if (conformsType(expressionType(tmp2))to(tmp3).not) then {
@@ -1296,7 +1292,7 @@ method resolveIdentifiers(node) {
                     ++ subtype.nicename(expressionType(tmp2)))
             }
         }
-        if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
+        if ((tmp2 != tmp) | (tmp4 != node.dtype)) then {
             findName(node.name.value).dtype := tmp4
             tmp := ast.varDecNode.new(node.name, tmp2, tmp4)
             tmp.annotations.extend(node.annotations)
@@ -1318,7 +1314,7 @@ method resolveIdentifiers(node) {
         if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
         }
-        if ((tmp2 /= tmp) | (tmp4 /= node.dtype)) then {
+        if ((tmp2 != tmp) | (tmp4 != node.dtype)) then {
             findName(node.name.value).dtype := tmp4
             tmp := ast.defDecNode.new(node.name, tmp2, tmp4)
             tmp.annotations.extend(node.annotations)
@@ -1337,7 +1333,7 @@ method resolveIdentifiers(node) {
                 ++ "{tmp3.value} from method of return type "
                 ++ currentReturnType.value)
         }
-        if (tmp2 /= tmp) then {
+        if (tmp2 != tmp) then {
             return ast.returnNode.new(tmp2)
         }
     }
@@ -1345,14 +1341,14 @@ method resolveIdentifiers(node) {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         tmp3 := resolveIdentifiers(node.index)
-        if ((tmp2 /= tmp) | (tmp3 /= node.index)) then {
+        if ((tmp2 != tmp) | (tmp3 != node.index)) then {
             return ast.indexNode.new(tmp2, tmp3)
         }
     }
     if (node.kind == "op") then {
         tmp := resolveIdentifiers(node.left)
         tmp2 := resolveIdentifiers(node.right)
-        if ((tmp /= node.left) | (tmp2 /= node.right)) then {
+        if ((tmp != node.left) | (tmp2 != node.right)) then {
             return ast.opNode.new(node.value, tmp, tmp2)
         }
     }
@@ -1360,22 +1356,22 @@ method resolveIdentifiers(node) {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.thenblock)
         tmp3 := resolveIdentifiersList(node.elseblock)
-        if ((tmp /= node.value) | (tmp2 /= node.thenblock)
-            | (tmp3 /= node.elseblock)) then {
+        if ((tmp != node.value) | (tmp2 != node.thenblock)
+            | (tmp3 != node.elseblock)) then {
             return ast.ifNode.new(tmp, tmp2, tmp3)
         }
     }
     if (node.kind == "while") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.body)
-        if ((tmp /= node.value) | (tmp2 /= node.body)) then {
+        if ((tmp != node.value) | (tmp2 != node.body)) then {
             return ast.whileNode.new(tmp, tmp2)
         }
     }
     if (node.kind == "for") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiers(node.body)
-        if ((tmp /= node.value) | (tmp2 /= node.body)) then {
+        if ((tmp != node.value) | (tmp2 != node.body)) then {
             return ast.forNode.new(tmp, tmp2)
         }
     }
@@ -1413,7 +1409,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
                 ast.methodTypeNode.new(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))
         } elseif (e.kind == "vardec") then {
             tpb := findType(e.dtype)
-            if ((tpb == false) || {tpb.kind /= "type"}) then {
+            if ((tpb == false) || {tpb.kind != "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("var")
@@ -1421,7 +1417,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             bindName(e.name.value, tmp)
         } elseif (e.kind == "defdec") then {
             tpb := findType(e.dtype)
-            if ((tpb == false) || {tpb.kind /= "type"}) then {
+            if ((tpb == false) || {tpb.kind != "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
             tmp := Binding.new("def")

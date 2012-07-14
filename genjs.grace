@@ -173,7 +173,7 @@ method compileobject(o, outerRef) {
             superobj := e.value
         }
     }
-    if (superobj /= false) then {
+    if (superobj != false) then {
         var sup := compilenode(superobj)
         out("  var {selfr} = Grace_allocObject();")
         out("  {selfr}.superobj = {sup};")
@@ -719,7 +719,7 @@ method compilereturn(o) {
 }
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
-    if (linenum /= o.line) then {
+    if (linenum != o.line) then {
         linenum := o.line
         out("  lineNumber = " ++ linenum);
     }
@@ -922,7 +922,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         if ("  lineNumber =" == o.substringFrom(0)to(14)) then {
             lineOut := o
         } else {
-            if (false /= lineOut) then {
+            if (false != lineOut) then {
                 outprint(lineOut)
                 lineOut := false
             }

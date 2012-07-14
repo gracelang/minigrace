@@ -185,7 +185,7 @@ def LexerClass = object {
             method modechange(tokens, mode, accum) {
                 var done := false
                 var tok := 0
-                if ((mode /= "n") | (accum.size > 0)) then {
+                if ((mode != "n") | (accum.size > 0)) then {
                     if (mode == "i") then {
                         tok := IdentifierToken.new(accum)
                         if ((accum == "object") | (accum == "method")
@@ -397,15 +397,15 @@ def LexerClass = object {
                     util.setPosition(lineNumber, linePosition)
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
-                    if ((unicode.isSeparator(ordval) & (ordval /= 32) &
-                        (ordval /= 8232)) | (ordval == 9)) then {
+                    if ((unicode.isSeparator(ordval) & (ordval != 32) &
+                        (ordval != 8232)) | (ordval == 9)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
                         util.syntax_error("illegal whitespace in input: "
                             ++ "{ordval}, {unicode.name(c)}")
                     }
-                    if (unicode.isControl(ordval) & (ordval /= 10)
-                        & (ordval /= 13)) then {
+                    if (unicode.isControl(ordval) & (ordval != 10)
+                        & (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
                         util.syntax_error("illegal control character in "
@@ -424,7 +424,7 @@ def LexerClass = object {
 
                     } elseif ((mode != "c") && (mode != "p")) then {
                         // Not in a comment, so look for a mode.
-                        if ((c == " ") & (mode /= "d")) then {
+                        if ((c == " ") & (mode != "d")) then {
                             newmode := "n"
                         }
                         if (c == "\"") then {
@@ -446,7 +446,7 @@ def LexerClass = object {
                             newmode := "i"
                         }
                         ct := ((ordval >= 48) & (ordval <=57))
-                        if (ct & (mode /= "i")) then {
+                        if (ct & (mode != "i")) then {
                             newmode := "m"
                         }
                         if ((ordval >= 97) & (ordval <=122) & (mode == "m")) then {
@@ -482,8 +482,8 @@ def LexerClass = object {
                             & (unicode.isSeparator(ordval).not)
                             & (unicode.isControl(ordval).not)) then {
                             if ((unicode.isSeparator(ordval).not)
-                                & (ordval /= 10) & (ordval /= 13)
-                                & (ordval /= 32)) then {
+                                & (ordval != 10) & (ordval != 13)
+                                & (ordval != 32)) then {
                                 util.syntax_error("unknown character in "
                                     ++ "input: #{ordval}"
                                     ++ " '{c}', {unicode.name(c)}")
@@ -519,7 +519,7 @@ def LexerClass = object {
                         inBackticks := false
                         backtickIdent := true
                     }
-                    if (newmode /= mode) then {
+                    if (newmode != mode) then {
                         // This character is the beginning of a different
                         // lexical mode - process the old one now.
                         modechange(tokens, mode, accum)

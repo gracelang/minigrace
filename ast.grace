@@ -318,7 +318,7 @@ class methodTypeNode.new(name', signature', rtype') {
         }
         var s := "MethodType\n"
         s := "{s}{spc}Name: {value}\n"
-        if (rtype /= false) then {
+        if (rtype != false) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.value}\n"
         }
         s := "{s}{spc}Signature:"
@@ -703,7 +703,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
             spc := spc ++ "  "
         }
         var s := "Class(" ++ self.name.pretty(0) ++ ")"
-        if (self.superclass /= false) then {
+        if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
         }
@@ -784,7 +784,7 @@ class objectNode.new(body, superclass') {
             spc := spc ++ "  "
         }
         var s := "Object"
-        if (self.superclass /= false) then {
+        if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
             s := s ++ "\n" ++ spc ++ "Body:"

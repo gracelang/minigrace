@@ -22,8 +22,8 @@ var recurse := true
 var jobs := 2
 
 method runOnNew(b)else(e) {
-    if ((__compilerRevision /= "cc2ded6be7e705924e6a331ed01d8c3240ceb688")
-        & (__compilerRevision /= false)) then {
+    if ((__compilerRevision != "cc2ded6be7e705924e6a331ed01d8c3240ceb688")
+        & (__compilerRevision != false)) then {
         b.apply
     } else {
         e.apply
@@ -267,7 +267,7 @@ method join(joiner, iterable) {
     def min = ind.first
     var s := ""
     for (ind) do {i->
-        if (i /= min) then {
+        if (i != min) then {
             s := s ++ joiner
         }
         s := s ++ iterable.at(i)
