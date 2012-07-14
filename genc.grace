@@ -1365,6 +1365,7 @@ method findPlatformUses(vals) {
                 {o.in.value == "platform"}) then {
                 checkimport(o.value)
             }
+            true
         }
     }
     for (vals) do {v->
