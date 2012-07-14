@@ -72,6 +72,15 @@ method compilearray(o) {
     o.register := "array" ++ myc
 }
 method compilemember(o) {
+    if ((o.in.kind == "identifier").andAlso {o.in.value == "platform"}) then {
+        out("// Import of " ++ o.value)
+        var con
+        var nm := escapestring(o.value)
+        var vf := varf(nm)
+        out("  var " ++ vf ++ " = do_import(\"{nm}\", gracecode_{nm});")
+        o.register := vf
+        return vf
+    }
     // Member in value position is actually a nullary method call.
     var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)])
     var r := compilenode(c)
