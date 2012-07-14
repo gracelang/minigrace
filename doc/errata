@@ -10,11 +10,10 @@ Some functionality is incomplete:
 - Runtime type checks use only method names and not any other type
   information. This applies both to pattern-matching and to gradual
   checks at method boundaries.
-- Variadic parameters and arguments may only appear after the final word
-  of a method name.
 - Numeric literals in non-decimal bases may only be integral.
 - Interpolated code inside string literals may not contain a right brace
   in any context.
+- Visibility annotations are checked only dynamically, not statically
 
 The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:
@@ -54,6 +53,11 @@ which are not part of the language and are subject to change:
   * success returns true if the process exited 0
   * terminated returns true if the process has terminated
 - if-then-elseif-elseif-...-else with the standard C-like syntax
+- Setting the default visibility of everything in a file with the
+  option -XDefaultVisibility=public|confidential. Three more specific
+  options are also available: DefaultDefVisibility,
+  DefaultVarVisibility, and DefaultMethodVisibility. All of these may
+  also be specified after "#pragma " at the top of a file.
 
 Certain environment variables affect the behaviour of running Grace
 programs:
