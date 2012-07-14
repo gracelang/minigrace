@@ -857,7 +857,7 @@ function gracecode_unicode() {
         isSymbolMathematical: function(argcv, ord) {
             var s = ord._value
             if ((s == 45) || (s == 43) || (s == 47) || (s == 42)
-                    || s == 62 || s == 60 || s == 61 || s == 126) {
+                    || s == 62 || s == 60 || s == 61 || s == 126 || s == 124) {
                 return new GraceBoolean(true);
             }
             return new GraceBoolean(false);
