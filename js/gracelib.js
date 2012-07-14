@@ -107,6 +107,12 @@ GraceString.prototype = {
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
+        "|": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&": function(argcv, o) {
+            return new GraceAndPattern(this, o);
+        },
     },
     className: "String"
 };
@@ -231,6 +237,12 @@ GraceNum.prototype = {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
+        },
+        "|": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&": function(argcv, o) {
+            return new GraceAndPattern(this, o);
         },
     },
     className: "Number",
@@ -479,6 +491,74 @@ GracePrimitiveArray.prototype = {
     className: "PrimitiveArray",
 };
 
+function GraceOrPattern(l, r) {
+    this._left = l;
+    this._right = r;
+}
+GraceOrPattern.prototype = {
+    methods: {
+        "==": function(argcv, other) {
+            if (this == other)
+                return new GraceBoolean(true);
+            return new GraceBoolean(false);
+        },
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "match": function(argcv, o) {
+            var m1 = callmethod(this._left, "match", [1], o);
+            if (Grace_isTrue(m1))
+                return new GraceSuccessfulMatch(o);
+            var m2 = callmethod(this._right, "match", [1], o);
+            if (Grace_isTrue(m2))
+                return new GraceSuccessfulMatch(o);
+            return new GraceFailedMatch(o);
+        },
+        "|": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+    },
+    className: "OrPattern",
+};
+function GraceAndPattern(l, r) {
+    this._left = l;
+    this._right = r;
+}
+GraceAndPattern.prototype = {
+    methods: {
+        "==": function(argcv, other) {
+            if (this == other)
+                return new GraceBoolean(true);
+            return new GraceBoolean(false);
+        },
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "match": function(argcv, o) {
+            var m1 = callmethod(this._left, "match", [1], o);
+            if (!Grace_isTrue(m1))
+                return m1;
+            var m2 = callmethod(this._right, "match", [1], o);
+            if (!Grace_isTrue(m1))
+                return m2;
+            var lb = callmethod(m1, "bindings", [0])._value;
+            var rb = callmethod(m2, "bindings", [0])._value;
+            return new GraceSuccessfulMatch(o, new GraceList(lb.concat(rb)));
+        },
+        "|": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&": function(argcv, o) {
+            return new GraceAndPattern(this, o);
+        },
+    },
+    className: "AndPattern",
+};
 function Grace_isTrue(o) {
     if (o._value === false)
         return false;
