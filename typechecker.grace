@@ -746,35 +746,44 @@ method rewritematchblock2(blk) {
             [ast.callWithPart.new("new", [ast.stringNode.new(arg.value)])]
         )
         if (arg.dtype != false) then {
-            if (arg.dtype.kind == "identifier") then {
-                pattern := ast.callNode.new(
-                    ast.memberNode.new("new",
-                        ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)
-                            )
-                        ),
-                    [ast.callWithPart.new("new", [varpat, arg.dtype])])
-            } else {
-                def tmp = rewritematchblockterm2(arg.dtype)
-                def bindingpat = ast.callNode.new(
-                    ast.memberNode.new("new",
-                        ast.memberNode.new("AndPattern",
-                            ast.identifierNode.new("prelude", false)
-                            )
-                        ),
-                    [ast.callWithPart.new("new", [varpat, tmp[1]])]
-                )
-                pattern := bindingpat
-                for (tmp[2]) do {p->
-                    newparams.push(p)
+            match (arg.dtype.kind)
+                case { "identifier" ->
+                    pattern := ast.callNode.new(
+                        ast.memberNode.new("new",
+                            ast.memberNode.new("AndPattern",
+                                ast.identifierNode.new("prelude", false)
+                                )
+                            ),
+                        [ast.callWithPart.new("new", [varpat, arg.dtype])])
+                } case { "op" ->
+                    pattern := ast.callNode.new(
+                        ast.memberNode.new("new",
+                            ast.memberNode.new("AndPattern",
+                                ast.identifierNode.new("prelude", false)
+                                )
+                            ),
+                        [ast.callWithPart.new("new", [varpat, arg.dtype])])
+                } case { _ ->
+                    def tmp = rewritematchblockterm2(arg.dtype)
+                    def bindingpat = ast.callNode.new(
+                        ast.memberNode.new("new",
+                            ast.memberNode.new("AndPattern",
+                                ast.identifierNode.new("prelude", false)
+                                )
+                            ),
+                        [ast.callWithPart.new("new", [varpat, tmp[1]])]
+                    )
+                    pattern := bindingpat
+                    for (tmp[2]) do {p->
+                        newparams.push(p)
+                    }
                 }
-            }
             pattern := resolveIdentifiers(pattern)
-        } else {
-            if (blk.matchingPattern == arg) then {
-                pattern := resolveIdentifiers(arg)
-                newparams := []
-            }
+        }
+    } else {
+        if (blk.matchingPattern == arg) then {
+            pattern := resolveIdentifiers(arg)
+            newparams := []
         }
     }
     def newblk = ast.blockNode.new(newparams, blk.body)
