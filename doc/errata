@@ -21,10 +21,13 @@ which are not part of the language and are subject to change:
   and methods size, push, pop, first, last, and indices.
 - Maps, created using HashMap.new, and supporting methods put(key,
   value), get(key), and contains(key).
-- Multiple modules with separate compilation. A file foo.grace defines a
-  module foo, which can be accessed in another module using "import
-  foo". Types do not cross module boundaries. All methods and top-level
-  var and def statements bind methods on the module object.
+- Multiple modules with separate compilation. A file foo.grace defines
+  a module foo, which can be accessed in another module using the
+  semi-standardised "platform.foo" or the deprecated "import foo".
+  Module files must be found in the current directory. Dynamic modules
+  (like the built-in "unicode") are found at runtime next to the
+  executable. Types do not cross module boundaries. All methods and
+  top-level var and def statements bind methods on the module object.
 - Methods defined in the prelude can always be accessed through the
   implicitly-bound "prelude" object.
 - Character codes for length-one strings can be obtained with the "ord"
