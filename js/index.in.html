@@ -21,6 +21,14 @@
             stderr_txt.value = "";
             stdout_txt.value = "";
             compileError = false;
+            extensionsMap = callmethod(var_HashMap, "new", [0])
+            var vis = document.getElementById('defaultVisibility').value;
+            if (vis == "methodspublic") {
+                callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString("confidential"));
+                callmethod(extensionsMap, "put", [2], new GraceString("DefaultMethodVisibility"), new GraceString("public"));
+            } else {
+                callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(vis));
+            }
             try {
                 gracecode_compiler.call(Grace_allocModule(":user:"));
             } catch (e) {
@@ -69,6 +77,7 @@
             }
         }
         function loadtest(testname) {
+            document.getElementById('defaultVisibility').selectedIndex = 1;
             var req = new XMLHttpRequest();
             req.open("GET", "./tests/" + testname + "_test.grace", false);
             req.send(null);
@@ -188,6 +197,11 @@
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
 <!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
+ </select>
+ <select id="defaultVisibility">
+  <option value="methodspublic">Methods public
+  <option value="public">Public
+  <option value="confidential">Confidential
  </select>
 <span style="font-size: smaller;">
 minigrace-js

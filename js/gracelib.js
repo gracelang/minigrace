@@ -1130,8 +1130,6 @@ function dbg(o) {
     stderr_txt.value += dbgp(o, 0) + "\n";
 }
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"),
-        new GraceString("public"));
 var var_nothing = new GraceObject();
 var_nothing.methods.asString = function() {return new GraceString("noSuchValue");}
 var var_noSuchValue = var_nothing;
