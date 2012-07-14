@@ -85,7 +85,7 @@ do
     NUM_TESTS=$((NUM_TESTS + 1))
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
-        if $GRACE --make --native "$tcase" > test-$$.log 2>&1
+        if $GRACE -XDefaultVisibility=public --make --native "$tcase" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
             $EXECUTOR"$execname" > test-$$.out

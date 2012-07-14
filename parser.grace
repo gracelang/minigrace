@@ -1,3 +1,4 @@
+#pragma DefaultVisibility=public
 import io
 import ast
 import util
@@ -17,8 +18,8 @@ var tokens := 0
 var values := []
 var auto_count := 0
 var don'tTakeBlock := false
-var defaultDefVisibility := "public"
-var defaultVarVisibility := "public"
+var defaultDefVisibility := "confidential"
+var defaultVarVisibility := "confidential"
 var defaultMethodVisibility := "public"
 
 // Global object containing the current token

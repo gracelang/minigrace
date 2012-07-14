@@ -1,3 +1,5 @@
+#pragma NativePrelude
+#pragma DefaultVisibility=public
 inherits _prelude
 def isStandardPrelude = true
 

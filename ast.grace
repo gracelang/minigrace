@@ -1,5 +1,4 @@
-var kwyj1 := 1
-var kwyj2 := 2
+#pragma DefaultVisibility=public
 import util
 import mgcollections
 

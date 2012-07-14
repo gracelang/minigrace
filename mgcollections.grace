@@ -1,3 +1,4 @@
+#pragma DefaultVisibility=public
 
 class list.new(*a) {
     var inner := PrimitiveArray.new(a.size * 2 + 1)

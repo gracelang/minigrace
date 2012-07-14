@@ -1,3 +1,4 @@
+#pragma DefaultVisibility=public
 
 import util
 
