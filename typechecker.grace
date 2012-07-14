@@ -450,7 +450,7 @@ method expressionType(expr) {
 method checkShadowing(name, kd) {
     if (haveBinding(name)) then {
         var namebinding := findName(name)
-        if ((kd == "method") & ((namebinding.kind == "var") |
+        if ((kd == "method") && ((namebinding.kind == "var") |
             (namebinding.kind == "method"))) then {
             // Pass; this is allowable.
         } elseif (util.extensions.contains("ShadowingWarnOnly")) then {
@@ -1168,7 +1168,7 @@ method resolveIdentifiers(node) {
                     ++ " to var of type "
                     ++ subtype.nicename(findType(tmp.dtype)))
             }
-        } elseif ((tmp.kind == "call") & (node.kind != "call")) then {
+        } elseif ((tmp.kind == "call") && (node.kind != "call")) then {
             tmp := tmp.value
         }
         if ((tmp != node.dest) | (tmp2 != node.value)) then {
@@ -1403,7 +1403,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         }
     }
     for (lst) do {e->
-        if (isobj & ((e.kind == "vardec") | (e.kind == "defdec"))) then {
+        if (isobj && ((e.kind == "vardec") | (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
             selftypes.last.methods.push(
                 ast.methodTypeNode.new(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))

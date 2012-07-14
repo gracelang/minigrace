@@ -143,7 +143,7 @@ method findType(typeid) {
 }
 
 method simpleCheckThat(a)mayBeSubtypeOf(b) {
-    if ((a == false) | (b == false)) then {
+    if ((a == false) || (b == false)) then {
         return true
     }
     matrix.get(stringifyType(a)).get(stringifyType(b))
@@ -160,7 +160,7 @@ method checkThat(a)mayBeSubtypeOf(b) {
     if (matrix.get(at).get(bt).not) then {
         return false
     }
-    if (a.nominal | b.nominal) then {
+    if (a.nominal || b.nominal) then {
         return (a == b)
     }
     if (a.unionTypes.size > 0) then {
@@ -238,14 +238,14 @@ method findSubtypes {
 }
 
 method conformsType(a)to(b) {
-    if (addType(a) | addType(b) | modified) then {
+    if (addType(a) || addType(b) || modified) then {
         findSubtypes
     }
     matrix.get(stringifyType(a)).get(stringifyType(b))
 }
 
 method nicename(t) {
-    if (addType(t) | modified) then {
+    if (addType(t) || modified) then {
         findSubtypes
     }
     def id = stringifyType(t)
@@ -256,7 +256,7 @@ method nicename(t) {
     def maybe = []
     for (types) do { t2 ->
         def d2 = stringifyType(t2)
-        if ((d2 != "Dynamic") & st.get(d2) & matrix.get(d2).get(id)) then {
+        if ((d2 != "Dynamic") && st.get(d2) && matrix.get(d2).get(id)) then {
             maybe.push(d2)
         }
     }

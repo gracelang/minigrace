@@ -23,7 +23,7 @@ var jobs := 2
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision != "cc2ded6be7e705924e6a331ed01d8c3240ceb688")
-        & (__compilerRevision != false)) then {
+        && (__compilerRevision != false)) then {
         b.apply
     } else {
         e.apply

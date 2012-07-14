@@ -338,12 +338,12 @@ class methodTypeNode.new(name', signature', rtype') {
         var s := ""
         for (self.signature) do { part ->
             s := s ++ part.name
-            if ((part.params.size > 0) | (part.vararg != false)) then {
+            if ((part.params.size > 0) || (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
                     var p := part.params[pnr]
                     s := s ++ p.toGrace(depth + 1)
-                    if ((pnr < part.params.size) | (part.vararg != false)) then {
+                    if ((pnr < part.params.size) || (part.vararg != false)) then {
                         s := s ++ ", "
                     }
                 }
@@ -419,9 +419,9 @@ class typeNode.new(name', methods') {
         }
         var s := ""
         def isanon = self.value.substringFrom(2)to(6) == "Anon_"
-        def isadhoc = (self.value.substringFrom(1)to(6) == "Union<") |
+        def isadhoc = (self.value.substringFrom(1)to(6) == "Union<") ||
                       (self.value.substringFrom(1)to(13) == "Intersection<")
-        if (!isanon & !isadhoc) then {
+        if (!isanon && !isadhoc) then {
             s := "type {self.value}"
             if (generics.size > 0) then {
                 s := s ++ "<"
@@ -435,7 +435,7 @@ class typeNode.new(name', methods') {
             }
             s := s ++ " = "
         }
-        if (!isadhoc & (self.unionTypes.size == 0) &
+        if (!isadhoc && (self.unionTypes.size == 0) &&
             (self.intersectionTypes.size == 0)) then {
             s := s ++ "\{"
         }
@@ -458,7 +458,7 @@ class typeNode.new(name', methods') {
         for (self.methods) do { mx ->
             s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
         }
-        if (!isadhoc & (self.unionTypes.size == 0) &
+        if (!isadhoc && (self.unionTypes.size == 0) &&
             (self.intersectionTypes.size == 0)) then {
             s := s ++ "\n" ++ spc ++ "\}"
         }
@@ -544,12 +544,12 @@ class methodNode.new(name', signature', body', dtype') {
         var s := "method "
         for (self.signature) do { part ->
             s := s ++ part.name
-            if ((part.params.size > 0) | (part.vararg != false)) then {
+            if ((part.params.size > 0) || (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
                     var p := part.params[pnr]
                     s := s ++ p.toGrace(depth + 1)
-                    if ((pnr < part.params.size) | (part.vararg != false)) then {
+                    if ((pnr < part.params.size) || (part.vararg != false)) then {
                         s := s ++ ", "
                     }
                 }
@@ -736,12 +736,12 @@ class classNode.new(name', signature', body', superclass', constructor') {
             s := s ++ "."
             for (self.signature) do { part ->
                 s := s ++ part.name
-                if ((part.params.size > 0) | (part.vararg != false)) then {
+                if ((part.params.size > 0) || (part.vararg != false)) then {
                     s := s ++ "("
                     for (part.params.indices) do { pnr ->
                         var p := part.params[pnr]
                         s := s ++ p.toGrace(depth + 1)
-                        if ((pnr < part.params.size) | (part.vararg != false)) then {
+                        if ((pnr < part.params.size) || (part.vararg != false)) then {
                             s := s ++ ", "
                         }
                     }
@@ -1029,7 +1029,7 @@ class opNode.new(op, l, r) {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
-        if ((self.left.kind == "op") & (self.left.value != self.value)) then {
+        if ((self.left.kind == "op") && (self.left.value != self.value)) then {
             s := "(" ++ self.left.toGrace(0) ++ ")"
         } else {
             s := self.left.toGrace(0)
@@ -1039,7 +1039,7 @@ class opNode.new(op, l, r) {
         } else {
             s := s ++ " " ++ self.value ++ " "
         }
-        if ((self.right.kind == "op") & (self.right.value != self.value)) then {
+        if ((self.right.kind == "op") && (self.right.value != self.value)) then {
             s := s ++ "(" ++ self.right.toGrace(0) ++ ")"
         } else {
             s := s ++ self.right.toGrace(0)

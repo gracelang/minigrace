@@ -185,14 +185,14 @@ def LexerClass = object {
             method modechange(tokens, mode, accum) {
                 var done := false
                 var tok := 0
-                if ((mode != "n") | (accum.size > 0)) then {
+                if ((mode != "n") || (accum.size > 0)) then {
                     if (mode == "i") then {
                         tok := IdentifierToken.new(accum)
-                        if ((accum == "object") | (accum == "method")
-                            | (accum == "var") | (accum == "type")
-                            | (accum == "import") | (accum == "class")
-                            | (accum == "return") | (accum == "def")
-                            | (accum == "inherits") | (accum == "is")) then {
+                        if ((accum == "object") || (accum == "method")
+                            || (accum == "var") || (accum == "type")
+                            || (accum == "import") || (accum == "class")
+                            || (accum == "return") || (accum == "def")
+                            || (accum == "inherits") || (accum == "is")) then {
                             tok := KeywordToken.new(accum)
                         }
                         tokens.push(tok)
@@ -312,7 +312,7 @@ def LexerClass = object {
                     def n = c.ord
                     val := val * base
                     var inc := 0
-                    if ((n >= 48) & (n <= 57)) then {
+                    if ((n >= 48) && (n <= 57)) then {
                         inc := n - 48 // 0
                     } else {
                         inc := n - 87 // 'a' - 10
@@ -344,8 +344,8 @@ def LexerClass = object {
             // characters are Unicode letters, Unicode numbers, apostrophe,
             // and (currently) underscore.
             method isidentifierchar(ov) {
-                if (unicode.isLetter(ov) | unicode.isNumber(ov)
-                    | (ov == 95) | (ov == 39)) then {
+                if (unicode.isLetter(ov) || unicode.isNumber(ov)
+                    || (ov == 95) || (ov == 39)) then {
                     // 95 is _, 39 is '
                     true
                 } else {
@@ -356,9 +356,10 @@ def LexerClass = object {
             // True if c (with codepoint ordval) is a valid operator character.
             method isoperatorchar(c, ordval) {
                 var ret := false
-                if ((c == "-") | (c == "&") | (c == "|") | (c == ":")
-                    | (c == "%") | (c == "^")
-                    | (c == "*") | (c == "/") | (c == "+") | (c == "!")) then {
+                if ((c == "-") || (c == "&") || (c == "||") || (c == ":")
+                    || (c == "%") || (c == "^")
+                    || (c == "*") || (c == "/") || (c == "+") || (c == "!")
+                    ) then {
                     ret := true
                 } elseif (unicode.isSymbolMathematical(ordval)) then {
                     ret := true
@@ -397,22 +398,22 @@ def LexerClass = object {
                     util.setPosition(lineNumber, linePosition)
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
-                    if ((unicode.isSeparator(ordval) & (ordval != 32) &
-                        (ordval != 8232)) | (ordval == 9)) then {
+                    if ((unicode.isSeparator(ordval) && (ordval != 32) &&
+                        (ordval != 8232)) || (ordval == 9)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
                         util.syntax_error("illegal whitespace in input: "
                             ++ "{ordval}, {unicode.name(c)}")
                     }
-                    if (unicode.isControl(ordval) & (ordval != 10)
-                        & (ordval != 13)) then {
+                    if (unicode.isControl(ordval) && (ordval != 10)
+                        && (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
                         util.syntax_error("illegal control character in "
                             ++ "input: #{ordval} on line {lineNumber}"
                             ++ " character {linePosition}.")
                     }
-                    if (atStart & (linePosition == 1)) then {
+                    if (atStart && (linePosition == 1)) then {
                         if (c == "#") then {
                             mode := "p"
                             newmode := mode
@@ -420,11 +421,11 @@ def LexerClass = object {
                             atStart := false
                         }
                     }
-                    if (instr | inBackticks) then {
+                    if (instr || inBackticks) then {
 
                     } elseif ((mode != "c") && (mode != "p")) then {
                         // Not in a comment, so look for a mode.
-                        if ((c == " ") & (mode != "d")) then {
+                        if ((c == " ") && (mode != "d")) then {
                             newmode := "n"
                         }
                         if (c == "\"") then {
@@ -445,17 +446,17 @@ def LexerClass = object {
                         if (ct) then {
                             newmode := "i"
                         }
-                        ct := ((ordval >= 48) & (ordval <=57))
-                        if (ct & (mode != "i")) then {
+                        ct := ((ordval >= 48) && (ordval <=57))
+                        if (ct && (mode != "i")) then {
                             newmode := "m"
                         }
-                        if ((ordval >= 97) & (ordval <=122) & (mode == "m")) then {
+                        if ((ordval >= 97) && (ordval <=122) && (mode == "m")) then {
                             newmode := "m"
                         }
-                        if ((mode == "i") & (c == "<")) then {
+                        if ((mode == "i") && (c == "<")) then {
                             newmode := "<"
-                        } elseif (((mode == "i") | (mode == ">"))
-                            & (c == ">")) then {
+                        } elseif (((mode == "i") || (mode == ">"))
+                            && (c == ">")) then {
                             if (mode == ">") then {
                                 modechange(tokens, mode, accum)
                             }
@@ -463,33 +464,33 @@ def LexerClass = object {
                         } elseif (isoperatorchar(c, ordval)) then {
                             newmode := "o"
                         }
-                        if ((c == "(") | (c == ")") | (c == ",") | (c == ".")
-                            | (c == "\{") | (c == "}") | (c == "[") | (c == "]")
-                            | (c == ";")) then {
+                        if ((c == "(") || (c == ")") || (c == ",") || (c == ".")
+                            || (c == "\{") || (c == "}") || (c == "[")
+                            || (c == "]") || (c == ";")) then {
                             newmode := c
                         }
-                        if ((c == ".") & (accum == ".")) then {
+                        if ((c == ".") && (accum == ".")) then {
                             // Special handler for .. operator
                             mode := "o"
                             newmode := mode
                         }
-                        if ((c == "/") & (accum == "/")) then {
+                        if ((c == "/") && (accum == "/")) then {
                             // Start of comment
                             mode := "c"
                             newmode := mode
                         }
-                        if ((newmode == mode) & (mode == "n")
-                            & (unicode.isSeparator(ordval).not)
-                            & (unicode.isControl(ordval).not)) then {
+                        if ((newmode == mode) && (mode == "n")
+                            && (unicode.isSeparator(ordval).not)
+                            && (unicode.isControl(ordval).not)) then {
                             if ((unicode.isSeparator(ordval).not)
-                                & (ordval != 10) & (ordval != 13)
-                                & (ordval != 32)) then {
+                                && (ordval != 10) && (ordval != 13)
+                                && (ordval != 32)) then {
                                 util.syntax_error("unknown character in "
                                     ++ "input: #{ordval}"
                                     ++ " '{c}', {unicode.name(c)}")
                             }
                         }
-                        if ((c == ".") & (accum == "..")) then {
+                        if ((c == ".") && (accum == "..")) then {
                             // Special handler for ... identifier
                             mode := "n"
                             newmode := mode
@@ -497,12 +498,12 @@ def LexerClass = object {
                             accum := ""
                         }
                     }
-                    if ((mode == "x") & (c == "\"") & (escaped.not)) then {
+                    if ((mode == "x") && (c == "\"") && (escaped.not)) then {
                         // End of octet literal
                         newmode := "n"
                         instr := false
                     }
-                    if ((mode == "\"") & (c == "\"") & (escaped.not)) then {
+                    if ((mode == "\"") && (c == "\"") && (escaped.not)) then {
                         // End of string literal
                         newmode := "n"
                         instr := false
@@ -513,7 +514,7 @@ def LexerClass = object {
                             interpString := false
                         }
                     }
-                    if ((mode == "I") & (inBackticks) & (c == "`")) then {
+                    if ((mode == "I") && (inBackticks) && (c == "`")) then {
                         // End of backticked identifier
                         newmode := "n"
                         inBackticks := false
@@ -523,7 +524,7 @@ def LexerClass = object {
                         // This character is the beginning of a different
                         // lexical mode - process the old one now.
                         modechange(tokens, mode, accum)
-                        if ((newmode == "}") & (interpdepth > 0)) then {
+                        if ((newmode == "}") && (interpdepth > 0)) then {
                             modechange(tokens, ")", ")")
                             modechange(tokens, "o", "++")
                             newmode := "\""
@@ -531,7 +532,7 @@ def LexerClass = object {
                             interpdepth := interpdepth - 1
                         }
                         mode := newmode
-                        if (instr | inBackticks) then {
+                        if (instr || inBackticks) then {
                             // String accum should skip the opening quote, but
                             // other modes' should include their first
                             // character.
@@ -539,9 +540,9 @@ def LexerClass = object {
                         } else {
                             accum := c
                         }
-                        if ((mode == "(") | (mode == ")") | (mode == "[")
-                            | (mode == "]") | (mode == "\{")
-                            | (mode == "}")) then {
+                        if ((mode == "(") || (mode == ")") || (mode == "[")
+                            || (mode == "]") || (mode == "\{")
+                            || (mode == "}")) then {
                             modechange(tokens, mode, accum)
                             mode := "n"
                             newmode := "n"
@@ -634,7 +635,7 @@ def LexerClass = object {
                                 ++ "backtick identifiers")
                         }
                         accum := accum ++ c
-                    } elseif ((c == "\n") | (c == "\r")) then {
+                    } elseif ((c == "\n") || (c == "\r")) then {
                         // Linebreaks terminate any open tokens
                         modechange(tokens, mode, accum)
                         mode := "d"

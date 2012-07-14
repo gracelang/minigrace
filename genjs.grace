@@ -39,8 +39,8 @@ method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
         var o := c.ord
-        if (((o >= 97 ) & (o <= 122)) | ((o >= 65) & (o <= 90))
-            | ((o >= 48) & (o <= 57))) then {
+        if (((o >= 97 ) && (o <= 122)) || ((o >= 65) && (o <= 90))
+            || ((o >= 48) && (o <= 57))) then {
             nm := nm ++ c
         } else {
             nm := nm ++ "__" ++ o ++ "__"
@@ -568,7 +568,7 @@ method compilecall(o) {
         }
     }
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "super")}) then {
+        && (o.value.in.value == "super")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethodsuper(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         for (o.with.indices) do { partnr ->
@@ -584,12 +584,12 @@ method compilecall(o) {
         call := call ++ ");"
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "self") & (o.value.value == "outer")}
+        && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
         out("  var call{auto_count} = callmethod(superDepth, "
             ++ "\"outer\", [0]);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "self")}) then {
+        && (o.value.in.value == "self")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethod(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         for (o.with.indices) do { partnr ->
@@ -606,7 +606,7 @@ method compilecall(o) {
         out("onSelf = true;");
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "prelude")}) then {
+        && (o.value.in.value == "prelude")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
             ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
         for (o.with.indices) do { partnr ->
@@ -739,7 +739,7 @@ method compilenode(o) {
                 os := os ++ "\\\\"
             } elseif (c == "\n") then {
                 os := os ++ "\\n"
-            } elseif ((c.ord < 32) | (c.ord > 126)) then {
+            } elseif ((c.ord < 32) || (c.ord > 126)) then {
                 var uh := util.hex(c.ord)
                 while {uh.size < 4} do {
                     uh := "0" ++ uh
@@ -773,7 +773,7 @@ method compilenode(o) {
         o.register := compilenode(o.value)
     }
     if ((o.kind == "identifier")
-        & ((o.value == "true") | (o.value == "false"))) then {
+        && ((o.value == "true") || (o.value == "false"))) then {
         var val := 0
         if (o.value == "true") then {
             val := 1
@@ -840,28 +840,28 @@ method compilenode(o) {
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&
                 { (o.value.in.kind == "identifier")
-                    & (o.value.in.value == "self")
-                    & (o.value.value == "length")}) then {
+                    && (o.value.in.value == "self")
+                    && (o.value.value == "length")}) then {
             tmp := compilenode(o.with.first.args.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "length")) then {
+                && (o.value.value == "length")) then {
             tmp := compilenode(o.with.first.args.first)
             out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&
                 { (o.value.in.kind == "identifier")
-                    & (o.value.in.value == "self")
-                    & (o.value.value == "escapestring")}) then {
+                    && (o.value.in.value == "self")
+                    && (o.value.value == "escapestring")}) then {
             tmp := o.with.first.args.first
             tmp := ast.memberNode.new("_escape", tmp)
             tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "escapestring")) then {
+                && (o.value.value == "escapestring")) then {
             tmp := o.with.first.args.first
             tmp := ast.memberNode.new("_escape", tmp)
             tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])

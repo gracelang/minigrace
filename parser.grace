@@ -57,25 +57,25 @@ method accept(t) {
 // line (either because it's on the same physical line, or because
 // it's on an indented continuation line).
 method acceptSameLine(t) {
-    (sym.kind == t) & ((lastline == sym.line) |
+    (sym.kind == t) & ((lastline == sym.line) ||
         (sym.indent > lastIndent))
 }
 
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOf(other) {
-    (sym.kind == t) & ((other.line == sym.line) |
+    (sym.kind == t) & ((other.line == sym.line) ||
         (sym.indent > other.indent))
 }
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOfLastOr(other) {
-    (sym.kind == t) & (((other.line == sym.line) |
-        (sym.indent > other.indent)) | (lastToken.line == sym.line))
+    (sym.kind == t) & (((other.line == sym.line) ||
+        (sym.indent > other.indent)) || (lastToken.line == sym.line))
 }
 // True if there is a token on the same logical line
 method tokenOnSameLine {
-    (lastline == sym.line) | (sym.indent > lastIndent)
+    (lastline == sym.line) || (sym.indent > lastIndent)
 }
 // Require a t as the current token; if not, raise a syntax error.
 method expect(t) {
@@ -256,7 +256,7 @@ method block {
             isMatchingBlock := true
         }
         ifConsume {expression} then {
-            if (accept("comma") | accept("arrow") | accept("colon")) then {
+            if (accept("comma") || accept("arrow") || accept("colon")) then {
                 // This block has parameters
                 ident1 := values.pop
                 if (accept("colon")) then {
@@ -453,7 +453,7 @@ method dofor {
         var localMin
         var minInd := statementIndent + 1
         if (accept("identifier") & ((sym.value == "each")
-            | (sym.value == "do"))) then {
+            || (sym.value == "do"))) then {
             next
             expect("lbrace")
             block
@@ -763,8 +763,9 @@ method dotrest {
             next
             if (accept("dot")) then {
                 dotrest
-            } elseif (accept("lparen") | accept("lbrace")
-                | accept("num") | accept("string") | accept("lsquare")) then {
+            } elseif (accept("lparen") || accept("lbrace")
+                || accept("num") || accept("string") || accept("lsquare")
+                ) then {
                 callrest
             }
         }
@@ -837,10 +838,10 @@ method callrest {
         next
     } elseif (don'tTakeBlock && {accept("lbrace")onLineOf(tok)}) then {
         values.push(meth)
-    } elseif (accept("string")onLineOf(tok) | accept("num")onLineOf(tok)
-        | accept("lbrace")onLineOf(tok)
-        | (accept("identifier")onLineOf(tok) & ((sym.value == "true")
-                                   | (sym.value == "false")))) then {
+    } elseif (accept("string")onLineOf(tok) || accept("num")onLineOf(tok)
+        || accept("lbrace")onLineOf(tok)
+        || (accept("identifier")onLineOf(tok) & ((sym.value == "true")
+                                   || (sym.value == "false")))) then {
         tok := sym
         hadcall := true
         methn := meth.value
@@ -895,7 +896,7 @@ method callmprest(meth, signature, tok) {
     var ln := linenum
     var part
     while {accept("identifier")onLineOf(tok)
-           | accept("identifier")onLineOf(lastToken)} do {
+           || accept("identifier")onLineOf(lastToken)} do {
         // Each word must start on the same line as the preceding parameter
         // ended.
         part := ast.callWithPart.new
@@ -911,11 +912,11 @@ method callmprest(meth, signature, tok) {
             util.syntax_error("multi-part method name parameters require .")
         }
         if (accept("lbrace")onLineOfLastOr(tok)
-            | accept("string")onLineOfLastOr(tok)
-            | accept("num")onLineOfLastOr(tok)
-            | (accept("identifier")onLineOfLastOr(tok)
+            || accept("string")onLineOfLastOr(tok)
+            || accept("num")onLineOfLastOr(tok)
+            || (accept("identifier")onLineOfLastOr(tok)
                 & ((sym.value == "true")
-                    | (sym.value == "false")))) then {
+                    || (sym.value == "false")))) then {
             isTerm := true
         } else {
             next
@@ -1370,7 +1371,7 @@ method parsempmndecrest(tm) {
         }
         next
         while {accept("identifier")
-                | (accept("op") & (sym.value == "*"))} do {
+                || (accept("op") & (sym.value == "*"))} do {
             if (vararg) then {
                 util.syntax_error("varargs parameter must be last.")
             }
@@ -1433,7 +1434,7 @@ method methodsignature(sameline) {
     if (accept("lparen")) then {
         next
         var id
-        while {accept("identifier") |
+        while {accept("identifier") ||
                 (accept("op") & (sym.value == "*"))} do {
             // Parse the parameter list, including optional dtype
             // annotations.
@@ -1469,7 +1470,7 @@ method methodsignature(sameline) {
         }
         expect("rparen")
         next
-        if ((!sameline & accept("identifier")) |
+        if ((!sameline & accept("identifier")) ||
             acceptSameLine("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
@@ -1613,8 +1614,8 @@ method checkIndent {
         indentFreePass := false
     } elseif (sym.kind == "semicolon") then {
         // pass
-    } elseif ((sym.kind == "rbrace") | (sym.kind == "rparen")
-        | (sym.kind == "rsquare")) then {
+    } elseif ((sym.kind == "rbrace") || (sym.kind == "rparen")
+        || (sym.kind == "rsquare")) then {
         // pass
     } elseif (sym.indent < minIndentLevel) then {
         if ((sym.linePos - 1) != minIndentLevel) then {

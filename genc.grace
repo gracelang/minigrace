@@ -66,8 +66,8 @@ method countnodebindings(n) {
 method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
-        if ((n.kind == "vardec") | (n.kind == "defdec")
-            | (n.kind == "class") | (n.kind == "type")) then {
+        if ((n.kind == "vardec") || (n.kind == "defdec")
+            || (n.kind == "class") || (n.kind == "type")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -77,8 +77,8 @@ method countbindings(l) {
 }
 method definebindings(l, slot) {
     for (l) do { n ->
-        if ((n.kind == "vardec") | (n.kind == "defdec")
-            | (n.kind == "class")) then {
+        if ((n.kind == "vardec") || (n.kind == "defdec")
+            || (n.kind == "class")) then {
             var tnm := ""
             if (n.name.kind == "generic") then {
                 tnm := escapeident(n.name.value.value)
@@ -118,10 +118,10 @@ method escapeident(s) {
     var ns := ""
     for (s) do { c ->
         def o = c.ord
-        if (((o >= 65) & (o <= 90))
-            | ((o >= 97) & (o <= 122))
-            | ((o >= 48) & (o <= 57))
-            | (o == 95)) then {
+        if (((o >= 65) && (o <= 90))
+            || ((o >= 97) && (o <= 122))
+            || ((o >= 48) && (o <= 57))
+            || (o == 95)) then {
             ns := ns ++ c
         } else {
             ns := ns ++ "_{o}_"
@@ -134,7 +134,7 @@ method escapestring2(s) {
     var cd := 0
     var ls := false
     for (escapestring(s)) do { c->
-        if (ls & (c == "\\")) then {
+        if (ls && (c == "\\")) then {
             ls := false
             ns := ns ++ "\\\\"
         } elseif (c == "\\") then {
@@ -960,8 +960,8 @@ method compileop(o) {
     var right := compilenode(o.right)
     out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
-    if ((o.value == "+") | (o.value == "*") | (o.value == "/") |
-        (o.value == "-") | (o.value == "%")) then {
+    if ((o.value == "+") || (o.value == "*") || (o.value == "/") ||
+        (o.value == "-") || (o.value == "%")) then {
         var rnm := "sum"
         if (o.value == "*") then {
             rnm := "prod"
@@ -1018,7 +1018,7 @@ method compilecall(o, tailcall) {
     }
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "super")}) then {
+        && (o.value.in.value == "super")}) then {
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1030,12 +1030,12 @@ method compilecall(o, tailcall) {
             ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "self") & (o.value.value == "outer")}
+        && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "self")}) then {
+        && (o.value.in.value == "self")}) then {
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1046,7 +1046,7 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
             ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        & (o.value.in.value == "prelude")}) then {
+        && (o.value.in.value == "prelude")}) then {
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1202,7 +1202,7 @@ method compilenode(o) {
         o.register := compilenode(o.value)
     }
     if ((o.kind == "identifier")
-        & ((o.value == "true") | (o.value == "false"))) then {
+        && ((o.value == "true") || (o.value == "false"))) then {
         var val := 0
         if (o.value == "true") then {
             val := 1
@@ -1274,14 +1274,14 @@ method compilenode(o) {
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&
                 { (o.value.in.kind == "identifier")
-                    & (o.value.in.value == "self")
-                    & (o.value.value == "length")}) then {
+                    && (o.value.in.value == "self")
+                    && (o.value.value == "length")}) then {
             tmp := compilenode(o.with.first.args.first)
             out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "length")) then {
+                && (o.value.value == "length")) then {
             if (o.with.first.args.size == 0) then {
                 out("; PP FOLLOWS")
                 out(o.pretty(0))
@@ -1294,14 +1294,14 @@ method compilenode(o) {
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&
                 { (o.value.in.kind == "identifier")
-                    & (o.value.in.value == "self")
-                    & (o.value.value == "escapestring")}) then {
+                    && (o.value.in.value == "self")
+                    && (o.value.value == "escapestring")}) then {
             tmp := o.with.first.args.first
             tmp := ast.memberNode.new("_escape", tmp)
             tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
             o.register := compilenode(tmp)
         } elseif ((o.value.kind == "identifier")
-                & (o.value.value == "escapestring")) then {
+                && (o.value.value == "escapestring")) then {
             tmp := o.with.first.args.first
             tmp := ast.memberNode.new("_escape", tmp)
             tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
@@ -1419,7 +1419,7 @@ method compile(vl, of, mn, rm, bt) {
                         ext := false
                     }
                 }
-                if ((nm == "sys") | (nm == "io")) then {
+                if ((nm == "sys") || (nm == "io")) then {
                     exists := true
                     staticmodules.push(nm)
                 }
