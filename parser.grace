@@ -1697,6 +1697,15 @@ method parse(toks) {
         defaultVarVisibility := util.extensions.get("DefaultVisibility")
         defaultMethodVisibility := util.extensions.get("DefaultVisibility")
     }
+    if (util.extensions.contains("DefaultDefVisibility")) then {
+        defaultDefVisibility := util.extensions.get("DefaultDefVisibility")
+    }
+    if (util.extensions.contains("DefaultVarVisibility")) then {
+        defaultVarVisibility := util.extensions.get("DefaultVarVisibility")
+    }
+    if (util.extensions.contains("DefaultMethodVisibility")) then {
+        defaultMethodVisibility := util.extensions.get("DefaultMethodVisibility")
+    }
     var otoks := toks
     if (toks.size == 0) then {
         return toks
