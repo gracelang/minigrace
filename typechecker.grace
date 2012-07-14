@@ -1556,6 +1556,7 @@ method typecheck(values) {
     bindName("super", Binding.new("def"))
     bindName("raise", Binding.new("method"))
     bindName("outer", Binding.new("method"))
+    bindName("platform", Binding.new("def"))
     bindName("prelude", Binding.new("def"))
     bindName("_prelude", Binding.new("def"))
     btmp := Binding.new("type")
