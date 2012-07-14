@@ -735,6 +735,19 @@ Object List_prepended(Object self, int nparts, int *argcv,
     }
     return nl;
 }
+Object List_concat(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ListObject *sself = (struct ListObject*)self;
+    struct ListObject *sother = (struct ListObject*)args[0];
+    int i;
+    Object nl = alloc_List();
+    int partcv[] = {1};
+    for (i=0; i<sself->size; i++)
+        List_push(nl, 1, partcv, sself->items + i, 0);
+    for (i=0; i<sother->size; i++)
+        List_push(nl, 1, partcv, sother->items + i, 0);
+    return nl;
+}
 void List__release(Object o) {
     struct ListObject *s = (struct ListObject *)o;
     glfree(s->items);
@@ -747,7 +760,7 @@ void List_mark(Object o) {
 }
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class3("List", 18, (void*)&List_mark,
+        List = alloc_class3("List", 19, (void*)&List_mark,
                 (void*)&List__release);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
@@ -767,6 +780,7 @@ Object alloc_List() {
         add_Method(List, "first", &List_first);
         add_Method(List, "last", &List_last);
         add_Method(List, "prepended", &List_prepended);
+        add_Method(List, "++", &List_concat);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, List);
     struct ListObject *lo = (struct ListObject*)o;
