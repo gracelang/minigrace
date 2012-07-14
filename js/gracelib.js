@@ -748,6 +748,12 @@ GraceType.prototype = {
             return new GraceSuccessfulMatch(other,
                     new GraceList([]));
         },
+        "|": function(argcv, other) {
+            return new GraceOrPattern(this, other);
+        },
+        "&": function(argcv, other) {
+            return new GraceAndPattern(this, other);
+        }
     },
     typeMethods: [],
     className: "Type",

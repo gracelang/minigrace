@@ -2820,11 +2820,13 @@ Object Type_match(Object self, int nparts, int *argcv,
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 4);
+        Type = alloc_class("Type", 6);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
         add_Method(Type, "asString", &Object_asString);
         add_Method(Type, "match", &Type_match);
+        add_Method(Type, "&", &literal_and);
+        add_Method(Type, "|", &literal_or);
     }
     Object o = alloc_obj(sizeof(struct TypeObject)
             - sizeof(int32_t) - sizeof(ClassData), Type);
@@ -2840,11 +2842,13 @@ inline void initialise_Class() {
         Class->flags = 3;
         Class->class = Class;
         Class->name = "ClassOf<Class>";
-        Class->methods = glmalloc(sizeof(Method));
-        Class->nummethods = 1;
+        Class->methods = glmalloc(sizeof(Method) * 3);
+        Class->nummethods = 3;
         Class->mark = NULL;
         Class->release = NULL;
         add_Method(Class, "match", &Type_match);
+        add_Method(Class, "&", &literal_and);
+        add_Method(Class, "|", &literal_or);
     }
 }
 ClassData alloc_class(const char *name, int nummethods) {
