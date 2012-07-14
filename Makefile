@@ -52,7 +52,7 @@ js/StandardPrelude.js: StandardPrelude.grace minigrace
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
 
-js/index.html: js/index.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES)) js/StandardPrelude.js
+js/index.html: js/index.in.html js/ace.in.html $(patsubst %.grace,js/%.js,$(SOURCEFILES)) js/StandardPrelude.js
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
