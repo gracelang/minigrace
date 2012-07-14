@@ -1320,7 +1320,7 @@ method compilenode(o) {
     out("// compilenode returning " ++ o.register)
     o.register
 }
-method spawnSubprocess(subprocesses, id, cmd) {
+method spawnSubprocess(id, cmd) {
     if (subprocesses.size < util.jobs) then {
         return subprocesses.push([id, io.spawn("bash", "-c", cmd)])
     }
@@ -1340,6 +1340,74 @@ method spawnSubprocess(subprocesses, id, cmd) {
     }
     subprocesses.push([id, io.spawn("bash", "-c", cmd)])
 }
+method checkimport(nm) {
+    var exists := false
+    var ext := false
+    var cmd
+    def argv = sys.argv
+    if (staticmodules.contains(nm)) then {
+        return true
+    }
+    if (io.exists("{sys.execPath}/{nm}.gso") &&
+        {!util.extensions.contains("Static")}) then {
+        exists := true
+    } elseif (io.exists(nm ++ ".gso") &&
+        {!util.extensions.contains("Static")}) then {
+        exists := true
+    } elseif(nm == "StandardPrelude") then {
+        exists := true
+        staticmodules.add(nm)
+    } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
+            !io.exists("{nm}.grace")
+        }) then {
+        // Find static modules like unicode alongside compiler,
+        // but not modules compiled from Grace code here.
+        exists := true
+        linkfiles.push("{sys.execPath}/{nm}.gcn")
+        staticmodules.add(nm)
+    } elseif (io.exists(nm ++ ".gcn")) then {
+        if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
+            exists := true
+            linkfiles.push(nm ++ ".gcn")
+            staticmodules.add(nm)
+        }
+    }
+    if (exists.not) then {
+        if (io.exists(nm ++ ".gc")) then {
+            ext := ".gc"
+        }
+        if (io.exists(nm ++ ".grace")) then {
+            ext := ".grace"
+        }
+        if (ext != false) then {
+            cmd := argv.first ++ " --target c --make " ++ nm ++ ext
+            cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
+            if (util.verbosity > 30) then {
+                cmd := cmd ++ " --verbose"
+            }
+            if (false != util.vtag) then {
+                cmd := cmd ++ " --vtag " ++ util.vtag
+            }
+            cmd := cmd ++ " --noexec --no-recurse -XNoMain"
+            if (util.recurse) then {
+                spawnSubprocess(nm, cmd)
+            }
+            exists := true
+            linkfiles.push(nm ++ ".gcn")
+            staticmodules.add(nm)
+            ext := false
+        }
+    }
+    if ((nm == "sys") || (nm == "io")) then {
+        exists := true
+        staticmodules.add(nm)
+    }
+    if (exists.not) then {
+        util.syntax_error("failed finding import of " ++ nm ++ ".")
+    }
+}
+var subprocesses := collections.list.new
+var linkfiles := collections.list.new
 method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
@@ -1363,72 +1431,12 @@ method compile(vl, of, mn, rm, bt) {
     escmodname := escapeident(modname)
     runmode := rm
     buildtype := bt
-    var linkfiles := []
-    var ext := false
     if (runmode == "make") then {
         log_verbose("checking imports.")
-        def subprocesses = []
         for (values) do { v ->
             if (v.kind == "import") then {
                 var nm := v.value.value
-                var exists := false
-                if (io.exists("{sys.execPath}/{nm}.gso") &&
-                    {!util.extensions.contains("Static")}) then {
-                    exists := true
-                } elseif (io.exists(nm ++ ".gso") &&
-                    {!util.extensions.contains("Static")}) then {
-                    exists := true
-                } elseif(nm == "StandardPrelude") then {
-                    exists := true
-                    staticmodules.add(nm)
-                } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
-                        !io.exists("{nm}.grace")
-                    }) then {
-                    // Find static modules like unicode alongside compiler,
-                    // but not modules compiled from Grace code here.
-                    exists := true
-                    linkfiles.push("{sys.execPath}/{nm}.gcn")
-                    staticmodules.add(nm)
-                } elseif (io.exists(nm ++ ".gcn")) then {
-                    if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
-                        exists := true
-                        linkfiles.push(nm ++ ".gcn")
-                        staticmodules.add(nm)
-                    }
-                }
-                if (exists.not) then {
-                    if (io.exists(nm ++ ".gc")) then {
-                        ext := ".gc"
-                    }
-                    if (io.exists(nm ++ ".grace")) then {
-                        ext := ".grace"
-                    }
-                    if (ext != false) then {
-                        cmd := argv.first ++ " --target c --make " ++ nm ++ ext
-                        cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
-                        if (util.verbosity > 30) then {
-                            cmd := cmd ++ " --verbose"
-                        }
-                        if (false != util.vtag) then {
-                            cmd := cmd ++ " --vtag " ++ util.vtag
-                        }
-                        cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-                        if (util.recurse) then {
-                            spawnSubprocess(subprocesses, nm, cmd)
-                        }
-                        exists := true
-                        linkfiles.push(nm ++ ".gcn")
-                        staticmodules.add(nm)
-                        ext := false
-                    }
-                }
-                if ((nm == "sys") || (nm == "io")) then {
-                    exists := true
-                    staticmodules.add(nm)
-                }
-                if (exists.not) then {
-                    util.syntax_error("failed finding import of " ++ nm ++ ".")
-                }
+                checkimport(nm)
             }
         }
         def imperrors = []
