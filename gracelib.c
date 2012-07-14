@@ -1132,7 +1132,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 21,
+        ConcatString = alloc_class3("ConcatString", 24,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1142,7 +1142,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
         add_Method(ConcatString, "!=", &Object_NotEquals);
-        add_Method(ConcatString, "/=", &Object_NotEquals);
+        add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
@@ -1155,6 +1155,8 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "asNumber", &String_asNumber);
         add_Method(ConcatString, "match", &literal_match);
+        add_Method(ConcatString, "|", &literal_or);
+        add_Method(ConcatString, "&", &literal_and);
     }
     struct StringObject *lefts = (struct StringObject*)left;
     struct StringObject *rights = (struct StringObject*)right;
@@ -1314,7 +1316,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 23);
+        String = alloc_class("String", 24);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
