@@ -41,7 +41,11 @@ def NumberType = ast.typeNode.new("Number", [
     ast.methodTypeNode.new("prefix-", [ast.signaturePart.new("prefix-")], NumberIdentifier),
     ast.methodTypeNode.new("inBase", [ast.signaturePart.new("inBase", [NumberOther])], StringIdentifier),
     ast.methodTypeNode.new("truncate", [ast.signaturePart.new("truncate")], NumberIdentifier),
-    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier),
+    ast.methodTypeNode.new("|", [ast.signaturePart.new("|", [TopOther])],
+        DynamicIdentifier),
+    ast.methodTypeNode.new("&", [ast.signaturePart.new("&", [TopOther])],
+        DynamicIdentifier)
 ])
 def StringType = ast.typeNode.new("String", [
     ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
@@ -61,7 +65,11 @@ def StringType = ast.typeNode.new("String", [
     ast.methodTypeNode.new("indices", [ast.signaturePart.new("indices")], ListIdentifier),
     ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
     ast.methodTypeNode.new("asNumber", [ast.signaturePart.new("asNumber")], NumberIdentifier),
-    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
+    ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier),
+    ast.methodTypeNode.new("|", [ast.signaturePart.new("|", [TopOther])],
+        DynamicIdentifier),
+    ast.methodTypeNode.new("&", [ast.signaturePart.new("&", [TopOther])],
+        DynamicIdentifier)
 ])
 def BooleanType = ast.typeNode.new("Boolean", [
     ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),

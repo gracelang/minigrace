@@ -39,6 +39,9 @@ Object String_substringFrom_to(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
+Object alloc_OrPattern(Object l, Object r);
+Object alloc_AndPattern(Object l, Object r);
+
 int gc_period = 100000;
 int rungc();
 int gc_frame_new();
@@ -91,8 +94,11 @@ ClassData SysModule;
 ClassData Type;
 ClassData Class;
 ClassData MatchResult;
+ClassData OrPattern;
+ClassData AndPattern;
 
 Object Dynamic;
+Object prelude = NULL;
 
 struct StringObject {
     int32_t flags;
@@ -316,6 +322,7 @@ int istrue(Object o) {
         return 1;
     if (o->flags & FLAG_USEROBJ)
         return istrue(((struct UserObject *)o)->super);
+    return 0;
 }
 int isclass(Object o, const char *class) {
     return (strcmp(o->class->name, class) == 0);
@@ -465,6 +472,77 @@ Object literal_match(Object self, int nparts, int *argcv,
     if (!istrue(callmethod(self, "==", 1, partcv, argv)))
         return alloc_FailedMatch(other, NULL);
     return alloc_SuccessfulMatch(other, NULL);
+}
+Object literal_or(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+        die("| requires an argument");
+    return alloc_OrPattern(self, argv[0]);
+}
+Object literal_and(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+        die("& requires an argument");
+    return alloc_AndPattern(self, argv[0]);
+}
+
+Object AndPattern_match(Object self, int nparts, int *argcv, Object *argv,
+        int flags) {
+    Object target = argv[0];
+    struct UserObject *b = (struct UserObject *)self;
+    Object left = b->data[0];
+    Object right = b->data[1];
+    Object m = callmethod(left, "match", 1, argcv, argv);
+    if (!istrue(m))
+        return m;
+    Object bindings = callmethod(m, "bindings", 0, NULL, NULL);
+    m = callmethod(right, "match", 1, argcv, argv);
+    if (!istrue(m))
+        return m;
+    Object bindings2 = callmethod(m, "bindings", 0, NULL, NULL);
+    bindings = callmethod(bindings, "++", 1, argcv, &bindings2);
+    return alloc_SuccessfulMatch(target, bindings);
+}
+Object OrPattern_match(Object self, int nparts, int *argcv, Object *argv,
+        int flags) {
+    Object target = argv[0];
+    struct UserObject *b = (struct UserObject *)self;
+    Object left = b->data[0];
+    Object right = b->data[1];
+    int tmp[1] = {1};
+    Object m = callmethod(left, "match", 1, argcv, argv);
+    if (istrue(m))
+        return alloc_SuccessfulMatch(target, NULL);
+    m = callmethod(right, "match", 1, argcv, argv);
+    if (istrue(m))
+        return alloc_SuccessfulMatch(target, NULL);
+    return alloc_FailedMatch(target, NULL);
+}
+Object alloc_OrPattern(Object l, Object r) {
+    Object o = alloc_userobj2(3, 2, OrPattern);
+    if (!OrPattern) {
+        OrPattern = o->class;
+        add_Method(OrPattern, "|", &literal_or);
+        add_Method(OrPattern, "&", &literal_and);
+        add_Method(OrPattern, "match", &OrPattern_match);
+    }
+    struct UserObject *b = (struct UserObject *)o;
+    b->data[0] = l;
+    b->data[1] = r;
+    return o;
+}
+Object alloc_AndPattern(Object l, Object r) {
+    Object o = alloc_userobj2(3, 2, AndPattern);
+    if (!AndPattern) {
+        AndPattern = o->class;
+        add_Method(AndPattern, "|", &literal_or);
+        add_Method(AndPattern, "&", &literal_and);
+        add_Method(AndPattern, "match", &AndPattern_match);
+    }
+    struct UserObject *b = (struct UserObject *)o;
+    b->data[0] = l;
+    b->data[1] = r;
+    return o;
 }
 Object String_Equals(Object self, int nparts, int *argcv,
         Object *params, int flags) {
@@ -1236,14 +1314,14 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 21);
+        String = alloc_class("String", 23);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_at);
         add_Method(String, "==", &String_Equals);
         add_Method(String, "!=", &Object_NotEquals);
-        add_Method(String, "/=", &Object_NotEquals);
+        add_Method(String, "iterator", &String_iter);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
         add_Method(String, "size", &String_size);
@@ -1256,6 +1334,8 @@ Object alloc_String(const char *data) {
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
         add_Method(String, "match", &literal_match);
+        add_Method(String, "|", &literal_or);
+        add_Method(String, "&", &literal_and);
     }
     if (blen == 1) {
         if (String_Interned_1[data[0]] != NULL)
@@ -1654,7 +1734,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 21, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 23, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -1675,6 +1755,8 @@ Object alloc_Float64(double num) {
         add_Method(Number, "inBase", &Float64_inBase);
         add_Method(Number, "truncate", &Float64_truncate);
         add_Method(Number, "match", &literal_match);
+        add_Method(Number, "|", &literal_or);
+        add_Method(Number, "&", &literal_and);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
@@ -3677,7 +3759,6 @@ Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
     die(str);
     return NULL;
 }
-Object prelude = NULL;
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
