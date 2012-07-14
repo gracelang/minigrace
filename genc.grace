@@ -5,6 +5,9 @@ import ast
 import util
 import buildinfo
 import subtype
+import mgcollections
+
+def collections = mgcollections
 
 // genc produces C code from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -23,8 +26,8 @@ var usedvars := []
 var declaredvars := []
 var bblock := "entry"
 var linenum := 1
-var modules := []
-var staticmodules := []
+var modules := collections.set.new
+var staticmodules := collections.set.new
 var values := []
 var outfile
 var modname := "main"
@@ -1127,7 +1130,7 @@ method compileimport(o) {
     }
     out("  Object *var_{nm} = alloc_var();")
     out("  *var_{nm} = {modg};")
-    modules.push(nm)
+    modules.add(nm)
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
@@ -1377,7 +1380,7 @@ method compile(vl, of, mn, rm, bt) {
                     exists := true
                 } elseif(nm == "StandardPrelude") then {
                     exists := true
-                    staticmodules.push(nm)
+                    staticmodules.add(nm)
                 } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
                         !io.exists("{nm}.grace")
                     }) then {
@@ -1385,12 +1388,12 @@ method compile(vl, of, mn, rm, bt) {
                     // but not modules compiled from Grace code here.
                     exists := true
                     linkfiles.push("{sys.execPath}/{nm}.gcn")
-                    staticmodules.push(nm)
+                    staticmodules.add(nm)
                 } elseif (io.exists(nm ++ ".gcn")) then {
                     if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
                         exists := true
                         linkfiles.push(nm ++ ".gcn")
-                        staticmodules.push(nm)
+                        staticmodules.add(nm)
                     }
                 }
                 if (exists.not) then {
@@ -1415,13 +1418,13 @@ method compile(vl, of, mn, rm, bt) {
                         }
                         exists := true
                         linkfiles.push(nm ++ ".gcn")
-                        staticmodules.push(nm)
+                        staticmodules.add(nm)
                         ext := false
                     }
                 }
                 if ((nm == "sys") || (nm == "io")) then {
                     exists := true
-                    staticmodules.push(nm)
+                    staticmodules.add(nm)
                 }
                 if (exists.not) then {
                     util.syntax_error("failed finding import of " ++ nm ++ ".")
