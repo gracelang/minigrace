@@ -189,7 +189,7 @@ method conformsType(b)to(a) {
     if (util.extensions.contains("IgnoreTypes")) then {
         return DynamicType
     }
-    if ((b == false) | (a == false)) then {
+    if ((b == false) || (a == false)) then {
         return true
     }
     if (a.value == "Dynamic") then {
@@ -234,7 +234,7 @@ method conformsType(b)to(a) {
 
 method expressionType(expr) {
     if (expr.kind == "identifier") then {
-        if ((expr.value == "true") | (expr.value == "false")) then {
+        if ((expr.value == "true") || (expr.value == "false")) then {
             return BooleanType
         }
         if (expr.dtype != false) then {
@@ -458,7 +458,7 @@ method expressionType(expr) {
 method checkShadowing(name, kd) {
     if (haveBinding(name)) then {
         var namebinding := findName(name)
-        if ((kd == "method") && ((namebinding.kind == "var") |
+        if ((kd == "method") && ((namebinding.kind == "var") ||
             (namebinding.kind == "method"))) then {
             // Pass; this is allowable.
         } elseif (util.extensions.contains("ShadowingWarnOnly")) then {
@@ -1030,8 +1030,8 @@ method resolveIdentifiers(node) {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.cases)
         tmp3 := resolveIdentifiers(node.elsecase)
-        if ((tmp != node.value) | (tmp2 != node.cases)
-            | (tmp3 != node.elsecase)) then {
+        if ((tmp != node.value) || (tmp2 != node.cases)
+            || (tmp3 != node.elsecase)) then {
             return ast.matchCaseNode.new(tmp, tmp2, tmp3)
         }
         return node
@@ -1193,7 +1193,7 @@ method resolveIdentifiers(node) {
         } elseif ((tmp.kind == "call") && (node.kind != "call")) then {
             tmp := tmp.value
         }
-        if ((tmp != node.dest) | (tmp2 != node.value)) then {
+        if ((tmp != node.dest) || (tmp2 != node.value)) then {
             return ast.bindNode.new(tmp, tmp2)
         }
     }
@@ -1314,7 +1314,7 @@ method resolveIdentifiers(node) {
                     ++ subtype.nicename(expressionType(tmp2)))
             }
         }
-        if ((tmp2 != tmp) | (tmp4 != node.dtype)) then {
+        if ((tmp2 != tmp) || (tmp4 != node.dtype)) then {
             findName(node.name.value).dtype := tmp4
             tmp := ast.varDecNode.new(node.name, tmp2, tmp4)
             tmp.annotations.extend(node.annotations)
@@ -1333,10 +1333,10 @@ method resolveIdentifiers(node) {
                 ++ " with expression of type "
                 ++ subtype.nicename(tmp5))
         }
-        if ((node.dtype == false) | (tmp4.value == "Dynamic")) then {
+        if ((node.dtype == false) || (tmp4.value == "Dynamic")) then {
             tmp4 := expressionType(tmp2)
         }
-        if ((tmp2 != tmp) | (tmp4 != node.dtype)) then {
+        if ((tmp2 != tmp) || (tmp4 != node.dtype)) then {
             findName(node.name.value).dtype := tmp4
             tmp := ast.defDecNode.new(node.name, tmp2, tmp4)
             tmp.annotations.extend(node.annotations)
@@ -1363,14 +1363,14 @@ method resolveIdentifiers(node) {
         tmp := node.value
         tmp2 := resolveIdentifiers(tmp)
         tmp3 := resolveIdentifiers(node.index)
-        if ((tmp2 != tmp) | (tmp3 != node.index)) then {
+        if ((tmp2 != tmp) || (tmp3 != node.index)) then {
             return ast.indexNode.new(tmp2, tmp3)
         }
     }
     if (node.kind == "op") then {
         tmp := resolveIdentifiers(node.left)
         tmp2 := resolveIdentifiers(node.right)
-        if ((tmp != node.left) | (tmp2 != node.right)) then {
+        if ((tmp != node.left) || (tmp2 != node.right)) then {
             return ast.opNode.new(node.value, tmp, tmp2)
         }
     }
@@ -1378,22 +1378,22 @@ method resolveIdentifiers(node) {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.thenblock)
         tmp3 := resolveIdentifiersList(node.elseblock)
-        if ((tmp != node.value) | (tmp2 != node.thenblock)
-            | (tmp3 != node.elseblock)) then {
+        if ((tmp != node.value) || (tmp2 != node.thenblock)
+            || (tmp3 != node.elseblock)) then {
             return ast.ifNode.new(tmp, tmp2, tmp3)
         }
     }
     if (node.kind == "while") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiersList(node.body)
-        if ((tmp != node.value) | (tmp2 != node.body)) then {
+        if ((tmp != node.value) || (tmp2 != node.body)) then {
             return ast.whileNode.new(tmp, tmp2)
         }
     }
     if (node.kind == "for") then {
         tmp := resolveIdentifiers(node.value)
         tmp2 := resolveIdentifiers(node.body)
-        if ((tmp != node.value) | (tmp2 != node.body)) then {
+        if ((tmp != node.value) || (tmp2 != node.body)) then {
             return ast.forNode.new(tmp, tmp2)
         }
     }
@@ -1425,7 +1425,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
         }
     }
     for (lst) do {e->
-        if (isobj && ((e.kind == "vardec") | (e.kind == "defdec"))) then {
+        if (isobj && ((e.kind == "vardec") || (e.kind == "defdec"))) then {
             bindName(e.name.value, Binding.new("method"))
             selftypes.last.methods.push(
                 ast.methodTypeNode.new(e.name.value, [ast.signaturePart.new(e.name.value)], findType(e.dtype)))

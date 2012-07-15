@@ -57,20 +57,20 @@ method accept(t) {
 // line (either because it's on the same physical line, or because
 // it's on an indented continuation line).
 method acceptSameLine(t) {
-    (sym.kind == t) & ((lastline == sym.line) ||
+    (sym.kind == t) && ((lastline == sym.line) ||
         (sym.indent > lastIndent))
 }
 
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOf(other) {
-    (sym.kind == t) & ((other.line == sym.line) ||
+    (sym.kind == t) && ((other.line == sym.line) ||
         (sym.indent > other.indent))
 }
 // True if the current token is a t, and it is on the same logical
 // line as a provided token.
 method accept(t)onLineOfLastOr(other) {
-    (sym.kind == t) & (((other.line == sym.line) ||
+    (sym.kind == t) && (((other.line == sym.line) ||
         (sym.indent > other.indent)) || (lastToken.line == sym.line))
 }
 // True if there is a token on the same logical line
@@ -191,7 +191,7 @@ method dotyperef {
     def unionTypes = []
     dotypeterm
     overallType := values.pop
-    while {acceptSameLine("op") & (sym.value == "|")} do {
+    while {acceptSameLine("op") && (sym.value == "|")} do {
         if (unionTypes.size == 0) then {
             unionTypes.push(overallType)
         }
@@ -212,7 +212,7 @@ method dotyperef {
         subtype.addType(overallType)
     }
     def intersectionTypes = []
-    while {acceptSameLine("op") & (sym.value == "&")} do {
+    while {acceptSameLine("op") && (sym.value == "&")} do {
         if (intersectionTypes.size == 0) then {
             intersectionTypes.push(overallType)
         }
@@ -335,7 +335,7 @@ method block {
 // than just a call with a multi-part method name - it might be possible
 // to change that and compensate later on.
 method doif {
-    if (accept("identifier") & (sym.value == "if")) then {
+    if (accept("identifier") && (sym.value == "if")) then {
         next
         expression
         var cond := values.pop
@@ -353,7 +353,7 @@ method doif {
         def localMin = minIndentLevel
         def localStatementIndent = statementIndent
         var minInd := statementIndent + 1
-        if (accept("identifier") & (sym.value == "then")) then {
+        if (accept("identifier") && (sym.value == "then")) then {
             next
             if (accept("lbrace")) then {
                 next
@@ -373,14 +373,14 @@ method doif {
             var eif
             var newelse
             var ebody
-            while {accept("identifier") & (sym.value == "elseif")} do {
+            while {accept("identifier") && (sym.value == "elseif")} do {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
                 statementToken := sym
                 next
                 expression
                 econd := values.pop
-                if ((accept("identifier") &
+                if ((accept("identifier") &&
                     (sym.value == "then")).not) then {
                     util.syntax_error("elseif with no then.")
                 }
@@ -410,7 +410,7 @@ method doif {
                 // else block.
                 curelse := newelse
             }
-            if (accept("identifier") & (sym.value == "else")) then {
+            if (accept("identifier") && (sym.value == "else")) then {
                 next
                 if (accept("lbrace")) then {
                     // Just take all the statements and put them into
@@ -443,7 +443,7 @@ method doif {
 // Accept a "for" statement. This is also a syntactic special case
 // at the moment. It currently *requires* exactly one parameter.
 method dofor {
-    if (accept("identifier") & (sym.value == "for")) then {
+    if (accept("identifier") && (sym.value == "for")) then {
         next
         var over
         expression
@@ -452,7 +452,7 @@ method dofor {
         var variable
         var localMin
         var minInd := statementIndent + 1
-        if (accept("identifier") & ((sym.value == "each")
+        if (accept("identifier") && ((sym.value == "each")
             || (sym.value == "do"))) then {
             next
             expect("lbrace")
@@ -526,7 +526,7 @@ method generic {
     }
 }
 method matchcase {
-    if (!(accept("identifier") & (sym.value == "match"))) then {
+    if (!(accept("identifier") && (sym.value == "match"))) then {
         return 0
     }
     def localmin = minIndentLevel
@@ -539,7 +539,7 @@ method matchcase {
     next
     def cases = []
     var elsecase := false
-    while {accept("identifier") & (sym.value == "case")} do {
+    while {accept("identifier") && (sym.value == "case")} do {
         next
         if (accept("lbrace")) then {
             block
@@ -553,7 +553,7 @@ method matchcase {
         }
         cases.push(values.pop)
     }
-    if (accept("identifier") & (sym.value == "else")) then {
+    if (accept("identifier") && (sym.value == "else")) then {
         next
         if (accept("lbrace")) then {
             block
@@ -579,14 +579,14 @@ method term {
         pushstring
     } elseif (accept("octets")) then {
         pushoctets
-    } elseif(accept("identifier") & (sym.value == "match")) then {
+    } elseif(accept("identifier") && (sym.value == "match")) then {
         matchcase
     } elseif (accept("identifier")) then {
         identifier
         if (accept("lgeneric")) then {
             generic
         }
-    } elseif (accept("keyword") & (sym.value == "object")) then {
+    } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
     } elseif (accept("lbrace")) then {
         block
@@ -682,10 +682,10 @@ method expressionrest {
             o := sym.value
             next
             prec := oprec(o)
-            if ((o != "*") & (o != "/") & (o != "+") & (o != "-")) then {
+            if ((o != "*") && (o != "/") && (o != "+") && (o != "-")) then {
                 allarith := false
             }
-            if ((opdtype != "") & (opdtype != o) & (allarith.not)) then {
+            if ((opdtype != "") && (opdtype != o) && (allarith.not)) then {
                 // If: this is not the first operator, it is not the same
                 // as the last operator, and the expression has not been
                 // entirely arithmetic, raise a syntax error.
@@ -693,7 +693,7 @@ method expressionrest {
                     ++ opdtype ++ " and " ++ o)
             }
             opdtype := o
-            while {(ops.size > 0) & (prec <= toprec(ops))} do {
+            while {(ops.size > 0) && (prec <= toprec(ops))} do {
                 // Do the shunting: for as long as the current operator
                 // has lesser or equal precedence than the one on the
                 // top of the stack, take the operator off the stack and
@@ -840,7 +840,7 @@ method callrest {
         values.push(meth)
     } elseif (accept("string")onLineOf(tok) || accept("num")onLineOf(tok)
         || accept("lbrace")onLineOf(tok)
-        || (accept("identifier")onLineOf(tok) & ((sym.value == "true")
+        || (accept("identifier")onLineOf(tok) && ((sym.value == "true")
                                    || (sym.value == "false")))) then {
         tok := sym
         hadcall := true
@@ -907,15 +907,15 @@ method callmprest(meth, signature, tok) {
         methname := methname ++ nxt.value
         part.name := nxt.value
         var isTerm := false
-        if ((accept("lparen")).not & (accept("lbrace")).not
-            & accept("string").not & accept("num").not) then {
+        if ((accept("lparen")).not && (accept("lbrace")).not
+            && accept("string").not && accept("num").not) then {
             util.syntax_error("multi-part method name parameters require .")
         }
         if (accept("lbrace")onLineOfLastOr(tok)
             || accept("string")onLineOfLastOr(tok)
             || accept("num")onLineOfLastOr(tok)
             || (accept("identifier")onLineOfLastOr(tok)
-                & ((sym.value == "true")
+                && ((sym.value == "true")
                     || (sym.value == "false")))) then {
             isTerm := true
         } else {
@@ -938,7 +938,7 @@ method callmprest(meth, signature, tok) {
         if (isTerm.not) then {
             expect("rparen")
         }
-        if (accept("rparen") & isTerm.not) then {
+        if (accept("rparen") && isTerm.not) then {
             ln := lastline
             next
         }
@@ -948,7 +948,7 @@ method callmprest(meth, signature, tok) {
 
 // Accept a const declaration
 method defdec {
-    if (accept("keyword") & (sym.value == "def")) then {
+    if (accept("keyword") && (sym.value == "def")) then {
         next
         pushidentifier
         var val := false
@@ -960,7 +960,7 @@ method defdec {
             dtype := values.pop
         }
         def anns = doannotation
-        if (accept("op") & (sym.value == "=")) then {
+        if (accept("op") && (sym.value == "=")) then {
             next
             expression
             val := values.pop
@@ -984,7 +984,7 @@ method defdec {
 
 // Accept a var declaration
 method vardec {
-    if (accept("keyword") & (sym.value == "var")) then {
+    if (accept("keyword") && (sym.value == "var")) then {
         next
         pushidentifier
         var val := false
@@ -1001,7 +1001,7 @@ method vardec {
             expression
             val := values.pop
         }
-        if (accept("op") & (sym.value == "=")) then {
+        if (accept("op") && (sym.value == "=")) then {
             util.syntax_error("var declaration uses ':=', not '='")
         }
         var o := ast.varDecNode.new(name, val, dtype)
@@ -1042,7 +1042,7 @@ method doarray {
 
 // Accept "inherits X.new"
 method inheritsdec {
-    if (accept("keyword") & (sym.value == "inherits")) then {
+    if (accept("keyword") && (sym.value == "inherits")) then {
         checkIndent
         next
         expectConsume {
@@ -1056,11 +1056,11 @@ method inheritsdec {
 // Accept an object literal.
 method doobject {
     // doobject because "object" is a keyword
-    if (accept("keyword") & (sym.value == "object")) then {
+    if (accept("keyword") && (sym.value == "object")) then {
         def localMinIndentLevel = minIndentLevel
         next
         var superclass := false
-        if (accept("identifier") & (sym.value == "extends")) then {
+        if (accept("identifier") && (sym.value == "extends")) then {
             next
             expect("identifier")
             identifier
@@ -1136,7 +1136,7 @@ method doobject {
 //     method y(z) { ... }
 //   }
 method doclass {
-    if (accept("keyword") & (sym.value == "class")) then {
+    if (accept("keyword") && (sym.value == "class")) then {
         next
         def localMinIndentLevel = minIndentLevel
         expect("identifier")
@@ -1182,7 +1182,7 @@ method doclassOld {
         def localMinIndentLevel = minIndentLevel
         generic
         var superclass := false
-        if (accept("identifier") & (sym.value == "extends")) then {
+        if (accept("identifier") && (sym.value == "extends")) then {
             next
             expect("identifier")
             identifier
@@ -1288,7 +1288,7 @@ method doclassOld {
 
 // Accept a method declaration
 method methoddec {
-    if (accept("keyword") & (sym.value == "method")) then {
+    if (accept("keyword") && (sym.value == "method")) then {
         checkIndent
         var stok := sym
         next
@@ -1371,7 +1371,7 @@ method parsempmndecrest(tm) {
         }
         next
         while {accept("identifier")
-                || (accept("op") & (sym.value == "*"))} do {
+                || (accept("op") && (sym.value == "*"))} do {
             if (vararg) then {
                 util.syntax_error("varargs parameter must be last.")
             }
@@ -1423,7 +1423,7 @@ method methodsignature(sameline) {
         next
         meth.value := meth.value ++ ":="
         part.name := part.name ++ ":="
-    } elseif (accept("op") & (meth.value == "prefix")) then {
+    } elseif (accept("op") && (meth.value == "prefix")) then {
         meth.value := meth.value ++ sym.value
         part.name := part.name ++ sym.value
         next
@@ -1435,7 +1435,7 @@ method methodsignature(sameline) {
         next
         var id
         while {accept("identifier") ||
-                (accept("op") & (sym.value == "*"))} do {
+                (accept("op") && (sym.value == "*"))} do {
             // Parse the parameter list, including optional dtype
             // annotations.
             if (accept("op")) then {
@@ -1470,13 +1470,13 @@ method methodsignature(sameline) {
         }
         expect("rparen")
         next
-        if ((!sameline & accept("identifier")) ||
+        if ((!sameline && accept("identifier")) ||
             acceptSameLine("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
             var tm := ast.methodNode.new(meth, signature, [], false)
             meth := parsempmndecrest(tm)
-            varargs := varargs | tm.varargs
+            varargs := varargs || tm.varargs
         }
     }
     if (accept("arrow")) then {
@@ -1499,7 +1499,7 @@ method methodsignature(sameline) {
 // Accept an import statement. import takes a single identifier
 // following, as in "import parser".
 method doimport {
-    if (accept("keyword") & (sym.value == "import")) then {
+    if (accept("keyword") && (sym.value == "import")) then {
         next
         expect("identifier")
         identifier
@@ -1512,7 +1512,7 @@ method doimport {
 // Accept a return statement. return takes a mandatory argument,
 // of the form "return x". x may be any expression.
 method doreturn {
-    if (accept("keyword") & (sym.value == "return")) then {
+    if (accept("keyword") && (sym.value == "return")) then {
         next
         var retval
         if (tokenOnSameLine) then {
@@ -1566,7 +1566,7 @@ method doanontype {
 }
 // Accept a type declaration.
 method dotype {
-    if (accept("keyword") & (sym.value == "type")) then {
+    if (accept("keyword") && (sym.value == "type")) then {
         next
         expect("identifier")
         pushidentifier
