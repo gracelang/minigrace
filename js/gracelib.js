@@ -519,6 +519,12 @@ GraceOrPattern.prototype = {
         "&": function(argcv, o) {
             return new GraceOrPattern(this, o);
         },
+        "asString": function(argcv) {
+            return new GraceString("<OrPattern("
+                    + callmethod(this._left, "asString", [0])._value
+                    + ", " + callmethod(this._right, "asString", [0])._value
+                    + ")>");
+        }
     },
     className: "OrPattern",
 };
@@ -554,6 +560,12 @@ GraceAndPattern.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "asString": function(argcv) {
+            return new GraceString("<AndPattern("
+                    + callmethod(this._left, "asString", [0])._value
+                    + ", " + callmethod(this._right, "asString", [0])._value
+                    + ")>");
+        }
     },
     className: "AndPattern",
 };
