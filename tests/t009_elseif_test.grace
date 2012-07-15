@@ -5,14 +5,14 @@ if (false) then {
 }
 if (true.not) then {
     print("Fail 2 then")
-} elseif (true & false) then {
+} elseif (true && false) then {
     print("Fail 2 elseif1")
-} elseif (false | true) then {
+} elseif (false || true) then {
     print("OK 2 elseif2")
 }
-if (false & false) then {
+if (false && false) then {
     print("Fail 3 then")
-} elseif (false | false) then {
+} elseif (false || false) then {
     print("Fail 3 elseif")
 } else {
     print("OK 3 else")

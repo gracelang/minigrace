@@ -6,7 +6,7 @@ foo(3)bar(5)
 def x = object {
     var value := 4
     method valueBetween (lower) and (upper) {
-        (self.value >= lower) & (self.value <= upper)
+        (self.value >= lower) && (self.value <= upper)
     }
 }
 method sumOf(a,b)isSumOf(c,d) {
