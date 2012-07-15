@@ -402,6 +402,14 @@ method expressionType(expr) {
                 objectmeths.push(e)
             }
         }
+        objectmeths.push(ast.methodTypeNode.new("==",
+            [ast.signaturePart.new("==")], BooleanIdentifier))
+        objectmeths.push(ast.methodTypeNode.new("!=",
+            [ast.signaturePart.new("!=")], BooleanIdentifier))
+        objectmeths.push(ast.methodTypeNode.new("asString",
+            [ast.signaturePart.new("asString")], StringIdentifier))
+        objectmeths.push(ast.methodTypeNode.new("asDebugString",
+            [ast.signaturePart.new("asDebugString")], StringIdentifier))
         for (expr.value) do {e->
             if (e.kind == "defdec") then {
                 objectmeths.push(ast.methodTypeNode.new(e.name.value,
