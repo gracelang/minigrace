@@ -31,6 +31,25 @@ class list.new(*a) {
         size := size - 1
         ret
     }
+    method indices {
+        1..size
+    }
+    method first {
+        inner.at(0)
+    }
+    method last {
+        inner.at(size - 1)
+    }
+    method ++(o) {
+        def l = list.new
+        for (self) do {it->
+            l.push(it)
+        }
+        for (o) do {it->
+            l.push(it)
+        }
+        l
+    }
     method asString {
         var s := "list.new("
         for (0..(size-1)) do {i->
