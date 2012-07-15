@@ -91,8 +91,13 @@ class set.new(*a) {
         def h = x.hashcode
         def s = inner.size
         var t := h % s
-        while {inner.at(t) != unused} do {
+        var c := inner.at(t)
+        while {c != unused} do {
+            if (c == x) then {
+                return self
+            }
             t := (t * 3 + 1) % s
+            c := inner.at(t)
         }
         inner.at(t)put(x)
         size := size + 1
