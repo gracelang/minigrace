@@ -1683,7 +1683,7 @@ Object Float64_asInteger32(Object self, int nparts, int *argcv,
     return alloc_Integer32(i);
 }
 Object Float64_hashcode(Object self, int nparts, int *argcv,
-        Object *args) {
+        Object *args, int flags) {
     double *d = (double*)self->data;
     uint32_t *w1 = (uint32_t*)d;
     uint32_t *w2 = (uint32_t*)(d + 4);
