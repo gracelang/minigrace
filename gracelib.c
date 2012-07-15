@@ -1891,8 +1891,8 @@ Object alloc_Boolean(int val) {
     if (Boolean == NULL) {
         Boolean = alloc_class("Boolean", 13);
         add_Method(Boolean, "asString", &Boolean_asString);
-        add_Method(Boolean, "&", &Boolean_And);
-        add_Method(Boolean, "|", &Boolean_Or);
+        add_Method(Boolean, "&", &literal_and);
+        add_Method(Boolean, "|", &literal_or);
         add_Method(Boolean, "&&", &Boolean_AndAnd);
         add_Method(Boolean, "||", &Boolean_OrOr);
         add_Method(Boolean, "prefix!", &Boolean_not);

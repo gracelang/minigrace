@@ -260,12 +260,10 @@ GraceBoolean.prototype = {
             return new GraceBoolean(!this._value)
         },
         "&": function(argcv, other) {
-            var s = this._value && other._value;
-            return new GraceBoolean(s)
+            return new GraceAndPattern(this, other);
         },
         "|": function(argcv, other) {
-            var s = this._value || other._value;
-            return new GraceBoolean(s)
+            return new GraceOrPattern(this, other);
         },
         "&&": function(argcv, other) {
             if (!this._value)
