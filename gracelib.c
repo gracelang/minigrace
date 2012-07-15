@@ -1750,7 +1750,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 23, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 24, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -1758,7 +1758,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "%", &Float64_Mod);
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
-        add_Method(Number, "/=", &Object_NotEquals);
+        add_Method(Number, "hashcode", &Float64_hashcode);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
