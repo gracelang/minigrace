@@ -674,7 +674,7 @@ function Grace_allocObject() {
         methods: {
             "==": GraceObjectMethods["=="],
             "!=": GraceObjectMethods["!="],
-            "/=": GraceObjectMethods["/="],
+            "asDebugString": GraceObjectMethods["asString"],
             "asString": GraceObjectMethods["asString"],
         },
         superobj: null,
