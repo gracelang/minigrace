@@ -522,6 +522,8 @@ Object alloc_OrPattern(Object l, Object r) {
     Object o = alloc_userobj2(3, 2, OrPattern);
     if (!OrPattern) {
         OrPattern = o->class;
+        glfree(o->class->name);
+        o->class->name = "OrPattern";
         add_Method(OrPattern, "|", &literal_or);
         add_Method(OrPattern, "&", &literal_and);
         add_Method(OrPattern, "match", &OrPattern_match);
@@ -535,6 +537,8 @@ Object alloc_AndPattern(Object l, Object r) {
     Object o = alloc_userobj2(3, 2, AndPattern);
     if (!AndPattern) {
         AndPattern = o->class;
+        glfree(o->class->name);
+        o->class->name = "AndPattern";
         add_Method(AndPattern, "|", &literal_or);
         add_Method(AndPattern, "&", &literal_and);
         add_Method(AndPattern, "match", &AndPattern_match);
