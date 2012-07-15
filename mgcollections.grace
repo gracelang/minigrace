@@ -174,6 +174,7 @@ class set.new(*a) {
         def c = inner.size
         def n = c * 2
         def oldInner = inner
+        size := 0
         inner := PrimitiveArray.new(n)
         for (0..(inner.size-1)) do {i->
             inner.at(i)put(unused)
@@ -188,5 +189,108 @@ class set.new(*a) {
     for (a) do {x->
         add(x)
         size := size + 1
+    }
+}
+
+class map.new {
+    var size := 0
+    var inner := PrimitiveArray.new(8)
+    def unused = object { var unused := true }
+    for (0..(inner.size-1)) do {i->
+        inner.at(i)put(unused)
+    }
+    method put(key', value') {
+        def h = key'.hashcode
+        def s = inner.size
+        var t := h % s
+        var c := inner.at(t)
+        while {c != unused} do {
+            if (c.key == key') then {
+                c.value := value'
+                return self
+            }
+            t := (t * 3 + 1) % s
+            c := inner.at(t)
+        }
+        inner.at(t)put(object {
+            def key = key'
+            var value := value'
+        })
+        size := size + 1
+        if (size > (inner.size / 2)) then {
+            expand
+        }
+    }
+    method get(key') {
+        def h = key'.hashcode
+        def s = inner.size
+        var t := h % s
+        var c := inner.at(t)
+        while {c != unused} do {
+            if (c.key == key') then {
+                return c.value
+            }
+            t := (t * 3 + 1) % s
+            c := inner.at(t)
+        }
+        return inner.at(t).value
+    }
+    method contains(key') {
+        def h = key'.hashcode
+        def s = inner.size
+        var t := h % s
+        while {inner.at(t) != unused} do {
+            if (inner.at(t).key == key') then {
+                return true
+            }
+            t := (t * 3 + 1) % s
+        }
+        return false
+    }
+    method asString {
+        var s := "map.new["
+        for (0..(inner.size-1)) do {i->
+            def a = inner.at(i)
+            if (a != unused) then {
+                s := s ++ "{a.key} => {a.value},"
+            }
+        }
+        s ++ "]"
+    }
+    method iter {
+        object {
+            var count := 1
+            var idx := 0
+            method havemore {
+                count <= size
+            }
+            method next {
+                while {inner.at(idx) == unused} do {
+                    idx := idx + 1
+                }
+                def ret = inner.at(idx).key
+                count := count + 1
+                ret
+            }
+        }
+    }
+    method iterator {
+        iter
+    }
+    method expand {
+        def c = inner.size
+        def n = c * 2
+        def oldInner = inner
+        inner := PrimitiveArray.new(n)
+        for (0..(inner.size-1)) do {i->
+            inner.at(i)put(unused)
+        }
+        size := 0
+        for (0..(oldInner.size-1)) do {i->
+            def a = oldInner.at(i)
+            if (a != unused) then {
+                put(a.key, a.value)
+            }
+        }
     }
 }
