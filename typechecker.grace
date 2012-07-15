@@ -659,7 +659,7 @@ method resolveIdentifier(node) {
     }
     node
 }
-method rewritematchblockterm2(arg) {
+method rewritematchblockterm(arg) {
     if (arg.kind == "num") then {
         return [arg, []]
     }
@@ -674,7 +674,7 @@ method rewritematchblockterm2(arg) {
         def subpats = []
         for (arg.with) do { part ->
             for (part.args) do { a ->
-                def tmp = rewritematchblockterm2(a)
+                def tmp = rewritematchblockterm(a)
                 subpats.push(tmp[1])
                 for (tmp[2]) do {b->
                     bindings.push(b)
@@ -714,7 +714,7 @@ method rewritematchblockterm2(arg) {
                     [ast.callWithPart.new("new", [varpat, arg.dtype])]
                 ), [arg]]
             }
-            def tmp = rewritematchblockterm2(arg.dtype)
+            def tmp = rewritematchblockterm(arg.dtype)
             def bindings = [arg]
             for (tmp[2]) do {b->
                 bindings.push(b)
@@ -733,13 +733,13 @@ method rewritematchblockterm2(arg) {
         return [varpat, [arg]]
     }
 }
-method rewritematchblock2(blk) {
+method rewritematchblock(blk) {
     def arg = blk.params[1]
     var pattern := false
     var newparams := blk.params
     if ((arg.kind == "num") || (arg.kind == "string") ||
         (arg.kind == "boolean")) then {
-        def tmp = rewritematchblockterm2(arg)
+        def tmp = rewritematchblockterm(arg)
         pattern := tmp[1]
         newparams := tmp[2]
     }
@@ -772,7 +772,7 @@ method rewritematchblock2(blk) {
                             ),
                         [ast.callWithPart.new("new", [varpat, arg.dtype])])
                 } case { _ ->
-                    def tmp = rewritematchblockterm2(arg.dtype)
+                    def tmp = rewritematchblockterm(arg.dtype)
                     def bindingpat = ast.callNode.new(
                         ast.memberNode.new("new",
                             ast.memberNode.new("AndPattern",
@@ -802,187 +802,6 @@ method rewritematchblock2(blk) {
     def newblk = ast.blockNode.new(newparams, blk.body)
     newblk.matchingPattern := pattern
     return newblk
-}
-method rewritematchblockterm(param, body) {
-    if (param.kind == "identifier") then {
-        bindIdentifier(param)
-        if ((param.dtype == false) || {param.dtype.kind == "call"}) then {
-            return [param, body]
-        }
-    }
-    var newname := ast.identifierNode.new("__matchterm" ++ auto_count,
-        false)
-    auto_count := auto_count + 1
-    bindIdentifier(newname)
-    var pat := param
-    var st
-    if (pat.kind == "call") then {
-        st := ast.ifNode.new(
-            ast.callNode.new(
-                ast.memberNode.new(
-                    "match",
-                    pat.value),
-                [ast.callWithPart.new("match", [newname])]),
-            body,
-            [ast.identifierNode.new("MatchFailed", false)]
-        )
-    } elseif (pat.kind == "identifier") then {
-        pat := pat.dtype
-        param.dtype := false
-        st := ast.callNode.new(ast.identifierNode.new("print"),
-            [ast.callWithPart.new("print", [ast.stringNode.new("Recursively binding pattern matches unimplemented")])])
-    } else {
-        st := ast.ifNode.new(
-            ast.opNode.new("==", pat, newname),
-            body,
-            [ast.identifierNode.new("MatchFailed", false)]
-        )
-    }
-    return [newname, [st]]
-}
-
-method rewritematchblock(o) {
-    var params := o.params
-    if (params.size != 1) then {
-        def skipListBody = resolveIdentifiersList(o.body)
-        return ast.blockNode.new(o.params, skipListBody)
-    }
-    var body := o.body
-    var inbody := body
-    var pat
-    var tmpp
-    var nparams
-    var newname := ast.identifierNode.new("__matchvar" ++ auto_count,
-        false)
-    auto_count := auto_count + 1
-    bindIdentifier(newname)
-    var fst := params.first
-    if (fst.kind == "call") then {
-        pat := fst
-        tmpp := fst
-        params := [newname]
-        nparams := []
-        for (pat.with) do { part ->
-            for (part.args.indices) do { pwi ->
-                def pw = part.args[pwi]
-                def rw2 = rewritematchblockterm(pw, inbody)
-                part.args[pwi] := rw2[1]
-                inbody := rw2[2]
-            }
-        }
-        inbody := resolveIdentifiersList(inbody)
-        var args := []
-        for (pat.with) do { part ->
-            for (part.args) do { arg ->
-                args.push(arg)
-            }
-        }
-        body := [ast.ifNode.new(
-                    ast.callNode.new(
-                        ast.memberNode.new(
-                            "match",
-                            pat.value),
-                        [ast.callWithPart.new("match", [newname])]),
-                    [
-                        ast.callNode.new(
-                            ast.memberNode.new("applyIndirectly",
-                                ast.blockNode.new(args, inbody)
-                            ),
-                            [ast.callWithPart.new("applyIndirectly", [ast.callNode.new(
-                                ast.memberNode.new("try", pat.value),
-                                [ast.callWithPart.new("try", [newname])]
-                            )])])
-                    ],
-                    [ast.identifierNode.new("MatchFailed", false)]
-                    )
-                ]
-    } elseif (fst.kind != "identifier") then {
-        auto_count := auto_count + 1
-        pat := fst
-        params := [newname]
-        inbody := resolveIdentifiersList(inbody)
-        body := [ast.ifNode.new(
-                    ast.opNode.new("==", pat, newname),
-                    [
-                        ast.callNode.new(
-                            ast.memberNode.new("apply",
-                                ast.blockNode.new([], inbody)
-                            ),
-                            [ast.callWithPart.new("apply")])
-                    ],
-                    [ast.identifierNode.new("MatchFailed", false)]
-                    )
-                ]
-    } elseif (fst.dtype != false) then {
-        pat := fst.dtype
-        tmpp := fst
-        if (pat.kind == "call") then {
-            nparams := []
-            params := [newname]
-            for (pat.with) do { part ->
-                for (part.args.indices) do { pwi ->
-                    def pw = part.args[pwi]
-                    def rw2 = rewritematchblockterm(pw, inbody)
-                    part.args[pwi] := rw2[1]
-                    inbody := rw2[2]
-                }
-            }
-            inbody := resolveIdentifiersList(inbody)
-            body := [ast.ifNode.new(
-                        ast.callNode.new(
-                            ast.memberNode.new(
-                                "match",
-                                pat.value),
-                            [ast.callWithPart.new("match", [newname])]),
-                        [
-                            ast.callNode.new(
-                                ast.memberNode.new("applyIndirectly",
-                                    ast.blockNode.new(pat.with.args.first.prepended(fst),
-                                                inbody)
-                                ),
-                                [ast.callWithPart.new("applyIndirectly", [ast.callNode.new(
-                                    ast.memberNode.new(
-                                        "prepended",
-                                        ast.callNode.new(
-                                            ast.memberNode.new("try", pat.value),
-                                            [ast.callWithPart.new("try", [newname])]
-                                        )
-                                    ),
-                                    [ast.callWithPart.new("prepended", [newname])]
-                                )
-                                ])])
-                        ],
-                        [ast.identifierNode.new("MatchFailed", false)]
-                        )
-                    ]
-        } else {
-            inbody := resolveIdentifiersList(inbody)
-            def binding = findName(pat.value)
-            if (binding.kind != "type") then {
-                params := [newname]
-                body := [ast.ifNode.new(
-                            ast.callNode.new(
-                                ast.memberNode.new(
-                                    "match",
-                                    pat),
-                                [ast.callWithPart.new("match", [newname])]),
-                            [
-                                ast.callNode.new(
-                                    ast.memberNode.new("apply",
-                                        ast.blockNode.new(o.params, inbody)
-                                    ),
-                                    [ast.callWithPart.new("apply", [newname])])
-                            ],
-                            [ast.identifierNode.new("MatchFailed", false)]
-                            )
-                        ]
-            }
-        }
-    } else {
-        body := resolveIdentifiersList(body)
-    }
-    o := ast.blockNode.new(params, body)
-    return o
 }
 
 method resolveIdentifiers(node) {
@@ -1094,7 +913,7 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "block") then {
         if (node.params.size == 1) then {
-            node := rewritematchblock2(node)
+            node := rewritematchblock(node)
         }
         pushScope
         for (node.params) do {e->
