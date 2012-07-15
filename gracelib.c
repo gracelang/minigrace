@@ -3348,7 +3348,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         add_Method(c, "++", &Object_concat);
         add_Method(c, "==", &UserObj_Equals);
         add_Method(c, "!=", &Object_NotEquals);
-        add_Method(c, "/=", &Object_NotEquals);
+        add_Method(c, "asDebugString", &Object_asString);
     }
     numFields++;
     Object o = alloc_obj(sizeof(struct UserObject)
