@@ -373,14 +373,12 @@ def LexerClass = object {
 
             // Read the program text from util.infile and return a list of
             // tokens.
-            method lexinput {
-                lexfile(util.infile)
-            }
-
             method lexfile(file) {
                 util.log_verbose("reading source.")
-                var input := file.read
+                lexinput(file.read)
+            }
 
+            method lexinput(input) {
                 var tokens := []
                 var mode := "n"
                 var newmode := mode

@@ -25,7 +25,7 @@ if (util.target == "help") then {
     sys.exit(0)
 }
 
-var tokens := lexer.Lexer.new.lexinput
+var tokens := lexer.Lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
