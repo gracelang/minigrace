@@ -970,9 +970,18 @@ method defdec {
             util.syntax_error("def declaration requires value")
         }
         var o := ast.defDecNode.new(name, val, dtype)
-        if (false != anns) then {
+        var hasVisibility := false
+        if (anns != false) then {
+            for (anns) do {a->
+                if ((a.kind == "identifier").andAlso {
+                    (a.value == "public")
+                     || (a.value == "confidential")}) then {
+                    hasVisibility := true
+                }
+            }
             o.annotations.extend(anns)
-        } else {
+        }
+        if (!hasVisibility) then {
             if (defaultDefVisibility == "confidential") then {
                 o.annotations.push(ast.identifierNode.new("confidential",
                     false))
@@ -1005,9 +1014,18 @@ method vardec {
             util.syntax_error("var declaration uses ':=', not '='")
         }
         var o := ast.varDecNode.new(name, val, dtype)
-        if (false != anns) then {
+        var hasVisibility := false
+        if (anns != false) then {
+            for (anns) do {a->
+                if ((a.kind == "identifier").andAlso {
+                    (a.value == "public")
+                     || (a.value == "confidential")}) then {
+                    hasVisibility := true
+                }
+            }
             o.annotations.extend(anns)
-        } else {
+        }
+        if (!hasVisibility) then {
             if (defaultVarVisibility == "confidential") then {
                 o.annotations.push(ast.identifierNode.new("confidential",
                     false))
