@@ -251,6 +251,9 @@ method expressionType(expr) {
         if (expr.value == "self") then {
             return selftypes.last
         }
+        if (expr.value == "super") then {
+            return selftypes.last
+        }
         return expr.dtype
     }
     if (expr.kind == "num") then {
