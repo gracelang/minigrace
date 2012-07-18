@@ -67,8 +67,8 @@ Object callmethod(Object receiver, const char *name,
         int nparts, int *nparams, Object *args);
 Object callmethodflags(Object receiver, const char *name,
         int nparts, int *nparams, Object *args, int callflags);
-Object callmethod4(Object self, const char *name,
-        int partc, int *argcv, Object *argv, int superdepth, int callflags);
+Object callmethod4(Object, const char *,
+        int, int *, Object *, int, int);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
