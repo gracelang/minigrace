@@ -1,3 +1,0 @@
-#!/bin/bash
-
-java -classpath "$(dirname "$0")" minigrace --target java --gracelib "$(dirname "$0")" $@
