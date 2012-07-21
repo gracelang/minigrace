@@ -91,6 +91,8 @@ method parseargs {
                 } elseif (arg.at(2) == "X") then {
                     var ext := arg.substringFrom(3)to(arg.size)
                     processExtension(ext)
+                } elseif (arg == "-") then {
+                    toStdout := true
                 } else {
                     io.error.write("minigrace: invalid argument {arg}.\n")
                     sys.exit(1)
@@ -112,22 +114,13 @@ method parseargs {
         }
     }
     if ((outfilev == io.output) && {!toStdout}) then {
-        if (targetv == "c") then {
-            outfilev := io.open(modnamev ++ ".c", "w")
-        } elseif (targetv == "java") then {
-            outfilev := io.open(modnamev ++ ".java", "w")
-        } else {
-            outfilev := io.open(modnamev ++ ".ll", "w")
-        }
+        outfilev := match(targetv)
+            case { "c" -> io.open(modnamev ++ ".c", "w") }
+            case { "js" -> io.open(modnamev ++ ".js", "w") }
+            case { _ -> io.output }
     }
     if (gracelibPathv == false) then {
-        if (targetv == "llvm") then {
-            gracelibPathv := sys.execPath ++ "/gracelib.bc"
-        } elseif (targetv == "java") then {
-            gracelibPathv := sys.execPath ++ "/java"
-        } else {
-            gracelibPathv := sys.execPath
-        }
+        gracelibPathv := sys.execPath
     }
     if (infilev == io.input) then {
         if (infilev.isatty) then {
