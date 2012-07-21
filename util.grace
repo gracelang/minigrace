@@ -39,75 +39,82 @@ method parseargs {
         var skip := true
         for (indices) do { ai->
             arg := argv.at(ai)
-            if (skip) then {
-                skip := false
-            } elseif (arg.at(1) == "-") then {
-                if (arg == "-o") then {
-                    outfilev := io.open(argv.at(ai + 1), "w")
-                    skip := true
-                } elseif (arg == "--verbose") then {
-                    verbosityv := 40
-                } elseif (arg == "--vtag") then {
-                    skip := true
-                    vtagv := argv.at(ai + 1)
-                } elseif (arg == "--make") then {
-                    runmodev := "make"
-                    buildtypev := "bc"
-                } elseif (arg == "--no-recurse") then {
-                    recurse := false
-                } elseif (arg == "--run") then {
-                    buildtypev := "run"
-                    runmodev := "make"
-                } elseif (arg == "--source") then {
-                    buildtypev := "source"
-                    runmodev := "build"
-                } elseif (arg == "--native") then {
-                    buildtypev := "native"
-                } elseif (arg == "--noexec") then {
-                    noexecv := true
-                } elseif (arg == "--stdout") then {
-                    toStdout := true
-                } elseif (arg == "--module") then {
-                    skip := true
-                    modnamev := argv.at(ai + 1)
-                } elseif (arg == "--gracelib") then {
-                    skip := true
-                    gracelibPathv := argv.at(ai + 1)
-                } elseif (arg == "--target") then {
-                    skip := true
-                    targetv := argv.at(ai + 1)
-                } elseif (arg == "-j") then {
-                    skip := true
-                    jobs := argv.at(ai + 1).asNumber
-                } elseif (arg == "--version") then {
-                    print("minigrace {versionNumber}.{buildinfo.gitgeneration}")
-                    print("git revision " ++ buildinfo.gitrevision)
-                    print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
-                    sys.exit(0)
-                } elseif (arg == "--help") then {
-                    print "Usage: minigrace <file>.grace"
-                    print "See the documentation for more options."
-                    sys.exit(0)
-                } elseif (arg.at(2) == "X") then {
-                    var ext := arg.substringFrom(3)to(arg.size)
-                    processExtension(ext)
-                } elseif (arg == "-") then {
-                    toStdout := true
-                } else {
-                    io.error.write("minigrace: invalid argument {arg}.\n")
-                    sys.exit(1)
-                }
-            } else {
-                var filename := arg
-                infilev := io.open(filename, "r")
-                if (modnamev == "stdin_minigrace") then {
-                    var accum := ""
-                    modnamev := ""
-                    for (filename) do { c->
-                        if (c == ".") then {
-                            modnamev := accum
+            if (arg.at(1) == "-") then {
+                match(arg)
+                    case { "-o" ->
+                        outfilev := io.open(argv.at(ai + 1), "w")
+                        skip := true
+                    } case { "--verbose" ->
+                        verbosityv := 40
+                    } case { "--vtag" ->
+                        skip := true
+                        vtagv := argv.at(ai + 1)
+                    } case { "--make" ->
+                        runmodev := "make"
+                        buildtypev := "bc"
+                    } case { "--no-recurse" ->
+                        recurse := false
+                    } case { "--run" ->
+                        buildtypev := "run"
+                        runmodev := "make"
+                    } case { "--source" ->
+                        buildtypev := "source"
+                        runmodev := "build"
+                    } case { "--native" ->
+                        buildtypev := "native"
+                    } case { "--noexec" ->
+                        noexecv := true
+                    } case { "--stdout" ->
+                        toStdout := true
+                    } case { "-" ->
+                        toStdout := true
+                    } case { "--module" ->
+                        skip := true
+                        modnamev := argv.at(ai + 1)
+                    } case { "--gracelib" ->
+                        skip := true
+                        gracelibPathv := argv.at(ai + 1)
+                    } case { "--target" ->
+                        skip := true
+                        targetv := argv.at(ai + 1)
+                    } case { "-j" ->
+                        skip := true
+                        jobs := argv.at(ai + 1).asNumber
+                    } case { "--version" ->
+                        print("minigrace "
+                            ++ "{versionNumber}.{buildinfo.gitgeneration}")
+                        print("git revision " ++ buildinfo.gitrevision)
+                        print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
+                        sys.exit(0)
+                    } case { "--help" ->
+                        print "Usage: minigrace <file>.grace"
+                        print "See the documentation for more options."
+                        sys.exit(0)
+                    } case { _ ->
+                        if (arg.at(2) == "X") then {
+                            var ext := arg.substringFrom(3)to(arg.size)
+                            processExtension(ext)
+                        } else {
+                            io.error.write("minigrace: invalid "
+                                ++ "argument {arg}.\n")
+                            sys.exit(1)
                         }
-                        accum := accum ++ c
+                    }
+            } else {
+                if (skip) then {
+                    skip := false
+                } else {
+                    var filename := arg
+                    infilev := io.open(filename, "r")
+                    if (modnamev == "stdin_minigrace") then {
+                        var accum := ""
+                        modnamev := ""
+                        for (filename) do { c->
+                            if (c == ".") then {
+                                modnamev := accum
+                            }
+                            accum := accum ++ c
+                        }
                     }
                 }
             }
@@ -232,10 +239,12 @@ method processExtension(ext) {
         if (c == "=") then {
             seeneq := true
             extv := ""
-        } elseif (!seeneq) then {
-            extn := extn ++ c
         } else {
-            extv := extv ++ c
+            if (!seeneq) then {
+                extn := extn ++ c
+            } else {
+                extv := extv ++ c
+            }
         }
     }
     extensionsv.put(extn, extv)
