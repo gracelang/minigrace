@@ -18,9 +18,6 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
-gracelib.bc: gracelib.c gracelib.h
-	clang -emit-llvm -c -o gracelib.bc gracelib.c
-
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -o gracelib-basic.o -c gracelib.c
 
@@ -67,19 +64,10 @@ tarball: minigrace
 	chmod 755 c/configure
 	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ; mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ; cp -R README doc minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
-jar: java
-	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) && cd java && jar cvfe minigrace-$$VER.jar minigrace . && mv minigrace-$$VER.jar ../..
-
 selfhost-stats: minigrace
-	cat compiler.grace util.grace ast.grace parser.grace genllvm29.grace > tmp.grace
+	cat compiler.grace util.grace ast.grace parser.grace genc.grace > tmp.grace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
 	rm -f tmp.grace
-
-selfhost-rec: minigrace
-	@( cd l2 ; llvm-dis -o l2.ll minigrace.bc )
-	@llvm-dis -o l3.ll minigrace.bc
-	@diff -q l2/l2.ll l3.ll
-	@rm -f l2/l2.ll l3.ll
 
 selftest: minigrace
 	rm -rf selftest
@@ -91,50 +79,27 @@ selftest: minigrace
 minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) $(OTHER_MODULES) gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
-unicode.gco: unicode.c unicodedata.h
-	clang -emit-llvm -c -o unicode.gco -DNO_FLAGS= unicode.c
-
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 test: minigrace
 	./tests/harness "../minigrace" tests ""
-fulltest: gencheck clean selfhost-rec selftest test llvmtest
-javatest: minigrace
-	./tests/harness "../minigrace --target java --gracelib ../java" tests "java -classpath .:../java"
-javajavatest: java
-	./tests/harness "../java/minigracej" tests "java -classpath .:../java"
+fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
-backendtests: test javatest
+backendtests: test
 
-java: minigrace $(SOURCEFILES)
-	cd java && cp ../StandardPrelude.grace grace/lib && ../minigrace --make --verbose --target java -XNativePrelude grace/lib/StandardPrelude.grace && for x in $(SOURCEFILES) ; do ln -sf ../$$x . ; done && ../minigrace --make --verbose --target java --module minigrace compiler.grace
-
-javaclean:
-	rm -f $(SOURCEFILES:.grace=.java) minigrace.java
-	rm -f $(SOURCEFILES:.grace=)*.class minigrace.class
-	rm -f java/grace/lib/*.class
-	rm -f java/grace/lang/*.class
-	rm -f java/*.java
-	rm -f java/*.class
-clean: javaclean
+clean:
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso unicode.gcn
 	rm -rf l1 l2 buildinfo.grace
-	rm -f $(SOURCEFILES:.grace=.ll)
-	rm -f $(SOURCEFILES:.grace=.s)
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)
 	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
-	rm -f $(SOURCEFILES:.grace=.bc) minigrace.bc
 	rm -f $(SOURCEFILES:.grace=)
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	( cd c ; rm -f *.gcn *.c *.h *.grace minigrace unicode.gso gracelib.o )
-	rm -f minigrace.gco minigrace.ll minigrace.s minigrace
-
-semiclean:
-	rm -f lexer.gco parser.gco util.gco ast.gco genllvm29.gco
+	rm -f minigrace.gco minigrace
 
 known-good/%:
 	rm -rf l1 l2 # We must regenerate files so #include updated
@@ -144,4 +109,4 @@ known-good/%:
 Makefile.conf: configure
 	./configure
 
-.PHONY: all clean selfhost-stats selfhost-rec test js c java selftest
+.PHONY: all clean selfhost-stats test js c selftest
