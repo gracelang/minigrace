@@ -117,11 +117,19 @@ method compileobjdefdec(o, selfr, pos) {
     out("    return this.data[\"" ++ nm ++ "\"];")
     out("  \}")
     out("  reader_{modname}_{nmi}{myc}.def = true;")
+    var isReadable := false
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso
             {ann.value == "confidential"}) then {
             out("  reader_{modname}_{nmi}{myc}.confidential = true;")
         }
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "readable"}) then {
+            isReadable := true
+        }
+    }
+    if (!isReadable) then {
+        out("  reader_{modname}_{nmi}{myc}._private = true;")
     }
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
@@ -147,12 +155,28 @@ method compileobjvardec(o, selfr, pos) {
     out("  \}")
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
+    var isReadable := false
+    var isWritable := false
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso
             {ann.value == "confidential"}) then {
             out("  reader_{modname}_{nmi}{myc}.confidential = true;")
             out("  writer_{modname}_{nmi}{myc}.confidential = true;")
         }
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "readable"}) then {
+            isReadable := true
+        }
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "writable"}) then {
+            isWritable := true
+        }
+    }
+    if (!isReadable) then {
+        out("  reader_{modname}_{nmi}{myc}._private = true;")
+    }
+    if (!isWritable) then {
+        out("  writer_{modname}_{nmi}{myc}._private = true;")
     }
 }
 method compileclass(o) {
