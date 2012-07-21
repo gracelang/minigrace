@@ -188,6 +188,7 @@ struct SFLinkList *shutdown_functions;
 
 int linenumber = 0;
 const char *modulename;
+char **moduleSourceLines;
 
 size_t heapsize;
 size_t heapcurrent;
@@ -243,6 +244,13 @@ void gracedie(char *msg, ...) {
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
+    int fl = linenumber - 2;
+    if (fl < 0) fl = 0;
+    for (; fl<linenumber+1; fl++)
+        if (moduleSourceLines[fl])
+            fprintf(stderr, "%4i: %s\n", fl + 1, moduleSourceLines[fl]);
+        else
+            break;
     backtrace();
     va_end(args);
     exit(1);
@@ -256,6 +264,13 @@ void die(char *msg, ...) {
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
+    int fl = linenumber - 2;
+    if (fl < 0) fl = 0;
+    for (; fl<linenumber+1; fl++)
+        if (moduleSourceLines[fl])
+            fprintf(stderr, "%4i: %s\n", fl + 1, moduleSourceLines[fl]);
+        else
+            break;
     backtrace();
     va_end(args);
     exit(1);
@@ -3522,6 +3537,9 @@ void setline(int l) {
 }
 void setmodule(const char *mod) {
     modulename = mod;
+}
+void setsource(char *msl[]) {
+    moduleSourceLines = msl;
 }
 
 int freed_since_expansion;

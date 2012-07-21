@@ -1201,6 +1201,7 @@ method compilenode(o) {
         out("// Begin line " ++ linenum)
         out("  setline({linenum});")
         out("  setmodule(modulename);")
+        out("  setsource(originalSourceLines);")
     }
     if (o.kind == "num") then {
         compilenum(o)
@@ -1523,6 +1524,11 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object prelude;")
     outprint("static const char modulename[] = \"{modname}\";");
     outprint("Object module_StandardPrelude_init();");
+    outprint("static char *originalSourceLines[] = \{")
+    for (util.cLines) do {l->
+        outprint("  \"{l}\",")
+    }
+    outprint("  NULL\n\};")
     topLevelTypes.put("String", true)
     topLevelTypes.put("Number", true)
     topLevelTypes.put("Boolean", true)
