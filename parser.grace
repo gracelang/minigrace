@@ -986,6 +986,10 @@ method defdec {
                 o.annotations.push(ast.identifierNode.new("confidential",
                     false))
             }
+            if (defaultDefVisibility == "public") then {
+                o.annotations.push(ast.identifierNode.new("readable",
+                    false))
+            }
         }
         values.push(o)
     }
@@ -1028,6 +1032,12 @@ method vardec {
         if (!hasVisibility) then {
             if (defaultVarVisibility == "confidential") then {
                 o.annotations.push(ast.identifierNode.new("confidential",
+                    false))
+            }
+            if (defaultVarVisibility == "public") then {
+                o.annotations.push(ast.identifierNode.new("readable",
+                    false))
+                o.annotations.push(ast.identifierNode.new("writable",
                     false))
             }
         }
