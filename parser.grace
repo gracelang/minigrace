@@ -146,6 +146,7 @@ method pushstring {
 // Push the current token onto the output stack as an identifier.
 // false means that this identifier has not been assigned a dtype (yet).
 method pushidentifier {
+    util.setline(sym.line)
     var o := ast.identifierNode.new(sym.value, false)
     if (o.value == "_") then {
         o.value := "__" ++ auto_count
@@ -238,6 +239,7 @@ method dotyperef {
 // Accept a block
 method block {
     if (accept("lbrace")) then {
+        def btok = sym
         next
         var minInd := statementIndent + 1
         var startIndent := statementIndent
@@ -321,6 +323,7 @@ method block {
         minIndentLevel := minInd - 1
         statementIndent := startIndent
         next
+        util.setPosition(btok.line, btok.linePos)
         var o := ast.blockNode.new(params, body)
         if (isMatchingBlock) then {
             if (params.size > 0) then {
@@ -336,6 +339,7 @@ method block {
 // to change that and compensate later on.
 method doif {
     if (accept("identifier") && (sym.value == "if")) then {
+        def btok = sym
         next
         expression
         var cond := values.pop
@@ -429,6 +433,7 @@ method doif {
                     next
                 }
             }
+            util.setPosition(btok.line, btok.linePos)
             var o := ast.ifNode.new(cond, body, elseblock)
             values.push(o)
         } else {
@@ -787,6 +792,7 @@ method callrest {
         }
     }
     var methn
+    def btok = sym
     var tmp
     var ln := false
     var signature := []
@@ -880,6 +886,7 @@ method callrest {
                 meth := methn
             }
         }
+        util.setPosition(btok.line, btok.linePos)
         tmp := ast.callNode.new(meth, signature)
         values.push(tmp)
     }
