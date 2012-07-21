@@ -1127,9 +1127,13 @@ function callmethodsuper(obj, methname, argcv) {
 function callmethod(obj, methname, argcv) {
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
+    var isSuper = false;
+    if (overrideReceiver != null)
+        isSuper = true;
     superDepth = obj;
     if (typeof(meth) != "function") {
-        var s = obj
+        var s = obj;
+        isSuper = true;
         while (s.superobj != null) {
             s = s.superobj;
             meth = s.methods[methname];
@@ -1139,7 +1143,7 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) != "function") {
+    if (typeof(meth) != "function" || (meth._private && isSuper)) {
         stderr_txt.value += "No such method '" + methname + "' on " + obj.className + ", called at line " + lineNumber + ".\n";
         for (var i=callStack.length; i>0; i--)
             stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
