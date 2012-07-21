@@ -219,10 +219,13 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "MFLAG_DEF"
+    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
             flags := "{flags} | MFLAG_CONFIDENTIAL"
+        }
+        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+            flags := "({flags}) ^ MFLAG_PRIVATE"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
@@ -273,16 +276,24 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "0"
+    var rflags := "MFLAG_PRIVATE"
+    var wflags := "MFLAG_PRIVATE"
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso {ann.value == "confidential"}) then {
-            flags := "{flags} | MFLAG_CONFIDENTIAL"
+            rflags := "{rflags} | MFLAG_CONFIDENTIAL"
+            wflags := "{wflags} | MFLAG_CONFIDENTIAL"
+        }
+        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+            rflags := "({rflags}) ^ MFLAG_PRIVATE"
+        }
+        if ((ann.kind == "identifier").andAlso {ann.value == "writable"}) then {
+            wflags := "({wflags}) ^ MFLAG_PRIVATE"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
+    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     nmw := escapestring2(nmw)
@@ -293,7 +304,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return none;");
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc}, {flags});")
+    out("  addmethodrealflags({selfr}, \"{enm}:=\",&writer_{escmodname}_{inm}_{myc}, {wflags});")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
