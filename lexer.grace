@@ -3,6 +3,9 @@ import io
 import sys
 import util
 import unicode
+import mgcollections
+
+def collections = mgcollections
 
 // Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {
@@ -304,7 +307,8 @@ def LexerClass = object {
                 }
                 startPosition := linePosition
             }
-
+            def cLines = collections.list.new
+            def lines = collections.list.new
             method fromBase(str, base) {
                 def digits = "0123456789abcdefghijklmnopqrstuvqxyz"
                 var val := 0
@@ -391,6 +395,8 @@ def LexerClass = object {
                 var interpdepth := 0
                 var interpString := false
                 var atStart := true
+                var cline := ""
+                var lineStr := ""
                 linePosition := 0
                 util.log_verbose("lexing.")
                 for (input) do { c ->
@@ -641,6 +647,10 @@ def LexerClass = object {
                         mode := "d"
                         newmode := "d"
                         accum := ""
+                        cLines.push(cline)
+                        cline := ""
+                        lines.push(lineStr)
+                        lineStr := ""
                     } else {
                         accum := accum ++ c
                     }
@@ -659,10 +669,23 @@ def LexerClass = object {
                         linePosition := 0
                         startPosition := 1
                         util.setPosition(lineNumber, 0)
+                    } else {
+                        if (c == "\"") then {
+                            cline := cline ++ "\\\""
+                        } else {
+                            if (c == "\\") then {
+                                cline := cline ++ "\\\\"
+                            } else {
+                                cline := cline ++ c
+                            }
+                        }
+                        lineStr := lineStr ++ c
                     }
                     prev := c
                 }
                 modechange(tokens, mode, accum)
+                util.cLines := cLines
+                util.lines := lines
                 tokens
             }
         }

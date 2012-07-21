@@ -1716,6 +1716,7 @@ method statement {
     } else {
         if (sym.line == lastToken.line) then {
             if (sym.kind != "rbrace") then {
+                util.setPosition(sym.line, sym.linePos)
                 util.syntax_error("unexpected token after statement ended; "
                     ++ "got {sym.kind}:'{sym.value}', expected "
                     ++ "new line or semicolon")

@@ -20,6 +20,8 @@ var versionNumber := "0.0.7"
 var extensionsv := HashMap.new
 var recurse := true
 var jobs := 2
+var cLines := []
+var lines := []
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision != "cc2ded6be7e705924e6a331ed01d8c3240ceb688")
@@ -164,6 +166,14 @@ method syntax_error(s) {
     }
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Syntax error: {s}")
     io.error.write("\n")
+    var arr := ""
+    for (2..lineposv) do {
+        arr := arr ++ "-"
+    }
+    if (lines.size >= linenumv) then {
+        io.error.write(lines.at(linenumv))
+        io.error.write("\n{arr}^\n")
+    }
     sys.exit(1)
 }
 method type_error(s) {
@@ -175,6 +185,7 @@ method type_error(s) {
     }
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
     io.error.write("\n")
+    io.error.write(lines.at(linenumv) ++ "\n")
     sys.exit(1)
 }
 method warning(s) {
