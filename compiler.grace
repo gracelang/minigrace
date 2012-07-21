@@ -15,7 +15,7 @@ import mgcollections
 
 util.parseargs
 
-def targets = ["lex", "parse", "processed-ast", "subtypematrix", "c", "js", "grace", "java"]
+def targets = ["lex", "parse", "processed-ast", "subtypematrix", "c", "js", "grace"]
 
 if (util.target == "help") then {
     print("Valid targets:")

@@ -7,16 +7,11 @@ for how this wrapping would work.
 For the C backend, see unicode.c for an example of glue code. The code
 specifies a dynamically-loadable module with several methods, which can
 be called directly from Grace code. All arguments and return values will
-be Objects.
+be Objects. Also see grace-gtk (<https://github.com/mwh/grace-gtk>),
+which binds the GTK+, GDK, and Cairo libraries for use in Grace code.
 
 For the JavaScript backend, see gracelib.js and particularly the
 gracecode_io and gracecode_unicode functions. An object contains an
 object of methods and a className field, and any JavaScript object with
 this form can be used as a Grace object. Importable modules should be
 returned by a function named gracecode_<module>.
-
-For the experimental Java backend, see the code in java/grace/lib. Any
-module will need to support a $module method returning an instance. Any
-arguments will be GraceObjects and any return values must be also.
-
-The Java backend is no longer functional or included in tarballs.
