@@ -2494,6 +2494,7 @@ start:
     }
     int slot = gc_frame_newslot(self);
     ClassData c = self->class;
+    Object originalself = self;
     Object realself = self;
     Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
     sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
@@ -2513,6 +2514,11 @@ start:
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
         gracedie("requested confidential method from outside.");
+    }
+    if (m != NULL && m->flags & MFLAG_PRIVATE
+            && (originalself != self)) {
+        die("Method lookup error: no %s in %s.",
+                name, self->class->name);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
