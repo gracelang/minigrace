@@ -1092,6 +1092,7 @@ method inheritsdec {
 method doobject {
     // doobject because "object" is a keyword
     if (accept("keyword") && (sym.value == "object")) then {
+        def btok = sym
         def localMinIndentLevel = minIndentLevel
         next
         var superclass := false
@@ -1158,6 +1159,7 @@ method doobject {
             var p := rbody.pop
             body.push(p)
         }
+        util.setline(btok.line)
         var o := ast.objectNode.new(body, superclass)
         values.push(o)
         minIndentLevel := localMinIndentLevel
@@ -1172,6 +1174,7 @@ method doobject {
 //   }
 method doclass {
     if (accept("keyword") && (sym.value == "class")) then {
+        def btok = sym
         next
         def localMinIndentLevel = minIndentLevel
         expect("identifier")
@@ -1206,6 +1209,7 @@ method doclass {
             }
         }
         next
+        util.setline(btok.line)
         var o := ast.classNode.new(cname, csig, body, false, constructorName)
         values.push(o)
         minIndentLevel := localMinIndentLevel

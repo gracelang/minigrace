@@ -186,9 +186,6 @@ method popScope {
 }
 
 method conformsType(b)to(a) {
-    if (util.extensions.contains("IgnoreTypes")) then {
-        return DynamicType
-    }
     if ((b == false) || (a == false)) then {
         return true
     }
@@ -941,6 +938,7 @@ method resolveIdentifiers(node) {
         }
         selftypes.push(selftype)
         l := resolveIdentifiersList(node.value)withBlock(tmp)
+        util.setline(node.line)
         tmp2 := ast.objectNode.new(l,
             resolveIdentifiers(node.superclass))
         selftypes.pop
@@ -1315,6 +1313,7 @@ method resolveIdentifiersList(lst)withBlock(bk) {
                     bindIdentifier(part.vararg)
                 }
             }
+            util.setline(e.line)
             def classInstanceType' = expressionType(ast.objectNode.new(e.value,
                 e.superclass))
             popScope
