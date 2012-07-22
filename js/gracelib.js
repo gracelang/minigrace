@@ -1091,10 +1091,26 @@ function gracecode_util() {
                 extv = new GraceBoolean(true);
             }
             callmethod(extensionsMap, "put", [2], extn, extv);
-        }
+        },
+        "lines": function(argcv) {
+            return this._lines;
+        },
+        "cLines": function(argcv) {
+            return this._cLines;
+        },
+        "lines:=": function(argcv, v) {
+            this._lines = v;
+            return var_noSuchValue;
+        },
+        "cLines:=": function(argcv, v) {
+            this._cLines = v;
+            return var_noSuchValue;
+        },
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
+    this._lines = new GraceList([]);
+    this._cLines = new GraceList([]);
     util_module = this;
     return this;
 }
