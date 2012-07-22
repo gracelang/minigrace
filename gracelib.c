@@ -244,14 +244,14 @@ void gracedie(char *msg, ...) {
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
+    backtrace();
     int fl = linenumber - 2;
     if (fl < 0) fl = 0;
     for (; fl<linenumber+1; fl++)
         if (moduleSourceLines[fl])
-            fprintf(stderr, "%4i: %s\n", fl + 1, moduleSourceLines[fl]);
+            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
         else
             break;
-    backtrace();
     va_end(args);
     exit(1);
 }
@@ -264,14 +264,14 @@ void die(char *msg, ...) {
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
+    backtrace();
     int fl = linenumber - 2;
     if (fl < 0) fl = 0;
     for (; fl<linenumber+1; fl++)
         if (moduleSourceLines[fl])
-            fprintf(stderr, "%4i: %s\n", fl + 1, moduleSourceLines[fl]);
+            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
         else
             break;
-    backtrace();
     va_end(args);
     exit(1);
 }
@@ -2513,7 +2513,7 @@ start:
     Object originalself = self;
     Object realself = self;
     Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
-    sprintf(callstack[calldepth], "%s%s.%s (defined at %s:%i in %s:%i) on line %i", (istail ? "tailcall " : ""),
+    sprintf(callstack[calldepth], "%s%s.%s (defined at %s:%i in object at %s:%i) on line %i", (istail ? "tailcall " : ""),
             self->class->name, name, m ? m->definitionModule : "<nowhere>",
             m ? m->definitionLine : 0,
             originalself->class->definitionModule,
