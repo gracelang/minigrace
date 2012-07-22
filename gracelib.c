@@ -780,7 +780,7 @@ void List_mark(Object o) {
 }
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class3("List", 19, (void*)&List_mark,
+        List = alloc_class3("List", 20, (void*)&List_mark,
                 (void*)&List__release);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
@@ -792,6 +792,7 @@ Object alloc_List() {
         add_Method(List, "length", &List_length);
         add_Method(List, "size", &List_length);
         add_Method(List, "iter", &List_iter);
+        add_Method(List, "iterator", &List_iter);
         add_Method(List, "contains", &List_contains);
         add_Method(List, "==", &Object_Equals);
         add_Method(List, "!=", &Object_NotEquals);
@@ -2226,6 +2227,23 @@ Object io_spawn(Object self, int nparts, int *argcv,
     }
     return alloc_Process(pid);
 }
+Object io_spawnv(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    int size = integerfromAny(callmethod(argv[1], "size", 0, NULL, NULL));
+    char *args[size + 2];
+    args[0] = grcstring(argv[0]);
+    int i;
+    Object iter = callmethod(argv[1], "iterator", 0, NULL, NULL);
+    for (i=0; i<size; i++)
+        args[i+1] = grcstring(callmethod(iter, "next", 0, NULL, NULL));
+    args[i+1] = NULL;
+    pid_t pid;
+    if (!(pid = fork())) {
+        execvp(args[0], args);
+        exit(127);
+    }
+    return alloc_Process(pid);
+}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -2234,7 +2252,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 8, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 9, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2243,6 +2261,7 @@ Object module_io_init() {
     add_Method(IOModule, "exists", &io_exists);
     add_Method(IOModule, "newer", &io_newer);
     add_Method(IOModule, "spawn", &io_spawn);
+    add_Method(IOModule, "spawnv", &io_spawnv);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
