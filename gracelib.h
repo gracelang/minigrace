@@ -37,6 +37,8 @@ struct ClassData {
     int nummethods;
     void (*mark)(void *);
     void (*release)(void *);
+    const char *definitionModule;
+    int definitionLine;
 };
 
 struct Object {

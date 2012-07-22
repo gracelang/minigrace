@@ -423,6 +423,8 @@ method compileobject(o, outerRef) {
         pos := pos + 1
     }
     out("objclass{myc} = {selfr}->class;")
+    out("  objclass{myc}->definitionModule = modulename;")
+    out("  objclass{myc}->definitionLine = {o.line};")
     out("  self = oldself{myc};")
     out("  *selfslot = self;")
     out("  set_type({selfr}, "
