@@ -2513,8 +2513,9 @@ start:
     Object originalself = self;
     Object realself = self;
     Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
-    sprintf(callstack[calldepth], "%s%s.%s (%i)", (istail ? "tailcall " : ""),
-            self->class->name, name, linenumber);
+    sprintf(callstack[calldepth], "%s%s.%s (defined at %s:%i) on line %i", (istail ? "tailcall " : ""),
+            self->class->name, name, m ? m->definitionModule : "<nowhere>",
+            m ? m->definitionLine : 0, linenumber);
     if (track_callgraph && calldepth > 0) {
         char tmp[255];
         char *prev;
@@ -2893,6 +2894,7 @@ ClassData alloc_class(const char *name, int nummethods) {
         c->methods[i].name = NULL;
         c->methods[i].flags = 0;
         c->methods[i].pos = 0;
+        c->methods[i].definitionModule = "unknown";
     }
     return c;
 }
@@ -2912,6 +2914,7 @@ ClassData alloc_class2(const char *name, int nummethods, void (*mark)(void*)) {
         c->methods[i].name = NULL;
         c->methods[i].flags = 0;
         c->methods[i].pos = 0;
+        c->methods[i].definitionModule = "unknown";
     }
     return c;
 }
