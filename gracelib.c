@@ -376,10 +376,11 @@ int integerfromAny(Object p) {
     int i = atoi(c);
     return i;
 }
-void addmethodrealflags(Object o, char *name,
+Method *addmethodrealflags(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int), int flags) {
     Method *m = add_Method(o->class, name, func);
     m->flags |= flags;
+    return m;
 }
 void addmethodreal(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int)) {
@@ -2478,10 +2479,10 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
-                    die("Type error: expected %s for argument %s (%i) of %s",
+                    die("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i)",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
-                            m->name);
+                            m->name, m->definitionModule, m->definitionLine);
                 }
             k++;
         }
@@ -2528,12 +2529,12 @@ start:
     }
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
-        gracedie("requested confidential method \"%s\" from outside.", name);
+        gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->flags & MFLAG_PRIVATE
-            && (originalself != self)) {
-        die("Method lookup error: no %s in %s.",
-                name, self->class->name);
+            && ((originalself != self) || !(callflags & CFLAG_SELF))) {
+        die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
+                name, self->class->name, name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))

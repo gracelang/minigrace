@@ -16,6 +16,8 @@ typedef struct Method {
     Object(*func)(Object, int, int*, Object*, int);
     int pos;
     struct MethodType *type;
+    const char *definitionModule;
+    int definitionLine;
 } Method;
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
@@ -130,7 +132,7 @@ Object *getfromclosure(Object, int);
 void addmethod2(Object, char *, Object (*)(Object, int, int*, Object*, int));
 Method *addmethod2pos(Object, char *, Object (*)(Object, int, int*, Object*, int), int);
 void addmethodreal(Object, char *, Object (*)(Object, int, int*, Object*, int));
-void addmethodrealflags(Object, char *, Object (*)(Object, int, int*, Object*, int), int);
+Method *addmethodrealflags(Object, char *, Object (*)(Object, int, int*, Object*, int), int);
 void adddatum2(Object, Object, int);
 Object getdatum(Object, int, int);
 void set_type(Object, int16_t);

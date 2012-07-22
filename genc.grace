@@ -258,7 +258,9 @@ method compileobjdefdec(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
+    out("  reader{myc}->definitionModule = modulename;")
+    out("  reader{myc}->definitionLine = {o.line};")
 }
 method compileobjvardecdata(o, selfr, pos) {
     var val := "undefined"
@@ -294,7 +296,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
     var nmw := nm ++ ":="
     len := length(nmw) + 1
     nmw := escapestring2(nmw)
@@ -305,7 +307,11 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("  uo->data[{pos}] = args[0];")
     outprint("  return none;");
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}:=\",&writer_{escmodname}_{inm}_{myc}, {wflags});")
+    out("  Method *writer{myc} = addmethodrealflags({selfr}, \"{enm}:=\",&writer_{escmodname}_{inm}_{myc}, {wflags});")
+    out("  reader{myc}->definitionModule = modulename;")
+    out("  writer{myc}->definitionModule = modulename;")
+    out("  reader{myc}->definitionLine = {o.line};")
+    out("  writer{myc}->definitionLine = {o.line};")
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -700,6 +706,8 @@ method compilemethod(o, selfobj, pos) {
             out("  meth_{litname}->flags |= MFLAG_CONFIDENTIAL;");
         }
     }
+    out("  meth_{litname}->definitionModule = modulename;")
+    out("  meth_{litname}->definitionLine = {o.line};")
     inBlock := origInBlock
     paramsUsed := origParamsUsed
     partsUsed := origPartsUsed
