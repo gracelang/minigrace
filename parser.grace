@@ -1723,9 +1723,20 @@ method statement {
         if (sym.line == lastToken.line) then {
             if (sym.kind != "rbrace") then {
                 util.setPosition(sym.line, sym.linePos)
-                util.syntax_error("unexpected token after statement ended; "
-                    ++ "got {sym.kind}:'{sym.value}', expected "
-                    ++ "new line or semicolon")
+                if ((values.last.kind == "identifier").orElse {
+                        values.last.kind == "member"
+                    }.andAlso {
+                        sym.kind == "identifier"
+                    }) then {
+                    util.syntax_error("unexpected token after statement ended; "
+                        ++ "got {sym.kind}:'{sym.value}', expected "
+                        ++ "new line or semicolon. Did you mean "
+                        ++ "{values.last.toGrace 0}({sym.value})?")
+                } else {
+                    util.syntax_error("unexpected token after statement ended; "
+                        ++ "got {sym.kind}:'{sym.value}', expected "
+                        ++ "new line or semicolon")
+                }
             }
         }
     }
