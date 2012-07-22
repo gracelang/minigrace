@@ -905,6 +905,7 @@ method resolveIdentifiers(node) {
         }
         currentReturnType := oldReturnType
         popScope
+        util.setline(node.line)
         tmp := ast.methodNode.new(node.value, tmp2, l,
             tmp4)
         tmp.annotations.extend(node.annotations)

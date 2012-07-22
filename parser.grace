@@ -1328,6 +1328,7 @@ method doclassOld {
 // Accept a method declaration
 method methoddec {
     if (accept("keyword") && (sym.value == "method")) then {
+        def btok = sym
         checkIndent
         var stok := sym
         next
@@ -1372,6 +1373,7 @@ method methoddec {
             util.syntax_error("No body in method declaration for " ++
                 meth.value)
         }
+        util.setline(btok.line)
         var o := ast.methodNode.new(meth, signature, body, dtype)
         if (varargs) then {
             o.varargs := true
