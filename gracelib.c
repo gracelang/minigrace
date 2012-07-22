@@ -2528,7 +2528,7 @@ start:
     }
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
-        gracedie("requested confidential method from outside.");
+        gracedie("requested confidential method \"%s\" from outside.", name);
     }
     if (m != NULL && m->flags & MFLAG_PRIVATE
             && (originalself != self)) {
