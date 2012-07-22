@@ -475,6 +475,11 @@ def LexerClass = object {
                             || (c == "]") || (c == ";")) then {
                             newmode := c
                         }
+                        if ((c == "#") && (mode != "p")) then {
+                            util.syntax_error("illegal operator character"
+                                ++ ": #{ordval}"
+                                ++ " '{c}', {unicode.name(c)}")
+                        }
                         if ((c == ".") && (accum == ".")) then {
                             // Special handler for .. operator
                             mode := "o"
