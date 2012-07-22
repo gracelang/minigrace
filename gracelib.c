@@ -2527,14 +2527,14 @@ start:
     if (calldepth == STACK_SIZE) {
         die("Maximum call stack depth exceeded.");
     }
-    if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
-            && !(callflags & CFLAG_SELF)) {
-        gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
-    }
     if (m != NULL && m->flags & MFLAG_PRIVATE
             && ((originalself != self) || !(callflags & CFLAG_SELF))) {
         die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
                 name, self->class->name, name, m->definitionModule, m->definitionLine);
+    }
+    if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
+            && !(callflags & CFLAG_SELF)) {
+        gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
