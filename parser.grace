@@ -1768,25 +1768,9 @@ method parse(toks) {
         inheritsdec
         statement
         if (tokens.size == oldlength) then {
-            var nxtToks := ""
-            for (0..5) do {i->
-                if (i < tokens.size) then {
-                    var t := tokens.at(tokens.size - i)
-                    nxtToks := nxtToks ++ t.kind ++ ": " ++ t.value ++ ", "
-                }
-            }
-            var lstAST := ""
-            for (0..1) do {i->
-                if (values.size > 0) then {
-                    var t := values.pop
-                    print(t.kind)
-                    print(t.pretty(2))
-                    lstAST := t.pretty(1) ++ "\n" ++ lstAST
-                }
-            }
-            util.syntax_error("No token consumed. Have " ++ sym.kind
-                ++ ": " ++ sym.value ++ ". Recent AST:\n"
-                ++ lstAST ++ "\nNext tokens: " ++ nxtToks)
+            util.setPosition(sym.line, sym.linePos)
+            util.syntax_error("No token consumed at top level. Have " 
+                ++ sym.kind ++ ": " ++ sym.value ++ ", expected statement.")
         }
         oldlength := tokens.size + 0
     }
