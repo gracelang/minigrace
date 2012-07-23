@@ -363,7 +363,7 @@ method expressionType(expr) {
             var part := callmeth.signature[partnr]
             if (part.params.size > expr.with[partnr].args.size) then {
                 util.type_error("method '{callname}' in {callreceivertype.value} "
-                    ++ "requires {part.args.size} arguments for part {partnr}, not "
+                    ++ "requires {part.params.size} arguments for part {partnr}, not "
                     ++ "{expr.with[partnr].args.size}")
             }
         }
