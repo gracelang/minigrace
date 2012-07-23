@@ -486,6 +486,7 @@ method bindIdentifier(ident) {
     if (ident.kind == "call") then {
         util.syntax_error("name shadows method")
     }
+    util.setPosition(ident.line, ident.linePos)
     if (scopes.last.contains("___is_object")) then {
         checkShadowing(ident.value, "method")
         scopes.last.put(ident.value, Binding.new("method"))
@@ -1265,12 +1266,14 @@ method resolveIdentifiersList(lst)withBlock(bk) {
             }
             tmp := Binding.new("var")
             tmp.dtype := tpb
+            util.setPosition(e.name.line, e.name.linePos)
             bindName(e.name.value, tmp)
         } elseif (e.kind == "defdec") then {
             tpb := findType(e.dtype)
             if ((tpb == false) || {tpb.kind != "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
+            util.setPosition(e.name.line, e.name.linePos)
             tmp := Binding.new("def")
             tmp.dtype := tpb
             bindName(e.name.value, tmp)

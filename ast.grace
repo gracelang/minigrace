@@ -914,6 +914,7 @@ class identifierNode.new(n, dtype') {
     var dtype := dtype'
     var register := ""
     def line = util.linenum
+    def linePos = util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
