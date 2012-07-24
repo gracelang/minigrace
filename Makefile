@@ -2,7 +2,7 @@ include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=672d7488e743e6714989f56a577f31a70c0f6e5e
-all: minigrace
+all: minigrace $(OTHER_MODULES)
 
 REALSOURCEFILES = compiler.grace util.grace ast.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace mgcollections.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
@@ -76,7 +76,7 @@ selftest: minigrace
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 	rm -rf selftest
 
-minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) $(OTHER_MODULES) gracelib.o
+minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 gencheck:
