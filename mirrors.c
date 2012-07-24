@@ -168,12 +168,21 @@ Object mirrors_reflect(Object self, int nparams, int *argcv, Object *args,
     return alloc_mirror(args[0]);
 }
 
+Object mirrors_loadDynamicModule(Object self, int nparams, int *argcv,
+        Object *argv, int flags) {
+    if (nparams != 1)
+        gracedie("mirrors.loadDynamicModule requires one argument");
+    char *s = grcstring(argv[0]);
+    return dlmodule(s);
+}
+
 // Create and return a Grace object with all the above functions as methods.
 Object module_mirrors_init() {
     if (mirrors_module != NULL)
         return mirrors_module;
     ClassData c = alloc_class("Module<mirrors>", 12);
     add_Method(c, "reflect", &mirrors_reflect);
+    add_Method(c, "loadDynamicModule", &mirrors_loadDynamicModule);
     Object o = alloc_newobj(0, c);
     mirrors_module = o;
     gc_root(mirrors_module);
