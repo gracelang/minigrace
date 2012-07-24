@@ -25,7 +25,7 @@ gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
 	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
 
-mirrors.gso: mirrors.c
+mirrors.gso: mirrors.c gracelib.h
 	gcc -g $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
@@ -91,6 +91,7 @@ backendtests: test
 clean:
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso unicode.gcn
+	rm -f mirrors.gso
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)
