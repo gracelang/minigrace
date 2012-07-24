@@ -19,6 +19,7 @@ var targetv := "c"
 var versionNumber := "0.0.7"
 var extensionsv := HashMap.new
 var recurse := true
+var dynamicModule := false
 var jobs := 2
 var cLines := []
 var lines := []
@@ -56,6 +57,12 @@ method parseargs {
                         buildtypev := "bc"
                     } case { "--no-recurse" ->
                         recurse := false
+                    } case { "--dynamic-module" ->
+                        dynamicModule := true
+                        runmodev := "make"
+                        recurse := false
+                        noexecv := true
+                        buildtypev := "bc"
                     } case { "--run" ->
                         buildtypev := "run"
                         runmodev := "make"

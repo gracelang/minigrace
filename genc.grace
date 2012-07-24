@@ -1707,6 +1707,25 @@ method compile(vl, of, mn, rm, bt) {
                 sys.exit(1)
             }
         }
+        if (util.dynamicModule) then {
+            log_verbose("producing dynamic module {modname}.gso.")
+            var dlbit := ""
+            var exportDynamicBit := ""
+            cmd := "ld -ldl -o /dev/null 2>/dev/null"
+            if (io.system(cmd)) then {
+                dlbit := "-ldl"
+            }
+            cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
+            if (io.system(cmd)) then {
+                exportDynamicBit := "-Wl,--export-dynamic"
+            }
+            cmd := "gcc -g -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
+                ++ "\"{modname}.c\" "
+            if ((io.system(cmd)).not) then {
+                io.error.write("Failed producing dynamic module.")
+                sys.exit(1)
+            }
+        }
         log_verbose("done.")
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
