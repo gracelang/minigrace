@@ -1420,7 +1420,7 @@ method checkimport(nm) {
         exists := true
         linkfiles.push("{sys.execPath}/{nm}.gcn")
         staticmodules.add(nm)
-    } elseif (io.exists(nm ++ ".gcn")) then {
+    } elseif (io.exists(nm ++ ".gcn").andAlso {!util.importDynamic}) then {
         if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
             exists := true
             linkfiles.push(nm ++ ".gcn")
@@ -1444,12 +1444,20 @@ method checkimport(nm) {
                 cmd := cmd ++ " --vtag " ++ util.vtag
             }
             cmd := cmd ++ " --noexec --no-recurse -XNoMain"
+            if (util.dynamicModule) then {
+                cmd := cmd ++ " --dynamic-module"
+            }
+            if (util.importDynamic) then {
+                cmd := cmd ++ " --import-dynamic --dynamic-module"
+            }
             if (util.recurse) then {
                 spawnSubprocess(nm, cmd)
             }
             exists := true
-            linkfiles.push(nm ++ ".gcn")
-            staticmodules.add(nm)
+            if (!util.importDynamic) then {
+                linkfiles.push(nm ++ ".gcn")
+                staticmodules.add(nm)
+            }
             ext := false
         }
     }

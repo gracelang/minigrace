@@ -20,6 +20,7 @@ var versionNumber := "0.0.7"
 var extensionsv := HashMap.new
 var recurse := true
 var dynamicModule := false
+var importDynamic := false
 var jobs := 2
 var cLines := []
 var lines := []
@@ -60,9 +61,10 @@ method parseargs {
                     } case { "--dynamic-module" ->
                         dynamicModule := true
                         runmodev := "make"
-                        recurse := false
                         noexecv := true
                         buildtypev := "bc"
+                    } case { "--import-dynamic" ->
+                        importDynamic := true
                     } case { "--run" ->
                         buildtypev := "run"
                         runmodev := "make"
@@ -73,6 +75,8 @@ method parseargs {
                         buildtypev := "native"
                     } case { "--noexec" ->
                         noexecv := true
+                    } case { "--yesexec" ->
+                        noexecv := false
                     } case { "--stdout" ->
                         toStdout := true
                     } case { "-" ->
