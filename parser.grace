@@ -1141,8 +1141,11 @@ method doobject {
             inheritsdec
             statement
             if (values.size == sz) then {
-                util.syntax_error("did not consume anything in "
-                    ++ "object declaration.")
+                util.setPosition(sym.line, sym.linePos)
+                util.syntax_error("unexpected symbol in "
+                    ++ "object declaration. Expected var, def, method, "
+                    ++ "closing brace, or statement, "
+                    ++ "got {sym.kind}:{sym.value}.")
             }
             sz := values.size
         }
