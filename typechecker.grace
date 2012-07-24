@@ -72,7 +72,6 @@ def StringType = ast.typeNode.new("String", [
         DynamicIdentifier)
 ])
 def BooleanType = ast.typeNode.new("Boolean", [
-    ast.methodTypeNode.new("++", [ast.signaturePart.new("++", [TopOther])], StringIdentifier),
     ast.methodTypeNode.new("&", [ast.signaturePart.new("&", [BooleanOther])], BooleanIdentifier),
     ast.methodTypeNode.new("|", [ast.signaturePart.new("|", [BooleanOther])], BooleanIdentifier),
     ast.methodTypeNode.new("&&", [ast.signaturePart.new("&&", [TopOther])], BooleanIdentifier),
@@ -81,7 +80,8 @@ def BooleanType = ast.typeNode.new("Boolean", [
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("prefix!", [ast.signaturePart.new("prefix!")], BooleanIdentifier),
     ast.methodTypeNode.new("not", [ast.signaturePart.new("not")], BooleanIdentifier),
-    ast.methodTypeNode.new("ifTrue", [ast.signaturePart.new("ifTrue", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("andAlso", [ast.signaturePart.new("andAlso", [TopOther])], BooleanIdentifier),
+    ast.methodTypeNode.new("orElse", [ast.signaturePart.new("orElse", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
     ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier)
 ])

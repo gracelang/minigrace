@@ -1921,7 +1921,6 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "andAlso", &Boolean_andAlso);
         add_Method(Boolean, "==", &Boolean_Equals);
         add_Method(Boolean, "!=", &Boolean_NotEquals);
-        add_Method(Boolean, "/=", &Boolean_NotEquals);
         add_Method(Boolean, "orElse", &Boolean_orElse);
         add_Method(Boolean, "match", &literal_match);
     }
