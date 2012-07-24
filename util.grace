@@ -166,12 +166,18 @@ method syntax_error(s) {
     }
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Syntax error: {s}")
     io.error.write("\n")
-    var arr := "--"
-    for (2..lineposv) do {
+    if (linenumv > 1) then {
+        io.error.write("  {linenumv - 1}: {lines.at(linenumv - 1)}\n")
+    }
+    var arr := "----"
+    for (2..(lineposv + linenumv.asString.size)) do {
         arr := arr ++ "-"
     }
     if (lines.size >= linenumv) then {
-        io.error.write("  {lines.at(linenumv)}\n{arr}^\n")
+        io.error.write("  {linenumv}: {lines.at(linenumv)}\n{arr}^\n")
+    }
+    if (linenumv < lines.size) then {
+        io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
     sys.exit(1)
 }
