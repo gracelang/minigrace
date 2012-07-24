@@ -1565,6 +1565,9 @@ method compile(vl, of, mn, rm, bt) {
         out("  adddatum2(self, prelude, 0);")
     }
     out("  addmethod2(self, \"outer\", &grace_userobj_outer);")
+    out("  setline(1);")
+    out("  setmodule(modulename);")
+    out("  setsource(originalSourceLines);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_HashMap = alloc_var();")
