@@ -2511,6 +2511,7 @@ FILE *callgraph;
 int track_callgraph = 0;
 int callcount = 0;
 int tailcount = 0;
+Object sourceObject;
 Object callmethod4(Object self, const char *name,
         int partc, int *argcv, Object *argv, int superdepth, int callflags) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
@@ -2550,7 +2551,9 @@ start:
         die("Maximum call stack depth exceeded.");
     }
     if (m != NULL && m->flags & MFLAG_PRIVATE
-            && ((originalself != self) || !(callflags & CFLAG_SELF))) {
+            && ((originalself != self && realself != sourceObject)
+                || !(callflags & CFLAG_SELF))) {
+        fprintf(stderr, "self: %p realself: %p originalself: %p sourceObject: %p\n", self, realself, originalself, sourceObject);
         die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
                 name, self->class->name, name, m->definitionModule, m->definitionLine);
     }
@@ -2562,6 +2565,8 @@ start:
         if (!checkmethodcall(m, partc, argcv, argv))
             die("Type error.");
     }
+    Object prevSourceObject = sourceObject;
+    sourceObject = realself;
     Object ret = NULL;
     if (m != NULL && (m->flags & MFLAG_REALSELFALSO)) {
         calldepth--;
@@ -2576,6 +2581,7 @@ start:
                     ret, self->class->name, name);
         }
     }
+    sourceObject = prevSourceObject;
     if (ret != NULL) {
         gc_frame_end(frame);
         debug(" returned %p (%s) from %s on %p", ret, ret->class->name, name, self);

@@ -656,6 +656,7 @@ method compilemethod(o, selfobj, pos) {
     for (closurevars) do { cv ->
         if (cv == "self") then {
             out("  Object self = *(getfromclosure(closure, {j}));")
+            out("  sourceObject = self;")
         } else {
             out("  Object *var_{cv} = getfromclosure(closure, {j});")
         }
@@ -1544,6 +1545,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object Block;")
     outprint("extern Object None;")
     outprint("extern Object Type;")
+    outprint("extern Object sourceObject;")
     outprint("static Object type_String;")
     outprint("static Object type_Number;")
     outprint("static Object type_Boolean;")
