@@ -1054,6 +1054,19 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
             ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
+    } elseif ((o.value.kind == "member").andAlso {
+        o.value.in.kind == "member"}.andAlso {
+            o.value.in.value == "outer"}) then {
+        def ot = compilenode(o.value.in)
+        for (args) do { arg ->
+            out("  params[{i}] = {arg};")
+            i := i + 1
+        }
+        for (o.with.indices) do { partnr ->
+            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+        }
+        out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
+            ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
