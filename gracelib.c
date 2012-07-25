@@ -3822,8 +3822,10 @@ Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
 Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     error_jump_set = 1;
+    int start_calldepth = calldepth;
     if (setjmp(error_jump)) {
         error_jump_set = 0;
+        calldepth = start_calldepth;
         return callmethod(argv[1], "apply", 0, NULL, NULL);
     }
     Object rv = callmethod(argv[0], "apply", 0, NULL, NULL);
