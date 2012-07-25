@@ -232,7 +232,9 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
     outprint("\}")
-    out("  addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
+    out("  reader{myc}->definitionModule = modulename;")
+    out("  reader{myc}->definitionLine = {o.line};")
 }
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
@@ -259,8 +261,6 @@ method compileobjdefdec(o, selfr, pos) {
     outprint("  return uo->data[{pos}];")
     outprint("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, MFLAG_DEF);")
-    out("  reader{myc}->definitionModule = modulename;")
-    out("  reader{myc}->definitionLine = {o.line};")
 }
 method compileobjvardecdata(o, selfr, pos) {
     var val := "undefined"
