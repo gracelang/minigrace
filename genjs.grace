@@ -292,6 +292,7 @@ method compileblock(o) {
         out(varf(p.value))
     }
     out(") \{")
+    out("  sourceObject = this;")
     var ret := "undefined"
     for (o.body) do {l->
         ret := compilenode(l)

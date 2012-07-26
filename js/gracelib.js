@@ -1149,6 +1149,7 @@ function checkmethodcall(func, methname, obj, args) {
 var callStack = [];
 var overrideReceiver = null;
 var onSelf = false;
+var sourceObject;
 function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
     var args = Array.prototype.slice.call(arguments, 1);
@@ -1175,13 +1176,17 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) != "function" || (meth._private && isSuper)) {
+    if (typeof(meth) != "function" || (meth._private &&
+                superDepth != sourceObject)) {
         stderr_txt.value += "No such method '" + methname + "' on " + obj.className + ", called at line " + lineNumber + ".\n";
         for (var i=callStack.length; i>0; i--)
             stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
         stderr_txt.value += "Methods are:\n";
         for (var mn in obj.methods) {
             stderr_txt.value += "  " + mn + "\n";
+        }
+        if (meth._private) {
+            stderr_txt.value += "Did you mean the local " + methname + "? It is not annotated readable.\n";
         }
         throw "No such method '" + methname + "'";
     }
@@ -1192,6 +1197,8 @@ function callmethod(obj, methname, argcv) {
         throw "Confidential method requested from outside";
     }
     onSelf = false;
+    var oldSourceObject = sourceObject;
+    sourceObject = superDepth;
     if (overrideReceiver != null) {
         obj = overrideReceiver;
         overrideReceiver = null;
@@ -1204,6 +1211,7 @@ function callmethod(obj, methname, argcv) {
     var ret = meth.apply(obj, args);
     superDepth = origSuperDepth;
     callStack.pop();
+    sourceObject = oldSourceObject;
     return ret;
 }
 function matchCase(obj, cases, elsecase) {
