@@ -50,7 +50,7 @@ int gc_frame_newslot(Object);
 void gc_frame_setslot(int, Object);
 int expand_living();
 void gc_pause();
-void gc_unpause();
+int gc_unpause();
 
 char *grcstring(Object s);
 
@@ -3624,10 +3624,9 @@ int gc_wouldHaveRun;
 void gc_pause() {
     gc_paused++;
 }
-void gc_unpause() {
+int gc_unpause() {
     gc_paused--;
-    if (gc_wouldHaveRun && !gc_paused)
-        rungc();
+    return gc_wouldHaveRun;
 }
 Object *gc_stack;
 int gc_framepos = 0;

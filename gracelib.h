@@ -123,7 +123,7 @@ char *grcstring(Object);
 void gc_mark(Object);
 void gc_root(Object);
 void gc_pause();
-void gc_unpause();
+int gc_unpause();
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.
