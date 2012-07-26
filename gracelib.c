@@ -3620,11 +3620,14 @@ void gc_root(Object o) {
     GC_roots = r;
 }
 int gc_paused;
+int gc_wouldHaveRun;
 void gc_pause() {
     gc_paused++;
 }
 void gc_unpause() {
     gc_paused--;
+    if (gc_wouldHaveRun && !gc_paused)
+        rungc();
 }
 Object *gc_stack;
 int gc_framepos = 0;
@@ -3653,8 +3656,10 @@ int rungc() {
     int i;
     if (gc_paused) {
         debug("skipping GC; paused %i times", gc_paused);
+        gc_wouldHaveRun = 1;
         return 0;
     }
+    gc_wouldHaveRun = 0;
     int32_t unreachable = 0xffffffff ^ FLAG_REACHABLE;
     for (i=0; i<objects_living_max; i++) {
         Object o = objects_living[i];
