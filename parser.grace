@@ -301,6 +301,12 @@ method block {
                 expression
                 var rhs := values.pop
                 body.push(ast.bindNode.new(lhs, rhs))
+                if (accept("semicolon")) then {
+                    next
+                    if (sym.line == lastToken.line) then {
+                        indentFreePass := true
+                    }
+                }
             } else {
                 body.push(values.pop)
             }
