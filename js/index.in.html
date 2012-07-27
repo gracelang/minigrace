@@ -202,9 +202,9 @@
 <!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
  </select>
  <select id="defaultVisibility">
-  <option value="methodspublic">Methods public
-  <option value="public">Public
   <option value="confidential">Confidential
+  <option value="public">Public
+  <option value="methodspublic">Methods public
  </select>
 <span style="font-size: smaller;">
 minigrace-js

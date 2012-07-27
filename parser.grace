@@ -20,7 +20,7 @@ var auto_count := 0
 var don'tTakeBlock := false
 var defaultDefVisibility := "confidential"
 var defaultVarVisibility := "confidential"
-var defaultMethodVisibility := "public"
+var defaultMethodVisibility := "confidential"
 
 // Global object containing the current token
 var sym

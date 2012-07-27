@@ -15,7 +15,8 @@ echo:
 	echo $(MINIGRACE_BUILD_SUBPROCESSES)
 
 buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
-	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
+	echo "#pragma DefaultVisibility=public" > buildinfo.grace
+	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" >> buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
 gracelib-basic.o: gracelib.c gracelib.h
