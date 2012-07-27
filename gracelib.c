@@ -12,6 +12,7 @@
 #include <float.h>
 #include <math.h>
 #include <sys/wait.h>
+#include <limits.h>
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
@@ -2306,8 +2307,10 @@ Object sys_execPath(Object self, int nparts, int *argcv,
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
+    char buf[PATH_MAX];
     char *dn = dirname(epm);
-    return alloc_String(dn);
+    realpath(dn, buf);
+    return alloc_String(buf);
 }
 void sys__mark(struct SysModule *o) {
     gc_mark(o->argv);
@@ -3451,11 +3454,16 @@ Object process_varargs(Object *args, int fixed, int nargs) {
     }
     return lst;
 }
+char * compilerModulePath;
+void setCompilerModulePath(char *s) {
+    compilerModulePath = s;
+}
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) dirname(argv[0])
     // 2) GRACE_MODULE_PATH
-    // 3) .
+    // 3) Path of the compiler used to build
+    // 4) .
     struct stat st;
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
@@ -3478,6 +3486,16 @@ int find_gso(const char *name, char *buf) {
             return 1;
         }
     }
+    if (compilerModulePath != NULL) {
+        char *gmp = compilerModulePath;
+        strcpy(buf, gmp);
+        strcat(buf, "/");
+        strcat(buf, name);
+        strcat(buf, ".gso");
+        if (stat(buf, &st) == 0) {
+            return 1;
+        }
+    }
     strcpy(buf, "./");
     strcat(buf, name);
     strcat(buf, ".gso");
@@ -3490,6 +3508,8 @@ Object dlmodule(const char *name) {
     int blen = strlen(name) + strlen(ARGV[0]) + 13;
     if (getenv("GRACE_MODULE_PATH") != NULL)
         blen += strlen(getenv("GRACE_MODULE_PATH"));
+    if (compilerModulePath != NULL)
+        blen += strlen(compilerModulePath);
     char buf[blen];
     if (!find_gso(name, buf)) {
         fprintf(stderr, "minigrace: could not find dynamic module %s.\n",
