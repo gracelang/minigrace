@@ -295,6 +295,12 @@ method block {
             } elseif (accept("semicolon")) then {
                 body.push(values.pop)
                 next
+                if (accept("semicolon")) then {
+                    next
+                    if (sym.line == lastToken.line) then {
+                        indentFreePass := true
+                    }
+                }
             } elseif (accept("bind")) then {
                 var lhs := values.pop
                 next
