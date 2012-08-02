@@ -2159,6 +2159,12 @@ Object io_exists(Object self, int nparts, int *argcv,
     struct stat st;
     return alloc_Boolean(stat(buf, &st) == 0);
 }
+Object io_realpath(Object self, int nparts, int *argcv, Object *argv,
+        int flags) {
+    char buf[PATH_MAX];
+    realpath(grcstring(argv[0]), buf);
+    return alloc_String(buf);
+}
 struct ProcessObject {
     int32_t flags;
     ClassData class;
@@ -2261,7 +2267,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 9, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 10, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2271,6 +2277,7 @@ Object module_io_init() {
     add_Method(IOModule, "newer", &io_newer);
     add_Method(IOModule, "spawn", &io_spawn);
     add_Method(IOModule, "spawnv", &io_spawnv);
+    add_Method(IOModule, "realpath", &io_realpath);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
