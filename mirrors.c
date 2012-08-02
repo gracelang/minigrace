@@ -13,9 +13,9 @@
 //   getMethod(name : String) -> MirrorMethod
 // MirrorMethods support two methods:
 //   name -> String
-//   request(*arglists : List) -> Any
+//   request(arglists : List of Lists) -> Any
 // A sample use might be:
-//   mirrors.reflect(1).getMethod("+").request([2]) == 3
+//   mirrors.reflect(1).getMethod("+").request([[2]]) == 3
 
 Object mirrors_module = NULL;
 ClassData MirrorClass;
@@ -81,25 +81,31 @@ Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
 Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
         int flags) {
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
-    int nparams = argcv[0];
-    int i;
+    Object partsl = argv[0];
+    int cparts = integerfromAny(callmethod(partsl, "size", 0, NULL, NULL));
+    int i = 0;
     int size = 0;
-    int cargcv[nparams];
-    for (i=0; i<nparams; i++) {
-        cargcv[i] = integerfromAny(callmethod(argv[i], "size", 0, NULL, NULL));
+    int cargcv[cparts];
+    Object partsiter = callmethod(partsl, "iter", 0, NULL, NULL);
+    while (istrue(callmethod(partsiter, "havemore", 0, NULL, NULL))) {
+        Object argsl = callmethod(partsiter, "next", 0, NULL, NULL);
+        cargcv[i] = integerfromAny(callmethod(argsl, "size", 0, NULL, NULL));
         size += cargcv[i];
+        i++;
     }
     Object cargv[size];
-    int j = 0;
-    for (i=0; i<nparams; i++) {
-        Object iter = callmethod(argv[i], "iter", 0, NULL, NULL);
-        while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
-            Object o = callmethod(iter, "next", 0, NULL, NULL);
-            cargv[j] = o;
-            j++;
+    i = 0;
+    partsiter = callmethod(partsl, "iter", 0, NULL, NULL);
+    while (istrue(callmethod(partsiter, "havemore", 0, NULL, NULL))) {
+        Object argsl = callmethod(partsiter, "next", 0, NULL, NULL);
+        Object argsiter = callmethod(argsl, "iter", 0, NULL, NULL);
+        while (istrue(callmethod(argsiter, "havemore", 0, NULL, NULL))) {
+            Object o = callmethod(argsiter, "next", 0, NULL, NULL);
+            cargv[i] = o;
+            i++;
         }
     }
-    Object rv = callmethod(s->obj, s->method->name, nparams, cargcv,
+    Object rv = callmethod(s->obj, s->method->name, cparts, cargcv,
             cargv);
     return rv;
 }
