@@ -78,10 +78,10 @@ Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
     return l;
 }
 
-Object MirrorMethod_request(Object self, int nparams, int *argcv, Object *argv,
+Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
         int flags) {
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
-    int cargc = argcv[0];
+    int nparams = argcv[0];
     int i;
     int size = 0;
     int cargcv[nparams];
