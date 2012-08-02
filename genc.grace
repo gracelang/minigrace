@@ -1673,7 +1673,9 @@ method compile(vl, of, mn, rm, bt) {
         if (!util.extensions.contains("NativePrelude")) then {
             //out("  prelude = module_StandardPrelude_init();")
         }
-        out("  setCompilerModulePath(\"{sys.execPath}\");")
+        util.runOnNew {
+            out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
+        } else {}
         out("  gracelib_argv(argv);")
         out("  Object params[1];")
         out("  undefined = alloc_Undefined();")

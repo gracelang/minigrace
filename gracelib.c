@@ -2323,10 +2323,8 @@ Object sys_execPath(Object self, int nparts, int *argcv,
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
-    char buf[PATH_MAX];
     char *dn = dirname(epm);
-    realpath(dn, buf);
-    return alloc_String(buf);
+    return alloc_String(dn);
 }
 void sys__mark(struct SysModule *o) {
     gc_mark(o->argv);
