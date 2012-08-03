@@ -1368,13 +1368,11 @@ preludeObj.put("octets", Binding.new("method"))
 method typecheck(values, *sc) {
     util.log_verbose("typechecking.")
     if (!initDone) then {
-        util.runOnNew {
-            if (!util.extensions.contains("NativePrelude")) then {
-                for (prelude._methods) do {mn->
-                    preludeObj.put(mn, Binding.new("method"))
-                }
+        if (!util.extensions.contains("NativePrelude")) then {
+            for (prelude._methods) do {mn->
+                preludeObj.put(mn, Binding.new("method"))
             }
-        } else { }
+        }
         var btmp
         bindName("print", Binding.new("method"))
         bindName("length", Binding.new("method"))
