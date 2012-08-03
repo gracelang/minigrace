@@ -2936,7 +2936,7 @@ Object alloc_Type(const char *name, int nummethods) {
     strcpy(t->name, name);
     return (Object)t;
 }
-inline void initialise_Class() {
+static inline void initialise_Class() {
     if (Class == NULL) {
         Class = glmalloc(sizeof(struct ClassData));
         Class->flags = 3;

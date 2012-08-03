@@ -20,7 +20,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
 gracelib-basic.o: gracelib.c gracelib.h
-	gcc -g -o gracelib-basic.o -c gracelib.c
+	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
 gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
 	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
