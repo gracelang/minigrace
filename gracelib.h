@@ -124,6 +124,10 @@ void gc_mark(Object);
 void gc_root(Object);
 void gc_pause();
 int gc_unpause();
+int gc_frame_new();
+void gc_frame_end(int);
+int gc_frame_newslot(Object);
+void gc_frame_setslot(int, Object);
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.

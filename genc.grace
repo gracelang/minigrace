@@ -757,7 +757,7 @@ method compilewhile(o) {
     out("  while (1) \{")
     out("  int while_frame{myc} = gc_frame_new();")
     out("stackframe = alloc_StackFrame({numslots}, whiletmpstackframe{myc});")
-    out("gc_frame_newslot(stackframe);")
+    out("gc_frame_newslot((Object)stackframe);")
     def cond = compilenode(o.value)
     out("    gc_frame_setslot(while_cond{myc}, {cond});")
     out("    if (!istrue({cond})) break;")
@@ -781,7 +781,7 @@ method compileifexpr(o) {
     out("  if (istrue({cond})) \{")
     var numslots := countbindings(o.thenblock)
     out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-    out("gc_frame_newslot(stackframe);")
+    out("gc_frame_newslot((Object)stackframe);")
     var tret := "none"
     var fret := "none"
     var tblock := "ERROR"
@@ -796,7 +796,7 @@ method compileifexpr(o) {
     if (o.elseblock.size > 0) then {
         numslots := countbindings(o.elseblock)
         out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-        out("gc_frame_newslot(stackframe);")
+        out("gc_frame_newslot((Object)stackframe);")
         definebindings(o.elseblock, 0)
         for (o.elseblock) do { l->
             fret := compilenode(l)

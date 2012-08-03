@@ -74,10 +74,6 @@ Object alloc_AndPattern(Object l, Object r);
 
 int gc_period = 100000;
 int rungc();
-int gc_frame_new();
-void gc_frame_end(int);
-int gc_frame_newslot(Object);
-void gc_frame_setslot(int, Object);
 int expand_living();
 void gc_pause();
 int gc_unpause();
