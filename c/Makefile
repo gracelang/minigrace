@@ -9,17 +9,17 @@ selfhost: minigrace $(CFILES:.c=.grace)
 	./minigrace --make --verbose --target c --module minigrace compiler.grace
 
 %.gcn: %.c
-	gcc -c -o $@ $<
+	gcc -std=c99 -c -o $@ $<
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
 unicode.gcn: unicode.c unicodedata.h gracelib.h
-	gcc -g -c -o unicode.gcn unicode.c
+	gcc -std=c99 -g -c -o unicode.gcn unicode.c
 
 gracelib.o: gracelib.c StandardPrelude.c
-	gcc -c -o gracelib-basic.o gracelib.c
-	gcc -c -o StandardPrelude.gcn StandardPrelude.c
+	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
+	gcc -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
 
 install: minigrace
