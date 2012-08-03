@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -13,9 +15,36 @@
 #include <math.h>
 #include <sys/wait.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
+
+#ifdef _POSIX_VERSION
+#if _POSIX_VERSION < 200809L
+size_t getline(char **lineptr, size_t *n, FILE *stream) {
+    size_t chars = 0;
+    int c = 0;
+    if (*lineptr == NULL) {
+        *lineptr = malloc(128);
+        *n = 128;
+    }
+    while (c != '\n') {
+        c = fgetc(stream);
+        if (c == EOF)
+            break;
+        (*lineptr)[chars++] = (unsigned char)c;
+        if (chars == *n - 1) {
+            *n *= 2;
+            *lineptr = realloc(*lineptr, *n);
+        }
+        c = fgetc(stream);
+    }
+    (*lineptr)[chars] = 0;
+    return chars;
+}
+#endif
+#endif
 Object Float64_asString(Object, int nparts, int *argcv,
         Object*, int flags);
 Object Float64_Add(Object, int nparts, int *argcv,
