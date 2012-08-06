@@ -62,6 +62,12 @@ if (util.target == "subtypematrix") then {
     subtype.printMatrix
     sys.exit(0)
 }
+if (util.target == "types") then {
+    for (subtype.types) do {t->
+        print("{subtype.stringifyType(t)}:\n  {t.pretty(2)}")
+    }
+    sys.exit(0)
+}
 
 // Perform the actual compilation
 match(util.target)
