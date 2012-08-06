@@ -2595,7 +2595,6 @@ start:
     if (m != NULL && m->flags & MFLAG_PRIVATE
             && ((originalself != self && realself != sourceObject)
                 || !(callflags & CFLAG_SELF))) {
-        fprintf(stderr, "self: %p realself: %p originalself: %p sourceObject: %p\n", self, realself, originalself, sourceObject);
         die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
                 name, self->class->name, name, m->definitionModule, m->definitionLine);
     }
