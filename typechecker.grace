@@ -1285,6 +1285,13 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
             if ((tpb == false) || {tpb.kind != "type"}) then {
                 util.type_error("declared type of {e.name.value}, '{e.dtype.value}', not a type")
             }
+            if (e.dtype.value == "Dynamic") then {
+                def infType = expressionType(resolveIdentifiers(e.value))
+                if ((infType != false).andAlso
+                    {infType.value != "Dynamic"}) then {
+                    tpb := infType
+                }
+            }
             util.setPosition(e.name.line, e.name.linePos)
             tmp := Binding.new("def")
             tmp.dtype := tpb
