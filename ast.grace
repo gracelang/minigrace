@@ -1,6 +1,7 @@
 #pragma DefaultVisibility=public
 def util = platform.util
 def mgcollections = platform.mgcollections
+def mirrors = platform.mirrors
 
 def collections = mgcollections
 
@@ -1554,4 +1555,315 @@ method baseVisitor -> ASTVisitor {
             true
         }
     }
+}
+
+class evalVisitor.new(env) {
+    var _result
+
+    var _env := env
+
+    method getResult {
+        _result
+    }
+
+    method resolve(v, *e) {
+        if (v.kind == "identifier") then {
+            if (v.value == "true") then {
+                return true
+            } elseif (v.value == "false") then {
+                return false
+            } else {
+                if (e.size != 0) then {
+                    return e[1].get(v.value)
+                } else {
+                    return _env.get(v.value)
+                }
+            }
+        } else {
+            v.accept(self)
+            return _result
+        }
+    }
+
+
+    method visitFor(node) -> Boolean {
+        def over = resolve(node.value)
+
+        for (over) do { val ->
+            // TODO: remove parameter from env after end of loop
+            def param = node.body.params[1]
+            _env.put(param.value, val)
+            def id = memberNode.new("apply", node.body)
+            def callnode = callNode.new(id, [callWithPart.new(id.value, [param])])
+            visitCall(callnode)
+        }
+    }
+
+    method visitWhile(node) -> Boolean {
+        def condid = memberNode.new("apply", node.value)
+        def condcallnode = callNode.new(condid, [callWithPart.new(condid.value)])
+        visitCall(condcallnode)
+        var cond := _result
+
+        while {cond} do {
+            def bodyid = memberNode.new("apply", node.body)
+            def bodycallnode = callNode.new(bodyid, [callWithPart.new(bodyid.value)])
+            visitCall(bodycallnode)
+            visitCall(condcallnode)
+            cond := _result
+        }
+    }
+
+    method visitIf(node) -> Boolean {
+        def cond = resolve(node.value)
+
+        if (cond) then {
+            for (node.thenblock) do { s ->
+                s.accept(self)
+            }
+        } else {
+            for (node.elseblock) do { s ->
+                s.accept(self)
+            }
+        }
+    }
+
+    method visitBlock(node) -> Boolean {
+        _result := node
+        return false
+    }
+
+    method visitMatchCase(node) -> Boolean { true }
+    method visitMethodType(node) -> Boolean { true }
+    method visitType(node) -> Boolean { true }
+
+    method visitMethod(node) -> Boolean {
+        def name = node.value.value
+        def entry = object {
+            def localenv = HashMap.new
+            def meth = node
+        }
+        _env.put(name, entry)
+        _result := true
+        return false
+    }
+
+    method visitCall(node) -> Boolean {
+        def name = node.value.value
+        def member = node.value
+
+        if (_env.contains(name) && (member.kind == "member") && (member.in.value == "self")) then {
+            // interactively defined method
+            def meth = _env.get(name).meth
+            def outerenv = _env
+            _env := outerenv.get(name).localenv
+
+            for (meth.signature.indices) do { partnr ->
+                var part := meth.signature[partnr]
+                for (part.params.indices) do { paramnr ->
+                    var param := part.params[paramnr]
+                    var arg := node.with[partnr].args[paramnr]
+                    _env.put(param.value, resolve(arg, outerenv))
+                }
+                if (part.vararg != false) then {
+                    var vararg := []
+                    var callpart := node.with[partnr]
+                    var nparams := part.params.size
+                    var nargs := callpart.args.size
+                    for ((nparams + 1)..nargs) do { argnr ->
+                        var arg := callpart.args[argnr]
+                        vararg.push(resolve(arg, outerenv))
+                    }
+                    _env.put(part.vararg.value, vararg)
+                }
+            }
+
+            for (meth.body) do { s ->
+                s.accept(self)
+            }
+
+            _env := outerenv
+        } elseif (name == "for()do") then {
+            def cond = node.with[1].args[1]
+            def body = node.with[2].args[1]
+            def fornode = forNode.new(cond, body)
+            visitFor(fornode)
+        } elseif (name == "while()do") then {
+            def cond = node.with[1].args[1]
+            def body = node.with[2].args[1]
+            def whilenode = whileNode.new(cond, body)
+            visitWhile(whilenode)
+        } elseif (name == "minigrace") then {
+            _result := minigrace
+        } elseif (name == "print") then {
+            var parts := []
+            for (node.with) do { part ->
+                var args := []
+                for (part.args) do { arg ->
+                    args.push(resolve(arg))
+                }
+                parts.push(args)
+            }
+
+            // _result := callmethod(name, parts)
+            // TODO: other parts
+            _result := print(parts[1][1])
+        } elseif ((name == "apply") && (resolve(member.in).kind == "block")) then {
+            def block = resolve(member.in)
+            for (node.with[1].args.indices) do { argnr ->
+                def arg = node.with[1].args[argnr]
+                def blockparam = block.params[argnr].value
+                _env.put(blockparam, resolve(arg))
+            }
+            for (block.body) do { s ->
+                s.accept(self)
+            }
+        } else { // compiled method
+            var parts := []
+            for (node.with) do { part ->
+                var args := []
+                for (part.args) do { arg ->
+                    args.push(resolve(arg))
+                }
+                parts.push(args)
+            }
+
+            // _result := callmethod(name, parts)
+            _result := mirrors.reflect(resolve(member.in)).getMethod(name).request(parts)
+        }
+
+        return false
+    }
+
+    method visitClass(node) -> Boolean { true }
+    method visitObject(node) -> Boolean { true }
+
+    method visitArray(node) -> Boolean {
+        var res := []
+
+        for (node.value) do { v ->
+            res.push(resolve(v))
+        }
+
+        _result := res
+
+        return false
+    }
+
+    method visitMember(node) -> Boolean {
+        var callnode := callNode.new(node, [callWithPart.new(node.value)])
+        visitCall(callnode)
+        return false
+    }
+
+    method visitGeneric(node) -> Boolean { true }
+
+    method visitIdentifier(node) -> Boolean {
+        _result := resolve(node)
+        return false
+    }
+
+    method visitOctets(node) -> Boolean { true }
+
+    method visitString(node) -> Boolean {
+        _result := node.value
+        return false
+    }
+
+    method visitNum(node) -> Boolean {
+        _result := node.value.asNumber
+        return false
+    }
+
+    method visitOp(node) -> Boolean {
+        var left := resolve(node.left)
+        var right := resolve(node.right)
+
+        _result := match(node.value)
+            case { "+"  -> left +  right }
+            case { "*"  -> left *  right }
+            case { "-"  -> left -  right }
+            case { "/"  -> left /  right }
+            case { "%"  -> left %  right }
+            case { "==" -> left == right }
+            case { "!=" -> left != right }
+            case { "++" -> left ++ right }
+            case { "<"  -> left <  right }
+            case { "<=" -> left <= right }
+            case { ">"  -> left >  right }
+            case { ">=" -> left >= right }
+            case { ".." -> left .. right }
+            case { "&"  -> left &  right }
+            case { "|"  -> left |  right }
+            case { "&&" -> left && right }
+            case { "||" -> left || right }
+
+        return false
+    }
+
+    method visitIndex(node) -> Boolean {
+        def value = resolve(node.value)
+        def index = resolve(node.index)
+
+        _result := value[index]
+
+        return false
+    }
+
+    method visitBind(node) -> Boolean {
+        def dest = node.dest.value
+        def value = resolve(node.value)
+
+        _env.put(dest, value)
+
+        _result := value
+
+        return false
+    }
+
+    method visitDefDec(node) -> Boolean {
+        def name  = node.name.value
+        def value = resolve(node.value)
+        // node.dtype.accept(self)
+        // def dtype = _result
+
+        _env.put(name, value)
+
+        _result := value
+
+        return false
+    }
+
+    method visitVarDec(node) -> Boolean {
+        def name  = node.name.value
+        def value = resolve(node.value)
+        // node.dtype.accept(self)
+        // def dtype = _result
+
+        _env.put(name, value)
+
+        _result := value
+
+        return false
+    }
+
+    method visitImport(node) -> Boolean {
+        def name = node.value.value
+        def mod = mirrors.loadDynamicModule(name)
+        _env.put(name, mod)
+
+        _result := mod
+
+        return false
+    }
+
+    method visitReturn(node) -> Boolean {
+        def value = resolve(node.value)
+
+        _result := value
+
+        return false
+    }
+
+    method visitInherits(node) -> Boolean { true }
 }

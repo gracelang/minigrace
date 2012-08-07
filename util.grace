@@ -10,6 +10,7 @@ var infilev := io.input
 var modnamev := "stdin_minigrace"
 var runmodev := "make"
 var buildtypev := "run"
+var interactivev := false
 var gracelibPathv := false
 var linenumv := 1
 var lineposv := 1
@@ -24,6 +25,8 @@ var importDynamic := false
 var jobs := 2
 var cLines := []
 var lines := []
+
+var errno := 0
 
 method runOnNew(b)else(e) {
     if ((__compilerRevision != "d5f6522d5c5e3f5b1f40d77502a66954955d0e5a")
@@ -75,6 +78,8 @@ method parseargs {
                         runmodev := "build"
                     } case { "--native" ->
                         buildtypev := "native"
+                    } case { "--interactive" ->
+                        interactivev := true
                     } case { "--noexec" ->
                         noexecv := true
                     } case { "--yesexec" ->
@@ -156,8 +161,10 @@ method parseargs {
             print("This is free software with ABSOLUTELY NO WARRANTY. "
                 ++ "Say minigrace.w for details.")
             print ""
-            print "Enter a program and press Ctrl-D to execute it."
-            print ""
+            if (interactivev.not) then {
+                print "Enter a program and press Ctrl-D to execute it."
+                print ""
+            }
         }
     }
 }
@@ -196,7 +203,11 @@ method syntax_error(s) {
     if (linenumv < lines.size) then {
         io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
-    sys.exit(1)
+    if (interactivev.not) then {
+        sys.exit(1)
+    } else {
+        errno := 1
+    }
 }
 method type_error(s) {
     if (extensionsv.contains("IgnoreTypes")) then {
@@ -208,7 +219,11 @@ method type_error(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
-    sys.exit(1)
+    if (interactivev.not) then {
+        sys.exit(1)
+    } else {
+        errno := 1
+    }
 }
 method warning(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
@@ -232,6 +247,9 @@ method runmode {
 }
 method buildtype {
     buildtypev
+}
+method interactive {
+    interactivev
 }
 method gracelibPath {
     gracelibPathv
