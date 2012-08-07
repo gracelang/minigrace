@@ -1059,9 +1059,6 @@ var GraceHighlightRules = function() {
                 regex : '"(?=.)', // " strings can't span multiple lines
                 next : "string"
             }, {
-                token : "symbol.constant", // single line
-                regex : "'[\\w\\d_]+"
-            }, {
                 token : "constant.numeric", // hex
                 regex : "0[xX][0-9a-fA-F]+\\b"
             }, {
