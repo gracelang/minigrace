@@ -1410,11 +1410,11 @@ method methoddec {
 // a single line (because they are ended by "{" or "->"). This method
 // returns a replacement method name identifier and modifies params in
 // place.
-method parsempmndecrest(tm) {
+method parsempmndecrest(tm, sameline) {
     var methname := tm.value.value
     var signature := tm.signature
     var nxt
-    while {accept("identifier")} do {
+    while {(!sameline && accept("identifier")) || acceptSameLine("identifier")} do {
         methname := methname ++ "()"
         var part := ast.signaturePart.new
         pushidentifier
@@ -1531,7 +1531,7 @@ method methodsignature(sameline) {
             // The presence of an identifier here means
             // a multi-part method name.
             var tm := ast.methodNode.new(meth, signature, [], false)
-            meth := parsempmndecrest(tm)
+            meth := parsempmndecrest(tm, sameline)
             varargs := varargs || tm.varargs
         }
     }
@@ -1597,7 +1597,7 @@ method domethodtype {
         next
     } else {
         if (!accept("rbrace")) then {
-            if (meth.line == sym.line) then {
+            if (lastToken.line == sym.line) then {
                 util.syntax_error("multiple methods on same line in type, "
                     ++ "after {meth.value}")
             }
