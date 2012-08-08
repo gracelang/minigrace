@@ -16,6 +16,7 @@
                 return;
             }
             importedModules = {};
+            callStack = [];
             stdout_txt = document.getElementById("js_txt");
             stdin_txt = document.getElementById("code_txt");
             stderr_txt = document.getElementById("stderr_txt");
@@ -44,6 +45,7 @@
          }
         function run() {
             importedModules = {};
+            callStack = [];
             stdout_txt = document.getElementById("stdout_txt");
             stdin_txt = document.getElementById("stdout_txt");
             stderr_txt = document.getElementById("stderr_txt");
