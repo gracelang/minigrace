@@ -20,9 +20,8 @@
 #include "gracelib.h"
 #define max(x,y) (x>y?x:y)
 
-#ifdef _POSIX_VERSION
-#if _POSIX_VERSION < 200809L
-size_t getline(char **lineptr, size_t *n, FILE *stream) {
+#if !defined(_POSIX_VERSION) || _POSIX_VERSION < 200809L
+size_t mggetline(char **lineptr, size_t *n, FILE *stream) {
     size_t chars = 0;
     int c = 0;
     if (*lineptr == NULL) {
@@ -43,8 +42,9 @@ size_t getline(char **lineptr, size_t *n, FILE *stream) {
     (*lineptr)[chars] = 0;
     return chars;
 }
+#define getline(x,y,z) mggetline(x,y,z)
 #endif
-#endif
+
 Object Float64_asString(Object, int nparts, int *argcv,
         Object*, int flags);
 Object Float64_Add(Object, int nparts, int *argcv,
