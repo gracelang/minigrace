@@ -82,6 +82,7 @@ method expect(t) {
     if (sym.kind == t) then {
         return true
     }
+    util.setPosition(sym.line, sym.linePos)
     util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
 // Require a t OR s as the current token; if not, raise a syntax error.
@@ -92,6 +93,7 @@ method expect(t)or(s) {
     if (sym.kind == s) then {
         return true
     }
+    util.setPosition(sym.line, sym.linePos)
     util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
 }
 // Require a t OR s OR u as the current token; if not, raise a syntax error.
@@ -103,6 +105,7 @@ method expect(t)or(s)or(u) {
     } elseif (sym.kind == u) then {
         return true
     }
+    util.setPosition(sym.line, sym.linePos)
     util.syntax_error("expected {t} or {s} or {u}, got {sym.kind}: {sym.value}")
 }
 // Expect block to consume at least one token
