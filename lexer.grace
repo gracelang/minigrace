@@ -650,10 +650,12 @@ def LexerClass = object {
                         mode := "d"
                         newmode := "d"
                         accum := ""
-                        cLines.push(cline)
-                        cline := ""
-                        lines.push(lineStr)
-                        lineStr := ""
+                        if (c != "\r") then {
+                            cLines.push(cline)
+                            cline := ""
+                            lines.push(lineStr)
+                            lineStr := ""
+                        }
                     } else {
                         accum := accum ++ c
                     }
@@ -672,6 +674,7 @@ def LexerClass = object {
                         linePosition := 0
                         startPosition := 1
                         util.setPosition(lineNumber, 0)
+                    } elseif (c == "\r") then {
                     } else {
                         if (c == "\"") then {
                             cline := cline ++ "\\\""
