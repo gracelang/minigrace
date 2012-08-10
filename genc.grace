@@ -421,6 +421,7 @@ method compileobject(o, outerRef) {
             superobj := compilenode(e.value)
             out("  self = setsuperobj({selfr}, {superobj});")
             out("  {selfr} = self;")
+            out("  gc_frame_newslot(self);")
             out("  *selfslot = self;")
             pos := pos - 1
         } else {
