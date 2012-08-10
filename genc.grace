@@ -398,6 +398,7 @@ method compileobject(o, outerRef) {
     out("  Object oldself{myc} = self;")
     out("  struct StackFrameObject *oldstackframe{myc} = stackframe;")
     out("  stackframe = alloc_StackFrame(1, oldstackframe{myc});")
+    out("  gc_frame_newslot((Object)stackframe);")
     out("  self = {selfr};")
     out("  Object *oldselfslot{myc} = selfslot;")
     out("  selfslot = &stackframe->slots[0];")
