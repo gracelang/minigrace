@@ -200,7 +200,7 @@ struct BlockObject {
     ClassData class;
     jmp_buf *retpoint;
     Object super;
-    Object data[2];
+    Object *data;
 };
 struct TypeObject {
     int32_t flags;
@@ -3373,6 +3373,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "pattern", &Block_pattern);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
+    o->data = glmalloc(sizeof(Object) * 2);
     o->super = NULL;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
@@ -3444,16 +3445,21 @@ Object UserObj_Equals(Object self, int nparts, int *argcv,
     }
     return alloc_Boolean(1);
 }
+void UserObj__release(struct UserObject *o) {
+    int i;
+    glfree(o->data);
+}
 Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (GraceDefaultObject == NULL) {
         ClassData dc = alloc_class2("DefaultObject", 6,
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
-                sizeof(struct Object) + sizeof(Object), dc);
+                sizeof(struct Object), dc);
         GraceDefaultObject->flags |= FLAG_USEROBJ;
         struct UserObject *duo = (struct UserObject *)GraceDefaultObject;
         duo->super = NULL;
+        duo->data = glmalloc(sizeof(Object));
         duo->data[0] = NULL;
         addmethod2(GraceDefaultObject, "asString", &Object_asString);
         addmethod2(GraceDefaultObject, "++", &Object_concat);
@@ -3462,15 +3468,20 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
     }
     if (c == NULL) {
-        c = alloc_class2("Object", numMethods + 1,
-                (void*)&UserObj__mark);
+        c = alloc_class3("Object", numMethods + 6,
+                (void*)&UserObj__mark, (void*)&UserObj__release);
+        add_Method(c, "asString", &Object_asString);
+        add_Method(c, "++", &Object_concat);
+        add_Method(c, "==", &UserObj_Equals);
+        add_Method(c, "!=", &Object_NotEquals);
+        add_Method(c, "asDebugString", &Object_asString);
     }
     numFields++;
-    Object o = alloc_obj(sizeof(struct UserObject)
-            + sizeof(Object) * numFields - sizeof(struct Object), c);
+    Object o = alloc_obj(sizeof(struct UserObject) - sizeof(struct Object), c);
     o->flags |= FLAG_USEROBJ;
     struct UserObject *uo = (struct UserObject *)o;
     int i;
+    uo->data = glmalloc(sizeof(Object) * numFields);
     for (i=0; i<numFields; i++)
         uo->data[i] = NULL;
     uo->super = GraceDefaultObject;

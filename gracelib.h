@@ -52,7 +52,7 @@ struct UserObject {
     ClassData class;
     jmp_buf *retpoint;
     Object super;
-    void *data[];
+    void **data;
 };
 
 struct StackFrameObject {
