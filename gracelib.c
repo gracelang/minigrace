@@ -3431,8 +3431,8 @@ Object UserObj_Equals(Object self, int nparts, int *argcv,
                 return alloc_Boolean(0);
             if (m->func != om->func)
                 return alloc_Boolean(0);
-            struct ClosureEnvObject *myclosure = ((struct UserObject*)self)->data[m->pos];
-            struct ClosureEnvObject *otclosure = ((struct UserObject*)realself)->data[om->pos];
+            struct ClosureEnvObject *myclosure = (struct ClosureEnvObject *)(((struct UserObject*)self)->data[m->pos]);
+            struct ClosureEnvObject *otclosure = (struct ClosureEnvObject *)(((struct UserObject*)realself)->data[om->pos]);
             if (myclosure->frame != otclosure->frame)
                 return alloc_Boolean(0);
         }
