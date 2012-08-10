@@ -396,7 +396,11 @@ method compileobject(o, outerRef) {
     }
     compileobjouter(selfr, outerRef)
     out("  Object oldself{myc} = self;")
+    out("  struct StackFrameObject *oldstackframe{myc} = stackframe;")
+    out("  stackframe = alloc_StackFrame(1, oldstackframe{myc});")
     out("  self = {selfr};")
+    out("  Object *oldselfslot{myc} = selfslot;")
+    out("  selfslot = &stackframe->slots[0];")
     out("  *selfslot = self;")
     for (o.value) do { e ->
         if (e.kind == "method") then {
@@ -426,7 +430,8 @@ method compileobject(o, outerRef) {
     out("  objclass{myc}->definitionModule = modulename;")
     out("  objclass{myc}->definitionLine = {o.line};")
     out("  self = oldself{myc};")
-    out("  *selfslot = self;")
+    out("  selfslot = oldselfslot{myc};")
+    out("  stackframe = oldstackframe{myc};")
     out("  set_type({selfr}, "
         ++ "{subtype.typeId(o.otype)});")
     o.register := selfr
