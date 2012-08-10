@@ -409,12 +409,12 @@ Object gracebecome(Object subObject, Object superObject) {
     ClassData subclass = sub->class;
     Object *subdata = (Object *)sub->data;
     sub->super = sup->super;
-    sup->super = sub;
+    sup->super = subObject;
     sub->class = sup->class;
     sub->data = (Object *)(sup->data);
     sup->class = subclass;
     sup->data = subdata;
-    return sup;
+    return superObject;
 }
 Method *addmethodrealflags(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int), int flags) {
@@ -3398,9 +3398,12 @@ void set_type(Object o, int16_t t) {
     flags |= (t << 16);
     o->flags = flags;
 }
-void setsuperobj(Object sub, Object super) {
+Object setsuperobj(Object sub, Object super) {
     struct UserObject *uo = (struct UserObject *)sub;
+    if (super->flags & FLAG_USEROBJ)
+        return gracebecome(sub, super);
     uo->super = super;
+    return sub;
 }
 void UserObj__mark(struct UserObject *o) {
     int i;

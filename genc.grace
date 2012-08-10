@@ -419,7 +419,9 @@ method compileobject(o, outerRef) {
             compileobjdefdecdata(e, selfr, pos)
         } elseif (e.kind == "inherits") then {
             superobj := compilenode(e.value)
-            out("  setsuperobj({selfr}, {superobj});")
+            out("  self = setsuperobj({selfr}, {superobj});")
+            out("  {selfr} = self;")
+            out("  *selfslot = self;")
             pos := pos - 1
         } else {
             compilenode(e)
@@ -1646,7 +1648,7 @@ method compile(vl, of, mn, rm, bt) {
     for (values) do { o ->
         if (o.kind == "inherits") then {
             def superobj = compilenode(o.value)
-            out("  setsuperobj(self, {superobj});")
+            out("  self = setsuperobj(self, {superobj});")
         }
         compilenode(o)
         if (o.kind == "type") then {
