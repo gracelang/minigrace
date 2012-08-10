@@ -402,6 +402,20 @@ int integerfromAny(Object p) {
     int i = atoi(c);
     return i;
 }
+Object gracebecome(Object subObject, Object superObject) {
+    struct UserObject *sub = (struct UserObject *)subObject;
+    struct UserObject *sup = (struct UserObject *)superObject;
+    struct UserObject *tmpSup = sup;
+    ClassData subclass = sub->class;
+    Object *subdata = (Object *)sub->data;
+    sub->super = sup->super;
+    sup->super = sub;
+    sub->class = sup->class;
+    sub->data = (Object *)(sup->data);
+    sup->class = subclass;
+    sup->data = subdata;
+    return sup;
+}
 Method *addmethodrealflags(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int), int flags) {
     Method *m = add_Method(o->class, name, func);
@@ -3935,11 +3949,15 @@ Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
     die(str);
     return NULL;
 }
+Object prelude_become(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    return gracebecome(argv[0], argv[1]);
+}
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 12, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 13, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -3952,6 +3970,7 @@ Object grace_prelude() {
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "try()else", &prelude_tryElse);
     add_Method(c, "forceError", &prelude_forceError);
+    add_Method(c, "become", &prelude_become);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
