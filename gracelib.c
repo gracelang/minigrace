@@ -3368,6 +3368,7 @@ void Block__mark(struct BlockObject *o) {
 void Block__release(struct BlockObject *o) {
     ClassData__release(o->class);
     glfree(o->class);
+    glfree(o->data);
 }
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
