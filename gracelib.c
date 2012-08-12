@@ -3437,15 +3437,26 @@ Object UserObj_Equals(Object self, int nparts, int *argcv,
     }
     return alloc_Boolean(1);
 }
+Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
-    if (c == NULL) {
-        c = alloc_class2("Object", numMethods + 6,
+    if (GraceDefaultObject == NULL) {
+        ClassData dc = alloc_class2("DefaultObject", 6,
                 (void*)&UserObj__mark);
-        add_Method(c, "asString", &Object_asString);
-        add_Method(c, "++", &Object_concat);
-        add_Method(c, "==", &UserObj_Equals);
-        add_Method(c, "!=", &Object_NotEquals);
-        add_Method(c, "asDebugString", &Object_asString);
+        GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
+                sizeof(struct Object) + sizeof(Object), dc);
+        GraceDefaultObject->flags |= FLAG_USEROBJ;
+        struct UserObject *duo = (struct UserObject *)GraceDefaultObject;
+        duo->super = NULL;
+        duo->data[0] = NULL;
+        addmethod2(GraceDefaultObject, "asString", &Object_asString);
+        addmethod2(GraceDefaultObject, "++", &Object_concat);
+        addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
+        addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
+        addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
+    }
+    if (c == NULL) {
+        c = alloc_class2("Object", numMethods + 1,
+                (void*)&UserObj__mark);
     }
     numFields++;
     Object o = alloc_obj(sizeof(struct UserObject)
@@ -3455,7 +3466,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     int i;
     for (i=0; i<numFields; i++)
         uo->data[i] = NULL;
-    uo->super = NULL;
+    uo->super = GraceDefaultObject;
     return o;
 }
 Object alloc_userobj(int numMethods, int numFields) {
