@@ -1032,15 +1032,15 @@ char *grcstring(Object self) {
 
 void ConcatString__FillBuffer(Object self, char *buf, int len) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
-    int size = sself->size;
-    Object left = sself->left;
-    Object right = sself->right;
     int i;
     if (sself->flat != NULL) {
         strncpy(buf, sself->flat, len);
         buf[sself->blen] = 0;
         return;
     }
+    int size = sself->size;
+    Object left = sself->left;
+    Object right = sself->right;
     struct StringObject *lefts = (struct StringObject*)left;
     int ls = lefts->blen;
     if (left->class == String) {
@@ -1176,8 +1176,7 @@ void ConcatString__mark(Object o) {
     struct ConcatStringObject *s = (struct ConcatStringObject *)o;
     if (s->flat)
         return;
-    gc_mark(s->left);
-    gc_mark(s->right);
+    ConcatString__Flatten(o);
 }
 Object String_asNumber(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
@@ -1230,7 +1229,7 @@ Object alloc_ConcatString(Object left, Object right) {
         depth = max(depth, ((struct ConcatStringObject*)lefts)->depth + 1);
     if (rights->class == ConcatString)
         depth = max(depth, ((struct ConcatStringObject*)rights)->depth + 1);
-    if (depth > 1000) {
+    if (depth > 100) {
         int len = lefts->blen + rights->blen + 1;
         char buf[len];
         ConcatString__FillBuffer(left, buf, len);
@@ -3348,11 +3347,14 @@ void Block__mark(struct BlockObject *o) {
     gc_mark(o->data[0]);
     gc_mark(o->data[1]);
 }
+void Block__release(struct BlockObject *o) {
+}
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class2(buf, 10, (void*)&Block__mark);
+    ClassData c = alloc_class3(buf, 10, (void*)&Block__mark,
+            (void*)&Block__release);
     if (!Block)
         Block = c;
     add_Method(c, "asString", &Object_asString);
