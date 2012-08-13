@@ -3363,18 +3363,17 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class3(buf, 10, (void*)&Block__mark,
+    ClassData c = alloc_class3(buf, 9, (void*)&Block__mark,
             (void*)&Block__release);
     if (!Block)
         Block = c;
-    add_Method(c, "asString", &Object_asString);
-    add_Method(c, "++", &Object_concat);
-    add_Method(c, "==", &Object_Equals);
-    add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "apply", &Block_apply);
     add_Method(c, "applyIndirectly", &Block_applyIndirectly);
     add_Method(c, "match", &Block_match);
+    add_Method(c, "asString", &Object_asString);
+    add_Method(c, "asDebugString", &Object_asString);
+    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "pattern", &Block_pattern);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
