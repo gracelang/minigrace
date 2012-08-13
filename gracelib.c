@@ -2930,6 +2930,15 @@ Object alloc_Type(const char *name, int nummethods) {
     strcpy(t->name, name);
     return (Object)t;
 }
+void ClassData__release(struct ClassData *c) {
+    for (int i=0; i<c->nummethods; i++)
+        if (c->methods[i].type) {
+            glfree(c->methods[i].type->names);
+            glfree(c->methods[i].type->argcv);
+            glfree(c->methods[i].type);
+        }
+    glfree(c->methods);
+}
 static inline void initialise_Class() {
     if (Class == NULL) {
         Class = glmalloc(sizeof(struct ClassData));
@@ -2939,7 +2948,7 @@ static inline void initialise_Class() {
         Class->methods = glmalloc(sizeof(Method) * 3);
         Class->nummethods = 3;
         Class->mark = NULL;
-        Class->release = NULL;
+        Class->release = (void *)&ClassData__release;
         add_Method(Class, "match", &Type_match);
         add_Method(Class, "&", &literal_and);
         add_Method(Class, "|", &literal_or);
