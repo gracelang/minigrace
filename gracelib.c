@@ -2858,8 +2858,7 @@ Method* add_Method(ClassData c, const char *name,
         }
     }
     c->methods[i].flags = MFLAG_REALSELFONLY;
-    c->methods[i].name = glmalloc(strlen(name) + 1);
-    strcpy(c->methods[i].name, name);
+    c->methods[i].name = name;
     c->methods[i].func = func;
     c->nummethods++;
     return &c->methods[i];

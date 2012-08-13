@@ -11,7 +11,7 @@ struct MethodType {
     char **names;
 };
 typedef struct Method {
-    char *name;
+    const char *name;
     int32_t flags;
     Object(*func)(Object, int, int*, Object*, int);
     int pos;
