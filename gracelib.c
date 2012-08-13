@@ -806,7 +806,7 @@ void List_mark(Object o) {
 }
 Object alloc_List() {
     if (List == NULL) {
-        List = alloc_class3("List", 20, (void*)&List_mark,
+        List = alloc_class3("List", 19, (void*)&List_mark,
                 (void*)&List__release);
         add_Method(List, "asString", &List_asString);
         add_Method(List, "at", &List_index);
@@ -822,7 +822,6 @@ Object alloc_List() {
         add_Method(List, "contains", &List_contains);
         add_Method(List, "==", &Object_Equals);
         add_Method(List, "!=", &Object_NotEquals);
-        add_Method(List, "/=", &Object_NotEquals);
         add_Method(List, "indices", &List_indices);
         add_Method(List, "first", &List_first);
         add_Method(List, "last", &List_last);
@@ -900,10 +899,9 @@ Object PrimitiveArrayClassObject;
 Object alloc_PrimitiveArrayClassObject() {
     if (PrimitiveArrayClassObject)
         return PrimitiveArrayClassObject;
-    ClassData c = alloc_class("Class<PrimitiveArray>", 5);
+    ClassData c = alloc_class("Class<PrimitiveArray>", 3);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "new", &PrimitiveArrayClassObject_new);
     Object o = alloc_obj(0, c);
     gc_root(o);
@@ -2095,7 +2093,7 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 17);
+        File = alloc_class("File", 16);
         add_Method(File, "read", &File_read);
         add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
@@ -2112,7 +2110,6 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
-        add_Method(File, "/=", &Object_NotEquals);
     }
     Object o = alloc_obj(sizeof(FILE*) + sizeof(int), File);
     struct FileObject* so = (struct FileObject*)o;
@@ -3262,10 +3259,9 @@ void HashMap__mark(struct HashMap *h) {
 }
 Object alloc_HashMap() {
     if (HashMap == NULL) {
-        HashMap = alloc_class2("HashMap", 7, (void*)&HashMap__mark);
+        HashMap = alloc_class2("HashMap", 6, (void*)&HashMap__mark);
         add_Method(HashMap, "==", &Object_Equals);
         add_Method(HashMap, "!=", &Object_NotEquals);
-        add_Method(HashMap, "/=", &Object_NotEquals);
         add_Method(HashMap, "contains", &HashMap_contains);
         add_Method(HashMap, "get", &HashMap_get);
         add_Method(HashMap, "put", &HashMap_put);
@@ -3292,10 +3288,9 @@ Object HashMapClassObject;
 Object alloc_HashMapClassObject() {
     if (HashMapClassObject)
         return HashMapClassObject;
-    ClassData c = alloc_class("Class<HashMap>", 5);
+    ClassData c = alloc_class("Class<HashMap>", 3);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "new", &HashMapClassObject_new);
     Object o = alloc_obj(0, c);
     gc_root(o);
@@ -3932,12 +3927,11 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 13, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 12, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
-    add_Method(c, "/=", &Object_NotEquals);
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "octets", &grace_octets);
