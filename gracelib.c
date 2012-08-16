@@ -2506,6 +2506,7 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
                         if (m->flags & MFLAG_REALSELFALSO)
                             realself = uo->super;
                         callflags |= depth << 24;
+                        callflags |= (m->pos & 255) << 16;
                         break;
                     }
                 }
