@@ -213,6 +213,12 @@ method compileobject(o, outerRef) {
         out("  if ({sup}.data)")
         out("    {selfr}.data = {sup}.data;")
         out("  {selfr}._value = {sup}._value;")
+        out("  var tmpmeths = {selfr}.methods;");
+        out("  {selfr}.superobj = {sup}.superobj;")
+        out("  {selfr}.methods = {sup}.methods;")
+        out("  {sup}.methods = tmpmeths;")
+        out("  {sup}.superobj = {selfr};")
+        selfr := sup
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
