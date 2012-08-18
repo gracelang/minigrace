@@ -1385,83 +1385,85 @@ type ASTVisitor = {
      visitReturn(o) -> Boolean
      visitInherits(o) -> Boolean
 }
-def baseVisitor : ASTVisitor = object {
-    method visitFor(o) -> Boolean {
-        true
-    }
-    method visitWhile(o) -> Boolean {
-        true
-    }
-    method visitIf(o) -> Boolean {
-        true
-    }
-    method visitBlock(o) -> Boolean {
-        true
-    }
-    method visitMatchCase(o) -> Boolean {
-        true
-    }
-    method visitMethodType(o) -> Boolean {
-        true
-    }
-    method visitType(o) -> Boolean {
-        true
-    }
-    method visitMethod(o) -> Boolean {
-        true
-    }
-    method visitCall(o) -> Boolean {
-        true
-    }
-    method visitClass(o) -> Boolean {
-        true
-    }
-    method visitObject(o) -> Boolean {
-        true
-    }
-    method visitArray(o) -> Boolean {
-        true
-    }
-    method visitMember(o) -> Boolean {
-        true
-    }
-    method visitGeneric(o) -> Boolean {
-        true
-    }
-    method visitIdentifier(o) -> Boolean {
-        true
-    }
-    method visitOctets(o) -> Boolean {
-        true
-    }
-    method visitString(o) -> Boolean {
-        true
-    }
-    method visitNum(o) -> Boolean {
-        true
-    }
-    method visitOp(o) -> Boolean {
-        true
-    }
-    method visitIndex(o) -> Boolean {
-        true
-    }
-    method visitBind(o) -> Boolean {
-        true
-    }
-    method visitDefDec(o) -> Boolean {
-        true
-    }
-    method visitVarDec(o) -> Boolean {
-        true
-    }
-    method visitImport(o) -> Boolean {
-        true
-    }
-    method visitReturn(o) -> Boolean {
-        true
-    }
-    method visitInherits(o) -> Boolean {
-        true
+method baseVisitor -> ASTVisitor {
+    object {
+        method visitFor(o) -> Boolean {
+            true
+        }
+        method visitWhile(o) -> Boolean {
+            true
+        }
+        method visitIf(o) -> Boolean {
+            true
+        }
+        method visitBlock(o) -> Boolean {
+            true
+        }
+        method visitMatchCase(o) -> Boolean {
+            true
+        }
+        method visitMethodType(o) -> Boolean {
+            true
+        }
+        method visitType(o) -> Boolean {
+            true
+        }
+        method visitMethod(o) -> Boolean {
+            true
+        }
+        method visitCall(o) -> Boolean {
+            true
+        }
+        method visitClass(o) -> Boolean {
+            true
+        }
+        method visitObject(o) -> Boolean {
+            true
+        }
+        method visitArray(o) -> Boolean {
+            true
+        }
+        method visitMember(o) -> Boolean {
+            true
+        }
+        method visitGeneric(o) -> Boolean {
+            true
+        }
+        method visitIdentifier(o) -> Boolean {
+            true
+        }
+        method visitOctets(o) -> Boolean {
+            true
+        }
+        method visitString(o) -> Boolean {
+            true
+        }
+        method visitNum(o) -> Boolean {
+            true
+        }
+        method visitOp(o) -> Boolean {
+            true
+        }
+        method visitIndex(o) -> Boolean {
+            true
+        }
+        method visitBind(o) -> Boolean {
+            true
+        }
+        method visitDefDec(o) -> Boolean {
+            true
+        }
+        method visitVarDec(o) -> Boolean {
+            true
+        }
+        method visitImport(o) -> Boolean {
+            true
+        }
+        method visitReturn(o) -> Boolean {
+            true
+        }
+        method visitInherits(o) -> Boolean {
+            true
+        }
     }
 }
