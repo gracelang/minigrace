@@ -3536,9 +3536,11 @@ void setCompilerModulePath(char *s) {
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) dirname(argv[0])
-    // 2) GRACE_MODULE_PATH
-    // 3) Path of the compiler used to build
-    // 4) .
+    // 2) dirname(argv[0])/../lib
+    // 3) GRACE_MODULE_PATH
+    // 4) Path of the compiler used to build
+    // 5) Path of the compiler used to build/../lib
+    // 6) .
     struct stat st;
     char *ep = ARGV[0];
     char epm[strlen(ep) + 1];
@@ -3546,6 +3548,13 @@ int find_gso(const char *name, char *buf) {
     char *dn = dirname(epm);
     strcpy(buf, dn);
     strcat(buf, "/");
+    strcat(buf, name);
+    strcat(buf, ".gso");
+    if (stat(buf, &st) == 0) {
+        return 1;
+    }
+    strcpy(buf, dn);
+    strcat(buf, "/../lib/");
     strcat(buf, name);
     strcat(buf, ".gso");
     if (stat(buf, &st) == 0) {
@@ -3565,6 +3574,14 @@ int find_gso(const char *name, char *buf) {
         char *gmp = compilerModulePath;
         strcpy(buf, gmp);
         strcat(buf, "/");
+        strcat(buf, name);
+        strcat(buf, ".gso");
+        if (stat(buf, &st) == 0) {
+            return 1;
+        }
+        gmp = compilerModulePath;
+        strcpy(buf, gmp);
+        strcat(buf, "/../lib/");
         strcat(buf, name);
         strcat(buf, ".gso");
         if (stat(buf, &st) == 0) {
