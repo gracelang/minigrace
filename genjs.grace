@@ -212,6 +212,8 @@ method compileobject(o, outerRef) {
         out("  {selfr}.superobj = {sup};")
         out("  if ({sup}.data)")
         out("    {selfr}.data = {sup}.data;")
+        out("  else")
+        out("    {sup}.data = {selfr}.data;")
         out("  {selfr}._value = {sup}._value;")
         out("  var tmpmeths = {selfr}.methods;");
         out("  {selfr}.superobj = {sup}.superobj;")
@@ -219,7 +221,7 @@ method compileobject(o, outerRef) {
         out("  {selfr}.outer = {sup}.outer;")
         out("  {sup}.methods = tmpmeths;")
         out("  {sup}.superobj = {selfr};")
-        selfr := sup
+        out("  {selfr} = {sup};")
     } else {
         out("  var " ++ selfr ++ " = Grace_allocObject();")
     }
