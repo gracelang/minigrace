@@ -19,12 +19,15 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" >> buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 
+%.o: %.c
+	gcc -g -std=c99 -c -o $@ $<
+
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
-gracelib.o: gracelib-basic.o l1/minigrace StandardPrelude.grace
+gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace
 	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
@@ -99,6 +102,7 @@ clean:
 	rm -f gracelib.bc gracelib.o
 	rm -f unicode.gco unicode.gso unicode.gcn
 	rm -f mirrors.gso
+	rm -f debugger.o
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)

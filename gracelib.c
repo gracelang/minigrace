@@ -22,6 +22,8 @@
 #include "definitions.h"
 #define max(x,y) (x>y?x:y)
 
+void debugger();
+
 Object Float64_asString(Object, int nparts, int *argcv,
         Object*, int flags);
 Object Float64_Add(Object, int nparts, int *argcv,
@@ -271,6 +273,8 @@ void gracedie(char *msg, ...) {
         else
             break;
     va_end(args);
+    if (getenv("GRACE_DEBUGGER"))
+        debugger();
     exit(1);
 }
 void die(char *msg, ...) {
@@ -291,6 +295,8 @@ void die(char *msg, ...) {
         else
             break;
     va_end(args);
+    if (getenv("GRACE_DEBUGGER"))
+        debugger();
     exit(1);
 }
 void debug(char *msg, ...) {
