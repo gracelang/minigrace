@@ -2354,6 +2354,29 @@ Object sys_exit(Object self, int nparts, int *argcv,
 Object sys_execPath(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *ep = ARGV[0];
+    if (ep[0] == '/') {
+        // Absolute path - needs no work
+    } else if (strchr(ep, '/')) {
+        // Relative path - we will ignore the work
+    } else {
+        // We have to search PATH
+        char *p = getenv("PATH");
+        char path[strlen(p)];
+        strcpy(path, p);
+        char *c = strtok(path, ":");
+        char buf[PATH_MAX];
+        struct stat st;
+        while (c) {
+            strcpy(buf, c);
+            strcat(buf, "/");
+            strcat(buf, ep);
+            if (stat(buf, &st) == 0) {
+                ep = buf;
+                break;
+            }
+            c = strtok(NULL, ":");
+        }
+    }
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
     char *dn = dirname(epm);
