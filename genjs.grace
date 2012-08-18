@@ -216,6 +216,7 @@ method compileobject(o, outerRef) {
         out("  var tmpmeths = {selfr}.methods;");
         out("  {selfr}.superobj = {sup}.superobj;")
         out("  {selfr}.methods = {sup}.methods;")
+        out("  {selfr}.outer = {sup}.outer;")
         out("  {sup}.methods = tmpmeths;")
         out("  {sup}.superobj = {selfr};")
         selfr := sup
