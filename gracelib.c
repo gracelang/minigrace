@@ -258,11 +258,26 @@ static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
 int calldepth = 0;
+struct StackFrameObject **frame_stack;
+struct ClosureEnvObject **closure_stack;
 void backtrace() {
     int i;
     for (i=0; i<calldepth; i++) {
         fprintf(stderr, "  Called %s\n", callstack[i]);
     }
+}
+void pushstackframe(struct StackFrameObject *f, char *name) {
+    frame_stack[calldepth-1] = f;
+    f->name = name;
+}
+void pushclosure(Object c) {
+    closure_stack[calldepth-1] = (struct ClosureEnvObject *)c;
+}
+void setframeelementname(struct StackFrameObject *f, int p, char *name) {
+    if (getenv("GRACE_FOO"))
+        fprintf(stderr, "adding name %s(%p) to slot %i of %s(%p)\n",
+                name, name, p, f->name, f);
+    f->names[p] = name;
 }
 void gracedie(char *msg, ...) {
     va_list args;
@@ -2764,17 +2779,22 @@ void StackFrame__mark(struct StackFrameObject *o) {
     if (o->parent != NULL)
         gc_mark((Object)o->parent);
 }
+void StackFrame__release(struct StackFrameObject *o) {
+    glfree(o->names);
+}
 struct StackFrameObject *alloc_StackFrame(int size,
         struct StackFrameObject *parent) {
     int i;
     if (StackFrame == NULL) {
-        StackFrame = alloc_class2("StackFrame", 0, (void*)&StackFrame__mark);
+        StackFrame = alloc_class3("StackFrame", 0, (void*)&StackFrame__mark,
+                (void*)&StackFrame__release);
     }
     Object o = alloc_obj(sizeof(struct StackFrameObject) + sizeof(Object)*size
             - sizeof(struct Object), StackFrame);
     struct StackFrameObject *s = (struct StackFrameObject *)o;
     s->size = size;
     s->parent = parent;
+    s->names = glmalloc(sizeof(char *) * (size + 1));
     Object u = alloc_Undefined();
     for (i=0; i<size; i++) {
         s->slots[i] = u;
@@ -2784,14 +2804,6 @@ struct StackFrameObject *alloc_StackFrame(int size,
 
 
 ClassData ClosureEnv;
-struct ClosureEnvObject {
-    int32_t flags;
-    ClassData class;
-    char name[256];
-    int size;
-    Object frame;
-    Object *data[];
-};
 void ClosureEnv__mark(struct ClosureEnvObject *o) {
     int i;
     if (o->frame != NULL)
@@ -3643,6 +3655,10 @@ void gracelib_argv(char **argv) {
     // We need return_stack[-1] to be available.
     return_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
     return_stack++;
+    frame_stack = calloc(STACK_SIZE + 1, sizeof(struct StackFrameObject *));
+    frame_stack++;
+    closure_stack = calloc(STACK_SIZE + 1, sizeof(struct ClosureEnvObject *));
+    closure_stack++;
     debug_enabled = (getenv("GRACE_DEBUG_LOG") != NULL);
     if (debug_enabled) {
         debugfp = fopen("debug", "w");

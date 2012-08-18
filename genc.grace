@@ -83,14 +83,18 @@ method definebindings(l, slot) {
         if ((n.kind == "vardec") || (n.kind == "defdec")
             || (n.kind == "class")) then {
             var tnm := ""
+            var snm := ""
             if (n.name.kind == "generic") then {
                 tnm := escapeident(n.name.value.value)
+                snm := escapestring(n.name.value.value)
             } else {
                 tnm := escapeident(n.name.value)
+                snm := escapestring(n.name.value)
             }
             if (!declaredvars.contains(tnm)) then {
                 declaredvars.push(tnm)
                 out("  Object *var_{tnm} = &(stackframe->slots[{slot}]);")
+                out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                 slot := slot + 1
             }
         } else {
@@ -101,10 +105,12 @@ method definebindings(l, slot) {
             } else {
                 if (n.kind == "type") then {
                     var tnm := escapeident(n.value)
+                    def snm = escapestring(n.value)
                     if (!declaredvars.contains(tnm)) then {
                         declaredvars.push(tnm)
                         out("  Object *var_{tnm} = "
                             ++ "&(stackframe->slots[{slot}]);")
+                        out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                         slot := slot + 1
                     }
                 }
@@ -403,6 +409,7 @@ method compileobject(o, outerRef) {
     out("  Object *oldselfslot{myc} = selfslot;")
     out("  selfslot = &stackframe->slots[0];")
     out("  *selfslot = self;")
+    out("  setframeelementname(stackframe, 0, \"self\");")
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
@@ -560,6 +567,7 @@ method compilemethod(o, selfobj, pos) {
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")
     out("  *selfslot = self;")
+    out("  setframeelementname(stackframe, 0, \"self\");")
     slot := slot + 1
     numslots := numslots + 1
     var ret := "none"
@@ -622,11 +630,14 @@ method compilemethod(o, selfobj, pos) {
         }
         out("  Object closure = getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, getclosureframe(closure));")
+        out("  pushclosure(closure);")
     } else {
         out("Object {litname}(Object self, int nparts, int *argcv, Object *args, "
             ++ "int32_t flags) \{")
         out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
+        out("  pushclosure(NULL);")
     }
+    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
     for (o.signature.indices) do { partnr ->
@@ -1641,8 +1652,10 @@ method compile(vl, of, mn, rm, bt) {
     out("  gc_root(emptyclosure);")
     out("  struct StackFrameObject *stackframe = alloc_StackFrame({nummethods}, NULL);")
     out("  gc_root((Object)stackframe);")
+    out("  pushstackframe(stackframe, \"module scope\");")
     out("  Object *selfslot = &(stackframe->slots[0]);")
     out("  *selfslot = self;")
+    out("  setframeelementname(stackframe, 0, \"self\");")
     var tmpo := output
     output := []
     definebindings(values, 1)

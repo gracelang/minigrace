@@ -25,6 +25,7 @@ typedef struct Method {
 #define MFLAG_CONFIDENTIAL 16
 #define MFLAG_PRIVATE 32
 
+#define OFLAG_USEROBJ 16
 #define OFLAG_MUTABLE 64
 
 #define CFLAG_SELF 128
@@ -60,7 +61,18 @@ struct StackFrameObject {
     ClassData class;
     struct StackFrameObject *parent;
     int size;
+    char *name;
+    char **names;
     Object slots[];
+};
+
+struct ClosureEnvObject {
+    int32_t flags;
+    ClassData class;
+    char name[256];
+    int size;
+    Object frame;
+    Object *data[];
 };
 
 Object alloc_Float64(double);
@@ -74,6 +86,8 @@ Object callmethodflags(Object receiver, const char *name,
         int nparts, int *nparams, Object *args, int callflags);
 Object callmethod4(Object, const char *,
         int, int *, Object *, int, int);
+Object callmethodself(Object receiver, const char *name,
+        int nparts, int *nparamsv, Object *args);
 Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
@@ -151,6 +165,9 @@ Object setsuperobj(Object, Object);
 void block_savedest(Object);
 void block_return(Object, Object);
 void setclassname(Object, char*);
+void pushstackframe(struct StackFrameObject *, char *name);
+void setframeelementname(struct StackFrameObject *, int, char *);
+void pushclosure(Object c);
 void gracelib_stats();
 int istrue(Object);
 void setmodule(const char *);
