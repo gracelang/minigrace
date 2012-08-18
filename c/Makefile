@@ -8,6 +8,9 @@ selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f $(CFILES:.c=.gcn)
 	./minigrace --make --verbose --target c --module minigrace compiler.grace
 
+%.o: %.c
+	gcc -g -std=c99 -c -o $@ $<
+
 %.gcn: %.c
 	gcc -std=c99 -c -o $@ $<
 
@@ -23,10 +26,10 @@ mirrors.gso: mirrors.c gracelib.h
 mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
 
-gracelib.o: gracelib.c StandardPrelude.c
+gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
 	gcc -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
 install: minigrace
 	mkdir -p $(PREFIX)/bin
