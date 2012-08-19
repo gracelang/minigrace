@@ -9,10 +9,10 @@ selfhost: minigrace $(CFILES:.c=.grace)
 	./minigrace --make --verbose --target c --module minigrace compiler.grace
 
 %.o: %.c
-	gcc -g -std=c99 -c -o $@ $<
+	gcc -g -I. -std=c99 -c -o $@ $<
 
 %.gcn: %.c
-	gcc -std=c99 -c -o $@ $<
+	gcc -I. -std=c99 -c -o $@ $<
 
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
@@ -28,12 +28,15 @@ mirrors.gcn: mirrors.c gracelib.h
 
 gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
-	gcc -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
+	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
 install: minigrace
-	mkdir -p $(PREFIX)/bin
-	cp minigrace gracelib.h gracelib.o unicode.gso $(PREFIX)/bin
+	install -d $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include
+	install -m 755 minigrace $(PREFIX)/bin/minigrace
+	install -m 755 unicode.gso mirrors.gso gracelib.o $(PREFIX)/lib/
+	install gracelib.h $(PREFIX)/include/gracelib.h
+
 
 test: minigrace
 	./tests/harness "../minigrace" tests ""
@@ -47,4 +50,4 @@ fullclean: buildclean
 Makefile.conf:
 	./configure
 
-.PHONY: selfhost test buildclean fullclean
+.PHONY: selfhost test buildclean fullclean install

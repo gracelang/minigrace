@@ -120,7 +120,13 @@ known-good/%:
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
+install: minigrace
+	install -d $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include
+	install -m 755 minigrace $(PREFIX)/bin/minigrace
+	install -m 755 unicode.gso mirrors.gso gracelib.o $(PREFIX)/lib/
+	install gracelib.h $(PREFIX)/include/gracelib.h
+
 Makefile.conf: configure
 	./configure
 
-.PHONY: all clean selfhost-stats test js c selftest
+.PHONY: all clean selfhost-stats test js c selftest install
