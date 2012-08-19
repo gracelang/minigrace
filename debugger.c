@@ -241,7 +241,7 @@ static void showcmd(char *rest) {
     rest[strlen(rest) - 1] = 0;
     Object o = getnamedelement(rest);
     if (o == NULL) {
-        printf("No such name '%s' in this scope.\n");
+        printf("No such name '%s' in this scope.\n", rest);
         return;
     }
     Object s;
