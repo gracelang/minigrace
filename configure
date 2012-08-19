@@ -195,19 +195,19 @@ else
 fi
 
 echo -n "Checking GCC search paths... "
-cat <<EOT >> tmp-$$.c
+cat <<EOT >> configure-$$-tmp.c
 #include <setjmp.h>
 int main() {
     return 0;
 }
 EOT
-if ! gcc -o tmp-$$ tmp-$$.c
+if ! gcc -o configure-$$-tmp configure-$$-tmp.c
 then
     fail "gcc"
 else
     echo "OK."
 fi
-rm -f tmp-$${.c,}
+rm -f configure-$$-tmp*
 
 if [ "$DISTRIB" = "tarball" ]
 then
