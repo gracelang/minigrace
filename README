@@ -82,7 +82,9 @@ None.
 
 No backend or platform provides foreign functions or access to the
 underlying platform. Manual platform glue code may be possible to bind
-particular functionality; see <doc/interop> for details.
+particular functionality; see <doc/interop> for details. Wrappers for
+some functionality may be included with the compiler; see <doc/modules>
+for details.
 
 Licensing
 ---------

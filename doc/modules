@@ -1,0 +1,113 @@
+The Minigrace distribution includes some additional modules that may be
+useful in user code. They are briefly described here.
+
+mgcollections
+-------------
+mgcollections.grace includes three common collection types: list, set,
+and map. Requesting platform.mgcollections.list.new(*elements)
+constructs a list of the given elements, and similarly for set. map.new
+does not take arguments.
+
+Lists support methods add, at, at()put, [], []:=, size, push, pop,
+indices, first, last, ++, extend, and reduce. Sets support add,
+contains, and extend. Maps support put, get, and contains. All
+collections are iterable.
+
+This is a Grace module that is available on all targets and
+architectures, but must be found in the current directory at compile
+time for the native compiler.
+
+mirrors
+-------
+The mirrors module supports reflection on Grace objects. A native module
+compiled from mirrors.c, this module will usually be dynamically loaded
+as mirrors.gso. The module supports one method: reflect(o : Object)
+returns a Mirror for the provided object.
+
+Mirrors support two methods: methods returns a list of MirrorMethods
+representing the methods on the object. getMethod returns a single
+MirrorMethod with the name given as argument.
+
+MirrorMethods support four methods: name returns the name of the method,
+partcount the number of parts (words) in the name, and paramcounts a
+list of parameter counts in each part. The request method takes a list
+of lists as argument, where the elements of the top-level list are lists
+of the arguments to provide each part of the name.
+
+A sample use might be:
+  platform.mirrors.reflect(1).getMethod("+").request([[2]]) == 3
+
+This module is only available in the native compiler.
+
+unicode
+-------
+The unicode module supports accessing the Unicode Character Database.
+The module may be built either dynamically or statically, but is dynamic
+on platforms that support it.
+
+The module contains these methods:
+  category(char : String) -> String
+  bidirectional(char : String) -> String
+  combining(char : String) -> Number
+  mirrored(char : String) -> Boolean
+  name(char : String) -> String
+  iscategory(char : String, category : String) -> Boolean
+  isSeparator(char : String) -> Boolean
+  isControl(char : String) -> Boolean
+  isLetter(char : String) -> Boolean
+  isNumber(char : String) -> Boolean
+  isSymbolMathematical(char : String) -> Boolean
+  create(codepoint : Number) -> String
+These all return or test the corresponding Unicode property, or in the
+case of create return a String consisting of the character with the
+given codepoint.
+
+This module is only usefully available in the native compiler, although
+a shim is provided in the JavaScript library to allow the compiler to
+work.
+
+curl
+----
+The curl module is a thin wrapper around some of the libcurl API, for
+acccessing resources by URL. The module is not currently compiled by
+default, but may be built with `make curl.gso`. It is only available as
+a dynamic module.
+
+The module supports one method:
+  easy -> CurlEasy
+This method wraps curl_easy_init, returning a CurlEasy object
+representing a CURL* handle.
+
+CurlEasy objects support these methods:
+  onReceive(blk : Block) -> Done
+    Set the block to be executed when data is received in response
+    to a request. The block is passed the received data as an Octets
+    object. Wraps CURLOPT_WRITEFUNCTION.
+  url:=(url : String) -> Done
+    Set the URL to be requested. Wraps CURLOPT_URL.
+  perform -> Done
+    Make the request. Wraps curl_easy_perform.
+  escape(s : String | Octets) -> String
+    URL-encodes s. Wraps curl_easy_escape.
+  unescape(s : String | Octets) -> Octets
+    URL-decodes s. Wraps curl_easy_unescape.
+  responseCode -> Number
+    Returns the result code of the most recent request performed.
+    Wraps CURLINFO_RESPONSE_CODE.
+  effectiveUrl -> String
+    Returns the effective URL, after any redirects, of the most
+    recent request performed. Wraps CURLINFO_EFFECTIVE_URL.
+  includeResponseHeader:=(b : Boolean) -> Done
+    Sets whether to include response headers in the returned data.
+    Wraps CURLOPT_HEADER.
+
+A sample use might be:
+  def req = platform.curl.easy
+  req.url := "http://example.com/"
+  req.onReceive {d->
+    io.output.write(d.decode("utf-8"))
+  }
+  req.perform
+
+This module is only available in the native compiler, on architectures
+that support dynamic modules.

@@ -19,8 +19,6 @@ The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:
 - Lists, constructed with [] and supporting indexing with [] and []:=
   and methods size, push, pop, first, last, and indices.
-- Maps, created using HashMap.new, and supporting methods put(key,
-  value), get(key), and contains(key).
 - Multiple modules with separate compilation. A file foo.grace defines
   a module foo, which can be accessed in another module using the
   semi-standardised "platform.foo" or the deprecated "import foo".
@@ -69,6 +67,8 @@ programs:
   standard error when the program terminates, if set.
 - GRACE_GC_DISABLE prevents garbage collection, if set.
 - GRACE_MODULE_PATH is used to find dynamic modules.
+- GRACE_DEBUGGER will cause the program to drop to an interactive
+  debugger when a fatal error occurs.
 
 Some functionality of the compiler or programs may behave differently or
 be unavailable on some platforms or targets:
