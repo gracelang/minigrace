@@ -1549,7 +1549,7 @@ method compile(vl, of, mn, rm, bt) {
             util.syntax_error("failed processing import of " ++ imperrors ++".")
         }
     }
-    outprint("#include \"{util.gracelibPath}/gracelib.h\"")
+    outprint("#include <gracelib.h>")
     outprint("#include <stdlib.h>")
     outprint("#ifndef __CYGWIN__")
     outprint("#pragma weak main")
@@ -1726,7 +1726,7 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
-        cmd := "gcc -std=c99 -g -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
             sys.exit(1)

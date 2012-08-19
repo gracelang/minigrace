@@ -140,7 +140,11 @@ method parseargs {
             case { _ -> io.output }
     }
     if (gracelibPathv == false) then {
-        gracelibPathv := sys.execPath
+        if (io.exists(sys.execPath ++ "/../lib/gracelib.o")) then {
+            gracelibPathv := sys.execPath ++ "/../lib"
+        } else {
+            gracelibPathv := sys.execPath
+        }
     }
     if (infilev == io.input) then {
         if (infilev.isatty) then {
