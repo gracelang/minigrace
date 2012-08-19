@@ -149,14 +149,14 @@ static void changeframe() {
     frame = frame_stack[framedepth];
     closure = closure_stack[framedepth];
     printf("In frame %s. There are %i higher and %i lower frames.\n",
-            frame->name, framedepth, lowestframe - framedepth);
+            frame->name, framedepth + 1, lowestframe - framedepth);
     printf("  %s\n", callstack[framedepth]);
     printf("Scope has %i local names and %i closure names.\n",
             countframenames(), countclosurenames());
 }
 
 static void upcmd(char *rest) {
-    if (framedepth == 0) {
+    if (framedepth == -1) {
         printf("Already at topmost frame.\n");
         return;
     }
@@ -302,7 +302,7 @@ int debugger() {
     addcommand("down", "Go down to callee frame", &downcmd);
     addcommand("field", "Show value of field #2 on object #1", &fieldcmd);
     addcommand("methods", "List methods on argument", &methodscmd);
-    for (framedepth=calldepth; framedepth>=0; framedepth--)
+    for (framedepth=calldepth; framedepth>=-1; framedepth--)
         if (frame_stack[framedepth]) {
             frame = frame_stack[framedepth];
             break;
@@ -314,7 +314,7 @@ int debugger() {
         closure = closure_stack[framedepth];
         printf("Minigrace debugger\n");
         printf("Closest stack frame is for %s. There are %i higher frames.\n",
-                frame->name, framedepth);
+                frame->name, framedepth + 1);
         printf("  %s\n", callstack[framedepth]);
         printf("Scope has %i local names and %i closure names.\n",
                 countframenames(), countclosurenames());

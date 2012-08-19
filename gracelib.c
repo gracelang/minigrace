@@ -127,12 +127,6 @@ struct ConcatStringObject {
     Object left;
     Object right;
 };
-struct OctetsObject {
-    int32_t flags;
-    ClassData class;
-    int blen;
-    char body[];
-};
 struct ListObject {
     int32_t flags;
     ClassData class;
