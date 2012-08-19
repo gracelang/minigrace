@@ -75,6 +75,13 @@ struct ClosureEnvObject {
     Object *data[];
 };
 
+struct OctetsObject {
+    int32_t flags;
+    ClassData class;
+    int blen;
+    char body[];
+};
+
 Object alloc_Float64(double);
 Object alloc_List();
 Object alloc_String(const char*);
@@ -142,6 +149,11 @@ int gc_frame_new();
 void gc_frame_end(int);
 int gc_frame_newslot(Object);
 void gc_frame_setslot(int, Object);
+
+// Prototypes used by dynamic-module objects
+Object Object_Equals(Object, int, int *, Object*, int);
+Object Object_NotEquals(Object, int, int *, Object*, int);
+Object Object_asString(Object, int, int *, Object*, int);
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.
