@@ -104,6 +104,9 @@ CurlEasy objects support these methods:
   includeResponseHeader:=(b : Boolean) -> Done
     Sets whether to include response headers in the returned data.
     Wraps CURLOPT_HEADER.
+  followLocation:=(b : Boolean) -> Done
+    Sets whether to follow any Location: headers that appear in.
+    Wraps CURLOPT_FOLLOWLOCATION.
 
 A sample use might be:
   def req = platform.curl.easy

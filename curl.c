@@ -38,6 +38,9 @@
 //   includeResponseHeader:=(b : Boolean) -> Done
 //     Sets whether to include response headers in the returned data.
 //     Wraps CURLOPT_HEADER.
+//   followLocation:=(b : Boolean) -> Done
+//     Sets whether to follow any Location: headers that appear in.
+//     Wraps CURLOPT_FOLLOWLOCATION.
 // A sample use might be:
 //   def req = curl.easy
 //   req.url := "http://example.com/"
@@ -123,6 +126,13 @@ Object CurlEasy_includeResponseHeader(Object self, int nparts, int *argcv,
     return alloc_none();
 }
 
+Object CurlEasy_followLocation(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    struct CurlEasyObject *r = (struct CurlEasyObject *)self;
+    curl_easy_setopt(r->handle, CURLOPT_FOLLOWLOCATION, istrue(argv[0]));
+    return alloc_none();
+}
+
 Object CurlEasy_responseCode(Object self, int nparts, int *argcv, Object *argv,
         int flags) {
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
@@ -186,7 +196,7 @@ void CurlEasy__release(struct CurlEasyObject *r) {
 
 Object alloc_CurlEasy() {
     if (!CurlEasy) {
-        CurlEasy = alloc_class3("CurlEasy", 13, (void*)&CurlEasy__mark,
+        CurlEasy = alloc_class3("CurlEasy", 14, (void*)&CurlEasy__mark,
                 (void*)&CurlEasy__release);
         add_Method(CurlEasy, "perform", &CurlEasy_perform);
         add_Method(CurlEasy, "onReceive", &CurlEasy_onReceive);
@@ -194,6 +204,7 @@ Object alloc_CurlEasy() {
         add_Method(CurlEasy, "responseCode", &CurlEasy_responseCode);
         add_Method(CurlEasy, "effectiveUrl", &CurlEasy_effectiveUrl);
         add_Method(CurlEasy, "onHeader", &CurlEasy_onHeader);
+        add_Method(CurlEasy, "followLocation:=", &CurlEasy_followLocation);
         add_Method(CurlEasy, "includeResponseHeader:=",
                 &CurlEasy_includeResponseHeader);
         add_Method(CurlEasy, "escape", &CurlEasy_escape);
@@ -208,7 +219,6 @@ Object alloc_CurlEasy() {
     struct CurlEasyObject *r = (struct CurlEasyObject *)o;
     r->handle = curl_easy_init();
     curl_easy_setopt(r->handle, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS | CURLPROTO_FTP);
-    curl_easy_setopt(r->handle, CURLOPT_FOLLOWLOCATION, 1);
     curl_easy_setopt(r->handle, CURLOPT_MAXREDIRS, 10);
     curl_easy_setopt(r->handle, CURLOPT_USERAGENT, "Minigrace HTTP Library");
     return o;
