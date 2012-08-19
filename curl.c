@@ -55,6 +55,7 @@ struct CurlEasyObject {
     int32_t flags;
     ClassData class;
     CURL *handle;
+    Object objects[2];
 };
 
 Object CurlEasy_perform(Object self, int nparts, int *argcv, Object *argv,
@@ -79,6 +80,7 @@ Object CurlEasy_onReceive(Object self, int nparts, int *argcv,
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
     curl_easy_setopt(r->handle, CURLOPT_WRITEFUNCTION, &CurlEasy__receive);
     curl_easy_setopt(r->handle, CURLOPT_WRITEDATA, argv[0]);
+    r->objects[0] = argv[0];
     return alloc_none();
 }
 
@@ -86,6 +88,7 @@ Object CurlEasy_url_assign(Object self, int nparts, int *argcv, Object *argv,
         int flags) {
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
     curl_easy_setopt(r->handle, CURLOPT_URL, grcstring(argv[0]));
+    r->objects[1] = argv[0];
     return alloc_none();
 }
 
@@ -149,6 +152,8 @@ Object CurlEasy_unescape(Object self, int nparts, int *argcv, Object *argv,
 }
 
 void CurlEasy__mark(struct CurlEasyObject *r) {
+    for (int i=0; i<2; i++)
+        gc_mark(r->objects[i]);
 }
 
 void CurlEasy__release(struct CurlEasyObject *r) {
