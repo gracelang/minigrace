@@ -68,6 +68,26 @@ do
     shift
 done
 
+checkcurl() {
+    echo -n "Checking for libcurl... "
+    cat <<EOT > configure-$$-tmp.c
+#include <curl/curl.h>
+
+int main(int argc, char **argv) {
+    CURL *handle = curl_easy_init();
+    return 0;
+}
+EOT
+    if gcc -o configure-$$-tmp -lcurl configure-$$-tmp.c
+    then
+        other_modules=(${other_modules:+"${other_modules[@]}"} curl)
+        echo yes
+    else
+        echo no
+    fi
+    rm -f configure-$$-tmp*
+}
+
 UNICODE_MODULE=unicode.gso
 if grep -qi CYGWIN <<<"$PLATFORM"
 then
@@ -88,6 +108,7 @@ then
         sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
 else
+    checkcurl
     for mod in ${other_modules[@]}
     do
         OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gso)
