@@ -126,7 +126,7 @@ known-good/%:
 install: minigrace
 	install -d $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
-	install -m 755 unicode.gso mirrors.gso gracelib.o $(PREFIX)/lib/
+	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/
 	install gracelib.h $(PREFIX)/include/gracelib.h
 
 Makefile.conf: configure
