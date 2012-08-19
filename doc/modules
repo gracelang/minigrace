@@ -87,6 +87,10 @@ CurlEasy objects support these methods:
     Set the URL to be requested. Wraps CURLOPT_URL.
   perform -> Done
     Make the request. Wraps curl_easy_perform.
+  onHeader(blk : Block) -> Done
+    Set the block to be executed when a header is received in response
+    to a request. The block is passed the received header as an Octets
+    object. Wraps CURLOPT_HEADERFUNCTION.
   escape(s : String | Octets) -> String
     URL-encodes s. Wraps curl_easy_escape.
   unescape(s : String | Octets) -> Octets

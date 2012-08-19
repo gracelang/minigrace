@@ -21,6 +21,10 @@
 //     Set the URL to be requested. Wraps CURLOPT_URL.
 //   perform -> Done
 //     Make the request. Wraps curl_easy_perform.
+//   onHeader(blk : Block) -> Done
+//     Set the block to be executed when a header is received in response
+//     to a request. The block is passed the received header as an Octets
+//     object. Wraps CURLOPT_HEADERFUNCTION.
 //   escape(s : String | Octets) -> String
 //     URL-encodes s. Wraps curl_easy_escape.
 //   unescape(s : String | Octets) -> Octets
@@ -51,11 +55,12 @@ struct CurlModuleObject {
     ClassData class;
 };
 
+#define MINIGRACE_CURLEASY_OBJECTS 3
 struct CurlEasyObject {
     int32_t flags;
     ClassData class;
     CURL *handle;
-    Object objects[2];
+    Object objects[MINIGRACE_CURLEASY_OBJECTS];
 };
 
 Object CurlEasy_perform(Object self, int nparts, int *argcv, Object *argv,
@@ -81,6 +86,25 @@ Object CurlEasy_onReceive(Object self, int nparts, int *argcv,
     curl_easy_setopt(r->handle, CURLOPT_WRITEFUNCTION, &CurlEasy__receive);
     curl_easy_setopt(r->handle, CURLOPT_WRITEDATA, argv[0]);
     r->objects[0] = argv[0];
+    return alloc_none();
+}
+
+size_t CurlEasy__receiveHeader(char *ptr, size_t size, size_t nmemb,
+        void *blk) {
+    size_t bsz = size * nmemb;
+    char buf[bsz];
+    int tmp = 1;
+    Object arg = alloc_Octets(ptr, bsz);
+    callmethod(blk, "apply", 1, &tmp, &arg);
+    return bsz;
+}
+
+Object CurlEasy_onHeader(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    struct CurlEasyObject *r = (struct CurlEasyObject *)self;
+    curl_easy_setopt(r->handle, CURLOPT_HEADERFUNCTION, &CurlEasy__receiveHeader);
+    curl_easy_setopt(r->handle, CURLOPT_HEADERDATA, argv[0]);
+    r->objects[2] = argv[0];
     return alloc_none();
 }
 
@@ -152,7 +176,7 @@ Object CurlEasy_unescape(Object self, int nparts, int *argcv, Object *argv,
 }
 
 void CurlEasy__mark(struct CurlEasyObject *r) {
-    for (int i=0; i<2; i++)
+    for (int i=0; i<MINIGRACE_CURLEASY_OBJECTS; i++)
         gc_mark(r->objects[i]);
 }
 
@@ -169,6 +193,7 @@ Object alloc_CurlEasy() {
         add_Method(CurlEasy, "url:=", &CurlEasy_url_assign);
         add_Method(CurlEasy, "responseCode", &CurlEasy_responseCode);
         add_Method(CurlEasy, "effectiveUrl", &CurlEasy_effectiveUrl);
+        add_Method(CurlEasy, "onHeader", &CurlEasy_onHeader);
         add_Method(CurlEasy, "includeResponseHeader:=",
                 &CurlEasy_includeResponseHeader);
         add_Method(CurlEasy, "escape", &CurlEasy_escape);
