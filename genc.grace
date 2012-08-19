@@ -1443,6 +1443,10 @@ method checkimport(nm) {
     } elseif (io.exists(nm ++ ".gso") &&
         {!util.extensions.contains("Static")}) then {
         exists := true
+    } elseif (io.exists(io.realpath(sys.execPath)
+        ++ "/../lib/minigrace/{nm}.gso") &&
+            {!util.extensions.contains("Static")}) then {
+        exists := true
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)

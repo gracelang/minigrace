@@ -3553,10 +3553,10 @@ void setCompilerModulePath(char *s) {
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) dirname(argv[0])
-    // 2) dirname(argv[0])/../lib
+    // 2) dirname(argv[0])/../lib/minigrace
     // 3) GRACE_MODULE_PATH
     // 4) Path of the compiler used to build
-    // 5) Path of the compiler used to build/../lib
+    // 5) Path of the compiler used to build/../lib/minigrace
     // 6) .
     struct stat st;
     char *ep = ARGV[0];
@@ -3570,8 +3570,9 @@ int find_gso(const char *name, char *buf) {
     if (stat(buf, &st) == 0) {
         return 1;
     }
+    realpath(dn, buf);
     strcpy(buf, dn);
-    strcat(buf, "/../lib/");
+    strcat(buf, "/../lib/minigrace/");
     strcat(buf, name);
     strcat(buf, ".gso");
     if (stat(buf, &st) == 0) {
@@ -3598,7 +3599,7 @@ int find_gso(const char *name, char *buf) {
         }
         gmp = compilerModulePath;
         strcpy(buf, gmp);
-        strcat(buf, "/../lib/");
+        strcat(buf, "/../lib/minigrace/");
         strcat(buf, name);
         strcat(buf, ".gso");
         if (stat(buf, &st) == 0) {
@@ -3614,11 +3615,7 @@ int find_gso(const char *name, char *buf) {
     return 0;
 }
 Object dlmodule(const char *name) {
-    int blen = strlen(name) + strlen(ARGV[0]) + 13;
-    if (getenv("GRACE_MODULE_PATH") != NULL)
-        blen += strlen(getenv("GRACE_MODULE_PATH"));
-    if (compilerModulePath != NULL)
-        blen += strlen(compilerModulePath);
+    int blen = PATH_MAX;
     char buf[blen];
     if (!find_gso(name, buf)) {
         fprintf(stderr, "minigrace: could not find dynamic module %s.\n",

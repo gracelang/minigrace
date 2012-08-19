@@ -140,8 +140,8 @@ method parseargs {
             case { _ -> io.output }
     }
     if (gracelibPathv == false) then {
-        if (io.exists(sys.execPath ++ "/../lib/gracelib.o")) then {
-            gracelibPathv := sys.execPath ++ "/../lib"
+        if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {
+            gracelibPathv := sys.execPath ++ "/../lib/minigrace"
         } else {
             gracelibPathv := sys.execPath
         }

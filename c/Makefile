@@ -35,9 +35,9 @@ gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
 install: minigrace
-	install -d $(PREFIX)/bin $(PREFIX)/lib $(PREFIX)/include
+	install -d $(PREFIX)/bin $(PREFIX)/lib/minigrace $(PREFIX)/include
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
-	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/
+	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/minigrace
 	install gracelib.h $(PREFIX)/include/gracelib.h
 
 
