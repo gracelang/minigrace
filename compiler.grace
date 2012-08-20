@@ -15,7 +15,8 @@ import mgcollections
 
 util.parseargs
 
-def targets = ["lex", "parse", "processed-ast", "subtypematrix", "c", "js", "grace"]
+def targets = ["lex", "parse", "grace", "processed-ast", "subtypematrix",
+    "types", "imports", "c", "js", "grace"]
 
 if (util.target == "help") then {
     print("Valid targets:")
@@ -65,6 +66,29 @@ if (util.target == "subtypematrix") then {
 if (util.target == "types") then {
     for (subtype.types) do {t->
         print("{subtype.stringifyType(t)}:\n  {t.pretty(2)}")
+    }
+    sys.exit(0)
+}
+if (util.target == "imports") then {
+    def imps = mgcollections.set.new
+    def vis = object {
+        inherits ast.baseVisitor
+        method visitMember(o) -> Boolean {
+            if ((o.in.kind == "identifier").andAlso
+                {o.in.value == "platform"}) then {
+                imps.add(o.value)
+            }
+            true
+        }
+        method visitImport(o) -> Boolean {
+            imps.add(o.value.value)
+        }
+    }
+    for (values) do {v->
+        v.accept(vis)
+    }
+    for (imps) do {im->
+        print(im)
     }
     sys.exit(0)
 }
