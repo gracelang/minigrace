@@ -76,7 +76,7 @@ else
     mv tmp-$$/l2/minigrace $ARCH/$COMMIT
     cp tmp-$$/l2/gracelib.o $ARCH/$COMMIT/gracelib.o
     cp tmp-$$/l2/gracelib.h $ARCH/$COMMIT/gracelib.h
-    for x in gracelib.a unicode.gso unicode.gcn mirrors.gso
+    for x in gracelib.a unicode.gso unicode.gcn mirrors.gso repl.gso
     do
         [ -e tmp-$$/l2/$x ] && cp tmp-$$/l2/$x $ARCH/$COMMIT/$x
     done

@@ -1557,6 +1557,15 @@ method baseVisitor -> ASTVisitor {
     }
 }
 
+class replObj.new(kind', val', *env') {
+    def kind = kind'
+    def val  = val'
+    var env  := false
+    if (env'.size > 0) then {
+        env := env'.first
+    }
+}
+
 class evalVisitor.new(env) {
     var _result
 
@@ -1629,6 +1638,7 @@ class evalVisitor.new(env) {
     }
 
     method visitBlock(node) -> Boolean {
+        // TODO: closure env
         _result := node
         return false
     }
@@ -1639,10 +1649,7 @@ class evalVisitor.new(env) {
 
     method visitMethod(node) -> Boolean {
         def name = node.value.value
-        def entry = object {
-            def localenv = HashMap.new
-            def meth = node
-        }
+        def entry = replObj.new("method", node, HashMap.new)
         _env.put(name, entry)
         _result := true
         return false
@@ -1652,11 +1659,13 @@ class evalVisitor.new(env) {
         def name = node.value.value
         def member = node.value
 
-        if (_env.contains(name) && (member.kind == "member") && (member.in.value == "self")) then {
+        if (_env.contains(name) && (member.kind == "member") &&
+            (member.in.value == "self")) then {
             // interactively defined method
-            def meth = _env.get(name).meth
+            def methobj = _env.get(name)
+            def meth = methobj.val
             def outerenv = _env
-            _env := outerenv.get(name).localenv
+            _env := methobj.env
 
             for (meth.signature.indices) do { partnr ->
                 var part := meth.signature[partnr]
@@ -1708,7 +1717,7 @@ class evalVisitor.new(env) {
             // _result := callmethod(name, parts)
             // TODO: other parts
             _result := print(parts[1][1])
-        } elseif ((name == "apply") && (resolve(member.in).kind == "block")) then {
+        } elseif ((name == "apply").andAlso {resolve(member.in).kind == "block"}) then {
             def block = resolve(member.in)
             for (node.with[1].args.indices) do { argnr ->
                 def arg = node.with[1].args[argnr]

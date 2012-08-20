@@ -35,6 +35,9 @@ curl.gso: curl.c gracelib.h
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
 
+repl.gso: repl.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
+
 unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
@@ -60,8 +63,8 @@ js/index.html: js/index.in.html js/ace.in.html $(patsubst %.grace,js/%.js,$(SOUR
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) StandardPrelude.grace $(UNICODE_MODULE) mirrors.c definitions.h debugger.c curl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) StandardPrelude.grace $(UNICODE_MODULE) mirrors.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
 
 tarball: minigrace
 	touch c/Makefile.conf
@@ -106,6 +109,7 @@ clean:
 	rm -f unicode.gco unicode.gso unicode.gcn
 	rm -f mirrors.gso
 	rm -f debugger.o
+	rm -f repl.gso
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)

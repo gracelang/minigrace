@@ -9,6 +9,7 @@ OTHER_MODULES=
 
 other_modules=(
     mirrors
+    repl
 )
 
 ADVISE_END=

@@ -29,6 +29,12 @@ mirrors.gcn: mirrors.c gracelib.h
 curl.gso: curl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -lcurl -fPIC -shared -o curl.gso curl.c
 
+repl.gso: repl.c gracelib.h
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o repl.gso repl.c
+
+repl.gcn: repl.c gracelib.h
+	gcc -std=c99 -g -c -o repl.gcn repl.c
+
 gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
 	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c

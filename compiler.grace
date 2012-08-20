@@ -34,6 +34,7 @@ if (util.interactive) then {
     while { cont && !io.input.eof } do {
         io.output.write("> ")
         var line := io.input.getline
+        print(line)
         if ((line == "q") || (line == "quit")) then {
             cont := false
         } else {
@@ -52,16 +53,16 @@ if (util.interactive) then {
                 //     print(v.pretty(0))
                 // }
                 if (util.errno == 0) then {
-                    if ((vals[1].kind == "identifier").andAlso {vals[1].value == "printenv"}) then {
-                        print(replenv)
-                    }
+                    // if ((vals[1].kind == "identifier").andAlso {vals[1].value == "printenv"}) then {
+                    //     print(replenv)
+                    // }
                     vals := typechecker.typecheck(vals, tcenv)
                     // print(vals)
-                    print("---")
+                    print("->-")
                     for (vals) do { v ->
                         print(v.pretty(0))
                     }
-                    print("---")
+                    print("-<-")
                     // for (vals.indices) do { i ->
                     //     var o := vals.pop
                     //     ivalues.push(o)
