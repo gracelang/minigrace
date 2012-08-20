@@ -163,6 +163,7 @@ class set.new(*a) {
                 }
                 def ret = inner.at(idx)
                 count := count + 1
+                idx := idx + 1
                 ret
             }
         }
@@ -270,6 +271,7 @@ class map.new {
                 }
                 def ret = inner.at(idx).key
                 count := count + 1
+                idx := idx + 1
                 ret
             }
         }
