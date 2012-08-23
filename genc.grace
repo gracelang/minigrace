@@ -1771,7 +1771,7 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
-            cmd := "gcc -g -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
+            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.c\" "
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.")
