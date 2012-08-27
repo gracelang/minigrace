@@ -640,8 +640,9 @@ Object alloc_AndPattern(Object l, Object r) {
 
 void printExceptionBacktrace(Object o) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)o;
-    fprintf(stderr, "Error around line %i: %s\n", e->lineNumber,
-            grcstring(e->message));
+    struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
+    fprintf(stderr, "Error around line %i: %s: %s\n", e->lineNumber,
+            x->name, grcstring(e->message));
     calldepth = e->calldepth;
     linenumber = e->lineNumber;
     moduleSourceLines = e->moduleSourceLines;
@@ -4161,18 +4162,17 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
             if (istrue(ret)) {
                 callmethod(finally, "apply", 0, NULL, NULL);
                 finally_stack[start_calldepth] = NULL;
+                exceptionHandlerDepth--;
                 return alloc_none();
             }
         }
         callmethod(finally, "apply", 0, NULL, NULL);
         finally_stack[start_calldepth] = NULL;
+        exceptionHandlerDepth--;
         // try next level of stack
-        for (int c = start_exceptionHandlerDepth - 1; c >= 0; c--) {
-            if (exceptionHandler_stack[c]) {
-                longjmp(exceptionHandler_stack[c], 1);
-            }
-        }
-        fprintf(stderr, "Exception propagated to top.\n");
+        if (exceptionHandlerDepth > 0)
+            longjmp(old_error_jump, 1);
+        // Exception propagated to top
         printExceptionBacktrace(currentException);
         exit(1);
     }
