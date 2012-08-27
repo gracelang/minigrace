@@ -253,6 +253,7 @@ static jmp_buf error_jump;
 static int error_jump_set;
 static Object currentException;
 static jmp_buf *exceptionHandler_stack;
+static Object *finally_stack;
 static int exceptionHandlerDepth;
 static Object ExceptionObject;
 
@@ -2854,6 +2855,11 @@ Object callmethodflags(Object receiver, const char *name,
         if (setjmp(return_stack[calldepth])) {
             Object rv = return_value;
             return_value = NULL;
+            for (i=calldepth; i>start_calldepth; i--)
+                if (finally_stack[i]) {
+                    callmethod(finally_stack[i], "apply", 0, NULL, NULL);
+                    finally_stack[i] = NULL;
+                }
             calldepth = start_calldepth;
             return rv;
         }
@@ -3828,6 +3834,8 @@ void gracelib_argv(char **argv) {
     closure_stack++;
     exceptionHandler_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
     exceptionHandler_stack++;
+    finally_stack = calloc(STACK_SIZE + 1, sizeof(Object));
+    finally_stack++;
     debug_enabled = (getenv("GRACE_DEBUG_LOG") != NULL);
     if (debug_enabled) {
         debugfp = fopen("debug", "w");
@@ -4136,6 +4144,7 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
     Object finally = argv[2];
     error_jump_set = 1;
     int start_calldepth = calldepth;
+    finally_stack[calldepth] = finally;
     int start_exceptionHandlerDepth = exceptionHandlerDepth;
     jmp_buf old_error_jump;
     if (error_jump)
@@ -4150,9 +4159,13 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
             Object ret = callmethod(val, "match", 1, partcv,
                     &currentException);
             if (istrue(ret)) {
+                callmethod(finally, "apply", 0, NULL, NULL);
+                finally_stack[start_calldepth] = NULL;
                 return alloc_none();
             }
         }
+        callmethod(finally, "apply", 0, NULL, NULL);
+        finally_stack[start_calldepth] = NULL;
         // try next level of stack
         for (int c = start_exceptionHandlerDepth - 1; c >= 0; c--) {
             if (exceptionHandler_stack[c]) {
@@ -4169,6 +4182,8 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
     error_jump_set = 0;
     memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
     exceptionHandlerDepth = start_exceptionHandlerDepth;
+    callmethod(finally, "apply", 0, NULL, NULL);
+    finally_stack[start_calldepth] = NULL;
     return rv;
 }
 Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
