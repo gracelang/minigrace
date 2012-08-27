@@ -52,6 +52,7 @@ Object alloc_OrPattern(Object l, Object r);
 Object alloc_AndPattern(Object l, Object r);
 
 Object alloc_ExceptionPacket(Object msg, Object exception);
+Object alloc_Exception(char *name, Object parent);
 
 int gc_period = 100000;
 int rungc();
@@ -104,6 +105,7 @@ ClassData MatchResult;
 ClassData OrPattern;
 ClassData AndPattern;
 ClassData ExceptionPacket;
+ClassData Exception;
 
 Object Dynamic;
 Object prelude = NULL;
@@ -198,6 +200,13 @@ struct ExceptionPacketObject {
     char **backtrace;
 };
 
+struct ExceptionObject {
+    int32_t flags;
+    ClassData class;
+    char *name;
+    Object parent;
+};
+
 struct SFLinkList *shutdown_functions;
 
 int linenumber = 0;
@@ -245,6 +254,7 @@ static int error_jump_set;
 static Object currentException;
 static jmp_buf *exceptionHandler_stack;
 static int exceptionHandlerDepth;
+static Object ExceptionObject;
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -296,7 +306,8 @@ void die(char *msg, ...) {
     if (error_jump_set) {
         char buf[strlen(msg) * 4 + 1024];
         vsprintf(buf, msg, args);
-        currentException = alloc_ExceptionPacket(alloc_String(buf), NULL);
+        currentException = alloc_ExceptionPacket(alloc_String(buf),
+                ExceptionObject);
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Error around line %i: ", linenumber);
@@ -642,6 +653,13 @@ void ExceptionPacket__mark(struct ExceptionPacketObject *e) {
     gc_mark(e->exception);
     gc_mark(e->data);
 }
+void ExceptionPacket__release(struct ExceptionPacketObject *e) {
+    int i;
+    for (i=0; i<calldepth; i++) {
+        glfree(e->backtrace[i]);
+    }
+    glfree(e->backtrace);
+}
 Object ExceptionPacket_message(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
@@ -649,8 +667,9 @@ Object ExceptionPacket_message(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class2("ExceptionPacket", 3,
-                (void*)&ExceptionPacket__mark);
+        ExceptionPacket = alloc_class3("ExceptionPacket", 3,
+                (void*)&ExceptionPacket__mark,
+                (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
     }
     Object o = alloc_obj(sizeof(struct ExceptionPacketObject)
@@ -668,6 +687,57 @@ Object alloc_ExceptionPacket(Object msg, Object exception) {
         e->backtrace[i] = glmalloc(256);
         strcpy(e->backtrace[i], callstack[i]);
     }
+    return o;
+}
+Object Exception_raise(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    if (error_jump_set) {
+        currentException = alloc_ExceptionPacket(argv[0],
+                self);
+        longjmp(error_jump, 1);
+    }
+    return self;
+}
+Object Exception_refine(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    char *name = grcstring(argv[0]);
+    return alloc_Exception(name, self);
+}
+Object Exception_match(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    struct ExceptionObject *e = (struct ExceptionObject *)self;
+    Object packet = argv[0];
+    if (packet->class != ExceptionPacket)
+        return alloc_FailedMatch(packet, NULL);
+    struct ExceptionPacketObject *p = (struct ExceptionPacketObject *)packet;
+    if (p->exception == self)
+        return alloc_SuccessfulMatch(packet, NULL);
+    e = (struct ExceptionObject *)p->exception;
+    while (e->parent) {
+        if (e->parent == self)
+            return alloc_SuccessfulMatch(packet, NULL);
+        e = (struct ExceptionObject *)e->parent;
+    }
+    fprintf(stderr, "failing to match packet against '%s'\n", e->name);
+    return alloc_FailedMatch(packet, NULL);
+}
+Object alloc_Exception(char *name, Object parent) {
+    if (!Exception) {
+        Exception = alloc_class("Exception", 7);
+        add_Method(Exception, "match", &Exception_match);
+        add_Method(Exception, "refine", &Exception_refine);
+        add_Method(Exception, "raise", &Exception_raise);
+        add_Method(Exception, "==", &Object_Equals);
+        add_Method(Exception, "!=", &Object_NotEquals);
+        add_Method(Exception, "asString", &Object_asString);
+        add_Method(Exception, "asDebugString", &Object_asString);
+    }
+    Object o = alloc_obj(sizeof (struct ExceptionObject)
+            - sizeof(struct Object), Exception);
+    struct ExceptionObject *e = (struct ExceptionObject *)o;
+    e->name = glmalloc(strlen(name) + 1);
+    strcpy(e->name, name);
+    e->parent = parent;
     return o;
 }
 
@@ -3774,6 +3844,8 @@ void gracelib_argv(char **argv) {
     alloc_Boolean(0);
     Dynamic = alloc_Type("Dynamic", 0);
     gc_root(Dynamic);
+    ExceptionObject = alloc_Exception("Exception", NULL);
+    gc_root(ExceptionObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -4092,6 +4164,10 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
     exceptionHandlerDepth = start_exceptionHandlerDepth;
     return rv;
 }
+Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    return ExceptionObject;
+}
 Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     char *str = grcstring(argv[0]); 
@@ -4106,13 +4182,14 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 14, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 15, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
+    add_Method(c, "Exception", &prelude_Exception);
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
