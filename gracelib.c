@@ -51,6 +51,8 @@ void ConcatString__FillBuffer(Object s, char *c, int len);
 Object alloc_OrPattern(Object l, Object r);
 Object alloc_AndPattern(Object l, Object r);
 
+Object alloc_ExceptionPacket(Object msg, Object exception);
+
 int gc_period = 100000;
 int rungc();
 int expand_living();
@@ -101,6 +103,7 @@ ClassData Class;
 ClassData MatchResult;
 ClassData OrPattern;
 ClassData AndPattern;
+ClassData ExceptionPacket;
 
 Object Dynamic;
 Object prelude = NULL;
@@ -183,6 +186,18 @@ struct TypeObject {
     int nummethods;
 };
 
+struct ExceptionPacketObject {
+    int32_t flags;
+    ClassData class;
+    Object message;
+    Object exception;
+    Object data;
+    char **moduleSourceLines;
+    int lineNumber;
+    int calldepth;
+    char **backtrace;
+};
+
 struct SFLinkList *shutdown_functions;
 
 int linenumber = 0;
@@ -227,6 +242,10 @@ int stack_size = 1024;
 #define STACK_SIZE stack_size
 static jmp_buf error_jump;
 static int error_jump_set;
+static Object currentException;
+static jmp_buf *exceptionHandler_stack;
+static int exceptionHandlerDepth;
+
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
@@ -272,11 +291,14 @@ void gracedie(char *msg, ...) {
     exit(1);
 }
 void die(char *msg, ...) {
-    if (error_jump_set) {
-        longjmp(error_jump, 1);
-    }
     va_list args;
     va_start(args, msg);
+    if (error_jump_set) {
+        char buf[strlen(msg) * 4 + 1024];
+        vsprintf(buf, msg, args);
+        currentException = alloc_ExceptionPacket(alloc_String(buf), NULL);
+        longjmp(error_jump, 1);
+    }
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
@@ -596,6 +618,59 @@ Object alloc_AndPattern(Object l, Object r) {
     b->data[1] = r;
     return o;
 }
+
+void printExceptionBacktrace(Object o) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)o;
+    fprintf(stderr, "Error around line %i: %s\n", e->lineNumber,
+            grcstring(e->message));
+    calldepth = e->calldepth;
+    linenumber = e->lineNumber;
+    moduleSourceLines = e->moduleSourceLines;
+    for (int i=0; e->backtrace[i] != NULL; i++) {
+        fprintf(stderr, "  Called %s\n", e->backtrace[i]);
+    }
+    int fl = linenumber - 2;
+    if (fl < 0) fl = 0;
+    for (; fl<linenumber+1; fl++)
+        if (moduleSourceLines[fl])
+            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
+        else
+            break;
+}
+void ExceptionPacket__mark(struct ExceptionPacketObject *e) {
+    gc_mark(e->message);
+    gc_mark(e->exception);
+    gc_mark(e->data);
+}
+Object ExceptionPacket_message(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    return e->message;
+}
+Object alloc_ExceptionPacket(Object msg, Object exception) {
+    if (!ExceptionPacket) {
+        ExceptionPacket = alloc_class2("ExceptionPacket", 3,
+                (void*)&ExceptionPacket__mark);
+        add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
+    }
+    Object o = alloc_obj(sizeof(struct ExceptionPacketObject)
+            - sizeof(struct Object), ExceptionPacket);
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)o;
+    e->message = msg;
+    e->exception = exception;
+    e->data = NULL;
+    e->moduleSourceLines = moduleSourceLines;
+    e->lineNumber = linenumber;
+    e->calldepth = calldepth;
+    e->backtrace = glmalloc(sizeof(char *) * (calldepth + 1));
+    int i;
+    for (i=0; i<calldepth; i++) {
+        e->backtrace[i] = glmalloc(256);
+        strcpy(e->backtrace[i], callstack[i]);
+    }
+    return o;
+}
+
 Object String_Equals(Object self, int nparts, int *argcv,
         Object *params, int flags) {
     Object other = params[0];
@@ -3674,6 +3749,8 @@ void gracelib_argv(char **argv) {
     frame_stack++;
     closure_stack = calloc(STACK_SIZE + 1, sizeof(struct ClosureEnvObject *));
     closure_stack++;
+    exceptionHandler_stack = calloc(STACK_SIZE + 1, sizeof(jmp_buf));
+    exceptionHandler_stack++;
     debug_enabled = (getenv("GRACE_DEBUG_LOG") != NULL);
     if (debug_enabled) {
         debugfp = fopen("debug", "w");
@@ -3973,6 +4050,48 @@ Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
     error_jump_set = 0;
     return rv;
 }
+Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    Object block = argv[0];
+    Object caseList = argv[1];
+    Object finally = argv[2];
+    error_jump_set = 1;
+    int start_calldepth = calldepth;
+    int start_exceptionHandlerDepth = exceptionHandlerDepth;
+    jmp_buf old_error_jump;
+    if (error_jump)
+        memcpy(old_error_jump, error_jump, sizeof(jmp_buf));
+    if (setjmp(error_jump)) {
+        error_jump_set = 0;
+        calldepth = start_calldepth;
+        Object iter = callmethod(caseList, "iter", 0, NULL, NULL);
+        int partcv[1] = {1};
+        while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+            Object val = callmethod(iter, "next", 0, NULL, NULL);
+            Object ret = callmethod(val, "match", 1, partcv,
+                    &currentException);
+            if (istrue(ret)) {
+                return alloc_none();
+            }
+        }
+        // try next level of stack
+        for (int c = start_exceptionHandlerDepth - 1; c >= 0; c--) {
+            if (exceptionHandler_stack[c]) {
+                longjmp(exceptionHandler_stack[c], 1);
+            }
+        }
+        fprintf(stderr, "Exception propagated to top.\n");
+        printExceptionBacktrace(currentException);
+        exit(1);
+    }
+    memcpy(exceptionHandler_stack[exceptionHandlerDepth++], error_jump,
+            sizeof(jmp_buf));
+    Object rv = callmethod(block, "apply", 0, NULL, NULL);
+    error_jump_set = 0;
+    memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
+    exceptionHandlerDepth = start_exceptionHandlerDepth;
+    return rv;
+}
 Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     char *str = grcstring(argv[0]); 
@@ -3987,7 +4106,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 13, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 14, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4001,6 +4120,7 @@ Object grace_prelude() {
     add_Method(c, "try()else", &prelude_tryElse);
     add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
+    add_Method(c, "catchException", &prelude_catchException);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
