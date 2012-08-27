@@ -284,6 +284,13 @@ void setframeelementname(struct StackFrameObject *f, int p, char *name) {
 void gracedie(char *msg, ...) {
     va_list args;
     va_start(args, msg);
+    if (error_jump_set) {
+        char buf[strlen(msg) * 4 + 1024];
+        vsprintf(buf, msg, args);
+        currentException = alloc_ExceptionPacket(alloc_String(buf),
+                ExceptionObject);
+        longjmp(error_jump, 1);
+    }
     fprintf(stderr, "Error around line %i: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
