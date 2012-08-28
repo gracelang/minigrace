@@ -107,17 +107,7 @@ class set.new(*a) {
         inner.at(i)put(unused)
     }
     method add(x) {
-        def h = x.hashcode
-        def s = inner.size
-        var t := h % s
-        var c := inner.at(t)
-        while {c != unused} do {
-            if (c == x) then {
-                return self
-            }
-            t := (t * 3 + 1) % s
-            c := inner.at(t)
-        }
+        var t := findPosition(x)
         inner.at(t)put(x)
         size := size + 1
         if (size > (inner.size / 2)) then {
@@ -125,16 +115,29 @@ class set.new(*a) {
         }
     }
     method contains(x) {
+        var t := findPosition(x)
+        if (inner.at(t) == x) then {
+            return true
+        }
+        return false
+    }
+    method findPosition(x) {
         def h = x.hashcode
         def s = inner.size
         var t := h % s
+        var jump := 5
         while {inner.at(t) != unused} do {
             if (inner.at(t) == x) then {
-                return true
+                return t
             }
-            t := (t * 3 + 1) % s
+            if (jump != 0) then {
+                t := (t * 3 + 1) % s
+                jump := jump - 1
+            } else {
+                t := (t + 1) % s
+            }
         }
-        return false
+        return t
     }
     method asString {
         var s := "set.new("
@@ -201,18 +204,7 @@ class map.new {
         inner.at(i)put(unused)
     }
     method put(key', value') {
-        def h = key'.hashcode
-        def s = inner.size
-        var t := h % s
-        var c := inner.at(t)
-        while {c != unused} do {
-            if (c.key == key') then {
-                c.value := value'
-                return self
-            }
-            t := (t * 3 + 1) % s
-            c := inner.at(t)
-        }
+        var t := findPosition(key')
         inner.at(t)put(object {
             def key = key'
             var value := value'
@@ -223,30 +215,34 @@ class map.new {
         }
     }
     method get(key') {
-        def h = key'.hashcode
-        def s = inner.size
-        var t := h % s
+        var t := findPosition(key')
         var c := inner.at(t)
-        while {c != unused} do {
-            if (c.key == key') then {
-                return c.value
-            }
-            t := (t * 3 + 1) % s
-            c := inner.at(t)
-        }
-        return inner.at(t).value
+        return c.value
     }
     method contains(key') {
-        def h = key'.hashcode
-        def s = inner.size
-        var t := h % s
-        while {inner.at(t) != unused} do {
-            if (inner.at(t).key == key') then {
-                return true
-            }
-            t := (t * 3 + 1) % s
+        var t := findPosition(key')
+        if (inner.at(t).key == key') then {
+            return true
         }
         return false
+    }
+    method findPosition(x) {
+        def h = x.hashcode
+        def s = inner.size
+        var t := h % s
+        var jump := 5
+        while {inner.at(t) != unused} do {
+            if (inner.at(t).key == x) then {
+                return t
+            }
+            if (jump != 0) then {
+                t := (t * 3 + 1) % s
+                jump := jump - 1
+            } else {
+                t := (t + 1) % s
+            }
+        }
+        return t
     }
     method asString {
         var s := "map.new["
