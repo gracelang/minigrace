@@ -294,7 +294,7 @@ void gracedie(char *msg, ...) {
                 RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Error around line %i: ", linenumber);
+    fprintf(stderr, "Error around line %i: RuntimeError: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
     backtrace();
@@ -320,7 +320,7 @@ void die(char *msg, ...) {
                 RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Error around line %i: ", linenumber);
+    fprintf(stderr, "Error around line %i: RuntimeError: ", linenumber);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
     backtrace();
