@@ -2847,6 +2847,7 @@ Object callmethodflags(Object receiver, const char *name,
         int nparts, int *nparamsv, Object *args, int callflags) {
     int i, j;
     int start_calldepth = calldepth;
+    int start_exceptionHandlerDepth = exceptionHandlerDepth;
     if (receiver->flags & FLAG_DEAD) {
         debug("called method on freed object %p: %s.%s",
                 receiver, receiver->class->name, name);
@@ -2860,6 +2861,8 @@ Object callmethodflags(Object receiver, const char *name,
                 if (finally_stack[i]) {
                     callmethod(finally_stack[i], "apply", 0, NULL, NULL);
                     finally_stack[i] = NULL;
+                    memcpy(error_jump, exceptionHandler_stack[i],
+                            sizeof(jmp_buf));
                 }
             calldepth = start_calldepth;
             return rv;
@@ -4143,15 +4146,17 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
     Object block = argv[0];
     Object caseList = argv[1];
     Object finally = argv[2];
+    int old_error_jump_set = error_jump_set;
     error_jump_set = 1;
     int start_calldepth = calldepth;
     finally_stack[calldepth] = finally;
-    int start_exceptionHandlerDepth = exceptionHandlerDepth;
+    int start_exceptionHandlerDepth = exceptionHandlerDepth++;
     jmp_buf old_error_jump;
     if (error_jump)
         memcpy(old_error_jump, error_jump, sizeof(jmp_buf));
     if (setjmp(error_jump)) {
-        error_jump_set = 0;
+        memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
+        error_jump_set = old_error_jump_set;
         calldepth = start_calldepth;
         Object iter = callmethod(caseList, "iter", 0, NULL, NULL);
         int partcv[1] = {1};
@@ -4176,10 +4181,10 @@ Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
         printExceptionBacktrace(currentException);
         exit(1);
     }
-    memcpy(exceptionHandler_stack[exceptionHandlerDepth++], error_jump,
+    memcpy(exceptionHandler_stack[calldepth], error_jump,
             sizeof(jmp_buf));
     Object rv = callmethod(block, "apply", 0, NULL, NULL);
-    error_jump_set = 0;
+    error_jump_set = old_error_jump_set;
     memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
     exceptionHandlerDepth = start_exceptionHandlerDepth;
     callmethod(finally, "apply", 0, NULL, NULL);
