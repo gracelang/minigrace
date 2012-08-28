@@ -723,13 +723,18 @@ Object Exception_match(Object self, int argc, int *argcv, Object *argv,
     struct ExceptionPacketObject *p = (struct ExceptionPacketObject *)packet;
     if (p->exception == self)
         return alloc_SuccessfulMatch(packet, NULL);
-    e = (struct ExceptionObject *)p->exception;
-    while (e->parent) {
-        if (e->parent == self)
+    struct ExceptionObject *x = (struct ExceptionObject *)p->exception;
+    if (strcmp(e->name, x->name) == 0)
+        return alloc_SuccessfulMatch(packet, NULL);
+    while (x->parent) {
+        if (x->parent == self)
             return alloc_SuccessfulMatch(packet, NULL);
-        e = (struct ExceptionObject *)e->parent;
+        if (strcmp(e->name, x->name) == 0)
+            return alloc_SuccessfulMatch(packet, NULL);
+        x = (struct ExceptionObject *)x->parent;
     }
-    fprintf(stderr, "failing to match packet against '%s'\n", e->name);
+    if (strcmp(e->name, x->name) == 0)
+        return alloc_SuccessfulMatch(packet, NULL);
     return alloc_FailedMatch(packet, NULL);
 }
 Object alloc_Exception(char *name, Object parent) {
