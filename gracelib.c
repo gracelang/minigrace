@@ -705,6 +705,8 @@ Object Exception_raise(Object self, int argc, int *argcv, Object *argv,
                 self);
         longjmp(error_jump, 1);
     }
+    printExceptionBacktrace(alloc_ExceptionPacket(argv[0], self));
+    exit(1);
     return self;
 }
 Object Exception_refine(Object self, int argc, int *argcv, Object *argv,
