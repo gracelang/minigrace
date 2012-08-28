@@ -680,12 +680,45 @@ Object ExceptionPacket_message(Object self, int argc, int *argcv, Object *argv,
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
     return e->message;
 }
+Object ExceptionPacket_exception(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    return e->exception;
+}
+Object ExceptionPacket_data(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    if (e->data)
+        return e->data;
+    return alloc_none();
+}
+Object ExceptionPacket_asString(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
+    char buf[strlen(x->name+3)];
+    strcpy(buf, x->name);
+    strcat(buf, ": ");
+    int tmp[1] = {1};
+    return callmethod(alloc_String(buf), "++", 1, tmp, &(e->message));
+}
+Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    printExceptionBacktrace(self);
+    return alloc_none();
+}
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class3("ExceptionPacket", 3,
+        ExceptionPacket = alloc_class3("ExceptionPacket", 6,
                 (void*)&ExceptionPacket__mark,
                 (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
+        add_Method(ExceptionPacket, "exception", &ExceptionPacket_exception);
+        add_Method(ExceptionPacket, "asString", &ExceptionPacket_asString);
+        add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
+        add_Method(ExceptionPacket, "asDebugString", &Object_asString);
+        add_Method(ExceptionPacket, "printBacktrace",
+                &ExceptionPacket_printBacktrace);
     }
     Object o = alloc_obj(sizeof(struct ExceptionPacketObject)
             - sizeof(struct Object), ExceptionPacket);
@@ -709,6 +742,19 @@ Object Exception_raise(Object self, int argc, int *argcv, Object *argv,
     if (error_jump_set) {
         currentException = alloc_ExceptionPacket(argv[0],
                 self);
+        longjmp(error_jump, 1);
+    }
+    printExceptionBacktrace(alloc_ExceptionPacket(argv[0], self));
+    exit(1);
+    return self;
+}
+Object Exception_raiseWith(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    currentException = alloc_ExceptionPacket(argv[0], self);
+    struct ExceptionPacketObject *p =
+        (struct ExceptionPacketObject *)currentException;
+    p->data = argv[1];
+    if (error_jump_set) {
         longjmp(error_jump, 1);
     }
     printExceptionBacktrace(alloc_ExceptionPacket(argv[0], self));
@@ -743,16 +789,24 @@ Object Exception_match(Object self, int argc, int *argcv, Object *argv,
         return alloc_SuccessfulMatch(packet, NULL);
     return alloc_FailedMatch(packet, NULL);
 }
+Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    struct ExceptionObject *e = (struct ExceptionObject *)self;
+    return alloc_String(e->name);
+}
 Object alloc_Exception(char *name, Object parent) {
     if (!Exception) {
-        Exception = alloc_class("Exception", 7);
+        Exception = alloc_class("Exception", 10);
         add_Method(Exception, "match", &Exception_match);
         add_Method(Exception, "refine", &Exception_refine);
         add_Method(Exception, "raise", &Exception_raise);
+        add_Method(Exception, "raiseWith", &Exception_raiseWith);
         add_Method(Exception, "==", &Object_Equals);
         add_Method(Exception, "!=", &Object_NotEquals);
-        add_Method(Exception, "asString", &Object_asString);
+        add_Method(Exception, "asString", &Exception_asString);
         add_Method(Exception, "asDebugString", &Object_asString);
+        add_Method(Exception, "|", &literal_or);
+        add_Method(Exception, "&", &literal_and);
     }
     Object o = alloc_obj(sizeof (struct ExceptionObject)
             - sizeof(struct Object), Exception);
