@@ -643,6 +643,9 @@ void printExceptionBacktrace(Object o) {
     struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
     fprintf(stderr, "Error around line %i: %s: %s\n", e->lineNumber,
             x->name, grcstring(e->message));
+    int start_calldepth = calldepth;
+    int start_linenumber = linenumber;
+    char **start_moduleSourceLines = moduleSourceLines;
     calldepth = e->calldepth;
     linenumber = e->lineNumber;
     moduleSourceLines = e->moduleSourceLines;
@@ -656,6 +659,9 @@ void printExceptionBacktrace(Object o) {
             fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
         else
             break;
+    calldepth = start_calldepth;
+    linenumber = start_linenumber;
+    moduleSourceLines = start_moduleSourceLines;
 }
 void ExceptionPacket__mark(struct ExceptionPacketObject *e) {
     gc_mark(e->message);
