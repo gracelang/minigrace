@@ -256,6 +256,8 @@ static jmp_buf *exceptionHandler_stack;
 static Object *finally_stack;
 static int exceptionHandlerDepth;
 static Object ExceptionObject;
+static Object ErrorObject;
+static Object RuntimeErrorObject;
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -289,7 +291,7 @@ void gracedie(char *msg, ...) {
         char buf[strlen(msg) * 4 + 1024];
         vsprintf(buf, msg, args);
         currentException = alloc_ExceptionPacket(alloc_String(buf),
-                ExceptionObject);
+                RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Error around line %i: ", linenumber);
@@ -315,7 +317,7 @@ void die(char *msg, ...) {
         char buf[strlen(msg) * 4 + 1024];
         vsprintf(buf, msg, args);
         currentException = alloc_ExceptionPacket(alloc_String(buf),
-                ExceptionObject);
+                RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Error around line %i: ", linenumber);
@@ -2892,6 +2894,11 @@ start:
         return ret;
     }
     if (error_jump_set) {
+        char buf[1024];
+        sprintf(buf, "Method lookup error: no %s in %s.", name,
+                self->class->name);
+        currentException = alloc_ExceptionPacket(alloc_String(buf),
+                RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Available methods are:\n");
@@ -3932,6 +3939,10 @@ void gracelib_argv(char **argv) {
     gc_root(Dynamic);
     ExceptionObject = alloc_Exception("Exception", NULL);
     gc_root(ExceptionObject);
+    ErrorObject = alloc_Exception("Error", ExceptionObject);
+    gc_root(ErrorObject);
+    RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
+    gc_root(RuntimeErrorObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -4262,6 +4273,14 @@ Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return ExceptionObject;
 }
+Object prelude_Error(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    return ErrorObject;
+}
+Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    return RuntimeErrorObject;
+}
 Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     char *str = grcstring(argv[0]); 
@@ -4276,7 +4295,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 15, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4284,6 +4303,8 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "Exception", &prelude_Exception);
+    add_Method(c, "Error", &prelude_Error);
+    add_Method(c, "RuntimeError", &prelude_RuntimeError);
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
