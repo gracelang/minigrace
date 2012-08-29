@@ -4269,56 +4269,6 @@ Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
     error_jump_set = 0;
     return rv;
 }
-Object prelude_catchException(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    Object block = argv[0];
-    Object caseList = argv[1];
-    Object finally = argv[2];
-    int old_error_jump_set = error_jump_set;
-    error_jump_set = 1;
-    int start_calldepth = calldepth;
-    finally_stack[calldepth] = finally;
-    int start_exceptionHandlerDepth = exceptionHandlerDepth++;
-    jmp_buf old_error_jump;
-    if (error_jump)
-        memcpy(old_error_jump, error_jump, sizeof(jmp_buf));
-    if (setjmp(error_jump)) {
-        memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
-        error_jump_set = old_error_jump_set;
-        calldepth = start_calldepth;
-        Object iter = callmethod(caseList, "iter", 0, NULL, NULL);
-        int partcv[1] = {1};
-        while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
-            Object val = callmethod(iter, "next", 0, NULL, NULL);
-            Object ret = callmethod(val, "match", 1, partcv,
-                    &currentException);
-            if (istrue(ret)) {
-                callmethod(finally, "apply", 0, NULL, NULL);
-                finally_stack[start_calldepth] = NULL;
-                exceptionHandlerDepth--;
-                return alloc_none();
-            }
-        }
-        callmethod(finally, "apply", 0, NULL, NULL);
-        finally_stack[start_calldepth] = NULL;
-        exceptionHandlerDepth--;
-        // try next level of stack
-        if (exceptionHandlerDepth > 0)
-            longjmp(old_error_jump, 1);
-        // Exception propagated to top
-        printExceptionBacktrace(currentException);
-        exit(1);
-    }
-    memcpy(exceptionHandler_stack[calldepth], error_jump,
-            sizeof(jmp_buf));
-    Object rv = callmethod(block, "apply", 0, NULL, NULL);
-    error_jump_set = old_error_jump_set;
-    memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
-    exceptionHandlerDepth = start_exceptionHandlerDepth;
-    callmethod(finally, "apply", 0, NULL, NULL);
-    finally_stack[start_calldepth] = NULL;
-    return rv;
-}
 Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return ExceptionObject;
@@ -4345,7 +4295,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 16, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4362,7 +4312,6 @@ Object grace_prelude() {
     add_Method(c, "try()else", &prelude_tryElse);
     add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
-    add_Method(c, "catchException", &prelude_catchException);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
