@@ -2992,6 +2992,54 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
         return callmethod(elsecase, "apply", 1, partcv, &matchee);
     return alloc_FailedMatch(matchee, NULL);
 }
+Object catchCase(Object block, Object *caseList, int ncases,
+        Object finally) {
+    int old_error_jump_set = error_jump_set;
+    error_jump_set = 1;
+    int start_calldepth = calldepth;
+    if (!finally)
+        finally = alloc_Block(NULL, NULL, NULL, -1);
+    finally_stack[calldepth] = finally;
+    int start_exceptionHandlerDepth = exceptionHandlerDepth++;
+    jmp_buf old_error_jump;
+    if (error_jump)
+        memcpy(old_error_jump, error_jump, sizeof(jmp_buf));
+    if (setjmp(error_jump)) {
+        memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
+        error_jump_set = old_error_jump_set;
+        calldepth = start_calldepth;
+        int partcv[1] = {1};
+        for (int i=0; i<ncases; i++) {
+            Object val = caseList[i];
+            Object ret = callmethod(val, "match", 1, partcv,
+                    &currentException);
+            if (istrue(ret)) {
+                callmethod(finally, "apply", 0, NULL, NULL);
+                finally_stack[start_calldepth] = NULL;
+                exceptionHandlerDepth--;
+                return alloc_none();
+            }
+        }
+        callmethod(finally, "apply", 0, NULL, NULL);
+        finally_stack[start_calldepth] = NULL;
+        exceptionHandlerDepth--;
+        // try next level of stack
+        if (exceptionHandlerDepth > 0)
+            longjmp(old_error_jump, 1);
+        // Exception propagated to top
+        printExceptionBacktrace(currentException);
+        exit(1);
+    }
+    memcpy(exceptionHandler_stack[calldepth], error_jump,
+            sizeof(jmp_buf));
+    Object rv = callmethod(block, "apply", 0, NULL, NULL);
+    error_jump_set = old_error_jump_set;
+    memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
+    exceptionHandlerDepth = start_exceptionHandlerDepth;
+    callmethod(finally, "apply", 0, NULL, NULL);
+    finally_stack[start_calldepth] = NULL;
+    return rv;
+}
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {
     int i;
@@ -3635,6 +3683,8 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "pattern", &Block_pattern);
+    if (self == NULL && line == -1)
+        add_Method(c, "_apply", &identity_function);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
     o->data = glmalloc(sizeof(Object) * 2);

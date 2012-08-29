@@ -545,6 +545,47 @@ method generic {
         values.push(ast.genericNode.new(id, gens))
     }
 }
+method catchcase {
+    if (!(accept("identifier") && (sym.value == "catch"))) then {
+        return 0
+    }
+    def localmin = minIndentLevel
+    next
+    expectConsume {term}
+    def mainblock = values.pop
+    def cases = []
+    var finally := false
+    while {accept("identifier") && (sym.value == "case")} do {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            expression
+            expect("rparen")
+            next
+        } else {
+            util.syntax_error("no argument to case")
+        }
+        cases.push(values.pop)
+    }
+    if (accept("identifier") && (sym.value == "finally")) then {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            expression
+            expect("rparen")
+            next
+        } else {
+            util.syntax_error("no argument to finally")
+        }
+        finally := values.pop
+    }
+    values.push(ast.catchCaseNode.new(mainblock, cases, finally))
+    minIndentLevel := localmin
+}
 method matchcase {
     if (!(accept("identifier") && (sym.value == "match"))) then {
         return 0
@@ -601,6 +642,8 @@ method term {
         pushoctets
     } elseif(accept("identifier") && (sym.value == "match")) then {
         matchcase
+    } elseif(accept("identifier") && (sym.value == "catch")) then {
+        catchcase
     } elseif (accept("identifier")) then {
         identifier
         if (accept("lgeneric")) then {

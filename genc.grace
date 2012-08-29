@@ -965,6 +965,39 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
+method compilecatchcase(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def cases = o.cases
+    if (o.cases.size > paramsUsed) then {
+        paramsUsed := o.cases.size
+    }
+    def mainblock = compilenode(o.value)
+    out("  int frame{myc} = gc_frame_new();")
+    out("  gc_frame_newslot({mainblock});")
+    var i := 0
+    def params = []
+    for (cases) do {c->
+        def e = compilenode(c)
+        out("  gc_frame_newslot({e});")
+        params.push([i, e])
+        i := i + 1
+    }
+    var finally := "NULL"
+    if (false != o.finally) then {
+        finally := compilenode(o.finally)
+        out("  gc_frame_newslot({finally});")
+    }
+    for (params) do {ie->
+        def idx = ie[1]
+        def e = ie[2]
+        out("  params[{idx}] = {e};")
+    }
+    out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
+        ++ "{finally});")
+    out("  gc_frame_end(frame{myc});")
+    o.register := "catchres" ++ myc
+}
 method compilematchcase(o) {
     def myc = auto_count
     auto_count := auto_count + 1
@@ -1317,6 +1350,9 @@ method compilenode(o) {
     }
     if (o.kind == "matchcase") then {
         compilematchcase(o)
+    }
+    if (o.kind == "catchcase") then {
+        compilecatchcase(o)
     }
     if (o.kind == "class") then {
         compileclass(o)

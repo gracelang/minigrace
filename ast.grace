@@ -226,6 +226,54 @@ class blockNode.new(params', body') {
         s
     }
 }
+class catchCaseNode.new(block, cases', finally') {
+    def kind = "catchcase"
+    def value = block
+    def cases = cases'
+    def finally = finally'
+    var register := ""
+    def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitCatchCase(self)) then {
+            self.value.accept(visitor)
+            for (self.cases) do { mx ->
+                mx.accept(visitor)
+            }
+            if (self.finally != false) then {
+                self.finally.accept(visitor)
+            }
+        }
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Catch\n"
+        s := s ++ spc ++ value.pretty(depth + 2)
+        for (self.cases) do { mx ->
+            s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
+        }
+        if (false != self.finally) then {
+            s := s ++ "\n{spc}Finally:\n{spc}  {self.finally.pretty(depth+2)}"
+        }
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "catch " ++ self.value.toGrace(0) ++ " "
+        for (self.cases) do { case ->
+            s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
+        }
+        if (self.finally != false) then {
+            s := s ++ "\n" ++ spc ++ "    " ++ "finally " ++ self.finally.toGrace(depth + 2)
+        }
+        s
+    }
+}
 class matchCaseNode.new(matchee, cases', elsecase') {
     def kind = "matchcase"
     def value = matchee
@@ -1363,6 +1411,7 @@ type ASTVisitor = {
      visitIf(o) -> Boolean
      visitBlock(o) -> Boolean
      visitMatchCase(o) -> Boolean
+     visitCatchCase(o) -> Boolean
      visitMethodType(o) -> Boolean
      visitType(o) -> Boolean
      visitMethod(o) -> Boolean
@@ -1400,6 +1449,9 @@ method baseVisitor -> ASTVisitor {
             true
         }
         method visitMatchCase(o) -> Boolean {
+            true
+        }
+        method visitCatchCase(o) -> Boolean {
             true
         }
         method visitMethodType(o) -> Boolean {

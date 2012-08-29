@@ -865,6 +865,16 @@ method resolveIdentifiers(node) {
         }
         return node
     }
+    if (node.kind == "catchcase") then {
+        tmp := resolveIdentifiers(node.value)
+        tmp2 := resolveIdentifiersList(node.cases)
+        tmp3 := resolveIdentifiers(node.finally)
+        if ((tmp != node.value) || (tmp2 != node.cases)
+            || (tmp3 != node.finally)) then {
+            return ast.catchCaseNode.new(tmp, tmp2, tmp3)
+        }
+        return node
+    }
     if (node.kind == "method") then {
         pushScope
         for (node.signature) do { part ->
