@@ -551,7 +551,15 @@ method catchcase {
     }
     def localmin = minIndentLevel
     next
-    expectConsume {term}
+    if (accept("lbrace")) then {
+        block
+    } else {
+        expect "lparen"
+        next
+        expression
+        expect "rparen"
+        next
+    }
     def mainblock = values.pop
     def cases = []
     var finally := false
