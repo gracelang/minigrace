@@ -2997,8 +2997,10 @@ Object catchCase(Object block, Object *caseList, int ncases,
     int old_error_jump_set = error_jump_set;
     error_jump_set = 1;
     int start_calldepth = calldepth;
-    if (!finally)
-        finally = alloc_Block(NULL, NULL, NULL, -1);
+    if (!finally) {
+        finally = alloc_Block(NULL, NULL, "implicit finally", -1);
+        block_savedest(finally);
+    }
     finally_stack[calldepth] = finally;
     int start_exceptionHandlerDepth = exceptionHandlerDepth++;
     jmp_buf old_error_jump;
