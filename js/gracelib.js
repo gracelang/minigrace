@@ -1296,6 +1296,12 @@ Grace_prelude.methods["_methods"] = function() {
     var meths = [];
     for (m in this.methods)
         meths.push(new GraceString(m));
+    var s = this.superobj;
+    while (s) {
+        for (m in s.methods)
+            meths.push(new GraceString(m));
+        s = s.superobj;
+    }
     var l = new GraceList(meths);
     return l;
 }
