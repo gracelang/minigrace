@@ -56,7 +56,14 @@
             try {
                 gracecode_USER.call({methods:{}, data: {}, className: "__main__"});
             } catch (e) {
-                if (e != "SystemExit") {
+                if (e.exctype == 'graceexception') {
+                    stderr_txt.value += "Error around line " + e.lineNumber
+                        + ": " + e.exception.name + ": "
+                        + e.message._value + "\n";
+                    for (i=e.callStack.length-1; i>=0; i--) {
+                        stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
+                    }
+                } else if (e != "SystemExit") {
                     stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
                     throw e;
                 }

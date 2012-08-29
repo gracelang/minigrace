@@ -560,6 +560,23 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
+method compilecatchcase(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def cases = o.cases
+    def mainblock = compilenode(o.value)
+    out("  var cases{myc} = [];")
+    for (cases) do {c->
+        def e = compilenode(c)
+        out("  cases{myc}.push({e});")
+    }
+    var finally := "false"
+    if (false != o.finally) then {
+        finally := compilenode(o.finally)
+    }
+    out("  var catchres{myc} = catchCase({mainblock},cases{myc},{finally});")
+    o.register := "catchres" ++ myc
+}
 method compilematchcase(o) {
     def myc = auto_count
     auto_count := auto_count + 1
@@ -850,6 +867,9 @@ method compilenode(o) {
     }
     if (o.kind == "if") then {
         compileif(o)
+    }
+    if (o.kind == "catchcase") then {
+        compilecatchcase(o)
     }
     if (o.kind == "matchcase") then {
         compilematchcase(o)

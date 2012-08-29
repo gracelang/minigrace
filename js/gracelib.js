@@ -1178,23 +1178,17 @@ function callmethod(obj, methname, argcv) {
     }
     if (typeof(meth) != "function" || (meth._private &&
                 superDepth != sourceObject)) {
-        stderr_txt.value += "No such method '" + methname + "' on " + obj.className + ", called at line " + lineNumber + ".\n";
-        for (var i=callStack.length; i>0; i--)
-            stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
-        stderr_txt.value += "Methods are:\n";
-        for (var mn in obj.methods) {
-            stderr_txt.value += "  " + mn + "\n";
+        var ext = "";
+        if (meth && meth._private) {
+            ext += " Did you mean the local " + methname + "? It is not annotated readable.";
         }
-        if (meth._private) {
-            stderr_txt.value += "Did you mean the local " + methname + "? It is not annotated readable.\n";
-        }
-        throw "No such method '" + methname + "'";
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("No such method '" + methname + "' on " +
+                    obj.className + "." + ext));;
     }
     if (meth.confidential && !onSelf) {
-        stderr_txt.value += "Requested confidential method '" + methname + "' on " + obj.className + " from outside at line " + lineNumber + ".\n";
-        for (var i=callStack.length; i>0; i--)
-            stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
-        throw "Confidential method requested from outside";
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " from outside."));
     }
     onSelf = false;
     var oldSourceObject = sourceObject;
@@ -1214,6 +1208,28 @@ function callmethod(obj, methname, argcv) {
     sourceObject = oldSourceObject;
     return ret;
 }
+function catchCase(obj, cases, finallyblock) {
+    var i = 0;
+    try {
+        callmethod(obj, "apply")
+    } catch (e) {
+        if (e.exctype == 'graceexception') {
+            for (i = 0; i<cases.length; i++) {
+                var ret = callmethod(cases[i], "match", [1],
+                        e);
+                if (Grace_isTrue(ret))
+                    return var_nothing;
+            }
+            throw e;
+        } else {
+            throw e;
+        }
+    } finally {
+        if (finallyblock != false)
+            callmethod(finallyblock, "apply");
+    }
+    return var_nothing;
+}
 function matchCase(obj, cases, elsecase) {
     var i = 0;
     for (i = 0; i<cases.length; i++) {
@@ -1232,6 +1248,69 @@ function ReturnException(v, target) {
 ReturnException.prototype = {
     'exctype': 'return',
 };
+function GraceExceptionPacket(exception, message, data) {
+    this.exception = exception;
+    this.message = message;
+    this.data = data;
+    this.lineNumber = lineNumber;
+    this.callStack = [];
+    for (var i=0; i<callStack.length; i++)
+        this.callStack.push(callStack[i]);
+}
+GraceExceptionPacket.prototype = {
+    methods: {
+        "data": function(argcv) {
+            return this.data;
+        },
+        "exception": function(argcv) {
+            return this.exception;
+        },
+        "message": function(argcv) {
+            return this.message;
+        },
+        "asString": function(argcv) {
+            return new GraceString(this.exception.name + ": "
+                    + this.message._value);
+        }
+    },
+    exctype: 'graceexception'
+};
+function GraceException(name, par) {
+    this.name = name;
+    this.par = par;
+}
+GraceException.prototype = {
+    methods: {
+        "refine": function(argcv, nm) {
+            return new GraceException(nm._value, this)
+        },
+        "raise": function(argcv, msg) {
+            throw new GraceExceptionPacket(this, msg, new GraceObject())
+        },
+        "raiseWith": function(argcv, msg, data) {
+            throw new GraceExceptionPacket(this, msg, data)
+        },
+        "match": function(argcv, other) {
+            if (!other.exception)
+                return new GraceFailedMatch(other);
+            if (other.exception.name == this.name)
+                return new GraceSuccessfulMatch(other);
+            var exc = other.exception;
+            while (exc) {
+                if (exc.name == this.name)
+                    return new GraceSuccessfulMatch(other);
+                exc = exc.par;
+            }
+            return new GraceFailedMatch(other);
+        },
+        "|": function(argcv, o) {
+            return new GraceOrPattern(this, o);
+        },
+        "&": function(argcv, o) {
+            return new GraceAndPattern(this, o);
+        },
+    }
+}
 var importedModules = {};
 function do_import(modname, func) {
     if (importedModules[modname]) {
@@ -1275,9 +1354,23 @@ var_nothing.methods.asString = function() {return new GraceString("noSuchValue")
 var var_noSuchValue = var_nothing;
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
+
+var ExceptionObject = new GraceException("Exception", false);
+var ErrorObject = new GraceException("Error", ExceptionObject);
+var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
+
 var Grace_native_prelude = Grace_allocObject();
 var Grace_prelude = Grace_native_prelude;
 var var___95__prelude = Grace_native_prelude;
+Grace_prelude.methods["Exception"] = function(argcv) {
+    return ExceptionObject;
+}
+Grace_prelude.methods["Error"] = function(argcv) {
+    return ErrorObject;
+}
+Grace_prelude.methods["RuntimeError"] = function(argcv) {
+    return RuntimeErrorObject;
+}
 Grace_prelude.methods["while()do"] = function(argcv, c, b) {
     while (Grace_isTrue(callmethod(c, "apply", [0]))) {
         callmethod(b, "apply", [0]);
