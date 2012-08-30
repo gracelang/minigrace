@@ -50,6 +50,8 @@ method parseargs {
                         skip := true
                     } case { "--verbose" ->
                         verbosityv := 40
+                    } case { "--help" ->
+                        printhelp
                     } case { "--vtag" ->
                         skip := true
                         vtagv := argv.at(ai + 1)
@@ -279,6 +281,32 @@ method processExtension(ext) {
         }
     }
     extensionsv.put(extn, extv)
+}
+method printhelp {
+    print "Usage: {sys.argv.at(1)} [OPTION]... [FILE]"
+    print "Compile, process, or run a Grace source file or standard input."
+    print ""
+    print "Modes:"
+    print "  --make           Compile FILE to a native executable"
+    print "  --run            Compile FILE and execute the program [default]"
+    print "  --source         Compile FILE to source, but no further"
+    print "  --dynamic-module Compile FILE as a dynamic module (experimental!)"
+    print ""
+    print "Options:"
+    print "  --verbose        Give more detailed output"
+    print "  --target TGT     Choose a non-default compilation target TGT"
+    print "                   Use --target help to list supported targets."
+    print "  -o OFILE         Output to OFILE instead of default"
+    print "  -j N             Spawn at most N concurrent subprocesses"
+    print "  --help           This text"
+    print "  --module         Override default module name (derived from FILE)"
+    print "  --no-recurse     Do not compile imported modules"
+    print "  --stdout         Output to standard output rather than a file"
+    print "  --version        Print version information"
+    print ""
+    print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."
+    print "More detailed usage information is in the <doc/usage> file in the source tree."
+    sys.exit(0)
 }
 method debug(s) {
 
