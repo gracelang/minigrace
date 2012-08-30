@@ -1,0 +1,31 @@
+This document describes the purpose of the different doc/* files.
+
+authors:
+    Lists the authors of Minigrace code
+errata:
+    Describes the differences between Minigrace's implementation and the
+    specified Grace language, including both specified features that are
+    not implemented, or that are partly implemented, and extensions
+    supported by Minigrace that are not standardised. Also enumerates
+    various environment variables and options that may be used to
+    control the compiler's behaviour.
+exceptions:
+    Documents the design and implementation of exceptions and exception
+    handlers in Minigrace.
+gpl3:
+    The text of the licence Minigrace is distributed under.
+index:
+    This file.
+interop:
+    Provides hints for how to write glue code for interoperability
+    between Grace code and other systems for use with Minigrace.
+modules:
+    Documents the modules included in the Minigrace distribution that
+    might be useful in user code.
+unicode:
+    Defines the behaviour of Minigrace with regard to Unicode, including
+    how strings behave and are defined, which characters are valid in
+    identifiers and numbers, and source file encoding.
+
+General information is found in the README file in the root of the
+repository.
