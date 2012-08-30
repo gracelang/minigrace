@@ -1,0 +1,58 @@
+Minigrace supports exceptions and exception handlers. Exceptions are
+raised by requesting the "raise" method on an exception object,
+providing a string message to accompany the exception. Exception
+handlers are defined using the catch-case construct, which parallels
+match-case:
+  catch {
+    // Some code that may raise an exception
+  } case { e : SomeError ->
+    ...
+  } case { e : AnotherError ->
+    ...
+  }
+Inside these case blocks, e points to the exception packet created from
+the raised exception. This object has a "message" field containing the
+message provided when the exception was raised, and an "exception" field
+pointing to the exception it was raised from.
+
+The first case with a matching exception will be executed. Exceptions
+that are not handled by any case propagate up the stack to the
+next-defined exception handler, or to the top where they will be
+reported as errors and terminate the program.
+
+Most exceptions will be instances of Error, the kind of exception
+representing failures. Exceptions raised by failures in built-in methods
+are all instances of this exception. User code can define its own
+exceptions:
+  def MyError = Error.refine "MyError"
+The MyError object can then be raised and used in exception handlers
+exactly as built-in exceptions are:
+  catch { MyError.raise "Something happened!" }
+    case { e : MyError -> print "Caught my error: {e}" }
+Exception refinement creates a hierarchy of exceptions. In this example,
+a case handling Error would also handle MyError. Exceptions are
+distinguished by the name passed to the refine method when they were
+created.
+
+Exception packets also contain a "data" field, which may be populated
+with any object using the raiseWith method on exceptions:
+  MyError.raiseWith("A message", anObject)
+There is no behaviour or requirement attached to this object. It is
+simply stored to be used by the exception handler if desired.
+
+There is also a finally construct:
+  catch { ... }
+    case { e : Error -> ... }
+    finally {
+        // Clean up, etc
+    }
+The finally block is always applied, whether an exception was raised or
+not, including when a non-local return has jumped up the stack over the
+handler.
+
+A single handler may be defined for more than one kind of exception
+using the | combinator:
+  catch { ... }
+    case { e : MyError | AnotherError -> ... }
+This handler will be run when either MyError or AnotherError is raised
+inside the catch block.
