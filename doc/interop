@@ -15,3 +15,6 @@ gracecode_io and gracecode_unicode functions. An object contains an
 object of methods and a className field, and any JavaScript object with
 this form can be used as a Grace object. Importable modules should be
 returned by a function named gracecode_<module>.
+
+Wrappers for some functionality may be included with the compiler; see
+<doc/modules> for details.

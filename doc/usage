@@ -1,0 +1,47 @@
+Minigrace supports a number of modes and options. This document will
+describe how these can be used for different tasks, and the expected
+results of compilation.
+
+Unless another location is specified, the resulting output file or files
+will be generated in the same directory as the input. It is best to
+compile code in the current directory, particularly when multiple
+modules may be imported. The minigrace executable may be located
+elsewhere, and will find its support files alongside itself.
+
+To compile and run a Grace source file:
+  ./minigrace file.grace
+  In most cases, this command will be all that is required.
+
+To produce a native executable, but not run it, use:
+  ./minigrace --make file.grace
+  This mode produces an executable called "file".
+
+To get more output, describing what it is doing while it goes, use:
+  ./minigrace --verbose [...]
+  This option can be used in combination with any of the others.
+
+To compile to JavaScript instead of native code, use:
+  ./minigrace --target js -o file.js file.grace
+
+To pretty-print the input source code as Grace, use:
+  ./minigrace --target grace -o file.js file.grace
+
+To compile to a specialised target, like a parse tree, use:
+  ./minigrace --target parse file.js
+  There are several targets for specialised purposes. Use --target help
+  to list them. Useful targets may be "lex" (tokens) and "subtypematrix"
+  (mapping of types to supertypes).
+
+To make object var and def declarations be public and readable, use:
+  ./minigrace -XDefaultVisibility=public [...]
+
+To disable static type checking, use:
+  ./minigrace -XIgnoreTypes [...]
+
+To enable tail call support, use:
+  ./minigrace -XTailCall [...]
+
+Several other -X options are also available for very specialised uses.
+Any -X option may be given implicitly whenever a particular file is
+compiled by including a #pragma <option> line at the top of the file (a
+Minigrace extension).

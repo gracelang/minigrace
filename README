@@ -8,83 +8,19 @@ Minigrace should work on POSIX-compliant systems, and is known to work
 on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
 the path, which may require installing development tools.
 
-The Git repository is capable of bootstrapping itself with `make`, but
-it is recommended to bootstrap from a recent tarball and is required on
-some platforms. Running tools/tarball-bootstrap will provide
-instructions on finding and using this tarball.
-
-A tarball distribution can be compiled using `./configure` and `make`.
+Tarball distributions should compile with `./configure && make`. The Git
+repository is able to bootstrap itself with `make` on some systems, but
+it is recommended to bootstrap from a tarball by running the
+`tools/tarball-bootstrap` script. More detailed build instructions are
+in <doc/build>.
 
 After building there will be a `minigrace` executable in the root. This
-executable supports a few different modes and options:
-- Execute a script in the simplest way possible:
+executable supports a few different modes and options, described in
+<doc/usage>. The simplest usage is just:
   ./minigrace file.grace
-  In most cases, this command will be all that is required.
-- Produce a native executable:
-  ./minigrace --make file.grace
-  This mode produces an executable called "file".
-- Describe what it is doing while it goes:
-  ./minigrace --verbose [...]
-- Use another backend:
-  ./minigrace --target js -o file.js file.grace
-  There are also other targets for specialised purposes. Use
-  --target help to list them.
-- Set the location of the standard Grace library code to link against:
-  ./minigrace --gracelib path [...]
-- Default object var and def declarations to public methods:
-  ./minigrace -XDefaultVisibility=public [...]
-- Disable static type checking:
-  ./minigrace -XIgnoreTypes [...]
-- Enable tail call support:
-  ./minigrace -XTailCall [...]
+which will compile file.grace to an executable and then run it.
 
-The resulting output will be generated in the same directory as the
-input. The minigrace executable may be located elsewhere, and will find
-its support files alongside itself.
-
-Some other Makefile targets may also be of interest:
-- make test
-  Runs the test suite. All tests are expected to pass; if any do not,
-  please send the tests/test.log file to the author.
-- make js
-  Builds the web frontend and JavaScript compiler, as used on
-  <http://ecs.vuw.ac.nz/~mwh/minigrace/js/>. The frontend is accessible
-  in js/index.html. Note that in general the file must be served over
-  HTTP for the test cases to load. The JavaScript back- and front-ends
-  are suitable for quick testing, but have some limitations compared to
-  the native compiler, and particularly do not support Unicode in any
-  way.
-
-
-Platform notes
---------------
-
-On both Mac OS X and Cygwin building from the git repository requires
-bootstrapping from a tarball the first time.
-
-On Mac OS X, Xcode is required to compile. The environment must be set
-up to ensure that gcc and ld are in the path and that GCC is able to
-compile C code. Setting the following environment variables is known to
-be required in many cases:
-  PATH
-  C_INCLUDE_PATH
-  LIBRARY_PATH
-The script c/environ-Darwin attempts to detect and set up these
-variables correctly.
-
-Under Cygwin, all builds will be static because of limitations in
-dynamic libraries in the PE format.
-
-
-Interoperability
-----------------
-None.
-
-No backend or platform provides foreign functions or access to the
-underlying platform. Manual platform glue code may be possible to bind
-particular functionality; see <doc/interop> for details. Wrappers for
-some functionality may be included with the compiler; see <doc/modules>
-for details.
+The Minigrace documentation is listed in the <doc/index> file.
 
 Licensing
 ---------

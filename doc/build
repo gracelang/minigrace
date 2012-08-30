@@ -1,0 +1,68 @@
+Minigrace should compile on any POSIX-compatible system with GCC. The
+build instructions differ according to how the source code was
+distributed.
+
+Tarball
+-------
+A tarball distribution should build simply with `make` (or `gmake`, or
+the name of GNU make on your system). You may run `./configure` manually
+to specify options for your system.
+
+You can re-build Minigrace from the Grace source, rather than the
+pregenerated C files in the tarball, by running `make selfhost`.
+
+Tarballs are available from <http://ecs.vuw.ac.nz/~mwh/minigrace/dist/>
+
+Git
+---
+The Git repository is capable of bootstrapping itself with `make` on
+some systems, but it is recommended to bootstrap from a recent tarball
+and is required on some platforms.
+
+To bootstrap from a tarball, run `tools/tarball-bootstrap` and it will
+provide instructions for downloading the correct tarball. You can then
+run the script again, passing in the path to the downloaded tarball,
+after which `make` will compile the latest version.
+
+After the first build you should be able to `git pull` and `make`
+without bootstrapping again. You will sometimes need to `make clean`
+when an ABI-incompatible change has been made.
+
+The main Git repository can be cloned with:
+  git clone git://github.com/mwh/minigrace.git
+or:
+  git clone https://github.com/mwh/minigrace.git
+
+Post-build
+----------
+The `make test` target will run the test suite. All tests are expected
+to pass; if any do not, please send the tests/test.log file to the
+author.
+
+From a Git checkout only, `make js` will build the JavaScript frontend
+used on <http://ecs.vuw.ac.nz/~mwh/minigrace/js/>. The frontend is
+accessible in js/index.html. Note that in general the file must be
+served over HTTP for the test cases to load. The JavaScript back- and
+front-ends are suitable for quick testing, but have some limitations
+compared to the native compiler, and particularly do not support Unicode
+in any way.
+
+Platform notes
+--------------
+On both Mac OS X and Cygwin building from the git repository requires
+bootstrapping from a tarball the first time.
+
+On Mac OS X, Xcode is required to compile. The environment must be set
+up to ensure that gcc and ld are in the path and that GCC is able to
+compile C code. Setting the following environment variables is known to
+be required in many cases:
+  PATH
+  C_INCLUDE_PATH
+  LIBRARY_PATH
+The script c/environ-Darwin attempts to detect and set up these
+variables correctly on systems that do not have the command-line
+development tools set up.
+
+Under Cygwin, all builds will be static because of limitations in
+dynamic libraries in the PE format.
+
