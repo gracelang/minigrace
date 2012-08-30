@@ -826,10 +826,8 @@ GraceHashMap.prototype.methods.get = function(argcv, k) {
             return this.table[hc].value;
         hc++;
     }
-    stderr_txt.value += "Key not found in HashMap at line " + lineNumber + ".\n";
-    for (var i=callStack.length; i>0; i--)
-        stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
-    throw "Key not found in HashMap";
+    throw new GraceExceptionPacket(RuntimeErrorObject,
+            new GraceString("Key not found in HashMap"));
 }
 GraceHashMap.prototype.methods.contains = function(argcv, k) {
     var hc = callmethod(k, "hashcode", [0]);
@@ -1139,10 +1137,8 @@ function checkmethodcall(func, methname, obj, args) {
             continue;
         var t = p[0];
         if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
-            stderr_txt.value += "Runtime type error: expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + ", called at line " + lineNumber + ".\n";
-            for (var i=callStack.length; i>0; i--)
-                stderr_txt.value += "  From call to " + callStack[i-1] + ".\n";
-            throw "Runtime type error";
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("Runtime type error: expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + "."));
         }
     }
 }
