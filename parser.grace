@@ -1294,6 +1294,7 @@ method doclass {
         next
         util.setline(btok.line)
         var o := ast.classNode.new(cname, csig, body, false, constructorName)
+        o.generics := s.generics
         values.push(o)
         minIndentLevel := localMinIndentLevel
     }

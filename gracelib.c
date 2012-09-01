@@ -3222,12 +3222,21 @@ Object Type_match(Object self, int nparts, int *argcv,
     }
     return alloc_SuccessfulMatch(obj, NULL);
 }
+Object Type_asString(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    struct TypeObject *t = (struct TypeObject *)self;
+    char buf[strlen(t->name) + 7];
+    strcpy(buf, "Type<");
+    strcat(buf, t->name);
+    strcat(buf, ">");
+    return alloc_String(buf);
+}
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
         Type = alloc_class("Type", 6);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
-        add_Method(Type, "asString", &Object_asString);
+        add_Method(Type, "asString", &Type_asString);
         add_Method(Type, "match", &Type_match);
         add_Method(Type, "&", &literal_and);
         add_Method(Type, "|", &literal_or);
@@ -3249,19 +3258,29 @@ void ClassData__release(struct ClassData *c) {
         }
     glfree(c->methods);
 }
+Object Class_asString(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    struct TypeObject *t = (struct TypeObject *)self;
+    char buf[strlen(t->name) + 8];
+    strcpy(buf, "Class<");
+    strcat(buf, t->name);
+    strcat(buf, ">");
+    return alloc_String(buf);
+}
 static inline void initialise_Class() {
     if (Class == NULL) {
         Class = glmalloc(sizeof(struct ClassData));
         Class->flags = 3;
         Class->class = Class;
         Class->name = "ClassOf<Class>";
-        Class->methods = glmalloc(sizeof(Method) * 3);
+        Class->methods = glmalloc(sizeof(Method) * 4);
         Class->nummethods = 3;
         Class->mark = NULL;
         Class->release = (void *)&ClassData__release;
         add_Method(Class, "match", &Type_match);
         add_Method(Class, "&", &literal_and);
         add_Method(Class, "|", &literal_or);
+        add_Method(Class, "asString", &Class_asString);
     }
 }
 ClassData alloc_class(const char *name, int nummethods) {

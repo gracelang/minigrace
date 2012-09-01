@@ -975,6 +975,13 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "class") then {
         pushScope
+        if (false != node.generics) then {
+            for (node.generics) do { g ->
+                def btmp = Binding.new("type")
+                btmp.value := DynamicType
+                bindName(g.value, btmp)
+            }
+        }
         var nm := node.name.value
         if (node.name.kind == "generic") then {
             nm := node.name.value.value
@@ -1017,8 +1024,10 @@ method resolveIdentifiers(node) {
             var part := node.signature[partnr]
             tmp3[partnr].params := resolveIdentifiersList(part.params)
         }
-        node := ast.classNode.new(node.name, tmp3, tmp2,
+        tmp := ast.classNode.new(node.name, tmp3, tmp2,
             resolveIdentifiers(node.superclass), node.constructor)
+        tmp.generics := node.generics
+        node := tmp
         popScope
         selftypes.pop
     }

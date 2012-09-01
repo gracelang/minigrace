@@ -357,6 +357,9 @@ method compileclass(o) {
     obj.classname := o.name.value
     var mbody := [obj]
     var newmeth := ast.methodNode.new(o.constructor, signature, mbody, false)
+    if (false != o.generics) then {
+        newmeth.generics := o.generics
+    }
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
@@ -579,7 +582,7 @@ method compilemethod(o, selfobj, pos) {
             slot := slot + 1
             numslots := numslots + 1
         }
-        out("  if (nparts == {o.signature.size}) \{")
+        out("  if (nparts == 1 + {o.signature.size}) \{")
         out("    if (argcv[nparts-1] < {o.generics.size}) \{")
         out("      gracedie(\"insufficient generic parameters\");")
         out("    \}")

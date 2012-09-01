@@ -737,6 +737,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
     def name = name'
     def constructor = constructor'
     def signature = signature'
+    var generics := false
     var register := ""
     def line = util.linenum
     def superclass = superclass'
@@ -780,6 +781,12 @@ class classNode.new(name', signature', body', superclass', constructor') {
             }
             if (part.vararg != false) then {
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
+            }
+        }
+        if (false != generics) then {
+            s := s ++ "\n" ++ spc ++ "Generics:"
+            for (generics) do {g->
+                s := s ++ "\n  {spc}{g.pretty(0)}"
             }
         }
         s := s ++ "\n" ++ spc ++ "Body:"
