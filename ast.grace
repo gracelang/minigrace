@@ -650,6 +650,7 @@ class callNode.new(what, with') {
     def with = with'
     def line = 0 + util.linenum
     var register := ""
+    var generics := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCall(self)) then {
             self.value.accept(visitor)
@@ -668,6 +669,12 @@ class callNode.new(what, with') {
         var s := "Call\n"
         s := s ++ spc ++ "Method: {self.value.pretty(depth + 1)}"
         s := s ++ "\n"
+        if (false != generics) then {
+            s := s ++ spc ++ "  Generics:\n"
+            for (generics) do {g->
+                s := s ++ spc ++ "    " ++ g.pretty(0) ++ "\n"
+            }
+        }
         s := s ++ spc ++ "Arguments:"
         for (self.with) do { part ->
             s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name

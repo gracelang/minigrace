@@ -573,7 +573,9 @@ method compilemethod(o, selfobj, pos) {
     if (o.generics.size > 0) then {
         out("// Start generics")
         for (o.generics) do {g->
-            out("  Object *var_{g.value} = &(stackframe->slots[{slot}]);")
+            var gn := escapeident(g.value)
+            declaredvars.push(gn)
+            out("  Object *var_{gn} = &(stackframe->slots[{slot}]);")
             slot := slot + 1
             numslots := numslots + 1
         }
@@ -582,11 +584,13 @@ method compilemethod(o, selfobj, pos) {
         out("      gracedie(\"insufficient generic parameters\");")
         out("    \}")
         for (o.generics) do {g->
-            out("    *var_{g.value} = args[curarg++];")
+            var gn := escapeident(g.value)
+            out("    *var_{gn} = args[curarg++];")
         }
         out("  \} else \{")
         for (o.generics) do {g->
-            out("    *var_{g.value} = Dynamic;")
+            var gn := escapeident(g.value)
+            out("    *var_{gn} = Dynamic;")
         }
         out("  \}")
         out("// End generics")
@@ -1116,6 +1120,23 @@ method compilecall(o, tailcall) {
     if (o.with.size > partsUsed) then {
         partsUsed := o.with.size
     }
+    var nparts := o.with.size
+    if (false != o.generics) then {
+        if (partsUsed == o.with.size) then {
+            partsUsed := partsUsed + 1
+        }
+        if (paramsUsed < (args.size + o.generics.size)) then {
+            paramsUsed := paramsUsed + o.generics.size
+        }
+        nparts := nparts + 1
+        out("  partcv[{o.with.size}] = {o.generics.size};")
+        i := args.size
+        for (o.generics) do {g->
+            out("  params[{i}] = {compilenode(g)};")
+            i := i + 1
+        }
+        i := 0
+    }
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
@@ -1127,7 +1148,7 @@ method compilecall(o, tailcall) {
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
-            ++ "{o.with.size}, partcv, params, ((flags >> 24) & 0xff) + 1, "
+            ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
     } elseif ((o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
@@ -1141,7 +1162,7 @@ method compilecall(o, tailcall) {
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
         out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
-            ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
+            ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
@@ -1157,7 +1178,7 @@ method compilecall(o, tailcall) {
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
-            ++ "{o.with.size}, partcv, params, CFLAG_SELF);")
+            ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
         for (args) do { arg ->
@@ -1168,7 +1189,7 @@ method compilecall(o, tailcall) {
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
         out("  Object call{auto_count} = callmethod(prelude, \"{evl}\", "
-            ++ "{o.with.size}, partcv, params);")
+            ++ "{nparts}, partcv, params);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "platform")}) then {
         out("// Import of " ++ o.value.value)
@@ -1198,10 +1219,10 @@ method compilecall(o, tailcall) {
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
-            out("    {o.with.size}, partcv, params, 0);")
+            out("    {nparts}, partcv, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod({obj}, \"{evl}\",")
-            out("    {o.with.size}, partcv, params);")
+            out("    {nparts}, partcv, params);")
         }
     } else {
         obj := "self"
@@ -1215,10 +1236,10 @@ method compilecall(o, tailcall) {
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall(self, \"{evl}\",")
-            out("    {o.with.size}, partcv, params, 0);")
+            out("    {nparts}, partcv, params, 0);")
         } else {
             out("  Object call{auto_count} = callmethod(self, \"{evl}\",")
-            out("    {o.with.size}, partcv, params);")
+            out("    {nparts}, partcv, params);")
         }
     }
     out("  gc_frame_end(callframe{myc});")

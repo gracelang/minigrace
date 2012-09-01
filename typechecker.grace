@@ -836,14 +836,18 @@ method resolveIdentifiers(node) {
                 var part := node.with[partnr]
                 tmp[partnr].args := resolveIdentifiersList(part.args)
             }
-            return ast.callNode.new(p.value, tmp)
+            tmp := ast.callNode.new(p.value, tmp)
+            tmp.generics := node.generics
+            return tmp
         }
         tmp := node.with
         for (node.with.indices) do { partnr ->
             var part := node.with[partnr]
             tmp[partnr].args := resolveIdentifiersList(part.args)
         }
-        return ast.callNode.new(p, tmp)
+        tmp := ast.callNode.new(p, tmp)
+        tmp.generics := node.generics
+        return tmp
     }
     if (node.kind == "member") then {
         tmp := resolveIdentifiers(node.in)
@@ -1315,6 +1319,16 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
         } elseif (e.kind == "method") then {
             def mt = Binding.new("method")
             mt.dtype := findType(e.dtype)
+            if (false == mt.dtype) then {
+                if (e.generics.size > 0) then {
+                    for (e.generics) do {g->
+                        if (e.dtype.value == g.value) then {
+                            // Generic; TODO for now
+                            mt.dtype := g
+                        }
+                    }
+                }
+            }
             bindName(e.value.value, mt)
             selftypes.last.methods.push(
                 ast.methodTypeNode.new(e.value.value, e.signature, mt.dtype))

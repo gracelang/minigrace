@@ -654,9 +654,6 @@ method term {
         catchcase
     } elseif (accept("identifier")) then {
         identifier
-        if (accept("lgeneric")) then {
-            generic
-        }
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
     } elseif (accept("lbrace")) then {
@@ -836,6 +833,7 @@ method dotrest {
                 dotrest
             } elseif (accept("lparen") || accept("lbrace")
                 || accept("num") || accept("string") || accept("lsquare")
+                || accept("lgeneric")
                 ) then {
                 callrest
             }
@@ -867,6 +865,21 @@ method callrest {
     var hadcall := false
     var tok := lastToken
     var startInd := minIndentLevel
+    var genericIdents := false
+    if (acceptSameLine "lgeneric") then {
+        // Generic!
+        next
+        genericIdents := mgcollections.list.new
+        while {accept("identifier")} do {
+            identifier
+            genericIdents.push(values.pop)
+            if (accept("comma")) then {
+                next
+            }
+        }
+        expect "rgeneric"
+        next
+    }
     if (acceptSameLine("lparen")) then {
         tok := sym
         hadcall := true
@@ -954,6 +967,7 @@ method callrest {
         }
         util.setPosition(btok.line, btok.linePos)
         tmp := ast.callNode.new(meth, signature)
+        tmp.generics := genericIdents
         values.push(tmp)
     }
     minIndentLevel := startInd
