@@ -535,6 +535,7 @@ class methodNode.new(name', signature', body', dtype') {
     def body = body'
     var dtype := dtype'
     var varargs := false
+    var generics := []
     var selfclosure := false
     var register := ""
     def line = util.linenum
@@ -578,6 +579,13 @@ class methodNode.new(name', signature', body', dtype') {
             }
         }
         s := s ++ "\n"
+        if (false != generics) then {
+            s := "{s}{spc}Generics:"
+            for (generics) do {g->
+                s := "{s}\n{spc}  {g.pretty(0)}"
+            }
+            s := s ++ "\n"
+        }
         s := s ++ spc ++ "Body:"
         for (self.body) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)

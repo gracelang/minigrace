@@ -570,6 +570,27 @@ method compilemethod(o, selfobj, pos) {
     out("  setframeelementname(stackframe, 0, \"self\");")
     slot := slot + 1
     numslots := numslots + 1
+    if (o.generics.size > 0) then {
+        out("// Start generics")
+        for (o.generics) do {g->
+            out("  Object *var_{g.value} = &(stackframe->slots[{slot}]);")
+            slot := slot + 1
+            numslots := numslots + 1
+        }
+        out("  if (nparts == {o.signature.size}) \{")
+        out("    if (argcv[nparts-1] < {o.generics.size}) \{")
+        out("      gracedie(\"insufficient generic parameters\");")
+        out("    \}")
+        for (o.generics) do {g->
+            out("    *var_{g.value} = args[curarg++];")
+        }
+        out("  \} else \{")
+        for (o.generics) do {g->
+            out("    *var_{g.value} = Dynamic;")
+        }
+        out("  \}")
+        out("// End generics")
+    }
     var ret := "none"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)

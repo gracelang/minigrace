@@ -877,6 +877,11 @@ method resolveIdentifiers(node) {
     }
     if (node.kind == "method") then {
         pushScope
+        for (node.generics) do { g ->
+            def btmp = Binding.new("type")
+            btmp.value := DynamicType
+            bindName(g.value, btmp)
+        }
         for (node.signature) do { part ->
             for (part.params) do { e ->
                 // Ensure parameter type exists
@@ -920,6 +925,7 @@ method resolveIdentifiers(node) {
         util.setline(node.line)
         tmp := ast.methodNode.new(node.value, tmp2, l,
             tmp4)
+        tmp.generics := node.generics
         tmp.annotations.extend(node.annotations)
         tmp.varargs := node.varargs
         return tmp

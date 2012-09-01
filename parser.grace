@@ -1406,6 +1406,7 @@ method methoddec {
         var signature := m.sig
         var dtype := m.rtype
         var varargs := m.v
+        var generics := m.generics
         var body := []
         var localMin
         def anns = doannotation
@@ -1447,6 +1448,7 @@ method methoddec {
         if (varargs) then {
             o.varargs := true
         }
+        o.generics := generics
         if (false != anns) then {
             o.annotations.extend(anns)
         } else {
@@ -1523,11 +1525,26 @@ method methodsignature(sameline) {
     var meth := values.pop
     var signature := []
     var part := ast.signaturePart.new(meth.value)
+    var genericIdents := []
     signature.push(part)
     if (meth.value == "[") then {
         expect("rsquare")
         next
         meth.value := "[]"
+    }
+    if (accept("lgeneric")) then {
+        // Generic!
+        next
+        genericIdents := mgcollections.list.new
+        while {accept("identifier")} do {
+            identifier
+            genericIdents.push(values.pop)
+            if (accept("comma")) then {
+                next
+            }
+        }
+        expect "rgeneric"
+        next
     }
     if (accept("bind")) then {
         next
@@ -1602,6 +1619,7 @@ method methodsignature(sameline) {
         var sig := signature
         var rtype := dtype
         var v := varargs
+        var generics := genericIdents
     }
     o
 }

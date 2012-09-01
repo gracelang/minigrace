@@ -459,7 +459,8 @@ def LexerClass = object {
                         }
                         if ((mode == "i") && (c == "<")) then {
                             newmode := "<"
-                        } elseif (((mode == "i") || (mode == ">"))
+                        } elseif (((mode == "i") || (mode == ">")
+                            || (mode == "<"))
                             && (c == ">")) then {
                             if (mode == ">") then {
                                 modechange(tokens, mode, accum)
