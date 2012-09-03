@@ -1,0 +1,33 @@
+A method may be declared with generic parameters:
+  method foo<X,Y>(...) { ... }
+These parameters are available as local variables inside the method
+body, like other parameters. Only one list of generic parameters is
+permitted on a method, and they must be on the first part of the method
+name.
+
+A method request may have generic parameters on it:
+  foo<Number, String>(...)
+These must also appear on the first part of the method name.
+
+A class declaration may have generic parameters:
+  class foo.new<X,Y>(...) { ... }
+The generic parameters are available in the lexical scope of the class
+body, like other parameters are. They are not accessible as fields of
+instances.
+
+If a method having generic parameters is requested without generic
+parameters, the parameters are populated with Dynamic instead. If any
+generic parameters are provided the full list must be given. Providing
+too few parameters is an error.
+
+The type parameters may be used to parameterise other methods or classes
+or for pattern-matching. Generic parameters are not currently used for
+static type checks, and are treated as though they were Dynamic. Static
+checking is to be added in future.
+
+In implementation, these parameters are passed as though they were
+ordinary arguments to an anonymous additional part on the end of the
+method name. The receiver can distinguish whether it was called with
+generics or not by the number of provided parts, which is included in
+the code generation. User code does not need to care about the
+implementation.

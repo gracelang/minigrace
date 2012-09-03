@@ -1,6 +1,5 @@
 Minigrace supports most of the specified dynamically-typed language, and
 a static structural type-checker. It does not yet support:
-- Generics
 - Overriding the if-then-else construct: only the built-in construct may
   begin with "if()". for()do and while()do can be used as any ordinary
   method.
@@ -13,6 +12,10 @@ Some functionality is incomplete:
 - Interpolated code inside string literals may not contain a right brace
   in any context.
 - Visibility annotations are checked only dynamically, not statically
+- Generics are supported only at runtime, and static checking of them is
+  limited, incomplete, or wrong. Generic types are not currently used in
+  gradual checks at method boundaries. The expected behaviour is
+  described in <doc/generics>.
 
 The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:

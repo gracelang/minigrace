@@ -14,6 +14,8 @@ errata:
 exceptions:
     Documents the design and implementation of exceptions and exception
     handlers in Minigrace.
+generics:
+    Describes the behaviour of generic parameters.
 gpl3:
     The text of the licence Minigrace is distributed under.
 index:
