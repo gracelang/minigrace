@@ -184,6 +184,9 @@ method compileclass(o) {
     var mbody := [ast.objectNode.new(o.value, o.superclass)]
     var newmeth := ast.methodNode.new(o.constructor, signature, mbody,
         false)
+    if (false != o.generics) then {
+        newmeth.generics := o.generics
+    }
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
@@ -376,6 +379,23 @@ method compilemethod(o, selfobj) {
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         }
+    }
+    if (o.generics.size > 0) then {
+        out("// Start generics")
+        out("  if (argcv.length == 1 + {o.signature.size}) \{")
+        out("    if (argcv[argcv.length-1] < {o.generics.size}) \{")
+        out("      callmethod(var_RuntimeError, \"raise\", [1], "
+            ++ "new GraceString(\"insufficient generic parameters\"));")
+        out("    \}")
+        for (o.generics) do {g->
+            out("  var {varf(g.value)} = arguments[curarg++];")
+        }
+        out("  \} else \{")
+        for (o.generics) do {g->
+            out("    {varf(g.value)} = var_Dynamic;")
+        }
+        out("  \}")
+        out("// End generics")
     }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
@@ -627,17 +647,26 @@ method compilecall(o) {
             args.push(r)
         }
     }
+    if (false != o.generics) then {
+        for (o.generics) do {g->
+            args.push(compilenode(g))
+        }
+    }
+    var partl := ""
+    for (o.with.indices) do { partnr ->
+        partl := partl ++ o.with[partnr].args.size
+        if (partnr < o.with.size) then {
+            partl := partl ++ ", "
+        }
+    }
+    if (false != o.generics) then {
+        partl := partl ++ ", {o.generics.size}"
+    }
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethodsuper(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
-        for (o.with.indices) do { partnr ->
-            call := call ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                call := call ++ ", "
-            }
-        }
-        call := call ++ "]"
+        call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
@@ -652,13 +681,7 @@ method compilecall(o) {
         && (o.value.in.value == "self")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethod(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
-        for (o.with.indices) do { partnr ->
-            call := call ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                call := call ++ ", "
-            }
-        }
-        call := call ++ "]"
+        call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
@@ -669,13 +692,7 @@ method compilecall(o) {
         && (o.value.in.value == "prelude")}) then {
         var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
             ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
-        for (o.with.indices) do { partnr ->
-            call := call ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                call := call ++ ", "
-            }
-        }
-        call := call ++ "]"
+        call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
@@ -685,13 +702,7 @@ method compilecall(o) {
         obj := compilenode(o.value.in)
         var call := "  var call" ++ auto_count ++ " = callmethod(" ++ obj
             ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
-        for (o.with.indices) do { partnr ->
-            call := call ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                call := call ++ ", "
-            }
-        }
-        call := call ++ "]"
+        call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }
@@ -701,13 +712,7 @@ method compilecall(o) {
         obj := "this"
         var call := "  var call" ++ auto_count ++ " = callmethod(this,"
             ++ "\"" ++ escapestring(o.value.value) ++ "\", ["
-        for (o.with.indices) do { partnr ->
-            call := call ++ o.with[partnr].args.size
-            if (partnr < o.with.size) then {
-                call := call ++ ", "
-            }
-        }
-        call := call ++ "]"
+        call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
         }

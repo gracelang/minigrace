@@ -763,6 +763,9 @@ GraceType.prototype = {
         },
         "&": function(argcv, other) {
             return new GraceAndPattern(this, other);
+        },
+        "asString": function(argcv) {
+            return new GraceString("Type<" + this.name + ">");
         }
     },
     typeMethods: [],
