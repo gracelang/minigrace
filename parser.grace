@@ -158,7 +158,19 @@ method pushidentifier {
     values.push(o)
     next
 }
-
+method checkAnnotation(ann) {
+    if (ann.kind == "call") then {
+        for (ann.with) do {p->
+            for (p.args) do {a->
+                if ((a.kind == "identifier").andAlso {a.dtype != false}) then {
+                    util.setPosition(a.line, a.linePos)
+                    util.syntax_error("Type given on argument to annotation.")
+                }
+            }
+        }
+    }
+    ann
+}
 method doannotation {
     if ((!accept("keyword")).orElse {sym.value != "is"}) then {
         return false
@@ -168,12 +180,12 @@ method doannotation {
     don'tTakeBlock := true
     expression
     while {accept("comma")} do {
-        anns.push(values.pop)
+        anns.push(checkAnnotation(values.pop))
         next
         expression
     }
     don'tTakeBlock := false
-    anns.push(values.pop)
+    anns.push(checkAnnotation(values.pop))
     anns
 }
 
