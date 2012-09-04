@@ -586,6 +586,13 @@ class methodNode.new(name', signature', body', dtype') {
             }
             s := s ++ "\n"
         }
+        if (annotations.size > 0) then {
+            s := "{s}{spc}Annotations:"
+            for (annotations) do {an->
+                s := "{s}\n{spc}  {an.pretty(depth + 2)}"
+            }
+            s := s ++ "\n"
+        }
         s := s ++ spc ++ "Body:"
         for (self.body) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
