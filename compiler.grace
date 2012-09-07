@@ -26,66 +26,88 @@ if (util.target == "help") then {
     sys.exit(0)
 }
 
+var nparens := 0
+var nbraces := 0
+var nsquares := 0
+
+method iscontinued {
+    return (nparens != 0) || (nbraces != 0) || (nsquares != 0)
+}
+
 if (util.interactive) then {
     var cont := true
     var tcenv := HashMap.new
-    var replenv := HashMap.new
+    var visitor := ast.evalVisitor.new
     var ivalues := []
+    var completeline := ""
     while { cont && !io.input.eof } do {
-        io.output.write("> ")
+        if (nparens < 0) then {
+            nparens := 0
+        }
+        if (nbraces < 0) then {
+            nbraces := 0
+        }
+        if (nsquares < 0) then {
+            nsquares := 0
+        }
+        if (io.input.isatty) then {
+            if (iscontinued) then {
+                io.output.write(". ")
+            } else {
+                io.output.write("> ")
+            }
+        }
         var line := io.input.getline
-        print(line)
-        if ((line == "q") || (line == "quit")) then {
-            cont := false
+        if (iscontinued) then {
+            completeline := completeline ++ "\n" ++ line
         } else {
-            // print(line)
-            util.errno := 0
-            var toks := lexer.Lexer.new.lexinput(line)
-            // for (toks) do { v ->
-            //     print(v.kind ++ ": " ++ v.value)
-            //     if (util.verbosity > 30) then {
-            //         print("  [line: {v.line} position: {v.linePos} indent: {v.indent}]")
-            //     }
-            // }
-            if (util.errno == 0) then {
-                var vals := parser.parse(toks)
-                // for (vals) do { v ->
-                //     print(v.pretty(0))
-                // }
-                if (util.errno == 0) then {
-                    // if ((vals[1].kind == "identifier").andAlso {vals[1].value == "printenv"}) then {
-                    //     print(replenv)
-                    // }
-                    vals := typechecker.typecheck(vals, tcenv)
-                    // print(vals)
-                    print("->-")
-                    for (vals) do { v ->
-                        print(v.pretty(0))
-                    }
-                    print("-<-")
-                    // for (vals.indices) do { i ->
-                    //     var o := vals.pop
-                    //     ivalues.push(o)
-                    // }
-                    if (util.errno == 0) then {
-                        def evalv = ast.evalVisitor.new(replenv)
-                        for (vals) do { val ->
-                            // if (val.kind == "identifier") then {
-                            //     // special case for if only the name of a
-                            //     // variable is entered
-                            //     print(replenv.get(val.value))
-                            // } else {
-                            //     val.accept(evalv)
-                            // }
-                            val.accept(evalv)
-                            print("=>", evalv.getResult)
+            completeline := line
+        }
+        // check for unbalanced parens etc. to allow line continuations
+        for (line) do { c ->
+            if (c == "(") then {
+                nparens := nparens + 1
+            } elseif (c == ")") then {
+                nparens := nparens - 1
+            } elseif (c == "\{") then {
+                nbraces := nbraces + 1
+            } elseif (c == "\}") then {
+                nbraces := nbraces - 1
+            } elseif (c == "[") then {
+                nsquares := nsquares + 1
+            } elseif (c == "]") then {
+                nsquares := nsquares - 1
+            }
+        }
+        if (!iscontinued) then {
+            if ((line == "q") || (line == "quit")) then {
+                cont := false
+            } elseif ((line[1] == "/") && (line[2] == "/")) then {
+                // skip comments
+            } else {
+                util.errno := 0
+                var toks := lexer.Lexer.new.lexinput(completeline)
+                if (!io.input.isatty && (util.errno != 0)) then {
+                    sys.exit(util.errno)
+                } elseif (util.errno == 0) then {
+                    var vals := parser.parse(toks)
+                    if (!io.input.isatty && (util.errno != 0)) then {
+                        sys.exit(util.errno)
+                    } elseif (util.errno == 0) then {
+                        vals := typechecker.typecheck(vals, tcenv)
+                        if (!io.input.isatty && (util.errno != 0)) then {
+                            sys.exit(util.errno)
+                        } elseif (util.errno == 0) then {
+                            for (vals) do { val ->
+                                val.accept(visitor)
+                            }
                         }
                     }
                 }
             }
         }
     }
-    sys.exit(0)
+    sys.exit(util.errno)
 }
 
 var tokens := lexer.Lexer.new.lexfile(util.infile)

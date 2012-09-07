@@ -10,15 +10,14 @@ Object visitor = NULL;
 
 Object module_ast_init();
 Object module_ast;
-/* Object module_util_init(); */
-/* Object module_util; */
-/* Object module_mgcollections_init(); */
-/* Object module_mgcollections; */
-/* Object module_mirrors_init(); */
-/* Object module_mirrors; */
 
 Object Object_asString(Object, int, int*, Object*, int);
 
+// This function will receive the name and target object of a method,
+// create the appropriate interactive objects for the interpreter and then
+// call back to the interpreter with them. This way the actual method gets
+// executed in the interpreter and we don't have to create functions at
+// runtime.
 Object trampoline(Object self, Object realself, int nparts, int *argcv,
         Object *args, int flags) {
     int pos = (flags >> 16) & 255;
@@ -76,14 +75,19 @@ Object trampoline(Object self, Object realself, int nparts, int *argcv,
     gc_root(callnode);
 
     int acceptargcv[] = {1};
-    return callmethod(callnode, "accept", 1, acceptargcv, &visitor);
+    callmethod(callnode, "accept", 1, acceptargcv, &visitor);
+    Object replvar = callmethod(visitor, "_result", 0, NULL, NULL);
+    return callmethod(replvar, "val", 0, NULL, NULL);
 }
 
+// This has to be called before the first method call so the trampoline
+// methods knows where to call back to.
 Object repl_registerVisitor(Object self, int nparts, int *argcv, Object *args,
         int flags) {
     if (nparts != 1 && argcv[0] != 1)
         gracedie("registerVisitor requires exactly one argument");
 
+    gc_pause(); // temporary
     visitor = args[0];
     return alloc_none();
 }
@@ -95,6 +99,9 @@ Object repl_createobject(Object self, int nparts, int *argcv, Object *args,
     return alloc_userobj(nummethods, numfields);
 }
 
+// Add a wrapper for the named method that actually points to the trampoline
+// function so that the function will call back to the interpreter to actually
+// execute the method.
 Object repl_addmethod(Object self, int nparts, int *argcv, Object *args,
         int flags) {
     Object o = args[0];
@@ -102,7 +109,6 @@ Object repl_addmethod(Object self, int nparts, int *argcv, Object *args,
     gc_root(objname);
     Object methname = args[2];
     gc_root(methname);
-    /* Object meth = args[2]; */
     int pos = integerfromAny(args[3]);
 
     Object(*func)(Object, int, int*, Object*, int);
@@ -137,11 +143,5 @@ Object module_repl_init() {
     gc_root(repl_module);
     if (module_ast == NULL)
         module_ast = module_ast_init();
-    /* if (module_util == NULL) */
-    /*     module_util = module_util_init(); */
-    /* if (module_mgcollections == NULL) */
-    /*     module_mgcollections = module_mgcollections_init(); */
-    /* if (module_mirrors == NULL) */
-    /*     module_mirrors = dlmodule("mirrors"); */
     return o;
 }
