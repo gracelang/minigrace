@@ -477,12 +477,17 @@ method compiletype(o) {
     def idName = escapeident(o.value)
     out("// Type {o.value}")
     out("Object type{myc} = alloc_Type(\"{escName}\", {o.methods.size});")
-    out("*var_{idName} = type{myc};")
+    if (!o.anonymous) then {
+        out("*var_{idName} = type{myc};")
+    }
     for (o.methods) do {meth->
         def mnm = escapestring2(meth.value)
         out("add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
     }
     o.register := "none"
+    if (o.anonymous) then {
+        o.register := "type{myc}"
+    }
 }
 method compilefor(o) {
     var myc := auto_count

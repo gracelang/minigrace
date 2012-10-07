@@ -734,6 +734,9 @@ method rewritematchblockterm(arg) {
         }
         return [varpat, [arg]]
     }
+    if (arg.kind == "type") then {
+        return [arg, []]
+    }
 }
 method rewritematchblock(blk) {
     def arg = blk.params[1]

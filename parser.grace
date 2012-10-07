@@ -18,6 +18,7 @@ var tokens := 0
 var values := []
 var auto_count := 0
 var don'tTakeBlock := false
+var braceIsType := false
 var defaultDefVisibility := "confidential"
 var defaultVarVisibility := "confidential"
 var defaultMethodVisibility := "confidential"
@@ -280,7 +281,9 @@ method block {
                     // We allow an expression here for the case of v : T
                     // patterns, where T may be "Pair(hd, tl)" or similar.
                     next
+                    braceIsType := true
                     expression
+                    braceIsType := false
                     ident1.dtype := values.pop
                 }
                 params.push(ident1)
@@ -668,6 +671,8 @@ method term {
         identifier
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
+    } elseif (accept("lbrace") && braceIsType) then {
+        dotypeterm
     } elseif (accept("lbrace")) then {
         block
     } elseif (accept("lsquare")) then {
@@ -1716,6 +1721,7 @@ method doanontype {
         }
         next
         def t = ast.typeNode.new("<Anon_{mc}>", methods)
+        t.anonymous := true
         values.push(t)
     }
 }
