@@ -416,6 +416,7 @@ class typeNode.new(name', methods') {
     def line = util.linenum
     var generics := []
     var nominal := false
+    var anonymous := false
     var register := ""
     method accept(visitor : ASTVisitor) {
         if (visitor.visitType(self)) then {
