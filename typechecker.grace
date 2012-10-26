@@ -39,6 +39,8 @@ def NumberType = ast.typeNode.new("Number", [
     ast.methodTypeNode.new("..", [ast.signaturePart.new("..", [NumberOther])], DynamicIdentifier),
     ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
     ast.methodTypeNode.new("prefix-", [ast.signaturePart.new("prefix-")], NumberIdentifier),
+    ast.methodTypeNode.new("prefix<", [ast.signaturePart.new("prefix<")], DynamicIdentifier),
+    ast.methodTypeNode.new("prefix>", [ast.signaturePart.new("prefix>")], DynamicIdentifier),
     ast.methodTypeNode.new("inBase", [ast.signaturePart.new("inBase", [NumberOther])], StringIdentifier),
     ast.methodTypeNode.new("truncate", [ast.signaturePart.new("truncate")], NumberIdentifier),
     ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier),
@@ -669,6 +671,10 @@ method rewritematchblockterm(arg) {
         return [arg, []]
     }
     if (arg.kind == "boolean") then {
+        return [arg, []]
+    }
+    if ((arg.kind == "call") && (arg.value.value.substringFrom(1)to(6)
+        == "prefix")) then {
         return [arg, []]
     }
     if (arg.kind == "call") then {

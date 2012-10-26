@@ -104,6 +104,8 @@ ClassData Class;
 ClassData MatchResult;
 ClassData OrPattern;
 ClassData AndPattern;
+ClassData GreaterThanPattern;
+ClassData LessThanPattern;
 ClassData ExceptionPacket;
 ClassData Exception;
 
@@ -637,6 +639,56 @@ Object alloc_AndPattern(Object l, Object r) {
     struct UserObject *b = (struct UserObject *)o;
     b->data[0] = l;
     b->data[1] = r;
+    return o;
+}
+Object LessThanPattern_match(Object self, int nparts, int *argcv, Object *argv,
+        int flags) {
+    struct UserObject *b = (struct UserObject *)self;
+    Object target = argv[0];
+    Object right = b->data[0];
+    int tmp[1] = {1};
+    Object m = callmethod(target, "<", 1, argcv, &right);
+    if (istrue(m))
+        return alloc_SuccessfulMatch(target, NULL);
+    return alloc_FailedMatch(target, NULL);
+}
+Object alloc_LessThanPattern(Object r) {
+    Object o = alloc_userobj2(3, 2, LessThanPattern);
+    if (!LessThanPattern) {
+        LessThanPattern = o->class;
+        glfree(o->class->name);
+        o->class->name = "LessThanPattern";
+        add_Method(LessThanPattern, "|", &literal_or);
+        add_Method(LessThanPattern, "&", &literal_and);
+        add_Method(LessThanPattern, "match", &LessThanPattern_match);
+    }
+    struct UserObject *b = (struct UserObject *)o;
+    b->data[0] = r;
+    return o;
+}
+Object GreaterThanPattern_match(Object self, int nparts, int *argcv, Object *argv,
+        int flags) {
+    struct UserObject *b = (struct UserObject *)self;
+    Object target = argv[0];
+    Object right = b->data[0];
+    int tmp[1] = {1};
+    Object m = callmethod(target, "<", 1, argcv, &right);
+    if (istrue(m))
+        return alloc_SuccessfulMatch(target, NULL);
+    return alloc_FailedMatch(target, NULL);
+}
+Object alloc_GreaterThanPattern(Object r) {
+    Object o = alloc_userobj2(3, 2, GreaterThanPattern);
+    if (!GreaterThanPattern) {
+        GreaterThanPattern = o->class;
+        glfree(o->class->name);
+        o->class->name = "GreaterThanPattern";
+        add_Method(GreaterThanPattern, "|", &literal_or);
+        add_Method(GreaterThanPattern, "&", &literal_and);
+        add_Method(GreaterThanPattern, "match", &GreaterThanPattern_match);
+    }
+    struct UserObject *b = (struct UserObject *)o;
+    b->data[0] = r;
     return o;
 }
 
@@ -2010,6 +2062,14 @@ void Float64__mark(Object self) {
     if (*strp != NULL)
         gc_mark(*strp);
 }
+Object Float64_prefixLessThan(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    return alloc_LessThanPattern(self);
+}
+Object Float64_prefixGreaterThan(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    return alloc_GreaterThanPattern(self);
+}
 Object alloc_Float64(double num) {
     if (num == 0 && FLOAT64_ZERO != NULL)
         return FLOAT64_ZERO;
@@ -2023,7 +2083,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 24, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 26, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2046,6 +2106,8 @@ Object alloc_Float64(double num) {
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);
         add_Method(Number, "&", &literal_and);
+        add_Method(Number, "prefix<", &Float64_prefixLessThan);
+        add_Method(Number, "prefix>", &Float64_prefixGreaterThan);
     }
     Object o = alloc_obj(sizeof(double) + sizeof(Object), Number);
     double *d = (double*)o->data;
