@@ -1,6 +1,6 @@
 #pragma DefaultVisibility=public
 
-import util
+def util = platform.util
 
 def types = []
 def typesToId = HashMap.new

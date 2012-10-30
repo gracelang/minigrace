@@ -1,7 +1,7 @@
 #pragma DefaultVisibility=public
-import io
-import sys
-import buildinfo
+def io = platform.io
+def sys = platform.sys
+def buildinfo = platform.buildinfo
 
 var __compilerRevision := false
 var verbosityv := 30

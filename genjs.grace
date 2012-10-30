@@ -1,8 +1,8 @@
 #pragma DefaultVisibility=public
-import io
-import sys
-import ast
-import util
+def io = platform.io
+def sys = platform.sys
+def ast = platform.ast
+def util = platform.util
 
 var tmp
 var verbosity := 30

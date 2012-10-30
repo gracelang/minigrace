@@ -1,8 +1,8 @@
 #pragma DefaultVisibility=public
-import io
-import ast
-import util
-import subtype
+def io = platform.io
+def ast = platform.ast
+def util = platform.util
+def subtype = platform.subtype
 
 def preludeObj = HashMap.new
 def moduleScope = HashMap.new

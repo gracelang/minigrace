@@ -1,6 +1,6 @@
 #pragma DefaultVisibility=public
-import util
-import mgcollections
+def util = platform.util
+def mgcollections = platform.mgcollections
 
 def collections = mgcollections
 

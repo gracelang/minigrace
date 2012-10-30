@@ -1,9 +1,9 @@
 #pragma DefaultVisibility=public
-import io
-import ast
-import util
-import subtype
-import mgcollections
+def io = platform.io
+def ast = platform.ast
+def util = platform.util
+def subtype = platform.subtype
+def mgcollections = platform.mgcollections
 
 def collections = mgcollections
 

@@ -1,17 +1,17 @@
 #pragma DefaultVisibility=public
-import io
-import sys
-import unicode
-import util
-import lexer
-import ast
-import parser
-import typechecker
-import genc
-import genjs
-import buildinfo
-import subtype
-import mgcollections
+def io = platform.io
+def sys = platform.sys
+def unicode = platform.unicode
+def util = platform.util
+def lexer = platform.lexer
+def ast = platform.ast
+def parser = platform.parser
+def typechecker = platform.typechecker
+def genc = platform.genc
+def genjs = platform.genjs
+def buildinfo = platform.buildinfo
+def subtype = platform.subtype
+def mgcollections = platform.mgcollections
 
 util.parseargs
 

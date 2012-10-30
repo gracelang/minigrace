@@ -1,9 +1,9 @@
 #pragma DefaultVisibility=public
-import io
-import sys
-import util
-import unicode
-import mgcollections
+def io = platform.io
+def sys = platform.sys
+def util = platform.util
+def unicode = platform.unicode
+def mgcollections = platform.mgcollections
 
 def collections = mgcollections
 
