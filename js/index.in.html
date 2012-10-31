@@ -38,6 +38,13 @@
                     compileError = true;
                 } else if (e == "SystemExit") {
                     // pass
+                } else if (e.exctype == 'graceexception') {
+                    stderr_txt.value += "Internal compiler error, around line " + e.lineNumber
+                        + ": " + e.exception.name + ": "
+                        + e.message._value + "\n";
+                    for (i=e.callStack.length-1; i>=0; i--) {
+                        stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
+                    }
                 } else {
                     throw e;
                 }
