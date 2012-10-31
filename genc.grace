@@ -1591,6 +1591,16 @@ method checkimport(nm) {
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)
+    } elseif (io.exists("{sys.execPath}/modules/{nm}.gcn")) then {
+        exists := true
+        linkfiles.push("{sys.execPath}/modules/{nm}.gcn")
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/modules/{nm}.gcn", nm)
+    } elseif (io.exists("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")) then {
+        exists := true
+        linkfiles.push("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn", nm)
     } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
             !io.exists("{nm}.grace")
         }) then {
