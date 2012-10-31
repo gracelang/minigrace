@@ -1285,18 +1285,20 @@ method compileimport(o) {
     }
     var nm := escapeident(o.value)
     var fn := escapestring2(o.path)
-    var modg := "module_" ++ snm
-    out("  if ({modg} == NULL)")
-    if (staticmodules.contains(nm)) then {
-        out("    {modg} = {modg}_init();")
+    var modg := "module_" ++ escapeident(o.path)
+    var modgn := "module_" ++ nm
+    var modgs := "module_" ++ snm
+    out("  if ({modgn} == NULL)")
+    if (staticmodules.contains(o.path)) then {
+        out("    {modgn} = {modg}_init();")
     } else {
-        out("    {modg} = dlmodule(\"{fn}\");")
+        out("    {modgn} = dlmodule(\"{fn}\");")
     }
     out("  Object *var_{nm} = alloc_var();")
-    out("  *var_{nm} = {modg};")
+    out("  *var_{nm} = {modgn};")
     modules.add(nm)
     globals.push("Object {modg}_init();")
-    globals.push("Object {modg};")
+    globals.push("Object {modgn};")
     auto_count := auto_count + 1
     o.register := "none"
 }
