@@ -1920,6 +1920,7 @@ method compile(vl, of, mn, rm, bt) {
         for (staticmodules) do {sm->
             tfp.write(" {sm}\n")
         }
+        tfp.write("path:\n {modname}\n")
         tfp.close
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
