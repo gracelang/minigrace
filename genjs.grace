@@ -768,9 +768,17 @@ method compileoctets(o) {
 }
 method compileimport(o) {
     out("// Import of " ++ o.value.value)
-    var con
-    var nm := escapestring(o.value.value)
-    out("  var " ++ varf(nm) ++ " = do_import(\"{nm}\", gracecode_{nm});")
+    var snm := ""
+    for (o.path) do {c->
+        if (c == "/") then {
+            snm := ""
+        } else {
+            snm := snm ++ c
+        }
+    }
+    var nm := escapestring(o.value)
+    var fn := escapestring(o.path)
+    out("  var " ++ varf(nm) ++ " = do_import(\"{fn}\", gracecode_{snm});")
     o.register := "undefined"
 }
 method compilereturn(o) {
