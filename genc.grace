@@ -29,6 +29,7 @@ var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
 def importnames = collections.map.new
+def gctCache = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -1531,25 +1532,42 @@ method findPlatformUses(vals) {
         v.accept(vis)
     }
 }
-method addTransitiveImports(filepath) {
+method parseGCT(filepath) {
     var path := filepath.replace(".gcn")with(".gct")
+    if (gctCache.contains(path)) then {
+        return gctCache.get(path)
+    }
+    def data = collections.map.new
     if (io.exists(path)) then {
         def tfp = io.open(path, "r")
-        var mods := false
+        var key := ""
         while {!tfp.eof} do {
             def line = tfp.getline
-            if (mods) then {
-                if (line.at(1) == " ") then {
-                    checkimport(line.substringFrom(2)to(line.size))
-                } else {
-                    mods := false
-                }
-            }
-            if (line == "modules:") then {
-                mods := true
+            if (line.at(1) != " ") then {
+                key := line.substringFrom(1)to(line.size-1)
+                data.put(key, collections.list.new)
+            } else {
+                data.get(key).push(line.substringFrom(2)to(line.size))
             }
         }
         tfp.close
+    }
+    gctCache.put(path, data)
+    return data
+}
+method addTransitiveImports(filepath, epath) {
+    def data = parseGCT(filepath)
+    if (data.contains("modules")) then {
+        for (data.get("modules")) do {m->
+            checkimport(m)
+        }
+    }
+    if (data.contains("path")) then {
+        def path = data.get("path").first
+        if (path != epath) then {
+            util.syntax_error("Imported module '{epath}' compiled with"
+                ++ " different path: uses {path}.")
+        }
     }
 }
 method checkimport(nm) {
@@ -1581,7 +1599,7 @@ method checkimport(nm) {
         exists := true
         linkfiles.push("{sys.execPath}/{nm}.gcn")
         staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/{nm}.gcn")
+        addTransitiveImports("{sys.execPath}/{nm}.gcn", nm)
     } elseif (io.exists("{sys.execPath}/../lib/minigrace/{nm}.gcn") && {
             !io.exists("{nm}.grace")
         }) then {
@@ -1589,12 +1607,12 @@ method checkimport(nm) {
         // but not modules compiled from Grace code here.
         exists := true
         linkfiles.push("{sys.execPath}/../lib/minigrace/{nm}.gcn")
-        addTransitiveImports("{sys.execPath}/../lib/minigrace/{nm}.gcn")
+        addTransitiveImports("{sys.execPath}/../lib/minigrace/{nm}.gcn", nm)
     } elseif (io.exists(nm ++ ".gcn").andAlso {!util.importDynamic}) then {
         if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
             exists := true
             linkfiles.push(nm ++ ".gcn")
-            addTransitiveImports(nm ++ ".gcn")
+            addTransitiveImports(nm ++ ".gcn", nm)
             staticmodules.add(nm)
         }
     }
@@ -1622,7 +1640,7 @@ method checkimport(nm) {
                 cmd := cmd ++ " --import-dynamic --dynamic-module"
             }
             if (util.recurse) then {
-                spawnSubprocess(nm, cmd, nm ++ ".gcn")
+                spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm])
             }
             exists := true
             if (!util.importDynamic) then {
@@ -1682,7 +1700,7 @@ method compile(vl, of, mn, rm, bt) {
             if (!p.success) then {
                 imperrors.push(nm)
             } else {
-                addTransitiveImports(pth)
+                addTransitiveImports(pth[1], pth[2])
             }
         }
         if (imperrors.size > 0) then {
