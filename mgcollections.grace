@@ -199,7 +199,7 @@ class set.new(*a) {
 class map.new {
     var size := 0
     var inner := PrimitiveArray.new(8)
-    def unused = object { var unused := true }
+    def unused = object { var unused := true ; def key = self }
     for (0..(inner.size-1)) do {i->
         inner.at(i)put(unused)
     }
