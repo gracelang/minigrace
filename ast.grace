@@ -1308,15 +1308,14 @@ class varDecNode.new(name', val', dtype') {
         s
     }
 }
-class importNode.new(name) {
+class importNode.new(path', name) {
     def kind = "import"
     def value = name
+    def path = path'
     var register := ""
     def line = util.linenum
     method accept(visitor : ASTVisitor) {
-        if (visitor.visitImport(self)) then {
-            self.value.accept(visitor)
-        }
+        visitor.visitImport(self)
     }
     method pretty(depth) {
         var spc := ""
@@ -1325,12 +1324,12 @@ class importNode.new(name) {
         }
         var s := "Import"
         s := s ++ "\n"
-        s := s ++ spc ++ self.value.pretty(depth + 1)
+        s := s ++ "{spc}Path: {self.path}\n"
+        s := s ++ "{spc}Identifier: {self.value}\n"
         s
     }
     method toGrace(depth : Number) -> String {
-        var s := "import " ++ self.value.toGrace(depth + 1)
-        s
+        "import \"{self.path}\" as {self.value}"
     }
 }
 class returnNode.new(expr) {

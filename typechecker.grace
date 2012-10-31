@@ -1402,7 +1402,7 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
             tmp.dtype := DynamicType
-            bindName(e.value.value, tmp)
+            bindName(e.value, tmp)
         }
     }
     for (lst) do {e->

@@ -1661,10 +1661,19 @@ method methodsignature(sameline) {
 method doimport {
     if (accept("keyword") && (sym.value == "import")) then {
         next
+        expect("string")
+        pushstring
+        def p = values.pop
         expect("identifier")
-        identifier
-        var p := values.pop
-        var o := ast.importNode.new(p)
+        if (sym.value != "as") then {
+            util.syntax_error("unexpected token {sym.kind}:{sym.value}; "
+                ++ "expected 'as'.")
+        }
+        next
+        expect("identifier")
+        pushidentifier
+        def n = values.pop
+        def o = ast.importNode.new(p.value, n.value)
         values.push(o)
     }
 }

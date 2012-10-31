@@ -1273,11 +1273,19 @@ method compileoctets(o) {
     auto_count := auto_count + 1
 }
 method compileimport(o) {
-    out("// Import of " ++ o.value.value)
+    out("// Import of {o.path} as {o.value}")
     var con
-    var nm := escapeident(o.value.value)
-    var fn := escapestring2(o.value.value)
-    var modg := "module_" ++ nm
+    var snm := ""
+    for (o.path) do {c->
+        if (c == "/") then {
+            snm := ""
+        } else {
+            snm := snm ++ c
+        }
+    }
+    var nm := escapeident(o.value)
+    var fn := escapestring2(o.path)
+    var modg := "module_" ++ snm
     out("  if ({modg} == NULL)")
     if (staticmodules.contains(nm)) then {
         out("    {modg} = {modg}_init();")
@@ -1622,7 +1630,7 @@ method compile(vl, of, mn, rm, bt) {
         log_verbose("checking imports.")
         for (values) do { v ->
             if (v.kind == "import") then {
-                var nm := v.value.value
+                var nm := v.path
                 checkimport(nm)
             }
         }
