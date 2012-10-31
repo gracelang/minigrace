@@ -907,7 +907,7 @@ stderr.methods.close = function() {};
 stdin.methods.close = function() {};
 function gracecode_io() {
     this.methods.output = function() {
-        return this._output;        
+        return this._output;
     };
     this._output = stdout;
     this.methods.input = function() {
@@ -918,6 +918,18 @@ function gracecode_io() {
         return this._error;        
     };
     this._error = stderr;
+    this.methods.exists = function() {
+        return new GraceBoolean(false);
+    }
+    this.methods.open = function() {
+        var o = new GraceObject();
+        o.methods['write'] = function() {};
+        o.methods['close'] = function() {};
+        return o;
+    };
+    this.methods.realpath = function(junk, x) {
+        return x;
+    };
     return this;
 }
 
@@ -931,6 +943,18 @@ function gracecode_sys() {
     };
     this.methods.exit = function() {
         throw "SystemExit";
+    };
+    this.methods.execPath = function() {
+        return new GraceString("./minigrace");
+    };
+    this.methods.environ = function() {
+        var o = new GraceObject();
+        o.methods['at'] = function() {return new GraceString("");};
+        o.methods['[]'] = o.methods['at'];
+        o.methods['at()put'] = function() {return new GraceBoolean(true);};
+        o.methods['[]:='] = o.methods['at()put'];
+        o.methods['contains'] = function() {return new GraceBoolean(false);};
+        return o;
     };
     return this;
 }
