@@ -28,6 +28,7 @@ var bblock := "entry"
 var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
+def importnames = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -904,12 +905,16 @@ method compileidentifier(o) {
         o.register := "ellipsis{auto_count}"
         auto_count := auto_count + 1
     } else {
-        name := escapestring2(name)
-        if (modules.contains(name)) then {
-            o.register := "module_" ++ name
+        if (importnames.contains(name)) then {
+            o.register := importnames.get(name)
         } else {
-            usedvars.push(name)
-            o.register := "*var_{name}"
+            name := escapestring2(name)
+            if (modules.contains(name)) then {
+                o.register := "module_" ++ name
+            } else {
+                usedvars.push(name)
+                o.register := "*var_{name}"
+            }
         }
     }
 }
@@ -1288,17 +1293,18 @@ method compileimport(o) {
     var modg := "module_" ++ escapeident(o.path)
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
-    out("  if ({modgn} == NULL)")
+    importnames.put(nm, modg)
+    out("  if ({modg} == NULL)")
     if (staticmodules.contains(o.path)) then {
-        out("    {modgn} = {modg}_init();")
+        out("    {modg} = {modg}_init();")
     } else {
-        out("    {modgn} = dlmodule(\"{fn}\");")
+        out("    {modg} = dlmodule(\"{fn}\");")
     }
     out("  Object *var_{nm} = alloc_var();")
-    out("  *var_{nm} = {modgn};")
+    out("  *var_{nm} = {modg};")
     modules.add(nm)
     globals.push("Object {modg}_init();")
-    globals.push("Object {modgn};")
+    globals.push("Object {modg};")
     auto_count := auto_count + 1
     o.register := "none"
 }
