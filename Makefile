@@ -111,11 +111,12 @@ clean:
 	rm -f $(SOURCEFILES:.grace=.gco)
 	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
 	rm -f $(SOURCEFILES:.grace=.gso) minigrace.gso
+	rm -f $(SOURCEFILES:.grace=.gct) minigrace.gct
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
-	( cd c ; rm -f *.gcn *.c *.h *.grace minigrace unicode.gso gracelib.o )
+	( cd c ; rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o )
 	rm -f minigrace.gco minigrace
 
 known-good/%:

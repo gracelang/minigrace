@@ -5,6 +5,7 @@
 *.gco
 *.gso
 *.gcn
+*.gct
 *.c
 java/*.java
 tests/*.java
