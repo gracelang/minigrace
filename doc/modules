@@ -35,7 +35,8 @@ of lists as argument, where the elements of the top-level list are lists
 of the arguments to provide each part of the name.
 
 A sample use might be:
-  platform.mirrors.reflect(1).getMethod("+").request([[2]]) == 3
+  import "mirrors" as m
+  m.reflect(1).getMethod("+").request([[2]]) == 3
 
 This module is only available in the native compiler.
 
@@ -109,7 +110,9 @@ CurlEasy objects support these methods:
     Wraps CURLOPT_FOLLOWLOCATION.
 
 A sample use might be:
-  def req = platform.curl.easy
+  import "io" as io
+  import "curl" as curl
+  def req = curl.easy
   req.url := "http://example.com/"
   req.onReceive {d->
     io.output.write(d.decode("utf-8"))
