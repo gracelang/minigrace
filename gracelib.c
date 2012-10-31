@@ -2598,6 +2598,46 @@ Object module_io_init() {
     gc_root(o);
     return o;
 }
+ClassData EnvironObject;
+Object environObject;
+Object environObject_at(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *s = grcstring(args[0]);
+    char *v = getenv(s);
+    if (v)
+        return alloc_String(v);
+    return alloc_String("");
+}
+Object environObject_atPut(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *s = grcstring(args[0]);
+    char *v = grcstring(args[1]);
+    setenv(s, v, 1);
+    return alloc_Boolean(1);
+}
+Object environObject_contains(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *s = grcstring(args[0]);
+    char *v = getenv(s);
+    if (v)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
+Object alloc_environObject() {
+    if (environObject)
+        return environObject;
+    if (!EnvironObject) {
+        EnvironObject = alloc_class("Environ", 5);
+        add_Method(EnvironObject, "at", &environObject_at);
+        add_Method(EnvironObject, "[]", &environObject_at);
+        add_Method(EnvironObject, "at()put", &environObject_atPut);
+        add_Method(EnvironObject, "[]:=", &environObject_atPut);
+        add_Method(EnvironObject, "contains", &environObject_contains);
+    }
+    environObject = alloc_obj(0, EnvironObject);
+    gc_root(environObject);
+    return environObject;
+}
 Object sys_argv(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct SysModule *so = (struct SysModule*)self;
@@ -2661,18 +2701,25 @@ Object sys_execPath(Object self, int nparts, int *argcv,
     char *dn = dirname(epm);
     return alloc_String(dn);
 }
+Object sys_environ(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    if (!environObject)
+        environObject = alloc_environObject();
+    return environObject;
+}
 void sys__mark(struct SysModule *o) {
     gc_mark(o->argv);
 }
 Object module_sys_init() {
     if (sysmodule != NULL)
         return sysmodule;
-    SysModule = alloc_class2("Module<sys>", 5, (void*)*sys__mark);
+    SysModule = alloc_class2("Module<sys>", 6, (void*)*sys__mark);
     add_Method(SysModule, "argv", &sys_argv);
     add_Method(SysModule, "cputime", &sys_cputime);
     add_Method(SysModule, "elapsed", &sys_elapsed);
     add_Method(SysModule, "exit", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
+    add_Method(SysModule, "environ", &sys_environ);
     Object o = alloc_obj(sizeof(Object), SysModule);
     struct SysModule *so = (struct SysModule*)o;
     so->argv = argv_List;
