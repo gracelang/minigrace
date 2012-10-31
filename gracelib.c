@@ -1923,6 +1923,14 @@ Object Float64_Div(Object self, int nparts, int *argcv,
         b = integerfromAny(other);
     return alloc_Float64(a/b);
 }
+Object Float64_Exp(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    Object other = args[0];
+    assertClass(other, Number);
+    double a = *(double*)self->data;
+    double b = *(double*)other->data;
+    return alloc_Float64(pow(a,b));
+}
 Object Float64_Mod(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
@@ -2083,11 +2091,12 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 26, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 27, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
         add_Method(Number, "/", &Float64_Div);
+        add_Method(Number, "^", &Float64_Exp);
         add_Method(Number, "%", &Float64_Mod);
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);

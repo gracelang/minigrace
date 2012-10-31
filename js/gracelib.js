@@ -140,6 +140,10 @@ GraceNum.prototype = {
             var s = this._value - other._value;
             return new GraceNum(s)
         },
+        "^": function(argcv, other) {
+            var s = Math.pow(this._value, other._value);
+            return new GraceNum(s)
+        },
         "%": function(argcv, other) {
             var s = this._value % other._value;
             return new GraceNum(s)

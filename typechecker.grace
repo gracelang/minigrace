@@ -28,6 +28,7 @@ def NumberType = ast.typeNode.new("Number", [
     ast.methodTypeNode.new("*", [ast.signaturePart.new("*", [NumberOther])], NumberIdentifier),
     ast.methodTypeNode.new("-", [ast.signaturePart.new("-", [NumberOther])], NumberIdentifier),
     ast.methodTypeNode.new("/", [ast.signaturePart.new("/", [NumberOther])], NumberIdentifier),
+    ast.methodTypeNode.new("^", [ast.signaturePart.new("^", [NumberOther])], NumberIdentifier),
     ast.methodTypeNode.new("%", [ast.signaturePart.new("%", [NumberOther])], NumberIdentifier),
     ast.methodTypeNode.new("==", [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier),
     ast.methodTypeNode.new("!=", [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier),
