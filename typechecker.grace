@@ -673,8 +673,8 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "boolean") then {
         return [arg, []]
     }
-    if ((arg.kind == "call") && (arg.value.value.substringFrom(1)to(6)
-        == "prefix")) then {
+    if ((arg.kind == "call").andAlso {arg.value.value.substringFrom(1)to(6)
+        == "prefix"}) then {
         return [arg, []]
     }
     if (arg.kind == "call") then {
