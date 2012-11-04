@@ -1774,6 +1774,7 @@ method dotype {
             for (ot.intersectionTypes) do {ut->
                 nt.intersectionTypes.push(ut)
             }
+            nt.generics := gens
             values.push(nt)
         }
     }
