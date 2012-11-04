@@ -442,6 +442,12 @@ class typeNode.new(name', methods') {
         }
         var s := "Type\n"
         s := "{s}{spc}Name: {value}\n"
+        if (generics.size > 0) then {
+            s := "{s}{spc}Generic parameters:\n"
+            for (generics) do {ut->
+                s := "{s}{spc}  {ut.value}\n"
+            }
+        }
         if (unionTypes.size > 0) then {
             s := "{s}{spc}Union of:\n"
             for (unionTypes) do {ut->
