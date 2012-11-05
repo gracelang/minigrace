@@ -9,8 +9,8 @@ size_t mggetline(char **lineptr, size_t *n, FILE *stream)
         *lineptr = malloc(128);
         *n = 128;
     }
+    c = fgetc(stream);
     while (c != '\n') {
-        c = fgetc(stream);
         if (c == EOF)
             break;
         (*lineptr)[chars++] = (unsigned char)c;
