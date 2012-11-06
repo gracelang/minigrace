@@ -1593,6 +1593,8 @@ Object String_substringFrom_to(Object self,
     if (en > mysize)
         en = mysize;
     int cl = en - st;
+    if (cl < 0)
+        return alloc_String("");
     char buf[cl * 4 + 1];
     char *bufp = buf;
     buf[0] = 0;
@@ -2292,7 +2294,8 @@ Object File_getline(Object self, int nparts, int *argcv,
     } else {
         str = alloc_String("");
     }
-    free(line);
+    if (line)
+        free(line);
     return str;
 }
 Object File_read(Object self, int nparts, int *argcv,
