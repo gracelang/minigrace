@@ -1538,6 +1538,7 @@ method parseGCT(filepath) {
         return gctCache.get(path)
     }
     def data = collections.map.new
+    util.runOnNew {} else { return data }
     if (io.exists(path)) then {
         def tfp = io.open(path, "r")
         var key := ""

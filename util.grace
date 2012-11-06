@@ -26,7 +26,7 @@ var cLines := []
 var lines := []
 
 method runOnNew(b)else(e) {
-    if ((__compilerRevision != "672d7488e743e6714989f56a577f31a70c0f6e5e")
+    if ((__compilerRevision != "d5f6522d5c5e3f5b1f40d77502a66954955d0e5a")
         && (__compilerRevision != false)) then {
         b.apply
     } else {
