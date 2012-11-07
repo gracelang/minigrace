@@ -1567,7 +1567,7 @@ method methodsignature(sameline) {
     if (accept("lgeneric")) then {
         // Generic!
         next
-        genericIdents := mgcollections.list.new
+        genericIdents := part.generics
         while {accept("identifier")} do {
             identifier
             genericIdents.push(values.pop)

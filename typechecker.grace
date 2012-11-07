@@ -1084,6 +1084,14 @@ method resolveIdentifiers(node) {
                 for (mt.signature.indices) do { partnr ->
                     var part := mt.signature[partnr]
                     var tmpparams := []
+                    for (part.generics) do { e ->
+                        def btmp = Binding.new("type")
+                        def nom = ast.typeNode.new(e.value, [])
+                        nom.nominal := true
+                        subtype.addType(nom)
+                        btmp.value := nom
+                        bindName(e.value, btmp)
+                    }
                     for (part.params) do { e ->
                         e.dtype := resolveIdentifiers(e.dtype)
                         bindIdentifier(e)

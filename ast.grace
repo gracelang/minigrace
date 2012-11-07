@@ -1394,6 +1394,7 @@ method signaturePart {
                 var name := ""
                 var params := []
                 var vararg := false
+                var generics := []
                 if (values.size > 0) then {
                     name := values[1]
                 }
