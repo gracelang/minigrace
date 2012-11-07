@@ -26,6 +26,10 @@ then
     then
         EXECUTOR="./"
         TYPE="tograce"
+    elif [ "$EXECUTOR" = "repl" ]
+    then
+        EXECUTOR="./"
+        TYPE="repl"
     else
         EXECUTOR="$EXECUTOR "
     fi
@@ -85,10 +89,21 @@ do
     NUM_TESTS=$((NUM_TESTS + 1))
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
-        if $GRACE -XDefaultVisibility=public --make --native "$tcase" > test-$$.log 2>&1
+        if [ "$TYPE" = "repl" ]
         then
-            execname="${tcase%%.*}"
-            $EXECUTOR"$execname" > test-$$.out
+            COMMAND="cat $tcase | $GRACE --interactive"
+        else
+            COMMAND="$GRACE -XDefaultVisibility=public --make --native $tcase"
+        fi
+        if eval "$COMMAND" > test-$$.log 2>&1
+        then
+            if [ "$TYPE" = "repl" ]
+            then
+                cat $tcase | $GRACE --interactive > test-$$.out
+            else
+                execname="${tcase%%.*}"
+                $EXECUTOR"$execname" > test-$$.out
+            fi
             if diff test-$$.out ${tcase%_test.grace}.out
             then
                 NUM_PASS=$((NUM_PASS + 1))
@@ -106,7 +121,13 @@ do
             fail "compile error"
         fi
     else
-        if $GRACE --make --native "$tcase" > test-$$.log 2>&1
+        if [ "$TYPE" = "repl" ]
+        then
+            COMMAND="cat $tcase | $GRACE --interactive"
+        else
+            COMMAND="$GRACE --make --native $tcase"
+        fi
+        if eval "$COMMAND" > test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
             NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))

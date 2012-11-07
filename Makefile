@@ -102,6 +102,8 @@ test: minigrace
 fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
+repltest: minigrace
+	./tests/harness "../minigrace" tests repl
 backendtests: test
 
 clean:
