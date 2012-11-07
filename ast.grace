@@ -2046,7 +2046,7 @@ class evalVisitor.new {
                                         _env.put("__block{myblockc}", argobj)
                                         def id = memberNode.new("apply",
                                                                 identifierNode.new("__block{myblockc}",
-                                                                                false))
+                                                                                   false))
                                         def callnode = callNode.new(id, [callWithPart.new(id.value)])
                                         visitCall(callnode)
                                         no := _result.val
@@ -2339,8 +2339,9 @@ class evalVisitor.new {
             return true
         }
 
-        def name = node.value.value
-        def mod = mirrors.loadDynamicModule(name)
+        def name = node.value
+        def path = node.path
+        def mod = mirrors.loadDynamicModule(path)
         def o = replObj.new("replvar", mod)
         _env.put(name, o)
 
