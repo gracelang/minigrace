@@ -1528,7 +1528,7 @@ method parsempmndecrest(tm, sameline) {
             nxt := values.pop
             if (accept("colon")) then {
                 next
-                pushidentifier
+                dotyperef
                 var tp := values.pop
                 nxt.dtype := tp
             }
