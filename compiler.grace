@@ -100,6 +100,16 @@ if (util.interactive) then {
                         } elseif (util.errno == 0) then {
                             for (vals) do { val ->
                                 val.accept(visitor)
+                                def result = visitor.getResult
+                                if ((false != result) && (true != result))
+                                    then {
+                                    def res = visitor.getResult.val
+                                    if (nothing != res) then {
+                                        if (io.output.isatty) then {
+                                            print("=> {res}")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
