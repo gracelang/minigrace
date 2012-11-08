@@ -1675,17 +1675,11 @@ method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
     values := vl
-    var nummethods := 2
+    var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
-            nummethods := nummethods + 2
+            nummethods := nummethods + 1
         } elseif (v.kind == "method") then {
-            nummethods := nummethods + 1
-        } elseif (v.kind == "defdec") then {
-            nummethods := nummethods + 1
-        } elseif (v.kind == "class") then {
-            nummethods := nummethods + 1
-        } elseif (v.kind == "type") then {
             nummethods := nummethods + 1
         }
     }
