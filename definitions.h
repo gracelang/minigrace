@@ -23,7 +23,7 @@ size_t mggetline(char **lineptr, size_t *n, FILE *stream)
     (*lineptr)[chars] = 0;
     if (chars == 0)
         return -1;
-    return chars;
+    return chars + 1;
 }
 #else
 ;
