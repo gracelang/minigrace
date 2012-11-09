@@ -12,6 +12,7 @@ def genjs = platform.genjs
 def buildinfo = platform.buildinfo
 def subtype = platform.subtype
 def mgcollections = platform.mgcollections
+def interactive = platform.interactive
 
 util.parseargs
 
@@ -37,7 +38,7 @@ method iscontinued {
 if (util.interactive) then {
     var cont := true
     var tcenv := HashMap.new
-    var visitor := ast.evalVisitor.new
+    var visitor := interactive.evalVisitor.new
     var ivalues := []
     var completeline := ""
     while { cont && !io.input.eof } do {
