@@ -1064,6 +1064,9 @@ function gracecode_util() {
         debug: function(argcv, s) {
             dbg(s._value);
         },
+        interactive: function(argcv) {
+            return new GraceBoolean(false);
+        },
         type_error: function(argcv, s) {
             stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
                 this._linepos._value + ": type error: " + s._value;
@@ -1157,6 +1160,10 @@ function gracecode_util() {
     this._lines = new GraceList([]);
     this._cLines = new GraceList([]);
     util_module = this;
+    return this;
+}
+var interactive_module = false;
+function gracecode_interactive() {
     return this;
 }
 function checkmethodcall(func, methname, obj, args) {
