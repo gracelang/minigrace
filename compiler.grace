@@ -101,7 +101,8 @@ if (util.interactive) then {
                             for (vals) do { val ->
                                 val.accept(visitor)
                                 def result = visitor.getResult
-                                if ((false != result) && (true != result))
+                                if ((false != result) && (true != result)
+                                    && (val.kind != "import"))
                                     then {
                                     def res = visitor.getResult.val
                                     if (nothing != res) then {

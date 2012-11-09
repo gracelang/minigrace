@@ -1940,10 +1940,10 @@ class evalVisitor.new {
             // non-builtin method
             var inobj := resolve(in)
             def namelen = name.size
-            if ((inobj.val == false) && (name == "&&")) then {
+            if ((false == inobj.val) && (name == "&&")) then {
                 // short-circuit '&&'
                 _result := inobj
-            } elseif ((inobj.val == true) && (name == "||")) then {
+            } elseif ((true == inobj.val) && (name == "||")) then {
                 // short-circuit '||'
                 _result := inobj
             } elseif (findmethod(name, inobj) != false) then {
