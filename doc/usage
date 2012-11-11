@@ -20,6 +20,11 @@ To get more output, describing what it is doing while it goes, use:
   ./minigrace --verbose [...]
   This option can be used in combination with any of the others.
 
+To launch an interactive read-eval-print interpreter, use:
+  ./minigrace --interactive
+  The interpreter supports much, but not all, of the language
+  supported by the compiler.
+
 To compile to JavaScript instead of native code, use:
   ./minigrace --target js -o file.js file.grace
 

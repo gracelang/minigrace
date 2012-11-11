@@ -309,6 +309,7 @@ method printhelp {
     print "  --run            Compile FILE and execute the program [default]"
     print "  --source         Compile FILE to source, but no further"
     print "  --dynamic-module Compile FILE as a dynamic module (experimental!)"
+    print "  --interactive    Launch interactive read-eval-print interpreter"
     print ""
     print "Options:"
     print "  --verbose        Give more detailed output"
