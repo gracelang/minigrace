@@ -1,0 +1,14 @@
+#!/bin/bash
+
+cd "$(git rev-parse --show-toplevel)"
+
+rev=$1
+[ "$rev" ] || rev=HEAD
+if [ "$rev" = "STABLE" ]
+then
+    rev=$(awk -F= '/STABLE=/ { print $2 }' Makefile)
+fi
+gen=$(tools/git-calculate-generation "$rev")
+ver=$(git show --format=%B $rev:util.grace | sed -n 's/var versionNumber := "\([^"]*\)"/\1/p')
+
+echo "$ver.$gen"
