@@ -494,11 +494,15 @@ class evalVisitor.new {
                 _result := findvar(name, inobj)
             } elseif ((name[namelen - 1] == ":") && (name[namelen] == "=") &&
                       (findvar(name.substringFrom(1)to(namelen - 2), inobj) != false)) then {
-                // variable assignment
+                // variable assignment (bind)
                 def o = findvar(name.substringFrom(1)to(namelen - 2), inobj)
                 def newvar = resolve(node.with[1].args[1])
-                o.val := newvar.val
-                _result := newvar
+                o.val      := newvar.val
+                o.env      := newvar.env
+                o.name     := newvar.name
+                o.classobj := newvar.classobj
+                o.superobj := newvar.superobj
+                _result := o
             } else {
                 // compiled/native method
                 var parts := []
@@ -721,49 +725,25 @@ class evalVisitor.new {
             return true
         }
 
-        var o
+        // Transform the bind operation into a method call, so things like
+        // overridden methods and binds on native objects can be handled
+        // transparently by the visitCall() method.
+        var membernode
         if (node.dest.kind == "member") then {
-            def in = resolve(node.dest.in)
-            if (findmethod("{node.dest.value}:=", in) != false) then {
-                def membernode = ast.memberNode.new("{node.dest.value}:=",
-                                                node.dest.in)
-                def callnode = ast.callNode.new(
-                                   membernode,
-                                   [ast.callWithPart.new(
-                                        "{node.dest.value}:=",
-                                        [node.value]
-                                   )]
-                               )
-                visitCall(callnode)
-                return false
-            }
-            o := in.env.get(node.dest.value)
+            membernode := ast.memberNode.new("{node.dest.value}:=",
+                                             node.dest.in)
         } else {
-            if (findmethod("{node.dest.value}:=",
-                           _env.get("self")) != false) then {
-                def membernode = ast.memberNode.new("{node.dest.value}:=",
-                                                ast.identifierNode.new("self", false))
-                def callnode = ast.callNode.new(
-                                   membernode,
-                                   [ast.callWithPart.new(
-                                        "{node.dest.value}:=",
-                                        [node.value]
-                                   )]
-                               )
-                visitCall(callnode)
-                return false
-            }
-            o := _env.get(node.dest.value)
+            membernode := ast.memberNode.new("{node.dest.value}:=",
+                              ast.identifierNode.new("self", false)
+                          )
         }
-        def newobj = resolve(node.value)
-
-        o.val      := newobj.val
-        o.env      := newobj.env
-        o.name     := newobj.name
-        o.classobj := newobj.classobj
-        o.superobj := newobj.superobj
-
-        _result := o
+        def callnode = ast.callNode.new(membernode,
+                                        [ast.callWithPart.new(
+                                             "{node.dest.value}:=",
+                                             [node.value]
+                                        )]
+                       )
+        visitCall(callnode)
 
         return false
     }
