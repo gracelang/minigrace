@@ -524,10 +524,15 @@ class evalVisitor.new {
                                         def myblockc = blockc
                                         blockc := blockc + 1
                                         _env.put("__block{myblockc}", argobj)
-                                        def id = ast.memberNode.new("apply",
-                                                                ast.identifierNode.new("__block{myblockc}",
-                                                                                   false))
-                                        def callnode = ast.callNode.new(id, [ast.callWithPart.new(id.value)])
+                                        def id = ast.memberNode.new(
+                                                     "apply",
+                                                     ast.identifierNode.new("__block{myblockc}",
+                                                                            false)
+                                                 )
+                                        def callnode = ast.callNode.new(
+                                                           id,
+                                                           [ast.callWithPart.new(id.value)]
+                                                       )
                                         visitCall(callnode)
                                         no := _result.val
                                     }
