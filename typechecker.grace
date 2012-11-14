@@ -978,10 +978,12 @@ method resolveIdentifiers(node) {
         return tmp2
     }
     if (node.kind == "inherits") then {
-        def csupertype = expressionType(resolveIdentifiers(node.value))
+        tmp := resolveIdentifiers(node.value)
+        def csupertype = expressionType(tmp)
         for (csupertype.methods) do { m->
             scopes.last.put(m.value, Binding.new("method"))
         }
+        return ast.inheritsNode.new(tmp)
     }
     if (node.kind == "class") then {
         pushScope
