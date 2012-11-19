@@ -10,6 +10,8 @@ Object visitor = NULL;
 
 Object module_ast_init();
 Object module_ast;
+Object module_interactive_init();
+Object module_interactive;
 
 Object Object_asString(Object, int, int*, Object*, int);
 
@@ -28,7 +30,7 @@ Object trampoline(Object self, Object realself, int nparts, int *argcv,
     Object objname  = callmethod(callinfo, "at", 1, largcv, &idx1);
     Object methname = callmethod(callinfo, "at", 1, largcv, &idx2);
 
-    Object replobjclass = callmethod(module_ast, "replObj", 0, NULL, NULL);
+    Object replobjclass = callmethod(module_interactive, "replObj", 0, NULL, NULL);
     Object kind = alloc_String("value");
     Object roargs[] = {kind, self};
     int roargcv[] = {2};
@@ -143,5 +145,7 @@ Object module_repl_init() {
     gc_root(repl_module);
     if (module_ast == NULL)
         module_ast = module_ast_init();
+    if (module_interactive == NULL)
+        module_interactive = module_interactive_init();
     return o;
 }
