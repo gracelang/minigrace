@@ -69,7 +69,8 @@ class evalVisitor.new {
     method resolve(val) {
         def result = match(val)
             case { v : {kind} ->
-                if ((v.kind == "replvar") || (v.kind == "replobj")) then {
+                if ((v.kind == "replvar") || (v.kind == "replobj") ||
+                    (v.kind == "replblock")) then {
                     val
                 } elseif (v.kind == "identifier") then {
                     resolveidentifier(val)
@@ -88,6 +89,8 @@ class evalVisitor.new {
             return replObj.new("replvar", true)
         } elseif (v.value == "false") then {
             return replObj.new("replvar", false)
+        } elseif (v.value == "nothing") then {
+            return replObj.new("replvar", nothing)
         } else {
             // _env may not be the current object env, for example in closures
             if (_env.contains(v.value)) then {
@@ -131,31 +134,35 @@ class evalVisitor.new {
         var numMethods := 0
         var pos := 1
 
-        for (o.val.value) do { e ->
-            if (e.kind == "vardec") then {
-                numMethods := numMethods + 1
+        numMethods := o.classobj.methods.size
+        if (o.kind == "replobj") then {
+            for (o.val.value) do { e ->
+                if (e.kind == "defdec") then {
+                    numMethods := numMethods + 1
+                } elseif (e.kind == "vardec") then {
+                    numMethods := numMethods + 2
+                }
             }
-            numMethods := numMethods + 1
-            numFields := numFields + 1
-        }
-        if (numFields == 3) then {
-            numFields := 4
         }
 
         var no := repl.createobject(numMethods, numFields)
 
-        for (o.val.value) do { e ->
-            if (e.kind == "method") then {
-                repl.addmethod(no, o.name, e.value.value, pos)
-                pos := pos + 1
-            } elseif (e.kind == "defdec") then {
-                repl.addmethod(no, o.name, e.name.value, pos)
-                pos := pos + 1
-            } elseif (e.kind == "vardec") then {
-                repl.addmethod(no, o.name, e.name.value, pos)
-                pos := pos + 1
-                repl.addmethod(no, o.name, e.name.value ++ ":=", pos)
-                pos := pos + 1
+        for (o.classobj.methods) do { m ->
+            var mval := o.classobj.methods.get(m)
+            repl.addmethod(no, o.name, mval.val.value.value, pos)
+            pos := pos + 1
+        }
+        if (o.kind == "replobj") then {
+            for (o.val.value) do { e ->
+                if (e.kind == "defdec") then {
+                    repl.addmethod(no, o.name, e.name.value, pos)
+                    pos := pos + 1
+                } elseif (e.kind == "vardec") then {
+                    repl.addmethod(no, o.name, e.name.value, pos)
+                    pos := pos + 1
+                    repl.addmethod(no, o.name, e.name.value ++ ":=", pos)
+                    pos := pos + 1
+                }
             }
         }
 
@@ -254,29 +261,28 @@ class evalVisitor.new {
             return true
         }
 
-        def blockobj = replObj.new("replvar", node, _env)
-        blockobj.classobj := replClass.new
+        def blockobj = replObj.new("replblock", node, _env)
+
+        def myblockc = blockc
+        blockc := blockc + 1
+
+        blockobj.name := "__block{myblockc}"
+        _env.put("__block{myblockc}", blockobj)
+
         def curobjold = _curobj
         _curobj := blockobj
 
         def inblockold = inblock
         inblock := true
 
-        def id = ast.identifierNode.new("_apply", false)
-        var applymeth := ast.methodNode.new(id,
-                                        [ast.signaturePart.new(id, node.params)],
-                                        node.body,
-                                        false)
+        def id = ast.identifierNode.new("apply", false)
+        var applymeth := ast.methodNode.new(
+                             id,
+                             [ast.signaturePart.new(id, node.params)],
+                             node.body,
+                             false)
         applymeth.selfclosure := true
         applymeth.accept(self)
-
-        def id2 = ast.identifierNode.new("apply", false)
-        var applymeth2 := ast.methodNode.new(id2,
-                                         [ast.signaturePart.new(id2, node.params)],
-                                         node.body,
-                                         false)
-        applymeth2.selfclosure := true
-        applymeth2.accept(self)
 
         inblock := inblockold
 
@@ -517,27 +523,30 @@ class evalVisitor.new {
                         if ((argobj.kind == "replobj") &&
                             (name != "==") && (name != "!=")) then {
                             no := createnativeobject(argobj)
+                        } elseif (argobj.kind == "replblock") then {
+                            if ((name == "&&") || (name == "||")) then {
+                                // If this is a boolean call then explicitly
+                                // apply block parameters that were used for
+                                // short-circuiting
+                                def myblockc = blockc
+                                blockc := blockc + 1
+                                _env.put("__block{myblockc}", argobj)
+                                def id = ast.memberNode.new(
+                                             "apply",
+                                             ast.identifierNode.new("__block{myblockc}",
+                                                                    false)
+                                         )
+                                def callnode = ast.callNode.new(
+                                                   id,
+                                                   [ast.callWithPart.new(id.value)]
+                                               )
+                                visitCall(callnode)
+                                no := _result.val
+                            } else {
+                                no := createnativeobject(argobj)
+                            }
                         } else {
-                            match(argobj.val)
-                                case { _ : {kind} ->
-                                    if (argobj.val.kind == "block") then {
-                                        def myblockc = blockc
-                                        blockc := blockc + 1
-                                        _env.put("__block{myblockc}", argobj)
-                                        def id = ast.memberNode.new(
-                                                     "apply",
-                                                     ast.identifierNode.new("__block{myblockc}",
-                                                                            false)
-                                                 )
-                                        def callnode = ast.callNode.new(
-                                                           id,
-                                                           [ast.callWithPart.new(id.value)]
-                                                       )
-                                        visitCall(callnode)
-                                        no := _result.val
-                                    }
-                                }
-                                case { _ -> no := argobj.val }
+                            no := argobj.val
                         }
                         args.push(no)
                     }
