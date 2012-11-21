@@ -27,7 +27,7 @@ mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
 
 curl.gso: curl.c gracelib.h
-	gcc -std=c99 $(UNICODE_LDFLAGS) -lcurl -fPIC -shared -o curl.gso curl.c
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o curl.gso curl.c -lcurl
 
 repl.gso: repl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o repl.gso repl.c

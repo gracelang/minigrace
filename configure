@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 EOT
-    if gcc -o configure-$$-tmp -lcurl configure-$$-tmp.c
+    if gcc -o configure-$$-tmp configure-$$-tmp.c -lcurl
     then
         other_modules=(${other_modules:+"${other_modules[@]}"} curl)
         echo yes

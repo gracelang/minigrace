@@ -30,7 +30,7 @@ gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
 curl.gso: curl.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -lcurl -o curl.gso -shared -fPIC curl.c
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
 
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c

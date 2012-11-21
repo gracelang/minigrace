@@ -1909,10 +1909,10 @@ method compile(vl, of, mn, rm, bt) {
             cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.gcn\" "
                 ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
-                ++ "-lm {dlbit}"
             for (linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }
+            cmd := cmd ++ " -lm {dlbit}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed linking")
                 sys.exit(1)
