@@ -1533,3 +1533,31 @@ method baseVisitor -> ASTVisitor {
     }
 }
 
+method findAnnotation(node, annName) {
+    for (node.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso {
+            ann.value == annName }) then {
+            return object {
+                inherits true
+                def value is public = ann
+            }
+        }
+    }
+    false
+}
+
+method isPublic(node) {
+    if ((node.annotations.size == 0).orElse {
+        findAnnotation(node, "public")}) then {
+        return true
+    }
+    false
+}
+
+method isWritable(node) {
+    if ((node.annotations.size == 0).orElse {
+        findAnnotation(node, "writable")}) then {
+        return true
+    }
+    false
+}

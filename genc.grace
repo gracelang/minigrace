@@ -6,6 +6,7 @@ def util = platform.util
 def buildinfo = platform.buildinfo
 def subtype = platform.subtype
 def mgcollections = platform.mgcollections
+import "xmodule" as xmodule
 
 def collections = mgcollections
 
@@ -29,7 +30,6 @@ var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
 def importnames = collections.map.new
-def gctCache = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -1533,28 +1533,7 @@ method findPlatformUses(vals) {
     }
 }
 method parseGCT(filepath) {
-    var path := filepath.replace(".gcn")with(".gct")
-    if (gctCache.contains(path)) then {
-        return gctCache.get(path)
-    }
-    def data = collections.map.new
-    util.runOnNew {} else { return data }
-    if (io.exists(path)) then {
-        def tfp = io.open(path, "r")
-        var key := ""
-        while {!tfp.eof} do {
-            def line = tfp.getline
-            if (line.at(1) != " ") then {
-                key := line.substringFrom(1)to(line.size-1)
-                data.put(key, collections.list.new)
-            } else {
-                data.get(key).push(line.substringFrom(2)to(line.size))
-            }
-        }
-        tfp.close
-    }
-    gctCache.put(path, data)
-    return data
+    xmodule.parseGCT(filepath.replace(".gcn")with(".gct"))
 }
 method addTransitiveImports(filepath, epath) {
     def data = parseGCT(filepath)
@@ -1675,12 +1654,26 @@ method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
     values := vl
+    def methods = collections.list.new
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
             nummethods := nummethods + 1
+            if (ast.isPublic(v)) then {
+                methods.push(v.name.value)
+                if (ast.isWritable(v)) then {
+                    methods.push(v.name.value ++ ":=")
+                }
+            }
         } elseif (v.kind == "method") then {
             nummethods := nummethods + 1
+            if (ast.isPublic(v)) then {
+                methods.push(v.value.value)
+            }
+        } elseif (v.kind == "def") then {
+            if (ast.isPublic(v)) then {
+                methods.push(v.name.value)
+            }
         }
     }
     outfile := of
@@ -1944,6 +1937,10 @@ method compile(vl, of, mn, rm, bt) {
             tfp.write(" {sm}\n")
         }
         tfp.write("path:\n {modname}\n")
+        tfp.write("methods:\n")
+        for (methods) do {methodName->
+            tfp.write(" {methodName}\n")
+        }
         tfp.close
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
