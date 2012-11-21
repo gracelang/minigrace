@@ -1532,11 +1532,11 @@ method findPlatformUses(vals) {
         v.accept(vis)
     }
 }
-method parseGCT(filepath) {
-    xmodule.parseGCT(filepath.replace(".gcn")with(".gct"))
+method parseGCT(path, filepath) {
+    xmodule.parseGCT(path, filepath.replace(".gcn")with(".gct"))
 }
 method addTransitiveImports(filepath, epath) {
-    def data = parseGCT(filepath)
+    def data = parseGCT(epath, filepath)
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             checkimport(m)
@@ -1650,6 +1650,32 @@ method checkimport(nm) {
 }
 var subprocesses := collections.list.new
 var linkfiles := collections.list.new
+method processImports(values') {
+    if (util.runmode == "make") then {
+        log_verbose("checking imports.")
+        for (values') do { v ->
+            if (v.kind == "import") then {
+                var nm := v.path
+                checkimport(nm)
+            }
+        }
+        findPlatformUses(values')
+        def imperrors = []
+        for (subprocesses) do { tt->
+            def nm = tt[1]
+            def p = tt[2]
+            def pth = tt[3]
+            if (!p.success) then {
+                imperrors.push(nm)
+            } else {
+                addTransitiveImports(pth[1], pth[2])
+            }
+        }
+        if (imperrors.size > 0) then {
+            util.syntax_error("failed processing import of " ++ imperrors ++".")
+        }
+    }
+}
 method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
@@ -1681,30 +1707,6 @@ method compile(vl, of, mn, rm, bt) {
     escmodname := escapeident(modname)
     runmode := rm
     buildtype := bt
-    if (runmode == "make") then {
-        log_verbose("checking imports.")
-        for (values) do { v ->
-            if (v.kind == "import") then {
-                var nm := v.path
-                checkimport(nm)
-            }
-        }
-        findPlatformUses(values)
-        def imperrors = []
-        for (subprocesses) do { tt->
-            def nm = tt[1]
-            def p = tt[2]
-            def pth = tt[3]
-            if (!p.success) then {
-                imperrors.push(nm)
-            } else {
-                addTransitiveImports(pth[1], pth[2])
-            }
-        }
-        if (imperrors.size > 0) then {
-            util.syntax_error("failed processing import of " ++ imperrors ++".")
-        }
-    }
     outprint("#include <gracelib.h>")
     outprint("#include <stdlib.h>")
     outprint("#ifndef __CYGWIN__")

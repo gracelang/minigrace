@@ -58,6 +58,9 @@ if (util.target == "grace") then {
     }
     sys.exit(0)
 }
+if (util.target == "c") then {
+    genc.processImports(values)
+}
 values := typechecker.typecheck(values)
 if (util.target == "processed-ast") then {
     for (values) do { v ->

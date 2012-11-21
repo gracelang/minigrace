@@ -7,14 +7,14 @@ import "util" as util
 
 def gctCache = collections.map.new
 
-method parseGCT(path) {
+method parseGCT(path, filepath) {
     if (gctCache.contains(path)) then {
         return gctCache.get(path)
     }
     def data = collections.map.new
     util.runOnNew {} else { return data }
-    if (io.exists(path)) then {
-        def tfp = io.open(path, "r")
+    if (io.exists(filepath)) then {
+        def tfp = io.open(filepath, "r")
         var key := ""
         while {!tfp.eof} do {
             def line = tfp.getline
