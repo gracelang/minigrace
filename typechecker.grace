@@ -1418,8 +1418,11 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
             if (gct.contains("public")) then {
                 def meths = collections.list.new
                 for (gct.get("public")) do {mn->
-                    meths.push(ast.methodTypeNode.new(mn, [
-                        ast.signaturePart.new(mn)], DynamicType))
+                    def parts = []
+                    for (util.split(mn, "()")) do {pn->
+                        parts.push(ast.signaturePart.new(pn))
+                    }
+                    meths.push(ast.methodTypeNode.new(mn, parts, DynamicType))
                 }
                 def mtype = ast.typeNode.new("<Module {e.value}>", meths)
                 tmp.dtype := mtype

@@ -354,3 +354,20 @@ method join(joiner, iterable) {
     }
     s
 }
+
+method split(str, by) {
+    def results = []
+    def bylen = by.size
+    var start := 1
+    var i := 1
+    def strlen = str.size
+    while {i <= strlen} do {
+        if (str.substringFrom(i)to(i+bylen-1) == by) then {
+            results.push(str.substringFrom(start)to(i-1))
+            start := i + bylen
+        }
+        i := i + 1
+    }
+    results.push(str.substringFrom(start)to(strlen))
+    results
+}
