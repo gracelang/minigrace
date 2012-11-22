@@ -1939,7 +1939,7 @@ method compile(vl, of, mn, rm, bt) {
             tfp.write(" {sm}\n")
         }
         tfp.write("path:\n {modname}\n")
-        tfp.write("methods:\n")
+        tfp.write("public:\n")
         for (methods) do {methodName->
             tfp.write(" {methodName}\n")
         }

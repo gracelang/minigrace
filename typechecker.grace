@@ -3,6 +3,8 @@ def io = platform.io
 def ast = platform.ast
 def util = platform.util
 def subtype = platform.subtype
+import "xmodule" as xmodule
+import "mgcollections" as collections
 
 def preludeObj = HashMap.new
 def moduleScope = HashMap.new
@@ -1412,7 +1414,18 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
             bindName(className, tmp)
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
-            tmp.dtype := DynamicType
+            def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+            if (gct.contains("public")) then {
+                def meths = collections.list.new
+                for (gct.get("public")) do {mn->
+                    meths.push(ast.methodTypeNode.new(mn, [
+                        ast.signaturePart.new(mn)], DynamicType))
+                }
+                def mtype = ast.typeNode.new("<Module {e.value}>", meths)
+                tmp.dtype := mtype
+            } else {
+                tmp.dtype := DynamicType
+            }
             bindName(e.value, tmp)
         }
     }
