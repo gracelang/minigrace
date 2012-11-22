@@ -1700,6 +1700,8 @@ method compile(vl, of, mn, rm, bt) {
             if (ast.isPublic(v)) then {
                 methods.push(v.name.value)
             }
+        } elseif (v.kind == "class") then {
+            methods.push(v.name.value)
         }
     }
     outfile := of
