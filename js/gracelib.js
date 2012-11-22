@@ -1120,6 +1120,13 @@ function gracecode_util() {
             }
             return new GraceString(s);
         },
+        split: function(argcv, str, by) {
+            var r = [];
+            var pts = str._value.split(by);
+            for (var i=0; i<pts.length; i++)
+                r.push(new GraceString(pts[i]));
+            return new GraceList(pts);
+        },
         "runOnNew()else": function(argcv, b,e) {
             return callmethod(b, "apply", [0]);
         },
