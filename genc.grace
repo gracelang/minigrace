@@ -1702,6 +1702,8 @@ method compile(vl, of, mn, rm, bt) {
             }
         } elseif (v.kind == "class") then {
             methods.push(v.name.value)
+        } elseif (v.kind == "type") then {
+            methods.push(v.value)
         }
     }
     outfile := of
