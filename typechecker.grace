@@ -1041,6 +1041,7 @@ method resolveIdentifiers(node) {
         tmp := ast.classNode.new(node.name, tmp3, tmp2,
             resolveIdentifiers(node.superclass), node.constructor)
         tmp.generics := node.generics
+        tmp.instanceMethods := node.instanceMethods
         node := tmp
         popScope
         selftypes.pop
@@ -1407,6 +1408,10 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
                 ast.methodTypeNode.new(e.constructor.value, e.signature,
                     classInstanceType)
             ])
+            def tmpM = e.instanceMethods
+            for (classInstanceType.methods) do {md->
+                tmpM.push(md)
+            }
             classItselfType.generics := classGenerics
             subtype.addType(classInstanceType)
             subtype.addType(classItselfType)
@@ -1415,6 +1420,31 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
         } elseif (e.kind == "import") then {
             tmp := Binding.new("def")
             def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+            def classes = collections.map.new
+            if (gct.contains("classes")) then {
+                for (gct.get("classes")) do {c->
+                    def cparts = []
+                    def constr = gct.get("constructor-of:{c}").at(1)
+                    for (util.split(constr, "()")) do {pn->
+                        cparts.push(ast.signaturePart.new(pn))
+                    }
+                    def meths = collections.list.new
+                    for (gct.get("methods-of:{c}")) do {mn->
+                        def parts = []
+                        for (util.split(mn, "()")) do {pn->
+                            parts.push(ast.signaturePart.new(pn))
+                        }
+                        meths.push(ast.methodTypeNode.new(mn, parts,
+                            DynamicType))
+                    }
+                    def itype = ast.typeNode.new("InstanceOf<{e.value}.{c}>",
+                        meths)
+                    def cmeth = ast.methodTypeNode.new(constr, cparts, itype)
+                    def ctype = ast.typeNode.new("ClassOf<{e.value}.{c}>",
+                        [cmeth])
+                    classes.put(c, ctype)
+                }
+            }
             if (gct.contains("public")) then {
                 def meths = collections.list.new
                 for (gct.get("public")) do {mn->
@@ -1422,7 +1452,11 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
                     for (util.split(mn, "()")) do {pn->
                         parts.push(ast.signaturePart.new(pn))
                     }
-                    meths.push(ast.methodTypeNode.new(mn, parts, DynamicType))
+                    var rtype := DynamicType
+                    if (classes.contains(mn)) then {
+                        rtype := classes.get(mn)
+                    }
+                    meths.push(ast.methodTypeNode.new(mn, parts, rtype))
                 }
                 def mtype = ast.typeNode.new("<Module {e.value}>", meths)
                 tmp.dtype := mtype
