@@ -935,6 +935,9 @@ method resolveIdentifiers(node) {
                     ++ "{realType.value} from method of return type "
                     ++ currentReturnType.value)
             }
+            if (lastStatement.kind == "object") then {
+                node.properties.put("fresh", realType)
+            }
         }
         currentReturnType := oldReturnType
         popScope
@@ -944,6 +947,7 @@ method resolveIdentifiers(node) {
         tmp.generics := node.generics
         tmp.annotations.extend(node.annotations)
         tmp.varargs := node.varargs
+        tmp.properties := node.properties
         return tmp
     }
     if (node.kind == "block") then {
@@ -1445,6 +1449,24 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
                     classes.put(c, ctype)
                 }
             }
+            def freshmeths = collections.map.new
+            if (gct.contains("fresh-methods")) then {
+                for (gct.get("fresh-methods")) do {c->
+                    def cparts = []
+                    def meths = collections.list.new
+                    for (gct.get("fresh:{c}")) do {mn->
+                        def parts = []
+                        for (util.split(mn, "()")) do {pn->
+                            parts.push(ast.signaturePart.new(pn))
+                        }
+                        meths.push(ast.methodTypeNode.new(mn, parts,
+                            DynamicType))
+                    }
+                    def itype = ast.typeNode.new("InstanceOf<{e.value}.{c}>",
+                        meths)
+                    freshmeths.put(c, itype)
+                }
+            }
             if (gct.contains("public")) then {
                 def meths = collections.list.new
                 for (gct.get("public")) do {mn->
@@ -1455,6 +1477,9 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
                     var rtype := DynamicType
                     if (classes.contains(mn)) then {
                         rtype := classes.get(mn)
+                    }
+                    if (freshmeths.contains(mn)) then {
+                        rtype := freshmeths.get(mn)
                     }
                     meths.push(ast.methodTypeNode.new(mn, parts, rtype))
                 }

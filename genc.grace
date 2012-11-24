@@ -1963,6 +1963,24 @@ method compile(vl, of, mn, rm, bt) {
         for (classes) do {c->
             tfp.write(" {c}\n")
         }
+        tfp.write("fresh-methods:\n")
+        for (values) do {val->
+            if (val.kind == "method") then {
+                if (val.properties.contains("fresh")) then {
+                    tfp.write(" {val.value.value}\n")
+                }
+            }
+        }
+        for (values) do {val->
+            if (val.kind == "method") then {
+                if (val.properties.contains("fresh")) then {
+                    tfp.write("fresh:{val.value.value}:\n")
+                    for (val.properties.get("fresh").methods) do {im->
+                        tfp.write(" {im.value}\n")
+                    }
+                }
+            }
+        }
         tfp.close
         if (buildtype == "run") then {
             if (modname[1] != "/") then {

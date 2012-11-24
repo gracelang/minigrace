@@ -545,6 +545,7 @@ class methodNode.new(name', signature', body', dtype') {
     var register := ""
     def line = util.linenum
     def annotations = collections.list.new
+    var properties := collections.map.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethod(self)) then {
             self.value.accept(visitor)
