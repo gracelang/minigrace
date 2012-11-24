@@ -1958,6 +1958,33 @@ method compile(vl, of, mn, rm, bt) {
                 }
                 classes.push(val.name.value)
             }
+            if (val.kind == "defdec") then {
+                if (val.value.kind == "object") then {
+                    def ob = val.value
+                    var isClass := false
+                    def obConstructors = collections.list.new
+                    for (ob.value) do {nd->
+                        if (nd.kind == "method") then {
+                            if (nd.properties.contains("fresh")) then {
+                                isClass := true
+                                obConstructors.push(nd.value)
+                                tfp.write("methods-of:{val.name.value}.{nd.value.value}:\n")
+                                for (nd.properties.get("fresh").methods) do {
+                                    im->
+                                    tfp.write(" {im.value}\n")
+                                }
+                            }
+                        }
+                    }
+                    if (obConstructors.size > 0) then {
+                        tfp.write("constructors-of:{val.name.value}:\n")
+                        for (obConstructors) do {im->
+                            tfp.write(" {im.value}\n")
+                        }
+                        classes.push(val.name.value)
+                    }
+                }
+            }
         }
         tfp.write("classes:\n")
         for (classes) do {c->
