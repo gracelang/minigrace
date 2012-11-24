@@ -1950,9 +1950,9 @@ method compile(vl, of, mn, rm, bt) {
         def classes = collections.list.new
         for (values) do {val->
             if (val.kind == "class") then {
-                tfp.write("constructor-of:{val.name.value}:\n")
+                tfp.write("constructors-of:{val.name.value}:\n")
                 tfp.write(" {val.constructor.value}\n")
-                tfp.write("methods-of:{val.name.value}:\n")
+                tfp.write("methods-of:{val.name.value}.{val.constructor.value}:\n")
                 for (val.instanceMethods) do {im->
                     tfp.write(" {im.value}\n")
                 }

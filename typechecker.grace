@@ -1427,25 +1427,30 @@ method resolveIdentifiersListReal(lst)withBlock(bk) {
             def classes = collections.map.new
             if (gct.contains("classes")) then {
                 for (gct.get("classes")) do {c->
-                    def cparts = []
-                    def constr = gct.get("constructor-of:{c}").at(1)
-                    for (util.split(constr, "()")) do {pn->
-                        cparts.push(ast.signaturePart.new(pn))
-                    }
-                    def meths = collections.list.new
-                    for (gct.get("methods-of:{c}")) do {mn->
-                        def parts = []
-                        for (util.split(mn, "()")) do {pn->
-                            parts.push(ast.signaturePart.new(pn))
+                    def cmeths = []
+                    def constrs = gct.get("constructors-of:{c}")
+                    for (constrs) do {constr->
+                        def cparts = []
+                        for (util.split(constr, "()")) do {pn->
+                            cparts.push(ast.signaturePart.new(pn))
                         }
-                        meths.push(ast.methodTypeNode.new(mn, parts,
-                            DynamicType))
+                        def meths = collections.list.new
+                        for (gct.get("methods-of:{c}.{constr}")) do {mn->
+                            def parts = []
+                            for (util.split(mn, "()")) do {pn->
+                                parts.push(ast.signaturePart.new(pn))
+                            }
+                            meths.push(ast.methodTypeNode.new(mn, parts,
+                                DynamicType))
+                        }
+                        def itype = ast.typeNode.new(
+                            "InstanceOf<{e.value}.{c}.{constr}>", meths)
+                        def cmeth = ast.methodTypeNode.new(constr, cparts,
+                            itype)
+                        cmeths.push(cmeth)
                     }
-                    def itype = ast.typeNode.new("InstanceOf<{e.value}.{c}>",
-                        meths)
-                    def cmeth = ast.methodTypeNode.new(constr, cparts, itype)
                     def ctype = ast.typeNode.new("ClassOf<{e.value}.{c}>",
-                        [cmeth])
+                        cmeths)
                     classes.put(c, ctype)
                 }
             }
