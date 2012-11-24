@@ -937,6 +937,13 @@ method resolveIdentifiers(node) {
             }
             if (lastStatement.kind == "object") then {
                 node.properties.put("fresh", realType)
+            } else {
+                if (lastStatement.kind == "return") then {
+                    if (lastStatement.value.kind == "object") then {
+                        node.properties.put("fresh",
+                            expressionType(lastStatement.value))
+                    }
+                }
             }
         }
         currentReturnType := oldReturnType
