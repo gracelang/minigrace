@@ -1696,7 +1696,7 @@ method compile(vl, of, mn, rm, bt) {
             if (ast.isPublic(v)) then {
                 methods.push(v.value.value)
             }
-        } elseif (v.kind == "def") then {
+        } elseif (v.kind == "defdec") then {
             if (ast.isPublic(v)) then {
                 methods.push(v.name.value)
             }
