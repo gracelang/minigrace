@@ -1661,14 +1661,18 @@ method processImports(values') {
         }
         findPlatformUses(values')
         def imperrors = []
-        for (subprocesses) do { tt->
-            def nm = tt[1]
-            def p = tt[2]
-            def pth = tt[3]
-            if (!p.success) then {
-                imperrors.push(nm)
-            } else {
-                addTransitiveImports(pth[1], pth[2])
+        while {subprocesses.size > 0} do {
+            def lsubprocesses = subprocesses
+            subprocesses := collections.list.new
+            for (lsubprocesses) do { tt->
+                def nm = tt[1]
+                def p = tt[2]
+                def pth = tt[3]
+                if (!p.success) then {
+                    imperrors.push(nm)
+                } else {
+                    addTransitiveImports(pth[1], pth[2])
+                }
             }
         }
         if (imperrors.size > 0) then {
