@@ -1574,6 +1574,10 @@ method addTransitiveImports(filepath, epath) {
     def data = parseGCT(epath, filepath)
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
+            if (m == util.modname) then {
+                util.syntax_error("Cyclic import detected: '{m}' is imported "
+                    ++ "by '{epath}', which is imported by '{m}' (and so on).")
+            }
             checkimport(m)
         }
     }
