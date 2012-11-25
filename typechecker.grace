@@ -1522,8 +1522,27 @@ method typecheck(values, *sc) {
     util.log_verbose("typechecking.")
     if (!initDone) then {
         if (!util.extensions.contains("NativePrelude")) then {
-            for (prelude._methods) do {mn->
-                preludeObj.put(mn, Binding.new("method"))
+            var hadDialect := false
+            for (values) do {val->
+                if (val.kind == "dialect") then {
+                    hadDialect := true
+                    def data = xmodule.parseGCT(val.value, "/nosuchfile")
+                    if (data.contains("public")) then {
+                        for (data.get("public")) do {mn->
+                            preludeObj.put(mn, Binding.new("method"))
+                        }
+                    }
+                    if (data.contains("confidential")) then {
+                        for (data.get("confidential")) do {mn->
+                            preludeObj.put(mn, Binding.new("method"))
+                        }
+                    }
+                }
+            }
+            if (!hadDialect) then {
+                for (prelude._methods) do {mn->
+                    preludeObj.put(mn, Binding.new("method"))
+                }
             }
         }
         var btmp

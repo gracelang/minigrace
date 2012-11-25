@@ -1278,6 +1278,38 @@ method compileoctets(o) {
     o.register := "octlit" ++ auto_count
     auto_count := auto_count + 1
 }
+method compiledialect(o) {
+    out("// Dialect import of {o.value}")
+    var con
+    var snm := ""
+    for (o.value) do {c->
+        if (c == "/") then {
+            snm := ""
+        } else {
+            snm := snm ++ c
+        }
+    }
+    var nm := "dialect"
+    var fn := escapestring2(o.value)
+    var modg := "module_" ++ escapeident(o.value)
+    var modgn := "module_" ++ nm
+    var modgs := "module_" ++ snm
+    importnames.put(nm, modg)
+    out("  if ({modg} == NULL)")
+    if (staticmodules.contains(o.value)) then {
+        out("    {modg} = {modg}_init();")
+    } else {
+        out("    {modg} = dlmodule(\"{fn}\");")
+    }
+    out("  Object *var_{nm} = alloc_var();")
+    out("  *var_{nm} = {modg};")
+    out("  prelude = {modg};")
+    modules.add("dialect")
+    globals.push("Object {modg}_init();")
+    globals.push("Object {modg};")
+    auto_count := auto_count + 1
+    o.register := "none"
+}
 method compileimport(o) {
     out("// Import of {o.path} as {o.value}")
     var con
@@ -1368,6 +1400,9 @@ method compilenode(o) {
     }
     if (o.kind == "octets") then {
         compileoctets(o)
+    }
+    if (o.kind == "dialect") then {
+        compiledialect(o)
     }
     if (o.kind == "import") then {
         compileimport(o)
@@ -1656,6 +1691,10 @@ method processImports(values') {
         for (values') do { v ->
             if (v.kind == "import") then {
                 var nm := v.path
+                checkimport(nm)
+            }
+            if (v.kind == "dialect") then {
+                var nm := v.value
                 checkimport(nm)
             }
         }
