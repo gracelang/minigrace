@@ -1202,8 +1202,8 @@ method compilecall(o, tailcall) {
         for (o.with.indices) do { partnr ->
             out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
         }
-        out("  Object call{auto_count} = callmethod(prelude, \"{evl}\", "
-            ++ "{nparts}, partcv, params);")
+        out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
+            ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "platform")}) then {
         out("// Import of " ++ o.value.value)
