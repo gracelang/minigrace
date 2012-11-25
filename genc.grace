@@ -1685,6 +1685,7 @@ method compile(vl, of, mn, rm, bt) {
     var cmd
     values := vl
     def methods = collections.list.new
+    def confidentials = collections.list.new
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -1699,6 +1700,8 @@ method compile(vl, of, mn, rm, bt) {
             nummethods := nummethods + 1
             if (ast.isPublic(v)) then {
                 methods.push(v.value.value)
+            } else {
+                confidentials.push(v.value.value)
             }
         } elseif (v.kind == "defdec") then {
             if (ast.isPublic(v)) then {
@@ -1949,6 +1952,10 @@ method compile(vl, of, mn, rm, bt) {
         tfp.write("path:\n {modname}\n")
         tfp.write("public:\n")
         for (methods) do {methodName->
+            tfp.write(" {methodName}\n")
+        }
+        tfp.write("confidential:\n")
+        for (confidentials) do {methodName->
             tfp.write(" {methodName}\n")
         }
         def classes = collections.list.new
