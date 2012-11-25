@@ -1172,6 +1172,16 @@ method doarray {
     }
 }
 
+// Accept "dialect "X""
+method dodialect {
+    if (accept("keyword") && (sym.value == "dialect")) then {
+        next
+        expect "string"
+        values.push(ast.dialectNode.new(sym.value))
+        next
+    }
+}
+
 // Accept "inherits X.new"
 method inheritsdec {
     if (accept("keyword") && (sym.value == "inherits")) then {
@@ -1818,6 +1828,8 @@ method statement {
             util.syntax_error("no such keyword const; did you mean def?")
         } elseif (sym.value == "import") then {
             doimport
+        } elseif (sym.value == "dialect") then {
+            dodialect
         } elseif (sym.value == "type") then {
             dotype
         } elseif (sym.value == "class") then {

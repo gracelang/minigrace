@@ -1338,6 +1338,28 @@ class importNode.new(path', name) {
         "import \"{self.path}\" as {self.value}"
     }
 }
+class dialectNode.new(path') {
+    def kind = "dialect"
+    def value = path'
+    var register := ""
+    def line = util.linenum
+    method accept(visitor : ASTVisitor) {
+        visitor.visitDialect(self)
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Dialect"
+        s := s ++ "\n"
+        s := s ++ "{spc}Path: {self.value}\n"
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        "dialect \"{self.value}\""
+    }
+}
 class returnNode.new(expr) {
     def kind = "return"
     def value = expr
@@ -1448,6 +1470,7 @@ type ASTVisitor = {
      visitImport(o) -> Boolean
      visitReturn(o) -> Boolean
      visitInherits(o) -> Boolean
+     visitDialect(o) -> Boolean
 }
 method baseVisitor -> ASTVisitor {
     object {
@@ -1530,6 +1553,9 @@ method baseVisitor -> ASTVisitor {
             true
         }
         method visitInherits(o) -> Boolean {
+            true
+        }
+        method visitDialect(o) -> Boolean {
             true
         }
     }
