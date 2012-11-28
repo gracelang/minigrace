@@ -1684,6 +1684,11 @@ method doimport {
         pushidentifier
         def n = values.pop
         def o = ast.importNode.new(p.value, n.value)
+        if (accept("colon")) then {
+            next
+            dotypeterm
+            o.dtype := values.pop
+        }
         values.push(o)
     }
 }

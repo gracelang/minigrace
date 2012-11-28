@@ -1320,6 +1320,7 @@ class importNode.new(path', name) {
     def path = path'
     var register := ""
     def line = util.linenum
+    var dtype := false
     method accept(visitor : ASTVisitor) {
         visitor.visitImport(self)
     }
