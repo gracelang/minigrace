@@ -1173,6 +1173,35 @@ var interactive_module = false;
 function gracecode_interactive() {
     return this;
 }
+function GraceMirrorMethod(o, k) {
+    this.name = k;
+    this.obj = o;
+}
+GraceMirrorMethod.prototype = Grace_allocObject();
+GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
+    return new GraceString(this.name);
+}
+function alloc_Mirror(o) {
+    var m = Grace_allocObject();
+    m.methods['methods'] = function(argcv) {
+        var meths = [];
+        for (k in o.methods) {
+            meths.push(new GraceMirrorMethod(o, k));
+        }
+        var l = new GraceList(meths);
+    }
+}
+function gracecode_mirrors() {
+    this.methods = {
+        'loadDynamicModule': function(argcv, v) {
+            return do_import(v, window["gracecode_" + v]);
+        },
+        'reflect': function(argcv, o) {
+            return alloc_Mirror(o);
+        }
+    };
+    return this;
+}
 function checkmethodcall(func, methname, obj, args) {
     var i = 0;
     var pt = func.paramTypes;
