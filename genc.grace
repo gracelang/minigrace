@@ -1701,12 +1701,25 @@ method processImports(values') {
             if (v.kind == "dialect") then {
                 var nm := v.value
                 checkimport(nm)
-                def dobj = mirrors.loadDynamicModule(nm)
-                def mths = mirrors.reflect(dobj).methods
-                for (mths) do { m->
-                    if (m.name == "checker") then {
-                        dobj.checker(values')
+                log_verbose("loading dialect for checkers.")
+                def CheckerFailure = Exception.refine "CheckerFailure"
+                catch {
+                    def dobj = mirrors.loadDynamicModule(nm)
+                    def mths = mirrors.reflect(dobj).methods
+                    for (mths) do { m->
+                        if (m.name == "checker") then {
+                            log_verbose("running dialect's checkers.")
+                            dobj.checker(values')
+                        }
                     }
+                } case { e : RuntimeError ->
+                    util.setPosition(v.line, 1)
+                    util.syntax_error("dialect '{nm}' failed to load: {e}")
+                } case { e : CheckerFailure ->
+                    if (nothing != e.data) then {
+                        util.setPosition(e.data.line, e.data.pos)
+                    }
+                    util.syntax_error("dialect failure: {e.message}")
                 }
             }
         }
