@@ -7,6 +7,7 @@ def buildinfo = platform.buildinfo
 def subtype = platform.subtype
 def mgcollections = platform.mgcollections
 import "xmodule" as xmodule
+import "mirrors" as mirrors
 
 def collections = mgcollections
 
@@ -1700,6 +1701,13 @@ method processImports(values') {
             if (v.kind == "dialect") then {
                 var nm := v.value
                 checkimport(nm)
+                def dobj = mirrors.loadDynamicModule(nm)
+                def mths = mirrors.reflect(dobj).methods
+                for (mths) do { m->
+                    if (m.name == "checker") then {
+                        dobj.checker(values')
+                    }
+                }
             }
         }
         findPlatformUses(values')
