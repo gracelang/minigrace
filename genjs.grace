@@ -767,7 +767,7 @@ method compileoctets(o) {
     auto_count := auto_count + 1
 }
 method compileimport(o) {
-    out("// Import of " ++ o.value.value)
+    out("// Import of " ++ o.path)
     var snm := ""
     for (o.path) do {c->
         if (c == "/") then {
