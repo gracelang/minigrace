@@ -4047,15 +4047,17 @@ Object dlmodule(const char *name) {
     int blen = PATH_MAX;
     char buf[blen];
     if (!find_gso(name, buf)) {
-        fprintf(stderr, "minigrace: could not find dynamic module %s.\n",
-                name);
-        exit(1);
+        gracedie("unable to find dynamic module '%s'", name);
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
+    if (!handle)
+        gracedie("failed to load dynamic module '%s'", buf);
     strcpy(buf, "module_");
     strcat(buf, name);
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
+    if (!init)
+        gracedie("failed to find initialiser in dynamic module '%s'", buf);
     Object mod = init();
     gc_root(mod);
     return mod;
