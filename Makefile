@@ -92,7 +92,7 @@ minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 	l1/minigrace --make --noexec --import-dynamic -XNoMain -XNativePrelude StandardPrelude.grace
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l2/minigrace --make --import-dynamic --verbose --module minigrace-dynamic compiler.grace
 
 gencheck:
