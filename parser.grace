@@ -1102,6 +1102,8 @@ method defdec {
 // Accept a var declaration
 method vardec {
     if (accept("keyword") && (sym.value == "var")) then {
+        def line = sym.line
+        def pos = sym.linePos
         next
         pushidentifier
         var val := false
@@ -1121,6 +1123,7 @@ method vardec {
         if (accept("op") && (sym.value == "=")) then {
             util.syntax_error("var declaration uses ':=', not '='")
         }
+        util.setPosition(line, pos)
         var o := ast.varDecNode.new(name, val, dtype)
         var hasVisibility := false
         if (anns != false) then {
