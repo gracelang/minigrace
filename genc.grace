@@ -1730,7 +1730,7 @@ method processImports(values') {
                     util.syntax_error("dialect '{nm}' failed to load: {e}")
                 } case { e : CheckerFailure ->
                     if (nothing != e.data) then {
-                        util.setPosition(e.data.line, e.data.pos)
+                        util.setPosition(e.data.line, e.data.linePos)
                     }
                     util.syntax_error("dialect failure: {e.message}")
                 }
