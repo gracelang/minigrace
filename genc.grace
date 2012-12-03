@@ -218,6 +218,9 @@ method compileobjdefdecdata(o, selfr, pos) {
         }
     }
     out("  adddatum2({selfr}, {val}, {pos});")
+    if (ast.findAnnotation(o, "parent")) then {
+        out("  ((struct UserObject *){selfr})->super = {val};")
+    }
 }
 method compileobjdefdecmeth(o, selfr, pos) {
     var myc := auto_count
@@ -967,6 +970,9 @@ method compiledefdec(o) {
     out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
+        if (ast.findAnnotation(o, "parent")) then {
+            out("  ((struct UserObject *)self)->super = {val};")
+        }
     }
     o.register := "none"
 }
@@ -1616,6 +1622,8 @@ method checkimport(nm) {
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)
+        addTransitiveImports(io.realpath(sys.execPath)
+            ++ "/StandardPrelude.gcn", nm)
     } elseif (io.exists("{sys.execPath}/modules/{nm}.gcn")) then {
         exists := true
         linkfiles.push("{sys.execPath}/modules/{nm}.gcn")
@@ -1775,6 +1783,13 @@ method compile(vl, of, mn, rm, bt) {
         } elseif (v.kind == "defdec") then {
             if (ast.isPublic(v)) then {
                 methods.push(v.name.value)
+            }
+            if (ast.findAnnotation(v, "parent")) then {
+                if (false != v.dtype) then {
+                    for (v.dtype.methods) do {m->
+                        methods.push(m.value)
+                    }
+                }
             }
         } elseif (v.kind == "class") then {
             methods.push(v.name.value)
