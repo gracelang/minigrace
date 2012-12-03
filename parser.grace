@@ -1053,6 +1053,8 @@ method callmprest(meth, signature, tok) {
 // Accept a const declaration
 method defdec {
     if (accept("keyword") && (sym.value == "def")) then {
+        def line = sym.line
+        def pos = sym.linePos
         next
         pushidentifier
         var val := false
@@ -1073,6 +1075,7 @@ method defdec {
         } else {
             util.syntax_error("def declaration requires value")
         }
+        util.setPosition(line, pos)
         var o := ast.defDecNode.new(name, val, dtype)
         var hasVisibility := false
         if (anns != false) then {
