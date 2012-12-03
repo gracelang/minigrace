@@ -1569,7 +1569,8 @@ method findPlatformUses(vals) {
     }
 }
 method parseGCT(path, filepath) {
-    xmodule.parseGCT(path, filepath.replace(".gcn")with(".gct"))
+    xmodule.parseGCT(path,
+        filepath.replace(".gcn")with(".gct").replace(".gso")with(".gct"))
 }
 method addTransitiveImports(filepath, epath) {
     def data = parseGCT(epath, filepath)
@@ -1601,13 +1602,17 @@ method checkimport(nm) {
     if (io.exists("{sys.execPath}/{nm}.gso") &&
         {!util.extensions.contains("Static")}) then {
         exists := true
+        addTransitiveImports("{sys.execPath}/{nm}.gso", nm)
     } elseif (io.exists(nm ++ ".gso") &&
         {!util.extensions.contains("Static")}) then {
         exists := true
+        addTransitiveImports("{nm}.gso", nm)
     } elseif (io.exists(io.realpath(sys.execPath)
         ++ "/../lib/minigrace/{nm}.gso") &&
             {!util.extensions.contains("Static")}) then {
         exists := true
+        addTransitiveImports(io.realpath(sys.execPath)
+            ++ "/../lib/minigrace/{nm}.gso", nm)
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)
