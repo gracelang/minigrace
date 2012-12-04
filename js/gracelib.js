@@ -1219,6 +1219,7 @@ function checkmethodcall(func, methname, obj, args) {
 var callStack = [];
 var overrideReceiver = null;
 var onSelf = false;
+var onOuter = false;
 var sourceObject;
 function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
@@ -1247,7 +1248,7 @@ function callmethod(obj, methname, argcv) {
         }
     }
     if (typeof(meth) != "function" || (meth._private &&
-                superDepth != sourceObject)) {
+                superDepth != sourceObject && !onOuter)) {
         var ext = "";
         if (meth && meth._private) {
             ext += " Did you mean the local " + methname + "? It is not annotated readable.";
@@ -1261,6 +1262,7 @@ function callmethod(obj, methname, argcv) {
                 new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " from outside."));
     }
     onSelf = false;
+    onOuter = false;
     var oldSourceObject = sourceObject;
     sourceObject = superDepth;
     if (overrideReceiver != null) {

@@ -672,6 +672,20 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
+    } elseif ((o.value.kind == "member").andAlso {
+        o.value.in.kind == "member"}.andAlso {
+            o.value.in.value == "outer"}) then {
+        def ot = compilenode(o.value.in)
+        var call := "  var call" ++ auto_count ++ " = callmethod({ot}"
+            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
+        call := call ++ partl ++ "]"
+        for (args) do { arg ->
+            call := call ++ ", " ++ arg
+        }
+        call := call ++ ");"
+        out("onOuter = true;");
+        out("onSelf = true;");
+        out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
