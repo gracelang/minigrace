@@ -1821,6 +1821,7 @@ method checkIndent {
     } elseif ((sym.kind == "rbrace") || (sym.kind == "rparen")
         || (sym.kind == "rsquare")) then {
         // pass
+    } elseif (sym.kind == "eof") then {
     } elseif (sym.indent < minIndentLevel) then {
         if ((sym.linePos - 1) != minIndentLevel) then {
             util.syntax_error("block and indentation inconsistent "
