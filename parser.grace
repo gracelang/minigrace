@@ -117,6 +117,14 @@ method expectConsume(ablock) {
         util.syntax_error("unable to consume token")
     }
 }
+// Expect block to consume at least one token, or report string error
+method expectConsume(ablock)error(msg) {
+    var sz := tokens.size
+    ablock.apply
+    if (tokens.size == sz) then {
+        util.syntax_error(msg)
+    }
+}
 // Expect block to consume at least one token, or call fallback code.
 method ifConsume(ablock)then(tblock) {
     var sz := tokens.size
@@ -1068,7 +1076,9 @@ method defdec {
         def anns = doannotation
         if (accept("op") && (sym.value == "=")) then {
             next
-            expression
+            expectConsume {
+                expression
+            } error "initial value of def expected after =."
             val := values.pop
         } elseif (accept("bind")) then {
             util.syntax_error("def declaration uses '=', not ':='")
@@ -1120,7 +1130,9 @@ method vardec {
         def anns = doannotation
         if (accept("bind")) then {
             next
-            expression
+            expectConsume {
+                expression
+            } error "initial value of var expected after :=."
             val := values.pop
         }
         if (accept("op") && (sym.value == "=")) then {
