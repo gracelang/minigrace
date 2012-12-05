@@ -409,9 +409,9 @@ method expressionType(expr) {
             }
         }
         objectmeths.push(ast.methodTypeNode.new("==",
-            [ast.signaturePart.new("==")], BooleanIdentifier))
+            [ast.signaturePart.new("==", [TopOther])], BooleanIdentifier))
         objectmeths.push(ast.methodTypeNode.new("!=",
-            [ast.signaturePart.new("!=")], BooleanIdentifier))
+            [ast.signaturePart.new("!=", [TopOther])], BooleanIdentifier))
         objectmeths.push(ast.methodTypeNode.new("asString",
             [ast.signaturePart.new("asString")], StringIdentifier))
         objectmeths.push(ast.methodTypeNode.new("asDebugString",
