@@ -1495,8 +1495,8 @@ method methoddec {
             if (accept("rbrace")) then {
                 next
             } else {
-                util.syntax_error("No statement but not end of "
-                    ++ meth.value ++ ". Have " ++ sym.kind ++ ".")
+                util.syntax_error("Statement or closing brace of body of "
+                    ++ "method '{meth.value}' expected, not {sym.kind}.")
             }
             minIndentLevel := localMin
         } else {
