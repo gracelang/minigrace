@@ -46,6 +46,7 @@ var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = HashMap.new
+var importHook := false
 
 method out(s) {
     output.push(s)
@@ -213,6 +214,9 @@ method compileobjdefdecdata(o, selfr, pos) {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
             val := o.value.register
+        } elseif (o.value.kind == "class") then {
+            compileclass(o.value, false)
+            val := o.value.register
         } else {
             val := compilenode(o.value)
         }
@@ -357,7 +361,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
-method compileclass(o) {
+method compileclass(o, includeConstant) {
     var signature := o.signature
     def obj = ast.objectNode.new(o.value, o.superclass)
     obj.classname := o.name.value
@@ -368,12 +372,16 @@ method compileclass(o) {
     }
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
-    var con := ast.defDecNode.new(o.name, cobj, false)
-    if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
-        compilenode(meth)
+    if (includeConstant) then {
+        var con := ast.defDecNode.new(o.name, cobj, false)
+        if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
+            def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
+            compilenode(meth)
+        }
+        o.register := compilenode(con)
+    } else {
+        o.register := compilenode(cobj)
     }
-    o.register := compilenode(con)
 }
 method compileobject(o, outerRef) {
     var origInBlock := inBlock
@@ -433,6 +441,22 @@ method compileobject(o, outerRef) {
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
             compileobjdefdecdata(e, selfr, pos)
+        } elseif (e.kind == "class") then {
+            def cd = ast.defDecNode.new(e.name,
+                e, false)
+            if (util.extensions.contains("DefaultVisibility")) then {
+                if (util.extensions.get("DefaultVisibility") == "public") then
+                    {
+                    cd.annotations.push(ast.identifierNode.new("public",
+                        false))
+                    cd.annotations.push(ast.identifierNode.new("readable",
+                        false))
+                }
+            }
+            out("if (objclass{myc} == NULL) \{")
+            compileobjdefdecmeth(cd, selfr, pos)
+            out("\}")
+            compileobjdefdecdata(cd, selfr, pos)
         } elseif (e.kind == "inherits") then {
             superobj := compilenode(e.value)
             out("  self = setsuperobj({selfr}, {superobj});")
@@ -1328,25 +1352,37 @@ method compileimport(o) {
             snm := snm ++ c
         }
     }
+    o.register := "none"
     var nm := escapeident(o.value)
     var fn := escapestring2(o.path)
     var modg := "module_" ++ escapeident(o.path)
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
+    modules.add(nm)
+    globals.push("Object {modg};")
     importnames.put(nm, modg)
+    out("  Object *var_{nm} = alloc_var();")
+    if (false != importHook) then {
+        def res = importHook.processImport(nm)
+        if (false != res) then {
+            for (res.importCode) do {l->
+                out(l)
+            }
+            for (res.globals) do {l->
+                globals.push(l)
+            }
+            out("  *var_{nm} = {res.moduleSymbol};")
+            return true
+        }
+    }
     out("  if ({modg} == NULL)")
     if (staticmodules.contains(o.path)) then {
         out("    {modg} = {modg}_init();")
     } else {
         out("    {modg} = dlmodule(\"{fn}\");")
     }
-    out("  Object *var_{nm} = alloc_var();")
     out("  *var_{nm} = {modg};")
-    modules.add(nm)
     globals.push("Object {modg}_init();")
-    globals.push("Object {modg};")
-    auto_count := auto_count + 1
-    o.register := "none"
 }
 method compilereturn(o) {
     var reg
@@ -1464,7 +1500,7 @@ method compilenode(o) {
         compilecatchcase(o)
     }
     if (o.kind == "class") then {
-        compileclass(o)
+        compileclass(o, true)
     }
     if (o.kind == "object") then {
         compileobject(o, "self")
@@ -1605,6 +1641,15 @@ method checkimport(nm) {
     if (staticmodules.contains(nm)) then {
         return true
     }
+    if (false != importHook) then {
+        def res = importHook.processImport(nm)
+        if (false != res) then {
+            for (res.linkTargets) do {t->
+                staticmodules.push(t)
+            }
+            return true
+        }
+    }
     if (io.exists("{sys.execPath}/{nm}.gso") &&
         {!util.extensions.contains("Static")}) then {
         exists := true
@@ -1706,6 +1751,10 @@ var linkfiles := collections.list.new
 method processImports(values') {
     if (util.runmode == "make") then {
         log_verbose("checking imports.")
+        if (util.extensions.contains("ImportHook")) then {
+            importHook := mirrors.loadDynamicModule(
+                            util.extensions.get "ImportHook")
+        }
         for (values') do { v ->
             if (v.kind == "import") then {
                 var nm := v.path
