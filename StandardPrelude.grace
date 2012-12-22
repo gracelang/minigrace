@@ -24,7 +24,14 @@ class FailedMatch.new(result') {
 type Extractable = {
     extract
 }
-
+class BasicPattern.new {
+    method &(o) {
+        AndPattern.new(self, o)
+    }
+    method |(o) {
+        OrPattern.new(self, o)
+    }
+}
 class MatchAndDestructuringPattern.new(pat, items') {
     def pattern = pat
     def items = items'
