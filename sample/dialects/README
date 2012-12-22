@@ -1,0 +1,9 @@
+To use a dialect, it must be compiled as a dynamic module. To build a
+dynamic module, use:
+  ../../minigrace --verbose --dynamic-module <name>.grace
+A makefile is provided to build all of the example dialects. Dynamic
+modules are not currently supported under Cygwin.
+
+After building the dialect module, another module can use the dialect
+when compiled in the ordinary fashion. Some simple example users of the
+dialects are included.
