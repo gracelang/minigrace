@@ -25,7 +25,9 @@
             compileError = false;
             extensionsMap = callmethod(var_HashMap, "new", [0])
             var vis = document.getElementById('defaultVisibility').value;
-            if (vis == "methodspublic") {
+            if (vis == "standard") {
+                // Do nothing
+            } else if (vis == "methodspublic") {
                 callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString("confidential"));
                 callmethod(extensionsMap, "put", [2], new GraceString("DefaultMethodVisibility"), new GraceString("public"));
             } else {
@@ -94,7 +96,7 @@
             }
         }
         function loadtest(testname) {
-            document.getElementById('defaultVisibility').selectedIndex = 1;
+            document.getElementById('defaultVisibility').selectedIndex = 2;
             var req = new XMLHttpRequest();
             req.open("GET", "./tests/" + testname + "_test.grace", false);
             req.send(null);
@@ -218,8 +220,9 @@
 <!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
  </select>
  <select id="defaultVisibility">
+  <option value="standard">Standard
   <option value="confidential">Confidential
-  <option value="public">Public
+  <option value="public">All accessible
   <option value="methodspublic">Methods public
  </select>
 <span style="font-size: smaller;">
