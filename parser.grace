@@ -19,9 +19,9 @@ var values := []
 var auto_count := 0
 var don'tTakeBlock := false
 var braceIsType := false
-var defaultDefVisibility := "confidential"
-var defaultVarVisibility := "confidential"
-var defaultMethodVisibility := "confidential"
+var defaultDefVisibility := "local"
+var defaultVarVisibility := "local"
+var defaultMethodVisibility := "public"
 
 // Global object containing the current token
 var sym
@@ -1088,12 +1088,18 @@ method defdec {
         util.setPosition(line, pos)
         var o := ast.defDecNode.new(name, val, dtype)
         var hasVisibility := false
+        var hasAccessibility := false
         if (anns != false) then {
             for (anns) do {a->
                 if ((a.kind == "identifier").andAlso {
                     (a.value == "public")
                      || (a.value == "confidential")}) then {
                     hasVisibility := true
+                }
+                if ((a.kind == "identifier").andAlso {
+                    (a.value == "readable")
+                     || (a.value == "writable")}) then {
+                    hasAccessibility := true
                 }
             }
             o.annotations.extend(anns)
@@ -1103,6 +1109,8 @@ method defdec {
                 o.annotations.push(ast.identifierNode.new("confidential",
                     false))
             }
+        }
+        if (!hasAccessibility) then {
             if (defaultDefVisibility == "public") then {
                 o.annotations.push(ast.identifierNode.new("readable",
                     false))
@@ -1141,12 +1149,18 @@ method vardec {
         util.setPosition(line, pos)
         var o := ast.varDecNode.new(name, val, dtype)
         var hasVisibility := false
+        var hasAccessibility := false
         if (anns != false) then {
             for (anns) do {a->
                 if ((a.kind == "identifier").andAlso {
                     (a.value == "public")
                      || (a.value == "confidential")}) then {
                     hasVisibility := true
+                }
+                if ((a.kind == "identifier").andAlso {
+                    (a.value == "readable")
+                     || (a.value == "writable")}) then {
+                    hasAccessibility := true
                 }
             }
             o.annotations.extend(anns)
@@ -1156,6 +1170,8 @@ method vardec {
                 o.annotations.push(ast.identifierNode.new("confidential",
                     false))
             }
+        }
+        if (!hasAccessibility) then {
             if (defaultVarVisibility == "public") then {
                 o.annotations.push(ast.identifierNode.new("readable",
                     false))
