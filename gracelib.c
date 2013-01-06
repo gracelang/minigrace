@@ -2742,10 +2742,11 @@ Object module_sys_init() {
 Object alloc_none() {
     if (none != NULL)
         return none;
-    None = alloc_class("noSuchValue", 3);
+    None = alloc_class("done", 4);
     add_Method(None, "==", &Object_Equals);
     add_Method(None, "!=", &Object_NotEquals);
     add_Method(None, "asString", &Object_asString);
+    add_Method(None, "asDebugString", &Object_asString);
     Object o = alloc_obj(0, None);
     none = o;
     gc_root(o);
