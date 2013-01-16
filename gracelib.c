@@ -453,6 +453,22 @@ Object gracebecome(Object subObject, Object superObject) {
     sup->data = subdata;
     return superObject;
 }
+Object graceunbecome(Object topObj) {
+    struct UserObject *top = (struct UserObject *)topObj;
+    struct UserObject *extra = (struct UserObject *)top->super;
+    // Swap the class and data on the two objects
+    ClassData extraclass = top->class;
+    Object *extradata = (Object *)top->data;
+    ClassData topclass = extra->class;
+    Object *topdata = (Object *)extra->data;
+    top->class = topclass;
+    top->data = topdata;
+    extra->class = extraclass;
+    extra->data = extradata;
+    // Remove the extra object from the chain
+    top->super = extra->super;
+    return (Object)extra;
+}
 Method *addmethodrealflags(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int), int flags) {
     Method *m = add_Method(o->class, name, func);
@@ -4436,11 +4452,15 @@ Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return gracebecome(argv[0], argv[1]);
 }
+Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+    return graceunbecome(argv[0]);
+}
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 16, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4457,6 +4477,7 @@ Object grace_prelude() {
     add_Method(c, "try()else", &prelude_tryElse);
     add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
+    add_Method(c, "unbecome", &prelude_unbecome);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
