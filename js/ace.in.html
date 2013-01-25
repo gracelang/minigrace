@@ -13,5 +13,7 @@
         stdin.methods.iterator = function() {
             return callmethod(new GraceString(editor.getValue()), "iterator", [0]);
         }
+        document.getElementById('code_txt_real').style.height = document.getElementById('tabbox').clientHeight + 'px';
+        document.getElementById('code_txt_real').style.width = (document.getElementById('tabbox').clientWidth - 30) + 'px';
      }
  </script>

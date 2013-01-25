@@ -90,8 +90,15 @@
             }
         }
         function compilerun() {
+            if (document.getElementById('mode').value == 'testall') {
+                document.getElementById('mode').selectedIndex = 0;
+                modeswitch();
+                testall();
+                return;
+            }
             compile();
-            if (!compileError) {
+            if (!compileError &&
+                   document.getElementById('mode').value == 'js') {
                 run();
             }
         }
@@ -118,15 +125,11 @@
             }
         }
         function modeswitch() {
-            var run_but = document.getElementById("run_but");
             var compilerun_but = document.getElementById("compilerun_but");
             var mode = document.getElementById('mode');
             if (mode.value != 'js') {
-                run_but.disabled = true;
-                compilerun_but.disabled = true;
-            } else {
-                run_but.disabled = false;
-                compilerun_but.disabled = false;
+                document.getElementById('tab').selectedIndex = 1;
+                tabswitch();
             }
         }
         function testall() {
@@ -194,17 +197,44 @@
             }
             testnext();
         }
+        function tabswitch() {
+            var tb = document.getElementById('tabbox');
+            var next = document.getElementById('tab').value;
+            for (var i = 0; i < tb.children.length; i++) {
+                var c = tb.children[i];
+                if (c.nodeName.toLowerCase() == "div") {
+                    if (c.id != next)
+                        c.style.display = 'none';
+                    else
+                        c.style.display = 'block';
+                }
+            }
+        }
      </script>
  </head>
- <div id="code_txt_real">print "Hello, world!"</div>
- <textarea id="code_txt" rows="20" cols="60">print "Hello, world!"</textarea>
- <textarea id="js_txt" rows="20" cols="60"></textarea><br />
- <textarea id="stdout_txt" rows="20" cols="60"></textarea>
- <textarea id="stderr_txt" rows="20" cols="60"></textarea>
+ <div id="text_areas">
+  <div id="code_area">
+   <div id="code_txt_real">print "Hello, world!"</div>
+   <textarea id="code_txt" rows="20" cols="60">print "Hello, world!"</textarea>
+  </div>
+  <div id="tabbox">
+   View
+   <select id="tab" onchange="tabswitch()">
+    <option value="stdout_tab">Program output
+    <option value="js_tab">Generated code
+   </select>:
+   <div id="js_tab" style="display: none;">
+    <textarea id="js_txt" rows="20" cols="60"></textarea>
+   </div>
+   <div id="stdout_tab">
+    <textarea id="stdout_txt" rows="20" cols="60"></textarea>
+   </div>
+  </div>
+  <br />
+  <textarea id="stderr_txt" rows="7" cols="60"></textarea>
+ </div>
  <br />
- <input type="button" value="Compile" onclick="compile()" />
- <input type="button" id="run_but" value="Run code" onclick="run()" />
- <input type="button" id="compilerun_but" value="Compile & run" onclick="compilerun()" />
+ <input type="button" id="compilerun_but" value="Go" onclick="compilerun()" />
  Target:
  <select id="mode" onchange="modeswitch()">
   <option value="js" />JavaScript
@@ -219,6 +249,7 @@
  <select id="testcases">
 <!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
  </select>
+ Visibility:
  <select id="defaultVisibility">
   <option value="standard">Standard
   <option value="confidential">Confidential
@@ -252,11 +283,19 @@ minigrace-js
          height: 300px;
          display: none;
      }
-     #js_txt {
-        position: absolute;
-        left: 455px;
-        top: 7px;
+     #tabbox {
+         float: right;
      }
+     #code_area {
+         float: left;
+     }
+     #text_areas {
+         position: relative;
+         max-width: 1000px;
+    }
+    #stderr_txt{
+        width: 100%;
+    }
  </style>
  <!--[!SH[ [ -e js/ace/ace.js ] && cat js/ace.in.html ]!]-->
 </html>
