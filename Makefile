@@ -107,7 +107,7 @@ repltest: minigrace
 backendtests: test
 
 clean:
-	rm -f gracelib.bc gracelib.o
+	rm -f gracelib.bc gracelib.o gracelib-basic.o
 	rm -f unicode.gco unicode.gso unicode.gcn
 	rm -f mirrors.gso
 	rm -f debugger.o
