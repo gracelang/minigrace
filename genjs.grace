@@ -274,24 +274,8 @@ method compileblock(o) {
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out("  block{myc}.pattern = {pat};")
-        out("  block{myc}.methods[\"match\"] = function(argcv, o) \{")
-        out("    var match = callmethod(this.pattern, \"match\", [1], o);")
-        out("    if (Grace_isTrue(match)) \{")
-        out("      var bindings = callmethod(match, \"bindings\", [0]);")
-        out("      var rv = callmethod(this, \"applyIndirectly\", [1], bindings);")
-        out("      return new GraceSuccessfulMatch(rv, []);")
-        out("    \}")
-        out("    return new GraceFailedMatch(rv);")
-        out("  \}")
-    } else {
-        if (o.params.size == 1) then {
-            out("  block{myc}.methods[\"match\"] = function(argcv, o) \{")
-            out("    var args = Array.prototype.slice.call(arguments, 1);")
-            out("    var r = this.real.apply(this.receiver, args);")
-            out("    return new GraceSuccessfulMatch(r, []);")
-            out("  \}")
-        }
     }
+    out("  block{myc}.methods[\"match\"] = GraceBlock_match;")
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block{myc}.className = 'block<{modname}:{o.line}>';")
     out("  block" ++ myc ++ ".real = function(")

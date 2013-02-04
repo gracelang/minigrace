@@ -775,6 +775,23 @@ GraceType.prototype = {
     typeMethods: [],
     className: "Type",
 };
+function GraceBlock_match(argcv, o) {
+    if (!this.pattern) {
+        if (argcv.length != 1 || argcv[0] != 1) {
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("Block is not a matching block"));
+        }
+        var rv = callmethod(this, "apply", [1], o);
+        return new GraceSuccessfulMatch(rv, []);
+    }
+    var match = callmethod(this.pattern, "match", [1], o);
+    if (Grace_isTrue(match)) {
+        var bindings = callmethod(match, "bindings", [0]);
+        var rv = callmethod(this, "applyIndirectly", [1], bindings);
+        return new GraceSuccessfulMatch(rv, []);
+    }
+    return new GraceFailedMatch(rv);
+}
 function classType(obj) {
     var t = new GraceType(obj.className);
     var o = obj;
