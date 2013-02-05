@@ -113,8 +113,7 @@ Object Dynamic;
 Object prelude = NULL;
 
 struct StringObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int blen;
     int size;
     unsigned int hashcode;
@@ -123,8 +122,7 @@ struct StringObject {
     char body[];
 };
 struct ConcatStringObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int blen;
     int size;
     unsigned int hashcode;
@@ -135,29 +133,25 @@ struct ConcatStringObject {
     Object right;
 };
 struct ListObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int size;
     int space;
     Object *items;
 };
 struct PrimitiveArrayObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int size;
     int space;
     Object *items;
 };
 struct IOModuleObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     Object _stdin;
     Object _stdout;
     Object _stderr;
 };
 struct FileObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     FILE* file;
 };
 struct SysModule {
@@ -176,23 +170,20 @@ struct SFLinkList {
 };
 
 struct BlockObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     jmp_buf *retpoint;
     Object super;
     Object *data;
 };
 struct TypeObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     char *name;
     Method *methods;
     int nummethods;
 };
 
 struct ExceptionPacketObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     Object message;
     Object exception;
     Object data;
@@ -203,8 +194,7 @@ struct ExceptionPacketObject {
 };
 
 struct ExceptionObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     char *name;
     Object parent;
 };
@@ -2506,8 +2496,7 @@ Object io_realpath(Object self, int nparts, int *argcv, Object *argv,
     return alloc_String(buf);
 }
 struct ProcessObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     pid_t pid;
     int status;
     int done;
@@ -2801,8 +2790,7 @@ void block_savedest(Object self) {
     uo->retpoint = (void *)&return_stack[calldepth-1];
 }
 struct TailCallObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     Object self;
     const char *name;
     int nparts;
@@ -3609,8 +3597,7 @@ struct HashMapPair {
     Object value;
 };
 struct HashMap {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int nelems;
     int nslots;
     struct HashMapPair *table;

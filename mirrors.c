@@ -24,14 +24,12 @@ ClassData MirrorMethodClass;
 Method *findmethodsimple(Object self, const char *name);
 
 struct MirrorObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     Object obj;
 };
 
 struct MirrorMethodObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     Method *method;
     Object obj;
 };

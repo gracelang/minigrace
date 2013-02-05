@@ -30,9 +30,11 @@ typedef struct Method {
 
 #define CFLAG_SELF 128
 
+#define OBJECT_HEADER int32_t flags; \
+                      ClassData class;
+
 struct ClassData {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     char *name;
     Method *methods;
     int nummethods;
@@ -43,22 +45,19 @@ struct ClassData {
 };
 
 struct Object {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     char data[];
 };
 
 struct UserObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     jmp_buf *retpoint;
     Object super;
     Object *data;
 };
 
 struct StackFrameObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     struct StackFrameObject *parent;
     int size;
     char *name;
@@ -67,8 +66,7 @@ struct StackFrameObject {
 };
 
 struct ClosureEnvObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     char name[256];
     int size;
     Object frame;
@@ -76,8 +74,7 @@ struct ClosureEnvObject {
 };
 
 struct OctetsObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     int blen;
     char body[];
 };

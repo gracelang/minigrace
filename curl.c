@@ -54,14 +54,12 @@ ClassData CurlEasy;
 extern ClassData Octets;
 
 struct CurlModuleObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
 };
 
 #define MINIGRACE_CURLEASY_OBJECTS 3
 struct CurlEasyObject {
-    int32_t flags;
-    ClassData class;
+    OBJECT_HEADER;
     CURL *handle;
     Object objects[MINIGRACE_CURLEASY_OBJECTS];
 };
