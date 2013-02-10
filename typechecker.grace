@@ -5,6 +5,7 @@ def util = platform.util
 def subtype = platform.subtype
 import "xmodule" as xmodule
 import "mgcollections" as collections
+import "mirrors" as mirrors
 
 def preludeObj = HashMap.new
 def moduleScope = HashMap.new
@@ -13,6 +14,9 @@ preludeObj.put("___is_prelude", true)
 var scopes := [HashMap.new, preludeObj, moduleScope]
 var selftypes := [ast.typeNode.new("module", [])]
 var auto_count := 0
+
+var pluginHookSet := false
+var pluginHook
 
 def DynamicIdentifier = ast.identifierNode.new("Dynamic", false)
 def TopOther = ast.identifierNode.new("other", ast.identifierNode.new("Dynamic", false))
@@ -827,6 +831,9 @@ method resolveIdentifiers(node) {
     if (node == false) then {
         return node
     }
+    if (pluginHookSet) then {
+        node := pluginHook.replaceNode(node)
+    }
     if (node.kind == "identifier") then {
         tmp := resolveIdentifier(node)
         return tmp
@@ -1519,6 +1526,10 @@ preludeObj.put("while()do", Binding.new("method"))
 preludeObj.put("for()do", Binding.new("method"))
 preludeObj.put("octets", Binding.new("method"))
 method typecheck(values, *sc) {
+    if (util.extensions.contains("Plugin")) then {
+        pluginHookSet := true
+        pluginHook := mirrors.loadDynamicModule(util.extensions.get("Plugin"))
+    }
     util.log_verbose("typechecking.")
     if (!initDone) then {
         if (!util.extensions.contains("NativePrelude")) then {
