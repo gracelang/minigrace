@@ -72,7 +72,7 @@ tarball: minigrace
 	make c
 	sed -e 's/DISTRIB=tree/DISTRIB=tarball/' < configure > c/configure
 	chmod 755 c/configure
-	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ; mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ; cp -R README doc minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
+	VER=$$(./minigrace --version|head -n 1|cut -d' ' -f2) ; mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ; mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ; mkdir -p minigrace-$$VER/sample/dialects ; cp sample/dialects/*.grace sample/dialects/README sample/dialects/Makefile minigrace-$$VER/sample/dialects ; cp -R README doc minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
 
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genc.grace > tmp.grace
