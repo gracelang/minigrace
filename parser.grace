@@ -1033,6 +1033,10 @@ method callmprest(meth, signature, tok) {
         } else {
             next
         }
+        var isEmpty := false
+        if (accept "rparen") then {
+            isEmpty := true
+        }
         if (isTerm) then {
             ln := lastline
             term
@@ -1045,8 +1049,10 @@ method callmprest(meth, signature, tok) {
                 expectConsume {expression}
             }
         }
-        nxt := values.pop
-        part.args.push(nxt)
+        if (!isEmpty) then {
+            nxt := values.pop
+            part.args.push(nxt)
+        }
         if (isTerm.not) then {
             expect("rparen")
         }
