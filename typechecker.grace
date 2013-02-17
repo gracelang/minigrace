@@ -73,6 +73,7 @@ def StringType = ast.typeNode.new("String", [
     ast.methodTypeNode.new("hashcode", [ast.signaturePart.new("hashcode")], NumberIdentifier),
     ast.methodTypeNode.new("indices", [ast.signaturePart.new("indices")], ListIdentifier),
     ast.methodTypeNode.new("asString", [ast.signaturePart.new("asString")], StringIdentifier),
+    ast.methodTypeNode.new("encode", [ast.signaturePart.new("encode")], DynamicIdentifier),
     ast.methodTypeNode.new("asNumber", [ast.signaturePart.new("asNumber")], NumberIdentifier),
     ast.methodTypeNode.new("match", [ast.signaturePart.new("match", [TopOther])], DynamicIdentifier),
     ast.methodTypeNode.new("|", [ast.signaturePart.new("|", [TopOther])],
