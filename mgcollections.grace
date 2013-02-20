@@ -107,6 +107,9 @@ class set.new(*a) {
         inner.at(i)put(unused)
     }
     method add(x) {
+        if (contains(x)) then {
+            return true
+        }
         var t := findPosition(x)
         inner.at(t)put(x)
         size := size + 1
@@ -148,6 +151,15 @@ class set.new(*a) {
         }
         s ++ ")"
     }
+    method -(o) {
+        def ret = set.new
+        for (self) do {v->
+            if (!o.contains(v)) then {
+                ret.add(v)
+            }
+        }
+        ret
+    }
     method extend(l) {
         for (l) do {i->
             add(i)
@@ -163,6 +175,9 @@ class set.new(*a) {
             method next {
                 while {inner.at(idx) == unused} do {
                     idx := idx + 1
+                    if (idx == inner.size) then {
+                        return
+                    }
                 }
                 def ret = inner.at(idx)
                 count := count + 1
