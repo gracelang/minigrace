@@ -299,6 +299,12 @@ method expressionType(expr) {
         if (opfound.not) then {
             util.type_error("no such operator '{opname}' in {opreceivertype.value}")
         }
+        if (opmeth.signature.size == 0) then {
+            return DynamicType
+        }
+        if (opmeth.signature.first.params.size == 0) then {
+            return DynamicType
+        }
         def opparamtypeid = opmeth.signature.first.params.first.dtype
         def opparamtypebd = if (false != opparamtypeid)
             then {findName(opparamtypeid.value)} else {
