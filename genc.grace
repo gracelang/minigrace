@@ -479,8 +479,6 @@ method compileobject(o, outerRef) {
     out("  self = oldself{myc};")
     out("  selfslot = oldselfslot{myc};")
     out("  stackframe = oldstackframe{myc};")
-    out("  set_type({selfr}, "
-        ++ "{subtype.typeId(o.otype)});")
     o.register := selfr
     inBlock := origInBlock
 }

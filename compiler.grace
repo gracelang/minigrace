@@ -13,6 +13,7 @@ def buildinfo = platform.buildinfo
 def subtype = platform.subtype
 def mgcollections = platform.mgcollections
 def interactive = platform.interactive
+import "identifierresolution" as identifierresolution
 
 util.parseargs
 
@@ -61,7 +62,11 @@ if (util.target == "grace") then {
 if (util.target == "c") then {
     genc.processImports(values)
 }
-values := typechecker.typecheck(values)
+if (util.extensions.contains("IDR")) then {
+    values := identifierresolution.resolve(values)
+} else {
+    values := typechecker.typecheck(values)
+}
 if (util.target == "processed-ast") then {
     for (values) do { v ->
         print(v.pretty(0))

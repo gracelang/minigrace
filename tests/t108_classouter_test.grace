@@ -2,7 +2,7 @@ method a {
   print("out")
 }
 
-class A {
+class A.new {
   method b {
     a
   }

@@ -19,12 +19,27 @@ def collections = platform.mgcollections
 // both a value (the condition) and a "body", for example. None of the nodes
 // are particularly notable in any way.
 
+method listMap(l, b)before(blkBefore)after(blkAfter) {
+    def r = collections.list.new
+    for (l) do {v->
+        def replacement = v.map(b)before(blkBefore)after(blkAfter)
+        r.push(replacement)
+    }
+    r
+}
+method maybeMap(n, b, before, after) {
+    if (n != false) then {
+        return n.map(b)before(before)after(after)
+    }
+    n
+}
+
 class forNode.new(over, body') {
     def kind = "for"
     def value = over
     def body = body'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitFor(self)) then {
             self.value.accept(visitor)
@@ -58,7 +73,7 @@ class whileNode.new(cond, body') {
     def value = cond
     def body = body'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitWhile(self)) then {
             self.value.accept(visitor)
@@ -100,7 +115,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     def thenblock = thenblock'
     def elseblock = elseblock'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     var handledIdentifiers := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIf(self)) then {
@@ -112,6 +127,20 @@ class ifNode.new(cond, thenblock', elseblock') {
                 ix.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := ifNode.new(self.value.map(blk)
+                before(blkBefore)after(blkAfter),
+            listMap(self.thenblock, blk)before(blkBefore)after(blkAfter),
+            listMap(self.elseblock, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -159,7 +188,7 @@ class blockNode.new(params', body') {
     def selfclosure = true
     var register := ""
     var matchingPattern := false
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitBlock(self)) then {
             for (self.params) do { mx ->
@@ -172,6 +201,22 @@ class blockNode.new(params', body') {
                 self.matchingPattern.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := blockNode.new(listMap(params, blk)before(blkBefore)after(blkAfter),
+            listMap(body, blk)before(blkBefore)after(blkAfter))
+        if (self.matchingPattern != false) then {
+            n.matchingPattern := self.matchingPattern.map(blk)
+                before(blkBefore)after(blkAfter)
+        }
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -230,7 +275,7 @@ class catchCaseNode.new(block, cases', finally') {
     def cases = cases'
     def finally = finally'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCatchCase(self)) then {
             self.value.accept(visitor)
@@ -241,6 +286,17 @@ class catchCaseNode.new(block, cases', finally') {
                 self.finally.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := catchCaseNode.new(value.map(blk)before(blkBefore)after(blkAfter),
+            listMap(cases, blk)before(blkBefore)after(blkAfter),
+            maybeMap(finally, blk, blkBefore, blkAfter))
+        n.line := line
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -278,7 +334,7 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     def cases = cases'
     def elsecase = elsecase'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMatchCase(self)) then {
             self.value.accept(visitor)
@@ -289,6 +345,19 @@ class matchCaseNode.new(matchee, cases', elsecase') {
                 self.elsecase.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        def newcases = listMap(cases, blk)before(blkBefore)after(blkAfter)
+        var n := matchCaseNode.new(value.map(blk)before(blkBefore)after(blkAfter),
+            newcases,
+            maybeMap(elsecase, blk, blkBefore, blkAfter))
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -340,7 +409,7 @@ class methodTypeNode.new(name', signature', rtype') {
     def value = name'
     def signature = signature'
     def rtype = rtype'
-    def line = util.linenum
+    var line := util.linenum
     var register := ""
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethodType(self)) then {
@@ -356,6 +425,21 @@ class methodTypeNode.new(name', signature', rtype') {
                 }
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var rt := false
+        if (rtype != false) then {
+            rt := rtype.map(blk)before(blkBefore)after(blkAfter)
+        }
+        var n := methodTypeNode.new(value, listMap(signature, blk)before(blkBefore)after(blkAfter),
+            rt)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -411,7 +495,7 @@ class typeNode.new(name', methods') {
     def methods = methods'
     def unionTypes = []
     def intersectionTypes = []
-    def line = util.linenum
+    var line := util.linenum
     var generics := []
     var nominal := false
     var anonymous := false
@@ -432,6 +516,18 @@ class typeNode.new(name', methods') {
                 mx.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := typeNode.new(value, listMap(methods, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.anonymous := self.anonymous
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -543,7 +639,7 @@ class methodNode.new(name', signature', body', dtype') {
     var generics := []
     var selfclosure := false
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def annotations = collections.list.new
     var properties := collections.map.new
     method accept(visitor : ASTVisitor) {
@@ -564,6 +660,24 @@ class methodNode.new(name', signature', body', dtype') {
                 mx.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var dt := false
+        if (dtype != false) then {
+            dt := dtype.map(blk)before(blkBefore)after(blkAfter)
+        }
+        var n := methodNode.new(name', signature, listMap(body, blk)before(blkBefore)after(blkAfter), dt)
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -661,7 +775,7 @@ class callNode.new(what, with') {
     def kind = "call"
     def value = what
     def with = with'
-    def line = 0 + util.linenum
+    var line := 0 + util.linenum
     var register := ""
     var generics := false
     method accept(visitor : ASTVisitor) {
@@ -673,6 +787,18 @@ class callNode.new(what, with') {
                 }
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := callNode.new(value.map(blk)before(blkBefore)after(blkAfter),
+            listMap(with, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -752,7 +878,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
     def signature = signature'
     var generics := false
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def superclass = superclass'
     var instanceMethods := collections.list.new
     method accept(visitor : ASTVisitor) {
@@ -775,6 +901,19 @@ class classNode.new(name', signature', body', superclass', constructor') {
             }
         }
     }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := classNode.new(name.map(blk)before(blkBefore)after(blkAfter),
+            listMap(signature, blk)before(blkBefore)after(blkAfter), listMap(value, blk)before(blkBefore)after(blkAfter),
+            maybeMap(superclass, blk, blkBefore, blkAfter), constructor)
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->
@@ -786,6 +925,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
         }
         s := s ++ "\n"
+        s := "{s}{spc}Constructor: {constructor.value}\n"
         s := "{s}{spc}Signature:"
         for (signature) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
@@ -848,7 +988,7 @@ class objectNode.new(body, superclass') {
     def kind = "object"
     def value = body
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def superclass = superclass'
     var otype := false
     var classname := "object"
@@ -910,13 +1050,24 @@ class arrayNode.new(values) {
     def kind = "array"
     def value = values
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitArray(self)) then {
             for (self.value) do { ax ->
                 ax.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := arrayNode.new(listMap(value, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -946,11 +1097,22 @@ class memberNode.new(what, in') {
     var value := what
     def in = in'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMember(self)) then {
             self.in.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := memberNode.new(value, in.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -977,7 +1139,7 @@ class genericNode.new(base, params') {
     def value = base
     def params = params'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitGeneric(self)) then {
             self.value.accept(visitor)
@@ -985,6 +1147,17 @@ class genericNode.new(base, params') {
                 p.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := genericNode.new(value.map(blk)before(blkBefore)after(blkAfter), listMap(params, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var s := "Generic(" ++ self.value.value ++ "<"
@@ -1006,12 +1179,12 @@ class genericNode.new(base, params') {
         s
     }
 }
-class identifierNode.new(n, dtype') {
+class identifierNode.new(name, dtype') {
     def kind = "identifier"
-    var value := n
+    var value := name
     var dtype := dtype'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def linePos = util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
@@ -1019,6 +1192,18 @@ class identifierNode.new(n, dtype') {
                 self.dtype.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
+        blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1044,7 +1229,7 @@ class octetsNode.new(n) {
     def kind = "octets"
     def value = n
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         visitor.visitOctets(self)
     }
@@ -1055,13 +1240,23 @@ class octetsNode.new(n) {
         self.value
     }
 }
-class stringNode.new(n) {
+class stringNode.new(v) {
     def kind = "string"
-    var value := n
+    var value := v
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         visitor.visitString(self)
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := blk.apply(self)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         "String(" ++ self.value ++ ")"
@@ -1086,13 +1281,23 @@ class stringNode.new(n) {
         s
     }
 }
-class numNode.new(n) {
+class numNode.new(val) {
     def kind = "num"
-    def value = n
+    def value = val
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         visitor.visitNum(self)
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := blk.apply(self)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         "Num(" ++ self.value ++ ")"
@@ -1107,12 +1312,23 @@ class opNode.new(op, l, r) {
     def left = l
     def right = r
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitOp(self)) then {
             self.left.accept(visitor)
             self.right.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := opNode.new(value, left.map(blk)before(blkBefore)after(blkAfter), right.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1151,12 +1367,23 @@ class indexNode.new(expr, index') {
     def value = expr
     def index = index'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIndex(self)) then {
             self.value.accept(visitor)
             self.index.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := indexNode.new(value.map(blk)before(blkBefore)after(blkAfter), index.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1185,12 +1412,23 @@ class bindNode.new(dest', val') {
     def dest = dest'
     def value = val'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitBind(self)) then {
             self.dest.accept(visitor)
             self.value.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := bindNode.new(dest.map(blk)before(blkBefore)after(blkAfter), value.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1220,7 +1458,7 @@ class defDecNode.new(name', val, dtype') {
     def value = val
     var dtype := dtype'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitDefDec(self)) then {
@@ -1232,6 +1470,21 @@ class defDecNode.new(name', val, dtype') {
                 self.value.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := defDecNode.new(name, value.map(blk)before(blkBefore)after(blkAfter),
+            maybeMap(dtype, blk, blkBefore, blkAfter))
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1277,7 +1530,7 @@ class varDecNode.new(name', val', dtype') {
     def value = val'
     var dtype := dtype'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
@@ -1289,6 +1542,22 @@ class varDecNode.new(name', val', dtype') {
                 self.value.accept(visitor)
             }
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := varDecNode.new(name, maybeMap(value, blk,
+                blkBefore, blkAfter),
+            maybeMap(dtype, blk, blkBefore, blkAfter))
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1333,10 +1602,20 @@ class importNode.new(path', name) {
     def value = name
     def path = path'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     var dtype := false
     method accept(visitor : ASTVisitor) {
         visitor.visitImport(self)
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := blk.apply(self)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1357,9 +1636,19 @@ class dialectNode.new(path') {
     def kind = "dialect"
     def value = path'
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         visitor.visitDialect(self)
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := blk.apply(self)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1379,11 +1668,22 @@ class returnNode.new(expr) {
     def kind = "return"
     def value = expr
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitReturn(self)) then {
             self.value.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := returnNode.new(value.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1403,11 +1703,22 @@ class inheritsNode.new(expr) {
     def kind = "inherits"
     def value = expr
     var register := ""
-    def line = util.linenum
+    var line := util.linenum
     method accept(visitor : ASTVisitor) {
         if (visitor.visitInherits(self)) then {
             self.value.accept(visitor)
         }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := inheritsNode.new(value.map(blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
     method pretty(depth) {
         var spc := ""
@@ -1425,10 +1736,12 @@ class inheritsNode.new(expr) {
 }
 
 class signaturePart.new(*values) {
+    def kind = "signaturepart"
     var name := ""
     var params := []
     var vararg := false
     var generics := []
+    def line = util.linenum
     if (values.size > 0) then {
         name := values[1]
     }
@@ -1438,12 +1751,23 @@ class signaturePart.new(*values) {
     if (values.size > 2) then {
         vararg := values[3]
     }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := signaturePart.new(name, listMap(params, blk)before(blkBefore)after(blkAfter), vararg)
+        n := blk.apply(n)
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
 }
 
 method callWithPart {
     object {
         method new(*values) {
             object {
+                def kind = "callwithpart"
                 var name := ""
                 var args := []
                 if (values.size > 0) then {
@@ -1452,6 +1776,17 @@ method callWithPart {
                 if (values.size > 1) then {
                     args := values[2]
                 }
+                method map(blk)before(blkBefore)after(blkAfter) {
+                    blkBefore.apply(self)
+                    var n := callWithPart.new(name, listMap(args, blk)before(blkBefore)after(blkAfter))
+                    n := blk.apply(n)
+                    blkAfter.apply(n)
+                    n
+                }
+                method map(blk) {
+                    map(blk)before {} after {}
+                }
+                def line = util.linenum
             }
         }
     }

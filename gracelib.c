@@ -730,7 +730,7 @@ void ExceptionPacket__mark(struct ExceptionPacketObject *e) {
 }
 void ExceptionPacket__release(struct ExceptionPacketObject *e) {
     int i;
-    for (i=0; i<calldepth; i++) {
+    for (i=0; i<e->calldepth; i++) {
         glfree(e->backtrace[i]);
     }
     glfree(e->backtrace);
@@ -2915,10 +2915,11 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
-                    die("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i)",
+                    die("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i), got %s",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
-                            m->name, m->definitionModule, m->definitionLine);
+                            m->name, m->definitionModule, m->definitionLine,
+                            argv[k]->class->name);
                 }
             k++;
         }
@@ -3018,6 +3019,13 @@ start:
             goto start;
         }
         return ret;
+    }
+    if (m) {
+        char buf[1024];
+        sprintf(buf, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
+                self->class->name, name, linenumber);
+        fprintf(stderr, buf);
+        exit(1);
     }
     if (error_jump_set) {
         char buf[1024];

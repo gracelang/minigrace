@@ -4,7 +4,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=7c9986bc77c7f13621e4616f44c4be4fed710326
 all: minigrace $(OTHER_MODULES)
 
-REALSOURCEFILES = compiler.grace util.grace ast.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace mgcollections.grace interactive.grace xmodule.grace
+REALSOURCEFILES = compiler.grace util.grace ast.grace lexer.grace parser.grace typechecker.grace genjs.grace subtype.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 
 ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
@@ -104,6 +104,8 @@ togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
 repltest: minigrace
 	./tests/harness "../minigrace" tests repl
+idrtest: minigrace
+	./tests/harness "../minigrace -XIDR" tests ""
 backendtests: test
 
 clean:
