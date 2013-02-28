@@ -186,8 +186,8 @@ class evalVisitor.new {
                                 ast.identifierNode.new("__block{myblockc}",
                                                    false))
 
-        for (over.val) do { v ->
-            v := resolve(v)
+        for (over.val) do { v' ->
+            var v := resolve(v')
             var paraml := []
             if (block.params.size > 0) then {
                 var param := block.params[1]

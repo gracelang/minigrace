@@ -47,6 +47,8 @@ var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = HashMap.new
 var importHook := false
+var subprocesses := collections.list.new
+var linkfiles := collections.list.new
 
 method out(s) {
     output.push(s)
@@ -82,7 +84,8 @@ method countbindings(l) {
     }
     numslots
 }
-method definebindings(l, slot) {
+method definebindings(l, slot') {
+    var slot := slot'
     for (l) do { n ->
         if ((n.kind == "vardec") || (n.kind == "defdec")
             || (n.kind == "class")) then {
@@ -1746,8 +1749,6 @@ method checkimport(nm) {
         util.syntax_error("failed finding import of " ++ nm ++ ".")
     }
 }
-var subprocesses := collections.list.new
-var linkfiles := collections.list.new
 method processImports(values') {
     if (util.runmode == "make") then {
         log_verbose("checking imports.")

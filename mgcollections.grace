@@ -103,6 +103,7 @@ class set.new(*a) {
     var inner := PrimitiveArray.new(if (a.size > 1)
         then {a.size * 3 + 1} else {8})
     def unused = object { var unused := true }
+    var size := 0
     for (0..(inner.size-1)) do {i->
         inner.at(i)put(unused)
     }
@@ -204,7 +205,6 @@ class set.new(*a) {
             }
         }
     }
-    var size := 0
     for (a) do {x->
         add(x)
         size := size + 1

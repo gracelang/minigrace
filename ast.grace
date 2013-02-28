@@ -862,7 +862,21 @@ class objectNode.new(body, superclass') {
             }
         }
     }
-    method pretty(depth) {
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := objectNode.new(listMap(value,
+        blk)before(blkBefore)after(blkAfter), maybeMap(superclass, blk,
+        blkBefore, blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
+    method pretty(depth') {
+        var depth := depth'
         var spc := ""
         for (0..depth) do { i ->
             spc := spc ++ "  "

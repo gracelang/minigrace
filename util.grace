@@ -332,12 +332,13 @@ method debug(s) {
 }
 var hexdigits := "0123456789abcdef"
 method hex(num) {
+    var tmp := num
     var s := ""
-    while {num > 0} do {
-        var i := num % 16
+    while {tmp > 0} do {
+        var i := tmp % 16
         s := s ++ hexdigits.at(i + 1)
-        num := num - i
-        num := num / 16
+        tmp := tmp - i
+        tmp := tmp / 16
     }
     s
 }

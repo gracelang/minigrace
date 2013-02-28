@@ -829,12 +829,13 @@ method rewritematchblock(blk) {
     return newblk
 }
 
-method resolveIdentifiers(node) {
+method resolveIdentifiers(node') {
     var l
     var tmp
     var tmp2
     var tmp3
     var tmp4
+    var node := node'
     if (node == false) then {
         return node
     }
