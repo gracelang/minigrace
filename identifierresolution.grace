@@ -9,9 +9,11 @@ import "mirrors" as mirrors
 
 class Scope.new(parent') {
     def elements = collections.map.new
+    def elementScopes = collections.map.new
     def parent = parent'
     var hasParent := true
     var variety := "block"
+    var name := ""
     method add(n) {
         elements.put(n, "method")
     }
@@ -29,6 +31,15 @@ class Scope.new(parent') {
     }
     method getKind(n) {
         elements.get(n)
+    }
+    method bindAs(n) {
+        parent.elementScopes.put(n, self)
+    }
+    method getScope(n) {
+        if (elementScopes.contains(n)) then {
+            return elementScopes.get(n)
+        }
+        return Scope.new(self)
     }
     method new {
         Scope.new(self)
@@ -102,6 +113,47 @@ method findDeepMethod(name) {
     }
     // Not found - leave it alone
     return ast.identifierNode.new(name, false)
+}
+
+method findDeepScope'(node, scope') {
+    if (node.kind == "identifier") then {
+        if (node.value == "self") then {
+            var s := scope'
+            while {s.hasParent} do {
+                if (s.variety == "object") then {
+                    return s
+                }
+                if (s.variety == "class") then {
+                    return s
+                }
+                if (s.variety == "module") then {
+                    return s
+                }
+                s := s.parent
+            }
+        }
+        scope'.do {s->
+            if (s.contains(node.value)) then {
+                return s.getScope(node.value)
+            }
+        }
+        return scope'.getScope(node.value)
+    }
+    if (node.kind == "member") then {
+        def tmp = findDeepScope'(node.in, scope')
+        if (node.value == "outer") then {
+            return tmp.parent
+        }
+        return tmp.getScope(node.value)
+    }
+    if (node.kind == "call") then {
+        return findDeepScope'(node.value, scope')
+    }
+    return Scope.new(scope')
+}
+
+method findDeepScope(node) {
+    findDeepScope'(node, scope)
 }
 
 method rewritematchblockterm(arg) {
@@ -336,7 +388,11 @@ method resolveIdentifiers(topNode) {
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
         if (node.kind == "class") then {
             scope.add(node.name.value) as "def"
+            def classScope = Scope.new(scope)
+            classScope.add(node.constructor.value)
+            classScope.bindAs(node.name.value)
             pushScope
+            classScope.elementScopes.put(node.constructor.value, scope)
             scope.variety := "class"
             for (node.signature) do {s->
                 for (s.params) do {p->
@@ -357,6 +413,13 @@ method resolveIdentifiers(topNode) {
                 if (n.kind == "def") then {
                     scope.add(n.name.value)
                 }
+                if (n.kind == "inherits") then {
+                    def parent = resolveIdentifiers(n.value)
+                    def parentScope = findDeepScope(parent)
+                    for (parentScope.elements) do {e->
+                        scope.add(e)
+                    }
+                }
             }
         }
         if (node.kind == "object") then {
@@ -372,6 +435,13 @@ method resolveIdentifiers(topNode) {
                 }
                 if (n.kind == "def") then {
                     scope.add(n.name.value)
+                }
+                if (n.kind == "inherits") then {
+                    def parent = resolveIdentifiers(n.value)
+                    def parentScope = findDeepScope(parent)
+                    for (parentScope.elements) do {e->
+                        scope.add(e)
+                    }
                 }
             }
         }
@@ -408,6 +478,8 @@ method resolveIdentifiers(topNode) {
         if (node.kind == "method") then {
             scope.add(node.value.value)
             pushScope
+            scope.variety := "method"
+            scope.name := node.value.value
             for (node.signature) do {s->
                 for (s.params) do {p->
                     scope.add(p.value)as "def"
@@ -443,6 +515,11 @@ method resolveIdentifiers(topNode) {
             popScope
         }
         if (node.kind == "object") then {
+            if (scope.parent.variety == "method") then {
+                scope.parent.parent.elementScopes.put(scope.parent.name,
+                    scope)
+            }
+            node.data := scope
             popScope
         }
         if (node.kind == "block") then {
@@ -456,6 +533,11 @@ method resolveIdentifiers(topNode) {
         }
         if (node.kind == "type") then {
             popScope
+        }
+        if (node.kind == "defdec") then {
+            if (node.value.kind == "object") then {
+                scope.elementScopes.put(node.name.value, node.value.data)
+            }
         }
     }
 }

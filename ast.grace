@@ -992,6 +992,7 @@ class objectNode.new(body, superclass') {
     def superclass = superclass'
     var otype := false
     var classname := "object"
+    var data := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitObject(self)) then {
             if (self.superclass != false) then {

@@ -220,11 +220,13 @@ class map.new {
     }
     method put(key', value') {
         var t := findPosition(key')
+        if (inner.at(t) == unused) then {
+            size := size + 1
+        }
         inner.at(t)put(object {
             def key = key'
             var value := value'
         })
-        size := size + 1
         if (size > (inner.size / 2)) then {
             expand
         }
