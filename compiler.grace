@@ -62,7 +62,7 @@ if (util.target == "grace") then {
 if (util.target == "c") then {
     genc.processImports(values)
 }
-if (util.extensions.contains("IDR")) then {
+if (!util.extensions.contains("NoIDR")) then {
     values := identifierresolution.resolve(values)
 } else {
     values := typechecker.typecheck(values)
