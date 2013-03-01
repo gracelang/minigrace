@@ -242,7 +242,6 @@
   <option value="lex" />Tokens
   <option value="parse" />AST
   <option value="grace" />Grace
-  <option value="subtypematrix" />Type matrix
   <option value="testall" />All tests (slow)
  </select>
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
@@ -272,8 +271,7 @@ minigrace-js
  <script src="genc.js"></script>
  <script src="genjs.js"></script>
  <script src="buildinfo.js"></script>
- <script src="subtype.js"></script>
- <script src="typechecker.js"></script>
+ <script src="identifierresolution.js"></script>
  <script src="mgcollections.js"></script>
  <script src="xmodule.js"></script>
  <style type="text/css">
