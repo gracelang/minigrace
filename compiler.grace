@@ -6,19 +6,17 @@ def util = platform.util
 def lexer = platform.lexer
 def ast = platform.ast
 def parser = platform.parser
-def typechecker = platform.typechecker
 def genc = platform.genc
 def genjs = platform.genjs
 def buildinfo = platform.buildinfo
-def subtype = platform.subtype
 def mgcollections = platform.mgcollections
 def interactive = platform.interactive
 import "identifierresolution" as identifierresolution
 
 util.parseargs
 
-def targets = ["lex", "parse", "grace", "processed-ast", "subtypematrix",
-    "types", "imports", "c", "js", "grace"]
+def targets = ["lex", "parse", "grace", "processed-ast",
+    "imports", "c", "js", "grace"]
 
 if (util.target == "help") then {
     print("Valid targets:")
@@ -62,24 +60,10 @@ if (util.target == "grace") then {
 if (util.target == "c") then {
     genc.processImports(values)
 }
-if (!util.extensions.contains("NoIDR")) then {
-    values := identifierresolution.resolve(values)
-} else {
-    values := typechecker.typecheck(values)
-}
+values := identifierresolution.resolve(values)
 if (util.target == "processed-ast") then {
     for (values) do { v ->
         print(v.pretty(0))
-    }
-    sys.exit(0)
-}
-if (util.target == "subtypematrix") then {
-    subtype.printMatrix
-    sys.exit(0)
-}
-if (util.target == "types") then {
-    for (subtype.types) do {t->
-        print("{subtype.stringifyType(t)}:\n  {t.pretty(2)}")
     }
     sys.exit(0)
 }

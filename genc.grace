@@ -4,7 +4,6 @@ def sys = platform.sys
 def ast = platform.ast
 def util = platform.util
 def buildinfo = platform.buildinfo
-def subtype = platform.subtype
 def mgcollections = platform.mgcollections
 import "xmodule" as xmodule
 import "mirrors" as mirrors

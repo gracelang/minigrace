@@ -9,7 +9,7 @@ def io = platform.io
 def util = platform.util
 def lexer = platform.lexer
 def parser = platform.parser
-def typechecker = platform.typechecker
+import "identifierresolution" as identifierresolution
 
 def collections = mgcollections
 
@@ -924,7 +924,8 @@ method startRepl {
                     if (!io.input.isatty && (util.errno != 0)) then {
                         sys.exit(util.errno)
                     } elseif (util.errno == 0) then {
-                        vals := typechecker.typecheck(vals, tcenv)
+                        // TODO - IDR doesn't support tcenv
+                        vals := identifierresolution.resolve(vals, tcenv)
                         if (!io.input.isatty && (util.errno != 0)) then {
                             sys.exit(util.errno)
                         } elseif (util.errno == 0) then {

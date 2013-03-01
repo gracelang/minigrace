@@ -2,7 +2,6 @@
 def io = platform.io
 def ast = platform.ast
 def util = platform.util
-def subtype = platform.subtype
 def mgcollections = platform.mgcollections
 
 def collections = mgcollections
@@ -234,7 +233,6 @@ method dotyperef {
         for (unionTypes) do {ut->
             overallType.unionTypes.push(ut)
         }
-        subtype.addType(overallType)
     }
     def intersectionTypes = []
     while {acceptSameLine("op") && (sym.value == "&")} do {
@@ -255,7 +253,6 @@ method dotyperef {
         for (intersectionTypes) do {it->
             overallType.intersectionTypes.push(it)
         }
-        subtype.addType(overallType)
     }
     values.push(overallType)
 }
