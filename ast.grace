@@ -1462,6 +1462,7 @@ class defDecNode.new(name', val, dtype') {
     var register := ""
     var line := util.linenum
     def annotations = collections.list.new
+    var data := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitDefDec(self)) then {
             self.name.accept(visitor)

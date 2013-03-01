@@ -538,6 +538,7 @@ method resolveIdentifiers(topNode) {
         if (node.kind == "defdec") then {
             if (node.value.kind == "object") then {
                 scope.elementScopes.put(node.name.value, node.value.data)
+                node.data := scope
             }
         }
     }
@@ -597,8 +598,10 @@ method resolve(values) {
     builtinObj.add "readable" as "def"
     builtinObj.add "writable" as "def"
     builtinObj.add "public" as "def"
+    builtinObj.add "parent" as "def"
     builtinObj.add "prelude" as "def"
     builtinObj.add "_prelude" as "def"
+    builtinObj.add "..." as "def"
     // Historical - should be removed eventually
     builtinObj.add "Unit" as "def"
     builtinObj.add "void" as "def"

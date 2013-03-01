@@ -1832,9 +1832,9 @@ method compile(vl, of, mn, rm, bt) {
                 methods.push(v.name.value)
             }
             if (ast.findAnnotation(v, "parent")) then {
-                if (false != v.dtype) then {
-                    for (v.dtype.methods) do {m->
-                        methods.push(m.value)
+                if (false != v.data) then {
+                    for (v.data.elements) do {m->
+                        methods.push(m)
                     }
                 }
             }
