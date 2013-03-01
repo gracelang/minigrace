@@ -543,6 +543,42 @@ method resolveIdentifiers(topNode) {
     }
 }
 
+method handleImport(e) {
+    def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+    def classes = collections.map.new
+    def otherModule = Scope.new(builtinObj)
+    if (gct.contains("classes")) then {
+        for (gct.get("classes")) do {c->
+            def cmeths = []
+            def constrs = gct.get("constructors-of:{c}")
+            def classScope = Scope.new(otherModule)
+            for (constrs) do {constr->
+                def ns = Scope.new(otherModule)
+                classScope.add(constr)
+                classScope.elementScopes.put(constr, ns)
+                for (gct.get("methods-of:{c}.{constr}")) do {mn->
+                    ns.add(mn)
+                }
+            }
+            otherModule.add(c)
+            otherModule.elementScopes.put(c, classScope)
+        }
+    }
+    def freshmeths = collections.map.new
+    if (gct.contains("fresh-methods")) then {
+        for (gct.get("fresh-methods")) do {c->
+            def mScope = Scope.new(otherModule)
+            for (gct.get("fresh:{c}")) do {mn->
+                mScope.add(mn)
+            }
+            otherModule.add(c)
+            otherModule.elementScopes.put(c, mScope)
+        }
+    }
+    scope.add(e.value) as "def"
+    scope.elementScopes.put(e.value, otherModule)
+}
+
 method resolve(values) {
     util.log_verbose "resolving identifiers."
     preludeObj.add "for()do"
@@ -608,6 +644,9 @@ method resolve(values) {
         }
         if (n.kind == "type") then {
             scope.add(n.value)
+        }
+        if (n.kind == "import") then {
+            handleImport(n)
         }
     }
     for (values) do { v ->
