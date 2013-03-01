@@ -2095,8 +2095,8 @@ method compile(vl, of, mn, rm, bt) {
                 tfp.write("constructors-of:{val.name.value}:\n")
                 tfp.write(" {val.constructor.value}\n")
                 tfp.write("methods-of:{val.name.value}.{val.constructor.value}:\n")
-                for (val.instanceMethods) do {im->
-                    tfp.write(" {im.value}\n")
+                for (val.data.elements) do {im->
+                    tfp.write(" {im}\n")
                 }
                 classes.push(val.name.value)
             }
@@ -2109,11 +2109,11 @@ method compile(vl, of, mn, rm, bt) {
                         if (nd.kind == "method") then {
                             if (nd.properties.contains("fresh")) then {
                                 isClass := true
-                                obConstructors.push(nd.value)
+                                obConstructors.push(nd.value.value)
                                 tfp.write("methods-of:{val.name.value}.{nd.value.value}:\n")
-                                for (nd.properties.get("fresh").methods) do {
+                                for (ob.data.getScope(nd.value.value)) do {
                                     im->
-                                    tfp.write(" {im.value}\n")
+                                    tfp.write(" {im}\n")
                                 }
                             }
                         }
@@ -2144,8 +2144,8 @@ method compile(vl, of, mn, rm, bt) {
             if (val.kind == "method") then {
                 if (val.properties.contains("fresh")) then {
                     tfp.write("fresh:{val.value.value}:\n")
-                    for (val.properties.get("fresh").methods) do {im->
-                        tfp.write(" {im.value}\n")
+                    for (val.properties.get("fresh").elements) do {im->
+                        tfp.write(" {im}\n")
                     }
                 }
             }

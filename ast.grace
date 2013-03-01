@@ -881,6 +881,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
     var line := util.linenum
     def superclass = superclass'
     var instanceMethods := collections.list.new
+    var data := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitClass(self)) then {
             self.name.accept(visitor)

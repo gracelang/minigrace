@@ -512,6 +512,7 @@ method resolveIdentifiers(topNode) {
         }
     } after { node ->
         if (node.kind == "class") then {
+            node.data := scope
             popScope
         }
         if (node.kind == "object") then {
@@ -610,7 +611,13 @@ method resolve(values) {
         }
     }
     for (values) do { v ->
-        vals.push(resolveIdentifiers(v))
+        def v' = resolveIdentifiers(v)
+        vals.push(v')
+        if (v'.kind == "method") then {
+            if (moduleObj.elementScopes.contains(v'.value.value)) then {
+                v'.properties.put("fresh", moduleObj.getScope(v'.value.value))
+            }
+        }
     }
     vals
 }
