@@ -323,9 +323,6 @@ method resolveIdentifier(node) {
     var nm := node.value
     util.setline(node.line)
     if (haveBinding(nm).not) then {
-        scope.do {s->
-            print(s.elements)
-        }
         util.syntax_error("use of undefined identifier {nm}")
     }
     if (nm == "outer") then {
