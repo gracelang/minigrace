@@ -12,6 +12,7 @@ def buildinfo = platform.buildinfo
 def mgcollections = platform.mgcollections
 def interactive = platform.interactive
 import "identifierresolution" as identifierresolution
+import "mirrors" as mirrors
 
 util.parseargs
 
@@ -59,6 +60,9 @@ if (util.target == "grace") then {
 }
 if (util.target == "c") then {
     genc.processImports(values)
+}
+if (util.extensions.contains("Plugin")) then {
+    mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
 values := identifierresolution.resolve(values)
 if (util.target == "processed-ast") then {
