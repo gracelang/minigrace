@@ -201,6 +201,7 @@ method dotypeterm {
     if (accept("identifier")) then {
         pushidentifier
         generic
+        dotrest
     } else {
         if (accept("lbrace")) then {
             doanontype
@@ -306,7 +307,7 @@ method block {
                     ident1 := values.pop
                     if (accept("colon")) then {
                         next
-                        pushidentifier
+                        dotyperef
                         ident1.dtype := values.pop
                     }
                     params.push(ident1)
