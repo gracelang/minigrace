@@ -144,6 +144,9 @@ method escapeident(s) {
     }
     ns
 }
+method escapestring(s) {
+    s._escape
+}
 method escapestring2(s) {
     var ns := ""
     var cd := 0
@@ -1530,20 +1533,6 @@ method compilenode(o) {
                   ++ args.size ++ ",  params);")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
-        } elseif ((o.value.kind == "member") &&
-                { (o.value.in.kind == "identifier")
-                    && (o.value.in.value == "self")
-                    && (o.value.value == "escapestring")}) then {
-            tmp := o.with.first.args.first
-            tmp := ast.memberNode.new("_escape", tmp)
-            tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
-            o.register := compilenode(tmp)
-        } elseif ((o.value.kind == "identifier")
-                && (o.value.value == "escapestring")) then {
-            tmp := o.with.first.args.first
-            tmp := ast.memberNode.new("_escape", tmp)
-            tmp := ast.callNode.new(tmp, [ast.callWithPart.new(tmp.value)])
-            o.register := compilenode(tmp)
         } else {
             compilecall(o, false)
         }

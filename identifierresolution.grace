@@ -605,7 +605,6 @@ method resolve(values) {
     builtinObj.add "nothing" as "def"
     builtinObj.add "platform" as "def"
     builtinObj.add "HashMap" as "def"
-    builtinObj.add "escapestring" as "method"
     if (!util.extensions.contains("NativePrelude")) then {
         var hadDialect := false
         for (values) do {val->
