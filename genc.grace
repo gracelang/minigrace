@@ -1,14 +1,12 @@
 #pragma DefaultVisibility=public
-def io = platform.io
-def sys = platform.sys
-def ast = platform.ast
-def util = platform.util
-def buildinfo = platform.buildinfo
-def mgcollections = platform.mgcollections
+import "io" as io
+import "sys" as sys
+import "ast" as ast
+import "util" as util
+import "buildinfo" as buildinfo
+import "mgcollections" as collections
 import "xmodule" as xmodule
 import "mirrors" as mirrors
-
-def collections = mgcollections
 
 // genc produces C code from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -44,7 +42,7 @@ var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
-def topLevelTypes = mgcollections.map.new
+def topLevelTypes = collections.map.new
 var importHook := false
 var subprocesses := collections.list.new
 var linkfiles := collections.list.new

@@ -1,11 +1,9 @@
 #pragma DefaultVisibility=public
-def io = platform.io
-def sys = platform.sys
-def util = platform.util
-def unicode = platform.unicode
-def mgcollections = platform.mgcollections
-
-def collections = mgcollections
+import "io" as io
+import "sys" as sys
+import "util" as util
+import "unicode" as unicode
+import "mgcollections" as collections
 
 // Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {

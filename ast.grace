@@ -1,6 +1,6 @@
 #pragma DefaultVisibility=public
-def util = platform.util
-def collections = platform.mgcollections
+import "util" as util
+import "mgcollections" as collections
 
 // This module contains pseudo-classes for all the AST nodes used
 // in the parser. The module predates the existence of classes in the

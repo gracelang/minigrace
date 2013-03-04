@@ -1,17 +1,14 @@
 #pragma DefaultVisibility=public
-
-def mgcollections = platform.mgcollections
-def mirrors = platform.mirrors
-def repl = platform.repl
-def ast = platform.ast
-def sys = platform.sys
-def io = platform.io
-def util = platform.util
-def lexer = platform.lexer
-def parser = platform.parser
+import "mgcollections" as collections
+import "mirrors" as mirrors
+import "repl" as repl
+import "ast" as ast
+import "sys" as sys
+import "io" as io
+import "util" as util
+import "lexer" as lexer
+import "parser" as parser
 import "identifierresolution" as identifierresolution
-
-def collections = mgcollections
 
 class replObj.new(kind', val', *env') {
     def kind = kind'
@@ -866,7 +863,7 @@ method iscontinued {
 
 method startRepl {
     var cont := true
-    var tcenv := mgcollections.map.new
+    var tcenv := collections.map.new
     var visitor := evalVisitor.new
     var ivalues := []
     var completeline := ""

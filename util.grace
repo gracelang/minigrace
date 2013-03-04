@@ -1,7 +1,7 @@
 #pragma DefaultVisibility=public
-def io = platform.io
-def sys = platform.sys
-def buildinfo = platform.buildinfo
+import "io" as io
+import "sys" as sys
+import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
 
 var __compilerRevision := false

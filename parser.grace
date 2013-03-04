@@ -1,10 +1,8 @@
 #pragma DefaultVisibility=public
-def io = platform.io
-def ast = platform.ast
-def util = platform.util
-def mgcollections = platform.mgcollections
-
-def collections = mgcollections
+import "io" as io
+import "ast" as ast
+import "util" as util
+import "mgcollections" as collections
 
 var lastline := 0
 var linenum := 0
@@ -892,7 +890,7 @@ method callrest {
     if (acceptSameLine "lgeneric") then {
         // Generic!
         next
-        genericIdents := mgcollections.list.new
+        genericIdents := collections.list.new
         while {accept("identifier")} do {
             identifier
             genericIdents.push(values.pop)
