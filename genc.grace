@@ -198,7 +198,7 @@ method compileobjouter(selfr, outerRef) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := "outer"
-    var len := length(nm) + 1
+    var len := nm.size + 1
     var enm := escapestring2(nm)
     out("// OBJECT OUTER DEC " ++ enm)
     out("  adddatum2({selfr}, {outerRef}, 0);")
@@ -232,7 +232,7 @@ method compileobjdefdecmeth(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := length(nm) + 1
+    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
@@ -267,7 +267,7 @@ method compileobjdefdec(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := length(nm) + 1
+    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     out("// OBJECT CONST DEC " ++ enm)
@@ -291,7 +291,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := length(nm) + 1
+    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
@@ -316,7 +316,7 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
     var nmw := nm ++ ":="
-    len := length(nmw) + 1
+    len := nmw.size + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
@@ -339,7 +339,7 @@ method compileobjvardec(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := length(nm) + 1
+    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     out("// OBJECT VAR DEC " ++ nm)
@@ -352,7 +352,7 @@ method compileobjvardec(o, selfr, pos) {
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
     var nmw := nm ++ ":="
-    len := length(nmw) + 1
+    len := nmw.size + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
@@ -760,7 +760,7 @@ method compilemethod(o, selfobj, pos) {
             }
         }
     }
-    var len := length(name) + 1
+    var len := name.size + 1
     if (selfobj == false) then {
     } elseif (closurevars.size == 0) then {
         var uo2 := "uo{myc}"
@@ -1131,7 +1131,7 @@ method compileop(o) {
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
     } else {
-        var len := length(o.value) + 1
+        var len := o.value.size + 1
         var evl := escapestring2(o.value)
         var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
             ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
@@ -1254,7 +1254,7 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = {modg};")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
-        len := length(o.value.value) + 1
+        len := o.value.value.size + 1
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1271,7 +1271,7 @@ method compilecall(o, tailcall) {
         }
     } else {
         obj := "self"
-        len := length(o.value.value) + 1
+        len := o.value.value.size + 1
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1293,7 +1293,7 @@ method compilecall(o, tailcall) {
 }
 method compileoctets(o) {
     var escval := ""
-    var l := length(o.value) / 2
+    var l := o.value.size / 2
     var i := 0
     for (o.value) do {c->
         if ((i % 2) == 0) then {
@@ -1427,7 +1427,7 @@ method compilenode(o) {
     }
     var l := ""
     if (o.kind == "string") then {
-        l := length(o.value)
+        l := o.value.size
         l := l + 1
         o.value := escapestring2(o.value)
         out("  if (strlit{auto_count} == NULL) \{")
@@ -1528,26 +1528,6 @@ method compilenode(o) {
             }
             out("  Object call{auto_count} = gracelib_print(NULL, "
                   ++ args.size ++ ",  params);")
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "member") &&
-                { (o.value.in.kind == "identifier")
-                    && (o.value.in.value == "self")
-                    && (o.value.value == "length")}) then {
-            tmp := compilenode(o.with.first.args.first)
-            out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "identifier")
-                && (o.value.value == "length")) then {
-            if (o.with.first.args.size == 0) then {
-                out("; PP FOLLOWS")
-                out(o.pretty(0))
-                tmp := "null"
-            } else {
-                tmp := compilenode(o.with.first.args.first)
-            }
-            out("  Object call" ++ auto_count ++ " = gracelib_length({tmp});")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&

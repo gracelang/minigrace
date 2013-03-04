@@ -722,7 +722,7 @@ method compilecall(o) {
 }
 method compileoctets(o) {
     var escval := ""
-    var l := length(o.value) / 2
+    var l := o.value.size / 2
     var i := 0
     for (o.value) do {c->
         if ((i % 2) == 0) then {
@@ -799,7 +799,7 @@ method compilenode(o) {
     }
     var l := ""
     if (o.kind == "string") then {
-        l := length(o.value)
+        l := o.value.size
         l := l + 1
         var os := ""
         // Escape characters that may not be legal in string literals
@@ -910,20 +910,6 @@ method compilenode(o) {
                 }
             }
             out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "member") &&
-                { (o.value.in.kind == "identifier")
-                    && (o.value.in.value == "self")
-                    && (o.value.value == "length")}) then {
-            tmp := compilenode(o.with.first.args.first)
-            out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
-        } elseif ((o.value.kind == "identifier")
-                && (o.value.value == "length")) then {
-            tmp := compilenode(o.with.first.args.first)
-            out("  var call" ++ auto_count ++ " = Grace_length(" ++ tmp ++ ");")
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } elseif ((o.value.kind == "member") &&
