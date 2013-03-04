@@ -1236,23 +1236,6 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "platform")}) then {
-        out("// Import of " ++ o.value.value)
-        var con
-        var nm := escapeident(o.value.value)
-        var fn := escapestring2(o.value.value)
-        var modg := "module_" ++ nm
-        out("  if ({modg} == NULL)")
-        if (staticmodules.contains(nm)) then {
-            out("    {modg} = {modg}_init();")
-        } else {
-            out("    {modg} = dlmodule(\"{fn}\");")
-        }
-        modules.add(nm)
-        globals.push("Object {modg}_init();")
-        globals.push("Object {modg};")
-        out("  Object call{auto_count} = {modg};")
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
         len := o.value.value.size + 1
@@ -1562,21 +1545,6 @@ method spawnSubprocess(id, cmd, data) {
     }
     subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
 }
-method findPlatformUses(vals) {
-    def vis = object {
-        inherits ast.baseVisitor
-        method visitMember(o) -> Boolean {
-            if ((o.in.kind == "identifier").andAlso
-                {o.in.value == "platform"}) then {
-                checkimport(o.value)
-            }
-            true
-        }
-    }
-    for (vals) do {v->
-        v.accept(vis)
-    }
-}
 method parseGCT(path, filepath) {
     xmodule.parseGCT(path,
         filepath.replace(".gcn")with(".gct").replace(".gso")with(".gct"))
@@ -1750,7 +1718,6 @@ method processImports(values') {
                 }
             }
         }
-        findPlatformUses(values')
         def imperrors = []
         while {subprocesses.size > 0} do {
             def lsubprocesses = subprocesses

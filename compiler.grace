@@ -75,13 +75,6 @@ if (util.target == "imports") then {
     def imps = mgcollections.set.new
     def vis = object {
         inherits ast.baseVisitor
-        method visitMember(o) -> Boolean {
-            if ((o.in.kind == "identifier").andAlso
-                {o.in.value == "platform"}) then {
-                imps.add(o.value)
-            }
-            true
-        }
         method visitImport(o) -> Boolean {
             imps.add(o.value.value)
         }
