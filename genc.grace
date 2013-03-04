@@ -44,7 +44,7 @@ var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
-def topLevelTypes = HashMap.new
+def topLevelTypes = mgcollections.map.new
 var importHook := false
 var subprocesses := collections.list.new
 var linkfiles := collections.list.new
@@ -1882,8 +1882,6 @@ method compile(vl, of, mn, rm, bt) {
     out("  setsource(originalSourceLines);")
     var modn := "Module<{modname}>"
     out("  setclassname(self, \"{modn}\");")
-    out("  Object *var_HashMap = alloc_var();")
-    out("  *var_HashMap = alloc_HashMapClassObject();")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
     out("  Object *var_noSuchValue = alloc_var();")

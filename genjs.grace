@@ -3,6 +3,7 @@ def io = platform.io
 def sys = platform.sys
 def ast = platform.ast
 def util = platform.util
+import "mgcollections" as mgcollections
 
 var tmp
 var verbosity := 30
@@ -24,7 +25,7 @@ var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
 var compilationDepth := 0
-def topLevelTypes = HashMap.new
+def topLevelTypes = mgcollections.map.new
 
 method out(s) {
     output.push(s)

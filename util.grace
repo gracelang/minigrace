@@ -2,6 +2,7 @@
 def io = platform.io
 def sys = platform.sys
 def buildinfo = platform.buildinfo
+import "mgcollections" as mgcollections
 
 var __compilerRevision := false
 var verbosityv := 30
@@ -18,7 +19,7 @@ var vtagv := false
 var noexecv := false
 var targetv := "c"
 var versionNumber := "0.0.8"
-var extensionsv := HashMap.new
+var extensionsv := mgcollections.map.new
 var recurse := true
 var dynamicModule := false
 var importDynamic := false

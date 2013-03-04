@@ -866,7 +866,7 @@ method iscontinued {
 
 method startRepl {
     var cont := true
-    var tcenv := HashMap.new
+    var tcenv := mgcollections.map.new
     var visitor := evalVisitor.new
     var ivalues := []
     var completeline := ""
