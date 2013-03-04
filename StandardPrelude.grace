@@ -85,7 +85,7 @@ class BindingPattern.new(pat) {
 
 class WildcardPattern.new {
     method match(o) {
-        SuccessfulMatch.new(nothing, [])
+        SuccessfulMatch.new(done, [])
     }
 }
 

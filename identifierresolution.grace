@@ -587,6 +587,7 @@ method resolve(values) {
     builtinObj.add "Number" as "def"
     builtinObj.add "Boolean" as "def"
     builtinObj.add "Done" as "def"
+    builtinObj.add "done" as "def"
     builtinObj.add "true" as "def"
     builtinObj.add "false" as "def"
     builtinObj.add "self" as "def"
@@ -600,8 +601,6 @@ method resolve(values) {
     builtinObj.add "_prelude" as "def"
     builtinObj.add "..." as "def"
     // Historical - should be removed eventually
-    builtinObj.add "Unit" as "def"
-    builtinObj.add "void" as "def"
     builtinObj.add "nothing" as "def"
     builtinObj.add "platform" as "def"
     builtinObj.add "HashMap" as "def"

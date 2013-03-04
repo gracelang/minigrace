@@ -1741,7 +1741,7 @@ method doreturn {
             expectConsume {expression}
             retval := values.pop
         } else {
-            retval := ast.identifierNode.new("void", false)
+            retval := ast.identifierNode.new("done", false)
         }
         var o := ast.returnNode.new(retval)
         values.push(o)
@@ -1755,7 +1755,7 @@ method domethodtype {
     var dtype := m.rtype
     var varargs := m.v
     if (dtype == false) then {
-        dtype := ast.identifierNode.new("Unit", false)
+        dtype := ast.identifierNode.new("Done", false)
     }
     var o := ast.methodTypeNode.new(meth.value, signature, dtype)
     values.push(o)
