@@ -1,27 +1,27 @@
 
-type Done = {
-    isDone -> Boolean
+type Finished = {
+    isFinished -> Boolean
 }
 type InnerList = {
     data -> Number
-    next -> OuterList | Done
+    next -> OuterList | Finished
 }
 type OuterList = {
     data -> Number
-    next -> InnerList | Done
+    next -> InnerList | Finished
 }
 
-def done : Done = object {
-    def isDone : Boolean = true
+def finished : Finished = object {
+    def isFinished : Boolean = true
 }
 
 var l1  := object {
     var data := 3
-    var next := done
+    var next := finished
 }
 var l2 : OuterList := object {
     def data : Number = 5
-    def next : InnerList | Done = done
+    def next : InnerList | Finished = finished
 }
 print(l1.data)
 l1 := l2
