@@ -759,6 +759,21 @@ method compileoctets(o) {
     o.register := "%octets" ++ auto_count
     auto_count := auto_count + 1
 }
+method compiledialect(o) {
+    out("// Dialect import of {o.value}")
+    var snm := ""
+    for (o.path) do {c->
+        if (c == "/") then {
+            snm := ""
+        } else {
+            snm := snm ++ c
+        }
+    }
+    var nm := escapestring(o.value)
+    var fn := escapestring(o.path)
+    out("this.outer = do_import(\"{fn}\", gracecode_{snm});")
+    o.register := "undefined"
+}
 method compileimport(o) {
     out("// Import of " ++ o.path)
     var snm := ""
@@ -828,6 +843,9 @@ method compilenode(o) {
     }
     if (o.kind == "octets") then {
         compileoctets(o)
+    }
+    if (o.kind == "dialect") then {
+        compiledialect(o)
     }
     if (o.kind == "import") then {
         compileimport(o)

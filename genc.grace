@@ -1742,40 +1742,12 @@ method compile(vl, of, mn, rm, bt) {
     var argv := sys.argv
     var cmd
     values := vl
-    def methods = collections.list.new
-    def confidentials = collections.list.new
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
             nummethods := nummethods + 1
-            if (ast.isPublic(v)) then {
-                methods.push(v.name.value)
-                if (ast.isWritable(v)) then {
-                    methods.push(v.name.value ++ ":=")
-                }
-            }
         } elseif (v.kind == "method") then {
             nummethods := nummethods + 1
-            if (ast.isPublic(v)) then {
-                methods.push(v.value.value)
-            } else {
-                confidentials.push(v.value.value)
-            }
-        } elseif (v.kind == "defdec") then {
-            if (ast.isPublic(v)) then {
-                methods.push(v.name.value)
-            }
-            if (ast.findAnnotation(v, "parent")) then {
-                if (false != v.data) then {
-                    for (v.data.elements) do {m->
-                        methods.push(m)
-                    }
-                }
-            }
-        } elseif (v.kind == "class") then {
-            methods.push(v.name.value)
-        } elseif (v.kind == "type") then {
-            methods.push(v.value)
         }
     }
     outfile := of
@@ -2007,82 +1979,8 @@ method compile(vl, of, mn, rm, bt) {
             }
         }
         log_verbose("done.")
-        def tfp = io.open(modname ++ ".gct", "w")
-        tfp.write("modules:\n")
-        for (staticmodules) do {sm->
-            tfp.write(" {sm}\n")
-        }
-        tfp.write("path:\n {modname}\n")
-        tfp.write("public:\n")
-        for (methods) do {methodName->
-            tfp.write(" {methodName}\n")
-        }
-        tfp.write("confidential:\n")
-        for (confidentials) do {methodName->
-            tfp.write(" {methodName}\n")
-        }
-        def classes = collections.list.new
-        for (values) do {val->
-            if (val.kind == "class") then {
-                tfp.write("constructors-of:{val.name.value}:\n")
-                tfp.write(" {val.constructor.value}\n")
-                tfp.write("methods-of:{val.name.value}.{val.constructor.value}:\n")
-                for (val.data.elements) do {im->
-                    tfp.write(" {im}\n")
-                }
-                classes.push(val.name.value)
-            }
-            if (val.kind == "defdec") then {
-                if (val.value.kind == "object") then {
-                    def ob = val.value
-                    var isClass := false
-                    def obConstructors = collections.list.new
-                    for (ob.value) do {nd->
-                        if (nd.kind == "method") then {
-                            if (nd.properties.contains("fresh")) then {
-                                isClass := true
-                                obConstructors.push(nd.value.value)
-                                tfp.write("methods-of:{val.name.value}.{nd.value.value}:\n")
-                                for (ob.data.getScope(nd.value.value)) do {
-                                    im->
-                                    tfp.write(" {im}\n")
-                                }
-                            }
-                        }
-                    }
-                    if (obConstructors.size > 0) then {
-                        tfp.write("constructors-of:{val.name.value}:\n")
-                        for (obConstructors) do {im->
-                            tfp.write(" {im.value}\n")
-                        }
-                        classes.push(val.name.value)
-                    }
-                }
-            }
-        }
-        tfp.write("classes:\n")
-        for (classes) do {c->
-            tfp.write(" {c}\n")
-        }
-        tfp.write("fresh-methods:\n")
-        for (values) do {val->
-            if (val.kind == "method") then {
-                if (val.properties.contains("fresh")) then {
-                    tfp.write(" {val.value.value}\n")
-                }
-            }
-        }
-        for (values) do {val->
-            if (val.kind == "method") then {
-                if (val.properties.contains("fresh")) then {
-                    tfp.write("fresh:{val.value.value}:\n")
-                    for (val.properties.get("fresh").elements) do {im->
-                        tfp.write(" {im}\n")
-                    }
-                }
-            }
-        }
-        tfp.close
+        xmodule.writeGCT(modname, modname ++ ".gct")
+            fromValues(values)modules(staticmodules)
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
                 cmd := "./" ++ modname
