@@ -19,4 +19,5 @@ process "A"
 process "A"
 process "A"
 process "B"
+// The FSM should crash and report an error at this point:
 process "X"
