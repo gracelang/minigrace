@@ -1431,6 +1431,9 @@ function do_import(modname, func) {
     if (importedModules[modname]) {
         return importedModules[modname];
     }
+    if (!func)
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+            new GraceString("Could not find module '" + modname + "'."));
     var f = func.call(Grace_allocModule(modname));
     importedModules[modname] = f;
     return f;
