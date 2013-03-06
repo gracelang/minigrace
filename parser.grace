@@ -1897,6 +1897,9 @@ method statement {
             values.push(o)
         }
     }
+    if (accept("eof")) then {
+        return true
+    }
     if (accept("semicolon")) then {
         def oldLine = sym.line
         next
@@ -1951,6 +1954,13 @@ method parse(toks) {
     }
     sym := toks.first
     tokens := []
+    tokens.push(object {
+        var kind := "eof"
+        var line := linenum + 1
+        var linePos := 0
+        var indent := 0
+        var value := ""
+    })
     for (otoks.indices) do { i ->
         var o := otoks.pop
         tokens.push(o)
