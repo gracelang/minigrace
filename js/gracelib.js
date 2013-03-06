@@ -1040,7 +1040,7 @@ function gracecode_util() {
             return new GraceString(document.getElementById('mode').value);
         },
         modname: function(argcv) {
-            return new GraceString("USER");
+            return new GraceString(document.getElementById('modname').value);
         },
         setline: function(argcv, i) {
             lineNumber = i._value;
@@ -1085,12 +1085,12 @@ function gracecode_util() {
             return new GraceBoolean(false);
         },
         type_error: function(argcv, s) {
-            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+            stderr_txt.value += document.getElementById('modname').value + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": type error: " + s._value;
             throw "ErrorExit";
         },
         syntax_error: function(argcv, s) {
-            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+            stderr_txt.value += document.getElementById('modname').value + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": syntax error: " + s._value;
             if (this._linenum._value > 1)
                 stderr_txt.value += "\n  " + (this._linenum._value - 1) + ": "
@@ -1111,7 +1111,7 @@ function gracecode_util() {
             throw "ErrorExit";
         },
         warning: function(argcv, s) {
-            stderr_txt.value += "<USER>:" + this._linenum._value + ":" +
+            stderr_txt.value += document.getElementById('modname').value + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": warning: " + s._value;
         },
         hex: function(argcv, n) {
