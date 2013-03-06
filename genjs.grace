@@ -130,6 +130,9 @@ method compileobjdefdec(o, selfr, pos) {
     }
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
+    if (ast.findAnnotation(o, "parent")) then {
+        out("  {selfr}.superobj = {val};")
+    }
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -528,6 +531,9 @@ method compiledefdec(o) {
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
             [o.name], false))
+        if (ast.findAnnotation(o, "parent")) then {
+            out("  this.superobj = {val};")
+        }
     }
     o.register := val
 }
