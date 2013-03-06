@@ -1316,6 +1316,7 @@ function callmethod(obj, methname, argcv) {
         obj = overrideReceiver;
         overrideReceiver = null;
     }
+    var beforeSize = callStack.length;
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
     var args = Array.prototype.slice.call(arguments, 3);
     if (meth.paramTypes)
@@ -1323,7 +1324,8 @@ function callmethod(obj, methname, argcv) {
     args.unshift(argcv)
     var ret = meth.apply(obj, args);
     superDepth = origSuperDepth;
-    callStack.pop();
+    while (callStack.length > beforeSize)
+        callStack.pop();
     sourceObject = oldSourceObject;
     return ret;
 }
@@ -1428,7 +1430,8 @@ GraceException.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
-    }
+    },
+    className: 'Exception'
 }
 var importedModules = {};
 function do_import(modname, func) {
