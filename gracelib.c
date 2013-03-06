@@ -3133,6 +3133,7 @@ Object catchCase(Object block, Object *caseList, int ncases,
     int start_calldepth = calldepth;
     if (!finally) {
         finally = alloc_Block(NULL, NULL, "implicit finally", -1);
+        gc_frame_newslot(finally);
         block_savedest(finally);
     }
     finally_stack[calldepth] = finally;
