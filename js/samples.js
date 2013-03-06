@@ -44,6 +44,7 @@ function loadSampleJS(k) {
     if (window[k])
         return;
     var sample = samples[k];
+    document.getElementById('stderr_txt').value += "\nUI: Loading sample dependency " + sample.name;
     var req = new XMLHttpRequest();
     req.open("GET", "./sample/" + sample.dir + '/' + k + ".js", false);
     req.send(null);
@@ -68,6 +69,7 @@ function loadSampleJS(k) {
 
 function loadsample(k) {
     var sample = samples[k];
+    document.getElementById('stderr_txt').value = "UI: Loading " + sample.name;
     if (sample.requires) {
         for (var i=0; i<sample.requires.length; i++)
             loadSampleJS(sample.requires[i]);
@@ -81,4 +83,5 @@ function loadsample(k) {
         document.getElementById("code_txt").value = req.responseText;
         document.getElementById('modname').value = k;
     }
+    document.getElementById('stderr_txt').value += "\nUI: done loading sample.\n";
 }

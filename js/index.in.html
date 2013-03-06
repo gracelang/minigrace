@@ -76,6 +76,7 @@
                     for (i=e.callStack.length-1; i>=0; i--) {
                         stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
                     }
+                    stderr_txt.scrollTop = stderr_txt.scrollHeight;
                 } else if (e != "SystemExit") {
                     stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
                     throw e;
@@ -94,6 +95,7 @@
             }
         }
         function compilerun() {
+            document.getElementById('stderr_txt').value = "";
             if (document.getElementById('mode').value == 'testall') {
                 document.getElementById('mode').selectedIndex = 0;
                 modeswitch();
@@ -115,6 +117,7 @@
                 if (ace)
                     editor.setValue(req.responseText);
                 document.getElementById("code_txt").value = req.responseText;
+                document.getElementById("modname").value = testname;
             }
             if (testname.indexOf("_fail") == -1) {
                 req.open("GET", "./tests/" + testname + ".out", false);
@@ -248,7 +251,7 @@
   <option value="grace" />Grace
   <option value="testall" />All tests (slow)
  </select>
- Module name: <input type="text" value="main" id="modname" size="8" />
+ Module name: <input type="text" value="main" id="modname" size="16" />
  <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
  <select id="testcases">
 <!--[!SH[ls tests | grep _test.grace | grep -v unicode | grep -v controlchar | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->

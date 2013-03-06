@@ -1094,7 +1094,8 @@ function gracecode_util() {
             return new GraceNum(30);
         },
         log_verbose: function(argcv, s) {
-            stderr_txt.value += "minigrace: " + s._value + "\n";
+            stderr_txt.value += "minigrace: " + document.getElementById('modname').value + ': ' + s._value + "\n";
+            stderr_txt.scrollTop = stderr_txt.scrollHeight;
         },
         outprint: function(argcv, s) {
             stdout_txt.value += s._value + "\n";
@@ -1111,6 +1112,7 @@ function gracecode_util() {
         type_error: function(argcv, s) {
             stderr_txt.value += document.getElementById('modname').value + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": type error: " + s._value;
+            stderr_txt.scrollTop = stderr_txt.scrollHeight;
             throw "ErrorExit";
         },
         syntax_error: function(argcv, s) {
@@ -1132,11 +1134,13 @@ function gracecode_util() {
                 stderr_txt.value += "\n  " + (this._linenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(this._linenum._value + 1))._value;
+            stderr_txt.scrollTop = stderr_txt.scrollHeight;
             throw "ErrorExit";
         },
         warning: function(argcv, s) {
             stderr_txt.value += document.getElementById('modname').value + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": warning: " + s._value;
+            stderr_txt.scrollTop = stderr_txt.scrollHeight;
         },
         hex: function(argcv, n) {
             var hexdigits = "0123456789abcdef"
