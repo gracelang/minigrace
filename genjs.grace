@@ -4,6 +4,8 @@ import "sys" as sys
 import "ast" as ast
 import "util" as util
 import "mgcollections" as mgcollections
+import "xmodule" as xmodule
+import "mirrors" as mirrors
 
 var tmp
 var verbosity := 30
@@ -762,16 +764,16 @@ method compileoctets(o) {
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
     var snm := ""
-    for (o.path) do {c->
+    for (o.value) do {c->
         if (c == "/") then {
             snm := ""
         } else {
             snm := snm ++ c
         }
     }
-    var nm := escapestring(o.value)
-    var fn := escapestring(o.path)
+    var fn := escapestring(o.value)
     out("this.outer = do_import(\"{fn}\", gracecode_{snm});")
+    out("var Grace_prelude = this.outer;")
     o.register := "undefined"
 }
 method compileimport(o) {
@@ -935,6 +937,35 @@ method compilenode(o) {
     compilationDepth := compilationDepth - 1
     o.register
 }
+method processDialect(values') {
+    log_verbose("looking for dialect.")
+    for (values') do { v ->
+        if (v.kind == "dialect") then {
+            var nm := v.value
+            xmodule.parseGCT(nm, nm ++ ".gct")
+            log_verbose("loading dialect for checkers.")
+            def CheckerFailure = Exception.refine "CheckerFailure"
+            catch {
+                def dobj = mirrors.loadDynamicModule(nm)
+                def mths = mirrors.reflect(dobj).methods
+                for (mths) do { m->
+                    if (m.name == "checker") then {
+                        log_verbose("running dialect's checkers.")
+                        dobj.checker(values')
+                    }
+                }
+            } case { e : RuntimeError ->
+                util.setPosition(v.line, 1)
+                util.syntax_error("dialect '{nm}' failed to load: {e}")
+            } case { e : CheckerFailure ->
+                if (nothing != e.data) then {
+                    util.setPosition(e.data.line, e.data.linePos)
+                }
+                util.syntax_error("dialect failure: {e.message}")
+            }
+        }
+    }
+}
 method compile(vl, of, mn, rm, bt, glpath) {
     var argv := sys.argv
     var cmd
@@ -988,5 +1019,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             outprint(o)
         }
     }
+    xmodule.writeGCT(modname, modname ++ ".gct")
+        fromValues(values)modules(staticmodules)
     log_verbose("done.")
 }

@@ -926,6 +926,7 @@ stderr.methods.write = function(s) {
 stdout.methods.close = function() {};
 stderr.methods.close = function() {};
 stdin.methods.close = function() {};
+var gctCache = {};
 function gracecode_io() {
     this.methods.output = function() {
         return this._output;
@@ -939,13 +940,36 @@ function gracecode_io() {
         return this._error;        
     };
     this._error = stderr;
-    this.methods.exists = function() {
+    this.methods.exists = function(argcv, path) {
+        path = path._value;
+        var gctpath = path.substr(0, path.length - 4);
+        if (gctCache[gctpath])
+            return new GraceBoolean(true);
         return new GraceBoolean(false);
     }
-    this.methods.open = function() {
+    this.methods.open = function(argcv, path, mode) {
         var o = new GraceObject();
         o.methods['write'] = function() {};
         o.methods['close'] = function() {};
+        path = path._value;
+        if (path.substr(path.length - 4) == ".gct") {
+            var gctpath = path.substr(0, path.length - 4);
+            if (mode._value == "w")
+                gctCache[gctpath] = "";
+            else if (mode._value == "r") {
+                o._lines = gctCache[gctpath].split("\n");
+                o._index = 0;
+            }
+            o.methods['write'] = function(argcv, s) {
+                gctCache[gctpath] += s._value;
+            }
+            o.methods['getline'] = function(argcv) {
+                return new GraceString(this._lines[this._index++]);
+            }
+            o.methods['eof'] = function() {
+                return new GraceBoolean(this._index >= this._lines.length);
+            }
+        }
         return o;
     };
     this.methods.realpath = function(junk, x) {
@@ -1206,12 +1230,14 @@ function alloc_Mirror(o) {
             meths.push(new GraceMirrorMethod(o, k));
         }
         var l = new GraceList(meths);
+        return l;
     }
+    return m;
 }
 function gracecode_mirrors() {
     this.methods = {
         'loadDynamicModule': function(argcv, v) {
-            return do_import(v, window["gracecode_" + v]);
+            return do_import(v._value, window["gracecode_" + v._value]);
         },
         'reflect': function(argcv, o) {
             return alloc_Mirror(o);

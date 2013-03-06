@@ -61,6 +61,9 @@ if (util.target == "grace") then {
 if (util.target == "c") then {
     genc.processImports(values)
 }
+if (util.target == "js") then {
+    genjs.processDialect(values)
+}
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
