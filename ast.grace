@@ -1187,7 +1187,7 @@ class identifierNode.new(name, dtype') {
     var dtype := dtype'
     var register := ""
     var line := util.linenum
-    def linePos = util.linepos
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1197,10 +1197,14 @@ class identifierNode.new(name, dtype') {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
+        util.setPosition(line, linePos)
         var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
         blkAfter))
         n := blk.apply(n)
         n.line := line
+        if (n.kind == "identifier") then {
+            n.linePos := linePos
+        }
         blkAfter.apply(n)
         n
     }

@@ -321,7 +321,7 @@ method resolveIdentifier(node) {
         return node
     }
     var nm := node.value
-    util.setline(node.line)
+    util.setPosition(node.line, node.linePos)
     if (haveBinding(nm).not) then {
         util.syntax_error("use of undefined identifier {nm}")
     }
