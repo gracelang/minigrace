@@ -1258,6 +1258,14 @@ function gracecode_mirrors() {
     };
     return this;
 }
+function gracecode_random() {
+    this.methods = {
+        'random': function(argcv) {
+            return new GraceNum(Math.random());
+        }
+    };
+    return this;
+}
 function checkmethodcall(func, methname, obj, args) {
     var i = 0;
     var pt = func.paramTypes;
