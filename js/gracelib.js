@@ -1007,38 +1007,47 @@ function gracecode_sys() {
 function gracecode_unicode() {
     this.methods = {
         isLetter: function(argcv, s) {
-            if (typeof s._value == "string")
-                var i = s._value.charCodeAt(0);
-            else
-                var i = s._value;
-            return new GraceBoolean((i >= 65 && i <= 90) || (i >= 97 && i <= 122));
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, "Ll")
+                    || unicode.isCategory(s, "Lu")
+                    || unicode.isCategory(s, "Lo")
+                    || unicode.isCategory(s, "Lm"));
         },
         isNumber: function(argcv, s) {
-            if (typeof s._value == "string")
-                var i = s._value.charCodeAt(0);
-            else
-                var i = s._value;
-            return new GraceBoolean((i >= 48 && i <= 57));
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, "Nd")
+                    || unicode.isCategory(s, "No")
+                    || unicode.isCategory(s, "Nl"));
         },
-        isSymbolMathematical: function(argcv, ord) {
-            var s = ord._value
-            if ((s == 45) || (s == 43) || (s == 47) || (s == 42)
-                    || s == 62 || s == 60 || s == 61 || s == 126 || s == 124) {
-                return new GraceBoolean(true);
-            }
-            return new GraceBoolean(false);
+        isSymbolMathematical: function(argcv, s) {
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, "Sm"));
         },
         isSeparator: function(argcv, s) {
-            if (s == " ") {
-                return new GraceBoolean(true);
-            }
-            return new GraceBoolean(false);
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, "Zs")
+                    || unicode.isCategory(s, "Zp")
+                    || unicode.isCategory(s, "Zl"));
         },
         isControl: function(argcv, s) {
-            return new GraceBoolean(false);
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, "Cf")
+                    || unicode.isCategory(s, "Cc")
+                    || unicode.isCategory(s, "Co")
+                    || unicode.isCategory(s, "Cs"));
         },
         name: function(argcv, s) {
-            return new GraceString("UNICODE CHARACTER " + s.methods["ord"].call(s)._value + " (no Unicode character database; names unknown)");
+            return new GraceString(unicode.name(s._value));
         },
         create: function(argcv, n) {
             return new GraceString(String.fromCharCode(n._value));
