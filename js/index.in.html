@@ -88,11 +88,12 @@
             if (goldenOutput != "") {
                 var realOut = stdout_txt.value.substr(goldenOutputOffset);
                 if (realOut == goldenOutput) {
-                    stderr_txt.value += "\nTest passed.\n";
+                    stderr_txt.value += "\nTest passed.";
                     passes = passes + 1;
                 } else {
-                    stderr_txt.value += "\nTest failed.\n";
+                    stderr_txt.value += "\nTest failed.";
                 }
+                stderr_txt.scrollTop = stderr_txt.scrollHeight;
                 goldenOutput = "";
                 setTimeout("stdout_txt.style.background = ''", 2500);
             }
@@ -112,6 +113,7 @@
             }
         }
         function loadtest(testname) {
+            document.getElementById('stderr_txt').value = "";
             document.getElementById('defaultVisibility').selectedIndex = 2;
             var req = new XMLHttpRequest();
             req.open("GET", "./tests/" + testname + "_test.grace", false);
@@ -241,7 +243,7 @@
    </div>
   </div>
   <br />
-  <textarea id="stderr_txt" rows="7" cols="60"></textarea>
+  <textarea id="stderr_txt" rows="9" cols="60"></textarea>
  </div>
  <br />
  <input type="button" id="compilerun_but" value="Go" onclick="compilerun()" />
