@@ -870,11 +870,17 @@ method callrest {
         return 0
     }
     var meth := values.pop
+    var lnum := linenum
+    var lpos := 1
     if (meth.kind != "identifier") then {
         if (meth.kind != "member") then {
             values.push(meth)
             return 0
         }
+    }
+    if (meth.kind == "identifier") then {
+        lnum := meth.line
+        lpos := meth.linePos
     }
     var methn
     def btok = sym
@@ -976,6 +982,7 @@ method callrest {
     if (hadcall) then {
         if (accept("identifier")onLineOfLastOr(tok)) then {
             // Multi-part method name
+            util.setPosition(lnum, lpos)
             methn := callmprest(ast.identifierNode.new(methn, false), signature, tok)
             if (meth.kind == "member") then {
                 // callmprest loses this information, so restore
@@ -1002,6 +1009,7 @@ method callmprest(meth, signature, tok) {
     var methname := meth.value
     var nxt
     var ln := linenum
+    var lp := meth.linePos
     var part
     while {accept("identifier")onLineOf(tok)
            || accept("identifier")onLineOf(lastToken)} do {
@@ -1057,6 +1065,7 @@ method callmprest(meth, signature, tok) {
             next
         }
     }
+    util.setPosition(ln, lp)
     ast.identifierNode.new(methname, false)
 }
 
