@@ -374,6 +374,14 @@ method resolveIdentifiersActual(node) {
             }
         }
     }
+    if (node.kind == "method") then {
+        if (node.body.size > 0) then {
+            def lastStatement = node.body.last
+            if (lastStatement.kind == "object") then {
+                node.properties.put("fresh", true)
+            }
+        }
+    }
     node
 }
 method resolveIdentifiers(topNode) {
@@ -536,6 +544,12 @@ method resolveIdentifiers(topNode) {
             if (node.value.kind == "object") then {
                 scope.elementScopes.put(node.name.value, node.value.data)
                 node.data := scope
+            }
+            if (ast.findAnnotation(node, "parent")) then {
+                def sc = findDeepScope(node.value)
+                for (sc.elements) do {m->
+                    scope.add(m)
+                }
             }
         }
     }

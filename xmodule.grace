@@ -103,7 +103,7 @@ method writeGCT(path, filepath)fromValues(values)modules(modules) {
                             isClass := true
                             obConstructors.push(nd.value.value)
                             gct.put("methods-of:{val.name.value}.{nd.value.value}",
-                                ob.data.getScope(nd.value.value))
+                                ob.data.getScope(nd.value.value).elements)
                         }
                     }
                 }
