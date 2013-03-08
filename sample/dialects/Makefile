@@ -1,5 +1,5 @@
-DIALECTS = StaticGrace fsm ObjectAssociations dialect
-SAMPLES = fsm_example ObjectAssociations_example dialect_example
+DIALECTS = StaticGrace fsm ObjectAssociations dialect grapl
+SAMPLES = fsm_example ObjectAssociations_example dialect_example grapl_example
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) dialect_example.js

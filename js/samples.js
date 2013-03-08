@@ -30,6 +30,15 @@ var samples = {
         'dir': 'dialects',
         'requires': ['dialect'],
     },
+    'grapl': {
+        'name': 'GrAPL dialect',
+        'dir': 'dialects',
+    },
+    'grapl_example': {
+        'name': 'GrAPL example',
+        'dir': 'dialects',
+        'requires': ['grapl'],
+    },
 };
 
 var sm = document.getElementById('sample');
