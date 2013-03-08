@@ -52,7 +52,25 @@ method escapeident(vn) {
     nm
 }
 method escapestring(s) {
-    s._escape
+    var os := ""
+    for (s) do {c->
+        if (c == "\"") then {
+            os := os ++ "\\\""
+        } elseif (c == "\\") then {
+            os := os ++ "\\\\"
+        } elseif (c == "\n") then {
+            os := os ++ "\\n"
+        } elseif ((c.ord < 32) || (c.ord > 126)) then {
+            var uh := util.hex(c.ord)
+            while {uh.size < 4} do {
+                uh := "0" ++ uh
+            }
+            os := os ++ "\\u" ++ uh
+        } else {
+            os := os ++ c
+        }
+    }
+    os
 }
 method varf(vn) {
     "var_" ++ escapeident(vn)
@@ -821,26 +839,7 @@ method compilenode(o) {
         l := l + 1
         var os := ""
         // Escape characters that may not be legal in string literals
-        for (o.value) do {c->
-            if (c == "\"") then {
-                os := os ++ "\\\""
-            } elseif (c == "\\") then {
-                os := os ++ "\\\\"
-            } elseif (c == "\n") then {
-                os := os ++ "\\n"
-            } elseif ((c.ord < 32) || (c.ord > 126)) then {
-                var uh := util.hex(c.ord)
-                while {uh.size < 4} do {
-                    uh := "0" ++ uh
-                }
-                os := os ++ "\\u" ++ uh
-            } else {
-                os := os ++ c
-            }
-        }
-        var sval := o.value.replace("\\")with("\\\\")
-        sval := sval.replace("\"")with("\\\"")
-        sval := sval.replace("\n")with("\\n")
+        os := escapestring(o.value)
         out("  var string" ++ auto_count ++ " = new GraceString(\""
             ++ os ++ "\");")
         o.register := "string" ++ auto_count
