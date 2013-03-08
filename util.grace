@@ -339,7 +339,7 @@ method hex(num) {
     var s := ""
     while {tmp > 0} do {
         var i := tmp % 16
-        s := s ++ hexdigits.at(i + 1)
+        s := hexdigits.at(i + 1) ++ s
         tmp := tmp - i
         tmp := tmp / 16
     }

@@ -1148,7 +1148,7 @@ function gracecode_util() {
             var num = n._value
             while (num > 0) {
                 var i = num % 16
-                s = s + hexdigits.charAt(i)
+                s = hexdigits.charAt(i) + s
                 num = num - i
                 num = num / 16
             }
