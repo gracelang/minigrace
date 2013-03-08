@@ -19,6 +19,16 @@ method hexdecchar(c) {
     }
     ret
 }
+method padl(s, l, w) {
+    if (s.size >= l) then {
+        return s
+    }
+    var s' := s
+    while {s'.size < l} do {
+        s' := w ++ s'
+    }
+    return s'
+}
 
 def LexerClass = object {
     method new {
@@ -406,14 +416,16 @@ def LexerClass = object {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
                         util.syntax_error("illegal whitespace in input: "
-                            ++ "{ordval}, {unicode.name(c)}")
+                            ++ "U+{padl(ordval.inBase 16, 4, "0")} "
+                            ++ "({ordval}), {unicode.name(c)}")
                     }
                     if (unicode.isControl(ordval) && (ordval != 10)
                         && (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
                         util.syntax_error("illegal control character in "
-                            ++ "input: #{ordval} on line {lineNumber}"
+                            ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
+                            ++ "({ordval}) on line {lineNumber}"
                             ++ " character {linePosition}.")
                     }
                     if (atStart && (linePosition == 1)) then {
