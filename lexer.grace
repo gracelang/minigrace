@@ -369,9 +369,10 @@ def LexerClass = object {
             // True if c (with codepoint ordval) is a valid operator character.
             method isoperatorchar(c, ordval) {
                 var ret := false
-                if ((c == "-") || (c == "&") || (c == "||") || (c == ":")
-                    || (c == "%") || (c == "^") || (c == "@")
+                if ((c == "-") || (c == "&") || (c == "|") || (c == ":")
+                    || (c == "%") || (c == "^") || (c == "@") || (c == "?")
                     || (c == "*") || (c == "/") || (c == "+") || (c == "!")
+                    || (c == "⍋") || (c == "⍒")
                     ) then {
                     ret := true
                 } elseif (unicode.isSymbolMathematical(ordval)) then {
