@@ -544,6 +544,9 @@ method resolveIdentifiers(topNode) {
             if (node.value.kind == "object") then {
                 scope.elementScopes.put(node.name.value, node.value.data)
                 node.data := scope
+            } else {
+                def sc = findDeepScope(node.value)
+                scope.elementScopes.put(node.name.value, sc)
             }
             if (ast.findAnnotation(node, "parent")) then {
                 def sc = findDeepScope(node.value)
