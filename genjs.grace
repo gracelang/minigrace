@@ -18,7 +18,6 @@ var declaredvars := []
 var bblock := "entry"
 var linenum := 0
 var modules := []
-var staticmodules := []
 var values := []
 var outfile
 var modname := "main"
@@ -27,6 +26,7 @@ var buildtype := "bc"
 var gracelibPath := "gracelib.o"
 var inBlock := false
 var compilationDepth := 0
+def staticmodules = mgcollections.set.new
 def topLevelTypes = mgcollections.map.new
 
 method out(s) {
@@ -943,12 +943,58 @@ method compilenode(o) {
     compilationDepth := compilationDepth - 1
     o.register
 }
+method addTransitiveImports(filepath, epath) {
+    def data = xmodule.parseGCT(epath, filepath)
+    if (data.contains("modules")) then {
+        for (data.get("modules")) do {m->
+            if (m == util.modname) then {
+                util.syntax_error("Cyclic import detected: '{m}' is imported "
+                    ++ "by '{epath}', which is imported by '{m}' (and so on).")
+            }
+            checkimport(m)
+        }
+    }
+    if (data.contains("path")) then {
+        def path = data.get("path").first
+        if (path != epath) then {
+            util.syntax_error("Imported module '{epath}' compiled with"
+                ++ " different path: uses {path}.")
+        }
+    }
+}
+method checkimport(nm) {
+    var exists := false
+    var ext := false
+    var cmd
+    def argv = sys.argv
+    if (staticmodules.contains(nm)) then {
+        return true
+    }
+    if (io.exists("{nm}.grace")) then {
+        staticmodules.add(nm)
+        addTransitiveImports(nm ++ ".gct", nm)
+    } elseif (io.exists("{sys.execPath}/modules/{nm}.grace")) then {
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/modules/{nm}.gct", nm)
+    } elseif (io.exists("{sys.execPath}/../lib/minigrace/modules/{nm}.grace")) then {
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/../lib/minigrace/modules/{nm}.gct", nm)
+    } elseif (io.exists("{sys.execPath}/{nm}.grace")) then {
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/{nm}.gct", nm)
+    } else {
+        xmodule.parseGCT(nm, nm ++ ".gct")
+    }
+}
 method processDialect(values') {
-    log_verbose("looking for dialect.")
+    log_verbose("checking imports.")
     for (values') do { v ->
+        if (v.kind == "import") then {
+            checkimport(v.path)
+        }
         if (v.kind == "dialect") then {
             var nm := v.value
-            xmodule.parseGCT(nm, nm ++ ".gct")
+            checkimport(nm)
             log_verbose("loading dialect for checkers.")
             def CheckerFailure = Exception.refine "CheckerFailure"
             catch {
