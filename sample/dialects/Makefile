@@ -1,5 +1,5 @@
 DIALECTS = StaticGrace fsm ObjectAssociations dialect grapl
-SAMPLES = fsm_example ObjectAssociations_example dialect_example grapl_example
+SAMPLES = fsm_example ObjectAssociations_example dialect_example.gso grapl_example
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) dialect_example.js
@@ -12,11 +12,11 @@ all: $(DIALECT_MODULES) $(SAMPLES) $(DIALECTS_JS)
 %.js: %.grace
 	../../minigrace --target js -o $@ $<
 
-dialect_example: dialect_example.grace dialect.gso
+dialect_example.gso: dialect_example.grace dialect.gso
 	../../minigrace --dynamic-module $<
 
 %: %.grace $(DIALECT_MODULES)
 	../../minigrace --make $<
 
 clean:
-	rm -f *.gso *.gct *.gcn *.c *.js fsm_example ObjectAssociations_example dialect_example
+	rm -f *.gso *.gct *.gcn *.c *.js fsm_example ObjectAssociations_example dialect_example.gso
