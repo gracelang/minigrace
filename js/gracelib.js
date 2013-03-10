@@ -1046,6 +1046,12 @@ function gracecode_unicode() {
                     || unicode.isCategory(s, "Co")
                     || unicode.isCategory(s, "Cs"));
         },
+        iscategory: function(argcv, s, c) {
+            if (typeof s._value == "number")
+                s = String.fromCharCode(s._value);
+            else s = s._value;
+            return new GraceBoolean(unicode.isCategory(s, c._value));
+        },
         name: function(argcv, s) {
             return new GraceString(unicode.name(s._value));
         },

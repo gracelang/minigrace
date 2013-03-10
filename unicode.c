@@ -34,6 +34,9 @@
 // (should be an actual header)
 #include "gracelib.h"
 
+ClassData String;
+ClassData ConcatString;
+
 // Intern module
 Object unicode_module = NULL;
 
@@ -89,7 +92,9 @@ Object unicode_bidirectional(Object self, int nparts, int *argcv,
 // category (like "N") or a specific one (like "Nd").
 Object unicode_iscategory(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    Object o = callmethod(args[0], "ord", 0, NULL, NULL);
+    Object o = args[0];
+    if (o->class == String || o->class == ConcatString)
+        o = callmethod(args[0], "ord", 0, NULL, NULL);
     Object co = args[1];
     int v = integerfromAny(o);
     int cindex = UnicodeRecords[v].category;
