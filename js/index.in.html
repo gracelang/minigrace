@@ -140,7 +140,7 @@
         function modeswitch() {
             var compilerun_but = document.getElementById("compilerun_but");
             var mode = document.getElementById('mode');
-            if (mode.value != 'js') {
+            if (mode.value != 'js' && mode.value != 'testall') {
                 document.getElementById('tab').selectedIndex = 1;
                 tabswitch();
             }
