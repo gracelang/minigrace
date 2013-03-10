@@ -1464,7 +1464,10 @@ function do_import(modname, func) {
     if (!func)
         throw new GraceExceptionPacket(RuntimeErrorObject,
             new GraceString("Could not find module '" + modname + "'."));
-    var f = func.call(Grace_allocModule(modname));
+    var origSuperDepth = superDepth;
+    superDepth = Grace_allocModule(modname);
+    var f = func.call(superDepth);
+    superDepth = origSuperDepth;
     importedModules[modname] = f;
     return f;
 }
