@@ -14,6 +14,9 @@ class vector.new {
             case {_ -> data := v}
         self
     }
+    method ←(v) {
+        self <- v
+    }
     method +(v) {
         def n = vector.new
         for (data) do {d->
