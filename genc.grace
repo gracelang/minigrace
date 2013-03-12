@@ -1970,6 +1970,11 @@ method compile(vl, of, mn, rm, bt) {
             cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
+            } else {
+                cmd := "ld -o /dev/null -undefined dynamic_lookup -lc >/dev/null 2>&1"
+                if (io.system(cmd)) then {
+                    exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
+                }
             }
             cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.c\" "
