@@ -812,6 +812,9 @@ method compileimport(o) {
     }
     var nm := escapestring(o.value)
     var fn := escapestring(o.path)
+    out("  if (typeof gracecode_{snm} == 'undefined')")
+    out "    throw new GraceExceptionPacket(RuntimeErrorObject, "
+    out "      new GraceString('could not find module {snm}'));"
     out("  var " ++ varf(nm) ++ " = do_import(\"{fn}\", gracecode_{snm});")
     o.register := "undefined"
 }
