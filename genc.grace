@@ -406,6 +406,12 @@ method compileobject(o, outerRef) {
         if (e.kind == "vardec") then {
             numMethods := numMethods + 1
         }
+        if (e.kind == "method") then {
+            if (e.properties.contains "fresh") then {
+                numMethods := numMethods + 1
+                numFields := numFields + 1
+            }
+        }
         numMethods := numMethods + 1
         numFields := numFields + 1
     }
@@ -814,9 +820,100 @@ method compilemethod(o, selfobj, pos) {
     }
     out("  meth_{litname}->definitionModule = modulename;")
     out("  meth_{litname}->definitionLine = {o.line};")
+    if (o.properties.contains("fresh")) then {
+        compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
+            oldout)
+    }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
     partsUsed := origPartsUsed
+}
+// Compiles the "fresh" method version of a method, when applicable.
+// This method is given a different name ending in _object, with the final
+// parameter being the object into which to insert methods.
+method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
+        oldout) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
+    def name = escapestring2(o.value.value ++ "()object")
+    util.log_verbose "switching up to top"
+    output := topOutput
+    if (closurevars.size > 0) then {
+        if (o.selfclosure) then {
+            out("Object {litname}(Object realself, int nparts, int *argcv, "
+                ++ "Object *args, int32_t flags) \{")
+            out("  struct UserObject *uo = (struct UserObject*)realself;")
+        } else {
+            out("Object {litname}(Object self, int nparts, int *argcv, Object *args, "
+                ++ "int32_t flags) \{")
+            out("  struct UserObject *uo = (struct UserObject*)self;")
+        }
+        out("  Object closure = getdatum((Object)uo, {pos}, (flags>>24)&0xff);")
+        out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, getclosureframe(closure));")
+        out("  pushclosure(closure);")
+    } else {
+        out("Object {litname}(Object self, int nparts, int *argcv, Object *args, "
+            ++ "int32_t flags) \{")
+        out("  struct StackFrameObject *stackframe = alloc_StackFrame({numslots}, NULL);")
+        out("  pushclosure(NULL);")
+    }
+    out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
+    out("  int frame = gc_frame_new();")
+    out("  gc_frame_newslot((Object)stackframe);")
+    for (o.signature.indices) do { partnr ->
+        def part = o.signature[partnr]
+        if (part.params.size > 0) then {
+            out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
+            out("    gracedie(\"insufficient arguments to method\");")
+        }
+    }
+    out("  Object params[{paramsUsed}];")
+    out("  int partcv[{partsUsed}];")
+    var j := 0
+    for (closurevars) do { cv ->
+        if (cv == "self") then {
+            out("  Object self = *(getfromclosure(closure, {j}));")
+            out("  sourceObject = self;")
+        } else {
+            out("  Object *var_{cv} = getfromclosure(closure, {j});")
+        }
+        j := j + 1
+    }
+    for (body) do { l->
+        out(l)
+    }
+    util.log_verbose "switching back down to bottom"
+    output := oldout
+    var len := name.size + 1
+    if (selfobj == false) then {
+    } elseif (closurevars.size == 0) then {
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+        compilemethodtypes(litname, o)
+    } else {
+        out("  block_savedest({selfobj});")
+        out("  Object closure" ++ myc ++ " = createclosure("
+            ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
+        out("setclosureframe(closure{myc}, stackframe);")
+        for (closurevars) do { v ->
+            if (v == "self") then {
+                out("  addtoclosure(closure{myc}, selfslot);")
+                auto_count := auto_count + 1
+            } else {
+                out("  addtoclosure(closure{myc}, var_{v});")
+            }
+        }
+        var uo := "uo{myc}"
+        out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
+    }
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier") && {ann.value == "confidential"}) then {
+            out("  meth_{litname}->flags |= MFLAG_CONFIDENTIAL;");
+        }
+    }
+    out("  meth_{litname}->definitionModule = modulename;")
+    out("  meth_{litname}->definitionLine = {o.line};")
+    util.log_verbose "at end of fresh compilation"
 }
 method compilemethodtypes(litname, o) {
     var argcv := "int argcv_{litname}[] = \{"
@@ -1755,7 +1852,7 @@ method processImports(values') {
     }
 }
 method compile(vl, of, mn, rm, bt) {
-    util.log_verbose "generating C code."
+    util.log_verbose "generating C code..."
     var argv := sys.argv
     var cmd
     values := vl
@@ -1765,6 +1862,9 @@ method compile(vl, of, mn, rm, bt) {
             nummethods := nummethods + 1
         } elseif (v.kind == "method") then {
             nummethods := nummethods + 1
+            if (v.properties.contains("fresh")) then {
+                nummethods := nummethods + 1
+            }
         }
     }
     outfile := of
