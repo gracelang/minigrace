@@ -379,6 +379,7 @@ method compileclass(o, includeConstant) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
+    newmeth.properties.put("fresh", true)
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     if (includeConstant) then {
@@ -402,6 +403,11 @@ method compileobject(o, outerRef) {
     var numMethods := 0
     var pos := 1
     var superobj := false
+    out "  Object inheritingObject{myc} = inheritingObject;"
+    out "  if (isTailObject) \{"
+    out "    isTailObject = 0;"
+    out "    inheritingObject = NULL;"
+    out "  \}"
     for (o.value) do { e ->
         if (e.kind == "vardec") then {
             numMethods := numMethods + 1
@@ -428,10 +434,6 @@ method compileobject(o, outerRef) {
         out("  {selfr}->class->name = \"{o.classname}\";")
         out("\}")
     }
-    if (o.superclass != false) then {
-        superobj := compilenode(o.superclass)
-        out("  setsuperobj({selfr}, {superobj});")
-    }
     compileobjouter(selfr, outerRef)
     out("  Object oldself{myc} = self;")
     out("  struct StackFrameObject *oldstackframe{myc} = stackframe;")
@@ -442,6 +444,13 @@ method compileobject(o, outerRef) {
     out("  selfslot = &stackframe->slots[0];")
     out("  *selfslot = self;")
     out("  setframeelementname(stackframe, 0, \"self\");")
+    out "  if (inheritingObject{myc}) \{"
+    out "    struct UserObject *inho{myc} = (struct UserObject *)inheritingObject{myc};"
+    out "    while (inho{myc}->super != GraceDefaultObject) inho{myc} = (struct UserObject *)inho{myc}->super;"
+    out "    inho{myc}->super = {selfr};"
+    out "    self = inheritingObject{myc};"
+    out "    *selfslot = self;"
+    out "  \}"
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
@@ -486,11 +495,11 @@ method compileobject(o, outerRef) {
             compileobjdefdecdata(e, selfr, pos)
         } elseif (e.kind == "class") then {
         } elseif (e.kind == "inherits") then {
+            // The return value is irrelevant with factory inheritance,
+            // but we save it as super for the sake of "inherits true".
             superobj := compilenode(e.value)
-            out("  self = setsuperobj({selfr}, {superobj});")
-            out("  {selfr} = self;")
-            out("  gc_frame_newslot(self);")
-            out("  *selfslot = self;")
+            out "  struct UserObject *{selfr}_uo = (struct UserObject *){selfr};"
+            out "  {selfr}_uo->super = {superobj};"
             pos := pos - 1
         } else {
             compilenode(e)
@@ -662,13 +671,23 @@ method compilemethod(o, selfobj, pos) {
     var ret := "none"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)
+    var tailObj := false
     var tco := false
     if ((o.body.size > 0) && {o.body.last.kind == "call"}
         && {util.extensions.contains("TailCall")}) then {
         tco := o.body.pop
     }
+    if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
+        tailObj := o.body.pop
+    }
     for (o.body) do { l ->
         ret := compilenode(l)
+    }
+    if (false != tailObj) then {
+        out "  isTailObject = 1;"
+        out "  inheritingObject = methodInheritingObject;"
+        compileobject(tailObj, "self")
+        ret := tailObj.register
     }
     if (false != tco) then {
         compilecall(tco, true)
@@ -729,6 +748,7 @@ method compilemethod(o, selfobj, pos) {
     out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
+    out "  Object methodInheritingObject = NULL;"
     for (o.signature.indices) do { partnr ->
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
@@ -837,7 +857,6 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
     def name = escapestring2(o.value.value ++ "()object")
-    util.log_verbose "switching up to top"
     output := topOutput
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
@@ -861,6 +880,11 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     out("  pushstackframe(stackframe, \"{escapestring2(name)}\");")
     out("  int frame = gc_frame_new();")
     out("  gc_frame_newslot((Object)stackframe);")
+    var sumAccum := "0"
+    for (o.signature.indices) do { partnr ->
+        sumAccum := sumAccum ++ " + argcv[{partnr - 1}]"
+    }
+    out "  Object methodInheritingObject = args[{sumAccum}];"
     for (o.signature.indices) do { partnr ->
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
@@ -883,7 +907,6 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     for (body) do { l->
         out(l)
     }
-    util.log_verbose "switching back down to bottom"
     output := oldout
     var len := name.size + 1
     if (selfobj == false) then {
@@ -913,7 +936,6 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     }
     out("  meth_{litname}->definitionModule = modulename;")
     out("  meth_{litname}->definitionLine = {o.line};")
-    util.log_verbose "at end of fresh compilation"
 }
 method compilemethodtypes(litname, o) {
     var argcv := "int argcv_{litname}[] = \{"
@@ -1888,6 +1910,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object Block;")
     outprint("extern Object None;")
     outprint("extern Object Type;")
+    outprint("extern Object GraceDefaultObject;")
     outprint("extern Object sourceObject;")
     outprint("static Object type_String;")
     outprint("static Object type_Number;")
@@ -1898,6 +1921,8 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static Object prelude;")
+    outprint("static int isTailObject = 0;")
+    outprint("static Object inheritingObject = NULL;")
     outprint("static const char modulename[] = \"{modname}\";");
     outprint("Object module_StandardPrelude_init();");
     outprint("static char *originalSourceLines[] = \{")
