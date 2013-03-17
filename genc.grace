@@ -117,6 +117,11 @@ method definebindings(l, slot') {
                         out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                         slot := slot + 1
                     }
+                } else {
+                    if (n.kind == "import") then {
+                        var tnm := escapeident(n.value)
+                        out "Object *var_{tnm} = alloc_var();"
+                    }
                 }
             }
         }
@@ -460,6 +465,19 @@ method compileobject(o, outerRef) {
             compileobjdefdecmeth(cd, selfr, pos)
             out("\}")
             compileobjdefdecdata(cd, selfr, pos)
+        } else {
+            pos := pos - 1
+        }
+        pos := pos + 1
+    }
+    pos := 1
+    for (o.value) do { e ->
+        if (e.kind == "method") then {
+        } elseif (e.kind == "vardec") then {
+            compileobjvardecdata(e, selfr, pos)
+        } elseif (e.kind == "defdec") then {
+            compileobjdefdecdata(e, selfr, pos)
+        } elseif (e.kind == "class") then {
         } elseif (e.kind == "inherits") then {
             superobj := compilenode(e.value)
             out("  self = setsuperobj({selfr}, {superobj});")
@@ -1345,7 +1363,6 @@ method compileimport(o) {
     modules.add(nm)
     globals.push("Object {modg};")
     importnames.put(nm, modg)
-    out("  Object *var_{nm} = alloc_var();")
     if (false != importHook) then {
         def res = importHook.processImport(nm)
         if (false != res) then {
@@ -1864,11 +1881,18 @@ method compile(vl, of, mn, rm, bt) {
     output := []
     definebindings(values, 1)
     for (values) do { o ->
+        if (o.kind == "method") then {
+            compilenode(o)
+        }
+    }
+    for (values) do { o ->
         if (o.kind == "inherits") then {
             def superobj = compilenode(o.value)
             out("  self = setsuperobj(self, {superobj});")
         }
-        compilenode(o)
+        if (o.kind != "method") then {
+            compilenode(o)
+        }
         if (o.kind == "type") then {
             def typeid = escapeident(o.value)
             out("type_{typeid} = *var_{typeid};")
