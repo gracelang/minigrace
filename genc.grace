@@ -1756,6 +1756,7 @@ method processImports(values') {
     }
 }
 method compile(vl, of, mn, rm, bt) {
+    util.log_verbose "generating C code."
     var argv := sys.argv
     var cmd
     values := vl
