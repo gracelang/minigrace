@@ -703,6 +703,13 @@ def LexerClass = object {
                     }
                     prev := c
                 }
+                // If file doesn't end in newline, add last line to the collection of lines.
+                if ((prev != "\n") && (prev != "\r")) then {
+                    cLines.push(cline)
+                    cline := ""
+                    lines.push(lineStr)
+                    lineStr := ""
+                }
                 modechange(tokens, mode, accum)
                 util.cLines := cLines
                 util.lines := lines
