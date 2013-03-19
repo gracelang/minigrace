@@ -77,9 +77,11 @@
                     for (i=e.callStack.length-1; i>=0; i--) {
                         stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
                     }
-                    stderr_txt.value += "Error around line " + e.lineNumber
-                        + ": " + e.exception.name + ": "
-                        + e.message._value + "\n";
+                    if (e.callStack.length > 0) {
+                        stderr_txt.value += "Error around line " + e.lineNumber
+                            + ": " + e.exception.name + ": "
+                            + e.message._value + "\n";
+                    }
                     stderr_txt.scrollTop = stderr_txt.scrollHeight;
                 } else if (e != "SystemExit") {
                     stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
