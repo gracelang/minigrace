@@ -100,6 +100,7 @@
                 goldenOutput = "";
                 setTimeout("stdout_txt.style.background = ''", 2500);
             }
+            scrollstdout();
         }
         function compilerun() {
             document.getElementById('stderr_txt').value = "";
@@ -224,6 +225,16 @@
                         c.style.display = 'block';
                 }
             }
+            document.getElementById('stdout_options').style.display = (next == "stdout_tab" ? 'block' : 'none');
+        }
+        function clearstdout() {
+            document.getElementById("stdout_txt").value = "";
+        }
+        function scrollstdout() {
+            if(document.getElementById("autoscroll").checked) {
+                var stdout = document.getElementById("stdout_txt");
+                stdout.scrollTop = stdout.scrollHeight;
+            }
         }
      </script>
  </head>
@@ -238,6 +249,10 @@
     <option value="stdout_tab">Program output
     <option value="js_tab">Generated code
    </select>:
+   <span id="stdout_options">
+    <input type="checkbox" id="autoscroll" onclick="scrollstdout()">Auto scroll</input>
+    <button onclick="clearstdout()">Clear output</button>
+   </span>
    <div id="js_tab" style="display: none;">
     <textarea id="js_txt" rows="20" cols="60"></textarea>
    </div>
@@ -318,6 +333,9 @@ minigrace-js
     }
     #stderr_txt{
         width: 100%;
+    }
+    #stdout_options {
+        float: right;
     }
  </style>
  <!--[!SH[ [ -e js/ace/ace.js ] && cat js/ace.in.html ]!]-->
