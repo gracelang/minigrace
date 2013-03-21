@@ -9,8 +9,7 @@ fail "def declaration must have a static type"
     when { n : DefDec -> n.dtype.value == "Dynamic" }
 fail "method must have a static return type"
     when { n : Method ->
-        if ((false == n.dtype).orElse
-            {n.dtype.value=="Dynamic"}) then {
+        if (n.decType.value=="Dynamic") then {
             CheckerFailure.raiseWith("no return type given to declaration"
                 ++ " of method '{n.value.value}'", n.value)
         }
@@ -19,8 +18,7 @@ fail "method parameters must have a static type"
     when { v : Method ->
         for (v.signature) do {s->
             for (s.params) do {p->
-                if ((false == p.dtype).orElse
-                    {p.dtype.value=="Dynamic"}) then {
+                if (p.decType.value=="Dynamic") then {
                     CheckerFailure.raiseWith("no type given to declaration"
                         ++ " of parameter '{p.value}'", p)
                 }

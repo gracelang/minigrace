@@ -719,6 +719,12 @@ class methodNode.new(name', signature', body', dtype') {
         }
         s
     }
+    method decType {
+        if (dtype == false) then {
+            return identifierNode.new("Dynamic", false)
+        }
+        return dtype
+    }
     method toGrace(depth : Number) -> String {
         var spc := ""
         for (0..(depth - 1)) do { i ->
@@ -1223,6 +1229,12 @@ class identifierNode.new(name, dtype') {
         }
         s
     }
+    method decType {
+        if (dtype == false) then {
+            return identifierNode.new("Dynamic", false)
+        }
+        return dtype
+    }
     method toGrace(depth : Number) -> String {
         var s := self.value
         if (self.dtype != false) then {
@@ -1511,6 +1523,12 @@ class defDecNode.new(name', val, dtype') {
         }
         s
     }
+    method decType {
+        if (dtype == false) then {
+            return identifierNode.new("Dynamic", false)
+        }
+        return dtype
+    }
     method toGrace(depth : Number) -> String {
         var spc := ""
         for (0..(depth - 1)) do { i ->
@@ -1583,6 +1601,12 @@ class varDecNode.new(name', val', dtype') {
             s := s ++ spc ++ self.value.pretty(depth + 1)
         }
         s
+    }
+    method decType {
+        if (dtype == false) then {
+            return identifierNode.new("Dynamic", false)
+        }
+        return dtype
     }
     method toGrace(depth : Number) -> String {
         var spc := ""

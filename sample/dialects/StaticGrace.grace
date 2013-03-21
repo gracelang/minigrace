@@ -7,13 +7,13 @@ def CheckerFailure = Exception.refine "CheckerFailure"
 def staticVisitor = object {
     inherits ast.baseVisitor
     method visitDefDec(v) is public {
-        if ((false == v.dtype).orElse {v.dtype.value=="Dynamic"}) then {
+        if (v.decType.value=="Dynamic") then {
             CheckerFailure.raiseWith("no type given to declaration"
                 ++ " of def '{v.name.value}'", v.name)
         }
     }
     method visitVarDec(v) is public {
-        if ((false == v.dtype).orElse {v.dtype.value=="Dynamic"}) then {
+        if (v.decType.value=="Dynamic") then {
             CheckerFailure.raiseWith("no type given to declaration"
                 ++ " of var '{v.name.value}'", v.name)
         }
@@ -21,23 +21,20 @@ def staticVisitor = object {
     method visitMethod(v) is public {
         for (v.signature) do {s->
             for (s.params) do {p->
-                if ((false == p.dtype).orElse
-                    {p.dtype.value=="Dynamic"}) then {
+                if (p.decType.value=="Dynamic") then {
                     CheckerFailure.raiseWith("no type given to declaration"
                         ++ " of parameter '{p.value}'", p)
                 }
             }
         }
-        if ((false == v.dtype).orElse
-            {v.dtype.value=="Dynamic"}) then {
+        if (v.decType.value=="Dynamic") then {
             CheckerFailure.raiseWith("no return type given to declaration"
                 ++ " of method '{v.value.value}'", v.value)
         }
     }
     method visitBlock(v) is public {
         for (v.params) do {p->
-            if ((false == p.dtype).orElse
-                {p.dtype.value=="Dynamic"}) then {
+            if (p.decType.value=="Dynamic") then {
                 CheckerFailure.raiseWith("no type given to declaration"
                     ++ " of parameter '{p.value}'", p)
             }
