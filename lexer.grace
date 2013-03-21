@@ -408,6 +408,8 @@ def LexerClass = object {
                 var lineStr := ""
                 linePosition := 0
                 util.log_verbose("lexing.")
+                util.lines := lines
+                util.cLines := cLines
                 for (input) do { c ->
                     linePosition := linePosition + 1
                     util.setPosition(lineNumber, linePosition)
@@ -417,6 +419,8 @@ def LexerClass = object {
                         (ordval != 8232)) || (ordval == 9)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
+                        lineStr := lineStr ++ c
+                        lines.push(lineStr)
                         util.syntax_error("illegal whitespace in input: "
                             ++ "U+{padl(ordval.inBase 16, 4, "0")} "
                             ++ "({ordval}), {unicode.name(c)}")
@@ -425,6 +429,8 @@ def LexerClass = object {
                         && (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
+                        lineStr := lineStr ++ c
+                        lines.push(lineStr)
                         util.syntax_error("illegal control character in "
                             ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
                             ++ "({ordval}) on line {lineNumber}"
@@ -488,6 +494,8 @@ def LexerClass = object {
                             newmode := c
                         }
                         if ((c == "#") && (mode != "p")) then {
+                            lineStr := lineStr ++ c
+                            lines.push(lineStr)
                             util.syntax_error("illegal operator character"
                                 ++ ": #{ordval}"
                                 ++ " '{c}', {unicode.name(c)}")
@@ -508,6 +516,8 @@ def LexerClass = object {
                             if ((unicode.isSeparator(ordval).not)
                                 && (ordval != 10) && (ordval != 13)
                                 && (ordval != 32)) then {
+                                lineStr := lineStr ++ c
+                                lines.push(lineStr)
                                 util.syntax_error("unknown character in "
                                     ++ "input: #{ordval}"
                                     ++ " '{c}', {unicode.name(c)}")
@@ -575,9 +585,13 @@ def LexerClass = object {
                     } elseif (instr) then {
                         if (c == "\n") then {
                             if (interpdepth > 0) then {
+                                lineStr := lineStr ++ c
+                                lines.push(lineStr)
                                 util.syntax_error("Runaway string "
                                     ++ "interpolation")
                             } else {
+                                lineStr := lineStr ++ c
+                                lines.push(lineStr)
                                 util.syntax_error("Newlines not permitted "
                                     ++ "in string literals")
                             }
@@ -654,6 +668,8 @@ def LexerClass = object {
                         }
                     } elseif (inBackticks) then {
                         if (c == "\n") then {
+                            lineStr := lineStr ++ c
+                            lines.push(lineStr)
                             util.syntax_error("Newlines not permitted in"
                                 ++ "backtick identifiers")
                         }
@@ -706,13 +722,9 @@ def LexerClass = object {
                 // If file doesn't end in newline, add last line to the collection of lines.
                 if ((prev != "\n") && (prev != "\r")) then {
                     cLines.push(cline)
-                    cline := ""
                     lines.push(lineStr)
-                    lineStr := ""
                 }
                 modechange(tokens, mode, accum)
-                util.cLines := cLines
-                util.lines := lines
                 tokens
             }
         }
