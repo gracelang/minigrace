@@ -365,7 +365,6 @@ GraceList.prototype = {
         },
         "asString": function(argcv) {
             var s = "[";
-            s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 if (v.methods["asString"])
@@ -376,7 +375,7 @@ GraceList.prototype = {
                 }
             }
             s += "]";
-            return new GraceString(s);
+            return new GraceString(s.replace(", ]", "]"));
         },
         "contains": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
@@ -1501,7 +1500,7 @@ function dbg(o) {
 }
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
 var var_nothing = new GraceObject();
-var_nothing.methods.asString = function() {return new GraceString("noSuchValue");}
+var_nothing.methods.asString = function() {return new GraceString("done");}
 var var_noSuchValue = var_nothing;
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
