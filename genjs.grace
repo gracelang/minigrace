@@ -932,7 +932,11 @@ method compilenode(o) {
                     args.push(r)
                 }
             }
-            out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
+            if(args.size == 0) then {
+                out("  var call" ++ auto_count ++ " = Grace_print(new GraceString(\"\"));")
+            } else {
+                out("  var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
+            }
             o.register := "call" ++ auto_count
             auto_count := auto_count + 1
         } else {
