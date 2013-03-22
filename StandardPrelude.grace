@@ -1,7 +1,7 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
 inherits _prelude
-def isStandardPrelude = true
+var isStandardPrelude := true
 
 class SuccessfulMatch.new(result', bindings') {
     inherits true
@@ -119,5 +119,12 @@ class OrPattern.new(p1, p2) {
             return SuccessfulMatch.new(o, [])
         }
         FailedMatch.new(o)
+    }
+}
+
+def _standardPrelude = self
+def BasicGrace = object {
+    method new {
+        _prelude.clone(_standardPrelude)
     }
 }
