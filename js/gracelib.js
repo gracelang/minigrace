@@ -1548,6 +1548,9 @@ Grace_prelude.methods["_methods"] = function() {
     var l = new GraceList(meths);
     return l;
 }
+Grace_prelude.methods["clone"] = function(argcv, obj) {
+  return obj;
+}
 var PrimitiveArrayClass = new GraceObject();
 PrimitiveArrayClass.methods["new"] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
