@@ -9,7 +9,8 @@ def CheckerFailure = Exception.refine "CheckerFailure"
 
 method visitWithPatterns(o) {
     for (patterns) do {pat->
-        if (pat.pattern.match(o)) then {
+        def mat = pat.pattern.match(o)
+        if (mat.andAlso {mat.result}) then {
             CheckerFailure.raiseWith(pat.message, object {
                 def line is public, readable = o.line
                 def linePos is public, readable = 1
