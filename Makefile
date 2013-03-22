@@ -65,6 +65,7 @@ js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js
 	cat js/minigrace.in.js > js/minigrace.js
 	cat js/dom.js >> js/minigrace.js
 	cat js/gracelib.js >> js/minigrace.js
+	cat js/StandardPrelude.js >> js/minigrace.js
 	for f in $(JSSOURCEFILES) ; do cat $$f >> js/minigrace.js ; done
 	cat js/unicodedata.js >> js/minigrace.js
 
