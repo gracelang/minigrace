@@ -1,7 +1,15 @@
- var compileError = false;
- var passes = 0;
 
- function compile() {
+
+function MiniGrace() {
+    this.compileError = false;
+    this.passes = 0;
+    this.vis = "standard";
+    this.stdout_txt = document.getElementById("stdout_txt");
+    this.stdin_txt = document.getElementById("stdout_txt");
+    this.stderr_txt = document.getElementById("stderr_txt");
+}
+
+MiniGrace.prototype.compile = function() {
     if (document.getElementById('mode').value == 'testall') {
         document.getElementById('mode').selectedIndex = 0;
         modeswitch();
@@ -17,14 +25,13 @@
     stdout_txt.value = "";
     compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0])
-    var vis = document.getElementById('defaultVisibility').value;
-    if (vis == "standard") {
+    if (this.vis == "standard") {
         // Do nothing
-    } else if (vis == "methodspublic") {
+    } else if (this.vis == "methodspublic") {
         callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString("confidential"));
         callmethod(extensionsMap, "put", [2], new GraceString("DefaultMethodVisibility"), new GraceString("public"));
     } else {
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(vis));
+        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
     }
     try {
         gracecode_compiler.call(Grace_allocModule(":user:"));
@@ -45,8 +52,8 @@
         }
     }
 }
-
-function run() {
+    
+MiniGrace.prototype.run = function() {
     importedModules = {};
     callStack = [];
     stdout_txt = document.getElementById("stdout_txt");
@@ -81,22 +88,9 @@ function run() {
             throw e;
         }
     }
-    if (goldenOutput != "") {
-        var realOut = stdout_txt.value.substr(goldenOutputOffset);
-        if (realOut == goldenOutput) {
-            stderr_txt.value += "\nTest passed.";
-            passes = passes + 1;
-        } else {
-            stderr_txt.value += "\nTest failed.";
-        }
-        stderr_txt.scrollTop = stderr_txt.scrollHeight;
-        goldenOutput = "";
-        setTimeout("stdout_txt.style.background = ''", 2500);
-    }
-    scrollstdout();
 }
-
-function compilerun() {
+    
+MiniGrace.prototype.compilerun = function() {
     document.getElementById('stderr_txt').value = "";
     if (document.getElementById('mode').value == 'testall') {
         document.getElementById('mode').selectedIndex = 0;
@@ -104,10 +98,10 @@ function compilerun() {
         testall();
         return;
     }
-    compile();
+    this.compile();
     if (!compileError &&
            document.getElementById('mode').value == 'js') {
-        run();
+        this.run();
     }
 }
 

@@ -1605,4 +1605,5 @@ function Grace_allocModule(modname) {
     mod.className = "module<" + modname + ">";
     return mod;
 }
+>>>>>>> 81372ca... Made MiniGrace object.
 

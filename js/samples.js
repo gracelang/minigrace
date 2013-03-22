@@ -50,13 +50,15 @@ var samples = {
     },
 };
 
-var sm = document.getElementById('sample');
-for (var s in samples) {
-    var opt = document.createElement('option');
-    opt.value = s;
-    opt.innerHTML = samples[s].name;
-    sm.appendChild(opt);
-}
+window.onload = function() {
+    var sm = document.getElementById('sample');
+    for (var s in samples) {
+        var opt = document.createElement('option');
+        opt.value = s;
+        opt.innerHTML = samples[s].name;
+        sm.appendChild(opt);
+    }
+};
 
 function loadSampleJS(k) {
     if (window[k])

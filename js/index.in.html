@@ -3,11 +3,23 @@
  <head>
      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
      <title>Minigrace JavaScript backend</title>
+     <script src="minigrace.js" type="text/javascript"></script>
+     <script src="samples.js"></script>
      <script type="text/javascript">
         var ace;
+        var minigrace = new MiniGrace();
+        var goldenOutput = "";
+        var goldenOutputOffset = 0;
+
+        function go() {
+            minigrace.compilerun();
+            scrollstdout();
+        }
+
         function loadtest(testname) {
             document.getElementById('stderr_txt').value = "";
             document.getElementById('defaultVisibility').selectedIndex = 2;
+            selectvisibility();
             var req = new XMLHttpRequest();
             req.open("GET", "./tests/" + testname + "_test.grace", false);
             req.send(null);
@@ -29,6 +41,7 @@
                 document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
             }
         }
+
         function modeswitch() {
             var compilerun_but = document.getElementById("compilerun_but");
             var mode = document.getElementById('mode');
@@ -37,9 +50,10 @@
                 tabswitch();
             }
         }
+
         function testall() {
             var tc = document.getElementById('testcases');
-            passes = 0;
+            var passes = 0;
             var tests = 0;
             var failures = [];
             var idx = 0;
@@ -57,12 +71,24 @@
                     fetchTime += (et - st);
                     var op = passes;
                     st = (new Date).getTime();
-                    compile();
+                    minigrace.compile();
                     et = (new Date).getTime();
                     compileTime += (et - st);
                     st = (new Date).getTime();
                     if (!compileError) {
-                        run();
+                        minigrace.run();
+                        if (goldenOutput != "") {
+                            var realOut = stdout_txt.value.substr(goldenOutputOffset);
+                            if (realOut == goldenOutput) {
+                                stderr_txt.value += "\nTest passed.";
+                                passes = passes + 1;
+                            } else {
+                                stderr_txt.value += "\nTest failed.";
+                            }
+                            stderr_txt.scrollTop = stderr_txt.scrollHeight;
+                            goldenOutput = "";
+                            setTimeout("stdout_txt.style.background = ''", 2500);
+                        }
                     }
                     et = (new Date).getTime();
                     runTime += (et - st);
@@ -102,6 +128,7 @@
             }
             testnext();
         }
+
         function tabswitch() {
             var tb = document.getElementById('tabbox');
             var next = document.getElementById('tab').value;
@@ -116,14 +143,20 @@
             }
             document.getElementById('stdout_options').style.display = (next == "stdout_tab" ? 'block' : 'none');
         }
+
         function clearstdout() {
             document.getElementById("stdout_txt").value = "";
         }
+
         function scrollstdout() {
             if(document.getElementById("autoscroll").checked) {
                 var stdout = document.getElementById("stdout_txt");
                 stdout.scrollTop = stdout.scrollHeight;
             }
+        }
+
+        function selectvisibility() {
+            minigrace.vis = document.getElementById("defaultVisibility").value;
         }
      </script>
  </head>
@@ -157,7 +190,7 @@
   <textarea id="stderr_txt" rows="9" cols="60"></textarea>
  </div>
  <br />
- <input type="button" id="compilerun_but" value="Go" onclick="compilerun()" />
+ <input type="button" id="compilerun_but" value="Go" onclick="go()" />
  Target:
  <select id="mode" onchange="modeswitch()">
   <option value="js" />JavaScript
@@ -176,7 +209,7 @@
  <input type="button" value="Load sample:" onclick="loadsample(document.getElementById('sample').value)" />
  <select id="sample"><!--Will be populated dynamically//--></select>
  Visibility:
- <select id="defaultVisibility">
+ <select id="defaultVisibility" onchange="selectvisibility();">
   <option value="standard">Standard
   <option value="confidential">Confidential
   <option value="public">All accessible
@@ -189,8 +222,6 @@ minigrace-js
  <!--[!SH[git rev-parse HEAD|cut -b1-7]!]-->
 </span>
  <br />
- <script src="minigrace.js" type="text/javascript"></script>
- <script src="samples.js"></script>
  <style type="text/css">
      #code_txt_real {
          position: relative;
