@@ -1,8 +1,7 @@
 import "ast" as ast
 import "mgcollections" as collections
-import "StandardPrelude" as StandardPrelude
 
-def standardPrelude is parent = StandardPrelude
+inherits BasicGrace.new
 
 def patterns = collections.list.new
 def bannedIdentifiers = collections.set.new

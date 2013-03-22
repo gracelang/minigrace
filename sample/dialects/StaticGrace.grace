@@ -1,7 +1,5 @@
 import "ast" as ast
-import "StandardPrelude" as StandardPrelude
-
-def standardPrelude is parent = StandardPrelude
+inherits BasicGrace.new
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def staticVisitor = object {

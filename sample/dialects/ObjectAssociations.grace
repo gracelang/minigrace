@@ -1,7 +1,7 @@
 import "mgcollections" as collections
 import "StandardPrelude" as StandardPrelude
 
-def standardPrelude is parent = StandardPrelude
+inherits BasicGrace.new
 
 method Relationship<From, To> {
     object {
