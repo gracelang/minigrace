@@ -443,10 +443,12 @@ method compileobject(o, outerRef) {
             compileobjvardecmeth(e, selfr, pos)
             out("\}")
             out("{selfr}->flags |= OFLAG_MUTABLE;")
+            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
         } elseif (e.kind == "defdec") then {
             out("if (objclass{myc} == NULL) \{")
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
+            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
         } elseif (e.kind == "class") then {
             def cd = ast.defDecNode.new(e.name,
                 e, false)
