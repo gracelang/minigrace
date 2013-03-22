@@ -4,6 +4,7 @@
 *.ll
 *.gco
 *.gso
+*.gso.dSYM
 *.gcn
 *.gct
 *.c
