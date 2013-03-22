@@ -4287,11 +4287,27 @@ Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return graceunbecome(argv[0]);
 }
+Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
+        int flags) {
+  if (!(argv[0]->flags & OFLAG_USEROBJ))
+    return argv[0];
+  Object obj = argv[0];
+  struct UserObject *uo = (struct UserObject *)obj;
+  void *sz = ((char *)obj) - sizeof(size_t);
+  size_t *size = sz;
+  int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
+  Object ret = alloc_userobj2(0, nfields, obj->class);
+  struct UserObject *uret = (struct UserObject *)ret;
+  memcpy(ret, obj, *size);
+  if (uo->super)
+    uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
+  return ret;
+}
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 18, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4309,6 +4325,7 @@ Object grace_prelude() {
     add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
+    add_Method(c, "clone", &prelude_clone);
     _prelude = alloc_userobj2(0, 7, c);
     gc_root(_prelude);
     prelude = _prelude;
