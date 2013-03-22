@@ -1890,6 +1890,7 @@ method compile(vl, of, mn, rm, bt) {
         if (o.kind == "inherits") then {
             def superobj = compilenode(o.value)
             out("  self = setsuperobj(self, {superobj});")
+            out("  *selfslot = self;")
         }
         if (o.kind != "method") then {
             compilenode(o)
