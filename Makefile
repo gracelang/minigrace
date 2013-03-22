@@ -6,6 +6,7 @@ all: minigrace $(OTHER_MODULES)
 
 REALSOURCEFILES = compiler.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
+JSSOURCEFILES = js/compiler.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js
 
 ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
 MINIGRACE_BUILD_SUBPROCESSES = 2
@@ -59,12 +60,13 @@ js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
 	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
 
-js/minigrace.js: js/minigrace.in.js $(patsubst %.grace,js/%.js,$(SOURCEFILES)) js/StandardPrelude.js
+js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js
 	@echo Generating minigrace.js from minigrace.in.js...
 	cat js/minigrace.in.js > js/minigrace.js
 	cat js/dom.js >> js/minigrace.js
 	cat js/gracelib.js >> js/minigrace.js
-	for f in $(patsubst %.grace,js/%.js,$(SOURCEFILES)) ; do cat $$f >> js/minigrace.js ; done
+	for f in $(JSSOURCEFILES) ; do cat $$f >> js/minigrace.js ; done
+	cat js/unicodedata.js >> js/minigrace.js
 
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
