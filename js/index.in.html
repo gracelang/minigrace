@@ -7,11 +7,16 @@
      <script src="samples.js"></script>
      <script type="text/javascript">
         var ace;
-        var minigrace = new MiniGrace();
         var goldenOutput = "";
         var goldenOutputOffset = 0;
 
         function go() {
+            if (document.getElementById('mode').value == 'testall') {
+                document.getElementById('mode').selectedIndex = 0;
+                modeswitch();
+                testall();
+                return;
+            }
             minigrace.compilerun();
             scrollstdout();
         }
@@ -43,11 +48,13 @@
         }
 
         function modeswitch() {
-            var compilerun_but = document.getElementById("compilerun_but");
-            var mode = document.getElementById('mode');
-            if (mode.value != 'js' && mode.value != 'testall') {
+            var mode = document.getElementById('mode').value;
+            if (mode != 'js' && mode != 'testall') {
                 document.getElementById('tab').selectedIndex = 1;
                 tabswitch();
+            }
+            if (mode != 'testall') {
+                minigrace.mode = mode;
             }
         }
 
@@ -75,7 +82,7 @@
                     et = (new Date).getTime();
                     compileTime += (et - st);
                     st = (new Date).getTime();
-                    if (!compileError) {
+                    if (!minigrace.compileError) {
                         minigrace.run();
                         if (goldenOutput != "") {
                             var realOut = stdout_txt.value.substr(goldenOutputOffset);

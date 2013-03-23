@@ -1094,7 +1094,7 @@ function gracecode_util() {
         parseargs: function(argcv) {
         },
         target: function(argcv) {
-            return new GraceString(document.getElementById('mode').value);
+            return new GraceString(minigrace.mode);
         },
         modname: function(argcv) {
             return new GraceString(document.getElementById('modname').value);
@@ -1605,5 +1605,3 @@ function Grace_allocModule(modname) {
     mod.className = "module<" + modname + ">";
     return mod;
 }
->>>>>>> 81372ca... Made MiniGrace object.
-

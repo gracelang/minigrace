@@ -1,21 +1,13 @@
-
-
 function MiniGrace() {
     this.compileError = false;
-    this.passes = 0;
     this.vis = "standard";
+    this.mode = "js";
     this.stdout_txt = document.getElementById("stdout_txt");
     this.stdin_txt = document.getElementById("stdout_txt");
     this.stderr_txt = document.getElementById("stderr_txt");
 }
 
 MiniGrace.prototype.compile = function() {
-    if (document.getElementById('mode').value == 'testall') {
-        document.getElementById('mode').selectedIndex = 0;
-        modeswitch();
-        testall();
-        return;
-    }
     importedModules = {};
     callStack = [];
     stdout_txt = document.getElementById("js_txt");
@@ -23,7 +15,7 @@ MiniGrace.prototype.compile = function() {
     stderr_txt = document.getElementById("stderr_txt");
     stderr_txt.value = "";
     stdout_txt.value = "";
-    compileError = false;
+    this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0])
     if (this.vis == "standard") {
         // Do nothing
@@ -37,7 +29,7 @@ MiniGrace.prototype.compile = function() {
         gracecode_compiler.call(Grace_allocModule(":user:"));
     } catch (e) {
         if (e == "ErrorExit") {
-            compileError = true;
+            this.compileError = true;
         } else if (e == "SystemExit") {
             // pass
         } else if (e.exctype == 'graceexception') {
@@ -92,19 +84,10 @@ MiniGrace.prototype.run = function() {
     
 MiniGrace.prototype.compilerun = function() {
     document.getElementById('stderr_txt').value = "";
-    if (document.getElementById('mode').value == 'testall') {
-        document.getElementById('mode').selectedIndex = 0;
-        modeswitch();
-        testall();
-        return;
-    }
     this.compile();
-    if (!compileError &&
-           document.getElementById('mode').value == 'js') {
+    if (!this.compileError && this.mode == 'js') {
         this.run();
     }
 }
 
-var stdout_txt = document.getElementById("stdout_txt");
-var stdin_txt = document.getElementById("stdout_txt");
-var stderr_txt = document.getElementById("stderr_txt");
+var minigrace = new MiniGrace();
