@@ -1,7 +1,7 @@
 import "ast" as ast
 import "mgcollections" as collections
-
-inherits BasicGrace.new
+import "StandardPrelude" as StandardPrelude
+inherits StandardPrelude.new
 
 def patterns = collections.list.new
 def bannedIdentifiers = collections.set.new
@@ -11,10 +11,7 @@ method visitWithPatterns(o) {
     for (patterns) do {pat->
         def mat = pat.pattern.match(o)
         if (mat.andAlso {mat.result}) then {
-            CheckerFailure.raiseWith(pat.message, object {
-                def line is public, readable = o.line
-                def linePos is public, readable = 1
-            })
+            fail(pat.message)at(o)
         }
     }
 }
@@ -113,6 +110,12 @@ method fail(msg)when(pat) {
         def pattern is public, readable = pat
         def message is public, readable = msg
     })
+}
+method fail(msg)at(o) {
+    CheckerFailure.raiseWith(msg, object {
+                def line is public, readable = o.line
+                def linePos is public, readable = 1
+            })
 }
 
 def Block' is public, readable = object {

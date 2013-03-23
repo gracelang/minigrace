@@ -679,6 +679,13 @@ class methodNode.new(name', signature', body', dtype') {
     method map(blk) {
         map(blk)before {} after {}
     }
+    method eachParameter(blk) {
+        for (signature) do {s->
+            for (s.params) do {p->
+                blk.apply(p)
+            }
+        }
+    }
     method pretty(depth) {
         var spc := ""
         for (0..depth) do { i ->

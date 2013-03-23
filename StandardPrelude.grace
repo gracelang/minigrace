@@ -128,3 +128,6 @@ def BasicGrace = object {
         _prelude.clone(_standardPrelude)
     }
 }
+method new {
+    _prelude.clone(self)
+}
