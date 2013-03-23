@@ -17,6 +17,7 @@
                 testall();
                 return;
             }
+            minigrace.modname = document.getElementById('modname').value;
             minigrace.compilerun();
             scrollstdout();
         }
@@ -33,6 +34,7 @@
                     editor.setValue(req.responseText, -1);
                 document.getElementById("code_txt").value = req.responseText;
                 document.getElementById("modname").value = testname;
+                minigrace.modname = testname;
             }
             if (testname.indexOf("_fail") == -1) {
                 req.open("GET", "./tests/" + testname + ".out", false);

@@ -2,9 +2,7 @@ function MiniGrace() {
     this.compileError = false;
     this.vis = "standard";
     this.mode = "js";
-    this.stdout_txt = document.getElementById("stdout_txt");
-    this.stdin_txt = document.getElementById("stdout_txt");
-    this.stderr_txt = document.getElementById("stderr_txt");
+    this.modname = "main";
 }
 
 MiniGrace.prototype.compile = function() {
@@ -54,13 +52,12 @@ MiniGrace.prototype.run = function() {
     var code = document.getElementById("js_txt").value;
     lineNumber = 1;
     eval(code);
-    var mod = document.getElementById('modname').value;
     var theModule;
-    eval("theModule = gracecode_" + mod + ";");
-    window['gracecode_' + mod] = theModule;
+    eval("theModule = gracecode_" + this.modname + ";");
+    window['gracecode_' + this.modname] = theModule;
     testpass = false;
     try {
-        theModule.call({methods:{}, data: {}, className: document.getElementById('modname').value});
+        theModule.call({methods:{}, data: {}, className: this.modname});
     } catch (e) {
         if (e.exctype == 'graceexception') {
             stderr_txt.value += "Error around line " + e.lineNumber
