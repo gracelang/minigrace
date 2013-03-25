@@ -3,16 +3,39 @@ function MiniGrace() {
     this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
+
+    this.generated_output = ""
+
+    this.stdout_write = function(value) {
+        
+    }
+
+    this.stderr_write = function(value) {
+        console.log(value);
+    };
+
+    this.stdin_read = function() {
+        return "";
+    }
 }
 
-MiniGrace.prototype.compile = function() {
+MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
     callStack = [];
-    stdout_txt = document.getElementById("js_txt");
-    stdin_txt = document.getElementById("code_txt");
-    stderr_txt = document.getElementById("stderr_txt");
-    stderr_txt.value = "";
-    stdout_txt.value = "";
+
+    // Change stdin to read from code.
+    var old_stdin_read = this.stdin_read;
+    this.stdin_read = function() {
+        return grace_code;
+    }
+
+    // Change stdout to store generated output.
+    var old_stdout_write = this.stdout_write;
+    this.stdout_write = function(value) {
+        this.generated_output += value;
+    }
+    this.generated_output = "";
+
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0])
     if (this.vis == "standard") {
@@ -31,25 +54,26 @@ MiniGrace.prototype.compile = function() {
         } else if (e == "SystemExit") {
             // pass
         } else if (e.exctype == 'graceexception') {
-            stderr_txt.value += "Internal compiler error, around line " + e.lineNumber
+            this.stderr_write("Internal compiler error, around line " + e.lineNumber
                 + ": " + e.exception.name + ": "
-                + e.message._value + "\n";
+                + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
-                stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
+                this.stderr_write("  From call to " + e.callStack[i] + "\n");
             }
         } else {
             throw e;
         }
+    } finally {
+        // Change the stdin and stdout back.
+        this.stdin_read = old_stdin_read;
+        this.stdout_write = old_stdout_write;
     }
 }
     
 MiniGrace.prototype.run = function() {
     importedModules = {};
     callStack = [];
-    stdout_txt = document.getElementById("stdout_txt");
-    stdin_txt = document.getElementById("stdout_txt");
-    stderr_txt = document.getElementById("stderr_txt");
-    var code = document.getElementById("js_txt").value;
+    var code = minigrace.generated_output;
     lineNumber = 1;
     eval(code);
     var theModule;
@@ -60,28 +84,26 @@ MiniGrace.prototype.run = function() {
         theModule.call({methods:{}, data: {}, className: this.modname});
     } catch (e) {
         if (e.exctype == 'graceexception') {
-            stderr_txt.value += "Error around line " + e.lineNumber
+            this.stderr_write("Error around line " + e.lineNumber
                 + ": " + e.exception.name + ": "
-                + e.message._value + "\n";
+                + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
-                stderr_txt.value += "  From call to " + e.callStack[i] + "\n";
+                this.stderr_write("  From call to " + e.callStack[i] + "\n");
             }
             if (e.callStack.length > 0) {
-                stderr_txt.value += "Error around line " + e.lineNumber
+                this.stderr_write("Error around line " + e.lineNumber
                     + ": " + e.exception.name + ": "
-                    + e.message._value + "\n";
+                    + e.message._value + "\n");
             }
-            stderr_txt.scrollTop = stderr_txt.scrollHeight;
         } else if (e != "SystemExit") {
-            stderr_txt.value += "Runtime error around line " + lineNumber + "\n";
+            this.stderr_write("Runtime error around line " + lineNumber + "\n");
             throw e;
         }
     }
 }
     
-MiniGrace.prototype.compilerun = function() {
-    document.getElementById('stderr_txt').value = "";
-    this.compile();
+MiniGrace.prototype.compilerun = function(grace_code) {
+    this.compile(grace_code);
     if (!this.compileError && this.mode == 'js') {
         this.run();
     }

@@ -10,6 +10,30 @@
         var goldenOutput = "";
         var goldenOutputOffset = 0;
 
+        // Overwritten by ace library if present.
+        var getCode = function() {
+            return document.getElementById('code_txt').value;
+        }
+
+        // Setup stderr.
+        minigrace.stderr_write = function(value) {
+            var stderr = document.getElementById("stderr_txt");
+            stderr.value += value;
+            stderr.scrollTop = stderr.scrollHeight;
+        };
+
+        // Setup stdin.
+        minigrace.stdin_read = function() {
+            return prompt("Input: ");
+        }
+
+        // Setup stdout.
+        minigrace.stdout_write = function(value) {
+            var stdout = document.getElementById("stdout_txt");
+            stdout.value += value;
+            scrollstdout();
+        };
+
         function go() {
             if (document.getElementById('mode').value == 'testall') {
                 document.getElementById('mode').selectedIndex = 0;
@@ -17,8 +41,9 @@
                 testall();
                 return;
             }
+            document.getElementById('stderr_txt').value = "";
             minigrace.modname = document.getElementById('modname').value;
-            minigrace.compilerun();
+            minigrace.compilerun(getCode());
             scrollstdout();
         }
 
@@ -80,7 +105,8 @@
                     fetchTime += (et - st);
                     var op = passes;
                     st = (new Date).getTime();
-                    minigrace.compile();
+                    document.getElementById('stderr_txt').value = "";
+                    minigrace.compile(getCode());
                     et = (new Date).getTime();
                     compileTime += (et - st);
                     st = (new Date).getTime();

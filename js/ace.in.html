@@ -7,13 +7,11 @@
         var editor = ace.edit("code_txt_real");
         var GraceMode = require("ace/mode/grace").Mode;
         editor.getSession().setMode(new GraceMode());
-        stdin.methods.read = function() {
-            return new GraceString(editor.getValue());
-        }
-        stdin.methods.iterator = function() {
-            return callmethod(new GraceString(editor.getValue()), "iterator", [0]);
-        }
         document.getElementById('code_txt_real').style.height = document.getElementById('tabbox').clientHeight + 'px';
         document.getElementById('code_txt_real').style.width = (document.getElementById('tabbox').clientWidth - 30) + 'px';
+        // Get code from ace editor.
+        var getCode = function() {
+            return editor.getValue();
+        }        
      }
  </script>

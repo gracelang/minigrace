@@ -621,7 +621,7 @@ function Grace_egal(o1, o2) {
 
 function Grace_print(obj) {
     var s = callmethod(obj, "asString", [0]);
-    stdout_txt.value += s._value + "\n";
+    minigrace.stdout_write(s._value + "\n");
     return var_nothing;
 }
 
@@ -923,22 +923,22 @@ GraceStringIterator.prototype.methods.next = function() {
 
 var stdout = Grace_allocObject();
 stdout.methods.write = function(junk, s) {
-    stdout_txt.value += s._value;
+    minigrace.stdout_write(s._value);
 }
 stdout.methods.close = function() {};
 
 var stdin = Grace_allocObject();
 stdin.methods.read = function() {
-    return new GraceString(stdin_txt.value);
+    return new GraceString(minigrace.stdin_read());
 }
 stdin.methods.iterator = function() {
-    return callmethod(new GraceString(stdin_txt.value), "iterator", [0]);
+    return callmethod(new GraceString(minigrace.stdin_read()), "iterator", [0]);
 }
 stdin.methods.close = function() {};
 
 var stderr = Grace_allocObject();
 stderr.methods.write = function(junk, s) {
-    stderr_txt.value += s._value;
+    minigrace.stderr_write(s._value);
 }
 stderr.methods.close = function() {};
 
@@ -1127,11 +1127,10 @@ function gracecode_util() {
             return new GraceNum(30);
         },
         log_verbose: function(argcv, s) {
-            stderr_txt.value += "minigrace: " + minigrace.modname + ': ' + s._value + "\n";
-            stderr_txt.scrollTop = stderr_txt.scrollHeight;
+            minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
         },
         outprint: function(argcv, s) {
-            stdout_txt.value += s._value + "\n";
+            minigrace.stdout_write(s._value + "\n");
         },
         engine: function(argcv) {
             return new GraceString("js");
@@ -1143,37 +1142,36 @@ function gracecode_util() {
             return new GraceBoolean(false);
         },
         type_error: function(argcv, s) {
-            stderr_txt.value += minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": type error: " + s._value;
-            stderr_txt.scrollTop = stderr_txt.scrollHeight;
+            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+                this._linepos._value + ": type error: " + s._value + "\n");
             throw "ErrorExit";
         },
         syntax_error: function(argcv, s) {
-            stderr_txt.value += minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": syntax error: " + s._value;
+            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+                this._linepos._value + ": syntax error: " + s._value + "\n");
             if (this._linenum._value > 1)
-                stderr_txt.value += "\n  " + (this._linenum._value - 1) + ": "
+                minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
                     + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value - 1))._value;
+                        [1], new GraceNum(this._linenum._value - 1))._value
+                    + "\n");
             var arr = "----";
             for (var i=0; i<this._linepos._value; i++)
                 arr = arr + "-";
-            stderr_txt.value += "\n  " + this._linenum._value + ": "
+            minigrace.stderr_write("  " + this._linenum._value + ": "
                 + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value))._value;
-            stderr_txt.value += "\n" + arr + "^";
+                        [1], new GraceNum(this._linenum._value))._value + "\n");
+            minigrace.stderr_write(arr + "^\n");
             if (this._linenum._value <
                     callmethod(this._lines, "size", [])._value)
-                stderr_txt.value += "\n  " + (this._linenum._value + 1) + ": "
+                minigrace.stderr_write("  " + (this._linenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value + 1))._value;
-            stderr_txt.scrollTop = stderr_txt.scrollHeight;
+                        [1], new GraceNum(this._linenum._value + 1))._value
+                    + "\n");
             throw "ErrorExit";
         },
         warning: function(argcv, s) {
-            stderr_txt.value += minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": warning: " + s._value;
-            stderr_txt.scrollTop = stderr_txt.scrollHeight;
+            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+                this._linepos._value + ": warning: " + s._value + "\n");
         },
         hex: function(argcv, n) {
             var hexdigits = "0123456789abcdef"
@@ -1533,7 +1531,7 @@ function dbgp(o, d) {
 }
 
 function dbg(o) {
-    stderr_txt.value += dbgp(o, 0) + "\n";
+    minigrace.stderr_write(dbgp(o, 0) + "\n");
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
