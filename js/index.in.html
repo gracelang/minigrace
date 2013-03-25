@@ -44,6 +44,7 @@
             document.getElementById('stderr_txt').value = "";
             minigrace.modname = document.getElementById('modname').value;
             minigrace.compilerun(getCode());
+            document.getElementById('js_txt').value = minigrace.generated_output;
             scrollstdout();
         }
 
@@ -104,11 +105,12 @@
                     var et = (new Date).getTime();
                     fetchTime += (et - st);
                     var op = passes;
-                    st = (new Date).getTime();
                     document.getElementById('stderr_txt').value = "";
+                    st = (new Date).getTime();
                     minigrace.compile(getCode());
                     et = (new Date).getTime();
                     compileTime += (et - st);
+                    document.getElementById('js_txt').value = minigrace.generated_output;
                     st = (new Date).getTime();
                     if (!minigrace.compileError) {
                         minigrace.run();
