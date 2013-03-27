@@ -1,4 +1,13 @@
 var samples = {
+    'loopinvariant': {
+        'name': 'Loop invariants dialect',
+        'dir': 'dialects',
+    },
+    'loopinvariant_example': {
+        'name': 'Loop invariant example',
+        'dir': 'dialects',
+        'requires': ['loopinvariant'],
+    },
     'fsm': {
         'name': 'Finite state machine dialect',
         'dir': 'dialects',
