@@ -10,8 +10,10 @@ def CheckerFailure = Exception.refine "CheckerFailure"
 method visitWithPatterns(o) {
     for (patterns) do {pat->
         def mat = pat.pattern.match(o)
-        if (mat.andAlso {mat.result}) then {
-            fail(pat.message)at(o)
+        if (pat.isFailure) then {
+            if (mat.andAlso {mat.result}) then {
+                fail(pat.message)at(o)
+            }
         }
     }
 }
@@ -109,6 +111,7 @@ method fail(msg)when(pat) {
     patterns.push(object {
         def pattern is public, readable = pat
         def message is public, readable = msg
+        def isFailure is public, readable = true
     })
 }
 method fail(msg)at(o) {
@@ -116,6 +119,13 @@ method fail(msg)at(o) {
                 def line is public, readable = o.line
                 def linePos is public, readable = 1
             })
+}
+method do(pat) {
+    patterns.push(object {
+        def pattern is public, readable = pat
+        def message is public, readable = "non-failure pattern"
+        def isFailure is public, readable = false
+    })
 }
 
 def Block' is public, readable = object {
@@ -276,6 +286,7 @@ patterns.push(object {
     }
     // This can't actually come up:
     def message is public, readable = "used banned identifier"
+    def isFailure is public, readable = true
 })
 
 method check(l) {
