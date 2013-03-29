@@ -648,10 +648,10 @@ method resolve(values) {
         if (n.kind == "method") then {
             scope.add(n.value.value)
         }
-        if ((n.kind == "class") || (n.kind == "def")) then {
+        if ((n.kind == "class") || (n.kind == "defdec")) then {
             scope.add(n.name.value) as "def"
         }
-        if (n.kind == "var") then {
+        if (n.kind == "vardec") then {
             scope.add(n.name.value) as "var"
         }
         if (n.kind == "type") then {
