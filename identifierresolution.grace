@@ -411,11 +411,11 @@ method resolveIdentifiers(topNode) {
                 if (n.kind == "method") then {
                     scope.add(n.value.value)
                 }
-                if (n.kind == "var") then {
+                if (n.kind == "vardec") then {
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
                 }
-                if (n.kind == "def") then {
+                if (n.kind == "defdec") then {
                     scope.add(n.name.value)
                 }
                 if (n.kind == "inherits") then {
@@ -434,11 +434,11 @@ method resolveIdentifiers(topNode) {
                 if (n.kind == "method") then {
                     scope.add(n.value.value)
                 }
-                if (n.kind == "var") then {
+                if (n.kind == "vardec") then {
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
                 }
-                if (n.kind == "def") then {
+                if (n.kind == "defdec") then {
                     scope.add(n.name.value)
                 }
                 if (n.kind == "inherits") then {
