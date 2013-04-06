@@ -425,6 +425,16 @@ method resolveIdentifiers(topNode) {
                     for (parentScope.elements) do {e->
                         scope.add(e)
                     }
+                    for (node.signature) do {s->
+                        for (s.params) do {p->
+                            if (parentScope.elements.contains(p.value)) then {
+                                util.setPosition(p.line, p.linePos)
+                                util.syntax_error("Class parameter {p.value} "
+                                    ++ "conflicts with inherited method "
+                                    ++ p.value ++ " and must be renamed.")
+                            }
+                        }
+                    }
                 }
             }
         }
