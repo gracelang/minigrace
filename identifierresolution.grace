@@ -397,8 +397,6 @@ method resolveIdentifiers(topNode) {
             classScope.add(node.constructor.value)
             classScope.bindAs(node.name.value)
             pushScope
-            classScope.elementScopes.put(node.constructor.value, scope)
-            scope.variety := "class"
             for (node.signature) do {s->
                 for (s.params) do {p->
                     scope.add(p.value)as "def"
@@ -407,6 +405,9 @@ method resolveIdentifiers(topNode) {
                     scope.add(s.vararg.value) as "def"
                 }
             }
+            pushScope
+            scope.variety := "class"
+            classScope.elementScopes.put(node.constructor.value, scope)
             for (node.value) do {n->
                 if (n.kind == "method") then {
                     scope.add(n.value.value)
@@ -518,6 +519,7 @@ method resolveIdentifiers(topNode) {
     } after { node ->
         if (node.kind == "class") then {
             node.data := scope
+            popScope
             popScope
         }
         if (node.kind == "object") then {
