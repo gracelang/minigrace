@@ -908,7 +908,7 @@ GraceStringIterator.prototype.methods.next = function() {
 }
 
 var stdout = Grace_allocObject();
-stdout.methods.write = function(s) {
+stdout.methods.write = function(junk, s) {
     stdout_txt.value += s._value;
 }
 var stdin = Grace_allocObject();
@@ -919,7 +919,7 @@ stdin.methods.iterator = function() {
     return callmethod(new GraceString(stdin_txt.value), "iterator", [0]);
 }
 var stderr = Grace_allocObject();
-stderr.methods.write = function(s) {
+stderr.methods.write = function(junk, s) {
     stderr_txt.value += s._value;
 }
 stdout.methods.close = function() {};
