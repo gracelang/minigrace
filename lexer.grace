@@ -277,8 +277,8 @@ def LexerClass = object {
                                     tok := tokens.pop
                                     tok := NumToken.new(tok.value ++ "." ++ accum)
                                 } else {
-                                    util.syntax_error("found ." ++ accum
-                                        ++ ", expected term")
+                                    util.syntax_error("Found '.{accum}'" ++
+                                        ", expected term.")
                                 }
                             }
                         }
@@ -310,8 +310,8 @@ def LexerClass = object {
                     } elseif (done) then {
                         //print(mode, accum, tokens)
                     } else {
-                        util.syntax_error("Lexing error: no handler for mode " ++ mode ++
-                            " with accum " ++ accum)
+                        util.syntax_error("Lexing error: no handler for mode {mode}" ++
+                            " with accum {accum}.")
                     }
                 }
                 startPosition := linePosition
@@ -331,7 +331,7 @@ def LexerClass = object {
                         inc := n - 87 // 'a' - 10
                     }
                     if (inc >= base) then {
-                        util.syntax_error("no such digit '{c}' in base {base}")
+                        util.syntax_error("No such digit '{c}' in base {base}.")
                     }
                     val := val + inc
                 }
@@ -421,9 +421,9 @@ def LexerClass = object {
                         // Unicode LINE SEPARATOR, or is a tab
                         lineStr := lineStr ++ c
                         lines.push(lineStr)
-                        util.syntax_error("illegal whitespace in input: "
+                        util.syntax_error("Illegal whitespace in input: "
                             ++ "U+{padl(ordval.inBase 16, 4, "0")} "
-                            ++ "({ordval}), {unicode.name(c)}")
+                            ++ "({ordval}), {unicode.name(c)}.")
                     }
                     if (unicode.isControl(ordval) && (ordval != 10)
                         && (ordval != 13)) then {
@@ -431,10 +431,9 @@ def LexerClass = object {
                         // carriage return or line feed.
                         lineStr := lineStr ++ c
                         lines.push(lineStr)
-                        util.syntax_error("illegal control character in "
+                        util.syntax_error("Illegal control character in "
                             ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
-                            ++ "({ordval}) on line {lineNumber}"
-                            ++ " character {linePosition}.")
+                            ++ "({ordval}), {unicode.name(c)}.")
                     }
                     if (atStart && (linePosition == 1)) then {
                         if (c == "#") then {
@@ -496,9 +495,9 @@ def LexerClass = object {
                         if ((c == "#") && (mode != "p")) then {
                             lineStr := lineStr ++ c
                             lines.push(lineStr)
-                            util.syntax_error("illegal operator character"
-                                ++ ": #{ordval}"
-                                ++ " '{c}', {unicode.name(c)}")
+                            util.syntax_error("Illegal operator character in "
+                                ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
+                                ++ "({ordval}), {unicode.name(c)}.")
                         }
                         if ((c == ".") && (accum == ".")) then {
                             // Special handler for .. operator
@@ -518,7 +517,7 @@ def LexerClass = object {
                                 && (ordval != 32)) then {
                                 lineStr := lineStr ++ c
                                 lines.push(lineStr)
-                                util.syntax_error("unknown character in "
+                                util.syntax_error("Unknown character in "
                                     ++ "input: #{ordval}"
                                     ++ " '{c}', {unicode.name(c)}")
                             }
@@ -588,12 +587,12 @@ def LexerClass = object {
                                 lineStr := lineStr ++ c
                                 lines.push(lineStr)
                                 util.syntax_error("Runaway string "
-                                    ++ "interpolation")
+                                    ++ "interpolation.")
                             } else {
                                 lineStr := lineStr ++ c
                                 lines.push(lineStr)
                                 util.syntax_error("Newlines not permitted "
-                                    ++ "in string literals")
+                                    ++ "in string literals.")
                             }
                         }
                         if (escaped) then {
@@ -671,7 +670,7 @@ def LexerClass = object {
                             lineStr := lineStr ++ c
                             lines.push(lineStr)
                             util.syntax_error("Newlines not permitted in"
-                                ++ "backtick identifiers")
+                                ++ " backtick identifiers.")
                         }
                         accum := accum ++ c
                     } elseif ((c == "\n") || (c == "\r")) then {

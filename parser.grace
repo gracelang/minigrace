@@ -81,7 +81,7 @@ method expect(t) {
         return true
     }
     util.setPosition(sym.line, sym.linePos)
-    util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
+    util.syntax_error("Expected {t}, got {sym.kind}: '{sym.value}'.")
 }
 // Require a t OR s as the current token; if not, raise a syntax error.
 method expect(t)or(s) {
@@ -92,7 +92,7 @@ method expect(t)or(s) {
         return true
     }
     util.setPosition(sym.line, sym.linePos)
-    util.syntax_error("expected {t}, got {sym.kind}: {sym.value}")
+    util.syntax_error("Expected {t} or {s}, got {sym.kind}: '{sym.value}'.")
 }
 // Require a t OR s OR u as the current token; if not, raise a syntax error.
 method expect(t)or(s)or(u) {
@@ -104,14 +104,14 @@ method expect(t)or(s)or(u) {
         return true
     }
     util.setPosition(sym.line, sym.linePos)
-    util.syntax_error("expected {t} or {s} or {u}, got {sym.kind}: {sym.value}")
+    util.syntax_error("Expected {t} or {s} or {u}, got {sym.kind}: '{sym.value}'.")
 }
 // Expect block to consume at least one token
 method expectConsume(ablock) {
     var sz := tokens.size
     ablock.apply
     if (tokens.size == sz) then {
-        util.syntax_error("unable to consume token")
+        util.syntax_error("Unable to consume token.")
     }
 }
 // Expect block to consume at least one token, or report string error
@@ -119,7 +119,7 @@ method expectConsume(ablock)error(msg) {
     var sz := tokens.size
     ablock.apply
     if (tokens.size == sz) then {
-        util.syntax_error(msg)
+        util.syntax_error("Unable to consume token: {msg}.")
     }
 }
 // Expect block to consume at least one token, or call fallback code.
@@ -295,8 +295,8 @@ method block {
                     isMatchingBlock := true
                 }
                 if (isMatchingBlock && {accept("comma")}) then {
-                    util.syntax_error("matching blocks can have only "
-                        ++ "one parameter")
+                    util.syntax_error("Matching blocks can have only "
+                        ++ "one parameter.")
                 }
                 while {accept("comma")} do {
                     // Keep doing the above for the rest of the parameters.
@@ -311,7 +311,7 @@ method block {
                     params.push(ident1)
                 }
                 if ((accept("arrow")).not) then {
-                    util.syntax_error("block parameter list not terminated ->.")
+                    util.syntax_error("Block parameter list not terminated with '->'.")
                 }
                 next
             } elseif (accept("semicolon")) then {
@@ -420,12 +420,12 @@ method doif {
                 econd := values.pop
                 if ((accept("identifier") &&
                     (sym.value == "then")).not) then {
-                    util.syntax_error("elseif with no then.")
+                    util.syntax_error("'elseif' with no 'then'.")
                 }
                 next
                 ebody := []
                 if ((accept("lbrace")).not) then {
-                    util.syntax_error("expected \{.")
+                    util.syntax_error("Expected '\{'.")
                 }
                 next
                 if (sym.line == lastToken.line) then {
@@ -472,7 +472,7 @@ method doif {
             values.push(o)
         } else {
             // Raise an error here, or it will spin nastily forever.
-            util.syntax_error("if with no then")
+            util.syntax_error("'if' with no 'then'.")
         }
         minIndentLevel := localMin
         statementIndent := localStatementIndent
@@ -501,7 +501,7 @@ method dofor {
             values.push(o)
             minIndentLevel := minInd - 1
         } else {
-            util.syntax_error("expected 'do'")
+            util.syntax_error("Expected 'do'.")
         }
     }
 }
@@ -526,7 +526,7 @@ method prefixop {
         if (accept("lparen")) then {
             next
             if (accept("rparen")) then {
-                util.syntax_error("empty () in expression")
+                util.syntax_error("Empty () in expression.")
             }
             expression
             expect("rparen")
@@ -592,7 +592,7 @@ method catchcase {
             expect("rparen")
             next
         } else {
-            util.syntax_error("no argument to case")
+            util.syntax_error("No argument to case.")
         }
         cases.push(values.pop)
     }
@@ -606,7 +606,7 @@ method catchcase {
             expect("rparen")
             next
         } else {
-            util.syntax_error("no argument to finally")
+            util.syntax_error("No argument to finally.")
         }
         finally := values.pop
     }
@@ -637,7 +637,7 @@ method matchcase {
             expect("rparen")
             next
         } else {
-            util.syntax_error("no argument to case")
+            util.syntax_error("No argument to case.")
         }
         cases.push(values.pop)
     }
@@ -651,7 +651,7 @@ method matchcase {
             expect("rparen")
             next
         } else {
-            util.syntax_error("no argument to case")
+            util.syntax_error("No argument to case.")
         }
         elsecase := values.pop
     }
@@ -778,8 +778,8 @@ method expressionrest {
                 // If: this is not the first operator, it is not the same
                 // as the last operator, and the expression has not been
                 // entirely arithmetic, raise a syntax error.
-                util.syntax_error("mixed operators without parentheses: "
-                    ++ opdtype ++ " and " ++ o)
+                util.syntax_error("Mixed operators without parentheses: "
+                    ++ "'{opdtype}' and '{o}'.")
             }
             opdtype := o
             while {(ops.size > 0) && (prec <= toprec(ops))} do {
@@ -804,7 +804,7 @@ method expressionrest {
                 // be allowed in term above?
                 next
                 if (accept("rparen")) then {
-                    util.syntax_error("empty () in expression (maybe empty interpolated \{\} block)")
+                    util.syntax_error("Empty () in expression (maybe empty interpolated \{\} block).")
                 }
                 expression
                 expect("rparen")
@@ -834,7 +834,7 @@ method expressionrest {
         tmp := terms.pop
         values.push(tmp)
         if (terms.size > 0) then {
-            util.syntax_error("values left on term stack")
+            util.syntax_error("Values left on term stack.")
         }
     }
 }
@@ -918,7 +918,7 @@ method callrest {
             if (accept("colon")) then {
                 tmp := values.pop
                 if (tmp.kind != "identifier") then {
-                    util.syntax_error("colon must follow identifier")
+                    util.syntax_error("Colon must follow identifier.")
                 }
                 next
                 expectConsume {expression}
@@ -934,7 +934,7 @@ method callrest {
                 if (accept("colon")) then {
                     tmp := values.pop
                     if (tmp.kind != "identifier") then {
-                        util.syntax_error("colon must follow identifier")
+                        util.syntax_error("Colon must follow identifier.")
                     }
                     next
                     expectConsume {expression}
@@ -1025,7 +1025,7 @@ method callmprest(meth, signature, tok) {
         var isTerm := false
         if ((accept("lparen")).not && (accept("lbrace")).not
             && accept("string").not && accept("num").not) then {
-            util.syntax_error("multi-part method name parameters require .")
+            util.syntax_error("Multi-part method name parameters require '.'.")
         }
         if (accept("lbrace")onLineOfLastOr(tok)
             || accept("string")onLineOfLastOr(tok)
@@ -1089,12 +1089,12 @@ method defdec {
             next
             expectConsume {
                 expression
-            } error "initial value of def expected after =."
+            } error "initial value of def expected after '='"
             val := values.pop
         } elseif (accept("bind")) then {
-            util.syntax_error("def declaration uses '=', not ':='")
+            util.syntax_error("def declaration uses '=', not ':='.")
         } else {
-            util.syntax_error("def declaration requires value")
+            util.syntax_error("def declaration requires value.")
         }
         util.setPosition(line, pos)
         var o := ast.defDecNode.new(name, val, dtype)
@@ -1151,11 +1151,11 @@ method vardec {
             next
             expectConsume {
                 expression
-            } error "initial value of var expected after :=."
+            } error "initial value of var expected after ':='"
             val := values.pop
         }
         if (accept("op") && (sym.value == "=")) then {
-            util.syntax_error("var declaration uses ':=', not '='")
+            util.syntax_error("var declaration uses ':=', not '='.")
         }
         util.setPosition(line, pos)
         var o := ast.varDecNode.new(name, val, dtype)
@@ -1254,7 +1254,7 @@ method doobject {
             identifier
             var nm := values.pop
             if (accept("dot").not) then {
-                util.syntax_error("extends must have .new invocation on right")
+                util.syntax_error("extends must have '.new' invocation on right.")
             }
             next
             expect("identifier")
@@ -1294,10 +1294,10 @@ method doobject {
             statement
             if (values.size == sz) then {
                 util.setPosition(sym.line, sym.linePos)
-                util.syntax_error("unexpected symbol in "
-                    ++ "object declaration. Expected var, def, method, "
-                    ++ "closing brace, or statement, "
-                    ++ "got {sym.kind}:{sym.value}.")
+                util.syntax_error("Unexpected symbol in "
+                    ++ "object declaration. Expected 'var', 'def', 'method', "
+                    ++ "'\}', or statement, "
+                    ++ "got {sym.kind}: '{sym.value}'.")
             }
             sz := values.size
         }
@@ -1343,7 +1343,7 @@ method doclass {
         var csig := s.sig
         var constructorName := s.m
         if (!accept("lbrace")) then {
-            util.syntax_error("class declaration without body")
+            util.syntax_error("Class declaration without body.")
         }
         next
         if (sym.line == statementToken.line) then {
@@ -1384,7 +1384,7 @@ method doclassOld {
             generic
             var nm := values.pop
             if (accept("dot").not) then {
-                util.syntax_error("extends must have .new invocation on right")
+                util.syntax_error("extends must have '.new' invocation on right.")
             }
             next
             expect("identifier")
@@ -1443,7 +1443,7 @@ method doclassOld {
                 if (accept("arrow")) then {
                     next
                 } else {
-                    util.syntax_error("expected ->.")
+                    util.syntax_error("Expected '->'.")
                 }
             }
             var sz := values.size
@@ -1454,7 +1454,7 @@ method doclassOld {
                 defdec
                 inheritsdec
                 if (values.size == sz) then {
-                    util.syntax_error("did not consume anything in "
+                    util.syntax_error("Did not consume anything in "
                         ++ "class declaration.")
                 }
                 sz := values.size
@@ -1475,7 +1475,7 @@ method doclassOld {
                 body, superclass, ast.identifierNode.new("new", false))
             values.push(o)
         } else {
-            util.syntax_error("class definition without body")
+            util.syntax_error("Class definition without body.")
         }
         minIndentLevel := localMinIndentLevel
     }
@@ -1528,7 +1528,7 @@ method methoddec {
             minIndentLevel := localMin
         } else {
             util.syntax_error("No body in method declaration for " ++
-                meth.value)
+                "'{meth.value}'.")
         }
         util.setline(btok.line)
         var o := ast.methodNode.new(meth, signature, body, dtype)
@@ -1566,13 +1566,13 @@ method parsempmndecrest(tm, sameline) {
         part.name := nxt.value
         var vararg := false
         if ((accept("lparen")).not) then {
-            util.syntax_error("multi-part method name parameters require ().")
+            util.syntax_error("Multi-part method name parameters require ().")
         }
         next
         while {accept("identifier")
                 || (accept("op") && (sym.value == "*"))} do {
             if (vararg) then {
-                util.syntax_error("varargs parameter must be last.")
+                util.syntax_error("Varargs parameter must be last.")
             }
             if (accept("op")) then {
                 next
@@ -1666,7 +1666,7 @@ method methodsignature(sameline) {
                     dotyperef
                     dtype := values.pop
                 } else {
-                    util.syntax_error("expected type after :.")
+                    util.syntax_error("Expected type after ':'.")
                 }
             }
             id.dtype := dtype
@@ -1679,7 +1679,7 @@ method methodsignature(sameline) {
             if (accept("comma")) then {
                 next
             } elseif ((accept("rparen")).not) then {
-                util.syntax_error("expected comma or rparen.")
+                util.syntax_error("Expected ',' or ')'.")
             }
         }
         expect("rparen")
@@ -1721,7 +1721,7 @@ method doimport {
         def p = values.pop
         expect("identifier")
         if (sym.value != "as") then {
-            util.syntax_error("unexpected token {sym.kind}:{sym.value}; "
+            util.syntax_error("Unexpected token {sym.kind}: '{sym.value}'; "
                 ++ "expected 'as'.")
         }
         next
@@ -1771,8 +1771,8 @@ method domethodtype {
     } else {
         if (!accept("rbrace")) then {
             if (lastToken.line == sym.line) then {
-                util.syntax_error("multiple methods on same line in type, "
-                    ++ "after {meth.value}")
+                util.syntax_error("Multiple methods on same line in type, "
+                    ++ "after '{meth.value}'.")
             }
         }
     }
@@ -1809,7 +1809,7 @@ method dotype {
         }
         expect("op")
         if (sym.value != "=") then {
-            util.syntax_error("type declarations require =.")
+            util.syntax_error("Type declarations require '='.")
         }
         next
         def methods = []
@@ -1851,10 +1851,10 @@ method checkIndent {
     } elseif (sym.kind == "eof") then {
     } elseif (sym.indent < minIndentLevel) then {
         if ((sym.linePos - 1) != minIndentLevel) then {
-            util.syntax_error("block and indentation inconsistent "
-                ++ "for token " ++ sym.kind ++ ": " ++ sym.value ++ "; "
-                ++ "indentation is " ++ sym.indent ++ ", must be at least "
-                ++ minIndentLevel)
+            util.syntax_error("Block and indentation inconsistent "
+                ++ "for token {sym.kind}: '{sym.value}'; "
+                ++ "indentation is {sym.indent}, must be at least "
+                ++ "{minIndentLevel}.")
         }
     } elseif (sym.indent > minIndentLevel) then {
         minIndentLevel := sym.indent
@@ -1876,7 +1876,7 @@ method statement {
         } elseif (sym.value == "def") then {
             defdec
         } elseif (sym.value == "const") then {
-            util.syntax_error("no such keyword const; did you mean def?")
+            util.syntax_error("No such keyword 'const'; did you mean 'def'?")
         } elseif (sym.value == "import") then {
             doimport
         } elseif (sym.value == "dialect") then {
@@ -1900,7 +1900,7 @@ method statement {
             var o := ast.bindNode.new(dest, val)
             if (dest.kind == "call") then {
                 if (dest.value.kind != "member") then {
-                    util.syntax_error("assignment to method call")
+                    util.syntax_error("Assignment to method call.")
                 }
             }
             values.push(o)
@@ -1924,14 +1924,14 @@ method statement {
                     }.andAlso {
                         sym.kind == "identifier"
                     }) then {
-                    util.syntax_error("unexpected token after statement ended; "
-                        ++ "got {sym.kind}:'{sym.value}', expected "
+                    util.syntax_error("Unexpected token after statement ended; "
+                        ++ "got {sym.kind}: '{sym.value}', expected "
                         ++ "new line or semicolon. Did you mean "
-                        ++ "{values.last.toGrace 0}({sym.value})?")
+                        ++ "'{values.last.toGrace 0}({sym.value})'?")
                 } else {
                     util.syntax_error("unexpected token after statement ended; "
-                        ++ "got {sym.kind}:'{sym.value}', expected "
-                        ++ "new line or semicolon")
+                        ++ "got {sym.kind}: '{sym.value}', expected "
+                        ++ "new line or semicolon.")
                 }
             }
         }
@@ -1985,7 +1985,7 @@ method parse(toks) {
         if (tokens.size == oldlength) then {
             util.setPosition(sym.line, sym.linePos)
             util.syntax_error("No token consumed at top level. Have " 
-                ++ sym.kind ++ ": " ++ sym.value ++ ", expected statement.")
+                ++ "{sym.kind}: '{sym.value}', expected statement.")
         }
         oldlength := tokens.size + 0
     }

@@ -1006,7 +1006,7 @@ method compiledefdec(o) {
     if (false != val) then {
         val := compilenode(val)
     } else {
-        util.syntax_error("const must have value bound.")
+        util.syntax_error("Const must have value bound.")
     }
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
@@ -1581,7 +1581,7 @@ method addTransitiveImports(filepath, epath) {
         def path = data.get("path").first
         if (path != epath) then {
             util.syntax_error("Imported module '{epath}' compiled with"
-                ++ " different path: uses {path}.")
+                ++ " different path '{path}'.")
         }
     }
 }
@@ -1695,7 +1695,7 @@ method checkimport(nm) {
         staticmodules.add(nm)
     }
     if (exists.not) then {
-        util.syntax_error("failed finding import of " ++ nm ++ ".")
+        util.syntax_error("Failed finding import of '{nm}'.")
     }
 }
 method processImports(values') {
@@ -1726,12 +1726,12 @@ method processImports(values') {
                     }
                 } case { e : RuntimeError ->
                     util.setPosition(v.line, 1)
-                    util.syntax_error("dialect '{nm}' failed to load: {e}")
+                    util.syntax_error("Dialect '{nm}' failed to load: {e}.")
                 } case { e : CheckerFailure ->
                     if (nothing != e.data) then {
                         util.setPosition(e.data.line, e.data.linePos)
                     }
-                    util.syntax_error("dialect failure: {e.message}")
+                    util.syntax_error("Dialect failure: {e.message}.")
                 }
             }
         }
@@ -1751,7 +1751,7 @@ method processImports(values') {
             }
         }
         if (imperrors.size > 0) then {
-            util.syntax_error("failed processing import of " ++ imperrors ++".")
+            util.syntax_error("Failed processing import of {imperrors}.")
         }
     }
 }

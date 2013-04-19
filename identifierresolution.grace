@@ -323,7 +323,7 @@ method resolveIdentifier(node) {
     var nm := node.value
     util.setPosition(node.line, node.linePos)
     if (haveBinding(nm).not) then {
-        util.syntax_error("use of undefined identifier {nm}")
+        util.syntax_error("Use of undefined identifier '{nm}'.")
     }
     if (nm == "outer") then {
         return ast.memberNode.new("outer", ast.identifierNode.new("self", false))
@@ -370,7 +370,7 @@ method resolveIdentifiersActual(node) {
         }
         if (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
-                util.syntax_error "reassignment to constant {node.dest.value}"
+                util.syntax_error "Reassignment to constant '{node.dest.value}'."
             }
         }
     }
@@ -429,9 +429,9 @@ method resolveIdentifiers(topNode) {
                         for (s.params) do {p->
                             if (parentScope.elements.contains(p.value)) then {
                                 util.setPosition(p.line, p.linePos)
-                                util.syntax_error("Class parameter {p.value} "
+                                util.syntax_error("Class parameter '{p.value}' "
                                     ++ "conflicts with inherited method "
-                                    ++ p.value ++ " and must be renamed.")
+                                    ++ "'{p.value}' and must be renamed.")
                             }
                         }
                     }

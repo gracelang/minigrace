@@ -543,7 +543,7 @@ method compiledefdec(o) {
     if (false != val) then {
         val := compilenode(val)
     } else {
-        util.syntax_error("const must have value bound.")
+        util.syntax_error("Const must have value bound.")
     }
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
@@ -964,7 +964,7 @@ method addTransitiveImports(filepath, epath) {
         def path = data.get("path").first
         if (path != epath) then {
             util.syntax_error("Imported module '{epath}' compiled with"
-                ++ " different path: uses {path}.")
+                ++ " different path '{path}'.")
         }
     }
 }
@@ -1014,12 +1014,12 @@ method processDialect(values') {
                 }
             } case { e : RuntimeError ->
                 util.setPosition(v.line, 1)
-                util.syntax_error("dialect '{nm}' failed to load: {e}")
+                util.syntax_error("Dialect '{nm}' failed to load: {e}.")
             } case { e : CheckerFailure ->
                 if (nothing != e.data) then {
                     util.setPosition(e.data.line, e.data.linePos)
                 }
-                util.syntax_error("dialect failure: {e.message}")
+                util.syntax_error("Dialect failure: {e.message}.")
             }
         }
     }
