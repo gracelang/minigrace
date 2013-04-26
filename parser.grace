@@ -1919,10 +1919,12 @@ method statement {
         if (sym.line == lastToken.line) then {
             if (sym.kind != "rbrace") then {
                 util.setPosition(sym.line, sym.linePos)
-                if ((values.last.kind == "identifier").orElse {
-                        values.last.kind == "member"
-                    }.andAlso {
-                        sym.kind == "identifier"
+                if ((values.size > 0).andAlso {
+                        (values.last.kind == "identifier").orElse {
+                            values.last.kind == "member"
+                        }.andAlso {
+                            sym.kind == "identifier"
+                        }
                     }) then {
                     util.syntax_error("Unexpected token after statement ended; "
                         ++ "got {sym.kind}: '{sym.value}', expected "
