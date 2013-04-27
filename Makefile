@@ -60,7 +60,7 @@ js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
 	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
 
-js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js
+js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js js/gracelib.js js/dom.js
 	@echo Generating minigrace.js from minigrace.in.js...
 	cat js/minigrace.in.js > js/minigrace.js
 	cat js/dom.js >> js/minigrace.js
