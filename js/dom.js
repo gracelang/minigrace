@@ -58,6 +58,8 @@ function wrapDOMObject(obj) {
 }
 
 function wrapGraceObject(o) {
+    if (o === undefined)
+        return var_noSuchValue;
     if (o instanceof GraceString) {
         return o._value;
     }
