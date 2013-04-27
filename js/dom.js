@@ -93,7 +93,8 @@ function gracecode_dom() {
                 callmethod(block, "apply", [1], val);
                 setTimeout(func, delay);
             } else {
-                callmethod(ret.data.then, "apply", [0]);
+                if (ret.data.then)
+                    callmethod(ret.data.then, "apply", [0]);
             }
         }
         func();
