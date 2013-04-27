@@ -248,6 +248,7 @@
    <select id="tab" onchange="tabswitch()">
     <option value="stdout_tab">Program output
     <option value="js_tab">Generated code
+    <option value="canvas_tab">Canvas
    </select>:
    <span id="stdout_options">
     <input type="checkbox" id="autoscroll" onclick="scrollstdout()">Auto scroll</input>
@@ -255,6 +256,9 @@
    </span>
    <div id="js_tab" style="display: none;">
     <textarea id="js_txt" rows="20" cols="60"></textarea>
+   </div>
+   <div id="canvas_tab" style="display: none;">
+    <canvas id="standard-canvas"></canvas>
    </div>
    <div id="stdout_tab">
     <textarea id="stdout_txt" rows="20" cols="60"></textarea>
@@ -297,6 +301,7 @@ minigrace-js
 </span>
  <br />
  <script src="gracelib.js" type="text/javascript"></script>
+ <script src="dom.js" type="text/javascript"></script>
  <script src="StandardPrelude.js" type="text/javascript"></script>
  <script src="compiler.js"></script>
  <script src="lexer.js"></script>
@@ -321,8 +326,11 @@ minigrace-js
          float: right;
          width: 50%;
      }
-     #tabbox textarea {
+     #tabbox textarea, #tabbox canvas {
          width: 100%;
+     }
+     #tabbox canvas {
+         height: 100%;
      }
      #code_area {
          float: left;

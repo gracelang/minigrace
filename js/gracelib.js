@@ -1565,3 +1565,4 @@ function Grace_allocModule(modname) {
     mod.className = "module<" + modname + ">";
     return mod;
 }
+
