@@ -69,6 +69,19 @@ function wrapGraceObject(o) {
     if (o instanceof GraceBoolean) {
         return o._value;
     }
+    if (o.real) { // A block
+        return function() {
+            var args = [];
+            for (var i=0; i<arguments.length; i++) {
+                args.push(wrapDOMObject(arguments[i]));
+            }
+            var ret
+            minigrace.trapErrors(function() {
+                ret = wrapGraceObject(o.real.apply(o.receiver, args));
+            });
+            return ret
+        }
+    }
     if (o._wrappedDOMObject)
         return o._wrappedDOMObject;
     return o;
