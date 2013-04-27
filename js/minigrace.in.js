@@ -69,19 +69,10 @@ MiniGrace.prototype.compile = function(grace_code) {
         this.stdout_write = old_stdout_write;
     }
 }
-    
-MiniGrace.prototype.run = function() {
-    importedModules = {};
-    callStack = [];
-    var code = minigrace.generated_output;
-    lineNumber = 1;
-    eval(code);
-    var theModule;
-    eval("theModule = gracecode_" + this.modname + ";");
-    window['gracecode_' + this.modname] = theModule;
-    testpass = false;
+
+MiniGrace.prototype.trapErrors = function(func) {
     try {
-        theModule.call({methods:{}, data: {}, className: this.modname});
+        func();
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.stderr_write("Error around line " + e.lineNumber
@@ -100,6 +91,21 @@ MiniGrace.prototype.run = function() {
             throw e;
         }
     }
+}
+
+MiniGrace.prototype.run = function() {
+    importedModules = {};
+    callStack = [];
+    var code = minigrace.generated_output;
+    lineNumber = 1;
+    eval(code);
+    var theModule;
+    eval("theModule = gracecode_" + this.modname + ";");
+    window['gracecode_' + this.modname] = theModule;
+    testpass = false;
+    this.trapErrors(function() {
+        theModule.call({methods:{}, data: {}, className: this.modname});
+    });
 }
     
 MiniGrace.prototype.compilerun = function(grace_code) {
