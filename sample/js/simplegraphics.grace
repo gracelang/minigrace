@@ -104,3 +104,6 @@ method write(s) at(x,y) size(size) in(col) {
     ctx.fill
     ctx.closePath
 }
+method end {
+    // No-op here
+}

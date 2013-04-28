@@ -55,7 +55,7 @@ var samples = {
     },
     'simplegraphics_example': {
         'name': 'Simple graphics demo',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': ['simplegraphics'],
     },
 };
