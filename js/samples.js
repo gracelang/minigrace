@@ -73,6 +73,11 @@ var samples = {
         'dir': 'graphics',
         'requires': ['turtle', 'logo'],
     },
+    'pong': {
+        'name': 'DOM Pong',
+        'dir': 'js',
+        'requires': [],
+    },
 };
 
 window.onload = function() {
