@@ -70,7 +70,9 @@ function wrapGraceObject(o) {
         return o._value;
     }
     if (o.real) { // A block
-        return function() {
+        if (o._wrappedDOMObject)
+            return o._wrappedDOMObject;
+        var f = function() {
             var args = [];
             for (var i=0; i<arguments.length; i++) {
                 args.push(wrapDOMObject(arguments[i]));
@@ -81,6 +83,7 @@ function wrapGraceObject(o) {
             });
             return ret
         }
+        o._wrappedDOMObject = f;
     }
     if (o._wrappedDOMObject)
         return o._wrappedDOMObject;
@@ -108,14 +111,35 @@ function gracecode_dom() {
         }
         var iter = callmethod(iterable, "iterator", [0]);
         var func = function() {
-            if (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
-                var val = callmethod(iter, "next", [0]);
-                callmethod(block, "apply", [1], val);
-                setTimeout(func, delay);
-            } else {
-                if (ret.data.then)
-                    callmethod(ret.data.then, "apply", [0]);
-            }
+            minigrace.trapErrors(function() {
+                if (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
+                    var val = callmethod(iter, "next", [0]);
+                    callmethod(block, "apply", [1], val);
+                    setTimeout(func, delay);
+                } else {
+                    if (ret.data.then)
+                        callmethod(ret.data.then, "apply", [0]);
+                }
+            });
+        }
+        func();
+        return ret;
+    }
+    this.methods["while()waiting()do"] = function(argcv, cond, delay, block) {
+        var ret = Grace_allocObject();
+        ret.methods.then = function(argcv, block) {
+            this.data["then"] = block;
+        }
+        var func = function() {
+            minigrace.trapErrors(function() {
+                if (Grace_isTrue(callmethod(cond, "apply", [0]))) {
+                    callmethod(block, "apply", [0]);
+                    setTimeout(func, delay);
+                } else {
+                    if (ret.data.then)
+                        callmethod(ret.data.then, "apply", [0]);
+                }
+            });
         }
         func();
         return ret;
