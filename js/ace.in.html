@@ -13,6 +13,7 @@
         editor.setShowPrintMargin(false);
         editor.getSession().setUseSoftTabs(true);
         editor.getSession().setTabSize(4);
+        editor.commands.bindKeys({"ctrl-l":null, "ctrl-shift-r":null, "ctrl-r":null, "ctrl-t":null})
 
         stdin.methods.read = function() {
             return new GraceString(editor.getValue());
