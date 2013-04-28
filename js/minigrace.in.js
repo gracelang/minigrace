@@ -3,6 +3,7 @@ function MiniGrace() {
     this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
+    this.lastSourceCode = "";
 
     this.generated_output = ""
 
@@ -110,7 +111,11 @@ MiniGrace.prototype.run = function() {
 }
     
 MiniGrace.prototype.compilerun = function(grace_code) {
-    this.compile(grace_code);
+    if (grace_code != this.lastSourceCode) {
+        this.compile(grace_code);
+        this.lastSourceCode = grace_code;
+        this.compileError = false;
+    }
     if (!this.compileError && this.mode == 'js') {
         this.run();
     }
