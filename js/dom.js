@@ -92,7 +92,14 @@ function gracecode_dom() {
         return wrapDOMObject(document);
     };
     this.methods.window = function(argcv) {
-        return wrapDOMObject(window);
+        var win = wrapDOMObject(window);
+        win.methods["Math"] = function() {
+            return {"methods": {
+                "cos": wrapDOMFunction(Math, "cos"),
+                "sin": wrapDOMFunction(Math, "sin")
+            }}
+        };
+        return win;
     };
     this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
         var ret = Grace_allocObject();
