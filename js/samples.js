@@ -129,7 +129,7 @@ function loadsample(k) {
     req.send(null);
     if (req.status == 200) {
         if (ace)
-            editor.setValue(req.responseText);
+            editor.setValue(req.responseText, -1);
         document.getElementById("code_txt").value = req.responseText;
         document.getElementById('modname').value = k;
     }
