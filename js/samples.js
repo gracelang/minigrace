@@ -48,6 +48,16 @@ var samples = {
         'dir': 'dialects',
         'requires': ['grapl'],
     },
+    'simplegraphics': {
+        'name': 'Simple graphics module',
+        'dir': 'js',
+        'requires': [],
+    },
+    'simplegraphics_example': {
+        'name': 'Simple graphics demo',
+        'dir': 'js',
+        'requires': ['simplegraphics'],
+    },
 };
 
 window.onload = function() {
