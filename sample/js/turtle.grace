@@ -27,9 +27,9 @@ class colour.r(r')g(g')b(b') {
     def b is readable = b'
 }
 def black = colour.r 0 g 0 b 0
-def blue = colour.r 0 g 0 b 1
-def green = colour.r 0 g 1 b 0
-def red = colour.r 1 g 0 b 0
+def blue = colour.r 0 g 0 b 255
+def green = colour.r 0 g 255 b 0
+def red = colour.r 255 g 0 b 0
 
 var x := 150
 var y := 225
@@ -63,12 +63,14 @@ method drawTurtle(angle) {
     ctx.closePath
 }
 method move(dist, angle, lineCol, lineWidth) {
-    ctx.fillStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
+    ctx.beginPath
+    ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
     ctx.lineWidth := lineWidth
     ctx.moveTo(x, y)
     modifyXY(dist, angle)
     ctx.lineTo(x, y)
     ctx.stroke
+    ctx.closePath
     turtleAngle := angle
 }
 method start {
