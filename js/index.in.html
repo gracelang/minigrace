@@ -196,6 +196,8 @@
             minigrace.vis = document.getElementById("defaultVisibility").value;
         }
         window.addEventListener("load", function() {
+            document.getElementById('stdout_txt').value = "";
+            document.getElementById('stderr_txt').value = "";
             if (window.location.hash) {
                 if (window.location.hash.substring(0, 8) == "#sample=") {
                     var s = window.location.hash.substring(8);
