@@ -195,6 +195,14 @@
         function selectvisibility() {
             minigrace.vis = document.getElementById("defaultVisibility").value;
         }
+        window.addEventListener("load", function() {
+            if (window.location.hash) {
+                if (window.location.hash.substring(0, 8) == "#sample=") {
+                    var s = window.location.hash.substring(8);
+                    loadsample(s);
+                }
+            }
+        });
      </script>
  </head>
  <div id="text_areas">
