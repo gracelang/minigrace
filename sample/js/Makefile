@@ -1,4 +1,4 @@
-SAMPLES = simplegraphics
+SAMPLES = simplegraphics turtle
 SAMPLES_JS = $(addsuffix .js,$(SAMPLES))
 
 all: $(SAMPLES_JS)

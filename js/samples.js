@@ -58,6 +58,21 @@ var samples = {
         'dir': 'graphics',
         'requires': ['simplegraphics'],
     },
+    'turtle': {
+        'name': 'Turtle graphics module',
+        'dir': 'js',
+        'requires': [],
+    },
+    'logo': {
+        'name': 'Logo-like dialect',
+        'dir': 'graphics',
+        'requires': ['turtle'],
+    },
+    'logo_example': {
+        'name': 'Logo-like client code',
+        'dir': 'graphics',
+        'requires': ['turtle', 'logo'],
+    },
 };
 
 window.onload = function() {
