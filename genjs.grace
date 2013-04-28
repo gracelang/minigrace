@@ -1051,13 +1051,20 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out("var Grace_prelude = window.Grace_native_prelude;")
     }
     for (values) do { o ->
+        if (o.kind == "method") then {
+            compilenode(o)
+        }
+    }
+    for (values) do { o ->
         if (o.kind == "inherits") then {
             def sup = compilenode(o.value)
             out("  this.superobj = {sup};")
             out("  this.data = {sup}.data;")
             out("  this._value = {sup}._value;")
         }
-        compilenode(o)
+        if (o.kind != "method") then {
+            compilenode(o)
+        }
         if (o.kind == "type") then {
             def typeid = escapeident(o.value)
             out("var type_{typeid} = var_{typeid};")
