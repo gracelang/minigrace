@@ -103,8 +103,9 @@ MiniGrace.prototype.run = function() {
     eval("theModule = gracecode_" + this.modname + ";");
     window['gracecode_' + this.modname] = theModule;
     testpass = false;
+    var modname = this.modname;
     this.trapErrors(function() {
-        theModule.call({methods:{}, data: {}, className: this.modname});
+        theModule.call({methods:{}, data: {}, className: modname});
     });
 }
     
