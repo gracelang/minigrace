@@ -110,16 +110,20 @@ MiniGrace.prototype.run = function() {
         theModule.call({methods:{}, data: {}, className: modname});
     });
 }
-    
+
+// Returns true if the program was compiled, or false if the program has not been modified.    
 MiniGrace.prototype.compilerun = function(grace_code) {
+    var compiled = false;
     if (grace_code != this.lastSourceCode || this.mode != this.lastMode) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
+        compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {
         this.run();
     }
+    return compiled;
 }
 
 var minigrace = new MiniGrace();

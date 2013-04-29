@@ -41,9 +41,12 @@
                 testall();
                 return;
             }
+            var old_stderr = document.getElementById('stderr_txt').value;
             document.getElementById('stderr_txt').value = "";
             minigrace.modname = document.getElementById('modname').value;
-            minigrace.compilerun(getCode());
+            var compiled = minigrace.compilerun(getCode());
+            if(!compiled)
+                document.getElementById('stderr_txt').value = old_stderr;
             document.getElementById('js_txt').value = minigrace.generated_output;
             scrollstdout();
         }
