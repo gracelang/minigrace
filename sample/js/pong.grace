@@ -107,10 +107,10 @@ def paddle2 = object {
             // Move towards ball when it's coming
             // towards us.
             if (y < ball.y) then {
-                y := y + 1
+                y := y + 2
             }
             if (y > ball.y) then {
-                y := y - 1
+                y := y - 2
             }
         }
     }
