@@ -46,6 +46,7 @@ def topLevelTypes = collections.map.new
 var importHook := false
 var subprocesses := collections.list.new
 var linkfiles := collections.list.new
+var dialectHasAtModuleEnd := false
 
 method out(s) {
     output.push(s)
@@ -1723,6 +1724,9 @@ method processImports(values') {
                             log_verbose("running dialect's checkers.")
                             dobj.checker(values')
                         }
+                        if (m.name == "atModuleEnd") then {
+                            dialectHasAtModuleEnd := true
+                        }
                     }
                 } case { e : RuntimeError ->
                     util.setPosition(v.line, 1)
@@ -1900,6 +1904,12 @@ method compile(vl, of, mn, rm, bt) {
         if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
         }
+    }
+    if (dialectHasAtModuleEnd) then {
+        out("  partcv[0] = 1;")
+        out("  params[0] = self;")
+        out("  callmethodflags(prelude, \"atModuleEnd\", "
+            ++ "1, partcv, params, CFLAG_SELF);")
     }
     for (globals) do {e->
         outprint(e)

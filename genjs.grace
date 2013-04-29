@@ -28,6 +28,7 @@ var inBlock := false
 var compilationDepth := 0
 def staticmodules = mgcollections.set.new
 def topLevelTypes = mgcollections.map.new
+var dialectHasAtModuleEnd := false
 
 method out(s) {
     output.push(s)
@@ -1011,6 +1012,9 @@ method processDialect(values') {
                         log_verbose("running dialect's checkers.")
                         dobj.checker(values')
                     }
+                    if (m.name == "atModuleEnd") then {
+                        dialectHasAtModuleEnd := true
+                    }
                 }
             } case { e : RuntimeError ->
                 util.setPosition(v.line, 1)
@@ -1070,6 +1074,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
         if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
         }
+    }
+    if (dialectHasAtModuleEnd) then {
+        out("  callmethod(Grace_prelude,\"atModuleEnd\", [1], this);")
     }
     out("  return this;")
     out("\}")
