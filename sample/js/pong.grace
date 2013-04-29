@@ -29,7 +29,6 @@ def ball = object {
         ctx.beginPath
         ctx.fillStyle := "white"
         ctx.fillRect(x-5, y-5, 10, 10)
-        ctx.closePath
     }
     method live {
         return (x > 0) && (x < 500)
@@ -88,7 +87,6 @@ def paddle = object {
         ctx.beginPath
         ctx.fillStyle := "white"
         ctx.fillRect(0, y - 20, 10, 40)
-        ctx.closePath
     }
 }
 // The computer's paddle
@@ -120,7 +118,6 @@ def paddle2 = object {
         ctx.beginPath
         ctx.fillStyle := "white"
         ctx.fillRect(490, y - 20, 10, 40)
-        ctx.closePath
     }
 }
 
@@ -130,8 +127,8 @@ def mouseMoveListener = { ev -> paddle.mouseY :=
 ev.clientY - canvas.offsetTop }
 canvas.addEventListener("mousemove", mouseMoveListener)
 
-// Waits 200ms betweeen each iteration of this loop
-dom.while {ball.live} waiting 200 do {
+// Waits 5ms betweeen each iteration of this loop
+dom.while {ball.live} waiting 5 do {
     ball.step
     paddle.step
     paddle2.step

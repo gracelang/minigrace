@@ -107,9 +107,9 @@ method move(dist, angle, lineCol, lineWidth) {
 }
 method start {
     // Iterate through the frames of the image and draw them,
-    // each separated in time by 20ms. dom.for()waiting()do
+    // each separated in time by 10ms. dom.for()waiting()do
     // uses setTimeout internally so it runs asynchronously.
-    dom.for(steps) waiting 20 do {step->
+    dom.for(steps) waiting 10 do {step->
         ctx.fillStyle := "white"
         ctx.fillRect(0, 0, 500, 250)
         x := 150

@@ -115,7 +115,7 @@ function gracecode_dom() {
                 if (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
                     var val = callmethod(iter, "next", [0]);
                     callmethod(block, "apply", [1], val);
-                    setTimeout(func, delay);
+                    setTimeout(func, delay._value);
                 } else {
                     if (ret.data.then)
                         callmethod(ret.data.then, "apply", [0]);
@@ -134,7 +134,7 @@ function gracecode_dom() {
             minigrace.trapErrors(function() {
                 if (Grace_isTrue(callmethod(cond, "apply", [0]))) {
                     callmethod(block, "apply", [0]);
-                    setTimeout(func, delay);
+                    setTimeout(func, delay._value);
                 } else {
                     if (ret.data.then)
                         callmethod(ret.data.then, "apply", [0]);
