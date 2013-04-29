@@ -26,8 +26,7 @@ method turnLeft(ang) {
     angle := angle - ang
 }
 
-method begin {}
-method end {
+method atModuleEnd(mod) {
     turtle.start
 }
 
