@@ -1885,6 +1885,11 @@ method compile(vl, of, mn, rm, bt) {
         if (o.kind == "method") then {
             compilenode(o)
         }
+        if (o.kind == "type") then {
+            compilenode(o)
+            def typeid = escapeident(o.value)
+            out("type_{typeid} = *var_{typeid};")
+        }
     }
     for (values) do { o ->
         if (o.kind == "inherits") then {
@@ -1892,12 +1897,8 @@ method compile(vl, of, mn, rm, bt) {
             out("  self = setsuperobj(self, {superobj});")
             out("  *selfslot = self;")
         }
-        if (o.kind != "method") then {
+        if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
-        }
-        if (o.kind == "type") then {
-            def typeid = escapeident(o.value)
-            out("type_{typeid} = *var_{typeid};")
         }
     }
     for (globals) do {e->

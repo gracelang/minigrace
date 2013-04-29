@@ -1054,6 +1054,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
         if (o.kind == "method") then {
             compilenode(o)
         }
+        if (o.kind == "type") then {
+            compilenode(o)
+            def typeid = escapeident(o.value)
+            out("var type_{typeid} = var_{typeid};")
+        }
     }
     for (values) do { o ->
         if (o.kind == "inherits") then {
@@ -1062,12 +1067,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
             out("  this.data = {sup}.data;")
             out("  this._value = {sup}._value;")
         }
-        if (o.kind != "method") then {
+        if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
-        }
-        if (o.kind == "type") then {
-            def typeid = escapeident(o.value)
-            out("var type_{typeid} = var_{typeid};")
         }
     }
     out("  return this;")
