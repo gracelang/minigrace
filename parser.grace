@@ -1261,9 +1261,9 @@ method doobject {
             identifier
             var mn := values.pop
             var scargs := []
-            if (accept("(")) then {
+            if (accept("lparen")) then {
                 next
-                while {accept(")").not} do {
+                while {accept("rparen").not} do {
                     expectConsume {expression}
                     var tmp := values.pop
                     scargs.push(tmp)
