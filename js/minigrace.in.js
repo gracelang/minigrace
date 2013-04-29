@@ -116,7 +116,6 @@ MiniGrace.prototype.compilerun = function(grace_code) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
-        this.compileError = false;
     }
     if (!this.compileError && this.mode == 'js') {
         this.run();
