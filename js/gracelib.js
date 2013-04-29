@@ -1324,6 +1324,8 @@ function callmethodsuper(obj, methname, argcv) {
 }
 
 function callmethod(obj, methname, argcv) {
+    if (obj === undefined)
+        debugger
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
