@@ -540,12 +540,7 @@ method compiledefdec(o) {
         nm := escapestring(o.name.value)
     }
     declaredvars.push(nm)
-    var val := o.value
-    if (false != val) then {
-        val := compilenode(val)
-    } else {
-        util.syntax_error("Const must have value bound.")
-    }
+    var val := compilenode(o.value)
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],

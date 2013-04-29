@@ -479,33 +479,6 @@ method doif {
     }
 }
 
-// Accept a "for" statement. This is also a syntactic special case
-// at the moment. It currently *requires* exactly one parameter.
-method dofor {
-    if (accept("identifier") && (sym.value == "for")) then {
-        next
-        var over
-        expression
-        over := values.pop
-        var body := []
-        var variable
-        var localMin
-        var minInd := statementIndent + 1
-        if (accept("identifier") && ((sym.value == "each")
-            || (sym.value == "do"))) then {
-            next
-            expect("lbrace")
-            block
-            var blk := values.pop
-            var o := ast.forNode.new(over, blk)
-            values.push(o)
-            minIndentLevel := minInd - 1
-        } else {
-            util.syntax_error("Expected 'do'.")
-        }
-    }
-}
-
 // Accept an identifier. Handle "if", "while", and "for" specially by
 // passing them on to the appropriate method above.
 method identifier {
@@ -1571,9 +1544,6 @@ method parsempmndecrest(tm, sameline) {
         next
         while {accept("identifier")
                 || (accept("op") && (sym.value == "*"))} do {
-            if (vararg) then {
-                util.syntax_error("Varargs parameter must be last.")
-            }
             if (accept("op")) then {
                 next
                 vararg := true
@@ -1875,8 +1845,6 @@ method statement {
             vardec
         } elseif (sym.value == "def") then {
             defdec
-        } elseif (sym.value == "const") then {
-            util.syntax_error("No such keyword 'const'; did you mean 'def'?")
         } elseif (sym.value == "import") then {
             doimport
         } elseif (sym.value == "dialect") then {

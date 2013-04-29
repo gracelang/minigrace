@@ -1003,12 +1003,7 @@ method compiledefdec(o) {
         nm := escapeident(o.name.value)
     }
     declaredvars.push(nm)
-    var val := o.value
-    if (false != val) then {
-        val := compilenode(val)
-    } else {
-        util.syntax_error("Const must have value bound.")
-    }
+    var val := compilenode(o.value)
     out("  *var_{nm} = {val};")
     out("  if ({val} == undefined)")
     out("    callmethod(none, \"assignment\", 0, NULL, NULL);")
