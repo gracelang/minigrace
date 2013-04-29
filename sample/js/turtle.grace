@@ -78,11 +78,14 @@ method move(dist, angle, lineCol, lineWidth) {
         ctx.stroke
         ctx.closePath
     }
+    def stageN = stages.size - 1
     // Just the rotation:
     steps.push {
+        for (1..stageN) do {j->
+            stages.at(j).apply
+        }
         turtleAngle := angle
     }
-    def stageN = stages.size - 1
     // One frame for each unit of distance
     for (1..dist) do {i->
         steps.push {
