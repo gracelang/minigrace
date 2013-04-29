@@ -4,6 +4,7 @@ function MiniGrace() {
     this.mode = "js";
     this.modname = "main";
     this.lastSourceCode = "";
+    this.lastMode = "";
 
     this.generated_output = ""
 
@@ -111,9 +112,10 @@ MiniGrace.prototype.run = function() {
 }
     
 MiniGrace.prototype.compilerun = function(grace_code) {
-    if (grace_code != this.lastSourceCode) {
+    if (grace_code != this.lastSourceCode || this.mode != this.lastMode) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
+        this.lastMode = this.mode;
         this.compileError = false;
     }
     if (!this.compileError && this.mode == 'js') {
