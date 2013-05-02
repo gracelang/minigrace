@@ -643,6 +643,7 @@ method compilemethod(o, selfobj, pos) {
     out("  setframeelementname(stackframe, 0, \"self\");")
     slot := slot + 1
     numslots := numslots + 1
+    out "  if (methodInheritingObject) curarg++;"
     if (o.generics.size > 0) then {
         out("// Start generics")
         for (o.generics) do {g->
@@ -652,7 +653,7 @@ method compilemethod(o, selfobj, pos) {
             slot := slot + 1
             numslots := numslots + 1
         }
-        out("  if (nparts == 1 + {o.signature.size}) \{")
+        out("  if (nparts == 1 + {o.signature.size} + (methodInheritingObject != NULL)) \{")
         out("    if (argcv[nparts-1] < {o.generics.size}) \{")
         out("      gracedie(\"insufficient generic parameters\");")
         out("    \}")
