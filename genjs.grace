@@ -428,6 +428,85 @@ method compilemethod(o, selfobj) {
         }
     }
     out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
+    if (o.properties.contains("fresh")) then {
+        compilefreshmethod(o, nm, selfobj)
+    }
+}
+method compilefreshmethod(o, selfobj) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var name := escapestring(o.value.value)
+    var nm := name ++ myc
+    var haveTypedParams := false
+    for (o.signature) do { part ->
+        for (part.params) do {p->
+            if (p.dtype != false) then {
+                if ((p.dtype.value != "Dynamic")
+                    && ((p.dtype.kind == "identifier")
+                        || (p.dtype.kind == "type"))) then {
+                    haveTypedParams := true
+                }
+            }
+        }
+    }
+    out("var func" ++ myc ++ " = function(argcv) \{")
+    out("  var curarg = 1;")
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        for (part.params) do { p ->
+            out("  var {varf(p.value)} = arguments[curarg];")
+            out("  curarg++;")
+        }
+        if (part.vararg != false) then {
+            out("  var {varf(part.vararg.value)} = new GraceList("
+                ++ "Array.prototype.slice.call(arguments, curarg, "
+                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
+            out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
+        }
+    }
+    if (o.generics.size > 0) then {
+        out("// Start generics")
+        out("  if (argcv.length == 1 + {o.signature.size}) \{")
+        out("    if (argcv[argcv.length-1] < {o.generics.size}) \{")
+        out("      callmethod(var_RuntimeError, \"raise\", [1], "
+            ++ "new GraceString(\"insufficient generic parameters\"));")
+        out("    \}")
+        for (o.generics) do {g->
+            out("  var {varf(g.value)} = arguments[curarg++];")
+        }
+        out("  \} else \{")
+        for (o.generics) do {g->
+            out("    {varf(g.value)} = var_Dynamic;")
+        }
+        out("  \}")
+        out("// End generics")
+    }
+    out("  var returnTarget = invocationCount;")
+    out("  invocationCount++;")
+    out("  try \{")
+    var ret := "undefined"
+    for (o.body) do { l ->
+        ret := compilenode(l)
+    }
+    out("  return " ++ ret)
+    out("  \} catch(e) \{")
+    out("    if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
+    out("      return e.returnvalue;")
+    out("    \} else \{")
+    out("      throw e;")
+    out("    \}")
+    out("  \}")
+    out("\}")
+    if (haveTypedParams) then {
+        compilemethodtypes("func{myc}", o)
+    }
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "confidential"}) then {
+            out("func{myc}.confidential = true;")
+        }
+    }
+    out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "()object\"] = func" ++ myc ++ ";")
 }
 method compilemethodtypes(func, o) {
     out("{func}.paramTypes = [];")
