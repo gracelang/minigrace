@@ -118,7 +118,7 @@ method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
     if (false != o.value) then {
         if (o.value.kind == "object") then {
-            compileobject(o.value, selfr)
+            compileobject(o.value, selfr, false)
             val := o.value.register
         } else {
             val := compilenode(o.value)
@@ -206,6 +206,7 @@ method compileclass(o) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
+    newmeth.properties.put("fresh", true)
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
@@ -216,7 +217,7 @@ method compileclass(o) {
     }
     o.register := compilenode(con)
 }
-method compileobject(o, outerRef) {
+method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
@@ -228,33 +229,25 @@ method compileobject(o, outerRef) {
             superobj := e.value
         }
     }
-    if (superobj != false) then {
-        var sup := compilenode(superobj)
-        out("  var {selfr} = Grace_allocObject();")
-        out("  {selfr}.superobj = {sup};")
-        out("  if ({sup}.data)")
-        out("    {selfr}.data = {sup}.data;")
-        out("  else")
-        out("    {sup}.data = {selfr}.data;")
-        out("  {selfr}._value = {sup}._value;")
-        out("  var tmpmeths = {selfr}.methods;");
-        out("  {selfr}.superobj = {sup}.superobj;")
-        out("  {selfr}.methods = {sup}.methods;")
-        out("  {selfr}.outer = {sup}.outer;")
-        out("  {sup}.methods = tmpmeths;")
-        out("  {sup}.superobj = {selfr};")
-        out("  {selfr} = {sup};")
-    } else {
-        out("  var " ++ selfr ++ " = Grace_allocObject();")
+    out("  var " ++ selfr ++ " = Grace_allocObject();")
+    if (inheritingObject) then {
+        out "  var inho{myc} = inheritingObject;"
+        out "  while (inho{myc}.superobj) inho{myc} = inho{myc}.superobj;"
+        out "  inho{myc}.superobj = {selfr};"
+        out "  {selfr}.data = inheritingObject.data;"
     }
     compileobjouter(selfr, outerRef)
     out("function obj_init_{myc}() \{")
     out("  var origSuperDepth = superDepth;")
-    out("  superDepth = this;")
+    out("  superDepth = {selfr};")
     var pos := 0
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr)
+        }
+    }
+    for (o.value) do { e ->
+        if (e.kind == "method") then {
         } elseif (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)
             out("{selfr}.mutable = true;")
@@ -263,14 +256,22 @@ method compileobject(o, outerRef) {
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
         } elseif (e.kind == "object") then {
-            compileobject(e, selfr)
+            compileobject(e, selfr, false)
+        } elseif (e.kind == "inherits") then {
+            def so = compilenode(e.value)
+            out "  {selfr}.superobj = {so};"
+            out "  {selfr}._value = {so}._value;"
         } else {
             compilenode(e)
         }
     }
     out("  superDepth = origSuperDepth;")
     out("\}")
-    out("obj_init_{myc}.apply({selfr}, []);")
+    if (inheritingObject) then {
+        out("obj_init_{myc}.apply(inheritingObject, []);")
+    } else {
+        out("obj_init_{myc}.apply({selfr}, []);")
+    }
     o.register := selfr
     inBlock := origInBlock
 }
@@ -429,7 +430,7 @@ method compilemethod(o, selfobj) {
     }
     out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
     if (o.properties.contains("fresh")) then {
-        compilefreshmethod(o, nm, selfobj)
+        compilefreshmethod(o, selfobj)
     }
 }
 method compilefreshmethod(o, selfobj) {
@@ -464,6 +465,7 @@ method compilefreshmethod(o, selfobj) {
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         }
     }
+    out "  var inheritingObject = arguments[curarg++];"
     if (o.generics.size > 0) then {
         out("// Start generics")
         out("  if (argcv.length == 1 + {o.signature.size}) \{")
@@ -484,9 +486,17 @@ method compilefreshmethod(o, selfobj) {
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
     out("  try \{")
+    var tailObject := false
+    if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
+        tailObject := o.body.pop
+    }
     var ret := "undefined"
     for (o.body) do { l ->
         ret := compilenode(l)
+    }
+    if (false != tailObject) then {
+        compileobject(tailObject, "this", true)
+        ret := tailObject.register
     }
     out("  return " ++ ret)
     out("  \} catch(e) \{")
@@ -987,7 +997,7 @@ method compilenode(o) {
         compileclass(o)
     }
     if (o.kind == "object") then {
-        compileobject(o, "this")
+        compileobject(o, "this", false)
     }
     if (o.kind == "type") then {
         compiletype(o)
