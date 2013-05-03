@@ -146,7 +146,7 @@ do
         echo "Expected output:" >> test.log
         cat ${tcase%_test.grace}.out >> test.log
     fi
-    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class
+    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *.gct
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
