@@ -1,5 +1,7 @@
-def x = object {
-    def foo = "OK"
+method x {
+    object {
+        def foo = "OK"
+    }
 }
 
 object {
