@@ -1057,6 +1057,7 @@ method defdec {
         def line = sym.line
         def pos = sym.linePos
         next
+        expect "identifier"
         pushidentifier
         var val := false
         var dtype := ast.identifierNode.new("Dynamic", false)
@@ -1119,6 +1120,7 @@ method vardec {
         def line = sym.line
         def pos = sym.linePos
         next
+        expect "identifier"
         pushidentifier
         var val := false
         var dtype := ast.identifierNode.new("Dynamic", false)
