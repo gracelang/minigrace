@@ -355,6 +355,9 @@ def LexerClass = object {
                         if (base == 0) then {
                             base := 16
                         }
+                        if((base < 2) || (base > 36)) then {
+                            util.syntax_error("Invalid base: {base}.")
+                        }
                         sofar := ""
                     } else {
                         sofar := sofar ++ c
