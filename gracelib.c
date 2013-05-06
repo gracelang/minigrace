@@ -4029,7 +4029,7 @@ void gc_mark(Object o) {
         return;
     ClassData c = o->class;
     o->flags |= FLAG_REACHABLE;
-    if (c->mark)
+    if (c && c->mark)
         c->mark(o);
 }
 void gc_root(Object o) {
