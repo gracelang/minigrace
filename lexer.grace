@@ -128,9 +128,10 @@ def LexerClass = object {
             def indent = indentLevel
             def linePos = startPosition
         }
-        class NumToken.new(v) {
+        class NumToken.new(v, b) {
             def kind = "num"
             def value = v
+            def base = b
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
@@ -275,14 +276,23 @@ def LexerClass = object {
                         tokens.push(tok)
                         done := true
                     } elseif (mode == "m") then {
-                        tok := NumToken.new(accum)
                         tok := makeNumToken(accum)
                         if (tokens.size > 1) then {
                             if (tokens.last.kind == "dot") then {
                                 tokens.pop
                                 if (tokens.last.kind == "num") then {
-                                    tok := tokens.pop
-                                    tok := NumToken.new(tok.value ++ "." ++ makeNumToken(accum).value)
+                                    if (tokens.last.base == 10) then {
+                                        tok := tokens.pop
+                                        var decimal := makeNumToken(accum)
+                                        if(decimal.base == 10) then {
+                                            tok := NumToken.new(tok.value ++ "." ++ decimal.value, 10)
+                                        } else {
+                                            util.syntax_error("Decimal portion of number must be in base 10.")
+                                        }
+                                    } else {
+                                        util.syntax_error("Numbers in base {tokens.last.base} " ++
+                                            "can only be integers.")
+                                    }
                                 } else {
                                     util.syntax_error("Found '.{accum}'" ++
                                         ", expected term.")
@@ -365,7 +375,7 @@ def LexerClass = object {
                         sofar := sofar ++ c
                     }
                 }
-                NumToken.new(fromBase(sofar, base).asString)
+                NumToken.new(fromBase(sofar, base).asString, base)
             }
             // True if ov is a valid identifier character. Identifier
             // characters are Unicode letters, Unicode numbers, apostrophe,
