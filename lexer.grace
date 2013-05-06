@@ -348,10 +348,12 @@ def LexerClass = object {
             }
             method makeNumToken(accum) {
                 var base := 10
+                var baseSet := false
                 var sofar := ""
                 for (accum) do {c->
-                    if (c == "x") then {
+                    if ((c == "x") && (!baseSet)) then {
                         base := sofar.asNumber
+                        baseSet := true
                         if (base == 0) then {
                             base := 16
                         }
