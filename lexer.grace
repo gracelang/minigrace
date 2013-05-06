@@ -282,7 +282,7 @@ def LexerClass = object {
                                 tokens.pop
                                 if (tokens.last.kind == "num") then {
                                     tok := tokens.pop
-                                    tok := NumToken.new(tok.value ++ "." ++ accum)
+                                    tok := NumToken.new(tok.value ++ "." ++ makeNumToken(accum).value)
                                 } else {
                                     util.syntax_error("Found '.{accum}'" ++
                                         ", expected term.")
