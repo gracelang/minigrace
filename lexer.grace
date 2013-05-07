@@ -338,7 +338,6 @@ def LexerClass = object {
             def cLines = collections.list.new
             def lines = collections.list.new
             method fromBase(str, base) {
-                def digits = "0123456789abcdefghijklmnopqrstuvqxyz"
                 var val := 0
                 for (str) do {c->
                     def n = c.ord
@@ -346,6 +345,8 @@ def LexerClass = object {
                     var inc := 0
                     if ((n >= 48) && (n <= 57)) then {
                         inc := n - 48 // 0
+                    } elseif((n >= 65) && (n <= 90)) then {
+                        inc := n - 55 // 'A' - 10
                     } else {
                         inc := n - 87 // 'a' - 10
                     }
@@ -496,7 +497,7 @@ def LexerClass = object {
                         if (ct && (mode != "i")) then {
                             newmode := "m"
                         }
-                        if ((ordval >= 97) && (ordval <=122) && (mode == "m")) then {
+                        if ((((ordval >= 97) && (ordval <=122)) || ((ordval >= 65) && (ordval <= 90)))  && (mode == "m")) then {
                             newmode := "m"
                         }
                         if ((mode == "i") && (c == "<")) then {
