@@ -8,6 +8,7 @@ import "ast" as ast
 import "parser" as parser
 import "genc" as genc
 import "genjs" as genjs
+import "genjson" as genjson
 import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
 import "interactive" as interactive
@@ -64,6 +65,9 @@ if (util.target == "c") then {
 if (util.target == "js") then {
     genjs.processDialect(values)
 }
+if (util.target == "json") then {
+    genjs.processDialect(values)
+}
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
@@ -100,6 +104,9 @@ match(util.target)
     case { "js" ->
         genjs.compile(values, util.outfile, util.modname, util.runmode,
             util.buildtype, util.gracelibPath)
+    }
+    case { "json" ->
+        genjson.generate(values, util.outfile)
     }
     case { _ ->
         io.error.write("minigrace: no such target '" ++ util.target ++ "'")
