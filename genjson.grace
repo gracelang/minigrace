@@ -1,4 +1,5 @@
 import "mgcollections" as collections
+import "util" as util
 
 method wrap(v) {
     match(v)
@@ -12,8 +13,10 @@ class JSObj.new {
     }
     method asJSON {
         var ret := "\{"
+        var comma := ""
         for (data) do {k->
-            ret := ret ++ "\"{k}\": " ++ data.get(k).asJSON ++ ","
+            ret := ret ++ comma ++ "\"{k}\": " ++ data.get(k).asJSON
+            comma := ","
         }
         return ret ++ "}"
     }
@@ -26,8 +29,10 @@ class JSArray.new {
     }
     method asJSON {
         var ret := "["
+        var comma := ""
         for (data) do {v->
-            ret := ret ++ v.asJSON ++ ","
+            ret := ret ++ comma ++ v.asJSON
+            comma := ","
         }
         return ret ++ "]"
     }
@@ -125,6 +130,7 @@ method generateNode(n) {
 }
 
 method generate(values, outfile) {
+    util.log_verbose "generating JSON."
     def overall = JSObj.new
     def arr = JSArray.new
     overall.put("chunks", arr)
