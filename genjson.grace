@@ -86,6 +86,25 @@ method generateNode(n) {
                 body.push(generateNode(v))
             }
             ret.put("body", body)
+        } case { "if" ->
+            def body = JSArray.new
+            for (n.thenblock) do {v->
+                body.push(generateNode(v))
+            }
+            if (n.elseblock.size > 0) then {
+                ret.put("type", "if-else")
+                ret.put("condition", generateNode(n.value))
+                ret.put("body", body)
+                def elseBody = JSArray.new
+                for (n.elseblock) do {v->
+                    elseBody.push(generateNode(v))
+                }
+                ret.put("elseBody", elseBody)
+            } else {
+                ret.put("type", "if")
+                ret.put("condition", generateNode(n.value))
+                ret.put("body", body)
+            }
         } case { "identifier" ->
             ret.put("type", "var")
             ret.put("value", n.value)
@@ -101,9 +120,37 @@ method generateNode(n) {
                             ret.put("type", "print")
                             ret.put("value", arg)
                         } else {
-                            ret.put("type", "dialect-request")
-                            ret.put("name", n.value.value)
-                            ret.put("value", arg)
+                            if (n.value.value == "for()do") then {
+                                ret.put("type", "for")
+                                ret.put("iterand", arg)
+                                def blk = n.with.at(2).args.at(1)
+                                def body = JSArray.new
+                                for (blk.body) do {v->
+                                    body.push(generateNode(v))
+                                }
+                                ret.put("body", body)
+                                if (blk.params.size == 0) then {
+                                    ret.put("loopvar", "")
+                                } else {
+                                    ret.put("loopvar", blk.params.at(1).value)
+                                }
+                            } else {
+                                if (n.value.value == "while()do") then {
+                                    ret.put("type", "while")
+                                    ret.put("condition",
+                                        generateNode(n.with.at(1).args.at(1).body.at(1)))
+                                    def blk = n.with.at(2).args.at(1)
+                                    def body = JSArray.new
+                                    for (blk.body) do {v->
+                                        body.push(generateNode(v))
+                                    }
+                                    ret.put("body", body)
+                                } else {
+                                    ret.put("type", "dialect-request")
+                                    ret.put("name", n.value.value)
+                                    ret.put("value", arg)
+                                }
+                            }
                         }
                     }
                 } else {
