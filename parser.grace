@@ -24,6 +24,8 @@ var defaultMethodVisibility := "public"
 var sym
 var lastToken
 
+var comment := false
+
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
 method next {
@@ -32,6 +34,13 @@ method next {
         lastline := linenum
         lastIndent := sym.indent
         sym := tokens.pop
+        if (sym.kind == "comment") then {
+            comment := ""
+            while {(sym.kind == "comment").andAlso {tokens.size > 0}} do {
+                comment := comment ++ sym.value
+                sym := tokens.pop
+            }
+        }
         linenum := sym.line
         util.setPosition(sym.line, sym.linePos)
     } else {

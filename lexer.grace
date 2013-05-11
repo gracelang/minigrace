@@ -51,6 +51,13 @@ def LexerClass = object {
             def indent = indentLevel
             def linePos = startPosition
         }
+        class CommentToken.new(s) {
+            def kind = "comment"
+            def value = s
+            def line = lineNumber
+            def indent = indentLevel
+            def linePos = startPosition
+        }
         class OctetsToken.new(s) {
             def kind = "octets"
             def value = s
@@ -301,6 +308,8 @@ def LexerClass = object {
                     } elseif (mode == "n") then {
                         done := true
                     } elseif (mode == "c") then {
+                        def cmt = accum.substringFrom(3)to(accum.size)
+                        tokens.push(CommentToken.new(cmt))
                         done := true
                     } elseif (mode == "p") then {
                         if (accum.substringFrom(1)to(8) == "#pragma ") then {
