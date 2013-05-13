@@ -287,7 +287,7 @@ def LexerClass = object {
                                         if(decimal.base == 10) then {
                                             tok := NumToken.new(tok.value ++ "." ++ decimal.value, 10)
                                         } else {
-                                            util.syntax_error("Decimal portion of number must be in base 10.")
+                                            util.syntax_error("Fractional part of number must be in base 10.")
                                         }
                                     } else {
                                         util.syntax_error("Numbers in base {tokens.last.base} " ++
