@@ -111,46 +111,15 @@ method generateNode(n) {
         } case { "call" ->
             if (n.value.kind == "member") then {
                 if (n.value.in.value == "prelude") then {
-                    if (n.with.at(1).args.size == 0) then {
-                        ret.put("type", "constant")
-                        ret.put("name", n.value.value)
-                    } else {
-                        def arg = generateNode(n.with.at(1).args.at(1))
-                        if (n.value.value == "print") then {
-                            ret.put("type", "print")
-                            ret.put("value", arg)
-                        } else {
-                            if (n.value.value == "for()do") then {
-                                ret.put("type", "for")
-                                ret.put("iterand", arg)
-                                def blk = n.with.at(2).args.at(1)
-                                def body = JSArray.new
-                                for (blk.body) do {v->
-                                    body.push(generateNode(v))
-                                }
-                                ret.put("body", body)
-                                if (blk.params.size == 0) then {
-                                    ret.put("loopvar", "")
-                                } else {
-                                    ret.put("loopvar", blk.params.at(1).value)
-                                }
-                            } else {
-                                if (n.value.value == "while()do") then {
-                                    ret.put("type", "while")
-                                    ret.put("condition",
-                                        generateNode(n.with.at(1).args.at(1).body.at(1)))
-                                    def blk = n.with.at(2).args.at(1)
-                                    def body = JSArray.new
-                                    for (blk.body) do {v->
-                                        body.push(generateNode(v))
-                                    }
-                                    ret.put("body", body)
-                                } else {
-                                    ret.put("type", "dialect-request")
-                                    ret.put("name", n.value.value)
-                                    ret.put("value", arg)
-                                }
-                            }
+                    ret.put("name", n.value.value)
+                    ret.put("type", "dialect-method")
+                    def parts = JSArray.new
+                    ret.put("parts", parts)
+                    for (n.with) do {part->
+                        def thisPart = JSArray.new
+                        parts.push(thisPart)
+                        for (part.args) do {arg->
+                            thisPart.push(generateNode(arg))
                         }
                     }
                 } else {
@@ -168,6 +137,18 @@ method generateNode(n) {
             } else {
                 ret.put("type", "unknown call")
                 print "    {n.pretty(4)}"
+            }
+        } case { "block" ->
+            ret.put("type", "block")
+            def params = JSArray.new
+            ret.put("params", params)
+            for (n.params) do {p->
+                params.push(p.value)
+            }
+            def body = JSArray.new
+            ret.put("body", body)
+            for (n.body) do {p->
+                body.push(generateNode(p))
             }
         } case { _ ->
             ret.put("type", "UNKNOWN")
