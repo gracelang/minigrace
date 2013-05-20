@@ -557,7 +557,7 @@ method catchcase {
     } else {
         expect "lparen"
         next
-        expression
+        expectConsume {expression}
         expect "rparen"
         next
     }
