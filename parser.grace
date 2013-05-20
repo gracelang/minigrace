@@ -674,6 +674,7 @@ method term {
 // (dotrest), postcircumfix square brackets, the rest of a method call,
 // or an operator expression.
 method expression {
+    var sz := values.size
     if (accept("lparen")) then {
         def tmpStatementToken = statementToken
         statementToken := sym
@@ -685,10 +686,12 @@ method expression {
     } else {
         term
     }
-    dotrest
-    callrest
-    postfixsquare
-    expressionrest
+    if (values.size > sz) then {
+        dotrest
+        callrest
+        postfixsquare
+        expressionrest
+    }
 }
 
 // Accept postcircumfix square brackets (as in x[y]) and replace the
