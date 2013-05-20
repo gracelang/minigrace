@@ -1638,6 +1638,7 @@ method methodsignature(sameline) {
             // annotations.
             if (accept("op")) then {
                 next
+                expect "identifier"
                 vararg := true
                 varargs := true
             }
