@@ -700,7 +700,7 @@ method postfixsquare {
     if (acceptSameLine("lsquare")) then {
         next
         var expr := values.pop
-        expression
+        expectConsume {expression}
         var index := values.pop
         expect("rsquare")
         next
