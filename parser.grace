@@ -678,7 +678,7 @@ method expression {
         def tmpStatementToken = statementToken
         statementToken := sym
         next
-        expression
+        expectConsume {expression}
         expect("rparen")
         statementToken := tmpStatementToken
         next
