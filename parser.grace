@@ -514,7 +514,7 @@ method prefixop {
             expect("rparen")
             next
         } else {
-            term
+            expectConsume {term}
         }
         dotrest
         callrest
