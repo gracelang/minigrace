@@ -345,6 +345,7 @@ method block {
                     }
                 }
             } else {
+                checkUnexpectedTokenAfterStatement
                 body.push(values.pop)
             }
         }
@@ -1899,25 +1900,29 @@ method statement {
             indentFreePass := true
         }
     } else {
-        if (sym.line == lastToken.line) then {
-            if (sym.kind != "rbrace") then {
-                util.setPosition(sym.line, sym.linePos)
-                if ((values.size > 0).andAlso {
-                        (values.last.kind == "identifier").orElse {
-                            values.last.kind == "member"
-                        }.andAlso {
-                            sym.kind == "identifier"
-                        }
-                    }) then {
-                    util.syntax_error("Unexpected token after statement ended; "
-                        ++ "got {sym.kind}: '{sym.value}', expected "
-                        ++ "new line or semicolon. Did you mean "
-                        ++ "'{values.last.toGrace 0}({sym.value})'?")
-                } else {
-                    util.syntax_error("unexpected token after statement ended; "
-                        ++ "got {sym.kind}: '{sym.value}', expected "
-                        ++ "new line or semicolon.")
-                }
+        checkUnexpectedTokenAfterStatement
+    }
+}
+
+method checkUnexpectedTokenAfterStatement {
+    if (sym.line == lastToken.line) then {
+        if (sym.kind != "rbrace") then {
+            util.setPosition(sym.line, sym.linePos)
+            if ((values.size > 0).andAlso {
+                    (values.last.kind == "identifier").orElse {
+                        values.last.kind == "member"
+                    }.andAlso {
+                        sym.kind == "identifier"
+                    }
+                }) then {
+                util.syntax_error("Unexpected token after statement ended; "
+                    ++ "got {sym.kind}: '{sym.value}', expected "
+                    ++ "new line or semicolon. Did you mean "
+                    ++ "'{values.last.toGrace 0}({sym.value})'?")
+            } else {
+                util.syntax_error("unexpected token after statement ended; "
+                    ++ "got {sym.kind}: '{sym.value}', expected "
+                    ++ "new line or semicolon.")
             }
         }
     }
