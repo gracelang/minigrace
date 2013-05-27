@@ -1772,6 +1772,26 @@ class inheritsNode.new(expr) {
         "inherits {self.value.toGrace(0)}"
     }
 }
+class blankNode.new {
+    def kind = "blank"
+    def value = "blank"
+    var register := ""
+    var line := util.linenum
+    method accept(visitor : ASTVisitor) {
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        self
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
+    method pretty(depth) {
+        "Blank"
+    }
+    method toGrace(depth : Number) -> String {
+        ""
+    }
+}
 
 class signaturePart.new(*values) {
     def kind = "signaturepart"

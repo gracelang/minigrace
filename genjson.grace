@@ -1,5 +1,6 @@
 import "mgcollections" as collections
 import "util" as util
+import "io" as io
 
 method wrap(v) {
     match(v)
@@ -161,23 +162,81 @@ method generateNode(n) {
     return ret
 }
 
+var lastToken := object {def kind is readable = ""}
+method saveToken(token) {
+    lastToken := token
+}
+
 method generate(values, outfile) {
     util.log_verbose "generating JSON."
+    def chunkLocations = collections.list.new
+    if (lastToken.kind == "comment") then {
+        def cmt = lastToken.value
+        if (cmt.substringFrom(1)to(9) == " chunks: ") then {
+            var accum := "";
+            var leftAccum := ""
+            for (cmt.substringFrom(10)to(cmt.size)) do {c->
+                if (c == " ") then {
+                    chunkLocations.push(object {
+                        def top is readable = accum
+                        def left is readable = leftAccum
+                    })
+                    accum := ""
+                } else {
+                    if (c == ",") then {
+                        leftAccum := accum
+                        accum := ""
+                    } else {
+                        accum := accum ++ c
+                    }
+                }
+            }
+            chunkLocations.push(object {
+                def top is readable = accum
+                def left is readable = leftAccum
+            })
+            accum := ""
+        }
+    }
+    if (chunkLocations.size == 0) then {
+        chunkLocations.push(object {
+            def top is readable = "10px"
+            def left is readable = "10px"
+        })
+    }
     def overall = JSObj.new
     def arr = JSArray.new
     overall.put("chunks", arr)
-    def chunk = JSObj.new
+    var chunkIndex := 1
+    var chunk := JSObj.new
     arr.push(chunk)
     chunk.put("type", "chunk")
-    chunk.put("x", "10px")
-    chunk.put("y", "10px")
-    def body = JSArray.new
+    chunk.put("x", chunkLocations.at(chunkIndex).left)
+    chunk.put("y", chunkLocations.at(chunkIndex).top)
+    var body := JSArray.new
     chunk.put("body", body)
     for (values) do {v->
         if (v.kind == "dialect") then {
             overall.put("dialect", v.value)
         } else {
-            body.push(generateNode(v))
+            if (v.kind == "blank") then {
+                chunkIndex := chunkIndex + 1
+                if (chunkLocations.size < chunkIndex) then {
+                    chunkLocations.push(object {
+                        def top is readable = "{chunkIndex * 10}px"
+                        def left is readable = "{chunkIndex * 10}px"
+                    })
+                }
+                chunk := JSObj.new
+                arr.push(chunk)
+                chunk.put("type", "chunk")
+                chunk.put("x", chunkLocations.at(chunkIndex).left)
+                chunk.put("y", chunkLocations.at(chunkIndex).top)
+                body := JSArray.new
+                chunk.put("body", body)
+            } else {
+                body.push(generateNode(v))
+            }
         }
     }
     outfile.write(overall.asJSON ++ "\n")

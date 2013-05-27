@@ -44,6 +44,14 @@ if (util.target == "lex") then {
     }
     sys.exit(0)
 }
+
+// JSON wants to keep hold of the last token in the file
+if (util.target == "json") then {
+    if (tokens.size > 0) then {
+        genjson.saveToken(tokens.last)
+    }
+}
+
 var values := parser.parse(tokens)
 
 if (util.target == "parse") then {

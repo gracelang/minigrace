@@ -22,7 +22,13 @@ var defaultMethodVisibility := "public"
 
 // Global object containing the current token
 var sym
-var lastToken
+var lastToken := object {
+    var kind := "start"
+    var line := 1
+    var linePos := 0
+    var indent := 0
+    var value := ""
+}
 
 var comment := false
 
@@ -202,6 +208,12 @@ method doannotation {
     don'tTakeBlock := false
     anns.push(checkAnnotation(values.pop))
     anns
+}
+
+method blank {
+    if (sym.line > (lastToken.line + 1)) then {
+        values.push(ast.blankNode.new)
+    }
 }
 
 method dotypeterm {
@@ -1969,8 +1981,11 @@ method parse(toks) {
     next
     var oldlength := tokens.size + 0
     while {tokens.size > 0} do {
+        blank
         methoddec
+        blank
         inheritsdec
+        blank
         statement
         if (tokens.size == oldlength) then {
             util.setPosition(sym.line, sym.linePos)
