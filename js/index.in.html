@@ -35,6 +35,8 @@
         };
 
         function go() {
+            if (ace)
+                editor.getSession().clearAnnotations();
             if (document.getElementById('mode').value == 'testall') {
                 document.getElementById('mode').selectedIndex = 0;
                 modeswitch();
@@ -48,6 +50,25 @@
             if(!compiled)
                 document.getElementById('stderr_txt').value = old_stderr;
             document.getElementById('js_txt').value = minigrace.generated_output;
+            if (minigrace.compileError && ace) {
+                var lines = document.getElementById('stderr_txt').value.split("\n");
+                var bits;
+                for (var i=0; i<lines.length; i++) {
+                    if (lines[i].substring(0, 10) != 'minigrace:') {
+                        bits = lines[i].split(':');
+                        break;
+                    }
+                }
+                editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
+                editor.getSelection().clearSelection();
+                bits.shift();
+                editor.getSession().setAnnotations([{
+                    row: bits.shift() - 1,
+                    column: bits.shift() - 1,
+                    text: bits.join(":"),
+                    type: "error"
+                }]);
+            }
             scrollstdout();
         }
 
