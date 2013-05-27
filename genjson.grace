@@ -66,9 +66,13 @@ method generateNode(n) {
         } case { "bind" ->
             if (n.dest.kind == "member") then {
                 if (n.dest.in.value == "prelude") then {
-                    ret.put("type", "dialect-request")
-                    ret.put("value", generateNode(n.value))
+                    ret.put("type", "dialect-method")
                     ret.put("name", n.dest.value ++ ":=")
+                    def parts = JSArray.new
+                    ret.put("parts", parts)
+                    def part = JSArray.new
+                    parts.push(part);
+                    part.push(generateNode(n.value))
                 } else {
                     ret.put("type", "unknown assign")
                 }
