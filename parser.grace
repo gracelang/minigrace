@@ -212,7 +212,11 @@ method doannotation {
 
 method blank {
     if (sym.line > (lastToken.line + 1)) then {
-        values.push(ast.blankNode.new)
+        if (values.size > 0) then {
+            if (values.last.kind != "blank") then {
+                values.push(ast.blankNode.new)
+            }
+        }
     }
 }
 
