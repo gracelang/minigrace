@@ -9,6 +9,7 @@
 
 // Some points in minigrace.js use "window" explicitly
 var window = self;
+var document = {};
 importScripts("minigrace.js");
 
 var stderr_output = "";
@@ -28,6 +29,8 @@ onmessage = function(ev) {
         } else {
             postMessage({success: false, stderr: stderr_output});
         }
+    } else if (cmd.action == "importFile") {
+        importScripts(cmd.url);
     } else if (cmd.action == "import") {
         var theModule;
         eval(cmd.code);
