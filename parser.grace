@@ -812,7 +812,11 @@ method expressionrest {
                 expect("rparen")
                 next
             } else {
-                expectConsume {term} error "expected term after operator"
+                util.setPosition(lastToken.line, lastToken.linePos + 1)
+                if (!tokenOnSameLine) then {
+                    util.syntax_error "expected term after operator."
+                }
+                expectConsume {term} error "expected term after operator."
             }
 
             // Regardless of where the last value came from, it may have
