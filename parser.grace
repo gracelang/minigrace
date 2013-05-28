@@ -812,7 +812,7 @@ method expressionrest {
                 expect("rparen")
                 next
             } else {
-                term
+                expectConsume {term} error "expected term after operator"
             }
 
             // Regardless of where the last value came from, it may have
