@@ -625,6 +625,7 @@ method resolve(values) {
     builtinObj.add "readable" as "def"
     builtinObj.add "writable" as "def"
     builtinObj.add "public" as "def"
+    builtinObj.add "confidential" as "def"
     builtinObj.add "parent" as "def"
     builtinObj.add "prelude" as "def"
     builtinObj.add "_prelude" as "def"
