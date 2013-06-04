@@ -1834,15 +1834,20 @@ method dotype {
         } else {
             dotyperef
             def ot = values.pop
-            def nt = ast.typeNode.new(p.value, ot.methods)
-            nt.generics := nt.generics
-            for (ot.unionTypes) do {ut->
-                nt.unionTypes.push(ut)
+            var nt
+            if (ot.kind == "type") then {
+                nt := ast.typeNode.new(p.value, ot.methods)
+                nt.generics := nt.generics
+                for (ot.unionTypes) do {ut->
+                    nt.unionTypes.push(ut)
+                }
+                for (ot.intersectionTypes) do {ut->
+                    nt.intersectionTypes.push(ut)
+                }
+                nt.generics := gens
+            } else {
+                nt := ast.typeNode.new(p.value, [])
             }
-            for (ot.intersectionTypes) do {ut->
-                nt.intersectionTypes.push(ut)
-            }
-            nt.generics := gens
             values.push(nt)
         }
     }
