@@ -224,7 +224,9 @@ method dotypeterm {
     if (accept("identifier")) then {
         pushidentifier
         generic
+        don'tTakeBlock := true
         dotrest
+        don'tTakeBlock := false
     } else {
         if (accept("lbrace")) then {
             doanontype
