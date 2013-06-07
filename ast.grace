@@ -894,6 +894,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
     var register := ""
     var line := util.linenum
     def superclass = superclass'
+    def annotations = collections.list.new
     var instanceMethods := collections.list.new
     var data := false
     method accept(visitor : ASTVisitor) {
