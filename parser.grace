@@ -1775,6 +1775,7 @@ method domethodtype {
         dtype := ast.identifierNode.new("Done", false)
     }
     var o := ast.methodTypeNode.new(meth.value, signature, dtype)
+    o.generics := m.generics
     values.push(o)
     if (accept("semicolon")) then {
         next

@@ -409,6 +409,7 @@ class methodTypeNode.new(name', signature', rtype') {
     def value = name'
     def signature = signature'
     def rtype = rtype'
+    var generics := []
     var line := util.linenum
     var register := ""
     method accept(visitor : ASTVisitor) {

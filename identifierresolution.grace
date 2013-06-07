@@ -502,6 +502,9 @@ method resolveIdentifiers(topNode) {
                     scope.add(s.vararg.value) as "def"
                 }
             }
+            for (node.generics) do {g->
+                scope.add(g.value) as "def"
+            }
         }
         if (node.kind == "method") then {
             scope.add(node.value.value)
@@ -623,10 +626,12 @@ method resolve(values) {
     preludeObj.add "for()do"
     preludeObj.add "while()do"
     preludeObj.add "print"
+    builtinObj.add "Object" as "def"
     builtinObj.add "Dynamic" as "def"
     builtinObj.add "String" as "def"
     builtinObj.add "Number" as "def"
     builtinObj.add "Boolean" as "def"
+    builtinObj.add "Block" as "def"
     builtinObj.add "Done" as "def"
     builtinObj.add "done" as "def"
     builtinObj.add "true" as "def"
