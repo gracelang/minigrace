@@ -429,7 +429,7 @@ method doif {
                     minIndentLevel := minInd
                 }
                 while {(accept("rbrace")).not} do {
-                    statement
+                    expectConsume {statement}
                     v := values.pop
                     body.push(v)
                 }
@@ -462,7 +462,7 @@ method doif {
                     minIndentLevel := minInd
                 }
                 while {(accept("rbrace")).not} do {
-                    statement
+                    expectConsume {statement}
                     v := values.pop
                     ebody.push(v)
                 }
@@ -488,7 +488,7 @@ method doif {
                         minIndentLevel := minInd
                     }
                     while {(accept("rbrace")).not} do {
-                        statement
+                        expectConsume {statement}
                         v := values.pop
                         curelse.push(v)
                     }
