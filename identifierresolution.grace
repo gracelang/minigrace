@@ -409,6 +409,11 @@ method resolveIdentifiers(topNode) {
             classScope.add(node.constructor.value)
             classScope.bindAs(node.name.value)
             pushScope
+            if (false != node.generics) then {
+                for (node.generics) do {g->
+                    scope.add(g.value) as "def"
+                }
+            }
             for (node.signature) do {s->
                 for (s.params) do {p->
                     scope.add(p.value)as "def"
@@ -494,6 +499,9 @@ method resolveIdentifiers(topNode) {
         if (node.kind == "methodtype") then {
             scope.add(node.value)
             pushScope
+            for (node.generics) do {g->
+                scope.add(g.value) as "def"
+            }
             for (node.signature) do {s->
                 for (s.params) do {p->
                     scope.add(p.value)as "def"
@@ -502,15 +510,15 @@ method resolveIdentifiers(topNode) {
                     scope.add(s.vararg.value) as "def"
                 }
             }
-            for (node.generics) do {g->
-                scope.add(g.value) as "def"
-            }
         }
         if (node.kind == "method") then {
             scope.add(node.value.value)
             pushScope
             scope.variety := "method"
             scope.name := node.value.value
+            for (node.generics) do {g->
+                scope.add(g.value) as "def"
+            }
             for (node.signature) do {s->
                 for (s.params) do {p->
                     scope.add(p.value)as "def"
