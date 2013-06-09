@@ -201,11 +201,11 @@ method doannotation {
     next
     def anns = collections.list.new
     don'tTakeBlock := true
-    expression
+    expectConsume {expression}
     while {accept("comma")} do {
         anns.push(checkAnnotation(values.pop))
         next
-        expression
+        expectConsume {expression}
     }
     don'tTakeBlock := false
     anns.push(checkAnnotation(values.pop))
