@@ -352,7 +352,9 @@ method block {
                         indentFreePass := true
                     }
                 }
-            } elseif (accept("bind")) then {
+            } elseif (((values.last.kind == "member")
+                || (values.last.kind == "identifier"))
+                && accept("bind")) then {
                 var lhs := values.pop
                 next
                 expectConsume {expression}
@@ -1915,7 +1917,9 @@ method statement {
         }
     } else {
         ifConsume {expression} then {
-            if (accept("bind")) then {
+            if (((values.last.kind == "identifier")
+                || (values.last.kind == "member"))
+                && accept("bind")) then {
                 var dest := values.pop
                 next
                 expectConsume {expression}
