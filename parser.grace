@@ -593,7 +593,7 @@ method catchcase {
             block
         } elseif (accept("lparen")) then {
             next
-            expression
+            expectConsume {expression}
             expect("rparen")
             next
         } else {
@@ -607,7 +607,7 @@ method catchcase {
             block
         } elseif (accept("lparen")) then {
             next
-            expression
+            expectConsume {expression}
             expect("rparen")
             next
         } else {
