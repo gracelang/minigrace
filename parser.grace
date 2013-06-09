@@ -241,14 +241,14 @@ method dotyperef {
     var tp := false
     var op := false
     def unionTypes = []
-    dotypeterm
+    expectConsume {dotypeterm}
     overallType := values.pop
     while {acceptSameLine("op") && (sym.value == "|")} do {
         if (unionTypes.size == 0) then {
             unionTypes.push(overallType)
         }
         next
-        dotypeterm
+        expectConsume {dotypeterm}
         unionTypes.push(values.pop)
     }
     if (unionTypes.size > 0) then {
@@ -268,7 +268,7 @@ method dotyperef {
             intersectionTypes.push(overallType)
         }
         next
-        dotypeterm
+        expectConsume {dotypeterm}
         intersectionTypes.push(values.pop)
     }
     if (intersectionTypes.size > 0) then {
