@@ -1914,19 +1914,20 @@ method statement {
             expression
         }
     } else {
-        expression
-        if (accept("bind")) then {
-            var dest := values.pop
-            next
-            expression
-            var val := values.pop
-            var o := ast.bindNode.new(dest, val)
-            if (dest.kind == "call") then {
-                if (dest.value.kind != "member") then {
-                    util.syntax_error("Assignment to method call.")
+        ifConsume {expression} then {
+            if (accept("bind")) then {
+                var dest := values.pop
+                next
+                expectConsume {expression}
+                var val := values.pop
+                var o := ast.bindNode.new(dest, val)
+                if (dest.kind == "call") then {
+                    if (dest.value.kind != "member") then {
+                        util.syntax_error("Assignment to method call.")
+                    }
                 }
+                values.push(o)
             }
-            values.push(o)
         }
     }
     if (accept("eof")) then {
