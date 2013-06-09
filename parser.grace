@@ -315,7 +315,7 @@ method block {
                     // patterns, where T may be "Pair(hd, tl)" or similar.
                     next
                     braceIsType := true
-                    expression
+                    expectConsume {expression}
                     braceIsType := false
                     ident1.dtype := values.pop
                 }
@@ -355,7 +355,7 @@ method block {
             } elseif (accept("bind")) then {
                 var lhs := values.pop
                 next
-                expression
+                expectConsume {expression}
                 var rhs := values.pop
                 body.push(ast.bindNode.new(lhs, rhs))
                 if (accept("semicolon")) then {
