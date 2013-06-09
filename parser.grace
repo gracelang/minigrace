@@ -407,7 +407,7 @@ method doif {
     if (accept("identifier") && (sym.value == "if")) then {
         def btok = sym
         next
-        expression
+        expectConsume {expression}
         var cond := values.pop
         var body := []
 
@@ -448,7 +448,7 @@ method doif {
                 // "elseifs", turning them into ifs inside the else.
                 statementToken := sym
                 next
-                expression
+                expectConsume {expression}
                 econd := values.pop
                 if ((accept("identifier") &&
                     (sym.value == "then")).not) then {
