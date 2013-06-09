@@ -638,7 +638,7 @@ method matchcase {
             block
         } elseif (accept("lparen")) then {
             next
-            expression
+            expectConsume {expression}
             expect("rparen")
             next
         } else {
@@ -652,7 +652,7 @@ method matchcase {
             block
         } elseif (accept("lparen")) then {
             next
-            expression
+            expectConsume {expression}
             expect("rparen")
             next
         } else {
