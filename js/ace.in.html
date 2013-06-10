@@ -15,12 +15,6 @@
         editor.getSession().setTabSize(4);
         editor.commands.bindKeys({"ctrl-l":null, "ctrl-shift-r":null, "ctrl-r":null, "ctrl-t":null})
 
-        stdin.methods.read = function() {
-            return new GraceString(editor.getValue());
-        }
-        stdin.methods.iterator = function() {
-            return callmethod(new GraceString(editor.getValue()), "iterator", [0]);
-        }
         document.getElementById('code_txt_real').style.height = document.getElementById('tabbox').clientHeight + 'px';
         document.getElementById('code_txt_real').style.width = (document.getElementById('tabbox').clientWidth - 30) + 'px';
         // Get code from ace editor.
