@@ -50,6 +50,10 @@ method parseargs {
             if (arg.at(1) == "-") then {
                 match(arg)
                     case { "-o" ->
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: -o requires argument.\n")
+                            sys.exit(1)
+                        }
                         outfilev := io.open(argv.at(ai + 1), "w")
                         skip := true
                     } case { "--verbose" ->
@@ -58,6 +62,10 @@ method parseargs {
                         printhelp
                     } case { "--vtag" ->
                         skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: --vtag requires argument.\n")
+                            sys.exit(1)
+                        }
                         vtagv := argv.at(ai + 1)
                     } case { "--make" ->
                         runmodev := "make"
@@ -91,15 +99,31 @@ method parseargs {
                         toStdout := true
                     } case { "--module" ->
                         skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: --module requires argument.\n")
+                            sys.exit(1)
+                        }
                         modnamev := argv.at(ai + 1)
                     } case { "--gracelib" ->
                         skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: --gracelib requires argument.\n")
+                            sys.exit(1)
+                        }
                         gracelibPathv := argv.at(ai + 1)
                     } case { "--target" ->
                         skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: --target requires argument.\n")
+                            sys.exit(1)
+                        }
                         targetv := argv.at(ai + 1)
                     } case { "-j" ->
                         skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write("minigrace: -j requires argument.\n")
+                            sys.exit(1)
+                        }
                         jobs := argv.at(ai + 1).asNumber
                     } case { "--version" ->
                         print("minigrace "
