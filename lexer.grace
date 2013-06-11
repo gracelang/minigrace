@@ -376,6 +376,9 @@ def LexerClass = object {
                         sofar := sofar ++ c
                     }
                 }
+                if(sofar == "") then {
+                    util.syntax_error("Number required after base.")
+                }
                 NumToken.new(fromBase(sofar, base).asString, base)
             }
             // True if ov is a valid identifier character. Identifier
