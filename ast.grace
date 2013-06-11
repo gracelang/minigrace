@@ -450,7 +450,7 @@ class methodTypeNode.new(name', signature', rtype') {
         var s := "MethodType\n"
         s := "{s}{spc}Name: {value}\n"
         if (rtype != false) then {
-            s := "{s}{spc}Returns:\n  {spc}{rtype.value}\n"
+            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}\n"
         }
         s := "{s}{spc}Signature:"
         for (signature) do { part ->
@@ -695,6 +695,10 @@ class methodNode.new(name', signature', body', dtype') {
         var s := "Method\n"
         s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
         s := s ++ "\n"
+        if (false != self.dtype) then {
+            s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
+            s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
+        }
         s := "{s}{spc}Signature:"
         for (signature) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
