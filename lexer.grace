@@ -673,7 +673,7 @@ def LexerClass = object {
                             codepoint := codepoint * 16
                             codepoint := codepoint + hexdecchar(c)
                             if (unichars == 0) then {
-                                // At the end of the sequence construct 
+                                // At the end of the sequence construct
                                 // the character in the unicode library.
                                 accum := accum ++ unicode.create(codepoint)
                             }

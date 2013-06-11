@@ -55,7 +55,7 @@ method outprint(s) {
     util.outprint(s)
 }
 method outswitchup {
-    output := topOutput   
+    output := topOutput
 }
 method outswitchdown {
     output := bottomOutput

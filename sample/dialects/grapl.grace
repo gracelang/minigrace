@@ -153,7 +153,7 @@ class vector.new {
                             found := 1
                         }
                     }
-                    case { n : Number -> 
+                    case { n : Number ->
                         if (d == d') then {
                             found := 1
                         }

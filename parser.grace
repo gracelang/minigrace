@@ -2022,7 +2022,7 @@ method parse(toks) {
         statement
         if (tokens.size == oldlength) then {
             util.setPosition(sym.line, sym.linePos)
-            util.syntax_error("No token consumed at top level. Have " 
+            util.syntax_error("No token consumed at top level. Have "
                 ++ "{sym.kind}: '{sym.value}', expected statement.")
         }
         oldlength := tokens.size + 0
