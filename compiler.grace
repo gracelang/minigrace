@@ -18,7 +18,7 @@ import "mirrors" as mirrors
 util.parseargs
 
 def targets = ["lex", "parse", "grace", "processed-ast",
-    "imports", "c", "js", "grace"]
+    "imports", "c", "js"]
 
 if (util.target == "help") then {
     print("Valid targets:")
