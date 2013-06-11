@@ -105,7 +105,7 @@ method findDeepMethod(name) {
         }
         match(s.variety)
             case { "object" -> mem := ast.memberNode.new("outer", mem) }
-            case { "class" -> 
+            case { "class" ->
                 mem := ast.memberNode.new("outer", mem)
                 mem := ast.memberNode.new("outer", mem)
                 }
@@ -323,7 +323,11 @@ method resolveIdentifier(node) {
     var nm := node.value
     util.setPosition(node.line, node.linePos)
     if (haveBinding(nm).not) then {
-        util.syntax_error("Use of undefined identifier '{nm}'.")
+        if (node.wildcard) then {
+            util.syntax_error("Unable to resolve wildcard identifier.")
+        } else {
+            util.syntax_error("Use of undefined identifier '{nm}'.")
+        }
     }
     if (nm == "outer") then {
         return ast.memberNode.new("outer", ast.identifierNode.new("self", false))

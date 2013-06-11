@@ -176,6 +176,7 @@ method pushidentifier {
     var o := ast.identifierNode.new(sym.value, false)
     if (o.value == "_") then {
         o.value := "__" ++ auto_count
+        o.wildcard := true
         auto_count := auto_count + 1
     }
     values.push(o)

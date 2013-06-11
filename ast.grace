@@ -1203,6 +1203,7 @@ class genericNode.new(base, params') {
 class identifierNode.new(name, dtype') {
     def kind = "identifier"
     var value := name
+    var wildcard := false
     var dtype := dtype'
     var register := ""
     var line := util.linenum
@@ -1219,10 +1220,12 @@ class identifierNode.new(name, dtype') {
         util.setPosition(line, linePos)
         var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
         blkAfter))
+        n.wildcard := wildcard
         n := blk.apply(n)
         n.line := line
         if (n.kind == "identifier") then {
             n.linePos := linePos
+            n.wildcard := wildcard
         }
         blkAfter.apply(n)
         n
@@ -1235,7 +1238,12 @@ class identifierNode.new(name, dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Identifier(" ++ self.value ++ ")"
+        var s
+        if(self.wildcard) then {
+            s := "WildcardIdentifier"
+        } else {
+            s := "Identifier(" ++ self.value ++ ")"
+        }
         if (self.dtype != false) then {
             s := s ++ "\n" ++ spc ++ "Type:"
             s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
@@ -1249,7 +1257,12 @@ class identifierNode.new(name, dtype') {
         return dtype
     }
     method toGrace(depth : Number) -> String {
-        var s := self.value
+        var s
+        if(self.wildcard) then {
+            s := "_"
+        } else {
+            s := self.value
+        }
         if (self.dtype != false) then {
             s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
         }
