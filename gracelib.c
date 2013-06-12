@@ -3179,17 +3179,13 @@ Object catchCase(Object block, Object *caseList, int ncases,
 }
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {
-    int i;
-    char *sp = " ";
-    for (i=0; i<nparams; i++) {
-        Object o = args[i];
-        if (i == nparams - 1)
-            sp = "";
-        o = callmethod(o, "asString", 0, NULL, NULL);
+    if (nparams == 0) {
+        puts("");
+    } else {
+        Object o = callmethod(args[0], "asString", 0, NULL, NULL);
         char *s = grcstring(o);
-        printf("%s%s", s, sp);
+        puts(s);
     }
-    puts("");
     return none;
 }
 
