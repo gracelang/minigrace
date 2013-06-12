@@ -354,7 +354,8 @@ method block {
                     }
                 }
             } elseif (((values.last.kind == "member")
-                || (values.last.kind == "identifier"))
+                || (values.last.kind == "identifier")
+                || (values.last.kind == "index"))
                 && accept("bind")) then {
                 var lhs := values.pop
                 next
@@ -1919,7 +1920,8 @@ method statement {
     } else {
         ifConsume {expression} then {
             if (((values.last.kind == "identifier")
-                || (values.last.kind == "member"))
+                || (values.last.kind == "member")
+                || (values.last.kind == "index"))
                 && accept("bind")) then {
                 var dest := values.pop
                 next
