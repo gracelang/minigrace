@@ -41,7 +41,7 @@ if [ $# -gt 0 ]
 then
     tests=( "$@" )
 else
-    tests=( t*_test.grace )
+    tests=( *_test.grace )
 fi
 
 set +e

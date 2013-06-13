@@ -110,6 +110,8 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
+regrtest: minigrace
+	./tests/harness "../../minigrace" tests/regression ""
 test: minigrace
 	./tests/harness "../minigrace" tests ""
 fulltest: gencheck clean selftest test
