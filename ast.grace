@@ -496,6 +496,7 @@ class typeNode.new(name', methods') {
     def methods = methods'
     def unionTypes = []
     def intersectionTypes = []
+    def annotations = collections.list.new
     var line := util.linenum
     var generics := []
     var nominal := false

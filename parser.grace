@@ -1831,6 +1831,7 @@ method dotype {
             gens := p.params
             p := p.value
         }
+        def anns = doannotation
         expect("op")
         if (sym.value != "=") then {
             util.syntax_error("Type declarations require '='.")
@@ -1846,6 +1847,9 @@ method dotype {
             next
             def t = ast.typeNode.new(p.value, methods)
             t.generics := gens
+            if (false != anns) then {
+                t.annotations.extend(anns)
+            }
             values.push(t)
         } else {
             dotyperef
@@ -1863,6 +1867,9 @@ method dotype {
                 nt.generics := gens
             } else {
                 nt := ast.typeNode.new(p.value, [])
+            }
+            if (false != anns) then {
+                nt.annotations.extend(anns)
             }
             values.push(nt)
         }
