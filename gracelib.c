@@ -1735,7 +1735,7 @@ Object makeEscapedString(char *p) {
             buf[op++] = '\\';
             buf[op] = '\\';
         } else if (p[ip] >= 32 && p[ip] <= 126) {
-            buf[op] = p[ip]; 
+            buf[op] = p[ip];
         } else {
             buf[op++] = '\\';
             char b2[3];
@@ -2059,7 +2059,7 @@ Object Float64_inBase(Object self, int nparts, int *argcv,
     }
     if (before)
         *(--b) = before;
-    return alloc_String(b); 
+    return alloc_String(b);
 }
 Object Float64_truncate(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2166,7 +2166,7 @@ Object Boolean_asString(Object self, int nparts, int *argcv,
     int myval = *(int8_t*)self->data;
     if (myval) {
         return alloc_String("true");
-    } else { 
+    } else {
         return alloc_String("false");
     }
 }
@@ -2176,7 +2176,7 @@ Object Boolean_And(Object self, int nparts, int *argcv,
     int8_t otherval = *(int8_t*)args[0]->data;
     if (myval && otherval) {
         return self;
-    } else { 
+    } else {
         return alloc_Boolean(0);
     }
 }
@@ -2186,7 +2186,7 @@ Object Boolean_Or(Object self, int nparts, int *argcv,
     int8_t otherval = *(int8_t*)args[0]->data;
     if (myval || otherval) {
         return alloc_Boolean(1);
-    } else { 
+    } else {
         return alloc_Boolean(0);
     }
 }
@@ -3897,7 +3897,24 @@ Object dlmodule(const char *name) {
     if (!handle)
         gracedie("failed to load dynamic module '%s'", buf);
     strcpy(buf, "module_");
-    strcat(buf, name);
+    int new_size = 0;
+    char c;
+    for (int i = 0; (c = name[i]) != '\0'; i++) {
+        new_size += c == '/' ? 4 : 1;
+    }
+    char escaped[new_size + 1];
+    for (int i = 0, j = 0; (c = name[i]) != '\0'; i++) {
+        if (c == '/') {
+            escaped[j++] = '_';
+            escaped[j++] = '4';
+            escaped[j++] = '7';
+            escaped[j++] = '_';
+        } else {
+            escaped[j++] = c;
+        }
+    }
+    escaped[new_size] = '\0';
+    strcat(buf, escaped);
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
     if (!init)
@@ -4271,7 +4288,7 @@ Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
 }
 Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-    char *str = grcstring(argv[0]); 
+    char *str = grcstring(argv[0]);
     die(str);
     return NULL;
 }
