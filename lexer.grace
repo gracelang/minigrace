@@ -751,6 +751,11 @@ def LexerClass = object {
                     cLines.push(cline)
                     lines.push(lineStr)
                 }
+                if ((mode == "\"") && instr) then {
+                    util.syntax_error("Unfinished string literal, expected '\"'.")
+                } elseif ((mode == "x") && instr) then {
+                    util.syntax_error("Unfinished octets literal, expected '\"'.")
+                }
                 modechange(tokens, mode, accum)
                 tokens
             }
