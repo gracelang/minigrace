@@ -1264,31 +1264,6 @@ method doobject {
         def localMinIndentLevel = minIndentLevel
         next
         var superclass := false
-        if (accept("identifier") && (sym.value == "extends")) then {
-            next
-            expect("identifier")
-            identifier
-            var nm := values.pop
-            if (accept("dot").not) then {
-                util.syntax_error("extends must have '.new' invocation on right.")
-            }
-            next
-            expect("identifier")
-            identifier
-            var mn := values.pop
-            var scargs := []
-            if (accept("lparen")) then {
-                next
-                while {accept("rparen").not} do {
-                    expectConsume {expression}
-                    var tmp := values.pop
-                    scargs.push(tmp)
-                }
-                next
-            }
-            superclass := ast.callNode.new(ast.memberNode.new(mn.value, nm),
-                [ast.callWithPart.new(mn.value, scargs)])
-        }
         expect("lbrace")
         values.push(object {
             var kind := "lbrace"
