@@ -814,7 +814,7 @@ method expressionrest {
                 // be allowed in term above?
                 next
                 if (accept("rparen")) then {
-                    util.syntax_error("Empty () in expression (maybe empty interpolated \{\} block).")
+                    util.syntax_error("Empty () in expression.")
                 }
                 expression
                 expect("rparen")

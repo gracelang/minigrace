@@ -585,6 +585,11 @@ def LexerClass = object {
                         // lexical mode - process the old one now.
                         modechange(tokens, mode, accum)
                         if ((newmode == "}") && (interpdepth > 0)) then {
+                            if (prev == "\{") then {
+                                lineStr := lineStr ++ c
+                                lines.push(lineStr)
+                                util.syntax_error("Empty expression in interpolated block.")
+                            }
                             modechange(tokens, ")", ")")
                             modechange(tokens, "o", "++")
                             newmode := "\""
