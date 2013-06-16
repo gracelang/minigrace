@@ -1,6 +1,7 @@
 import "mgcollections" as collections
 import "util" as util
 import "io" as io
+import "ast" as ast
 
 method wrap(v) {
     match(v)
@@ -92,23 +93,26 @@ method generateNode(n) {
             }
             ret.put("body", body)
         } case { "if" ->
-            def body = JSArray.new
-            for (n.thenblock) do {v->
-                body.push(generateNode(v))
-            }
             if (n.elseblock.size > 0) then {
-                ret.put("type", "if-else")
-                ret.put("condition", generateNode(n.value))
-                ret.put("body", body)
-                def elseBody = JSArray.new
-                for (n.elseblock) do {v->
-                    elseBody.push(generateNode(v))
-                }
-                ret.put("elseBody", elseBody)
+                def mn = ast.callNode.new(
+                    ast.memberNode.new("if()then()else",
+                        ast.identifierNode.new("prelude", false)),
+                    [ast.callWithPart.new("if", [n.value]),
+                        ast.callWithPart.new("then",
+                            [ast.blockNode.new([], n.thenblock)]),
+                        ast.callWithPart.new("else",
+                            [ast.blockNode.new([], n.elseblock)])
+                        ])
+                return generateNode(mn)
             } else {
-                ret.put("type", "if")
-                ret.put("condition", generateNode(n.value))
-                ret.put("body", body)
+                def mn = ast.callNode.new(
+                    ast.memberNode.new("if()then",
+                        ast.identifierNode.new("prelude", false)),
+                    [ast.callWithPart.new("if", [n.value]),
+                        ast.callWithPart.new("then",
+                            [ast.blockNode.new([], n.thenblock)])
+                        ])
+                return generateNode(mn)
             }
         } case { "identifier" ->
             ret.put("type", "var")
