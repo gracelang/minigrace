@@ -281,31 +281,30 @@ def LexerClass = object {
                         tokens.push(tok)
                         done := true
                     } elseif (mode == "m") then {
-                        tok := makeNumToken(accum)
-                        if (tokens.size > 1) then {
-                            if (tokens.last.kind == "dot") then {
-                                tokens.pop
-                                if (tokens.last.kind == "num") then {
-                                    if (tokens.last.base == 10) then {
-                                        tok := tokens.pop
-                                        var decimal := makeNumToken(accum)
-                                        if(decimal.base == 10) then {
-                                            tok := NumToken.new(tok.value ++ "." ++ accum, 10)
-                                        } else {
-                                            lines.push(lineStr)
-                                            util.syntax_error("Fractional part of number must be in base 10.")
-                                        }
+                        if ((tokens.size > 1).andAlso {tokens.last.kind == "dot"}) then {
+                            tokens.pop
+                            if (tokens.last.kind == "num") then {
+                                if (tokens.last.base == 10) then {
+                                    tok := tokens.pop
+                                    var decimal := makeNumToken(accum)
+                                    if(decimal.base == 10) then {
+                                        tok := NumToken.new(tok.value ++ "." ++ accum, 10)
                                     } else {
                                         lines.push(lineStr)
-                                        util.syntax_error("Numbers in base {tokens.last.base} " ++
-                                            "can only be integers.")
+                                        util.syntax_error("Fractional part of number must be in base 10.")
                                     }
                                 } else {
                                     lines.push(lineStr)
-                                    util.syntax_error("Found '.{accum}'" ++
-                                        ", expected term.")
+                                    util.syntax_error("Numbers in base {tokens.last.base} " ++
+                                        "can only be integers.")
                                 }
+                            } else {
+                                lines.push(lineStr)
+                                util.syntax_error("Found '.{accum}'" ++
+                                    ", expected term.")
                             }
+                        } else {
+                            tok := makeNumToken(accum)
                         }
                         tokens.push(tok)
                         done := true
