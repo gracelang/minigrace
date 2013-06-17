@@ -37,6 +37,11 @@ def LexerClass = object {
         var startPosition := 1
         var indentLevel := 0
 
+        def cLines = collections.list.new
+        def lines = collections.list.new
+        var cline := ""
+        var lineStr := ""
+
         class IdentifierToken.new(s) {
             def kind = "identifier"
             def value = s
@@ -287,13 +292,16 @@ def LexerClass = object {
                                         if(decimal.base == 10) then {
                                             tok := NumToken.new(tok.value ++ "." ++ accum, 10)
                                         } else {
+                                            lines.push(lineStr)
                                             util.syntax_error("Fractional part of number must be in base 10.")
                                         }
                                     } else {
+                                        lines.push(lineStr)
                                         util.syntax_error("Numbers in base {tokens.last.base} " ++
                                             "can only be integers.")
                                     }
                                 } else {
+                                    lines.push(lineStr)
                                     util.syntax_error("Found '.{accum}'" ++
                                         ", expected term.")
                                 }
@@ -335,8 +343,7 @@ def LexerClass = object {
                 }
                 startPosition := linePosition
             }
-            def cLines = collections.list.new
-            def lines = collections.list.new
+
             method fromBase(str, base) {
                 var val := 0
                 for (str) do {c->
@@ -351,6 +358,7 @@ def LexerClass = object {
                         inc := n - 87 // 'a' - 10
                     }
                     if (inc >= base) then {
+                        lines.push(lineStr)
                         util.syntax_error("No such digit '{c}' in base {base}.")
                     }
                     val := val + inc
@@ -369,6 +377,7 @@ def LexerClass = object {
                             base := 16
                         }
                         if((base < 2) || (base > 36)) then {
+                            lines.push(lineStr)
                             util.syntax_error("Invalid base: {base}.")
                         }
                         sofar := ""
@@ -377,6 +386,7 @@ def LexerClass = object {
                     }
                 }
                 if(sofar == "") then {
+                    lines.push(lineStr)
                     util.syntax_error("Number required after base.")
                 }
                 NumToken.new(fromBase(sofar, base).asString, base)
@@ -432,8 +442,6 @@ def LexerClass = object {
                 var interpdepth := 0
                 var interpString := false
                 var atStart := true
-                var cline := ""
-                var lineStr := ""
                 linePosition := 0
                 util.log_verbose("lexing.")
                 util.lines := lines
@@ -751,17 +759,20 @@ def LexerClass = object {
                     }
                     prev := c
                 }
+                if ((mode == "\"") && instr) then {
+                    lines.push(lineStr)
+                    util.syntax_error("Unfinished string literal, expected '\"'.")
+                } elseif ((mode == "x") && instr) then {
+                    lines.push(lineStr)
+                    util.syntax_error("Unfinished octets literal, expected '\"'.")
+                }
+                modechange(tokens, mode, accum)
+
                 // If file doesn't end in newline, add last line to the collection of lines.
                 if ((prev != "\n") && (prev != "\r")) then {
                     cLines.push(cline)
                     lines.push(lineStr)
                 }
-                if ((mode == "\"") && instr) then {
-                    util.syntax_error("Unfinished string literal, expected '\"'.")
-                } elseif ((mode == "x") && instr) then {
-                    util.syntax_error("Unfinished octets literal, expected '\"'.")
-                }
-                modechange(tokens, mode, accum)
                 tokens
             }
         }
