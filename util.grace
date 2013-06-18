@@ -209,26 +209,29 @@ method outprint(s) {
     outfilev.write(s)
     outfilev.write("\n")
 }
-method syntax_error(s) {
+
+method syntaxError(message)atRange(errlinenum, startpos, endpos) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Syntax error: {s}")
-    io.error.write("\n")
-    if (linenumv > 1) then {
-        if (lines.size > 0) then {
-            io.error.write("  {linenumv - 1}: {lines.at(linenumv - 1)}\n")
-        }
+    var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
+    io.error.write("{modnamev}.grace[{errlinenum}:{loc}]: Syntax error: {message}\n")
+    if ((errlinenum > 1) && (lines.size > 1)) then {
+        io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
     }
     var arr := "----"
-    for (2..(lineposv + linenumv.asString.size)) do {
+    for (2..(startpos + errlinenum.asString.size)) do {
         arr := arr ++ "-"
     }
-    if (lines.size >= linenumv) then {
-        io.error.write("  {linenumv}: {lines.at(linenumv)}\n{arr}^\n")
+    for (startpos..endpos) do {
+        arr := arr ++ "^"
     }
-    if (linenumv < lines.size) then {
-        io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
+    if (lines.size >= errlinenum) then {
+        io.error.write("  {errlinenum}: {lines.at(errlinenum)}\n")
+        io.error.write("{arr}\n")
+    }
+    if (errlinenum < lines.size) then {
+        io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
     if (interactivev.not) then {
         sys.exit(1)
@@ -236,6 +239,64 @@ method syntax_error(s) {
         errno := 1
     }
 }
+
+method syntaxError(message)atPosition(errlinenum, errpos) {
+    if (vtagv) then {
+        io.error.write("[" ++ vtagv ++ "]")
+    }
+    io.error.write("{modnamev}.grace[{errlinenum}:({errpos})]: Syntax error: {message}\n")
+    if ((errlinenum > 1) && (lines.size > 1)) then {
+        io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
+    }
+    var arr := "----"
+    for (2..(errpos + errlinenum.asString.size)) do {
+        arr := arr ++ "-"
+    }
+    arr := arr ++ "^"
+    if (lines.size >= errlinenum) then {
+        var line := lines.at(errlinenum)
+        io.error.write("  {errlinenum}: {line.substringFrom(1)to(errpos-1)} {line.substringFrom(errpos)to(line.size)}\n")
+        io.error.write("{arr}\n")
+    }
+    if (errlinenum < lines.size) then {
+        io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
+    }
+    if (interactivev.not) then {
+        sys.exit(1)
+    } else {
+        errno := 1
+    }
+}
+
+method syntaxError(message)atLine(errlinenum) {
+    if (vtagv) then {
+        io.error.write("[" ++ vtagv ++ "]")
+    }
+    io.error.write("{modnamev}.grace[{errlinenum}]: Syntax error: {message}\n")
+    if ((errlinenum > 1) && (lines.size > 1)) then {
+        io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
+    }
+    var arr := "----"
+    for (1..errlinenum.asString.size) do {
+        arr := arr ++ "-"
+    }
+    for (1..lines.at(errlinenum).size) do {
+        arr := arr ++ "^"
+    }
+    if (lines.size >= errlinenum) then {
+        io.error.write("  {errlinenum}: {lines.at(errlinenum)}\n")
+        io.error.write("{arr}\n")
+    }
+    if (errlinenum < lines.size) then {
+        io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
+    }
+    if (interactivev.not) then {
+        sys.exit(1)
+    } else {
+        errno := 1
+    }
+}
+
 method type_error(s) {
     if (extensionsv.contains("IgnoreTypes")) then {
         return true

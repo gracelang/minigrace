@@ -1126,28 +1126,78 @@ function gracecode_util() {
                 this._linepos._value + ": type error: " + s._value + "\n");
             throw "ErrorExit";
         },
-        syntax_error: function(argcv, s) {
-            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": syntax error: " + s._value + "\n");
-            if (this._linenum._value > 1)
-                minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
+        "syntaxError()atRange": function(argcv, message, errlinenum, startpos, endpos) {
+            var pos = (startpos._value == endpos._value ? startpos._value : startpos._value + "-" + endpos._value);
+            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + ":" + pos
+                + "]: Syntax error: " + message._value + "\n");
+            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
+                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
                     + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value - 1))._value
-                    + "\n");
-            var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
+                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
+            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
             var arr = "----";
-            for (var i=1; i<this._linepos._value+linenumsize._value; i++)
+            for (var i=1; i<startpos._value + errlinenumsize._value; i++)
                 arr = arr + "-";
-            minigrace.stderr_write("  " + this._linenum._value + ": "
+            for (var i=startpos._value; i <= endpos._value; i++)
+                arr = arr + "^";
+            minigrace.stderr_write("  " + errlinenum._value + ": "
                 + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value))._value + "\n");
-            minigrace.stderr_write(arr + "^\n");
-            if (this._linenum._value <
+                        [1], new GraceNum(errlinenum._value))._value + "\n");
+            minigrace.stderr_write(arr + "\n");
+            if (errlinenum._value <
                     callmethod(this._lines, "size", [])._value)
-                minigrace.stderr_write("  " + (this._linenum._value + 1) + ": "
+                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value + 1))._value
-                    + "\n");
+                        [1], new GraceNum(errlinenum._value + 1))._value);
+            throw "ErrorExit";
+        },
+        "syntaxError()atPosition": function(argcv, message, errlinenum, errpos) {
+            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
+                + ":(" + errpos._value + ")]: Syntax error: " + message._value + "\n");
+            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
+                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
+            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
+            var arr = "----";
+            for (var i=1; i<errpos._value + errlinenumsize._value; i++)
+                arr = arr + "-";
+            arr = arr + "^";
+            var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value));
+            minigrace.stderr_write("  " + errlinenum._value + ": "
+                + callmethod(line, "substringFrom()to", [2], new GraceNum(1), new GraceNum(errpos._value - 1))._value + " "
+                + callmethod(line, "substringFrom()to", [2], errpos, callmethod(line, "size", []))._value + "\n");
+            minigrace.stderr_write(arr + "\n");
+            if (errlinenum._value <
+                    callmethod(this._lines, "size", [])._value)
+                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(errlinenum._value + 1))._value);
+            throw "ErrorExit";
+        },
+        "syntaxError()atLine": function(argcv, message, errlinenum) {
+            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
+                + "]: Syntax error: " + message._value + "\n");
+            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
+                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
+            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
+            var arr = "----";
+            for(var i=0; i < errlinenumsize._value; i++)
+                arr = arr + "-";
+            var linesize = callmethod(callmethod(this._lines, "at", [1], errlinenum), "size", []);
+            for(var i=0; i < linesize._value; i++)
+                arr = arr + "^";
+            minigrace.stderr_write("  " + errlinenum._value + ": "
+                + callmethod(this._lines, "at",
+                        [1], new GraceNum(errlinenum._value))._value + "\n");
+            minigrace.stderr_write(arr + "\n");
+            if (errlinenum._value <
+                    callmethod(this._lines, "size", [])._value)
+                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(errlinenum._value + 1))._value);
             throw "ErrorExit";
         },
         semantic_error: function(argcv, s) {

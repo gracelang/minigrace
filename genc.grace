@@ -1748,8 +1748,8 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
-                util.syntax_error("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{epath}', which is imported by '{m}' (and so on).")
+                util.syntaxError("Cyclic import detected: '{m}' is imported "
+                    ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(1)
             }
             checkimport(m)
         }
@@ -1757,8 +1757,8 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("path")) then {
         def path = data.get("path").first
         if (path != epath) then {
-            util.syntax_error("Imported module '{epath}' compiled with"
-                ++ " different path '{path}'.")
+            util.syntaxError("Imported module '{epath}' compiled with"
+                ++ " different path '{path}'.")atLine(1)
         }
     }
 }
@@ -1872,7 +1872,7 @@ method checkimport(nm) {
         staticmodules.add(nm)
     }
     if (exists.not) then {
-        util.syntax_error("Failed finding import of '{nm}'.")
+        util.syntaxError("Failed finding import of '{nm}'.")atLine(1)
     }
 }
 method processImports(values') {
@@ -1906,12 +1906,12 @@ method processImports(values') {
                     }
                 } case { e : RuntimeError ->
                     util.setPosition(v.line, 1)
-                    util.syntax_error("Dialect '{nm}' failed to load: {e}.")
+                    util.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
                 } case { e : CheckerFailure ->
                     if (nothing != e.data) then {
                         util.setPosition(e.data.line, e.data.linePos)
                     }
-                    util.syntax_error("Dialect failure: {e.message}.")
+                    util.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
                 }
             }
         }
@@ -1931,7 +1931,7 @@ method processImports(values') {
             }
         }
         if (imperrors.size > 0) then {
-            util.syntax_error("Failed processing import of {imperrors}.")
+            util.syntaxError("Failed processing import of {imperrors}.")atLine(1)
         }
     }
 }

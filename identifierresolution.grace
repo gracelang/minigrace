@@ -344,9 +344,9 @@ method resolveIdentifier(node) {
     }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
-            util.syntax_error("Unable to resolve wildcard identifier.")
+            util.syntaxError("Unable to resolve wildcard identifier.")atRange(node.line, node.linePos, node.linePos)
         } else {
-            util.syntax_error("Use of undefined identifier '{nm}'.")
+            util.syntaxError("Use of undefined identifier '{nm}'.")atRange(node.line, node.linePos, node.linePos + node.value.size - 1)
         }
     }
     if (nm == "outer") then {
@@ -403,7 +403,7 @@ method resolveIdentifiersActual(node) {
         }
         if (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
-                util.syntax_error "Reassignment to constant '{node.dest.value}'."
+                util.syntaxError("Reassignment to constant '{node.dest.value}'.")atLine(node.line)
             }
         }
     }
@@ -452,8 +452,7 @@ method checkRedefinition(ident) {
         if (getNameScope(ident.value)
             .elementDeclarations.contains(ident.value)
         ) then {
-            util.setPosition(ident.line, ident.linePos)
-            util.syntax_error "Redeclaration of existing name '{ident.value}'."
+            util.syntaxError("Redeclaration of existing name '{ident.value}'.")atPosition(ident.line, ident.linePos)
         }
     }
     scope.elementDeclarations.put(ident.value, true)
@@ -510,9 +509,9 @@ method resolveIdentifiers(topNode) {
                         for (s.params) do {p->
                             if (parentScope.elements.contains(p.value)) then {
                                 util.setPosition(p.line, p.linePos)
-                                util.syntax_error("Class parameter '{p.value}' "
+                                util.syntaxError("Class parameter '{p.value}' "
                                     ++ "conflicts with inherited method "
-                                    ++ "'{p.value}' and must be renamed.")
+                                    ++ "'{p.value}' and must be renamed.")atRange(p.line, p.linePos, p.linePos + p.value.size - 1)
                             }
                         }
                     }

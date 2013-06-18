@@ -287,15 +287,13 @@ def LexerClass = object {
                                     if(decimal.base == 10) then {
                                         tok := NumToken.new(tok.value ++ "." ++ accum, 10)
                                     } else {
-                                        util.syntax_error("Fractional part of number must be in base 10.")
+                                        util.syntaxError("Fractional part of number must be in base 10.")atPosition(lineNumber, linePosition)
                                     }
                                 } else {
-                                    util.syntax_error("Numbers in base {tokens.last.base} " ++
-                                        "can only be integers.")
+                                    util.syntaxError("Numbers in base {tokens.last.base} can only be integers.")atPosition(lineNumber, linePosition)
                                 }
                             } else {
-                                util.syntax_error("Found '.{accum}'" ++
-                                    ", expected term.")
+                                util.syntaxError("Found '.{accum}', expected term.")atPosition(lineNumber, linePosition)
                             }
                         } else {
                             tok := makeNumToken(accum)
@@ -330,8 +328,7 @@ def LexerClass = object {
                     } elseif (done) then {
                         //print(mode, accum, tokens)
                     } else {
-                        util.syntax_error("Lexing error: no handler for mode {mode}" ++
-                            " with accum {accum}.")
+                        util.syntaxError("Lexing error: no handler for mode {mode} with accum {accum}.")atPosition(lineNumber, linePosition)
                     }
                 }
                 startPosition := linePosition
@@ -351,7 +348,7 @@ def LexerClass = object {
                         inc := n - 87 // 'a' - 10
                     }
                     if (inc >= base) then {
-                        util.syntax_error("No such digit '{c}' in base {base}.")
+                        util.syntaxError("No such digit '{c}' in base {base}.")atPosition(lineNumber, linePosition)
                     }
                     val := val + inc
                 }
@@ -369,7 +366,7 @@ def LexerClass = object {
                             base := 16
                         }
                         if((base < 2) || (base > 36)) then {
-                            util.syntax_error("Invalid base: {base}.")
+                            util.syntaxError("Invalid base: {base}.")atPosition(lineNumber, linePosition)
                         }
                         sofar := ""
                     } else {
@@ -377,7 +374,7 @@ def LexerClass = object {
                     }
                 }
                 if(sofar == "") then {
-                    util.syntax_error("Number required after base.")
+                    util.syntaxError("Number required after base.")atPosition(lineNumber, linePosition)
                 }
                 NumToken.new(fromBase(sofar, base).asString, base)
             }
@@ -473,17 +470,17 @@ def LexerClass = object {
                         (ordval != 8232)) || (ordval == 9)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
-                        util.syntax_error("Illegal whitespace in input: "
+                        util.syntaxError("Illegal whitespace in input: "
                             ++ "U+{padl(ordval.inBase 16, 4, "0")} "
-                            ++ "({ordval}), {unicode.name(c)}.")
+                            ++ "({ordval}), {unicode.name(c)}.")atPosition(lineNumber, linePosition)
                     }
                     if (unicode.isControl(ordval) && (ordval != 10)
                         && (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
-                        util.syntax_error("Illegal control character in "
+                        util.syntaxError("Illegal control character in "
                             ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
-                            ++ "({ordval}), {unicode.name(c)}.")
+                            ++ "({ordval}), {unicode.name(c)}.")atPosition(lineNumber, linePosition)
                     }
                     if (atStart && (linePosition == 1)) then {
                         if (c == "#") then {
@@ -543,9 +540,9 @@ def LexerClass = object {
                             newmode := c
                         }
                         if ((c == "#") && (mode != "p")) then {
-                            util.syntax_error("Illegal operator character in "
+                            util.syntaxError("Illegal operator character in "
                                 ++ "input: U+{padl(ordval.inBase 16, 4, "0")} "
-                                ++ "({ordval}), {unicode.name(c)}.")
+                                ++ "({ordval}), {unicode.name(c)}.")atPosition(lineNumber, linePosition)
                         }
                         if ((c == ".") && (accum == ".")) then {
                             // Special handler for .. operator
@@ -563,9 +560,9 @@ def LexerClass = object {
                             if ((unicode.isSeparator(ordval).not)
                                 && (ordval != 10) && (ordval != 13)
                                 && (ordval != 32)) then {
-                                util.syntax_error("Unknown character in "
+                                util.syntaxError("Unknown character in "
                                     ++ "input: #{ordval}"
-                                    ++ " '{c}', {unicode.name(c)}")
+                                    ++ " '{c}', {unicode.name(c)}")atPosition(lineNumber, linePosition)
                             }
                         }
                         if ((c == ".") && (accum == "..")) then {
@@ -604,7 +601,7 @@ def LexerClass = object {
                         modechange(tokens, mode, accum)
                         if ((newmode == "}") && (interpdepth > 0)) then {
                             if (prev == "\{") then {
-                                util.syntax_error("Empty expression in interpolated block.")
+                                util.syntaxError("Empty expression in interpolated block.")atPosition(lineNumber, linePosition)
                             }
                             modechange(tokens, ")", ")")
                             modechange(tokens, "o", "++")
@@ -633,11 +630,9 @@ def LexerClass = object {
                     } elseif (instr) then {
                         if (c == "\n") then {
                             if (interpdepth > 0) then {
-                                util.syntax_error("Runaway string "
-                                    ++ "interpolation.")
+                                util.syntaxError("Runaway string interpolation.")atPosition(lineNumber, linePosition)
                             } else {
-                                util.syntax_error("Newlines not permitted "
-                                    ++ "in string literals.")
+                                util.syntaxError("Newlines not permitted in string literals.")atPosition(lineNumber, linePosition)
                             }
                         }
                         if (escaped) then {
@@ -712,8 +707,7 @@ def LexerClass = object {
                         }
                     } elseif (inBackticks) then {
                         if (c == "\n") then {
-                            util.syntax_error("Newlines not permitted in"
-                                ++ " backtick identifiers.")
+                            util.syntaxError("Newlines not permitted in backtick identifiers.")atPosition(lineNumber, linePosition)
                         }
                         accum := accum ++ c
                     } elseif ((c == "\n") || (c == "\r")) then {
@@ -744,9 +738,9 @@ def LexerClass = object {
                     prev := c
                 }
                 if ((mode == "\"") && instr) then {
-                    util.syntax_error("Unfinished string literal, expected '\"'.")
+                    util.syntaxError("Unfinished string literal, expected '\"'.")atPosition(lineNumber, linePosition)
                 } elseif ((mode == "x") && instr) then {
-                    util.syntax_error("Unfinished octets literal, expected '\"'.")
+                    util.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
                 }
                 modechange(tokens, mode, accum)
                 tokens
