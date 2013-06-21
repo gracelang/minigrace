@@ -52,8 +52,8 @@ method next {
     } else {
         sym := object {
             var kind := "eof"
-            var line := linenum + 1
-            var linePos := 0
+            var line := lastToken.line
+            var linePos := util.lines[lastToken.line].size + 1
             var indent := 0
             var value := ""
         }
@@ -1979,8 +1979,8 @@ method parse(toks) {
     tokens := []
     tokens.push(object {
         var kind := "eof"
-        var line := linenum + 1
-        var linePos := 0
+        var line := toks.last.line
+        var linePos := util.lines[toks.last.line].size + 1
         var indent := 0
         var value := ""
     })
