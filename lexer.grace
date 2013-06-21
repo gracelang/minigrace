@@ -196,11 +196,13 @@ def LexerClass = object {
             // the token corresponding to the previous accumulated data.
             // mode is the previous lexical mode (a string), and accum the
             // accumulated characters since that mode began. Modes are:
-            //   n        Whitespace       i   Identifier
-            //   "        Quoted string    x   Octets literal
-            //   m        Number           o   Any operator
-            //   c        Comment
-            //   ,.{}[] The corresponding literal character
+
+            //   n           Whitespace       i   Identifier
+            //   "           Quoted string    x   Octets literal
+            //   m           Number           o   Any operator
+            //   p           Pragma           d   Indentation
+            //   c           Comment
+            //   ,.{}()[]<>; The corresponding literal character
             //
             // There are three special cases for mode o. If accum is "->",
             // ":=", or "=", the corresponding special token is created.
