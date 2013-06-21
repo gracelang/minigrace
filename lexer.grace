@@ -624,12 +624,10 @@ def LexerClass = object {
                     } elseif (instr) then {
                         if (c == "\n") then {
                             if (interpdepth > 0) then {
-                                lineStr := lineStr ++ c
                                 lines.push(lineStr)
                                 util.syntax_error("Runaway string "
                                     ++ "interpolation.")
                             } else {
-                                lineStr := lineStr ++ c
                                 lines.push(lineStr)
                                 util.syntax_error("Newlines not permitted "
                                     ++ "in string literals.")
@@ -707,7 +705,6 @@ def LexerClass = object {
                         }
                     } elseif (inBackticks) then {
                         if (c == "\n") then {
-                            lineStr := lineStr ++ c
                             lines.push(lineStr)
                             util.syntax_error("Newlines not permitted in"
                                 ++ " backtick identifiers.")
