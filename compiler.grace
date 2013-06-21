@@ -117,6 +117,6 @@ match(util.target)
         genjson.generate(values, util.outfile)
     }
     case { _ ->
-        io.error.write("minigrace: no such target '" ++ util.target ++ "'")
+        io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
         sys.exit(1)
     }
