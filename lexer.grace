@@ -414,15 +414,15 @@ def LexerClass = object {
             // tokens.
             method lexfile(file) {
                 util.log_verbose("reading source.")
-                util.lines := []
-                util.cLines := []
+                def lines = []
+                def cLines = []
                 var line := ""
                 var cLine := ""
                 var source := ""
                 for(file.read) do { c ->
                     if((c == "\n") || (c == "\l")) then {
-                        util.lines.push(line)
-                        util.cLines.push(cLine)
+                        lines.push(line)
+                        cLines.push(cLine)
                         line := ""
                         cLine := ""
                     } elseif(c == "\r") then {
@@ -439,9 +439,11 @@ def LexerClass = object {
                     source := source ++ c
                 }
                 if(line != "") then {
-                    util.lines.push(line)
-                    util.cLines.push(cLine)
+                    lines.push(line)
+                    cLines.push(cLine)
                 }
+                util.lines := lines
+                util.cLines := cLines
                 lexinput(source)
             }
 
