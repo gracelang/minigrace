@@ -217,6 +217,32 @@ method compileobjouter(selfr, outerRef) {
     outprint("\}")
     out("  addmethodreal({selfr},\"outer\", &reader_{escmodname}_{enm}_{myc});")
 }
+method compileobjtypemeth(o, selfr, pos) {
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := o.value
+    var len := nm.size + 1
+    var enm := escapestring2(nm)
+    var inm := escapeident(nm)
+    outprint("Object reader_{escmodname}_{inm}_{myc}"
+        ++ "(Object self, int nparams, int *argcv, "
+        ++ "Object* args, int flags) \{")
+    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
+            flags := "{flags} | MFLAG_CONFIDENTIAL"
+        }
+        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+            flags := "({flags}) ^ MFLAG_PRIVATE"
+        }
+    }
+    outprint("  struct UserObject *uo = (struct UserObject *)self;")
+    outprint("  return uo->data[{pos}];")
+    outprint("\}")
+    out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {flags});")
+    out("  reader{myc}->definitionModule = modulename;")
+    out("  reader{myc}->definitionLine = {o.line};")
+}
 method compileobjdefdecdata(o, selfr, pos) {
     var val := "undefined"
     if (false != o.value) then {
@@ -465,6 +491,11 @@ method compileobject(o, outerRef) {
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
+        } elseif (e.kind == "type") then {
+            out("if (objclass{myc} == NULL) \{")
+            compileobjtypemeth(e, selfr, pos)
+            out("\}")
+            out("adddatum2({selfr}, alloc_Undefined(), {pos});")
         } elseif (e.kind == "class") then {
             def cd = ast.defDecNode.new(e.name,
                 e, false)
@@ -493,6 +524,10 @@ method compileobject(o, outerRef) {
             compileobjvardecdata(e, selfr, pos)
         } elseif (e.kind == "defdec") then {
             compileobjdefdecdata(e, selfr, pos)
+        } elseif (e.kind == "type") then {
+            e.anonymous := true
+            def tn = compilenode(e)
+            out("  adddatum2({selfr}, {tn}, {pos});")
         } elseif (e.kind == "class") then {
         } elseif (e.kind == "inherits") then {
             // The return value is irrelevant with factory inheritance,
