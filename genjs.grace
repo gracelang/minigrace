@@ -114,6 +114,36 @@ method compileobjouter(selfr, outerRef) {
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
 }
+method compileobjtype(o, selfr, pos) {
+    var val := "undefined"
+    var myc := auto_count
+    auto_count := auto_count + 1
+    var nm := escapestring(o.value)
+    var nmi := escapeident(o.value)
+    o.anonymous := true
+    val := compilenode(o)
+    out("  " ++ selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
+    out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
+    out("    return this.data[\"" ++ nm ++ "\"];")
+    out("  \}")
+    out("  reader_{modname}_{nmi}{myc}.def = true;")
+    var isReadable := false
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "confidential"}) then {
+            out("  reader_{modname}_{nmi}{myc}.confidential = true;")
+        }
+        if ((ann.kind == "identifier").andAlso
+            {ann.value == "readable"}) then {
+            isReadable := true
+        }
+    }
+    if (!isReadable) then {
+        out("  reader_{modname}_{nmi}{myc}._private = true;")
+    }
+    out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
+        "_" ++ nmi ++ myc ++ ";")
+}
 method compileobjdefdec(o, selfr, pos) {
     var val := "undefined"
     if (false != o.value) then {
@@ -255,6 +285,9 @@ method compileobject(o, outerRef, inheritingObject) {
         } elseif (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
+        } elseif (e.kind == "type") then {
+            compileobjtype(e, selfr, pos)
+            pos := pos + 1
         } elseif (e.kind == "object") then {
             compileobject(e, selfr, false)
         } elseif (e.kind == "inherits") then {
@@ -323,12 +356,15 @@ method compiletype(o) {
     auto_count := auto_count + 1
     def escName = escapestring(o.value)
     def idName = escapeident(o.value)
-    out("var var_{idName} = new GraceType(\"{escName}\");")
+    out("var type{myc} = new GraceType(\"{escName}\");")
+    if (!o.anonymous) then {
+        out "var var_{idName} = type{myc};"
+    }
     for (o.methods) do {meth->
         def mnm = escapestring(meth.value)
-        out("var_{idName}.typeMethods.push(\"{mnm}\");")
+        out("type{myc}.typeMethods.push(\"{mnm}\");")
     }
-    o.register := "none"
+    o.register := "type{myc}"
 }
 method compilefor(o) {
     var myc := auto_count
