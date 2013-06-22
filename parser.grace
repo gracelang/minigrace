@@ -558,6 +558,14 @@ method generic {
         next
         while {accept("identifier")} do {
             identifier
+            while {accept("dot")} do {
+                next
+                def memberIn = values.pop
+                expect "identifier"
+                identifier
+                def memberName = values.pop
+                values.push(ast.memberNode.new(memberName.value, memberIn))
+            }
             generic
             gens.push(values.pop)
             if (accept("comma")) then {
