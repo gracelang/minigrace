@@ -937,6 +937,13 @@ method compileimport(o) {
     out "    throw new GraceExceptionPacket(RuntimeErrorObject, "
     out "      new GraceString('could not find module {snm}'));"
     out("  var " ++ varf(nm) ++ " = do_import(\"{fn}\", gracecode_{snm});")
+    if (o.dtype != false) then {
+        out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+        out "    [1], {varf(nm)})))"
+        out "      throw new GraceExceptionPacket(RuntimeErrorObject,"
+        out "            new GraceString(\"Type error: expected \""
+        out "            + \"module {snm} to be of type {o.dtype.value}\"))";
+    }
     o.register := "undefined"
 }
 method compilereturn(o) {
