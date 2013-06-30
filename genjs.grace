@@ -385,6 +385,11 @@ method compiletype(o) {
         def mnm = escapestring(meth.value)
         out("type{myc}.typeMethods.push(\"{mnm}\");")
     }
+    if (compilationDepth == 1) then {
+        def idd = ast.identifierNode.new(o.value, false)
+        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value)],
+            [idd], false))
+    }
     o.register := "type{myc}"
 }
 method compilefor(o) {
