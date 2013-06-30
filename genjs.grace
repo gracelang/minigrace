@@ -182,6 +182,15 @@ method compileobjdefdec(o, selfr, pos) {
     if (ast.findAnnotation(o, "parent")) then {
         out("  {selfr}.superobj = {val};")
     }
+    if (o.dtype != false) then {
+        linenum := o.line
+        out "  lineNumber = {linenum};"
+        out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+        out "    [1], {val})))"
+        out "      throw new GraceExceptionPacket(TypeErrorObject,"
+        out "            new GraceString(\"expected \""
+        out "            + \"initial value of def '{o.name.value}' to be of type {o.dtype.value}\"))";
+    }
 }
 method compileobjvardec(o, selfr, pos) {
     var val := "undefined"
@@ -226,6 +235,18 @@ method compileobjvardec(o, selfr, pos) {
     }
     if (!isWritable) then {
         out("  writer_{modname}_{nmi}{myc}._private = true;")
+    }
+    if (o.dtype != false) then {
+        if (val == "undefined") then {
+            return true
+        }
+        linenum := o.line
+        out "  lineNumber = {linenum};"
+        out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+        out "    [1], {val})))"
+        out "      throw new GraceExceptionPacket(TypeErrorObject,"
+        out "            new GraceString(\"expected \""
+        out "            + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
     }
 }
 method compileclass(o) {
