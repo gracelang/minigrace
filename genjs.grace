@@ -659,11 +659,13 @@ method compilebind(o) {
 }
 method compiledefdec(o) {
     var nm
+    var snm
     if (o.name.kind == "generic") then {
-        nm := escapestring(o.name.value.value)
+        snm := o.name.value.value
     } else {
-        nm := escapestring(o.name.value)
+        snm := o.name.value
     }
+    nm := escapestring(snm)
     declaredvars.push(nm)
     var val := compilenode(o.value)
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
@@ -673,6 +675,15 @@ method compiledefdec(o) {
         if (ast.findAnnotation(o, "parent")) then {
             out("  this.superobj = {val};")
         }
+    }
+    if (o.dtype != false) then {
+        linenum := o.line
+        out "  lineNumber = {linenum};"
+        out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+        out "    [1], {varf(nm)})))"
+        out "      throw new GraceExceptionPacket(TypeErrorObject,"
+        out "            new GraceString(\"expected \""
+        out "            + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))";
     }
     o.register := val
 }
@@ -940,8 +951,8 @@ method compileimport(o) {
     if (o.dtype != false) then {
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {varf(nm)})))"
-        out "      throw new GraceExceptionPacket(RuntimeErrorObject,"
-        out "            new GraceString(\"Type error: expected \""
+        out "      throw new GraceExceptionPacket(TypeErrorObject,"
+        out "            new GraceString(\"expected \""
         out "            + \"module {snm} to be of type {o.dtype.value}\"))";
     }
     o.register := "undefined"
