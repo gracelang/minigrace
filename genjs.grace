@@ -707,6 +707,15 @@ method compilevardec(o) {
             [ast.signaturePart.new(assignID.value, [tmpID])],
             [ast.bindNode.new(o.name, tmpID)], false))
     }
+    if (o.dtype != false) then {
+        linenum := o.line
+        out "  lineNumber = {linenum};"
+        out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+        out "    [1], {varf(nm)})))"
+        out "      throw new GraceExceptionPacket(TypeErrorObject,"
+        out "            new GraceString(\"expected \""
+        out "            + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
+    }
     o.register := val
 }
 method compileindex(o) {
