@@ -19,6 +19,7 @@ fail "method parameters must have a static type"
                     ++ " of parameter '{p.value}'")at(p)
             }
         }
+        true
     }
 
 method checker(l) is public {

@@ -16,6 +16,7 @@ method visitWithPatterns(o) {
             }
         }
     }
+    return true
 }
 
 def patternVisitor = object {
