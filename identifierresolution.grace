@@ -358,6 +358,7 @@ method resolveIdentifiersActual(node) {
         if (node.value.kind == "call") then {
             def tmp = ast.callNode.new(node.value.value, node.with)
             tmp.line := node.line
+            tmp.generics := node.generics
             return tmp
         }
     }

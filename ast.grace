@@ -673,6 +673,9 @@ class methodNode.new(name', signature', body', dtype') {
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
             n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
         }
+        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.generics.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
@@ -811,6 +814,9 @@ class callNode.new(what, with') {
         blkBefore.apply(self)
         var n := callNode.new(value.map(blk)before(blkBefore)after(blkAfter),
             listMap(with, blk)before(blkBefore)after(blkAfter))
+        if (generics != false) then {
+            n.generics := listMap(generics, blk)before(blkBefore)after(blkAfter)
+        }
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)

@@ -457,6 +457,34 @@ method compilemethod(o, selfobj) {
         }
         out("  \}")
         out("// End generics")
+        out "var curarg2 = 1;"
+        for (o.signature.indices) do { partnr ->
+            var part := o.signature[partnr]
+            for (part.params) do { p ->
+                if (p.dtype != false) then {
+                    for (o.generics) do {g->
+                        if (p.dtype.value == g.value) then {
+                            linenum := o.line
+                            out "  lineNumber = {linenum};"
+                            out "  if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
+                            out "    [1], arguments[curarg2])))"
+                            out "      throw new GraceExceptionPacket(TypeErrorObject,"
+                            out "            new GraceString(\"expected \""
+                            out "             + \"parameter '{p.value}' \""
+                            out "             + \"to be of type {p.dtype.value}\"));";
+                        }
+                    }
+                }
+                out("  curarg2++;")
+            }
+            if (part.vararg != false) then {
+                out("  var {varf(part.vararg.value)} = new GraceList("
+                    ++ "Array.prototype.slice.call(arguments, curarg2, "
+                    ++ "curarg2 + argcv[{partnr - 1}] - {part.params.size}));")
+                out("  curarg2 += argcv[{partnr - 1}] - {part.params.size};")
+            }
+        }
+        out "// End checking generics"
     }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
