@@ -210,7 +210,20 @@ method outprint(s) {
     outfilev.write("\n")
 }
 
+class suggestion.new(line', code') {
+    def line = line'
+    def code = code'
+}
+
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
+    syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([])
+}
+
+method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestion(suggestion') {
+    syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([suggestion'])
+}
+
+method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
@@ -233,6 +246,12 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos) {
     if (errlinenum < lines.size) then {
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
+    if (suggestions.size > 0) then {
+        io.error.write("\nDid you mean:\n")
+        for(suggestions) do { s ->
+            io.error.write("  {s.line}: {s.code}\n")
+        }
+    }
     if (interactivev.not) then {
         sys.exit(1)
     } else {
@@ -241,6 +260,14 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos) {
 }
 
 method syntaxError(message)atPosition(errlinenum, errpos) {
+    syntaxError(message)atPosition(errlinenum, errpos)withSuggestions([])
+}
+
+method syntaxError(message)atPosition(errlinenum, errpos)withSuggestion(suggestion') {
+    syntaxError(message)atPosition(errlinenum, errpos)withSuggestions([suggestion'])
+}
+
+method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggestions) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
@@ -261,6 +288,12 @@ method syntaxError(message)atPosition(errlinenum, errpos) {
     if (errlinenum < lines.size) then {
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
+    if (suggestions.size > 0) then {
+        io.error.write("\nDid you mean:\n")
+        for(suggestions) do { s ->
+            io.error.write("  {s.line}: {s.code}\n")
+        }
+    }
     if (interactivev.not) then {
         sys.exit(1)
     } else {
@@ -269,6 +302,14 @@ method syntaxError(message)atPosition(errlinenum, errpos) {
 }
 
 method syntaxError(message)atLine(errlinenum) {
+    syntaxError(message)atLine(errlinenum)withSuggestions([])
+}
+
+method syntaxError(message)atLine(errlinenum)withSuggestion(suggestion') {
+    syntaxError(message)atLine(errlinenum)withSuggestions([suggestion'])
+}
+
+method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
@@ -289,6 +330,12 @@ method syntaxError(message)atLine(errlinenum) {
     }
     if (errlinenum < lines.size) then {
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
+    }
+    if (suggestions.size > 0) then {
+        io.error.write("\nDid you mean:\n")
+        for(suggestions) do { s ->
+            io.error.write("  {s.line}: {s.code}\n")
+        }
     }
     if (interactivev.not) then {
         sys.exit(1)

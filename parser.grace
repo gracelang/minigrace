@@ -1946,10 +1946,15 @@ method checkUnexpectedTokenAfterStatement {
                         sym.kind == "identifier"
                     }
                 }) then {
+                def errorLine = util.lines.at(sym.line)
+                var suggestionLine := errorLine.substringFrom(1)to(values.last.linePos + values.last.value.size - 1)
+                suggestionLine := suggestionLine ++ "(" ++ sym.value ++ ")"
+                suggestionLine := suggestionLine ++ errorLine.substringFrom(sym.linePos + sym.value.size)to(errorLine.size)
+                def suggestion = util.suggestion.new(sym.line, suggestionLine)
                 util.syntaxError("Unexpected token after statement ended; "
                     ++ "got {sym.kind}: '{sym.value}', expected "
-                    ++ "new line or semicolon. Did you mean "
-                    ++ "'{values.last.toGrace 0}({sym.value})'?")atPosition(sym.line, sym.linePos)
+                    ++ "new line or semicolon.")atPosition(sym.line, sym.linePos)withSuggestion(suggestion)
+//                    ++ "'{values.last.toGrace 0}({sym.value})'?")
             } else {
                 util.syntaxError("unexpected token after statement ended; "
                     ++ "got {sym.kind}: '{sym.value}', expected "

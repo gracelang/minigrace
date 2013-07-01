@@ -1127,6 +1127,12 @@ function gracecode_util() {
             throw "ErrorExit";
         },
         "syntaxError()atRange": function(argcv, message, errlinenum, startpos, endpos) {
+            callmethod(this, "syntaxError()atRange()withSuggestions", [5], message, errlinenum, startpos, endpos, new GraceList([]));
+        },
+        "syntaxError()atRange()withSuggestion": function(argcv, message, errlinenum, startpos, endpos, suggestion) {
+            callmethod(this, "syntaxError()atRange()withSuggestions", [5], message, errlinenum, startpos, endpos, new GraceList([suggestion]));
+        },
+        "syntaxError()atRange()withSuggestions": function(argcv, message, errlinenum, startpos, endpos, suggestions) {
             var pos = (startpos._value == endpos._value ? startpos._value : startpos._value + "-" + endpos._value);
             minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + ":" + pos
                 + "]: Syntax error: " + message._value + "\n");
@@ -1149,9 +1155,26 @@ function gracecode_util() {
                 minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(errlinenum._value + 1))._value);
+            var numsuggestions = callmethod(suggestions, "size", []);
+            if(numsuggestions._value > 0) {
+                minigrace.stderr_write("\nDid you mean:\n");
+                for(var i=1; i <= numsuggestions._value; i++) {
+                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
+                    var suggestionline = callmethod(suggestion, "line", []);
+                    var suggestioncode = callmethod(suggestion, "code", []);
+                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
+                }
+            }
+
             throw "ErrorExit";
         },
         "syntaxError()atPosition": function(argcv, message, errlinenum, errpos) {
+            callmethod(this, "syntaxError()atPosition()withSuggestions", [4], message, errlinenum, errpos, new GraceList([]));
+        },
+        "syntaxError()atPosition()withSuggestion": function(argcv, message, errlinenum, errpos, suggestion) {
+            callmethod(this, "syntaxError()atPosition()withSuggestions", [4], message, errlinenum, errpos, new GraceList([suggestion]));
+        },
+        "syntaxError()atPosition()withSuggestions": function(argcv, message, errlinenum, errpos, suggestions) {
             minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
                 + ":(" + errpos._value + ")]: Syntax error: " + message._value + "\n");
             if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
@@ -1173,9 +1196,26 @@ function gracecode_util() {
                 minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(errlinenum._value + 1))._value);
+            var numsuggestions = callmethod(suggestions, "size", []);
+            if(numsuggestions._value > 0) {
+                minigrace.stderr_write("\nDid you mean:\n");
+                for(var i=1; i <= numsuggestions._value; i++) {
+                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
+                    var suggestionline = callmethod(suggestion, "line", []);
+                    var suggestioncode = callmethod(suggestion, "code", []);
+                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
+                }
+            }
+
             throw "ErrorExit";
         },
         "syntaxError()atLine": function(argcv, message, errlinenum) {
+            callmethod(this, "syntaxError()atLine()withSuggestions", [3], message, errlinenum, new GraceList([]));
+        },
+        "syntaxError()atLine()withSuggestion": function(argcv, message, errlinenum, suggestion) {
+            callmethod(this, "syntaxError()atRange()withSuggestions", [3], message, errlinenum, new GraceList([suggestion]));
+        },
+        "syntaxError()atLine()withSuggestions": function(argcv, message, errlinenum, suggestions) {
             minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
                 + "]: Syntax error: " + message._value + "\n");
             if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
@@ -1198,6 +1238,17 @@ function gracecode_util() {
                 minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(errlinenum._value + 1))._value);
+            var numsuggestions = callmethod(suggestions, "size", []);
+            if(numsuggestions._value > 0) {
+                minigrace.stderr_write("\nDid you mean:\n");
+                for(var i=1; i <= numsuggestions._value; i++) {
+                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
+                    var suggestionline = callmethod(suggestion, "line", []);
+                    var suggestioncode = callmethod(suggestion, "code", []);
+                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
+                }
+            }
+
             throw "ErrorExit";
         },
         semantic_error: function(argcv, s) {
@@ -1292,11 +1343,27 @@ function gracecode_util() {
             this._cLines = v;
             return var_noSuchValue;
         },
+        "suggestion": function() {
+            return this._suggestion;
+        },
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
     this._lines = new GraceList([]);
     this._cLines = new GraceList([]);
+    this._suggestion = new Grace_allocObject();
+
+    this._suggestion.methods["new"] = function(argcv, line, code) {
+        var suggestion = new Grace_allocObject();
+        suggestion.methods["line"] = function() {
+            return line;
+        };
+        suggestion.methods["code"] = function() {
+            return code;
+        };
+        return suggestion;
+    };
+
     util_module = this;
     return this;
 }
