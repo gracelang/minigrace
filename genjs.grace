@@ -444,6 +444,10 @@ method compilemethod(o, selfobj) {
                 ++ "Array.prototype.slice.call(arguments, curarg, "
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
+        } else {
+            out "if (argcv[{partnr - 1}] > {part.params.size})"
+            out("      callmethod(var_RuntimeError, \"raise\", [1], "
+                ++ "new GraceString(\"too many arguments for {part.name}\"));")
         }
     }
     if (o.generics.size > 0) then {

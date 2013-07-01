@@ -411,7 +411,7 @@ method compileclass(o, includeConstant) {
     if (includeConstant) then {
         var con := ast.defDecNode.new(o.name, cobj, false)
         if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-            def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false)
+            def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)], [o.name], false)
             compilenode(meth)
         }
         o.register := compilenode(con)
@@ -676,6 +676,9 @@ method compilemethod(o, selfobj, pos) {
             declaredvars.push(van)
             slot := slot + 1
             numslots := numslots + 1
+        } else {
+            out "if (argcv && argcv[{partnr - 1}] > {part.params.size})"
+            out "  gracedie(\"too many arguments for {part.name}\");"
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")
