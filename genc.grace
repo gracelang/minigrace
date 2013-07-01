@@ -677,8 +677,11 @@ method compilemethod(o, selfobj, pos) {
             slot := slot + 1
             numslots := numslots + 1
         } else {
-            out "if (argcv && argcv[{partnr - 1}] > {part.params.size})"
-            out "  gracedie(\"too many arguments for {part.name}\");"
+            if (!o.selfclosure) then {
+                // TODO currently blocks can have excess arguments
+                out "if (argcv && argcv[{partnr - 1}] > {part.params.size})"
+                out "  gracedie(\"too many arguments for {part.name}\");"
+            }
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")

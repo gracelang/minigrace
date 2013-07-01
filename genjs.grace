@@ -445,9 +445,11 @@ method compilemethod(o, selfobj) {
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         } else {
-            out "if (argcv[{partnr - 1}] > {part.params.size})"
-            out("      callmethod(var_RuntimeError, \"raise\", [1], "
-                ++ "new GraceString(\"too many arguments for {part.name}\"));")
+            if (!o.selfclosure) then {
+                out "if (argcv[{partnr - 1}] > {part.params.size})"
+                out("      callmethod(var_RuntimeError, \"raise\", [1], new "
+                    ++ "GraceString(\"too many arguments for {part.name}\"));")
+            }
         }
     }
     if (o.generics.size > 0) then {
