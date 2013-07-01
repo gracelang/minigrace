@@ -1154,8 +1154,9 @@ function gracecode_util() {
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(this._linenum._value - 1))._value
                     + "\n");
+            var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
             var arr = "----";
-            for (var i=0; i<this._linepos._value; i++)
+            for (var i=1; i<this._linepos._value+linenumsize._value; i++)
                 arr = arr + "-";
             minigrace.stderr_write("  " + this._linenum._value + ": "
                 + callmethod(this._lines, "at",
