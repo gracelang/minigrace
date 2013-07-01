@@ -525,6 +525,9 @@ class typeNode.new(name', methods') {
         n := blk.apply(n)
         n.anonymous := self.anonymous
         n.line := line
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
         blkAfter.apply(n)
         n
     }
