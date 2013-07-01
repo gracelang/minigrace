@@ -182,7 +182,7 @@ method parseargs {
         if (infilev.isatty) then {
             print("minigrace {versionNumber}.{buildinfo.gitgeneration} / "
                 ++ buildinfo.gitrevision)
-            print "Copyright (C) 2011, 2012 Michael Homer"
+            print "Copyright (C) 2011-2013 Michael Homer"
             print("This is free software with ABSOLUTELY NO WARRANTY. "
                 ++ "Say minigrace.w for details.")
             print ""
