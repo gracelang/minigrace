@@ -917,6 +917,9 @@ method startRepl {
                 if (!io.input.isatty && (util.errno != 0)) then {
                     sys.exit(util.errno)
                 } elseif (util.errno == 0) then {
+                    for (toks) do {t->
+                        util.lines.push("lines unavailable in interpreter")
+                    }
                     var vals := parser.parse(toks)
                     if (!io.input.isatty && (util.errno != 0)) then {
                         sys.exit(util.errno)
