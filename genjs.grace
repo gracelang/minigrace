@@ -707,7 +707,10 @@ method compilebind(o) {
         out("  " ++ varf(nm) ++ " = " ++ val ++ ";")
         o.register := val
     } elseif (dest.kind == "member") then {
-        dest.value := dest.value ++ ":="
+        if (dest.value.substringFrom(dest.value.size - 1)to(dest.value.size)
+            != ":=") then {
+            dest.value := dest.value ++ ":="
+        }
         c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
         o.register := r
