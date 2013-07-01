@@ -588,6 +588,11 @@ method compiletype(o) {
     if (o.anonymous) then {
         o.register := "type{myc}"
     }
+    if (compilationDepth == 1) then {
+        def idd = ast.identifierNode.new(o.value, false)
+        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value)],
+            [idd], false))
+    }
 }
 method compilefor(o) {
     var myc := auto_count
