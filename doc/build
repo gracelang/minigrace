@@ -44,8 +44,7 @@ used on <http://ecs.vuw.ac.nz/~mwh/minigrace/js/>. The frontend is
 accessible in js/index.html. Note that in general the file must be
 served over HTTP for the test cases to load. The JavaScript back- and
 front-ends are suitable for quick testing, but have some limitations
-compared to the native compiler, and particularly do not support Unicode
-in any way.
+compared to the native compiler.
 
 Platform notes
 --------------

@@ -12,10 +12,9 @@ Some functionality is incomplete:
 - Interpolated code inside string literals may not contain a right brace
   in any context.
 - Visibility annotations are checked only dynamically, not statically
-- Generics are supported only at runtime, and static checking of them is
-  limited, incomplete, or wrong. Generic types are not currently used in
-  gradual checks at method boundaries. The expected behaviour is
-  described in <doc/generics>.
+- The static typechecker is currently disabled. Types and generic
+  parameters are supported at runtime. The expected behaviour of
+  generics is described in <doc/generics>.
 
 The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:
@@ -31,8 +30,8 @@ which are not part of the language and are subject to change:
   the current directory will be compiled implicitly; all others must be
   already compiled using the correct path as the name. Dynamic modules
   (like the built-in "unicode") are found at runtime next to the
-  executable. Types do not cross module boundaries. All methods and
-  top-level var and def statements bind methods on the module object.
+  executable. All methods and top-level var and def statements bind
+  methods on the module object.
 - Methods defined in the prelude can always be accessed through the
   implicitly-bound "prelude" object.
 - Character codes for length-one strings can be obtained with the "ord"
@@ -77,10 +76,3 @@ programs:
 - GRACE_DEBUGGER will cause the program to drop to an interactive
   debugger when a fatal error occurs.
 
-Some functionality of the compiler or programs may behave differently or
-be unavailable on some platforms or targets:
-- JavaScript does not have access to Unicode data. As a result, the web
-  front-end does not support non-ASCII identifiers or operators, and is
-  unable to produce certain errors depending on Unicode character
-  information. See <doc/unicode> for more information on Unicode
-  behaviour.

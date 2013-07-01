@@ -23,7 +23,8 @@ too few parameters is an error.
 The type parameters may be used to parameterise other methods or classes
 or for pattern-matching. Generic parameters are not currently used for
 static type checks, and are treated as though they were Dynamic. Static
-checking is to be added in future.
+checking is to be added in future. At run-time, gradual checks on
+parameters of generic types will be performed.
 
 In implementation, these parameters are passed as though they were
 ordinary arguments to an anonymous additional part on the end of the

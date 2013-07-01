@@ -1,8 +1,8 @@
-No backend provides interoperability with existing code on the platform.
-It is possible to write wrapping code exposing whatever functionality is
-desired to the Grace code using something that mimics the backend's idea
-of a Grace object. This document provides some references and examples
-for how this wrapping would work.
+No backend provides innate interoperability with existing code on the
+platform.  It is possible to write wrapping code exposing whatever
+functionality is desired to the Grace code using something that mimics
+the backend's idea of a Grace object. This document provides some
+references and examples for how this wrapping would work.
 
 For the C backend, see unicode.c for an example of glue code. The code
 specifies a dynamically-loadable module with several methods, which can
@@ -14,7 +14,11 @@ For the JavaScript backend, see gracelib.js and particularly the
 gracecode_io and gracecode_unicode functions. An object contains an
 object of methods and a className field, and any JavaScript object with
 this form can be used as a Grace object. Importable modules should be
-returned by a function named gracecode_<module>.
+returned by a function named gracecode_<module>. There is a "dom"
+module included in the distribution which wraps the HTML Document Object
+Model to provide substantial access to the platform; see
+sample/js/pong.grace for a usage example, and js/dom.js for the
+implementation.
 
 Wrappers for some functionality may be included with the compiler; see
 <doc/modules> for details.
