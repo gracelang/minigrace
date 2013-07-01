@@ -298,6 +298,7 @@ method compileobject(o, outerRef, inheritingObject) {
         }
     }
     for (o.value) do { e ->
+        out "  sourceObject = {selfr};"
         if (e.kind == "method") then {
         } elseif (e.kind == "vardec") then {
             compileobjvardec(e, selfr, pos)

@@ -519,6 +519,7 @@ method compileobject(o, outerRef) {
     }
     pos := 1
     for (o.value) do { e ->
+        out "  sourceObject = {selfr};"
         if (e.kind == "method") then {
         } elseif (e.kind == "vardec") then {
             compileobjvardecdata(e, selfr, pos)

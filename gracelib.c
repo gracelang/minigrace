@@ -2847,6 +2847,7 @@ Object tailcall(Object self, const char *name, int nparts, int *argcv,
     return (Object)o;
 }
 
+Object sourceObject;
 Method *findmethod(Object *selfp, Object *realselfp, const char *name,
         int superdepth, int *cflags) {
     Object self = *selfp;
@@ -2882,6 +2883,8 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
                         if (m->flags & MFLAG_REALSELFONLY)
                             self = uo->super;
                         if (m->flags & MFLAG_REALSELFALSO)
+                            realself = uo->super;
+                        if (m->flags & MFLAG_PRIVATE)
                             realself = uo->super;
                         callflags |= depth << 24;
                         break;
@@ -2930,7 +2933,6 @@ FILE *callgraph;
 int track_callgraph = 0;
 int callcount = 0;
 int tailcount = 0;
-Object sourceObject;
 Object callmethod4(Object self, const char *name,
         int partc, int *argcv, Object *argv, int superdepth, int callflags) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
