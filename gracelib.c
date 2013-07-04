@@ -1417,10 +1417,6 @@ Object ConcatString_iter(Object self, int nparts, int *argcv,
 }
 Object ConcatString_substringFrom_to(Object self,
         int nparts, int *argcv, Object *args, int flags) {
-    int st = integerfromAny(args[0]);
-    int en = integerfromAny(args[1]);
-    st--;
-    en--;
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparts, argcv, args, flags);
@@ -1592,7 +1588,7 @@ Object String_substringFrom_to(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
-    int en = integerfromAny(args[1]);
+    int en = (argcv[1] > 0 ? integerfromAny(args[1]) : sself->size + 1);
     st--;
     en--;
     int mysize = sself->size;
