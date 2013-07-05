@@ -737,6 +737,7 @@ def LexerClass = object {
                     }
                     prev := c
                 }
+                linePosition := linePosition + 1
                 if ((mode == "\"") && instr) then {
                     util.syntaxError("Unfinished string literal, expected '\"'.")atPosition(lineNumber, linePosition)
                 } elseif ((mode == "x") && instr) then {
