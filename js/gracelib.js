@@ -1565,6 +1565,10 @@ Grace_prelude.methods["TypeError"] = function(argcv) {
     return TypeErrorObject;
 }
 Grace_prelude.methods["while()do"] = function(argcv, c, b) {
+    if (c.className == "Boolean" || c.className == "Number")
+        throw new GraceExceptionPacket(TypeErrorObject,
+            new GraceString("expected Block for argument condition (1) of "
+                + "while()do, got " + c.className));
     while (Grace_isTrue(callmethod(c, "apply", [0]))) {
         callmethod(b, "apply", [0]);
     }

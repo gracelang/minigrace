@@ -122,6 +122,7 @@ Object gracelib_print(Object, int, Object*);
 Object gracelib_length(Object);
 Object dlmodule(const char *);
 Object process_varargs(Object *, int, int);
+void assertClass(Object, ClassData);
 
 void bufferfromString(Object, char *);
 char *cstringfromString(Object);

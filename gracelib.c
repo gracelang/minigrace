@@ -4165,6 +4165,11 @@ Object grace_while_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         die("while-do requires exactly two arguments");
+    if (argv[0]->class == Boolean || argv[0]->class == Number) {
+        gracedie("Type error: expected Block for argument condition (1) of "
+                "while()do (defined at NativePrelude:0), got %s",
+                argv[0]->class->name);
+    }
     while (istrue(callmethod(argv[0], "apply", 0, NULL, NULL))) {
         callmethod(argv[1], "apply", 0, NULL, NULL);
     }
