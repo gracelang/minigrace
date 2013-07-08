@@ -210,9 +210,27 @@ method outprint(s) {
     outfilev.write("\n")
 }
 
-class suggestion.new(line', code') {
-    def line = line'
-    def code = code'
+class suggestion.new(lineNumber, line) {
+    def lineNumbers = [lineNumber]
+    def lines = [line]
+
+    method addLine(lineNumber', line') {
+        lineNumbers.push(lineNumber')
+        lines.push(line')
+    }
+
+    method print() {
+        for(1..lines.size) do { i ->
+            if((i > 1).andAlso {(lineNumbers[i] > (lineNumbers[i-1] + 1))}) then {
+                var s := ""
+                for(1..lineNumbers[i-1].asString.size) do {
+                    s := s ++ " "
+                }
+                io.error.write("    {s}...\n")
+            }
+            io.error.write("  {lineNumbers.at(i)}: {lines.at(i)}\n")
+        }
+    }
 }
 
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
@@ -247,9 +265,9 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
     if (suggestions.size > 0) then {
-        io.error.write("\nDid you mean:\n")
         for(suggestions) do { s ->
-            io.error.write("  {s.line}: {s.code}\n")
+            io.error.write("\nDid you mean:\n")
+            s.print
         }
     }
     if (interactivev.not) then {
@@ -289,9 +307,9 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
     if (suggestions.size > 0) then {
-        io.error.write("\nDid you mean:\n")
         for(suggestions) do { s ->
-            io.error.write("  {s.line}: {s.code}\n")
+            io.error.write("\nDid you mean:\n")
+            s.print
         }
     }
     if (interactivev.not) then {
@@ -332,9 +350,9 @@ method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
         io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
     if (suggestions.size > 0) then {
-        io.error.write("\nDid you mean:\n")
         for(suggestions) do { s ->
-            io.error.write("  {s.line}: {s.code}\n")
+            io.error.write("\nDid you mean:\n")
+            s.print
         }
     }
     if (interactivev.not) then {
