@@ -354,7 +354,9 @@ class evalVisitor.new {
         def name = node.value.value
         def in = node.value.in
 
-        if (name == "print") then {
+        if ((name == "print") &&
+           (in.kind == "identifier") &&
+           (in.value == "prelude")) then {
             // print()
             var parts := []
             for (node.with) do { part ->
