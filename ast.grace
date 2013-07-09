@@ -525,6 +525,15 @@ class typeNode.new(name', methods') {
         n := blk.apply(n)
         n.anonymous := self.anonymous
         n.line := line
+        for (listMap(unionTypes, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.unionTypes.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        for (listMap(intersectionTypes, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.intersectionTypes.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.generics.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
             n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
         }
