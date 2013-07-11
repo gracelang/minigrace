@@ -945,6 +945,9 @@ class classNode.new(name', signature', body', superclass', constructor') {
         var n := classNode.new(name.map(blk)before(blkBefore)after(blkAfter),
             listMap(signature, blk)before(blkBefore)after(blkAfter), listMap(value, blk)before(blkBefore)after(blkAfter),
             maybeMap(superclass, blk, blkBefore, blkAfter), constructor)
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
@@ -980,6 +983,12 @@ class classNode.new(name', signature', body', superclass', constructor') {
             s := s ++ "\n" ++ spc ++ "Generics:"
             for (generics) do {g->
                 s := s ++ "\n  {spc}{g.pretty(0)}"
+            }
+        }
+        if (annotations.size > 0) then {
+            s := s ++ "\n" ++ spc ++ "Annotations:"
+            for (annotations) do {a->
+                s := s ++ "\n  {spc}{a.pretty(depth + 2)}"
             }
         }
         s := s ++ "\n" ++ spc ++ "Body:"

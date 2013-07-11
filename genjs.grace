@@ -266,6 +266,9 @@ method compileclass(o) {
             [o.name], false)
         compilenode(meth)
     }
+    for (o.annotations) do {a->
+        con.annotations.push(a)
+    }
     o.register := compilenode(con)
 }
 method compileobject(o, outerRef, inheritingObject) {

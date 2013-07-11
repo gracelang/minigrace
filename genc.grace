@@ -414,6 +414,10 @@ method compileclass(o, includeConstant) {
             def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)], [o.name], false)
             compilenode(meth)
         }
+        for (o.annotations) do {a->
+            io.error.write("pushing annotation {a.pretty(0)} to class {o.name}")
+            con.annotations.push(a)
+        }
         o.register := compilenode(con)
     } else {
         o.register := compilenode(cobj)
@@ -499,6 +503,9 @@ method compileobject(o, outerRef) {
         } elseif (e.kind == "class") then {
             def cd = ast.defDecNode.new(e.name,
                 e, false)
+            for (e.annotations) do {a->
+                cd.annotations.push(a)
+            }
             if (util.extensions.contains("DefaultVisibility")) then {
                 if (util.extensions.get("DefaultVisibility") == "public") then
                     {
