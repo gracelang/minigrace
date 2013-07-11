@@ -401,6 +401,20 @@ method resolveIdentifiersActual(node) {
             )
             def newcall = ast.callNode.new(newmem, node.value.with)
             return ast.inheritsNode.new(newcall)
+        } else {
+            if (node.value.kind == "member") then {
+                def newmem = ast.memberNode.new(node.value.value
+                                                ++ "()object",
+                    node.value.in
+                )
+                def newcall = ast.callNode.new(newmem, collections.list.new(
+                    ast.callWithPart.new(node.value.value, []),
+                    ast.callWithPart.new("object",
+                        [ast.identifierNode.new("self", false)])
+                    )
+                )
+                return ast.inheritsNode.new(newcall)
+            }
         }
     }
     node
