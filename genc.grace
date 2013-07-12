@@ -1128,17 +1128,9 @@ method compileidentifier(o) {
         o.register := "ellipsis{auto_count}"
         auto_count := auto_count + 1
     } else {
-        if (importnames.contains(name)) then {
-            o.register := importnames.get(name)
-        } else {
-            name := escapestring2(name)
-            if (modules.contains(name)) then {
-                o.register := "module_" ++ name
-            } else {
-                usedvars.push(name)
-                o.register := "*var_{name}"
-            }
-        }
+        name := escapestring2(name)
+        usedvars.push(name)
+        o.register := "*var_{name}"
     }
 }
 method compilebind(o) {
