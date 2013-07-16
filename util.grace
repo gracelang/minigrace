@@ -252,6 +252,39 @@ method type_error(s) {
         errno := 1
     }
 }
+method semantic_error(s) {
+    if (vtagv) then {
+        io.error.write("[" ++ vtagv ++ "]")
+    }
+    io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
+    if (s == "") then {
+        io.error.write "\n"
+        if (!interactivev) then {
+            sys.exit(1)
+        }
+    }
+    io.error.write ": {s}\n"
+    if (linenumv > 1) then {
+        if (lines.size > 0) then {
+            io.error.write("  {linenumv - 1}: {lines.at(linenumv - 1)}\n")
+        }
+    }
+    var arr := "----"
+    for (2..(lineposv + linenumv.asString.size)) do {
+        arr := arr ++ "-"
+    }
+    if (lines.size >= linenumv) then {
+        io.error.write("  {linenumv}: {lines.at(linenumv)}\n{arr}^\n")
+    }
+    if (linenumv < lines.size) then {
+        io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
+    }
+    if (interactivev.not) then {
+        sys.exit(1)
+    } else {
+        errno := 1
+    }
+}
 method warning(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
     io.error.write("\n")

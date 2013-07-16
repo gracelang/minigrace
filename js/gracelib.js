@@ -1170,6 +1170,30 @@ function gracecode_util() {
                     + "\n");
             throw "ErrorExit";
         },
+        semantic_error: function(argcv, s) {
+            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+                this._linepos._value + ": error: " + s._value + "\n");
+            if (this._linenum._value > 1)
+                minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(this._linenum._value - 1))._value
+                    + "\n");
+            var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
+            var arr = "----";
+            for (var i=1; i<this._linepos._value+linenumsize._value; i++)
+                arr = arr + "-";
+            minigrace.stderr_write("  " + this._linenum._value + ": "
+                + callmethod(this._lines, "at",
+                        [1], new GraceNum(this._linenum._value))._value + "\n");
+            minigrace.stderr_write(arr + "^\n");
+            if (this._linenum._value <
+                    callmethod(this._lines, "size", [])._value)
+                minigrace.stderr_write("  " + (this._linenum._value + 1) + ": "
+                    + callmethod(this._lines, "at",
+                        [1], new GraceNum(this._linenum._value + 1))._value
+                    + "\n");
+            throw "ErrorExit";
+        },
         warning: function(argcv, s) {
             minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
                 this._linepos._value + ": warning: " + s._value + "\n");
