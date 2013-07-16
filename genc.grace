@@ -1678,7 +1678,7 @@ method compilenode(o) {
         compilefor(o)
     }
     if ((o.kind == "call")) then {
-        if ((o.value.value == "print") && (o.value.in.value == "prelude")) then {
+        if ((o.value.value == "print").andAlso {o.value.in.value == "prelude"}) then {
             var args := []
             for (o.with.first.args) do { prm ->
                 var r := compilenode(prm)
