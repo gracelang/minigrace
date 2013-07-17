@@ -365,6 +365,14 @@ method resolveIdentifiersActual(node) {
             tmp.generics := node.generics
             return tmp
         }
+        if (node.value.kind == "identifier") then {
+            def ck = getNameKind(node.value.value)
+            if (!node.isPattern) then {
+                if ((ck == "def") || (ck == "var")) then {
+                    util.semantic_error ""
+                }
+            }
+        }
     }
     if (node.kind == "block") then {
         if (node.params.size == 1) then {
