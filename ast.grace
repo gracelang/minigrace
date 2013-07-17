@@ -189,6 +189,9 @@ class blockNode.new(params', body') {
     var register := ""
     var matchingPattern := false
     var line := util.linenum
+    for (params') do {p->
+        p.accept(patternMarkVisitor)
+    }
     method accept(visitor : ASTVisitor) {
         if (visitor.visitBlock(self)) then {
             for (self.params) do { mx ->
@@ -812,6 +815,7 @@ class callNode.new(what, with') {
     var line := 0 + util.linenum
     var register := ""
     var generics := false
+    var isPattern := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCall(self)) then {
             self.value.accept(visitor)
@@ -829,6 +833,7 @@ class callNode.new(what, with') {
         if (generics != false) then {
             n.generics := listMap(generics, blk)before(blkBefore)after(blkAfter)
         }
+        n.isPattern := isPattern
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
@@ -2013,6 +2018,14 @@ method baseVisitor -> ASTVisitor {
         method visitDialect(o) -> Boolean {
             true
         }
+    }
+}
+def ast = self
+def patternMarkVisitor = object {
+    inherits ast.baseVisitor
+    method visitCall(c) {
+        c.isPattern := true
+        true
     }
 }
 
