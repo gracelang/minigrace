@@ -431,20 +431,19 @@ method doif {
         var minInd := statementIndent + 1
         if (accept("identifier") && (sym.value == "then")) then {
             next
-            if (accept("lbrace")) then {
-                next
-                if (sym.line == lastToken.line) then {
-                    minIndentLevel := sym.linePos - 1
-                } else {
-                    minIndentLevel := minInd
-                }
-                while {(accept("rbrace")).not} do {
-                    expectConsume {statement}
-                    v := values.pop
-                    body.push(v)
-                }
-                next
+            expect "lbrace"
+            next
+            if (sym.line == lastToken.line) then {
+                minIndentLevel := sym.linePos - 1
+            } else {
+                minIndentLevel := minInd
             }
+            while {(accept("rbrace")).not} do {
+                expectConsume {statement}
+                v := values.pop
+                body.push(v)
+            }
+            next
             var econd
             var eif
             var newelse
