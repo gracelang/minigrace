@@ -654,6 +654,12 @@ method compilemethod(o, selfobj, pos) {
     out("  int i;")
     out("  int curarg = 0;")
     out("  int pushcv[] = \{1\};")
+    if (!o.selfclosure) then {
+        out "  if (nparts < {o.signature.size})"
+        out("    gracedie(\"missing argument list for {name} (probably "
+            ++ "reflection error): got %i lists, expected "
+            ++ "{o.signature.size}.\", nparts);")
+    }
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         for (part.params) do { param ->
