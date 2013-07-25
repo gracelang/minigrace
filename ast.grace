@@ -1696,6 +1696,7 @@ class importNode.new(path', name) {
     var register := ""
     var line := util.linenum
     var dtype := false
+    def linePos = 1
     method accept(visitor : ASTVisitor) {
         visitor.visitImport(self)
     }

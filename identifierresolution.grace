@@ -596,6 +596,10 @@ method resolveIdentifiers(topNode) {
                 scope.add(node.name.value)
             }
         }
+        if (node.kind == "import") then {
+            checkRedefinition(node)
+            scope.add(node.value) as "def"
+        }
     } after { node ->
         if (node.kind == "class") then {
             node.data := scope
