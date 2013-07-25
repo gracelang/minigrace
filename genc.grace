@@ -655,7 +655,7 @@ method compilemethod(o, selfobj, pos) {
     out("  int curarg = 0;")
     out("  int pushcv[] = \{1\};")
     if (!o.selfclosure) then {
-        out "  if (nparts < {o.signature.size})"
+        out "  if (nparts < {o.signature.size} && args)"
         out("    gracedie(\"missing argument list for {name} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{o.signature.size}.\", nparts);")
