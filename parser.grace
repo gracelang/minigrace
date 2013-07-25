@@ -1298,7 +1298,9 @@ method doobject {
             methoddec
             inheritsdec
             statement
-            if ((values.size == sz) && (lastToken.kind != "semicolon")) then {
+            if (sym.kind == "eof") then {
+                expect("rbrace")
+            } elseif ((values.size == sz) && (lastToken.kind != "semicolon")) then {
                 util.setPosition(sym.line, sym.linePos)
                 util.syntax_error("Unexpected symbol in "
                     ++ "object declaration. Expected 'var', 'def', 'method', "
