@@ -119,9 +119,9 @@ togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
 repltest: minigrace
 	./tests/harness "../minigrace" tests repl
-idrtest: minigrace
-	./tests/harness "../minigrace -XIDR" tests ""
 backendtests: test
+
+alltests: test regrtest
 
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
