@@ -130,10 +130,12 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        var n := ifNode.new(self.value.map(blk)
-                before(blkBefore)after(blkAfter),
-            listMap(self.thenblock, blk)before(blkBefore)after(blkAfter),
-            listMap(self.elseblock, blk)before(blkBefore)after(blkAfter))
+        def v = self.value.map(blk)before(blkBefore)after(blkAfter)
+        def tb = listMap(self.thenblock, blk)before(blkBefore)after(blkAfter)
+        blkAfter.apply(self)
+        blkBefore.apply(self)
+        def eb = listMap(self.elseblock, blk)before(blkBefore)after(blkAfter)
+        var n := ifNode.new(v, tb, eb)
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
