@@ -435,7 +435,7 @@ method checkRedefinition(ident) {
             .elementDeclarations.contains(ident.value)
         ) then {
             util.setPosition(ident.line, ident.linePos)
-            util.syntax_error "Redeclaration of var or def '{ident.value}'."
+            util.syntax_error "Redeclaration of existing name '{ident.value}'."
         }
     }
     scope.elementDeclarations.put(ident.value, true)
@@ -449,6 +449,7 @@ method resolveIdentifiers(topNode) {
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
         util.setPosition(node.line, 1)
         if (node.kind == "class") then {
+            checkRedefinition(node.name)
             scope.add(node.name.value) as "def"
             def classScope = Scope.new(scope)
             classScope.add(node.constructor.value)
