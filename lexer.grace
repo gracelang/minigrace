@@ -37,173 +37,148 @@ def LexerClass = object {
         var startPosition := 1
         var indentLevel := 0
 
-        class IdentifierToken.new(s) {
-            def kind = "identifier"
-            def value = s
+        class Token.new() {
             def line = lineNumber
             def indent = indentLevel
             def linePos = startPosition
+
+            var next := false
+            var prev := false
+
+            method ==(other) {
+                if(other == false) then {
+                    false
+                } else {
+                    (other.line == line) && (other.linePos == linePos)
+                }
+            }
+        }
+
+        class IdentifierToken.new(s) {
+            inherits Token.new
+            def kind = "identifier"
+            def value = s
             def size = s.size
         }
         class StringToken.new(s) {
+            inherits Token.new
             def kind = "string"
             def value = s
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = s.size + 2
         }
         class CommentToken.new(s) {
+            inherits Token.new
             def kind = "comment"
             def value = s
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = s.size + 2
         }
         class OctetsToken.new(s) {
+            inherits Token.new
             def kind = "octets"
             def value = s
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = s.size + 3
         }
         class LBraceToken.new {
+            inherits Token.new
             def kind = "lbrace"
             def value = "\{"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class RBraceToken.new {
+            inherits Token.new
             def kind = "rbrace"
             def value = "}"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class LParenToken.new {
+            inherits Token.new
             def kind = "lparen"
             def value = "("
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class RParenToken.new {
+            inherits Token.new
             def kind = "rparen"
             def value = ")"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class LSquareToken.new {
+            inherits Token.new
             def kind = "lsquare"
             def value = "["
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class RSquareToken.new {
+            inherits Token.new
             def kind = "rsquare"
             def value = "]"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class CommaToken.new {
+            inherits Token.new
             def kind = "comma"
             def value = ","
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class ColonToken.new {
+            inherits Token.new
             def kind = "colon"
             def value = ":"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class DotToken.new {
+            inherits Token.new
             def kind = "dot"
             def value = "."
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class NumToken.new(v, b) {
+            inherits Token.new
             def kind = "num"
             def value = v
             def base = b
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = linePosition - startPosition
         }
         class KeywordToken.new(v) {
+            inherits Token.new
             def kind = "keyword"
             def value = v
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = v.size
         }
         class OpToken.new(v) {
+            inherits Token.new
             def kind = "op"
             def value = v
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = v.size
         }
         class ArrowToken.new {
+            inherits Token.new
             def kind = "arrow"
             def value = "->"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 2
         }
         class BindToken.new {
+            inherits Token.new
             def kind = "bind"
             def value = ":="
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 2
         }
         class SemicolonToken.new {
+            inherits Token.new
             def kind = "semicolon"
             def value = ";"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class LGenericToken.new {
+            inherits Token.new
             def kind = "lgeneric"
             def value = "<"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
         class RGenericToken.new {
+            inherits Token.new
             def kind = "rgeneric"
             def value = ">"
-            def line = lineNumber
-            def indent = indentLevel
-            def linePos = startPosition
             def size = 1
         }
 
@@ -547,7 +522,71 @@ def LexerClass = object {
             }
 
             method lexinput(input) {
-                var tokens := []
+                // tokens is a doubly-linked list of tokens.
+                var tokens := object {
+                    var first := false
+                    var last := false
+                    var size' := 0
+
+                    method push(t) {
+                        if(first == false) then {
+                            first := t
+                            last := t
+                        } else {
+                            last.next := t
+                            t.prev := last
+                            last := t
+                        }
+                        size' := size' + 1
+                    }
+
+                    method pop {
+                        if(last != false) then {
+                            def popped = last
+                            last := last.prev
+                            if(last == false) then {
+                                first := false
+                            }
+                            size' := size' - 1
+                            popped
+                        }
+                    }
+
+                    method poll {
+                        if(first != false) then {
+                            def polled = first
+                            first := first.next
+                            if(first == false) then {
+                                last := false
+                            }
+                            size' := size' - 1
+                            polled
+                        }
+                    }
+
+                    method size {
+                        size' + 0
+                    }
+
+                    method iter {
+                        object {
+                            var n := first
+                            method havemore {
+                                n != false
+                            }
+                            method next {
+                                def ret = n
+                                n := n.next
+                                ret
+                            }
+                        }
+                    }
+
+                    method iterator {
+                        iter
+                    }
+                }
+
                 var mode := "d"
                 var newmode := mode
                 var instr := false
