@@ -818,10 +818,14 @@ var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(new GraceBoolean(true));
 var var_Type = classType(var_Boolean);
+var var_List = new GraceType("List");
+var_List.typeMethods = ["==", "!=", "push", "pop", "at", "at()put",
+    "[]", "[]:=", "size", "iterator", "++", "asString", "asDebugString"];
 var type_String = var_String;
 var type_Number = var_Number;
 var type_Boolean = var_Boolean;
 var type_Dynamic = var_Dynamic;
+var type_List = var_List;
 var var_Block = new GraceType("Block");
 var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
