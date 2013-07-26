@@ -421,6 +421,14 @@ GraceList.prototype = {
         "last": function(argcv) {
             return this._value[this._value.length-1];
         },
+        "reduce": function(argcv, initial, block) {
+            var res = initial
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                res = callmethod(block, "apply", [2], res, v)
+            }
+            return res;
+        },
     },
     className: "List",
 };
@@ -486,6 +494,14 @@ GracePrimitiveArray.prototype = {
         },
         "iterator": function(argcv) {
             return new GracePrimitiveArrayIterator(this._value);
+        },
+        "reduce": function(argcv, initial, block) {
+            var res = initial
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                res = callmethod(block, "apply", [2], res, v);
+            }
+            return res;
         },
     },
     className: "PrimitiveArray",
@@ -1288,6 +1304,24 @@ GraceMirrorMethod.prototype = Grace_allocObject();
 GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
     return new GraceString(this.name);
 }
+GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
+    var count = 1;
+    var place = 1;
+    while(place < this.name.length)
+    {
+        if(this.name[place] == "(") {
+            count++;
+            place++;
+        }
+        place++;
+    }
+    return new GraceNum(count);
+}
+
+GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
+    // the method metadata needed to populate the result is not yet available!
+    return new GraceList([])
+}
 
 function alloc_Mirror(o) {
     var m = Grace_allocObject();
@@ -1298,6 +1332,14 @@ function alloc_Mirror(o) {
         }
         var l = new GraceList(meths);
         return l;
+    }
+    m.methods['getMethod'] = function(argcv, gString) {
+        var name = gString._value
+        for (k in o.methods) {
+            if (name == k) {
+                return (new GraceMirrorMethod(o, k));
+            }
+        }
     }
     return m;
 }

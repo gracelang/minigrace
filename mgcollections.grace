@@ -37,6 +37,15 @@ class list.new(*a) {
     method first {
         inner.at(0)
     }
+    method second {
+        inner.at(1)
+    }
+    method third {
+        inner.at(2)
+    }
+    method fourth {
+        inner.at(3)
+    }
     method last {
         inner.at(size - 1)
     }
@@ -53,7 +62,8 @@ class list.new(*a) {
     method asString {
         var s := "list.new("
         for (0..(size-1)) do {i->
-            s := s ++ inner.at(i).asString ++ ","
+            s := s ++ inner.at(i).asString
+            if (i < (size-1)) then { s := s ++ "," }
         }
         s ++ ")"
     }
@@ -144,10 +154,16 @@ class set.new(*a) {
         return t
     }
     method asString {
+        var firstTime := true
         var s := "set.new("
         for (0..(inner.size-1)) do {i->
             if (inner.at(i) != unused) then {
-                s := s ++ inner.at(i).asString ++ ","
+                if (firstTime) then {
+                    firstTime := false
+                    s := s ++ inner.at(i).asString
+                } else {
+                    s := s ++ "," ++ inner.at(i).asString
+                }
             }
         }
         s ++ ")"
@@ -165,6 +181,16 @@ class set.new(*a) {
         for (l) do {i->
             add(i)
         }
+    }
+    method reduce(initial, blk) {
+        if (size == 0) then {
+            return initial
+        }
+        var res := initial
+        for (self) do {it->
+            res := blk.apply(res, it)
+        }
+        res
     }
     method iter {
         object {
@@ -207,7 +233,6 @@ class set.new(*a) {
     }
     for (a) do {x->
         add(x)
-        size := size + 1
     }
 }
 
@@ -279,6 +304,7 @@ class map.new {
                 count <= size
             }
             method next {
+                if (count > size) then { forceError "iterator exhausted" }
                 while {inner.at(idx) == unused} do {
                     idx := idx + 1
                 }

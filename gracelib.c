@@ -987,12 +987,27 @@ Object BuiltinList_contains(Object self, int nparts, int *argcv,
     }
     return alloc_Boolean(0);
 }
+Object BuiltinList_reduce(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object initialValue = args[0];
+    Object functionBlock = args[1];
+    Object each;
+    Object accum = initialValue;
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {2};
+        accum = callmethod(functionBlock, "apply", 1, partcv, &accum);
+    }
+    return accum;
+}
 Object BuiltinList_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     int index = integerfromAny(args[0]);
     if (index > sself->size) {
-        die("Error: list index out of bounds: %i/%i\n",
+        die("Error: list index out of bounds: %i > %i\n",
                 index, sself->size);
     }
     if (index <= 0) {
@@ -1094,7 +1109,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 19, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 20, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "at", &BuiltinList_index);
@@ -1115,6 +1130,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "last", &BuiltinList_last);
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
+        add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
