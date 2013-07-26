@@ -11,9 +11,11 @@
 // Mirrors support two methods:
 //   methods -> List<MirrorMethod>
 //   getMethod(name : String) -> MirrorMethod
-// MirrorMethods support two methods:
+// MirrorMethods support four methods:
 //   name -> String
 //   request(arglists : List of Lists) -> Any
+//   partcount -> Number
+//   paramcounts -> List of Numbers
 // A sample use might be:
 //   mirrors.reflect(1).getMethod("+").request([[2]]) == 3
 
