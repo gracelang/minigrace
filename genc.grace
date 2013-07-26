@@ -181,7 +181,7 @@ method compilearray(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var r
-    out("  Object array" ++ myc ++ " = alloc_List();")
+    out("  Object array" ++ myc ++ " = alloc_BuiltinList();")
     out("  gc_pause();")
     var i := 0
     for (o.value) do {a ->
@@ -680,7 +680,7 @@ method compilemethod(o, selfobj, pos) {
         }
         if (part.vararg != false) then { // part has vararg
             var van := escapeident(part.vararg.value)
-            out("  Object var_init_{van} = alloc_List();")
+            out("  Object var_init_{van} = alloc_BuiltinList();")
             out("  for (i = {part.params.size}; i < argcv[{partnr - 1}]; i++) \{")
             out("    callmethod(var_init_{van}, \"push\", 1, pushcv, &args[curarg]);")
             out("    curarg++;")
@@ -2116,7 +2116,7 @@ method compile(vl, of, mn, rm, bt) {
         out("  Object params[1];")
         out("  undefined = alloc_Undefined();")
         out("  none = alloc_none();")
-        out("  Object tmp_argv = alloc_List();")
+        out("  Object tmp_argv = alloc_BuiltinList();")
         out("  gc_root(tmp_argv);")
         out("  int partcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
