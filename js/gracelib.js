@@ -97,7 +97,7 @@ GraceString.prototype = {
             return new GraceList(l);
         },
         "asNumber": function(argcv) {
-            return new GraceNum(0 + this._value);
+            return new GraceNum(+this._value);
         },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
