@@ -416,6 +416,12 @@ method compilefor(o) {
 method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
+    def paramCounts = mgcollections.list.new
+    def variableArities = mgcollections.list.new
+    for (o.signature) do { part ->
+        paramCounts.push(part.params.size)
+        variableArities.push(part.vararg != false)
+    }
     usedvars := []
     declaredvars := []
     var myc := auto_count
@@ -450,9 +456,10 @@ method compilemethod(o, selfobj) {
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         } else {
             if (!o.selfclosure) then {
-                out "if (argcv[{partnr - 1}] > {part.params.size})"
+                out "  if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}])"
                 out("      callmethod(var_RuntimeError, \"raise\", [1], new "
-                    ++ "GraceString(\"too many arguments for {part.name}\"));")
+                    ++ "GraceString(\"wrong number of arguments for part "
+                    ++ "{partnr} ({part.name})\"));")
             }
         }
     }
@@ -528,7 +535,21 @@ method compilemethod(o, selfobj) {
             out("func{myc}.confidential = true;")
         }
     }
-    out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
+    out "  func{myc}.paramCounts = ["
+    for (paramCounts) do {p->
+        out("    {p},")
+    }
+    out "];"
+    out "  func{myc}.variableArities = ["
+    for (variableArities) do {p->
+        if (p) then {
+            out "    true,"
+        } else {
+            out "    false,"
+        }
+    }
+    out "];"
+    out("  {selfobj}.methods[\"{name}\"] = func{myc};")
     if (o.properties.contains("fresh")) then {
         compilefreshmethod(o, selfobj)
     }
