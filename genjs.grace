@@ -416,6 +416,23 @@ method compilefor(o) {
 method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
+    def wholeMethodName = o.signature.reduce("", 
+        {acc, each -> acc ++ each.name ++ if (each.params.size == 0) then {""} else {"()"}})
+    var textualSignature := ""
+    for (o.signature) do { part ->
+        def size = part.params.size
+        def isVar = part.vararg != false
+        def varChar = if (isVar) then {"+"} else {""}
+        textualSignature := textualSignature ++ part.name
+        if ((size > 0) || (isVar)) then {
+            textualSignature := textualSignature ++ "({size}{varChar})"
+        }
+    }
+    def paramCounts = []
+    def variableArities = []
+    for (o.signature) do { part -> 
+            paramCounts.push(part.params.size)
+            variableArities.push(part.vararg != false) }
     usedvars := []
     declaredvars := []
     var myc := auto_count
@@ -435,7 +452,8 @@ method compilemethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{")
+
+    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     out("  var curarg = 1;")
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
@@ -450,9 +468,9 @@ method compilemethod(o, selfobj) {
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         } else {
             if (!o.selfclosure) then {
-                out "if (argcv[{partnr - 1}] > {part.params.size})"
+                out "  if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}]) // != {part.params.size} "
                 out("      callmethod(var_RuntimeError, \"raise\", [1], new "
-                    ++ "GraceString(\"too many arguments for {part.name}\"));")
+                    ++ "GraceString(\"argument list {partnr} to method {textualSignature} is of wrong size\"));")
             }
         }
     }
@@ -528,7 +546,9 @@ method compilemethod(o, selfobj) {
             out("func{myc}.confidential = true;")
         }
     }
-    out("  " ++ selfobj ++ ".methods[\"" ++ name ++ "\"] = func" ++ myc ++ ";")
+    out("  func{myc}.paramCounts = {paramCounts};")
+    out("  func{myc}.variableArities = {variableArities};")
+    out("  {selfobj}.methods[\"{name}\"] = func{myc};")
     if (o.properties.contains("fresh")) then {
         compilefreshmethod(o, selfobj)
     }
