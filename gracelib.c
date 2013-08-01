@@ -1078,8 +1078,12 @@ Object BuiltinList_concat(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     for (i=0; i<sself->size; i++)
         BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
-    for (i=0; i<sother->size; i++)
-        BuiltinList_push(nl, 1, partcv, sother->items + i, 0);
+    Object iter = callmethod(args[0], "iter", 0, NULL, NULL);
+    gc_frame_newslot(iter);
+    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL, NULL);
+        BuiltinList_push(nl, 1, partcv, &val, 0);
+    }
     return nl;
 }
 void BuiltinList__release(Object o) {
