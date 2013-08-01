@@ -46,6 +46,11 @@ GraceString.prototype = {
             return new GraceString(s.substring(from._value - 1, to._value));
         },
         "asString": function(argcv) { return this ; },
+        "asDebugString": function(argcv) {
+            var patt = /"/gm;
+            var s = '"' + this._value.replace(patt, '\\"') + '"';
+            return new GraceString(s);
+        },
         "encode": function(argcv) { return this ; }, // TODO this is a hack
         "==": function(argcv, other) {
             if (this == other)
@@ -179,6 +184,9 @@ GraceNum.prototype = {
         "asString": function(argcv) {
             return new GraceString("" + this._value)
         },
+        "asDebugString": function(argcv) {
+            return new GraceString("" + this._value)
+        },
         "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
@@ -301,6 +309,9 @@ GraceBoolean.prototype = {
         "asString": function(argcv) {
             return new GraceString("" + this._value)
         },
+        "asDebugString": function(argcv) {
+            return new GraceString("" + this._value)
+        },
         "==": function(argcv, other) {
             if (this == other)
                 return new GraceBoolean(true);
@@ -366,17 +377,43 @@ GraceList.prototype = {
         },
         "asString": function(argcv) {
             var s = "[";
+            var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
                 if (v.methods["asString"])
-                    s += callmethod(v, "asString", [0])._value + ", ";
+                    s += callmethod(v, "asString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
-                    s += "((" + q + ")), "
+                    s += "((" + q + "))"
                 }
             }
             s += "]";
-            return new GraceString(s.replace(", ]", "]"));
+            return new GraceString(s);
+        },
+        "asDebugString": function(argcv) {
+            var s = "[";
+            var isFirst = true;
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
+                if (v.methods["asDebugString"])
+                    s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
+                else {
+                    var q = dbgp(v, 2);
+                    s += "((" + q + "))"
+                }
+            }
+            s += "]";
+            return new GraceString(s);
         },
         "contains": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
@@ -439,7 +476,7 @@ GraceList.prototype = {
 function GracePrimitiveArray(n) {
     this._value = [];
     for (var i=0; i<n; i++)
-        this._value.push(var_nothing);
+        this._value.push(GraceDone);
 }
 GracePrimitiveArray.prototype = {
     methods: {
@@ -467,15 +504,32 @@ GracePrimitiveArray.prototype = {
             var s = "[";
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
+                if (i !== 0) s += ", ";
                 var v = this._value[i];
                 if (v.methods["asString"])
-                    s += callmethod(v, "asString", [0])._value + ", ";
+                    s += callmethod(v, "asString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
                     s += "((" + q + ")), "
                 }
             }
             s += "]";
+            return new GraceString(s);
+        },
+        "asDebugString": function(argcv) {
+            var s = "PrimArray(";
+            s += this._value.length + ": "
+            for (var i=0; i<this._value.length; i++) {
+                if (i !== 0) s += ", ";
+                var v = this._value[i];
+                if (v.methods["asDebugString"])
+                    s += callmethod(v, "asDebugString", [0])._value;
+                else {
+                    var q = dbgp(v, 2);
+                    s += "((" + q + ")), "
+                }
+            }
+            s += ")";
             return new GraceString(s);
         },
         "contains": function(argcv, other) {
@@ -641,7 +695,7 @@ function Grace_egal(o1, o2) {
 function Grace_print(obj) {
     var s = callmethod(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
-    return var_nothing;
+    return GraceDone;
 }
 
 function Grace_length(obj) {
@@ -671,6 +725,9 @@ GraceObject.prototype = {
             }
             return new GraceString(s + "}");
         },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
+        }
     },
     data: {}
 };
@@ -693,7 +750,10 @@ GraceObjectMethods = {
             s += "var " + i + " = " + this.data[i]._value + " ";
         }
         return new GraceString(s + "}");
-    },
+    },    
+    "asDebugString": function(argcv) {
+        return callmethod(this, "asString", [0]);
+    }
 };
 
 function Grace_allocObject() {
@@ -701,7 +761,7 @@ function Grace_allocObject() {
         methods: {
             "==": GraceObjectMethods["=="],
             "!=": GraceObjectMethods["!="],
-            "asDebugString": GraceObjectMethods["asString"],
+            "asDebugString": GraceObjectMethods["asDebugString"],
             "asString": GraceObjectMethods["asString"],
         },
         superobj: null,
@@ -1279,11 +1339,11 @@ function gracecode_util() {
         },
         "lines:=": function(argcv, v) {
             this._lines = v;
-            return var_noSuchValue;
+            return GraceDone;
         },
         "cLines:=": function(argcv, v) {
             this._cLines = v;
-            return var_noSuchValue;
+            return GraceDone;
         },
     };
     this._linenum = new GraceNum(1);
@@ -1500,7 +1560,7 @@ function catchCase(obj, cases, finallyblock) {
                 var ret = callmethod(cases[i], "match", [1],
                         e);
                 if (Grace_isTrue(ret))
-                    return var_nothing;
+                    return GraceDone;
             }
             throw e;
         } else {
@@ -1510,7 +1570,7 @@ function catchCase(obj, cases, finallyblock) {
         if (finallyblock != false)
             callmethod(finallyblock, "apply");
     }
-    return var_nothing;
+    return GraceDone;
 }
 
 function matchCase(obj, cases, elsecase) {
@@ -1647,9 +1707,8 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var var_nothing = new GraceObject();
-var_nothing.methods.asString = function() {return new GraceString("done");}
-var var_noSuchValue = var_nothing;
+var GraceDone = new GraceObject();
+GraceDone.methods.asString = function() {return new GraceString("done");}
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 
@@ -1682,7 +1741,7 @@ Grace_prelude.methods["while()do"] = function(argcv, c, b) {
     while (Grace_isTrue(callmethod(c, "apply", [0]))) {
         callmethod(b, "apply", [0]);
     }
-    return var_nothing;
+    return GraceDone;
 }
 Grace_prelude.methods["for()do"] = function(argcv, c, b) {
     var iter = callmethod(c, "iterator", [0]);
@@ -1690,7 +1749,7 @@ Grace_prelude.methods["for()do"] = function(argcv, c, b) {
         var val = callmethod(iter, "next", [0]);
         callmethod(b, "apply", [1], val);
     }
-    return var_nothing;
+    return GraceDone;
 }
 Grace_prelude.methods["_methods"] = function() {
     var meths = [];
