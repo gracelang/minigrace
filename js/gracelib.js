@@ -1329,7 +1329,7 @@ GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
     for (var i = 0; i < l; i++) {
         countArray[i] = new GraceNum(theFunction.paramCounts[i])
     }
-    return new GraceList(countArray)
+    return new GraceList(countArray);
 }
 
 GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
@@ -1339,9 +1339,28 @@ GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
     for (var i = 0; i < l; i++) {
         boolArray[i] = theFunction.variableArities[i] ? GraceTrue : GraceFalse
     }
-    return new GraceList(boolArray)
+    return new GraceList(boolArray);
 }
 
+GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
+    var theFunction = this.obj.methods[this.name];
+    var requiredLen = theFunction.paramCounts.length;
+    var providedLen = callmethod(argList, "size", [0])._value;
+    if (providedLen != requiredLen) {
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                                       new GraceString("wrong number of argument lists in 'reflect'" ));
+    }
+    var allArgs = [this.obj, this.name, []];
+    for (var outerIx = 1; outerIx <= providedLen; outerIx++) {
+        var innerArray = callmethod(argList, "at", [1], new GraceNum(outerIx));
+        var innerSize = callmethod(innerArray, "size", [0])._value;
+        allArgs[2].push(innerSize);    // incrementally build list of argument list lengths
+        for (var innerIx = 1; innerIx <= innerSize; innerIx++) {
+            allArgs.push(callmethod(innerArray, "at", [1], new GraceNum(innerIx)))
+        }
+    }
+    return callmethod.apply(null, allArgs);
+}
 
 function alloc_Mirror(o) {
     var m = Grace_allocObject();
