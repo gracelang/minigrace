@@ -330,6 +330,9 @@ GraceBoolean.prototype = {
     className: "Boolean",
 };
 
+var GraceTrue = new GraceBoolean(true);
+var GraceFalse = new GraceBoolean(false);
+
 function GraceList(l) {
     this._value = l;
 }
@@ -1301,6 +1304,7 @@ function GraceMirrorMethod(o, k) {
     this.obj = o;
 }
 GraceMirrorMethod.prototype = Grace_allocObject();
+
 GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
     return new GraceString(this.name);
 }
@@ -1319,9 +1323,25 @@ GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
 }
 
 GraceMirrorMethod.prototype.methods['paramcounts'] = function(argcv) {
-    // the method metadata needed to populate the result is not yet available!
-    return new GraceList([])
+    var theFunction = this.obj.methods[this.name];
+    var l = theFunction.paramCounts.length;
+    var countArray = new Array(l);
+    for (var i = 0; i < l; i++) {
+        countArray[i] = new GraceNum(theFunction.paramCounts[i])
+    }
+    return new GraceList(countArray)
 }
+
+GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
+    var theFunction = this.obj.methods[this.name];
+    var l = theFunction.variableArities.length;
+    var boolArray = new Array(l);
+    for (var i = 0; i < l; i++) {
+        boolArray[i] = theFunction.variableArities[i] ? GraceTrue : GraceFalse
+    }
+    return new GraceList(boolArray)
+}
+
 
 function alloc_Mirror(o) {
     var m = Grace_allocObject();
@@ -1617,6 +1637,7 @@ ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
 var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
+var var_RuntimeError = RuntimeErrorObject;
 var TypeErrorObject = new GraceException("TypeError", RuntimeErrorObject);
 
 var Grace_native_prelude = Grace_allocObject();
