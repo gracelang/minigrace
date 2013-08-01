@@ -1442,7 +1442,7 @@ function callmethod(obj, methname, argcv) {
             ext += " Did you mean the local " + methname + "? It is not annotated readable.";
         }
         throw new GraceExceptionPacket(RuntimeErrorObject,
-                new GraceString("No such method '" + methname + "' on " +
+                new GraceString("No method '" + methname + "' on " +
                     obj.className + "." + ext));;
     }
     if (meth.confidential && !onSelf) {
