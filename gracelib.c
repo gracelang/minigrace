@@ -1093,8 +1093,12 @@ Object BuiltinList_concat(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     for (i=0; i<sself->size; i++)
         BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
-    for (i=0; i<sother->size; i++)
-        BuiltinList_push(nl, 1, partcv, sother->items + i, 0);
+    Object iter = callmethod(args[0], "iter", 0, NULL, NULL);
+    gc_frame_newslot(iter);
+    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL, NULL);
+        BuiltinList_push(nl, 1, partcv, &val, 0);
+    }
     return nl;
 }
 void BuiltinList__release(Object o) {
@@ -4216,9 +4220,12 @@ Object grace_for_do(Object self, int nparts, int *argcv,
         die("for-do requires exactly two arguments");
     Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
     gc_frame_newslot(iter);
+    // Stack slot for argument object
+    int slot = gc_frame_newslot(NULL);
     int partcv[] = {1};
     while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
+        gc_frame_setslot(slot, val);
         callmethod(argv[1], "apply", 1, partcv, &val);
     }
     return none;

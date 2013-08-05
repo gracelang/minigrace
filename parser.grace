@@ -1350,6 +1350,7 @@ method doclass {
         var s := methodsignature(false)
         var csig := s.sig
         var constructorName := s.m
+        var dtype := s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
             util.syntax_error("Class declaration without body.")
@@ -1374,7 +1375,8 @@ method doclass {
         }
         next
         util.setline(btok.line)
-        var o := ast.classNode.new(cname, csig, body, false, constructorName)
+        var o :=
+            ast.classNode.new(cname, csig, body, false, constructorName, dtype)
         o.generics := s.generics
         if (false != anns) then {
             o.annotations.extend(anns)
@@ -1489,7 +1491,7 @@ method doclassOld {
                 body.push(p)
             }
             var o := ast.classNode.new(cname, [ast.signaturePart.new("new", params)],
-                body, superclass, ast.identifierNode.new("new", false))
+                body, superclass, ast.identifierNode.new("new", false), false)
             values.push(o)
         } else {
             util.syntax_error("Class definition without body.")

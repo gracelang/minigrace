@@ -899,7 +899,7 @@ class callNode.new(what, with') {
         s
     }
 }
-class classNode.new(name', signature', body', superclass', constructor') {
+class classNode.new(name', signature', body', superclass', constructor', dtype') {
     // [signature]
     //     object {
     //         name := ""
@@ -920,6 +920,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
     def name = name'
     def constructor = constructor'
     def signature = signature'
+    var dtype := dtype'
     var generics := false
     var register := ""
     var line := util.linenum
@@ -951,7 +952,7 @@ class classNode.new(name', signature', body', superclass', constructor') {
         blkBefore.apply(self)
         var n := classNode.new(name.map(blk)before(blkBefore)after(blkAfter),
             listMap(signature, blk)before(blkBefore)after(blkAfter), listMap(value, blk)before(blkBefore)after(blkAfter),
-            maybeMap(superclass, blk, blkBefore, blkAfter), constructor)
+            maybeMap(superclass, blk, blkBefore, blkAfter), constructor, dtype)
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
             n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
         }
