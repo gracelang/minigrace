@@ -109,130 +109,139 @@ class list.new(*a) {
     }
 }
 
-class set.new(*a) {
-    var inner := PrimitiveArray.new(if (a.size > 1)
-        then {a.size * 3 + 1} else {8})
-    def unused = object { var unused := true }
-    var size := 0
-    for (0..(inner.size-1)) do {i->
-        inner.at(i)put(unused)
-    }
-    method add(x) {
-        if (contains(x)) then {
-            return true
-        }
-        var t := findPosition(x)
-        inner.at(t)put(x)
-        size := size + 1
-        if (size > (inner.size / 2)) then {
-            expand
-        }
-    }
-    method contains(x) {
-        var t := findPosition(x)
-        if (inner.at(t) == x) then {
-            return true
-        }
-        return false
-    }
-    method findPosition(x) {
-        def h = x.hashcode
-        def s = inner.size
-        var t := h % s
-        var jump := 5
-        while {inner.at(t) != unused} do {
-            if (inner.at(t) == x) then {
-                return t
+def set = object {
+    method new(*a) { withAll(a) }
+
+    method with(*a) { withAll(a) }
+
+    method empty { with() }
+
+    method withAll(a:Collection) {
+        object {
+            var inner := PrimitiveArray.new(if (a.size > 1)
+                then {a.size * 3 + 1} else {8})
+            def unused = object { var unused := true }
+            var size := 0
+            for (0..(inner.size-1)) do {i->
+                inner.at(i)put(unused)
             }
-            if (jump != 0) then {
-                t := (t * 3 + 1) % s
-                jump := jump - 1
-            } else {
-                t := (t + 1) % s
-            }
-        }
-        return t
-    }
-    method asString {
-        var firstTime := true
-        var s := "set.new("
-        for (0..(inner.size-1)) do {i->
-            if (inner.at(i) != unused) then {
-                if (firstTime) then {
-                    firstTime := false
-                    s := s ++ inner.at(i).asString
-                } else {
-                    s := s ++ "," ++ inner.at(i).asString
+            for (a) do { x-> add(x) }
+
+            method add(x) {
+                if (contains(x)) then {
+                    return true
+                }
+                var t := findPosition(x)
+                inner.at(t)put(x)
+                size := size + 1
+                if (size > (inner.size / 2)) then {
+                    expand
                 }
             }
-        }
-        s ++ ")"
-    }
-    method -(o) {
-        def ret = set.new
-        for (self) do {v->
-            if (!o.contains(v)) then {
-                ret.add(v)
+            method contains(x) {
+                var t := findPosition(x)
+                if (inner.at(t) == x) then {
+                    return true
+                }
+                return false
             }
-        }
-        ret
-    }
-    method extend(l) {
-        for (l) do {i->
-            add(i)
-        }
-    }
-    method reduce(initial, blk) {
-        if (size == 0) then {
-            return initial
-        }
-        var res := initial
-        for (self) do {it->
-            res := blk.apply(res, it)
-        }
-        res
-    }
-    method iter {
-        object {
-            var count := 1
-            var idx := 0
-            method havemore {
-                count <= size
-            }
-            method next {
-                while {inner.at(idx) == unused} do {
-                    idx := idx + 1
-                    if (idx == inner.size) then {
-                        return
+            method findPosition(x) {
+                def h = x.hashcode
+                def s = inner.size
+                var t := h % s
+                var jump := 5
+                while {inner.at(t) != unused} do {
+                    if (inner.at(t) == x) then {
+                        return t
+                    }
+                    if (jump != 0) then {
+                        t := (t * 3 + 1) % s
+                        jump := jump - 1
+                    } else {
+                        t := (t + 1) % s
                     }
                 }
-                def ret = inner.at(idx)
-                count := count + 1
-                idx := idx + 1
+                return t
+            }
+            method asString {
+                var firstTime := true
+                var s := "set.new("
+                for (0..(inner.size-1)) do {i->
+                    if (inner.at(i) != unused) then {
+                        if (firstTime) then {
+                            firstTime := false
+                            s := s ++ inner.at(i).asString
+                        } else {
+                            s := s ++ "," ++ inner.at(i).asString
+                        }
+                    }
+                }
+                s ++ ")"
+            }
+            method -(o) {
+                def ret = set.new
+                for (self) do {v->
+                    if (!o.contains(v)) then {
+                        ret.add(v)
+                    }
+                }
                 ret
             }
-        }
-    }
-    method iterator {
-        iter
-    }
-    method expand {
-        def c = inner.size
-        def n = c * 2
-        def oldInner = inner
-        size := 0
-        inner := PrimitiveArray.new(n)
-        for (0..(inner.size-1)) do {i->
-            inner.at(i)put(unused)
-        }
-        for (0..(oldInner.size-1)) do {i->
-            if (oldInner.at(i) != unused) then {
-                add(oldInner.at(i))
+            method extend(l) {
+                for (l) do {i->
+                    add(i)
+                }
+            }
+            method reduce(initial, blk) {
+                if (size == 0) then {
+                    return initial
+                }
+                var res := initial
+                for (self) do {it->
+                    res := blk.apply(res, it)
+                }
+                res
+            }
+            method iter {
+                object {
+                    var count := 1
+                    var idx := 0
+                    method havemore {
+                        count <= size
+                    }
+                    method next {
+                        while {inner.at(idx) == unused} do {
+                            idx := idx + 1
+                            if (idx == inner.size) then {
+                                return
+                            }
+                        }
+                        def ret = inner.at(idx)
+                        count := count + 1
+                        idx := idx + 1
+                        ret
+                    }
+                }
+            }
+            method iterator {
+                iter
+            }
+            method expand {
+                def c = inner.size
+                def n = c * 2
+                def oldInner = inner
+                size := 0
+                inner := PrimitiveArray.new(n)
+                for (0..(inner.size-1)) do {i->
+                    inner.at(i)put(unused)
+                }
+                for (0..(oldInner.size-1)) do {i->
+                    if (oldInner.at(i) != unused) then {
+                        add(oldInner.at(i))
+                    }
+                }
             }
         }
-    }
-    for (a) do {x->
-        add(x)
     }
 }
 
