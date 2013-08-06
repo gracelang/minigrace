@@ -3693,8 +3693,8 @@ void Block__release(struct BlockObject *o) {
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
-    sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class3(buf, 9, (void*)&Block__mark,
+    sprintf(buf, "Block[%s:%i]", modname, line);
+    ClassData c = alloc_class3(buf, 10, (void*)&Block__mark,
             (void*)&Block__release);
     if (!Block)
         Block = c;
@@ -3710,7 +3710,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         add_Method(c, "_apply", &identity_function);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
-    o->data = glmalloc(sizeof(Object) * 2);
+    o->data = glmalloc(sizeof(Object) * 3);
     o->super = NULL;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
