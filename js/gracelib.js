@@ -421,6 +421,14 @@ GraceList.prototype = {
         "last": function(argcv) {
             return this._value[this._value.length-1];
         },
+        "reduce": function(argcv, initial, block) {
+            var res = initial
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                res = callmethod(block, "apply", [2], res, v)
+            }
+            return res;
+        },
     },
     className: "List",
 };
