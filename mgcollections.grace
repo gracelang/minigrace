@@ -207,7 +207,6 @@ class set.new(*a) {
     }
     for (a) do {x->
         add(x)
-        size := size + 1
     }
 }
 
