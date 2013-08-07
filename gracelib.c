@@ -4321,19 +4321,6 @@ Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     return alloc_PrimitiveArrayClassObject();
 }
-Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    error_jump_set = 1;
-    int start_calldepth = calldepth;
-    if (setjmp(error_jump)) {
-        error_jump_set = 0;
-        calldepth = start_calldepth;
-        return callmethod(argv[1], "apply", 0, NULL, NULL);
-    }
-    Object rv = callmethod(argv[0], "apply", 0, NULL, NULL);
-    error_jump_set = 0;
-    return rv;
-}
 Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return ExceptionObject;
@@ -4345,12 +4332,6 @@ Object prelude_Error(Object self, int argc, int *argcv, Object *argv,
 Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return RuntimeErrorObject;
-}
-Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    char *str = grcstring(argv[0]);
-    die(str);
-    return NULL;
 }
 Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {
@@ -4380,7 +4361,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 18, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 16, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4394,8 +4375,6 @@ Object grace_prelude() {
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
-    add_Method(c, "try()else", &prelude_tryElse);
-    add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);
