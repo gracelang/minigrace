@@ -1082,6 +1082,7 @@ function gracecode_sys() {
             new GraceString("js"),
         ]);
     };
+    this.methods.elapsed = function() {return new GraceNum((new Date).getTime()/1000);};
     this.methods.exit = function() {
         throw "SystemExit";
     };
@@ -1511,10 +1512,10 @@ function callmethod(obj, methname, argcv) {
         }
     }
     if (typeof(meth) != "function" || (meth._private &&
-                superDepth != sourceObject && !onOuter)) {
+                superDepth != sourceObject && !onOuter && !(meth.confidential && onSelf))) {
         var ext = "";
-        if (meth && meth._private) {
-            ext += " Did you mean the local " + methname + "? It is not annotated readable.";
+        if (meth && meth._private && !(meth.confidential && onSelf)) {
+            ext += " Did you mean the local " + methname + "? It is not readable.";
         }
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No method '" + methname + "' on " +
