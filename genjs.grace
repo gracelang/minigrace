@@ -772,6 +772,7 @@ method compiledefdec(o) {
         out "            new GraceString(\"expected \""
         out "            + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))";
     }
+    out("this.methods[\"{nm}\"].debug = \"def\";")
     o.register := val
 }
 method compilevardec(o) {
@@ -805,6 +806,7 @@ method compilevardec(o) {
             out "            + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
         }
     }
+    out("this.methods[\"{nm}\"].debug = \"var\";")
     o.register := val
 }
 method compileindex(o) {
