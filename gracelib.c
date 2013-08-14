@@ -2906,8 +2906,6 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
                             self = uo->super;
                         if (m->flags & MFLAG_REALSELFALSO)
                             realself = uo->super;
-                        if (m->flags & MFLAG_PRIVATE)
-                            realself = uo->super;
                         callflags |= depth << 24;
                         break;
                     }
@@ -2994,24 +2992,6 @@ start:
         die("Maximum call stack depth exceeded.");
     }
     int searchdepth = (callflags >> 24) & 0xff;
-    if (m != NULL && m->flags & MFLAG_PRIVATE
-            && ((originalself != self && realself != sourceObject)
-                || !(callflags & CFLAG_SELF))) {
-        // Handle private field access by checking depth (only when
-        // required).
-        if (originalself != realself && callflags & CFLAG_SELF &&
-                originalself->flags & OFLAG_USEROBJ) {
-            struct UserObject *uo1 = (struct UserObject *)originalself;
-            for (int i=0; i<searchdepth; i++)
-                uo1 = (struct UserObject *)uo1->super;
-            if ((Object)uo1 != realself)
-                die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
-                    name, self->class->name, name, m->definitionModule, m->definitionLine);
-        } else {
-            die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
-                name, self->class->name, name, m->definitionModule, m->definitionLine);
-        }
-    }
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
         gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);

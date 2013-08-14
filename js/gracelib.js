@@ -1374,15 +1374,10 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) != "function" || (meth._private &&
-                superDepth != sourceObject && !onOuter)) {
-        var ext = "";
-        if (meth && meth._private) {
-            ext += " Did you mean the local " + methname + "? It is not annotated readable.";
-        }
+    if (typeof(meth) != "function") {
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No such method '" + methname + "' on " +
-                    obj.className + "." + ext));;
+                    obj.className + "."));;
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(RuntimeErrorObject,
