@@ -1148,15 +1148,8 @@ method defdec {
             o.annotations.extend(anns)
         }
         if ((!hasVisibility) && (!hasAccessibility)) then {
-            if (defaultDefVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
-        if (!hasAccessibility) then {
             if (defaultDefVisibility == "public") then {
-                o.annotations.push(ast.identifierNode.new("readable",
-                    false))
+                o.annotations.push(ast.identifierNode.new("public", false))
             }
         }
         values.push(o)
@@ -1210,12 +1203,6 @@ method vardec {
             o.annotations.extend(anns)
         }
         if ((!hasVisibility) && (!hasAccessibility)) then {
-            if (defaultVarVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
-        if (!hasAccessibility) then {
             if (defaultVarVisibility == "public") then {
                 o.annotations.push(ast.identifierNode.new("readable",
                     false))

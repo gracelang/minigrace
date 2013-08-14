@@ -269,10 +269,17 @@ method compileobjdefdecmeth(o, selfr, pos) {
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
     var flags := "MFLAG_DEF"
+    var isPublic := false
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
-            flags := "{flags} | MFLAG_CONFIDENTIAL"
+        if ((ann.kind == "identifier").andAlso{ann.value == "public"}) then {
+            isPublic := true
         }
+        if ((ann.kind == "identifier").andAlso{ann.value == "readable"}) then {
+            isPublic := true
+        }
+    }
+    if (!isPublic) then {
+        flags := "{flags} | MFLAG_CONFIDENTIAL"
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
