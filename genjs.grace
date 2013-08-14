@@ -133,13 +133,6 @@ method compileobjtype(o, selfr, pos) {
             {ann.value == "confidential"}) then {
             out("  reader_{modname}_{nmi}{myc}.confidential = true;")
         }
-        if ((ann.kind == "identifier").andAlso
-            {ann.value == "readable"}) then {
-            isReadable := true
-        }
-    }
-    if (!isReadable) then {
-        out("  reader_{modname}_{nmi}{myc}._private = true;")
     }
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
@@ -166,8 +159,8 @@ method compileobjdefdec(o, selfr, pos) {
     var isReadable := false
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso
-            {ann.value == "confidential"}) then {
-            out("  reader_{modname}_{nmi}{myc}.confidential = true;")
+            {ann.value == "public"}) then {
+            isReadable := true
         }
         if ((ann.kind == "identifier").andAlso
             {ann.value == "readable"}) then {
@@ -175,7 +168,7 @@ method compileobjdefdec(o, selfr, pos) {
         }
     }
     if (!isReadable) then {
-        out("  reader_{modname}_{nmi}{myc}._private = true;")
+        out("  reader_{modname}_{nmi}{myc}.confidential = true;")
     }
     out("  " ++ selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
         "_" ++ nmi ++ myc ++ ";")
@@ -217,9 +210,9 @@ method compileobjvardec(o, selfr, pos) {
     var isWritable := false
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso
-            {ann.value == "confidential"}) then {
-            out("  reader_{modname}_{nmi}{myc}.confidential = true;")
-            out("  writer_{modname}_{nmi}{myc}.confidential = true;")
+            {ann.value == "public"}) then {
+            isReadable := true
+            isWritable := true
         }
         if ((ann.kind == "identifier").andAlso
             {ann.value == "readable"}) then {
@@ -231,10 +224,10 @@ method compileobjvardec(o, selfr, pos) {
         }
     }
     if (!isReadable) then {
-        out("  reader_{modname}_{nmi}{myc}._private = true;")
+        out("  reader_{modname}_{nmi}{myc}.confidential = true;")
     }
     if (!isWritable) then {
-        out("  writer_{modname}_{nmi}{myc}._private = true;")
+        out("  writer_{modname}_{nmi}{myc}.confidential = true;")
     }
     if (o.dtype != false) then {
         if (val == "undefined") then {
