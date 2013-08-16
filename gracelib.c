@@ -702,8 +702,8 @@ Object alloc_GreaterThanPattern(Object r) {
 void printExceptionBacktrace(Object o) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)o;
     struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
-    fprintf(stderr, "Error around line %i: %s: %s\n", e->lineNumber,
-            x->name, grcstring(e->message));
+    fprintf(stderr, "%s around line %i: %s\n", x->name, e->lineNumber,
+            grcstring(e->message));
     int start_calldepth = calldepth;
     int start_linenumber = linenumber;
     char **start_moduleSourceLines = moduleSourceLines;
@@ -746,6 +746,11 @@ Object ExceptionPacket_exception(Object self, int argc, int *argcv,
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
     return e->exception;
 }
+Object ExceptionPacket_lineNumber(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    return alloc_Float64(e->lineNumber);
+}
 Object ExceptionPacket_data(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
@@ -763,6 +768,10 @@ Object ExceptionPacket_asString(Object self, int argc, int *argcv,
     int tmp[1] = {1};
     return callmethod(alloc_String(buf), "++", 1, tmp, &(e->message));
 }
+Object ExceptionPacket_backTrace(Object self, int argc, int *argcv,
+         Object *argv, int flags) {
+    return alloc_BuiltinList();
+}
 Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     printExceptionBacktrace(self);
@@ -770,14 +779,16 @@ Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
 }
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class3("ExceptionPacket", 6,
+        ExceptionPacket = alloc_class3("ExceptionPacket", 8,
                 (void*)&ExceptionPacket__mark,
                 (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
         add_Method(ExceptionPacket, "exception", &ExceptionPacket_exception);
         add_Method(ExceptionPacket, "asString", &ExceptionPacket_asString);
+        add_Method(ExceptionPacket, "lineNumber", &ExceptionPacket_lineNumber);
         add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
         add_Method(ExceptionPacket, "asDebugString", &Object_asString);
+        add_Method(ExceptionPacket, "backTrace", &ExceptionPacket_backTrace);
         add_Method(ExceptionPacket, "printBacktrace",
                 &ExceptionPacket_printBacktrace);
     }
