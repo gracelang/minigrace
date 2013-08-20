@@ -1368,8 +1368,7 @@ GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
 GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
     var count = 1;
     var place = 1;
-    while(place < this.name.length)
-    {
+    while(place < this.name.length) {
         if(this.name[place] == "(") {
             count++;
             place++;

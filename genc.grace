@@ -575,6 +575,13 @@ method compileblock(o) {
         def pat = compilenode(o.matchingPattern)
         out("((struct UserObject *){obj})->data[1] = {pat};")
     }
+    if (false != o.extraRuntimeData) then {
+        def erdid = ast.identifierNode.new("extraRuntimeData", false)
+        def erdmeth = ast.methodNode.new(erdid,
+            [ast.signaturePart.new(erdid, [])],
+            [o.extraRuntimeData], false)
+        compilemethod(erdmeth, obj, 2)
+    }
     o.register := obj
     inBlock := origInBlock
 }

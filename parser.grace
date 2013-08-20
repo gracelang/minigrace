@@ -887,6 +887,8 @@ method dotrest {
                 ) then {
                 callrest
             }
+        } else {
+            util.syntax_error("Expected identifier after '.'.")
         }
     }
 }

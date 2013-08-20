@@ -191,6 +191,7 @@ class blockNode.new(params', body') {
     var register := ""
     var matchingPattern := false
     var line := util.linenum
+    var extraRuntimeData := false
     for (params') do {p->
         p.accept(patternMarkVisitor)
     }
@@ -216,6 +217,7 @@ class blockNode.new(params', body') {
                 before(blkBefore)after(blkAfter)
         }
         n := blk.apply(n)
+        n.extraRuntimeData := extraRuntimeData
         n.line := line
         blkAfter.apply(n)
         n

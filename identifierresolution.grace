@@ -422,6 +422,9 @@ method resolveIdentifiersActual(node) {
                         [ast.identifierNode.new("self", false)])
                     )
                 )
+                if (node.value.in.value == "StandardPrelude") then {
+                    return node
+                }
                 return ast.inheritsNode.new(newcall)
             }
         }
@@ -761,6 +764,17 @@ method resolve(values) {
         if (v'.kind == "method") then {
             if (moduleObj.elementScopes.contains(v'.value.value)) then {
                 v'.properties.put("fresh", moduleObj.getScope(v'.value.value))
+            }
+            if (v'.body.size > 0) then {
+                def lastStatement = v'.body.last
+                if (lastStatement.kind == "call") then {
+                    if (lastStatement.value.kind == "member") then {
+                        def mem = lastStatement.value
+                        if (mem.value == "clone") then {
+                            v'.properties.put("fresh", moduleObj)
+                        }
+                    }
+                }
             }
         }
     }
