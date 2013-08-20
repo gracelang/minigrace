@@ -82,6 +82,7 @@ var samples = {
 
 window.onload = function() {
     var sm = document.getElementById('sample');
+    sm.innerHTML = "";
     for (var s in samples) {
         var opt = document.createElement('option');
         opt.value = s;

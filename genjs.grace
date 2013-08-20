@@ -762,6 +762,7 @@ method compiledefdec(o) {
         if (ast.findAnnotation(o, "parent")) then {
             out("  this.superobj = {val};")
         }
+        out("  this.methods[\"{nm}\"].debug = \"def\";")
     }
     if (o.dtype != false) then {
         linenum := o.line
@@ -793,6 +794,7 @@ method compilevardec(o) {
         compilenode(ast.methodNode.new(assignID,
             [ast.signaturePart.new(assignID.value, [tmpID])],
             [ast.bindNode.new(o.name, tmpID)], false))
+        out("  this.methods[\"{nm}\"].debug = \"var\";")
     }
     if (o.dtype != false) then {
         if (val != "false") then {
