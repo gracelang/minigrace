@@ -1310,6 +1310,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     out("  return this;")
     out("\}")
+    xmodule.writeGCT(modname, modname ++ ".gct")
+        fromValues(values)modules(staticmodules)
+    def gct = xmodule.parseGCT(modname, modname ++ ".gct")
+    def gctText = xmodule.gctAsString(gct)
+    out "if (gctCache)"
+    out "  gctCache['{escapestring(modname)}'] = \"{escapestring(gctText)}\";"
     var lineOut := false
     for (output) do { o ->
         if ("  lineNumber =" == o.substringFrom(0)to(14)) then {
@@ -1322,7 +1328,5 @@ method compile(vl, of, mn, rm, bt, glpath) {
             outprint(o)
         }
     }
-    xmodule.writeGCT(modname, modname ++ ".gct")
-        fromValues(values)modules(staticmodules)
     log_verbose("done.")
 }
