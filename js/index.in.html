@@ -74,7 +74,7 @@
 
         function loadtest(testname) {
             document.getElementById('stderr_txt').value = "";
-            document.getElementById('defaultVisibility').selectedIndex = 2;
+            document.getElementById('defaultVisibility').selectedIndex = 1;
             selectvisibility();
             var req = new XMLHttpRequest();
             req.open("GET", "./tests/" + testname + "_test.grace", false);
@@ -276,9 +276,7 @@
  Visibility:
  <select id="defaultVisibility" onchange="selectvisibility();">
   <option value="standard">Standard
-  <option value="confidential">Confidential
   <option value="public">All accessible
-  <option value="methodspublic">Methods public
  </select>
 <span style="font-size: smaller;">
 minigrace-js
