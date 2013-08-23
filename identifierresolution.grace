@@ -344,9 +344,32 @@ method resolveIdentifier(node) {
     }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
-            util.syntaxError("Unable to resolve wildcard identifier.")atRange(node.line, node.linePos, node.linePos)
+            util.syntaxError("'_' can only be used as an identifier within a match case.")atRange(node.line, node.linePos, node.linePos)
         } else {
-            util.syntaxError("Use of undefined identifier '{nm}'.")atRange(node.line, node.linePos, node.linePos + node.value.size - 1)
+            def suggestions = []
+            var suggestion
+            for(scope.elements) do { v ->
+                if(util.levenshtein(v, nm) <= 1) then {
+                    suggestion := util.suggestion.new
+                    suggestion.replaceRange(node.linePos, node.linePos + node.value.size - 1)with(v)onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+            }
+
+            for(scope.elementScopes) do { s ->
+                if(scope.elementScopes.get(s).contains(nm)) then {
+                    suggestion := util.suggestion.new
+                    suggestion.insert("{s}.")atPosition(node.linePos)onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+            }
+
+            suggestion := util.suggestion.new
+            suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
+            suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
+            suggestions.push(suggestion)
+            util.syntaxError("Unknown variable or method name '{nm}'.")atRange(
+                node.line, node.linePos, node.linePos + node.value.size - 1)withSuggestions(suggestions)
         }
     }
     if (nm == "outer") then {
@@ -403,7 +426,7 @@ method resolveIdentifiersActual(node) {
         }
         if (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
-                util.syntaxError("Reassignment to constant '{node.dest.value}'.")atLine(node.line)
+                util.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant.")atLine(node.line)
             }
         }
     }
@@ -452,7 +475,7 @@ method checkRedefinition(ident) {
         if (getNameScope(ident.value)
             .elementDeclarations.contains(ident.value)
         ) then {
-            util.syntaxError("Redeclaration of existing name '{ident.value}'.")atPosition(ident.line, ident.linePos)
+            util.syntaxError("'{ident.value}' cannot be declared because it is already declared.")atPosition(ident.line, ident.linePos)
         }
     }
     scope.elementDeclarations.put(ident.value, true)
@@ -464,7 +487,6 @@ method resolveIdentifiers(topNode) {
         return topNode
     }
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
-        util.setPosition(node.line, 1)
         if (node.kind == "class") then {
             checkRedefinition(node.name)
             scope.add(node.name.value) as "def"
@@ -508,10 +530,15 @@ method resolveIdentifiers(topNode) {
                     for (node.signature) do {s->
                         for (s.params) do {p->
                             if (parentScope.elements.contains(p.value)) then {
-                                util.setPosition(p.line, p.linePos)
-                                util.syntaxError("Class parameter '{p.value}' "
-                                    ++ "conflicts with inherited method "
-                                    ++ "'{p.value}' and must be renamed.")atRange(p.line, p.linePos, p.linePos + p.value.size - 1)
+                                def suggestion = util.suggestion.new
+                                suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
+                                var primes := "'"
+                                while { scope.elements.contains(p.value ++ primes) || parentScope.elements.contains(p.value ++ primes) } do {
+                                    suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
+                                    primes := primes ++ "'"
+                                }
+                                util.syntaxError("The parameter name '{p.value}' cannot be used because this class inherits a method named '{p.value}'.")atRange(
+                                    p.line, p.linePos, p.linePos + p.value.size - 1)withSuggestion(suggestion)
                             }
                         }
                     }
