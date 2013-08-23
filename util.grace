@@ -466,6 +466,45 @@ class suggestion.new() {
     }
 }
 
+// Implemented http://en.wikipedia.org/wiki/Levenshtein_distance#Iterative_with_two_matrix_rows
+method levenshtein(s, t) {
+    if(s == t) then { return 0 }
+    if(s.size == 0) then { return t.size }
+    if(t.size == 0) then { return s.size }
+
+    def v0 = PrimitiveArray.new(t.size + 1)
+    def v1 = PrimitiveArray.new(t.size + 1)
+
+    for(0..(v0.size - 1)) do { i ->
+        v0[i] := i
+        v1[i] := 0
+    }
+
+    for(0..(s.size - 1)) do { i ->
+        v1[0] := i + 1
+        for(0..(t.size - 1)) do { j ->
+            def cost = if(s[i + 1] == t[j + 1]) then { 0 } else { 1 }
+            v1[j + 1] := min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+        }
+
+        for (0..(v0.size - 1)) do { j ->
+            v0[j] := v1[j]
+        }
+    }
+
+    v1[t.size]
+}
+
+method min(*n) {
+    if(n.size > 0) then {
+        var m := n[1]
+        for (n) do { i ->
+            if(i < m) then { m := i }
+        }
+        m
+    }
+}
+
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
     syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions([])
 }
