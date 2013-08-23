@@ -1023,7 +1023,7 @@ var GraceHighlightRules = function() {
 
     var keywords = lang.arrayToMap(
         (
-            "object|method|class|def|var|return|inherits|is|dialect"
+            "object|method|class|def|var|return|inherits|is|dialect|import|as"
         ).split("|")
     );
 
