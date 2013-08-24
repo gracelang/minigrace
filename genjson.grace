@@ -54,6 +54,10 @@ method generateNode(n) {
             ret.put("type", "vardec")
             ret.put("name", n.name.value)
             ret.put("value", generateNode(n.value))
+        } case { "defdec" ->
+            ret.put("type", "defdec")
+            ret.put("name", n.name.value)
+            ret.put("value", generateNode(n.value))
         } case { "string" ->
             ret.put("type", "string")
             ret.put("value", n.value)
@@ -86,9 +90,20 @@ method generateNode(n) {
         } case { "method" ->
             ret.put("type", "method")
             ret.put("name", n.value.value)
-            ret.put("arg", n.signature.at(1).params.at(1).value)
+            def args = JSArray.new
+            for (n.signature.at(1).params) do {p->
+                args.push(p.value)
+            }
+            ret.put("arg", args)
             def body = JSArray.new
             for (n.body) do {v->
+                body.push(generateNode(v))
+            }
+            ret.put("body", body)
+        } case { "object" ->
+            ret.put("type", "object")
+            def body = JSArray.new
+            for (n.value) do {v->
                 body.push(generateNode(v))
             }
             ret.put("body", body)
