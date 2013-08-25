@@ -107,6 +107,20 @@ method generateNode(n) {
                 body.push(generateNode(v))
             }
             ret.put("body", body)
+        } case { "class" ->
+            ret.put("type", "class")
+            ret.put("name", n.name.value)
+            ret.put("constructor", n.constructor.value)
+            def args = JSArray.new
+            for (n.signature.at(1).params) do {p->
+                args.push(p.value)
+            }
+            ret.put("args", args)
+            def body = JSArray.new
+            for (n.value) do {v->
+                body.push(generateNode(v))
+            }
+            ret.put("body", body)
         } case { "if" ->
             if (n.elseblock.size > 0) then {
                 def mn = ast.callNode.new(
@@ -156,12 +170,22 @@ method generateNode(n) {
                         ret.put("type", "request")
                         ret.put("receiver", generateNode(n.value.in))
                         ret.put("name", n.value.value)
+                        def args = JSArray.new
+                        for (n.with.at(1).args) do {arg->
+                            args.push(generateNode(arg))
+                        }
+                        ret.put("args", args)
                     }
                 }
             } else {
                 ret.put("type", "unknown call")
                 print "    {n.pretty(4)}"
             }
+        } case { "member" ->
+            ret.put("type", "request")
+            ret.put("receiver", generateNode(n.in))
+            ret.put("name", n.value)
+            ret.put("args", JSArray.new)
         } case { "block" ->
             ret.put("type", "block")
             def params = JSArray.new
