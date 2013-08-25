@@ -162,10 +162,13 @@ method generateNode(n) {
                     }
                 } else {
                     if (n.value.in.value == "self") then {
-                        def arg = generateNode(n.with.at(1).args.at(1))
                         ret.put("type", "selfcall")
-                        ret.put("argument", arg)
                         ret.put("name", n.value.value)
+                        def args = JSArray.new
+                        for (n.with.at(1).args) do {arg->
+                            args.push(generateNode(arg))
+                        }
+                        ret.put("args", args)
                     } else {
                         ret.put("type", "request")
                         ret.put("receiver", generateNode(n.value.in))
