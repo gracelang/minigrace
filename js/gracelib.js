@@ -1354,6 +1354,9 @@ function callmethodsuper(obj, methname, argcv) {
 }
 
 function callmethod(obj, methname, argcv) {
+    if (typeof obj == 'undefined')
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("Requested method on uninitialised value."));;
     if (obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
@@ -1394,6 +1397,10 @@ function callmethod(obj, methname, argcv) {
     var beforeSize = callStack.length;
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
     var args = Array.prototype.slice.call(arguments, 3);
+    for (var i=0; i<args.length; i++)
+        if (typeof args[i] == 'undefined')
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("Uninitialised value used as argument."));;
     if (meth.paramTypes)
         checkmethodcall(meth, methname, obj, args);
     args.unshift(argcv)
