@@ -409,7 +409,6 @@ method compilefor(o) {
 method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
-<<<<<<< HEAD
     def wholeMethodName = o.signature.reduce("", 
         {acc, each -> acc ++ each.name ++ if (each.params.size == 0) then {""} else {"()"}})
     var textualSignature := ""
@@ -427,14 +426,6 @@ method compilemethod(o, selfobj) {
     for (o.signature) do { part -> 
             paramCounts.push(part.params.size)
             variableArities.push(part.vararg != false) }
-=======
-    def paramCounts = mgcollections.list.new
-    def variableArities = mgcollections.list.new
-    for (o.signature) do { part ->
-        paramCounts.push(part.params.size)
-        variableArities.push(part.vararg != false)
-    }
->>>>>>> 56cb91ae69fcf7d6e4f83d421741f431b3d4e6ef
     usedvars := []
     declaredvars := []
     var myc := auto_count
@@ -470,16 +461,9 @@ method compilemethod(o, selfobj) {
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         } else {
             if (!o.selfclosure) then {
-<<<<<<< HEAD
                 out "  if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}]) // != {part.params.size} "
                 out("      callmethod(var_RuntimeError, \"raise\", [1], new "
                     ++ "GraceString(\"argument list {partnr} to method {textualSignature} is of wrong size\"));")
-=======
-                out "  if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}])"
-                out("      callmethod(var_RuntimeError, \"raise\", [1], new "
-                    ++ "GraceString(\"wrong number of arguments for part "
-                    ++ "{partnr} ({part.name})\"));")
->>>>>>> 56cb91ae69fcf7d6e4f83d421741f431b3d4e6ef
             }
         }
     }
@@ -555,10 +539,6 @@ method compilemethod(o, selfobj) {
             out("func{myc}.confidential = true;")
         }
     }
-<<<<<<< HEAD
-    out("  func{myc}.paramCounts = {paramCounts};")
-    out("  func{myc}.variableArities = {variableArities};")
-=======
     out "  func{myc}.paramCounts = ["
     for (paramCounts) do {p->
         out("    {p},")
@@ -573,7 +553,6 @@ method compilemethod(o, selfobj) {
         }
     }
     out "];"
->>>>>>> 56cb91ae69fcf7d6e4f83d421741f431b3d4e6ef
     out("  {selfobj}.methods[\"{name}\"] = func{myc};")
     if (o.properties.contains("fresh")) then {
         compilefreshmethod(o, selfobj)

@@ -1831,10 +1831,10 @@ method checkimport(nm) {
             addTransitiveImports(nm ++ ".gcn", nm)
             staticmodules.add(nm)
         }
-    }
+    } 
     if (exists.not) then {
-        if (io.exists(nm ++ ".gc")) then {
-            ext := ".gc"
+        if (io.exists(nm ++ ".gcn")) then {
+            ext := ".gcn"
         }
         if (io.exists(nm ++ ".grace")) then {
             ext := ".grace"
@@ -1870,6 +1870,39 @@ method checkimport(nm) {
         exists := true
         staticmodules.add(nm)
     }
+    
+    
+    
+    if (exists.not) then {
+        var i := 2
+        var slash := 1
+        var str
+        while {i <= argv.size} do {
+            if(argv.at(i).at(1) != "-") then {
+                var j := 1
+                str := argv.at(i)
+                while {j <= str.size} do {
+                    if(str.at(j) == "/") then {
+                        slash := j
+                    }
+                    j := j + 1
+                }
+                i := argv.size + 1
+            } else {
+                i := i + 1
+            }
+        }
+        var targetDir := str.substringFrom(1)to(slash)
+        if(io.exists(targetDir ++ "{nm}.gcn") && {!util.importDynamic}) then {
+            exists := true
+            linkfiles.push(targetDir ++ "{nm}.gcn")
+            addTransitiveImports(targetDir ++ "{nm}.gcn", nm)
+            staticmodules.add(nm)
+        } elseif()
+    }
+    
+    
+    
     if (exists.not) then {
         util.syntax_error("Failed finding import of '{nm}'.")
     }
