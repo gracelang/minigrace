@@ -135,4 +135,5 @@ function loadsample(k) {
         document.getElementById('modname').value = k;
     }
     document.getElementById('stderr_txt').value += "\nUI: done loading sample.\n";
+    updateDownloadLink();
 }

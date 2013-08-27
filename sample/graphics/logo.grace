@@ -4,8 +4,7 @@
 // handles the actual drawing and user interface.
 import "turtle" as turtle
 import "StandardPrelude" as StandardPrelude
-
-def dialectParent is parent = StandardPrelude
+inherits StandardPrelude.new
 
 def red = turtle.red
 def green = turtle.green

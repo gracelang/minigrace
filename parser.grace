@@ -491,22 +491,23 @@ method doif {
             }
             if (accept("identifier") && (sym.value == "else")) then {
                 next
-                if (accept("lbrace")) then {
-                    // Just take all the statements and put them into
-                    // curelse.
-                    next
-                    if (sym.line == lastToken.line) then {
-                        minIndentLevel := sym.linePos - 1
-                    } else {
-                        minIndentLevel := minInd
-                    }
-                    while {(accept("rbrace")).not} do {
-                        expectConsume {statement}
-                        v := values.pop
-                        curelse.push(v)
-                    }
-                    next
+                if ((accept("lbrace")).not) then {
+                    util.syntax_error("Expected '\{'.")
                 }
+                next
+                // Just take all the statements and put them into
+                // curelse.
+                if (sym.line == lastToken.line) then {
+                    minIndentLevel := sym.linePos - 1
+                } else {
+                    minIndentLevel := minInd
+                }
+                while {(accept("rbrace")).not} do {
+                    expectConsume {statement}
+                    v := values.pop
+                    curelse.push(v)
+                }
+                next
             }
             util.setPosition(btok.line, btok.linePos)
             var o := ast.ifNode.new(cond, body, elseblock)

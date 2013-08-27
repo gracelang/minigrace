@@ -54,6 +54,10 @@ method generateNode(n) {
             ret.put("type", "vardec")
             ret.put("name", n.name.value)
             ret.put("value", generateNode(n.value))
+        } case { "defdec" ->
+            ret.put("type", "defdec")
+            ret.put("name", n.name.value)
+            ret.put("value", generateNode(n.value))
         } case { "string" ->
             ret.put("type", "string")
             ret.put("value", n.value)
@@ -86,9 +90,34 @@ method generateNode(n) {
         } case { "method" ->
             ret.put("type", "method")
             ret.put("name", n.value.value)
-            ret.put("arg", n.signature.at(1).params.at(1).value)
+            def args = JSArray.new
+            for (n.signature.at(1).params) do {p->
+                args.push(p.value)
+            }
+            ret.put("arg", args)
             def body = JSArray.new
             for (n.body) do {v->
+                body.push(generateNode(v))
+            }
+            ret.put("body", body)
+        } case { "object" ->
+            ret.put("type", "object")
+            def body = JSArray.new
+            for (n.value) do {v->
+                body.push(generateNode(v))
+            }
+            ret.put("body", body)
+        } case { "class" ->
+            ret.put("type", "class")
+            ret.put("name", n.name.value)
+            ret.put("constructor", n.constructor.value)
+            def args = JSArray.new
+            for (n.signature.at(1).params) do {p->
+                args.push(p.value)
+            }
+            ret.put("args", args)
+            def body = JSArray.new
+            for (n.value) do {v->
                 body.push(generateNode(v))
             }
             ret.put("body", body)
@@ -133,20 +162,33 @@ method generateNode(n) {
                     }
                 } else {
                     if (n.value.in.value == "self") then {
-                        def arg = generateNode(n.with.at(1).args.at(1))
                         ret.put("type", "selfcall")
-                        ret.put("argument", arg)
                         ret.put("name", n.value.value)
+                        def args = JSArray.new
+                        for (n.with.at(1).args) do {arg->
+                            args.push(generateNode(arg))
+                        }
+                        ret.put("args", args)
                     } else {
                         ret.put("type", "request")
                         ret.put("receiver", generateNode(n.value.in))
                         ret.put("name", n.value.value)
+                        def args = JSArray.new
+                        for (n.with.at(1).args) do {arg->
+                            args.push(generateNode(arg))
+                        }
+                        ret.put("args", args)
                     }
                 }
             } else {
                 ret.put("type", "unknown call")
                 print "    {n.pretty(4)}"
             }
+        } case { "member" ->
+            ret.put("type", "request")
+            ret.put("receiver", generateNode(n.in))
+            ret.put("name", n.value)
+            ret.put("args", JSArray.new)
         } case { "block" ->
             ret.put("type", "block")
             def params = JSArray.new

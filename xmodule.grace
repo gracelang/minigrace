@@ -45,6 +45,20 @@ method writeGCT(path, filepath, data) {
 }
 
 method writeGCT(path, filepath)fromValues(values)modules(modules) {
+    writeGCT(path, filepath,
+        generateGCT(path)fromValues(values)modules(modules))
+}
+method gctAsString(data) {
+    var ret := ""
+    for (data) do {key->
+        ret := ret ++ "{key}:\n"
+        for (data.get(key)) do {v->
+            ret := ret ++ " {v}\n"
+        }
+    }
+    return ret
+}
+method generateGCT(path)fromValues(values)modules(modules) {
     def methods = collections.list.new
     def confidentials = collections.list.new
     for (values) do { v->
@@ -133,5 +147,5 @@ method writeGCT(path, filepath)fromValues(values)modules(modules) {
             }
         }
     }
-    writeGCT(path, filepath, gct)
+    return gct
 }
