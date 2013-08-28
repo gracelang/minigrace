@@ -1,6 +1,8 @@
 var downloadlink = document.getElementById('downloadlink');
 
 function updateDownloadLink() {
+    if (!URL)
+        return;
     if (downloadlink.href)
         URL.revokeObjectURL(downloadlink.href);
     var blob = new Blob([getCode()], {type: "text/x-grace;charset=utf-8"});
