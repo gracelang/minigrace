@@ -1,7 +1,7 @@
 var downloadlink = document.getElementById('downloadlink');
 
 function updateDownloadLink() {
-    if (!URL)
+    if (typeof URL == 'undefined')
         return;
     if (downloadlink.href)
         URL.revokeObjectURL(downloadlink.href);
