@@ -873,7 +873,7 @@ method expressionrest {
 // a following identifier, and will pass along to further lookups or
 // method calls on the result.
 method dotrest {
-    if (accept("dot")) then {
+    if (acceptSameLine("dot")) then {
         var lookuptarget := values.pop
         next
         if (accept("identifier")) then {
