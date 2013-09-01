@@ -450,7 +450,7 @@ method compilemethod(o, selfobj) {
         } else {
             if (!o.selfclosure) then {
                 out "  if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}])"
-                out("      callmethod(var_RuntimeError, \"raise\", [1], new "
+                out("      callmethod(RuntimeErrorObject, \"raise\", [1], new "
                     ++ "GraceString(\"wrong number of arguments for part "
                     ++ "{partnr} ({part.name})\"));")
             }
@@ -460,7 +460,7 @@ method compilemethod(o, selfobj) {
         out("// Start generics")
         out("  if (argcv.length == 1 + {o.signature.size}) \{")
         out("    if (argcv[argcv.length-1] < {o.generics.size}) \{")
-        out("      callmethod(var_RuntimeError, \"raise\", [1], "
+        out("      callmethod(RuntimeErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("    \}")
         for (o.generics) do {g->
@@ -584,7 +584,7 @@ method compilefreshmethod(o, selfobj) {
         out("// Start generics")
         out("  if (argcv.length == 1 + {o.signature.size}) \{")
         out("    if (argcv[argcv.length-1] < {o.generics.size}) \{")
-        out("      callmethod(var_RuntimeError, \"raise\", [1], "
+        out("      callmethod(RuntimeErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("    \}")
         for (o.generics) do {g->
