@@ -1077,7 +1077,9 @@ method callmprest(meth, signature, tok) {
             ln := lastline
             term
         } else {
-            expression
+            if(sym.kind != "rparen") then {
+                expectConsume {expression}
+            }
             while {accept("comma")} do {
                 nxt := values.pop
                 part.args.push(nxt)
