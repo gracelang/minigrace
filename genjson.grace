@@ -100,6 +100,9 @@ method generateNode(n) {
                 body.push(generateNode(v))
             }
             ret.put("body", body)
+        } case { "inherits" ->
+            ret.put("type", "inherits")
+            ret.put("parent", generateNode(n.value))
         } case { "object" ->
             ret.put("type", "object")
             def body = JSArray.new
