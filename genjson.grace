@@ -170,13 +170,27 @@ method generateNode(n) {
                     }
                 } else {
                     if (n.value.in.value == "self") then {
-                        ret.put("type", "selfcall")
-                        ret.put("name", memName)
-                        def args = JSArray.new
-                        for (n.with.at(1).args) do {arg->
-                            args.push(generateNode(arg))
+                        if (n.with.size > 1) then {
+                            ret.put("name", n.value.value)
+                            ret.put("type", "dialect-method")
+                            def parts = JSArray.new
+                            ret.put("parts", parts)
+                            for (n.with) do {part->
+                                def thisPart = JSArray.new
+                                parts.push(thisPart)
+                                for (part.args) do {arg->
+                                    thisPart.push(generateNode(arg))
+                                }
+                            }
+                        } else {
+                            ret.put("type", "selfcall")
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
                         }
-                        ret.put("args", args)
                     } else {
                         ret.put("type", "request")
                         ret.put("receiver", generateNode(n.value.in))
