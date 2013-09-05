@@ -7,6 +7,7 @@ import "buildinfo" as buildinfo
 import "mgcollections" as collections
 import "xmodule" as xmodule
 import "mirrors" as mirrors
+import "errormessages" as errormessages
 
 // genc produces C code from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -1748,7 +1749,7 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
-                util.syntaxError("Cyclic import detected: '{m}' is imported "
+                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
                     ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(1)
             }
             checkimport(m)
@@ -1757,7 +1758,7 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("path")) then {
         def path = data.get("path").first
         if (path != epath) then {
-            util.syntaxError("Imported module '{epath}' compiled with"
+            errormessages.syntaxError("Imported module '{epath}' compiled with"
                 ++ " different path '{path}'.")atLine(1)
         }
     }
@@ -1872,7 +1873,7 @@ method checkimport(nm) {
         staticmodules.add(nm)
     }
     if (exists.not) then {
-        util.syntaxError("Failed finding import of '{nm}'.")atLine(1)
+        errormessages.syntaxError("Failed finding import of '{nm}'.")atLine(1)
     }
 }
 method processImports(values') {
@@ -1906,12 +1907,12 @@ method processImports(values') {
                     }
                 } case { e : RuntimeError ->
                     util.setPosition(v.line, 1)
-                    util.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
+                    errormessages.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
                 } case { e : CheckerFailure ->
                     if (nothing != e.data) then {
                         util.setPosition(e.data.line, e.data.linePos)
                     }
-                    util.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                    errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
                 }
             }
         }
@@ -1931,7 +1932,7 @@ method processImports(values') {
             }
         }
         if (imperrors.size > 0) then {
-            util.syntaxError("Failed processing import of {imperrors}.")atLine(1)
+            errormessages.syntaxError("Failed processing import of {imperrors}.")atLine(1)
         }
     }
 }

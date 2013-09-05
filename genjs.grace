@@ -6,6 +6,7 @@ import "util" as util
 import "mgcollections" as mgcollections
 import "xmodule" as xmodule
 import "mirrors" as mirrors
+import "errormessages" as errormessages
 
 var tmp
 var indent := ""
@@ -1222,7 +1223,7 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
-                util.syntaxError("Cyclic import detected: '{m}' is imported "
+                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
                     ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(1)
             }
             checkimport(m)
@@ -1231,7 +1232,7 @@ method addTransitiveImports(filepath, epath) {
     if (data.contains("path")) then {
         def path = data.get("path").first
         if (path != epath) then {
-            util.syntaxError("Imported module '{epath}' compiled with"
+            errormessages.syntaxError("Imported module '{epath}' compiled with"
                 ++ " different path '{path}'.")atLine(1)
         }
     }
@@ -1285,12 +1286,12 @@ method processDialect(values') {
                 }
             } case { e : RuntimeError ->
                 util.setPosition(v.line, 1)
-                util.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
+                errormessages.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
             } case { e : CheckerFailure ->
                 if (nothing != e.data) then {
                     util.setPosition(e.data.line, e.data.linePos)
                 }
-                util.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
             }
         }
     }

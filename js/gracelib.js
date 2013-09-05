@@ -1126,126 +1126,46 @@ function gracecode_util() {
                 this._linepos._value + ": type error: " + s._value + "\n");
             throw "ErrorExit";
         },
-        "syntaxError()atRange": function(argcv, message, errlinenum, startpos, endpos) {
-            callmethod(this, "syntaxError()atRange()withSuggestions", [5], message, errlinenum, startpos, endpos, new GraceList([]));
-        },
-        "syntaxError()atRange()withSuggestion": function(argcv, message, errlinenum, startpos, endpos, suggestion) {
-            callmethod(this, "syntaxError()atRange()withSuggestions", [5], message, errlinenum, startpos, endpos, new GraceList([suggestion]));
-        },
-        "syntaxError()atRange()withSuggestions": function(argcv, message, errlinenum, startpos, endpos, suggestions) {
-            var pos = (startpos._value == endpos._value ? startpos._value : startpos._value + "-" + endpos._value);
-            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + ":" + pos
+        // This is called by various wrapper methods in the errormessages module.
+        // The parameters are explained as follows:
+        // - message: The text of the error message.
+        // - errlinenum: The line number on which the error occurred.
+        // - position: A string used to show the position of the error in the error message.
+        // - arr: The string used to draw an arrow showing the position of the error.
+        // - spacePos: The position in the error line that a space should be inserted, or false.
+        // - suggestions: A (possibly empty) list of suggestions to correct the error.
+        "syntaxError": function(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
+            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + position._value
                 + "]: Syntax error: " + message._value + "\n");
-            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
+
+            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
                 minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
                     + callmethod(this._lines, "at",
                         [1], new GraceNum(errlinenum._value - 1))._value + "\n");
-            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
-            var arr = "----";
-            for (var i=1; i<startpos._value + errlinenumsize._value; i++)
-                arr = arr + "-";
-            for (var i=startpos._value; i <= endpos._value; i++)
-                arr = arr + "^";
-            minigrace.stderr_write("  " + errlinenum._value + ": "
-                + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value))._value + "\n");
-            minigrace.stderr_write(arr + "\n");
-            if (errlinenum._value <
-                    callmethod(this._lines, "size", [])._value)
-                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value + 1))._value);
-            var numsuggestions = callmethod(suggestions, "size", []);
-            if(numsuggestions._value > 0) {
-                minigrace.stderr_write("\nDid you mean:\n");
-                for(var i=1; i <= numsuggestions._value; i++) {
-                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
-                    var suggestionline = callmethod(suggestion, "line", []);
-                    var suggestioncode = callmethod(suggestion, "code", []);
-                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
+
+            if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
+                var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
+                if(spacePos._value != false) {
+                    minigrace.stderr_write("  " + errlinenum._value + ": " + line.substring(0, spacePos._value - 1) + " "
+                        + line.substring(spacePos._value) + "\n");
+                } else {
+                    minigrace.stderr_write("  " + errlinenum._value + ": " + line + "\n");
                 }
+                minigrace.stderr_write(arr._value + "\n");
             }
 
-            throw "ErrorExit";
-        },
-        "syntaxError()atPosition": function(argcv, message, errlinenum, errpos) {
-            callmethod(this, "syntaxError()atPosition()withSuggestions", [4], message, errlinenum, errpos, new GraceList([]));
-        },
-        "syntaxError()atPosition()withSuggestion": function(argcv, message, errlinenum, errpos, suggestion) {
-            callmethod(this, "syntaxError()atPosition()withSuggestions", [4], message, errlinenum, errpos, new GraceList([suggestion]));
-        },
-        "syntaxError()atPosition()withSuggestions": function(argcv, message, errlinenum, errpos, suggestions) {
-            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
-                + ":(" + errpos._value + ")]: Syntax error: " + message._value + "\n");
-            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
-                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
-            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
-            var arr = "----";
-            for (var i=1; i<errpos._value + errlinenumsize._value; i++)
-                arr = arr + "-";
-            arr = arr + "^";
-            var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value));
-            minigrace.stderr_write("  " + errlinenum._value + ": "
-                + callmethod(line, "substringFrom()to", [2], new GraceNum(1), new GraceNum(errpos._value - 1))._value + " "
-                + callmethod(line, "substringFrom()to", [2], errpos, callmethod(line, "size", []))._value + "\n");
-            minigrace.stderr_write(arr + "\n");
             if (errlinenum._value <
-                    callmethod(this._lines, "size", [])._value)
+                    callmethod(this._lines, "size", [0])._value)
                 minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
                     + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value + 1))._value);
-            var numsuggestions = callmethod(suggestions, "size", []);
-            if(numsuggestions._value > 0) {
-                minigrace.stderr_write("\nDid you mean:\n");
-                for(var i=1; i <= numsuggestions._value; i++) {
-                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
-                    var suggestionline = callmethod(suggestion, "line", []);
-                    var suggestioncode = callmethod(suggestion, "code", []);
-                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
-                }
-            }
+                        [1], new GraceNum(errlinenum._value + 1))._value + "\n");
 
-            throw "ErrorExit";
-        },
-        "syntaxError()atLine": function(argcv, message, errlinenum) {
-            callmethod(this, "syntaxError()atLine()withSuggestions", [3], message, errlinenum, new GraceList([]));
-        },
-        "syntaxError()atLine()withSuggestion": function(argcv, message, errlinenum, suggestion) {
-            callmethod(this, "syntaxError()atRange()withSuggestions", [3], message, errlinenum, new GraceList([suggestion]));
-        },
-        "syntaxError()atLine()withSuggestions": function(argcv, message, errlinenum, suggestions) {
-            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value
-                + "]: Syntax error: " + message._value + "\n");
-            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [])._value > 1))
-                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
-            var errlinenumsize = callmethod(callmethod(errlinenum, "asString", []), "size", []);
-            var arr = "----";
-            for(var i=0; i < errlinenumsize._value; i++)
-                arr = arr + "-";
-            var linesize = callmethod(callmethod(this._lines, "at", [1], errlinenum), "size", []);
-            for(var i=0; i < linesize._value; i++)
-                arr = arr + "^";
-            minigrace.stderr_write("  " + errlinenum._value + ": "
-                + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value))._value + "\n");
-            minigrace.stderr_write(arr + "\n");
-            if (errlinenum._value <
-                    callmethod(this._lines, "size", [])._value)
-                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value + 1))._value);
             var numsuggestions = callmethod(suggestions, "size", []);
             if(numsuggestions._value > 0) {
-                minigrace.stderr_write("\nDid you mean:\n");
                 for(var i=1; i <= numsuggestions._value; i++) {
+                    minigrace.stderr_write("\nDid you mean:\n");
                     var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
-                    var suggestionline = callmethod(suggestion, "line", []);
-                    var suggestioncode = callmethod(suggestion, "code", []);
-                    minigrace.stderr_write("  Line " + suggestionline._value + ": " + suggestioncode._value + "\n");
+                    callmethod(suggestion, "print", [0]);
                 }
             }
 

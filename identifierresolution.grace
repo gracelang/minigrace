@@ -6,6 +6,7 @@ import "util" as util
 import "xmodule" as xmodule
 import "mgcollections" as collections
 import "mirrors" as mirrors
+import "errormessages" as errormessages
 
 class Scope.new(parent') {
     def elements = collections.map.new
@@ -344,13 +345,13 @@ method resolveIdentifier(node) {
     }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
-            util.syntaxError("'_' can only be used as an identifier within a match case.")atRange(node.line, node.linePos, node.linePos)
+            errormessages.syntaxError("'_' can only be used as an identifier within a match case.")atRange(node.line, node.linePos, node.linePos)
         } else {
             def suggestions = []
             var suggestion
             for(scope.elements) do { v ->
-                if(util.levenshtein(v, nm) <= 1) then {
-                    suggestion := util.suggestion.new
+                if(errormessages.levenshtein(v, nm) <= 1) then {
+                    suggestion := errormessages.suggestion.new
                     suggestion.replaceRange(node.linePos, node.linePos + node.value.size - 1)with(v)onLine(node.line)
                     suggestions.push(suggestion)
                 }
@@ -358,17 +359,17 @@ method resolveIdentifier(node) {
 
             for(scope.elementScopes) do { s ->
                 if(scope.elementScopes.get(s).contains(nm)) then {
-                    suggestion := util.suggestion.new
+                    suggestion := errormessages.suggestion.new
                     suggestion.insert("{s}.")atPosition(node.linePos)onLine(node.line)
                     suggestions.push(suggestion)
                 }
             }
 
-            suggestion := util.suggestion.new
+            suggestion := errormessages.suggestion.new
             suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
             suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
             suggestions.push(suggestion)
-            util.syntaxError("Unknown variable or method name '{nm}'.")atRange(
+            errormessages.syntaxError("Unknown variable or method name '{nm}'.")atRange(
                 node.line, node.linePos, node.linePos + node.value.size - 1)withSuggestions(suggestions)
         }
     }
@@ -426,7 +427,7 @@ method resolveIdentifiersActual(node) {
         }
         if (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
-                util.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant.")atLine(node.line)
+                errormessages.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant.")atLine(node.line)
             }
         }
     }
@@ -475,7 +476,7 @@ method checkRedefinition(ident) {
         if (getNameScope(ident.value)
             .elementDeclarations.contains(ident.value)
         ) then {
-            util.syntaxError("'{ident.value}' cannot be declared because it is already declared.")atPosition(ident.line, ident.linePos)
+            errormessages.syntaxError("'{ident.value}' cannot be declared because it is already declared.")atPosition(ident.line, ident.linePos)
         }
     }
     scope.elementDeclarations.put(ident.value, true)
@@ -530,14 +531,14 @@ method resolveIdentifiers(topNode) {
                     for (node.signature) do {s->
                         for (s.params) do {p->
                             if (parentScope.elements.contains(p.value)) then {
-                                def suggestion = util.suggestion.new
+                                def suggestion = errormessages.suggestion.new
                                 suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
                                 var primes := "'"
                                 while { scope.elements.contains(p.value ++ primes) || parentScope.elements.contains(p.value ++ primes) } do {
                                     suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
                                     primes := primes ++ "'"
                                 }
-                                util.syntaxError("The parameter name '{p.value}' cannot be used because this class inherits a method named '{p.value}'.")atRange(
+                                errormessages.syntaxError("The parameter name '{p.value}' cannot be used because this class inherits a method named '{p.value}'.")atRange(
                                     p.line, p.linePos, p.linePos + p.value.size - 1)withSuggestion(suggestion)
                             }
                         }

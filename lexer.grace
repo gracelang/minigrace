@@ -4,6 +4,7 @@ import "sys" as sys
 import "util" as util
 import "unicode" as unicode
 import "mgcollections" as collections
+import "errormessages" as errormessages
 
 // Return the numeric value of the single hexadecimal character c.
 method hexdecchar(c) {
@@ -284,52 +285,52 @@ def LexerClass = object {
                                         tok := NumToken.new(tok.value ++ "." ++ accum, 10)
                                     } else {
                                         def suggestions = []
-                                        var suggestion := util.suggestion.new
+                                        var suggestion := errormessages.suggestion.new
                                         suggestion.replaceRange(dot.linePos + 1, linePosition - 1)with(decimal.value)onLine(lineNumber)
                                         suggestions.push(suggestion)
-                                        suggestion := util.suggestion.new
+                                        suggestion := errormessages.suggestion.new
                                         suggestion.deleteRange(dot.linePos, linePosition - 1)onLine(lineNumber)
                                         suggestions.push(suggestion)
-                                        util.syntaxError("The fractional part of a number must be in base 10.")atRange(
+                                        errormessages.syntaxError("The fractional part of a number must be in base 10.")atRange(
                                             lineNumber, dot.linePos + 1, linePosition - 1)withSuggestions(suggestions)
                                     }
                                 } else {
                                     def suggestions = []
-                                    var suggestion := util.suggestion.new
+                                    var suggestion := errormessages.suggestion.new
                                     suggestion.replaceRange(tokens.last.linePos, dot.linePos - 1)with(tokens.last.value)onLine(lineNumber)
                                     suggestions.push(suggestion)
-                                    suggestion := util.suggestion.new
+                                    suggestion := errormessages.suggestion.new
                                     suggestion.deleteChar(dot.linePos)onLine(lineNumber)
                                     suggestions.push(suggestion)
-                                    util.syntaxError("A number in base {tokens.last.base} cannot have a fractional part.")atRange(
+                                    errormessages.syntaxError("A number in base {tokens.last.base} cannot have a fractional part.")atRange(
                                         lineNumber, dot.linePos, linePosition - 1)withSuggestions(suggestions)
                                 }
                             } else {
                                 if(tokens.last.kind == "string") then {
-                                    def suggestion = util.suggestion.new
+                                    def suggestion = errormessages.suggestion.new
                                     suggestion.replaceChar(dot.linePos)with("++")onLine(dot.line)
-                                    util.syntaxError("A number may only follow a '.' if there is a number before the '.'. "
+                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'. "
                                         ++ "To join a number to a string, use '++'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestion(suggestion)
                                 } elseif((tokens.last.kind == "op") || (tokens.last.kind == "bind")) then {
-                                    def suggestion = util.suggestion.new
+                                    def suggestion = errormessages.suggestion.new
                                     suggestion.insert("0")atPosition(dot.linePos)onLine(dot.line)
-                                    util.syntaxError("A number must have a digit before the decimal point.")atPosition(
+                                    errormessages.syntaxError("A number must have a digit before the decimal point.")atPosition(
                                         dot.line, dot.linePos)withSuggestion(suggestion)
                                 } elseif(tokens.last.kind == "identifier") then {
                                     def suggestions = []
                                     if(tokens.last.value == "o") then {
-                                        def suggestion = util.suggestion.new
+                                        def suggestion = errormessages.suggestion.new
                                         suggestion.replaceChar(tokens.last.linePos)with("0")onLine(tokens.last.line)
                                         suggestions.push(suggestion)
                                     }
-                                    def suggestion = util.suggestion.new
+                                    def suggestion = errormessages.suggestion.new
                                     suggestion.replaceRange(dot.linePos, linePosition - 1)with("({accum})")onLine(tokens.last.line)
                                     suggestions.push(suggestion)
-                                    util.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestions(suggestions)
                                 } else {
-                                    util.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)
                                 }
                             }
@@ -366,7 +367,7 @@ def LexerClass = object {
                     } elseif (done) then {
                         //print(mode, accum, tokens)
                     } else {
-                        util.syntaxError("Lexing error: no handler for mode {mode} with accum {accum}.")atPosition(lineNumber, linePosition)
+                        errormessages.syntaxError("Lexing error: no handler for mode {mode} with accum {accum}.")atPosition(lineNumber, linePosition)
                     }
                 }
                 startPosition := linePosition
@@ -388,12 +389,12 @@ def LexerClass = object {
                     }
                     if (inc >= base) then {
                         if((str[1] == "0") && (inc < 16)) then {
-                            def suggestion = util.suggestion.new
+                            def suggestion = errormessages.suggestion.new
                             suggestion.insert("x")atPosition(linePosition - str.size + 1)onLine(lineNumber)
-                            util.syntaxError("A number in base 16 must start with '0x'.")atPosition(
+                            errormessages.syntaxError("A number in base 16 must start with '0x'.")atPosition(
                                 lineNumber, linePosition - str.size + 1)withSuggestion(suggestion)
                         } else {
-                            def suggestion = util.suggestion.new
+                            def suggestion = errormessages.suggestion.new
                             if(str.size == 1) then {
                                 suggestion.deleteRange(linePosition - str.size - 1, linePosition - 1)onLine(lineNumber)
                             } else {
@@ -404,7 +405,7 @@ def LexerClass = object {
                             } else {
                                 "'0' to '9', 'a' to '{unicode.create(87 + base)}'"
                             }
-                            util.syntaxError("'{c}' is not a valid digit in base {base}. Valid digits are {validDigits}.")atRange(
+                            errormessages.syntaxError("'{c}' is not a valid digit in base {base}. Valid digits are {validDigits}.")atRange(
                                 lineNumber, linePosition - str.size + i, linePosition - str.size + i)withSuggestion(suggestion)
                         }
                     }
@@ -427,13 +428,13 @@ def LexerClass = object {
                         }
                         if((base < 2) || (base > 36)) then {
                             def suggestions = []
-                            var suggestion := util.suggestion.new
+                            var suggestion := errormessages.suggestion.new
                             suggestion.replaceChar(linePosition - accum.size + i)with("*")onLine(lineNumber)
                             suggestions.push(suggestion)
-                            suggestion := util.suggestion.new
+                            suggestion := errormessages.suggestion.new
                             suggestion.deleteRange(linePosition - accum.size, linePosition - accum.size + i)onLine(lineNumber)
                             suggestions.push(suggestion)
-                            util.syntaxError("Base {base} is not a valid numerical base.")atRange(
+                            errormessages.syntaxError("Base {base} is not a valid numerical base.")atRange(
                                 lineNumber, linePosition - accum.size, linePosition - accum.size + i - 1)withSuggestions(suggestions)
                         }
                         sofar := ""
@@ -444,13 +445,13 @@ def LexerClass = object {
                 }
                 if(sofar == "") then {
                     def suggestions = []
-                    var suggestion := util.suggestion.new
+                    var suggestion := errormessages.suggestion.new
                     suggestion.deleteRange(linePosition - accum.size + i - 1, linePosition - 1)onLine(lineNumber)
                     suggestions.push(suggestion)
-                    suggestion := util.suggestion.new
+                    suggestion := errormessages.suggestion.new
                     suggestion.insert("0")atPosition(linePosition)onLine(lineNumber)
                     suggestions.push(suggestion)
-                    util.syntaxError("At least one digit must follow the 'x' in a number.")atPosition(
+                    errormessages.syntaxError("At least one digit must follow the 'x' in a number.")atPosition(
                         lineNumber, linePosition - accum.size + i)withSuggestions(suggestions)
                 }
                 NumToken.new(fromBase(sofar, base).asString, base)
@@ -610,13 +611,13 @@ def LexerClass = object {
                         (ordval != 8232)) || (ordval == 9)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
-                        def suggestion = util.suggestion.new
+                        def suggestion = errormessages.suggestion.new
                         suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
                         if(ordval == 9) then {
-                            util.syntaxError("Tabs are not allowed, use spaces instead.")atRange(lineNumber,
+                            errormessages.syntaxError("Tabs are not allowed, use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         } else {
-                            util.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                                 ++ "is not a valid whitespace character, use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         }
@@ -625,9 +626,9 @@ def LexerClass = object {
                         && (ordval != 13)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
-                        def suggestion = util.suggestion.new
+                        def suggestion = errormessages.suggestion.new
                         suggestion.deleteChar(linePosition)onLine(lineNumber)
-                        util.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                        errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                             ++ "is not a valid control character, use spaces instead.")atRange(lineNumber,
                             linePosition, linePosition)withSuggestion(suggestion)
                     }
@@ -691,19 +692,19 @@ def LexerClass = object {
                         if ((c == "#") && (mode != "p")) then {
                             if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
                                 if(tokens.size == 0) then {
-                                    def suggestion = util.suggestion.new
+                                    def suggestion = errormessages.suggestion.new
                                     suggestion.addLine(1, util.lines.at(lineNumber))
                                     suggestion.addLine(lineNumber, "")
-                                    util.syntaxError("Pragma directives must be at the start of the file.")atLine(
+                                    errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
                                         lineNumber)withSuggestion(suggestion)
                                 } else {
-                                    util.syntaxError("Pragma directives must be at the start of the file.")atLine(
+                                    errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
                                         lineNumber)
                                 }
                             } else {
-                                def suggestion = util.suggestion.new
+                                def suggestion = errormessages.suggestion.new
                                 suggestion.replaceChar(linePosition)with("//")onLine(lineNumber)
-                                util.syntaxError("'#' is not allowed here. For a comment use '//'.")atRange(
+                                errormessages.syntaxError("'#' is not allowed here. For a comment use '//'.")atRange(
                                     lineNumber, linePosition, linePosition)withSuggestion(suggestion)
                             }
                         }
@@ -723,7 +724,7 @@ def LexerClass = object {
                             if ((unicode.isSeparator(ordval).not)
                                 && (ordval != 10) && (ordval != 13)
                                 && (ordval != 32)) then {
-                                util.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                                     ++ "is not a valid character, use spaces instead.")atRange(
                                     lineNumber, linePosition, linePosition)
                             }
@@ -765,9 +766,9 @@ def LexerClass = object {
                         if ((newmode == "}") && (interpdepth > 0)) then {
                             // Find the position of the opening brace to check in the interpolation is empty.
                             if (util.lines.at(tokens.last.line)[tokens.last.linePos] == "\{") then {
-                                def suggestion = util.suggestion.new
+                                def suggestion = errormessages.suggestion.new
                                 suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
-                                util.syntaxError("A string interpolation cannot be empty.")atRange(
+                                errormessages.syntaxError("A string interpolation cannot be empty.")atRange(
                                     lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
                             }
                             modechange(tokens, ")", ")")
@@ -808,17 +809,17 @@ def LexerClass = object {
                                     }
                                 }
                                 def suggestions = []
-                                var suggestion := util.suggestion.new
+                                var suggestion := errormessages.suggestion.new
                                 suggestion.insert("\\")atPosition(i)onLine(line)
                                 suggestions.push(suggestion)
                                 if((line == lineNumber) && (i == (linePosition - 2))) then {
-                                    util.syntaxError("For a '\{' character in a string use '\\\{'.")atPosition(
+                                    errormessages.syntaxError("For a '\{' character in a string use '\\\{'.")atPosition(
                                         line, i)withSuggestions(suggestions)
                                 } else {
-                                    suggestion := util.suggestion.new
+                                    suggestion := errormessages.suggestion.new
                                     suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
                                     suggestions.push(suggestion)
-                                    util.syntaxError("A string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
+                                    errormessages.syntaxError("A string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
                                         lineNumber, linePosition - accum.size - 1)withSuggestions(suggestions)
                                 }
                             } else {
@@ -838,25 +839,25 @@ def LexerClass = object {
                                 }
                                 if ((count % 2) == 1) then {
                                     def suggestions = []
-                                    var suggestion := util.suggestion.new
+                                    var suggestion := errormessages.suggestion.new
                                     suggestion.addLine(lineNumber, errorLine ++ nextLine)
                                     suggestion.addLine(lineNumber + 1, "")
                                     suggestions.push(suggestion)
-                                    suggestion := util.suggestion.new
+                                    suggestion := errormessages.suggestion.new
                                     suggestion.addLine(lineNumber, errorLine ++ "\"")
                                     suggestion.addLine(lineNumber + 1, "    ++ \"" ++ nextLine)
                                     suggestions.push(suggestion)
-                                    suggestion := util.suggestion.new
+                                    suggestion := errormessages.suggestion.new
                                     suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
                                     suggestion.addLine(lineNumber + 1, "")
                                     suggestions.push(suggestion)
-                                    util.syntaxError("A string must end with a '\"'. To insert a newline in a string use '\\n'. "
+                                    errormessages.syntaxError("A string must end with a '\"'. To insert a newline in a string use '\\n'. "
                                         ++ "To split a string over multiple lines use '++' to join strings together.")atRange(
                                         lineNumber, linePosition, linePosition)withSuggestions(suggestions)
                                 } else {
-                                    def suggestion = util.suggestion.new
+                                    def suggestion = errormessages.suggestion.new
                                     suggestion.addLine(lineNumber, errorLine ++ "\"")
-                                    util.syntaxError("A string must end with a '\"'.")atPosition(
+                                    errormessages.syntaxError("A string must end with a '\"'.")atPosition(
                                         lineNumber, linePosition)withSuggestion(suggestion)
                                 }
                             }
@@ -933,7 +934,7 @@ def LexerClass = object {
                         }
                     } elseif (inBackticks) then {
                         if (c == "\n") then {
-                            util.syntaxError("Newlines not permitted in backtick identifiers.")atPosition(lineNumber, linePosition)
+                            errormessages.syntaxError("Newlines not permitted in backtick identifiers.")atPosition(lineNumber, linePosition)
                         }
                         accum := accum ++ c
                     } elseif ((c == "\n") || (c == "\r")) then {
@@ -964,12 +965,12 @@ def LexerClass = object {
                 }
                 linePosition := linePosition + 1
                 if ((mode == "\"") && instr) then {
-                    def suggestion = util.suggestion.new
+                    def suggestion = errormessages.suggestion.new
                     suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
-                    util.syntaxError("A string must end with a '\"'.")atPosition(
+                    errormessages.syntaxError("A string must end with a '\"'.")atPosition(
                         lineNumber, linePosition)withSuggestion(suggestion)
                 } elseif ((mode == "x") && instr) then {
-                    util.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
+                    errormessages.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
                 }
                 modechange(tokens, mode, accum)
                 tokens
