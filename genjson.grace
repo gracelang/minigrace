@@ -80,7 +80,14 @@ method generateNode(n) {
                     parts.push(part);
                     part.push(generateNode(n.value))
                 } else {
-                    ret.put("type", "unknown assign")
+                    if (n.dest.in.value == "self") then {
+                        ret.put("type", "assign")
+                        def ident = ast.identifierNode.new(n.dest.value, false)
+                        ret.put("left", generateNode(ident))
+                        ret.put("right", generateNode(n.value))
+                    } else {
+                        ret.put("type", "unknown assign")
+                    }
                 }
             } else {
                 ret.put("type", "assign")
