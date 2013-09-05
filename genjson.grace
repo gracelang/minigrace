@@ -151,8 +151,13 @@ method generateNode(n) {
             ret.put("value", n.value)
         } case { "call" ->
             if (n.value.kind == "member") then {
+                var memName := n.value.value
+                if (memName.substringFrom(memName.size - 7)to(memName.size) ==
+                        "()object") then {
+                    memName := memName.substringFrom(1)to(memName.size - 8)
+                }
                 if (n.value.in.value == "prelude") then {
-                    ret.put("name", n.value.value)
+                    ret.put("name", memName)
                     ret.put("type", "dialect-method")
                     def parts = JSArray.new
                     ret.put("parts", parts)
@@ -166,7 +171,7 @@ method generateNode(n) {
                 } else {
                     if (n.value.in.value == "self") then {
                         ret.put("type", "selfcall")
-                        ret.put("name", n.value.value)
+                        ret.put("name", memName)
                         def args = JSArray.new
                         for (n.with.at(1).args) do {arg->
                             args.push(generateNode(arg))
@@ -175,7 +180,7 @@ method generateNode(n) {
                     } else {
                         ret.put("type", "request")
                         ret.put("receiver", generateNode(n.value.in))
-                        ret.put("name", n.value.value)
+                        ret.put("name", memName)
                         def args = JSArray.new
                         for (n.with.at(1).args) do {arg->
                             args.push(generateNode(arg))
