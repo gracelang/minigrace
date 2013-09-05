@@ -719,7 +719,7 @@ method compilebind(o) {
     if (dest.kind == "identifier") then {
         val := o.value
         val := compilenode(val)
-        var nm := escapestring(dest.value)
+        var nm := dest.value
         usedvars.push(nm)
         out("  " ++ varf(nm) ++ " = " ++ val ++ ";")
         o.register := val
@@ -746,7 +746,7 @@ method compiledefdec(o) {
     } else {
         snm := o.name.value
     }
-    nm := escapestring(snm)
+    nm := snm
     declaredvars.push(nm)
     var val := compilenode(o.value)
     out("  var " ++ varf(nm) ++ " = " ++ val ++ ";")
@@ -769,7 +769,7 @@ method compiledefdec(o) {
     o.register := val
 }
 method compilevardec(o) {
-    var nm := escapestring(o.name.value)
+    var nm := o.name.value
     declaredvars.push(nm)
     var val := o.value
     if (false != val) then {
