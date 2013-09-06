@@ -1355,17 +1355,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     def gctText = xmodule.gctAsString(gct)
     out "if (gctCache)"
     out "  gctCache['{escapestring(modname)}'] = \"{escapestring(gctText)}\";"
-    var lineOut := false
     for (output) do { o ->
-        if ("lineNumber =" == o.substringFrom(0)to(14)) then {
-            lineOut := o
-        } else {
-            if (false != lineOut) then {
-                outprint(lineOut)
-                lineOut := false
-            }
-            outprint(o)
-        }
+        outprint(o)
     }
     log_verbose("done.")
 }
