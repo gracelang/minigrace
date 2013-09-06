@@ -26,7 +26,6 @@ var declaredvars := []
 var bblock := "entry"
 var linenum := 1
 var staticmodules := collections.set.new
-def importpaths = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -226,10 +225,13 @@ method compileobjtypemeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "MFLAG_DEF"
+    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
             flags := "{flags} | MFLAG_CONFIDENTIAL"
+        }
+        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+            flags := "({flags}) ^ MFLAG_PRIVATE"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
@@ -267,18 +269,14 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "MFLAG_DEF"
-    var isPublic := false
+    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso{ann.value == "public"}) then {
-            isPublic := true
+        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
+            flags := "{flags} | MFLAG_CONFIDENTIAL"
         }
-        if ((ann.kind == "identifier").andAlso{ann.value == "readable"}) then {
-            isPublic := true
+        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+            flags := "({flags}) ^ MFLAG_PRIVATE"
         }
-    }
-    if (!isPublic) then {
-        flags := "{flags} | MFLAG_CONFIDENTIAL"
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -330,18 +328,18 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var rflags := "MFLAG_CONFIDENTIAL"
-    var wflags := "MFLAG_CONFIDENTIAL"
+    var rflags := "MFLAG_PRIVATE"
+    var wflags := "MFLAG_PRIVATE"
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso {ann.value == "public"}) then {
-            rflags := "0"
-            wflags := "0"
+        if ((ann.kind == "identifier").andAlso {ann.value == "confidential"}) then {
+            rflags := "{rflags} | MFLAG_CONFIDENTIAL"
+            wflags := "{wflags} | MFLAG_CONFIDENTIAL"
         }
         if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
-            rflags := "0"
+            rflags := "({rflags}) ^ MFLAG_PRIVATE"
         }
         if ((ann.kind == "identifier").andAlso {ann.value == "writable"}) then {
-            wflags := "0"
+            wflags := "({wflags}) ^ MFLAG_PRIVATE"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
@@ -574,13 +572,6 @@ method compileblock(o) {
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out("((struct UserObject *){obj})->data[1] = {pat};")
-    }
-    if (false != o.extraRuntimeData) then {
-        def erdid = ast.identifierNode.new("extraRuntimeData", false)
-        def erdmeth = ast.methodNode.new(erdid,
-            [ast.signaturePart.new(erdid, [])],
-            [o.extraRuntimeData], false)
-        compilemethod(erdmeth, obj, 2)
     }
     o.register := obj
     inBlock := origInBlock
@@ -1534,7 +1525,6 @@ method compileimport(o) {
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
     globals.push("Object {modg};")
-    importpaths.put(nm, fn)
     if (false != importHook) then {
         def res = importHook.processImport(nm)
         if (false != res) then {
@@ -1852,11 +1842,27 @@ method checkimport(nm) {
         {!util.extensions.contains("Static")}) then {
         exists := true
         addTransitiveImports("{nm}.gso", nm)
+    } elseif (io.exists(io.realpath(sys.execPath)
+        ++ "/../lib/minigrace/{nm}.gso") &&
+            {!util.extensions.contains("Static")}) then {
+        exists := true
+        addTransitiveImports(io.realpath(sys.execPath)
+            ++ "/../lib/minigrace/{nm}.gso", nm)
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)
         addTransitiveImports(io.realpath(sys.execPath)
             ++ "/StandardPrelude.gcn", nm)
+    } elseif (io.exists("{sys.execPath}/modules/{nm}.gcn")) then {
+        exists := true
+        linkfiles.push("{sys.execPath}/modules/{nm}.gcn")
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/modules/{nm}.gcn", nm)
+    } elseif (io.exists("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")) then {
+        exists := true
+        linkfiles.push("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")
+        staticmodules.add(nm)
+        addTransitiveImports("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn", nm)
     } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
             !io.exists("{nm}.grace")
         }) then {
@@ -1866,7 +1872,22 @@ method checkimport(nm) {
         linkfiles.push("{sys.execPath}/{nm}.gcn")
         staticmodules.add(nm)
         addTransitiveImports("{sys.execPath}/{nm}.gcn", nm)
-    } 
+    } elseif (io.exists("{sys.execPath}/../lib/minigrace/{nm}.gcn") && {
+            !io.exists("{nm}.grace")
+        }) then {
+        // Find static modules like unicode alongside compiler,
+        // but not modules compiled from Grace code here.
+        exists := true
+        linkfiles.push("{sys.execPath}/../lib/minigrace/{nm}.gcn")
+        addTransitiveImports("{sys.execPath}/../lib/minigrace/{nm}.gcn", nm)
+    } elseif (io.exists(nm ++ ".gcn").andAlso {!util.importDynamic}) then {
+        if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
+            exists := true
+            linkfiles.push(nm ++ ".gcn")
+            addTransitiveImports(nm ++ ".gcn", nm)
+            staticmodules.add(nm)
+        }
+    }
     
     if (exists.not) then {
         if (io.exists(nm ++ ".gcn")) then {
@@ -2099,7 +2120,7 @@ method compile(vl, of, mn, rm, bt) {
             topLevelTypes.put(typeid, true)
         }
     }
-    out("Object module_{escapeident(basename(mn))}_init() \{")
+    out("Object module_{rescmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
@@ -2254,7 +2275,6 @@ method compile(vl, of, mn, rm, bt) {
             log_verbose("linking.")
             var dlbit := ""
             var exportDynamicBit := ""
-            var targetDir := getFilePath()
             cmd := "ld -ldl -o /dev/null 2>/dev/null"
             if (io.system(cmd)) then {
                 dlbit := "-ldl"
