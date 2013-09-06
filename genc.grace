@@ -25,9 +25,8 @@ var usedvars := []
 var declaredvars := []
 var bblock := "entry"
 var linenum := 1
-var modules := collections.set.new
 var staticmodules := collections.set.new
-def importnames = collections.map.new
+def importpaths = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -1503,7 +1502,6 @@ method compiledialect(o) {
     var modg := "module_" ++ escapeident(o.value)
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
-    importnames.put(nm, modg)
     out("  if ({modg} == NULL)")
     if (staticmodules.contains(o.value)) then {
         out("    {modg} = {modg}_init();")
@@ -1513,7 +1511,6 @@ method compiledialect(o) {
     out("  Object *var_{nm} = alloc_var();")
     out("  *var_{nm} = {modg};")
     out("  prelude = {modg};")
-    modules.add("dialect")
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
@@ -1536,9 +1533,8 @@ method compileimport(o) {
     var modg := "module_" ++ escapeident(o.path)
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
-    modules.add(nm)
     globals.push("Object {modg};")
-    importnames.put(nm, modg)
+    importpaths.put(nm, fn)
     if (false != importHook) then {
         def res = importHook.processImport(nm)
         if (false != res) then {
@@ -1753,19 +1749,87 @@ method addTransitiveImports(filepath, epath) {
             checkimport(m)
         }
     }
-    if (data.contains("path")) then {
-        def path = data.get("path").first
-        if (path != epath) then {
-            util.syntax_error("Imported module '{epath}' compiled with"
-                ++ " different path '{path}'.")
+//    if (data.contains("path")) then {
+//        def path = data.get("path").first
+//        if (path != epath) then {
+//            util.syntax_error("Imported module '{epath}' compiled with"
+//                ++ " different path '{path}'.")
+//        }
+//    }
+}
+
+method basename(str) {
+    var slash := 0
+    for (1..str.size) do { i ->
+        if(str.at(i) == "/") then {
+            slash := i
+        }
+    }
+    str.substringFrom(slash+1)to(str.size)
+}
+
+method dirname(str) {
+    var slash := 0
+    for (1..str.size) do { i ->
+        if(str.at(i) == "/") then {
+            slash := i
+        }
+    }
+    if ((slash-1) > 1) then {
+        return str.substringFrom(1)to(slash-1)
+    } else {
+        return ""
+    }
+}
+
+
+
+method getFilePath() {
+// I've yet to find a good way to find the path to the target file for compilation,
+// so instead I've made this. Note the following conditions for file locations
+// minigrace [OPTION]... [FILE]
+//  --make           Compile FILE to a native executable
+//  --run            Compile FILE and execute the program [default]
+//  --source         Compile FILE to source, but no further
+//  --dynamic-module Compile FILE as a dynamic module (experimental!)
+
+    var targetDir := io.realpath(".")
+    def argv = sys.argv
+    
+    if(argv.size <= 1) then {
+        return targetDir
+    }
+    
+    for(2..argv.size) do { i->
+        var slash := 1
+        var str
+        if(argv[i].at(1) == "-") then {
+            if( (  (argv[i] == "--make")
+                || (argv[i] == "--run")
+                || (argv[i] == "--source")
+                || (argv[i] == "--dynamic-module")
+                ) && (argv.size >= (i+1)) ) then {
+                if(io.exists(argv[i+1])) then {
+                    return dirname(argv[i+1])
+                }
+            }
+        } elseif(io.exists(argv[i])) then {
+            return dirname(argv[argv.size])
         }
     }
 }
+
+
 method checkimport(nm) {
+    //importpaths.put(nm, fn)
     var exists := false
     var ext := false
     var cmd
     def argv = sys.argv
+    
+    var targetDir := getFilePath()
+    
+    // check if we've already imported the file
     if (staticmodules.contains(nm)) then {
         return true
     }
@@ -1778,6 +1842,8 @@ method checkimport(nm) {
             return true
         }
     }
+
+    // check if it's a module that's by the compiler
     if (io.exists("{sys.execPath}/{nm}.gso") &&
         {!util.extensions.contains("Static")}) then {
         exists := true
@@ -1786,27 +1852,11 @@ method checkimport(nm) {
         {!util.extensions.contains("Static")}) then {
         exists := true
         addTransitiveImports("{nm}.gso", nm)
-    } elseif (io.exists(io.realpath(sys.execPath)
-        ++ "/../lib/minigrace/{nm}.gso") &&
-            {!util.extensions.contains("Static")}) then {
-        exists := true
-        addTransitiveImports(io.realpath(sys.execPath)
-            ++ "/../lib/minigrace/{nm}.gso", nm)
     } elseif(nm == "StandardPrelude") then {
         exists := true
         staticmodules.add(nm)
         addTransitiveImports(io.realpath(sys.execPath)
             ++ "/StandardPrelude.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/modules/{nm}.gcn")) then {
-        exists := true
-        linkfiles.push("{sys.execPath}/modules/{nm}.gcn")
-        staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/modules/{nm}.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")) then {
-        exists := true
-        linkfiles.push("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")
-        staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn", nm)
     } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
             !io.exists("{nm}.grace")
         }) then {
@@ -1816,22 +1866,8 @@ method checkimport(nm) {
         linkfiles.push("{sys.execPath}/{nm}.gcn")
         staticmodules.add(nm)
         addTransitiveImports("{sys.execPath}/{nm}.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/../lib/minigrace/{nm}.gcn") && {
-            !io.exists("{nm}.grace")
-        }) then {
-        // Find static modules like unicode alongside compiler,
-        // but not modules compiled from Grace code here.
-        exists := true
-        linkfiles.push("{sys.execPath}/../lib/minigrace/{nm}.gcn")
-        addTransitiveImports("{sys.execPath}/../lib/minigrace/{nm}.gcn", nm)
-    } elseif (io.exists(nm ++ ".gcn").andAlso {!util.importDynamic}) then {
-        if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
-            exists := true
-            linkfiles.push(nm ++ ".gcn")
-            addTransitiveImports(nm ++ ".gcn", nm)
-            staticmodules.add(nm)
-        }
     } 
+    
     if (exists.not) then {
         if (io.exists(nm ++ ".gcn")) then {
             ext := ".gcn"
@@ -1872,35 +1908,58 @@ method checkimport(nm) {
     }
     
     
-    
+    // begin check file imports next to compilation target
     if (exists.not) then {
-        var i := 2
-        var slash := 1
-        var str
-        while {i <= argv.size} do {
-            if(argv.at(i).at(1) != "-") then {
-                var j := 1
-                str := argv.at(i)
-                while {j <= str.size} do {
-                    if(str.at(j) == "/") then {
-                        slash := j
-                    }
-                    j := j + 1
-                }
-                i := argv.size + 1
-            } else {
-                i := i + 1
+        // Second: check if sought module is there
+        if (io.exists("{targetDir}/{nm}.gso") &&
+            {!util.extensions.contains("Static")}) then {
+            exists := true
+            addTransitiveImports("{targetDir}/{nm}.gso", "{targetDir}/{nm}")
+        } elseif (io.exists("{targetDir}/{nm}.gcn").andAlso {!util.importDynamic}) then {
+            if (io.newer("{targetDir}/{nm}.gcn", "{targetDir}/{nm}.grace")) then {
+                exists := true
+                linkfiles.push("{targetDir}/{nm}.gcn")
+                //linkfiles.push("{nm}.gcn")
+                addTransitiveImports("{targetDir}/{nm}.gcn", "{targetDir}/{nm}")
+                staticmodules.add(nm)
             }
         }
-        var targetDir := str.substringFrom(1)to(slash)
-        if(io.exists(targetDir ++ "{nm}.gcn") && {!util.importDynamic}) then {
+        
+        if (io.exists("{targetDir}/{nm}.gcn")) then {
+            ext := ".gcn"
+        }
+        if (io.exists("{targetDir}/{nm}.grace")) then {
+            ext := ".grace"
+        }
+        if (ext != false) then {
+            cmd := argv.first ++ " --target c --make {targetDir}/{nm}" ++ ext
+            cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
+            if (util.verbosity > 30) then {
+                cmd := cmd ++ " --verbose"
+            }
+            if (false != util.vtag) then {
+                cmd := cmd ++ " --vtag " ++ util.vtag
+            }
+            cmd := cmd ++ " --noexec --no-recurse -XNoMain"
+            if (util.dynamicModule) then {
+                cmd := cmd ++ " --dynamic-module"
+            }
+            if (util.importDynamic) then {
+                cmd := cmd ++ " --import-dynamic --dynamic-module"
+            }
+            if (util.recurse) then {
+                spawnSubprocess("{targetDir}/{nm}", cmd, ["{targetDir}/{nm}.gcn", "{targetDir}/{nm}"])
+            }
             exists := true
-            linkfiles.push(targetDir ++ "{nm}.gcn")
-            addTransitiveImports(targetDir ++ "{nm}.gcn", nm)
-            staticmodules.add(nm)
-        } elseif()
+            if (!util.importDynamic) then {
+                linkfiles.push("{targetDir}/{nm}.gcn")
+                //linkfiles.push("{nm}.gcn")
+                staticmodules.add(nm)
+            }
+            ext := false
+        }
     }
-    
+
     
     
     if (exists.not) then {
@@ -1986,6 +2045,8 @@ method compile(vl, of, mn, rm, bt) {
     outfile := of
     modname := mn
     escmodname := escapeident(modname)
+    var rmodname := basename(mn)
+    var rescmodname := escapeident(rmodname)
     runmode := rm
     buildtype := bt
     outprint("#include <gracelib.h>")
@@ -2018,7 +2079,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object prelude;")
     outprint("static int isTailObject = 0;")
     outprint("static Object inheritingObject = NULL;")
-    outprint("static const char modulename[] = \"{modname}\";");
+    outprint("static const char modulename[] = \"{rmodname}\";");
     outprint("Object module_StandardPrelude_init();");
     outprint("static char *originalSourceLines[] = \{")
     for (util.cLines) do {l->
@@ -2038,7 +2099,7 @@ method compile(vl, of, mn, rm, bt) {
             topLevelTypes.put(typeid, true)
         }
     }
-    out("Object module_{escmodname}_init() \{")
+    out("Object module_{escapeident(basename(mn))}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
@@ -2054,7 +2115,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  setline(1);")
     out("  setmodule(modulename);")
     out("  setsource(originalSourceLines);")
-    var modn := "Module<{modname}>"
+    var modn := "Module<{rmodname}>"
     out("  setclassname(self, \"{modn}\");")
     out("  Object *var_MatchFailed = alloc_var();")
     out("  *var_MatchFailed = alloc_MatchFailed();")
@@ -2168,7 +2229,7 @@ method compile(vl, of, mn, rm, bt) {
         out("    callmethod(tmp_argv, \"push\", 1, partcv_push, params);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
-        out("  module_{escmodname}_init();")
+        out("  module_{rescmodname}_init();")
         out("  gracelib_stats();")
         out("  return 0;")
         out("}")
@@ -2193,6 +2254,7 @@ method compile(vl, of, mn, rm, bt) {
             log_verbose("linking.")
             var dlbit := ""
             var exportDynamicBit := ""
+            var targetDir := getFilePath()
             cmd := "ld -ldl -o /dev/null 2>/dev/null"
             if (io.system(cmd)) then {
                 dlbit := "-ldl"
@@ -2209,7 +2271,7 @@ method compile(vl, of, mn, rm, bt) {
             }
             cmd := cmd ++ " -lm {dlbit}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking")
+                io.error.write("Failed linking\n")
                 sys.exit(1)
             }
         }

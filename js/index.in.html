@@ -273,13 +273,6 @@
   <option value="testall" />All tests (slow)
  </select>
  <a id="downloadlink" download="main.grace" title="Download current module">Module</a>: <input type="text" value="main" id="modname" size="16" />
- <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
- <select id="testcases">
-<!--[!SH[ls tests | grep _test.grace | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
- </select>
- <br />
- <input type="button" value="Load sample:" onclick="loadsample(document.getElementById('sample').value)" />
- <select id="sample"><option></option><!--Will be populated dynamically//--></select>
  Visibility:
  <select id="defaultVisibility" onchange="selectvisibility();">
   <option value="standard">Standard
