@@ -78,6 +78,16 @@ var samples = {
         'dir': 'js',
         'requires': [],
     },
+    'sniff': {
+        'name': 'Sniff graphics dialect',
+        'dir': 'js',
+        'requires': [],
+    },
+    'sniffpong': {
+        'name': 'Sniff-based pong',
+        'dir': 'js',
+        'requires': ['sniff'],
+    },
 };
 
 window.onload = function() {

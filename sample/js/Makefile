@@ -1,4 +1,4 @@
-SAMPLES = simplegraphics turtle
+SAMPLES = simplegraphics turtle sniff
 SAMPLES_JS = $(addsuffix .js,$(SAMPLES))
 
 all: $(SAMPLES_JS)
