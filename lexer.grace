@@ -449,7 +449,7 @@ def LexerClass = object {
 
             method lexinput(input) {
                 var tokens := []
-                var mode := "n"
+                var mode := "d"
                 var newmode := mode
                 var instr := false
                 var inBackticks := false
