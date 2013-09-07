@@ -249,19 +249,42 @@ method image {
             ctx.restore
         }
         method isPointOver(p) {
-            if (p.x < (x - width / 2)) then {
+            // Rotate p and express it relative to (x, y), then just
+            // check whether it's within the bounds of the rectangle.
+            def c = trig.cos(-(angle + 180) / 180 * 3.1415)
+            def s = trig.sin(-(angle + 180) / 180 * 3.1415)
+            def rotatedX = c * (p.x - x) - s * (p.y - y)
+            def rotatedY = s * (p.x - x) + c * (p.y - y)
+            if (rotatedX < (-width / 2)) then {
                 return false
             }
-            if (p.x > (x + width / 2)) then {
+            if (rotatedX > (width / 2)) then {
                 return false
             }
-            if (p.y < (y - height / 2)) then {
+            if (rotatedY < (-height / 2)) then {
                 return false
             }
-            if (p.y > (y + height / 2)) then {
+            if (rotatedY > (height / 2)) then {
                 return false
             }
             return true
+        }
+    }
+}
+
+method value(b) {
+    object {
+        inherits drawable.new
+        var colour := "blue"
+        var label := ""
+        method draw(ctx) {
+            ctx.fillStyle := colour
+            ctx.font := "20px sans-serif"
+            if (label != "") then {
+                ctx.fillText("{label} {b.apply}", x, y)
+            } else {
+                ctx.fillText("{b.apply}", x, y)
+            }
         }
     }
 }
@@ -315,7 +338,7 @@ method initialise {
     canvas.addEventListener("mousemove", mouseMoveListener)
     mouseDownListener := { ev ->
         def x = (ev.clientX - canvas.offsetLeft) / canvas.offsetWidth * canvasHeight
-        def y = (ev.clientY - canvas.offsetTop - 7) / canvas.offsetHeight * canvasHeight
+        def y = (ev.clientY - canvas.offsetTop) / canvas.offsetHeight * canvasHeight
         if ((x > (canvasWidth - 20)) && (y < 20)) then {
             ev.preventDefault
             stop
@@ -335,6 +358,10 @@ method background(col) {
 }
 method random(n) {
     (n * randomModule.random).truncate
+}
+method randomPoint {
+    point.x(canvasWidth / 10 + random(canvasWidth * 0.8))
+        y(canvasHeight / 10 + random(canvasHeight * 0.8))
 }
 method start {
     initialise
