@@ -6,6 +6,7 @@ import "ast" as ast
 method wrap(v) {
     match(v)
         case { _ : String -> JSString.new(v) }
+        case { _ : Boolean -> JSBoolean.new(v) }
         case { _ -> v }
 }
 class JSObj.new {
@@ -44,6 +45,12 @@ class JSString.new(s) {
     def data = s
     method asJSON {
         return "\"{data}\""
+    }
+}
+class JSBoolean.new(b) {
+    def data = b
+    method asJSON {
+        return "{data}"
     }
 }
 
@@ -199,14 +206,25 @@ method generateNode(n) {
                             ret.put("args", args)
                         }
                     } else {
-                        ret.put("type", "request")
-                        ret.put("receiver", generateNode(n.value.in))
-                        ret.put("name", memName)
-                        def args = JSArray.new
-                        for (n.with.at(1).args) do {arg->
-                            args.push(generateNode(arg))
+                        if (n.value.in.value == "outer") then {
+                            ret.put("type", "selfcall")
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
+                            ret.put("isRequest", true)
+                        } else {
+                            ret.put("type", "request")
+                            ret.put("receiver", generateNode(n.value.in))
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
                         }
-                        ret.put("args", args)
                     }
                 }
             } else {
@@ -214,10 +232,17 @@ method generateNode(n) {
                 print "    {n.pretty(4)}"
             }
         } case { "member" ->
-            ret.put("type", "request")
-            ret.put("receiver", generateNode(n.in))
-            ret.put("name", n.value)
-            ret.put("args", JSArray.new)
+            if (n.in.value == "outer") then {
+                ret.put("type", "selfcall")
+                ret.put("name", n.value)
+                ret.put("args", JSArray.new)
+                ret.put("isRequest", true)
+            } else {
+                ret.put("type", "request")
+                ret.put("receiver", generateNode(n.in))
+                ret.put("name", n.value)
+                ret.put("args", JSArray.new)
+            }
         } case { "block" ->
             ret.put("type", "block")
             def params = JSArray.new
