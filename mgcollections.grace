@@ -313,7 +313,7 @@ class map.new {
                 count <= size
             }
             method next {
-                if (count > size) then { forceError "iterator exhausted" }
+                if (count > size) then { RuntimeError.raise "iterator exhausted" }
                 while {inner.at(idx) == unused} do {
                     idx := idx + 1
                 }
