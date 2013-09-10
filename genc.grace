@@ -1923,38 +1923,40 @@ method checkimport(nm) {
             }
         }
         
-        if (io.exists("{targetDir}/{nm}.gcn")) then {
-            ext := ".gcn"
-        }
-        if (io.exists("{targetDir}/{nm}.grace")) then {
-            ext := ".grace"
-        }
-        if (ext != false) then {
-            cmd := argv.first ++ " --target c --make {targetDir}/{nm}" ++ ext
-            cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
-            if (util.verbosity > 30) then {
-                cmd := cmd ++ " --verbose"
+        if (exists.not) then {
+            if (io.exists("{targetDir}/{nm}.gcn")) then {
+                ext := ".gcn"
             }
-            if (false != util.vtag) then {
-                cmd := cmd ++ " --vtag " ++ util.vtag
+            if (io.exists("{targetDir}/{nm}.grace")) then {
+                ext := ".grace"
             }
-            cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-            if (util.dynamicModule) then {
-                cmd := cmd ++ " --dynamic-module"
+            if (ext != false) then {
+                cmd := argv.first ++ " --target c --make {targetDir}/{nm}" ++ ext
+                cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
+                if (util.verbosity > 30) then {
+                    cmd := cmd ++ " --verbose"
+                }
+                if (false != util.vtag) then {
+                    cmd := cmd ++ " --vtag " ++ util.vtag
+                }
+                cmd := cmd ++ " --noexec --no-recurse -XNoMain"
+                if (util.dynamicModule) then {
+                    cmd := cmd ++ " --dynamic-module"
+                }
+                if (util.importDynamic) then {
+                    cmd := cmd ++ " --import-dynamic --dynamic-module"
+                }
+                if (util.recurse) then {
+                    spawnSubprocess("{targetDir}/{nm}", cmd, ["{targetDir}/{nm}.gcn", "{targetDir}/{nm}"])
+                }
+                exists := true
+                if (!util.importDynamic) then {
+                    linkfiles.push("{targetDir}/{nm}.gcn")
+                    //linkfiles.push("{nm}.gcn")
+                    staticmodules.add(nm)
+                }
+                ext := false
             }
-            if (util.importDynamic) then {
-                cmd := cmd ++ " --import-dynamic --dynamic-module"
-            }
-            if (util.recurse) then {
-                spawnSubprocess("{targetDir}/{nm}", cmd, ["{targetDir}/{nm}.gcn", "{targetDir}/{nm}"])
-            }
-            exists := true
-            if (!util.importDynamic) then {
-                linkfiles.push("{targetDir}/{nm}.gcn")
-                //linkfiles.push("{nm}.gcn")
-                staticmodules.add(nm)
-            }
-            ext := false
         }
     }
 
@@ -2028,6 +2030,7 @@ method compile(vl, of, mn, rm, bt) {
     util.log_verbose "generating C code..."
     var argv := sys.argv
     var cmd
+    var targetDir := getFilePath()
     values := vl
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
@@ -2243,7 +2246,7 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
-        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{targetDir}\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
             sys.exit(1)
@@ -2289,7 +2292,7 @@ method compile(vl, of, mn, rm, bt) {
                     exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
                 }
             }
-            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
+            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{targetDir}\" -I\"{sys.execPath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.c\" "
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.")
