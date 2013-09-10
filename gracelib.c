@@ -716,7 +716,7 @@ Object ExceptionPacket_exception(Object self, int argc, int *argcv,
 Object ExceptionPacket_lineNumber(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
-    return alloc_Float64(e->lineNumber);
+    return alloc_Float64((double)e->lineNumber);
 }
 Object ExceptionPacket_moduleName(Object self, int argc, int *argcv,
                                   Object *argv, int flags) {
@@ -746,7 +746,7 @@ Object ExceptionPacket_backtrace(Object self, int argc, int *argcv,
     struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
     gc_pause();
     Object traceList = alloc_BuiltinList();
-    for (int i=0; e->backtrace[i] != NULL; i++) {
+    for (int i=0; i < e->calldepth; i++) {
         int partcv[] = {1};
         Object btf = alloc_String(e->backtrace[i]);
         callmethod(traceList, "push", 1, partcv, &btf);
