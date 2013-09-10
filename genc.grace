@@ -1258,6 +1258,7 @@ method compilecatchcase(o) {
         def e = ie[2]
         out("  params[{idx}] = {e};")
     }
+    out "  setline({o.line});"
     out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
         ++ "{finally});")
     out("  gc_frame_end(frame{myc});")
