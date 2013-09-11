@@ -16,8 +16,8 @@ var values := []
 var auto_count := 0
 var don'tTakeBlock := false
 var braceIsType := false
-var defaultDefVisibility := "local"
-var defaultVarVisibility := "local"
+var defaultDefVisibility := "confidential"
+var defaultVarVisibility := "confidential"
 var defaultMethodVisibility := "public"
 
 // Global object containing the current token
@@ -491,22 +491,23 @@ method doif {
             }
             if (accept("identifier") && (sym.value == "else")) then {
                 next
-                if (accept("lbrace")) then {
-                    // Just take all the statements and put them into
-                    // curelse.
-                    next
-                    if (sym.line == lastToken.line) then {
-                        minIndentLevel := sym.linePos - 1
-                    } else {
-                        minIndentLevel := minInd
-                    }
-                    while {(accept("rbrace")).not} do {
-                        expectConsume {statement}
-                        v := values.pop
-                        curelse.push(v)
-                    }
-                    next
+                if ((accept("lbrace")).not) then {
+                    util.syntax_error("Expected '\{'.")
                 }
+                next
+                // Just take all the statements and put them into
+                // curelse.
+                if (sym.line == lastToken.line) then {
+                    minIndentLevel := sym.linePos - 1
+                } else {
+                    minIndentLevel := minInd
+                }
+                while {(accept("rbrace")).not} do {
+                    expectConsume {statement}
+                    v := values.pop
+                    curelse.push(v)
+                }
+                next
             }
             util.setPosition(btok.line, btok.linePos)
             var o := ast.ifNode.new(cond, body, elseblock)
@@ -872,7 +873,7 @@ method expressionrest {
 // a following identifier, and will pass along to further lookups or
 // method calls on the result.
 method dotrest {
-    if (accept("dot")) then {
+    if (acceptSameLine("dot")) then {
         var lookuptarget := values.pop
         next
         if (accept("identifier")) then {
@@ -887,6 +888,8 @@ method dotrest {
                 ) then {
                 callrest
             }
+        } else {
+            util.syntax_error("Expected identifier after '.'.")
         }
     }
 }
@@ -1074,7 +1077,9 @@ method callmprest(meth, signature, tok) {
             ln := lastline
             term
         } else {
-            expression
+            if(sym.kind != "rparen") then {
+                expectConsume {expression}
+            }
             while {accept("comma")} do {
                 nxt := values.pop
                 part.args.push(nxt)
@@ -1145,16 +1150,9 @@ method defdec {
             }
             o.annotations.extend(anns)
         }
-        if (!hasVisibility) then {
-            if (defaultDefVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
-        if (!hasAccessibility) then {
+        if ((!hasVisibility) && (!hasAccessibility)) then {
             if (defaultDefVisibility == "public") then {
-                o.annotations.push(ast.identifierNode.new("readable",
-                    false))
+                o.annotations.push(ast.identifierNode.new("public", false))
             }
         }
         values.push(o)
@@ -1207,13 +1205,7 @@ method vardec {
             }
             o.annotations.extend(anns)
         }
-        if (!hasVisibility) then {
-            if (defaultVarVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
-        if (!hasAccessibility) then {
+        if ((!hasVisibility) && (!hasAccessibility)) then {
             if (defaultVarVisibility == "public") then {
                 o.annotations.push(ast.identifierNode.new("readable",
                     false))

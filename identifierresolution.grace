@@ -133,6 +133,9 @@ method findDeepScope'(node, scope') {
                 s := s.parent
             }
         }
+        if (node.value == "prelude") then {
+            return preludeObj
+        }
         scope'.do {s->
             if (s.contains(node.value)) then {
                 return s.getScope(node.value)
@@ -422,6 +425,9 @@ method resolveIdentifiersActual(node) {
                         [ast.identifierNode.new("self", false)])
                     )
                 )
+                if (node.value.in.value == "StandardPrelude") then {
+                    return node
+                }
                 return ast.inheritsNode.new(newcall)
             }
         }
@@ -647,10 +653,8 @@ method resolveIdentifiers(topNode) {
     }
 }
 
-method handleImport(e) {
-    def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+method processGCT(gct, otherModule) {
     def classes = collections.map.new
-    def otherModule = Scope.new(builtinObj)
     if (gct.contains("classes")) then {
         for (gct.get("classes")) do {c->
             def cmeths = []
@@ -679,6 +683,11 @@ method handleImport(e) {
             otherModule.elementScopes.put(c, mScope)
         }
     }
+}
+method handleImport(e) {
+    def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+    def otherModule = Scope.new(builtinObj)
+    processGCT(gct, otherModule)
     scope.add(e.value) as "def"
     scope.elementScopes.put(e.value, otherModule)
 }
@@ -729,6 +738,7 @@ method resolve(values) {
                         preludeObj.add(mn)
                     }
                 }
+                processGCT(data, preludeObj)
             }
         }
         if (!hadDialect) then {
@@ -761,6 +771,17 @@ method resolve(values) {
         if (v'.kind == "method") then {
             if (moduleObj.elementScopes.contains(v'.value.value)) then {
                 v'.properties.put("fresh", moduleObj.getScope(v'.value.value))
+            }
+            if (v'.body.size > 0) then {
+                def lastStatement = v'.body.last
+                if (lastStatement.kind == "call") then {
+                    if (lastStatement.value.kind == "member") then {
+                        def mem = lastStatement.value
+                        if (mem.value == "clone") then {
+                            v'.properties.put("fresh", moduleObj)
+                        }
+                    }
+                }
             }
         }
     }

@@ -83,18 +83,6 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
-        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
-            var bl = callmethod(this, "==", [1], obj);
-            if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", [1], obj);
-            } else {
-                return callmethod(e, "apply", [1], obj);
-            }
-        },
         "indices": function(argcv) {
             var l = [];
             for (var i=1; i<=this._value.length; i++)
@@ -201,18 +189,6 @@ GraceNum.prototype = {
         },
         "hashcode": function(argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
-        },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
-        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
-            var bl = callmethod(this, "==", [1], obj);
-            if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", [1], obj);
-            } else {
-                return callmethod(e, "apply", [1], obj);
-            }
         },
         "inBase": function(argcv, other) {
             var mine = this._value;
@@ -324,10 +300,6 @@ GraceBoolean.prototype = {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
@@ -431,10 +403,6 @@ GraceList.prototype = {
         "/=": function(argcv, other) {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
-        },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
         },
         "prepended": function(argcv, item) {
             var l = [item];
@@ -555,7 +523,7 @@ GracePrimitiveArray.prototype = {
                 res = callmethod(block, "apply", [2], res, v);
             }
             return res;
-        },
+    },
     },
     className: "PrimitiveArray",
 };
@@ -746,7 +714,7 @@ GraceObjectMethods = {
             s += "var " + i + " = " + this.data[i]._value + " ";
         }
         return new GraceString(s + "}");
-    },    
+    },
     "asDebugString": function(argcv) {
         return callmethod(this, "asString", [0]);
     }
@@ -795,7 +763,7 @@ GraceMatchResult.prototype.methods.asString = function() {
 }
 
 function GraceSuccessfulMatch(result, bindings) {
-    this.superobj = GraceTrue;
+    this.superobj = new GraceBoolean(true);
     this.data = {};
     this.data["result"] = result;
     if (bindings == undefined)
@@ -806,7 +774,7 @@ function GraceSuccessfulMatch(result, bindings) {
 GraceSuccessfulMatch.prototype = GraceMatchResult.prototype;
 
 function GraceFailedMatch(result, bindings) {
-    this.superobj = GraceFalse;
+    this.superobj = new GraceBoolean(false);
     this.data = {};
     this.data["result"] = result;
     if (bindings == undefined)
@@ -865,13 +833,13 @@ function GraceBlock_match(argcv, o) {
                     new GraceString("Block is not a matching block"));
         }
         var rv = callmethod(this, "apply", [1], o);
-        return new GraceSuccessfulMatch(rv, []);
+        return new GraceSuccessfulMatch(rv);
     }
     var match = callmethod(this.pattern, "match", [1], o);
     if (Grace_isTrue(match)) {
         var bindings = callmethod(match, "bindings", [0]);
         var rv = callmethod(this, "applyIndirectly", [1], bindings);
-        return new GraceSuccessfulMatch(rv, []);
+        return new GraceSuccessfulMatch(rv);
     }
     return new GraceFailedMatch(rv);
 }
@@ -891,7 +859,7 @@ function classType(obj) {
 var var_Dynamic = new GraceType("Dynamic");
 var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
-var var_Boolean = classType(GraceTrue);
+var var_Boolean = classType(new GraceBoolean(true));
 var var_Type = classType(var_Boolean);
 var var_List = new GraceType("List");
 var_List.typeMethods = ["==", "!=", "push", "pop", "at", "at()put",
@@ -1361,15 +1329,13 @@ function GraceMirrorMethod(o, k) {
     this.obj = o;
 }
 GraceMirrorMethod.prototype = Grace_allocObject();
-
 GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
     return new GraceString(this.name);
 }
 GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
     var count = 1;
     var place = 1;
-    while(place < this.name.length)
-    {
+    while(place < this.name.length) {
         if(this.name[place] == "(") {
             count++;
             place++;
@@ -1491,7 +1457,10 @@ function callmethodsuper(obj, methname, argcv) {
 }
 
 function callmethod(obj, methname, argcv) {
-    if (obj === undefined)
+    if (typeof obj == 'undefined')
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("Requested method on uninitialised value."));;
+    if (obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
@@ -1511,15 +1480,10 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) != "function" || (meth._private &&
-                superDepth != sourceObject && !onOuter && !(meth.confidential && onSelf))) {
-        var ext = "";
-        if (meth && meth._private && !(meth.confidential && onSelf)) {
-            ext += " Did you mean the local " + methname + "? It is not readable.";
-        }
+    if (typeof(meth) != "function") {
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No method '" + methname + "' on " +
-                    obj.className + "." + ext));;
+                    obj.className + "."));;
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(RuntimeErrorObject,
@@ -1536,6 +1500,10 @@ function callmethod(obj, methname, argcv) {
     var beforeSize = callStack.length;
     callStack.push(obj.className + "." + methname + " at line " + lineNumber);
     var args = Array.prototype.slice.call(arguments, 3);
+    for (var i=0; i<args.length; i++)
+        if (typeof args[i] == 'undefined')
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("Uninitialised value used as argument."));;
     if (meth.paramTypes)
         checkmethodcall(meth, methname, obj, args);
     args.unshift(argcv)
@@ -1712,7 +1680,6 @@ ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
 var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
-var var_RuntimeError = RuntimeErrorObject;
 var TypeErrorObject = new GraceException("TypeError", RuntimeErrorObject);
 
 var Grace_native_prelude = Grace_allocObject();

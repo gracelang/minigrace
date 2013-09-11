@@ -78,6 +78,16 @@ var samples = {
         'dir': 'js',
         'requires': [],
     },
+    'sniff': {
+        'name': 'Sniff graphics dialect',
+        'dir': 'js',
+        'requires': [],
+    },
+    'sniffpong': {
+        'name': 'Sniff-based pong',
+        'dir': 'js',
+        'requires': ['sniff'],
+    },
 };
 
 window.onload = function() {
@@ -135,4 +145,5 @@ function loadsample(k) {
         document.getElementById('modname').value = k;
     }
     document.getElementById('stderr_txt').value += "\nUI: done loading sample.\n";
+    updateDownloadLink();
 }

@@ -227,13 +227,10 @@ method compileobjtypemeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
+    var flags := "MFLAG_DEF"
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
             flags := "{flags} | MFLAG_CONFIDENTIAL"
-        }
-        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
-            flags := "({flags}) ^ MFLAG_PRIVATE"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
@@ -271,14 +268,18 @@ method compileobjdefdecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var flags := "MFLAG_DEF | MFLAG_PRIVATE"
+    var flags := "MFLAG_DEF"
+    var isPublic := false
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
-            flags := "{flags} | MFLAG_CONFIDENTIAL"
+        if ((ann.kind == "identifier").andAlso{ann.value == "public"}) then {
+            isPublic := true
         }
-        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
-            flags := "({flags}) ^ MFLAG_PRIVATE"
+        if ((ann.kind == "identifier").andAlso{ann.value == "readable"}) then {
+            isPublic := true
         }
+    }
+    if (!isPublic) then {
+        flags := "{flags} | MFLAG_CONFIDENTIAL"
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
     outprint("  return uo->data[{pos}];")
@@ -330,18 +331,18 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("Object reader_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
         ++ "Object* args, int flags) \{")
-    var rflags := "MFLAG_PRIVATE"
-    var wflags := "MFLAG_PRIVATE"
+    var rflags := "MFLAG_CONFIDENTIAL"
+    var wflags := "MFLAG_CONFIDENTIAL"
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso {ann.value == "confidential"}) then {
-            rflags := "{rflags} | MFLAG_CONFIDENTIAL"
-            wflags := "{wflags} | MFLAG_CONFIDENTIAL"
+        if ((ann.kind == "identifier").andAlso {ann.value == "public"}) then {
+            rflags := "0"
+            wflags := "0"
         }
         if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
-            rflags := "({rflags}) ^ MFLAG_PRIVATE"
+            rflags := "0"
         }
         if ((ann.kind == "identifier").andAlso {ann.value == "writable"}) then {
-            wflags := "({wflags}) ^ MFLAG_PRIVATE"
+            wflags := "0"
         }
     }
     outprint("  struct UserObject *uo = (struct UserObject *)self;")
@@ -574,6 +575,13 @@ method compileblock(o) {
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out("((struct UserObject *){obj})->data[1] = {pat};")
+    }
+    if (false != o.extraRuntimeData) then {
+        def erdid = ast.identifierNode.new("extraRuntimeData", false)
+        def erdmeth = ast.methodNode.new(erdid,
+            [ast.signaturePart.new(erdid, [])],
+            [o.extraRuntimeData], false)
+        compilemethod(erdmeth, obj, 2)
     }
     o.register := obj
     inBlock := origInBlock
@@ -1250,6 +1258,7 @@ method compilecatchcase(o) {
         def e = ie[2]
         out("  params[{idx}] = {e};")
     }
+    out "  setline({o.line});"
     out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
         ++ "{finally});")
     out("  gc_frame_end(frame{myc});")

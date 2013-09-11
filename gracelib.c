@@ -994,11 +994,13 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     Object functionBlock = args[1];
     Object each;
     Object accum = initialValue;
+    int slot = gc_frame_newslot(accum);
     int index;
     for (index=0; index<sself->size; index++) {
         each = sself->items[index];
         int partcv[] = {2};
         accum = callmethod(functionBlock, "apply", 1, partcv, &accum);
+        gc_frame_setslot(slot, accum);
     }
     return accum;
 }
@@ -2904,8 +2906,6 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
                             self = uo->super;
                         if (m->flags & MFLAG_REALSELFALSO)
                             realself = uo->super;
-                        if (m->flags & MFLAG_PRIVATE)
-                            realself = uo->super;
                         callflags |= depth << 24;
                         break;
                     }
@@ -2992,24 +2992,6 @@ start:
         die("Maximum call stack depth exceeded.");
     }
     int searchdepth = (callflags >> 24) & 0xff;
-    if (m != NULL && m->flags & MFLAG_PRIVATE
-            && ((originalself != self && realself != sourceObject)
-                || !(callflags & CFLAG_SELF))) {
-        // Handle private field access by checking depth (only when
-        // required).
-        if (originalself != realself && callflags & CFLAG_SELF &&
-                originalself->flags & OFLAG_USEROBJ) {
-            struct UserObject *uo1 = (struct UserObject *)originalself;
-            for (int i=0; i<searchdepth; i++)
-                uo1 = (struct UserObject *)uo1->super;
-            if ((Object)uo1 != realself)
-                die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
-                    name, self->class->name, name, m->definitionModule, m->definitionLine);
-        } else {
-            die("Method lookup error: no %s in %s. Did you mean the local %s defined at %s:%i?",
-                name, self->class->name, name, m->definitionModule, m->definitionLine);
-        }
-    }
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
         gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
@@ -3691,8 +3673,8 @@ void Block__release(struct BlockObject *o) {
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
-    sprintf(buf, "Block«%s:%i»", modname, line);
-    ClassData c = alloc_class3(buf, 9, (void*)&Block__mark,
+    sprintf(buf, "Block[%s:%i]", modname, line);
+    ClassData c = alloc_class3(buf, 10, (void*)&Block__mark,
             (void*)&Block__release);
     if (!Block)
         Block = c;
@@ -3708,7 +3690,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         add_Method(c, "_apply", &identity_function);
     struct BlockObject *o = (struct BlockObject*)(
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
-    o->data = glmalloc(sizeof(Object) * 2);
+    o->data = glmalloc(sizeof(Object) * 3);
     o->super = NULL;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
@@ -4277,7 +4259,7 @@ Object minigrace_obj;
 Object minigrace_warranty(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     char *w =
-    "Copyright (C) 2011, 2012 Michael Homer and authors\n"
+    "Copyright (C) 2011-2013 Michael Homer and authors\n"
     "This program is free software: you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation, either version 3 of the License, or\n"
@@ -4319,19 +4301,6 @@ Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     return alloc_PrimitiveArrayClassObject();
 }
-Object prelude_tryElse(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    error_jump_set = 1;
-    int start_calldepth = calldepth;
-    if (setjmp(error_jump)) {
-        error_jump_set = 0;
-        calldepth = start_calldepth;
-        return callmethod(argv[1], "apply", 0, NULL, NULL);
-    }
-    Object rv = callmethod(argv[0], "apply", 0, NULL, NULL);
-    error_jump_set = 0;
-    return rv;
-}
 Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return ExceptionObject;
@@ -4343,12 +4312,6 @@ Object prelude_Error(Object self, int argc, int *argcv, Object *argv,
 Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return RuntimeErrorObject;
-}
-Object prelude_forceError(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    char *str = grcstring(argv[0]);
-    die(str);
-    return NULL;
 }
 Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {
@@ -4378,7 +4341,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 18, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 16, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4392,8 +4355,6 @@ Object grace_prelude() {
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
-    add_Method(c, "try()else", &prelude_tryElse);
-    add_Method(c, "forceError", &prelude_forceError);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);

@@ -18,6 +18,8 @@ generics:
     Describes the behaviour of generic parameters.
 gpl3:
     The text of the licence Minigrace is distributed under.
+hacking:
+    Provides guidelines for submitting modifications to Minigrace.
 index:
     This file.
 interop:

@@ -4,8 +4,7 @@
 // handles the actual drawing and user interface.
 import "turtle" as turtle
 import "StandardPrelude" as StandardPrelude
-
-def dialectParent is parent = StandardPrelude
+inherits StandardPrelude.new
 
 def red = turtle.red
 def green = turtle.green
@@ -14,16 +13,21 @@ def black = turtle.black
 
 var lineWidth := 1
 var lineColor := black
-var angle := 0
 
 method forward(dist) {
-    turtle.move(dist, angle, lineColor, lineWidth)
+    turtle.move(dist, lineColor, lineWidth)
 }
 method turnRight(ang) {
-    angle := angle + ang
+    turtle.turnRight(ang)
 }
 method turnLeft(ang) {
-    angle := angle - ang
+    turtle.turnLeft(ang)
+}
+method penUp {
+    turtle.penUp
+}
+method penDown {
+    turtle.penDown
 }
 
 method atModuleEnd(mod) {

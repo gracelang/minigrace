@@ -42,9 +42,6 @@ MiniGrace.prototype.compile = function(grace_code) {
     extensionsMap = callmethod(var_HashMap, "new", [0])
     if (this.vis == "standard") {
         // Do nothing
-    } else if (this.vis == "methodspublic") {
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString("confidential"));
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultMethodVisibility"), new GraceString("public"));
     } else {
         callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
     }

@@ -191,6 +191,7 @@ class blockNode.new(params', body') {
     var register := ""
     var matchingPattern := false
     var line := util.linenum
+    var extraRuntimeData := false
     for (params') do {p->
         p.accept(patternMarkVisitor)
     }
@@ -216,6 +217,7 @@ class blockNode.new(params', body') {
                 before(blkBefore)after(blkAfter)
         }
         n := blk.apply(n)
+        n.extraRuntimeData := extraRuntimeData
         n.line := line
         blkAfter.apply(n)
         n
@@ -976,6 +978,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         }
         s := s ++ "\n"
         s := "{s}{spc}Constructor: {constructor.value}\n"
+        if(false != dtype) then {
+            s := "{s}{spc}Returns:\n  {spc}{dtype.pretty(depth + 2)}\n"
+        }
         s := "{s}{spc}Signature:"
         for (signature) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
@@ -1031,6 +1036,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
                     s := s ++ ")"
                 }
             }
+        }
+        if(false != dtype) then {
+            s := "{s} -> {dtype.toGrace(depth + 1)}"
         }
         s := s ++ " \{"
         for (self.value) do { mx ->

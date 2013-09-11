@@ -1021,15 +1021,14 @@ var TextHighlightRules = require("./text_highlight_rules").TextHighlightRules;
 
 var GraceHighlightRules = function() {
 
-    // taken from http://download.oracle.com/javase/tutorial/java/nutsandbolts/_keywords.html
     var keywords = lang.arrayToMap(
         (
-            "object|method|class|def|var|return|inherits|is"
+            "object|method|class|def|var|return|inherits|is|dialect|import|as"
         ).split("|")
     );
 
     var buildinConstants = lang.arrayToMap(
-        ("true|false|noSuchValue").split("|")
+        ("true|false|done").split("|")
     );
     
     var langClasses = lang.arrayToMap(
