@@ -1,5 +1,5 @@
 
-var theBlock := nothing
+var theBlock
 
 method bar(n) {
     if (n == 4) then {
