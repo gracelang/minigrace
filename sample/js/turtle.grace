@@ -1,27 +1,11 @@
 import "dom" as dom
 import "mgcollections" as collections
 
-def document = dom.document
-
-// Activate the canvas tab if it isn't already
-def ts = document.getElementById("tab")
-for (0..(ts.options.length-1)) do {i->
-    if (ts.options.item(i).value == "canvas_tab") then {
-        ts.selectedIndex := i
-        dom.window.tabswitch
-    }
-}
-
-def canvas = document.getElementById("standard-canvas")
-def ctx = canvas.getContext("2d")
-ctx.lineWidth := 1
-ctx.fillStyle := "white"
-ctx.fillRect(0, 0, 500, 250)
-ctx.strokeStyle := "black"
-ctx.rect(0, 0, 500, 250)
-ctx.stroke
-
-def trig = dom.window.Math
+// These are vars to allow updating them only when "start" runs
+var document
+var canvas
+var ctx
+var trig
 
 class colour.r(r')g(g')b(b') {
     def r is readable = r'
@@ -37,6 +21,7 @@ var x := 150
 var y := 225
 var started := false
 var maxActionsDrawn := -1
+var delay := 1
 
 var turtleAngle := 0
 
@@ -48,76 +33,166 @@ def stages = collections.list.new
 def PI = 3.14159
 
 method drawTurtle(angle) {
+    initialise
+    def mctx = canvas.getContext("2d")
     def triangleSize = 30
     def x' = x + trig.sin(angle / 180 * PI) * triangleSize / 2
     def y' = y - trig.cos(angle / 180 * PI) * triangleSize / 2
-    ctx.beginPath
-    ctx.fillStyle := "rgb(0, 128, 0)"
-    ctx.lineWidth := 3
-    ctx.moveTo(x', y')
-    ctx.lineTo(x' - trig.cos((angle - 60) / 180 * PI) * triangleSize,
-              y' - trig.sin((angle - 60) / 180 * PI) * triangleSize)
-    ctx.lineTo(x' + trig.cos((angle + 60) / 180 * PI) * triangleSize,
-              y' + trig.sin((angle + 60) / 180 * PI) * triangleSize)
-    ctx.lineTo(x', y')
-    ctx.fill
-    ctx.closePath
+    mctx.beginPath
+    mctx.fillStyle := "rgb(0, 128, 0)"
+    mctx.lineWidth := 3
+    mctx.moveTo(x', y')
+    mctx.lineTo(x' - trig.cos((angle - 75) / 180 * PI) * triangleSize,
+              y' - trig.sin((angle - 75) / 180 * PI) * triangleSize)
+    mctx.lineTo(x' + trig.cos((angle + 75) / 180 * PI) * triangleSize,
+              y' + trig.sin((angle + 75) / 180 * PI) * triangleSize)
+    mctx.lineTo(x', y')
+    mctx.fill
+    mctx.closePath
 }
-method move(dist, angle, lineCol, lineWidth) {
-    // The entirety of this movement:
-    stages.push {
-        ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
-        ctx.lineWidth := lineWidth
-        def y' = trig.cos(angle / 180 * PI) * dist
-        def x' = trig.sin(angle / 180 * PI) * dist
-        ctx.beginPath
-        ctx.moveTo(x, y)
-        y := y - y'
-        x := x + x'
-        ctx.lineTo(x,y)
-        ctx.stroke
-        ctx.closePath
-    }
+
+var backingCanvas
+var drawingEnabled := true
+
+method move(dist, lineCol, lineWidth) {
+    initialise
+    def angle = turtleAngle
+    def y' = trig.cos(angle / 180 * PI) * dist
+    def x' = trig.sin(angle / 180 * PI) * dist
+    def startX = x
+    def startY = y
+    def startAngle = turtleAngle
+    y := y - y'
+    x := x + x'
     def stageN = stages.size - 1
-    // Just the rotation:
-    steps.push {
-        for (1..stageN) do {j->
-            stages.at(j).apply
-        }
-        turtleAngle := angle
-    }
+    def mctx = canvas.getContext("2d")
     // One frame for each unit of distance
     for (1..dist) do {i->
         steps.push {
-            // Draw all previous stages (not this one) before
-            // this frame's delta.
-            for (1..stageN) do {j->
-                stages.at(j).apply
+            def y'' = trig.cos(angle / 180 * PI) * i
+            def x'' = trig.sin(angle / 180 * PI) * i
+            mctx.beginPath
+            mctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
+            mctx.lineWidth := lineWidth
+            mctx.moveTo(startX, startY)
+            y := startY - y''
+            x := startX + x''
+            if (drawingEnabled) then {
+                mctx.lineTo(x, y)
+                mctx.stroke
             }
-            def y' = trig.cos(angle / 180 * PI) * i
-            def x' = trig.sin(angle / 180 * PI) * i
-            ctx.beginPath
-            ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
-            ctx.lineWidth := lineWidth
-            ctx.moveTo(x, y)
-            y := y - y'
-            x := x + x'
-            ctx.lineTo(x, y)
-            ctx.stroke
-            ctx.closePath
+            turtleAngle := startAngle
         }
     }
+    steps.push {
+        def y'' = trig.cos(angle / 180 * PI) * dist
+        def x'' = trig.sin(angle / 180 * PI) * dist
+        ctx.beginPath
+        ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
+        ctx.lineWidth := lineWidth
+        ctx.moveTo(startX, startY)
+        y := startY - y''
+        x := startX + x''
+        if (drawingEnabled) then {
+            ctx.lineTo(x, y)
+            ctx.stroke
+        }
+        turtleAngle := startAngle
+    }
+}
+method turnRight(ang) {
+    initialise
+    def startX = x
+    def startY = y
+    def startAngle = turtleAngle
+    for (0..ang) do {i->
+        steps.push {
+            x := startX
+            y := startY
+            turtleAngle := startAngle + i
+        }
+    }
+    steps.push {
+        x := startX
+        y := startY
+        turtleAngle := startAngle + ang
+    }
+    turtleAngle := turtleAngle + ang
+}
+method turnLeft(ang) {
+    initialise
+    def startX = x
+    def startY = y
+    def startAngle = turtleAngle
+    for (0..ang) do {i->
+        steps.push {
+            x := startX
+            y := startY
+            turtleAngle := startAngle - i
+        }
+    }
+    steps.push {
+        x := startX
+        y := startY
+        turtleAngle := startAngle - ang
+    }
+    turtleAngle := turtleAngle - ang
+}
+method penUp {
+    initialise
+    steps.push {
+        drawingEnabled := false
+    }
+}
+method penDown {
+    initialise
+    steps.push {
+        drawingEnabled := true
+    }
+}
+var initialised := false
+method initialise {
+    if (initialised) then {
+        return false
+    }
+    document := dom.document
+    // Activate the canvas tab if it isn't already
+    def ts = document.getElementById("tab")
+    for (0..(ts.options.length-1)) do {i->
+        if (ts.options.item(i).value == "canvas_tab") then {
+            ts.selectedIndex := i
+            dom.window.tabswitch
+        }
+    }
+    initialised := true
+    trig := dom.window.Math
+    canvas := document.getElementById("standard-canvas")
+    ctx := canvas.getContext("2d")
+    ctx.lineWidth := 1
+    ctx.fillStyle := "white"
+    ctx.fillRect(0, 0, 250, 250)
+    ctx.strokeStyle := "black"
+    ctx.rect(0, 0, 250, 250)
+    ctx.stroke
 }
 method start {
+    initialise
     // Iterate through the frames of the image and draw them,
     // each separated in time by 10ms. dom.for()waiting()do
     // uses setTimeout internally so it runs asynchronously.
-    dom.for(steps) waiting 10 do {step->
-        ctx.fillStyle := "white"
-        ctx.fillRect(0, 0, 500, 250)
+    backingCanvas := dom.document.createElement("canvas")
+    backingCanvas.height := 250
+    backingCanvas.width := 500
+    ctx := backingCanvas.getContext("2d")
+    def mctx = canvas.getContext("2d")
+    dom.for(steps) waiting(delay)do {step->
+        mctx.fillStyle := "white"
+        mctx.fillRect(0, 0, 500, 250)
         x := 150
         y := 225
+        turtleAngle := 0
         step.apply
+        mctx.drawImage(backingCanvas, 0, 0)
         drawTurtle(turtleAngle)
     }
 }

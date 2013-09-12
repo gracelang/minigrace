@@ -133,6 +133,9 @@ method findDeepScope'(node, scope') {
                 s := s.parent
             }
         }
+        if (node.value == "prelude") then {
+            return preludeObj
+        }
         scope'.do {s->
             if (s.contains(node.value)) then {
                 return s.getScope(node.value)
@@ -650,10 +653,8 @@ method resolveIdentifiers(topNode) {
     }
 }
 
-method handleImport(e) {
-    def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+method processGCT(gct, otherModule) {
     def classes = collections.map.new
-    def otherModule = Scope.new(builtinObj)
     if (gct.contains("classes")) then {
         for (gct.get("classes")) do {c->
             def cmeths = []
@@ -682,6 +683,11 @@ method handleImport(e) {
             otherModule.elementScopes.put(c, mScope)
         }
     }
+}
+method handleImport(e) {
+    def gct = xmodule.parseGCT(e.path, "/nosuchpath")
+    def otherModule = Scope.new(builtinObj)
+    processGCT(gct, otherModule)
     scope.add(e.value) as "def"
     scope.elementScopes.put(e.value, otherModule)
 }
@@ -732,6 +738,7 @@ method resolve(values) {
                         preludeObj.add(mn)
                     }
                 }
+                processGCT(data, preludeObj)
             }
         }
         if (!hadDialect) then {

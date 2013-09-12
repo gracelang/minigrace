@@ -99,7 +99,12 @@ function gracecode_dom() {
         win.methods["Math"] = function() {
             return {"methods": {
                 "cos": wrapDOMFunction(Math, "cos"),
-                "sin": wrapDOMFunction(Math, "sin")
+                "sin": wrapDOMFunction(Math, "sin"),
+                "tan": wrapDOMFunction(Math, "tan"),
+                "asin": wrapDOMFunction(Math, "asin"),
+                "acos": wrapDOMFunction(Math, "acos"),
+                "atan": wrapDOMFunction(Math, "atan"),
+                "atan2": wrapDOMFunction(Math, "atan2"),
             }}
         };
         return win;

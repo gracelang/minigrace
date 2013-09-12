@@ -873,7 +873,7 @@ method expressionrest {
 // a following identifier, and will pass along to further lookups or
 // method calls on the result.
 method dotrest {
-    if (accept("dot")) then {
+    if (acceptSameLine("dot")) then {
         var lookuptarget := values.pop
         next
         if (accept("identifier")) then {
@@ -1077,7 +1077,9 @@ method callmprest(meth, signature, tok) {
             ln := lastline
             term
         } else {
-            expression
+            if(sym.kind != "rparen") then {
+                expectConsume {expression}
+            }
             while {accept("comma")} do {
                 nxt := values.pop
                 part.args.push(nxt)

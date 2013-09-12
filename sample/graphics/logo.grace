@@ -13,16 +13,21 @@ def black = turtle.black
 
 var lineWidth := 1
 var lineColor := black
-var angle := 0
 
 method forward(dist) {
-    turtle.move(dist, angle, lineColor, lineWidth)
+    turtle.move(dist, lineColor, lineWidth)
 }
 method turnRight(ang) {
-    angle := angle + ang
+    turtle.turnRight(ang)
 }
 method turnLeft(ang) {
-    angle := angle - ang
+    turtle.turnLeft(ang)
+}
+method penUp {
+    turtle.penUp
+}
+method penDown {
+    turtle.penDown
 }
 
 method atModuleEnd(mod) {

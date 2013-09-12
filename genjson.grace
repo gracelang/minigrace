@@ -6,6 +6,7 @@ import "ast" as ast
 method wrap(v) {
     match(v)
         case { _ : String -> JSString.new(v) }
+        case { _ : Boolean -> JSBoolean.new(v) }
         case { _ -> v }
 }
 class JSObj.new {
@@ -46,6 +47,12 @@ class JSString.new(s) {
         return "\"{data}\""
     }
 }
+class JSBoolean.new(b) {
+    def data = b
+    method asJSON {
+        return "{data}"
+    }
+}
 
 method generateNode(n) {
     def ret = JSObj.new
@@ -80,7 +87,14 @@ method generateNode(n) {
                     parts.push(part);
                     part.push(generateNode(n.value))
                 } else {
-                    ret.put("type", "unknown assign")
+                    if (n.dest.in.value == "self") then {
+                        ret.put("type", "assign")
+                        def ident = ast.identifierNode.new(n.dest.value, false)
+                        ret.put("left", generateNode(ident))
+                        ret.put("right", generateNode(n.value))
+                    } else {
+                        ret.put("type", "unknown assign")
+                    }
                 }
             } else {
                 ret.put("type", "assign")
@@ -100,6 +114,9 @@ method generateNode(n) {
                 body.push(generateNode(v))
             }
             ret.put("body", body)
+        } case { "inherits" ->
+            ret.put("type", "inherits")
+            ret.put("parent", generateNode(n.value))
         } case { "object" ->
             ret.put("type", "object")
             def body = JSArray.new
@@ -148,8 +165,13 @@ method generateNode(n) {
             ret.put("value", n.value)
         } case { "call" ->
             if (n.value.kind == "member") then {
+                var memName := n.value.value
+                if (memName.substringFrom(memName.size - 7)to(memName.size) ==
+                        "()object") then {
+                    memName := memName.substringFrom(1)to(memName.size - 8)
+                }
                 if (n.value.in.value == "prelude") then {
-                    ret.put("name", n.value.value)
+                    ret.put("name", memName)
                     ret.put("type", "dialect-method")
                     def parts = JSArray.new
                     ret.put("parts", parts)
@@ -162,22 +184,47 @@ method generateNode(n) {
                     }
                 } else {
                     if (n.value.in.value == "self") then {
-                        ret.put("type", "selfcall")
-                        ret.put("name", n.value.value)
-                        def args = JSArray.new
-                        for (n.with.at(1).args) do {arg->
-                            args.push(generateNode(arg))
+                        if (n.with.size > 1) then {
+                            ret.put("name", n.value.value)
+                            ret.put("type", "dialect-method")
+                            def parts = JSArray.new
+                            ret.put("parts", parts)
+                            for (n.with) do {part->
+                                def thisPart = JSArray.new
+                                parts.push(thisPart)
+                                for (part.args) do {arg->
+                                    thisPart.push(generateNode(arg))
+                                }
+                            }
+                        } else {
+                            ret.put("type", "selfcall")
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
                         }
-                        ret.put("args", args)
                     } else {
-                        ret.put("type", "request")
-                        ret.put("receiver", generateNode(n.value.in))
-                        ret.put("name", n.value.value)
-                        def args = JSArray.new
-                        for (n.with.at(1).args) do {arg->
-                            args.push(generateNode(arg))
+                        if (n.value.in.value == "outer") then {
+                            ret.put("type", "selfcall")
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
+                            ret.put("isRequest", true)
+                        } else {
+                            ret.put("type", "request")
+                            ret.put("receiver", generateNode(n.value.in))
+                            ret.put("name", memName)
+                            def args = JSArray.new
+                            for (n.with.at(1).args) do {arg->
+                                args.push(generateNode(arg))
+                            }
+                            ret.put("args", args)
                         }
-                        ret.put("args", args)
                     }
                 }
             } else {
@@ -185,10 +232,17 @@ method generateNode(n) {
                 print "    {n.pretty(4)}"
             }
         } case { "member" ->
-            ret.put("type", "request")
-            ret.put("receiver", generateNode(n.in))
-            ret.put("name", n.value)
-            ret.put("args", JSArray.new)
+            if (n.in.value == "outer") then {
+                ret.put("type", "selfcall")
+                ret.put("name", n.value)
+                ret.put("args", JSArray.new)
+                ret.put("isRequest", true)
+            } else {
+                ret.put("type", "request")
+                ret.put("receiver", generateNode(n.in))
+                ret.put("name", n.value)
+                ret.put("args", JSArray.new)
+            }
         } case { "block" ->
             ret.put("type", "block")
             def params = JSArray.new
