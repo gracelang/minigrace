@@ -5,17 +5,17 @@ function MiniGrace() {
     this.modname = "main";
     this.lastSourceCode = "";
     this.lastMode = "";
-
+    
     this.generated_output = ""
-
+    
     this.stdout_write = function(value) {
         
     }
-
+    
     this.stderr_write = function(value) {
         console.log(value);
     };
-
+    
     this.stdin_read = function() {
         return "";
     }
@@ -24,20 +24,20 @@ function MiniGrace() {
 MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
     callStack = [];
-
+    
     // Change stdin to read from code.
     var old_stdin_read = this.stdin_read;
     this.stdin_read = function() {
         return grace_code;
     }
-
+    
     // Change stdout to store generated output.
     var old_stdout_write = this.stdout_write;
     this.stdout_write = function(value) {
         this.generated_output += value;
     }
     this.generated_output = "";
-
+    
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0])
     if (this.vis == "standard") {
@@ -54,8 +54,8 @@ MiniGrace.prototype.compile = function(grace_code) {
             // pass
         } else if (e.exctype == 'graceexception') {
             this.stderr_write("Internal compiler error, around line " + e.lineNumber
-                + ": " + e.exception.name + ": "
-                + e.message._value + "\n");
+                              + ": " + e.exception.name + ": "
+                              + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  From call to " + e.callStack[i] + "\n");
             }
@@ -75,15 +75,15 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.stderr_write("Error around line " + e.lineNumber
-                + ": " + e.exception.name + ": "
-                + e.message._value + "\n");
+                              + ": " + e.exception.name + ": "
+                              + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  From call to " + e.callStack[i] + "\n");
             }
             if (e.callStack.length > 0) {
                 this.stderr_write("Error around line " + e.lineNumber
-                    + ": " + e.exception.name + ": "
-                    + e.message._value + "\n");
+                                  + ": " + e.exception.name + ": "
+                                  + e.message._value + "\n");
             }
         } else if (e != "SystemExit") {
             this.stderr_write("Runtime error around line " + lineNumber + "\n");
@@ -104,17 +104,24 @@ MiniGrace.prototype.run = function() {
     testpass = false;
     var modname = this.modname;
     this.trapErrors(function() {
-        theModule.call({methods:{}, data: {}, className: modname});
+        if(document.getElementById("debugtoggle").checked) {
+            getVariableValues(theModule.call({methods:{}, data: {}, className: modname}));
+        } else {
+            theModule.call({methods:{}, data: {}, className: modname});
+        }
     });
 }
 
-// Returns true if the program was compiled, or false if the program has not been modified.    
+// Returns true if the program was compiled, or false if the program has not been modified.
 MiniGrace.prototype.compilerun = function(grace_code) {
     var compiled = false;
-    if (grace_code != this.lastSourceCode || this.mode != this.lastMode) {
+    if(grace_code != this.lastSourceCode ||
+       this.mode != this.lastMode ||
+       this.lastModule != document.getElementById("modname").value) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
+        this.lastModule = document.getElementById("modname").value;
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {
