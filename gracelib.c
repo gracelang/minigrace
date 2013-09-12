@@ -192,6 +192,7 @@ struct ExceptionPacketObject {
     int lineNumber;
     int calldepth;
     char **backtrace;
+    const char *moduleName;
 };
 
 struct ExceptionObject {
@@ -251,6 +252,7 @@ static int exceptionHandlerDepth;
 static Object ExceptionObject;
 static Object ErrorObject;
 static Object RuntimeErrorObject;
+static Object NoSuchMethodErrorObject;
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -260,8 +262,8 @@ struct StackFrameObject **frame_stack;
 struct ClosureEnvObject **closure_stack;
 void backtrace() {
     int i;
-    for (i=0; i<calldepth; i++) {
-        fprintf(stderr, "  Called %s\n", callstack[i]);
+    for (i=calldepth-1; i>=0; i--) {
+        fprintf(stderr, "  called from %s\n", callstack[i]);
     }
 }
 void pushstackframe(struct StackFrameObject *f, char *name) {
@@ -278,32 +280,6 @@ void setframeelementname(struct StackFrameObject *f, int p, char *name) {
     f->names[p] = name;
 }
 void gracedie(char *msg, ...) {
-    va_list args;
-    va_start(args, msg);
-    if (error_jump_set) {
-        char buf[strlen(msg) * 4 + 1024];
-        vsprintf(buf, msg, args);
-        currentException = alloc_ExceptionPacket(alloc_String(buf),
-                RuntimeErrorObject);
-        longjmp(error_jump, 1);
-    }
-    fprintf(stderr, "Error around line %i: RuntimeError: ", linenumber);
-    vfprintf(stderr, msg, args);
-    fprintf(stderr, "\n");
-    backtrace();
-    int fl = linenumber - 2;
-    if (fl < 0) fl = 0;
-    for (; fl<linenumber+1; fl++)
-        if (moduleSourceLines[fl])
-            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
-        else
-            break;
-    va_end(args);
-    if (getenv("GRACE_DEBUGGER"))
-        debugger();
-    exit(1);
-}
-void die(char *msg, ...) {
     va_list args;
     va_start(args, msg);
     if (error_jump_set) {
@@ -384,7 +360,7 @@ void grace_run_shutdown_functions() {
 
 int istrue(Object o) {
     if (o == undefined)
-        die("Undefined value used in boolean test.");
+        gracedie("Undefined value used in boolean test.");
     if (o == NULL || o == BOOLEAN_FALSE)
         return 0;
     if (o == BOOLEAN_TRUE)
@@ -566,7 +542,7 @@ Object alloc_FailedMatch(Object result, Object bindings) {
 Object literal_match(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        die("match requires an argument");
+        gracedie("match requires an argument");
     Object other = argv[0];
     int partcv[] = {1};
     if (!istrue(callmethod(self, "==", 1, partcv, argv)))
@@ -576,13 +552,13 @@ Object literal_match(Object self, int nparts, int *argcv,
 Object literal_or(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        die("| requires an argument");
+        gracedie("| requires an argument");
     return alloc_OrPattern(self, argv[0]);
 }
 Object literal_and(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        die("& requires an argument");
+        gracedie("& requires an argument");
     return alloc_AndPattern(self, argv[0]);
 }
 
@@ -702,27 +678,18 @@ Object alloc_GreaterThanPattern(Object r) {
 void printExceptionBacktrace(Object o) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)o;
     struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
-    fprintf(stderr, "Error around line %i: %s: %s\n", e->lineNumber,
-            x->name, grcstring(e->message));
-    int start_calldepth = calldepth;
-    int start_linenumber = linenumber;
-    char **start_moduleSourceLines = moduleSourceLines;
-    calldepth = e->calldepth;
-    linenumber = e->lineNumber;
-    moduleSourceLines = e->moduleSourceLines;
-    for (int i=0; e->backtrace[i] != NULL; i++) {
-        fprintf(stderr, "  Called %s\n", e->backtrace[i]);
+    fprintf(stderr, "%s around line %i: %s\n", x->name, e->lineNumber,
+            grcstring(e->message));
+    for (int i=e->calldepth - 1; i >= 0; i--) {
+        fprintf(stderr, "  called from %s\n", e->backtrace[i]);
     }
-    int fl = linenumber - 2;
+    int fl = e->lineNumber - 2;
     if (fl < 0) fl = 0;
-    for (; fl<linenumber+1; fl++)
-        if (moduleSourceLines[fl])
-            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
+    for (; fl<e->lineNumber+1; fl++)
+        if (e->moduleSourceLines[fl])
+            fprintf(stderr, "    %i: %s\n", fl + 1, e->moduleSourceLines[fl]);
         else
             break;
-    calldepth = start_calldepth;
-    linenumber = start_linenumber;
-    moduleSourceLines = start_moduleSourceLines;
 }
 void ExceptionPacket__mark(struct ExceptionPacketObject *e) {
     gc_mark(e->message);
@@ -746,6 +713,16 @@ Object ExceptionPacket_exception(Object self, int argc, int *argcv,
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
     return e->exception;
 }
+Object ExceptionPacket_lineNumber(Object self, int argc, int *argcv,
+        Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    return alloc_Float64((double)e->lineNumber);
+}
+Object ExceptionPacket_moduleName(Object self, int argc, int *argcv,
+                                  Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    return alloc_String(e->moduleName);
+}
 Object ExceptionPacket_data(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
@@ -763,6 +740,20 @@ Object ExceptionPacket_asString(Object self, int argc, int *argcv,
     int tmp[1] = {1};
     return callmethod(alloc_String(buf), "++", 1, tmp, &(e->message));
 }
+Object ExceptionPacket_backtrace(Object self, int argc, int *argcv,
+         Object *argv, int flags) {
+    struct ExceptionPacketObject *e = (struct ExceptionPacketObject *)self;
+    struct ExceptionObject *x = (struct ExceptionObject *)e->exception;
+    gc_pause();
+    Object traceList = alloc_BuiltinList();
+    for (int i=0; i < e->calldepth; i++) {
+        int partcv[] = {1};
+        Object btf = alloc_String(e->backtrace[i]);
+        callmethod(traceList, "push", 1, partcv, &btf);
+    }
+    gc_unpause();
+    return traceList;
+}
 Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     printExceptionBacktrace(self);
@@ -770,14 +761,17 @@ Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
 }
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class3("ExceptionPacket", 6,
+        ExceptionPacket = alloc_class3("ExceptionPacket", 9,
                 (void*)&ExceptionPacket__mark,
                 (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
         add_Method(ExceptionPacket, "exception", &ExceptionPacket_exception);
         add_Method(ExceptionPacket, "asString", &ExceptionPacket_asString);
+        add_Method(ExceptionPacket, "lineNumber", &ExceptionPacket_lineNumber);
+        add_Method(ExceptionPacket, "moduleName", &ExceptionPacket_moduleName);
         add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
         add_Method(ExceptionPacket, "asDebugString", &Object_asString);
+        add_Method(ExceptionPacket, "backtrace", &ExceptionPacket_backtrace);
         add_Method(ExceptionPacket, "printBacktrace",
                 &ExceptionPacket_printBacktrace);
     }
@@ -796,6 +790,7 @@ Object alloc_ExceptionPacket(Object msg, Object exception) {
         e->backtrace[i] = glmalloc(256);
         strcpy(e->backtrace[i], callstack[i]);
     }
+    e->moduleName = modulename;
     return o;
 }
 Object Exception_raise(Object self, int argc, int *argcv, Object *argv,
@@ -827,6 +822,13 @@ Object Exception_refine(Object self, int argc, int *argcv, Object *argv,
     char *name = grcstring(argv[0]);
     return alloc_Exception(name, self);
 }
+Object Exception_parent(Object self, int argc, int *argcv, Object *argv,
+                        int flags) {
+    struct ExceptionObject *e = (struct ExceptionObject *)self;
+    if (e->parent == NULL) {
+        return self;
+    } else return e->parent;
+}
 Object Exception_match(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     struct ExceptionObject *e = (struct ExceptionObject *)self;
@@ -857,11 +859,12 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_Exception(char *name, Object parent) {
     if (!Exception) {
-        Exception = alloc_class("Exception", 10);
+        Exception = alloc_class("Exception", 11);
         add_Method(Exception, "match", &Exception_match);
         add_Method(Exception, "refine", &Exception_refine);
         add_Method(Exception, "raise", &Exception_raise);
         add_Method(Exception, "raiseWith", &Exception_raiseWith);
+        add_Method(Exception, "parent", &Exception_parent);
         add_Method(Exception, "==", &Object_Equals);
         add_Method(Exception, "!=", &Object_NotEquals);
         add_Method(Exception, "asString", &Exception_asString);
@@ -934,7 +937,7 @@ Object BuiltinList_pop(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     sself->size--;
     if (sself->size < 0)
-        die("popped from negative value: %i", sself->size);
+        gracedie("popped from negative value: %i", sself->size);
     return sself->items[sself->size];
 }
 Object BuiltinList_push(Object self, int nparts, int *argcv,
@@ -961,11 +964,11 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index > sself->size) {
-        die("Error: list index out of bounds: %i/%i",
+        gracedie("Error: list index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        die("Error: list index out of bounds: %i <= 0",
+        gracedie("Error: list index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1009,11 +1012,11 @@ Object BuiltinList_index(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     int index = integerfromAny(args[0]);
     if (index > sself->size) {
-        die("Error: list index out of bounds: %i > %i\n",
+        gracedie("Error: list index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        die("Error: list index out of bounds: %i <= 0",
+        gracedie("Error: list index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1155,11 +1158,11 @@ Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index >= sself->size) {
-        die("Error: array index out of bounds: %i/%i",
+        gracedie("Error: array index out of bounds: %i/%i",
                 index, sself->size);
     }
     if (index < 0) {
-        die("Error: array index out of bounds: %i < 0",
+        gracedie("Error: array index out of bounds: %i < 0",
                 index);
     }
     sself->items[index] = val;
@@ -1170,11 +1173,11 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
     int index = integerfromAny(args[0]);
     if (index >= sself->size) {
-        die("Error: array index out of bounds: %i/%i\n",
+        gracedie("Error: array index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
-        die("Error: array index out of bounds: %i < 0",
+        gracedie("Error: array index out of bounds: %i < 0",
                 index);
     }
     return sself->items[index];
@@ -1205,7 +1208,7 @@ Object alloc_PrimitiveArray(int size) {
 Object PrimitiveArrayClassObject_new(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (argcv[0] != 1)
-        die("array construction requires size argument");
+        gracedie("array construction requires size argument");
     return alloc_PrimitiveArray(integerfromAny(args[0]));
 }
 Object PrimitiveArrayClassObject;
@@ -1227,7 +1230,7 @@ int getutf8charlen(const char *s) {
         return 1;
     if ((s[0] & 64) == 0) {
         // Unexpected continuation byte, error
-        die("Unexpected continuation byte starting character: %x",
+        gracedie("Unexpected continuation byte starting character: %x",
                 (int)(s[0] & 255));
     }
     if ((s[0] & 32) == 0)
@@ -1258,24 +1261,24 @@ int getutf8char(const char *s, char buf[5]) {
             } else
                 cp = (cp << 6) | (c & 63);
             if ((c == 192) || (c == 193) || (c > 244)) {
-                die("Invalid byte in UTF-8 sequence: %x at position %i",
+                gracedie("Invalid byte in UTF-8 sequence: %x at position %i",
                         c, i);
             }
             if ((i > 0) && ((c & 192) != 128)) {
-                die("Invalid byte in UTF-8 sequence, expected continuation "
+                gracedie("Invalid byte in UTF-8 sequence, expected continuation "
                         "byte: %x at position %i", c, i);
             }
         } else
             buf[i] = 0;
     }
     if ((cp >= 0xD800) && (cp <= 0xDFFF)) {
-        die("Illegal surrogate in UTF-8 sequence: U+%x", cp);
+        gracedie("Illegal surrogate in UTF-8 sequence: U+%x", cp);
     }
     if ((cp & 0xfffe) == 0xfffe) {
-        die("Illegal non-character in UTF-8 sequence: U+%x", cp);
+        gracedie("Illegal non-character in UTF-8 sequence: U+%x", cp);
     }
     if ((cp >= 0xfdd0) && (cp <= 0xfdef)) {
-        die("Illegal non-character in UTF-8 sequence: U+%x", cp);
+        gracedie("Illegal non-character in UTF-8 sequence: U+%x", cp);
     }
     return 0;
 }
@@ -1835,7 +1838,7 @@ Object Octets_at(Object receiver, int nparts, int *argcv,
     int size = self->blen;
     int i = integerfromAny(args[0]);
     if (i >= size)
-        die("Octets index out of bounds: %i/%i", i, size);
+        gracedie("Octets index out of bounds: %i/%i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
 Object Octets_Equals(Object receiver, int nparts, int *argcv,
@@ -2061,7 +2064,7 @@ Object Float64_inBase(Object self, int nparts, int *argcv,
     int base = (int)based;
     int mine = (int)mined;
     if (base > 36 || base < 2)
-        die("base must be in range 2..36");
+        gracedie("base must be in range 2..36");
     char symbols[] = "0123456789abcdefghijklmnopqrstuvwxyz";
     char buf[DBL_MAX_EXP + 3]; // One byte for sign, one for null, one for luck
     int i = 0;
@@ -2302,7 +2305,7 @@ Object File_write(Object self, int nparts, int *argcv,
     int wrote = fwrite(data, sizeof(char), so->blen, file);
     if (wrote != so->blen) {
         perror("Error writing to file");
-        die("Error writing to file.");
+        gracedie("Error writing to file.");
     }
     return alloc_Boolean(1);
 }
@@ -2451,7 +2454,7 @@ Object alloc_File(const char *filename, const char *mode) {
     FILE *file = fopen(filename, mode);
     if (file == NULL) {
         perror("File access failed");
-        die("File access failed: could not open %s for %s.",
+        gracedie("File access failed: could not open %s for %s.",
                 filename, mode);
     }
     return alloc_File_from_stream(file);
@@ -2938,7 +2941,7 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
-                    die("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i), got %s",
+                    gracedie("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i), got %s",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
                             m->name, m->definitionModule, m->definitionLine,
@@ -2989,7 +2992,7 @@ start:
     }
     calldepth++;
     if (calldepth == STACK_SIZE) {
-        die("Maximum call stack depth exceeded.");
+        gracedie("Maximum call stack depth exceeded.");
     }
     int searchdepth = (callflags >> 24) & 0xff;
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
@@ -2998,7 +3001,7 @@ start:
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
-            die("Type error.");
+            gracedie("Type error.");
     }
     Object prevSourceObject = sourceObject;
     sourceObject = realself;
@@ -3041,22 +3044,22 @@ start:
         char buf[1024];
         sprintf(buf, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
                 self->class->name, name, linenumber);
-        fprintf(stderr, buf);
+        fputs(buf, stderr);
         exit(1);
     }
     if (error_jump_set) {
         char buf[1024];
-        sprintf(buf, "Method lookup error: no %s in %s.", name,
+        sprintf(buf, "no method %s in %s.", name,
                 self->class->name);
         currentException = alloc_ExceptionPacket(alloc_String(buf),
-                RuntimeErrorObject);
+                NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Available methods are:\n");
     for (i=0; i<c->nummethods; i++) {
         fprintf(stderr, "  %s\n", c->methods[i].name);
     }
-    die("Method lookup error: no %s in %s.",
+    gracedie("no method %s in %s.",
             name, self->class->name);
     exit(1);
 }
@@ -3097,13 +3100,13 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        die("method call on undefined value");
+        gracedie("method call on undefined value");
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
         for (j = 0; j < nparamsv[i]; j++) {
             if (args[n] == undefined)
-                die("undefined value used as argument to %s", name);
+                gracedie("undefined value used as argument to %s", name);
             n++;
         }
     }
@@ -3295,7 +3298,7 @@ Object gracelib_readall(Object self, int nparams,
 }
 Object gracelib_length(Object self) {
     if (self == NULL) {
-        die("null passed to gracelib_length()");
+        gracedie("null passed to gracelib_length()");
         exit(1);
     } else {
         return callmethod(self, "length", 0, NULL, NULL);
@@ -3641,7 +3644,7 @@ Object Block_match(Object self, int nparts, int *argcv, Object *args, int flags)
     struct BlockObject *bo = (struct BlockObject*)self;
     if (!bo->data[1]) {
         if (nparts != 1 || argcv == NULL || argcv[0] != 1)
-            die("block is not a matching block");
+            gracedie("block is not a matching block");
         Object r = callmethod(self, "apply", nparts, argcv, args);
         return alloc_SuccessfulMatch(r, NULL);
     }
@@ -4030,6 +4033,8 @@ void gracelib_argv(char **argv) {
     gc_root(ErrorObject);
     RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
     gc_root(RuntimeErrorObject);
+    NoSuchMethodErrorObject = alloc_Exception("No such method", RuntimeErrorObject);
+    gc_root(NoSuchMethodErrorObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -4107,7 +4112,7 @@ void gc_frame_end(int pos) {
 }
 int gc_frame_newslot(Object o) {
     if (gc_framepos == gc_stack_size) {
-        die("gc shadow stack size exceeded\n");
+        gracedie("gc shadow stack size exceeded\n");
     }
     gc_stack[gc_framepos] = o;
     return gc_framepos++;
@@ -4185,7 +4190,7 @@ Object grace_userobj_outer(Object self, int nparts, int *argcv,
 Object grace_while_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        die("while-do requires exactly two arguments");
+        gracedie("while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
         gracedie("Type error: expected Block for argument condition (1) of "
                 "while()do (defined at NativePrelude:0), got %s",
@@ -4199,7 +4204,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
 Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        die("for-do requires exactly two arguments");
+        gracedie("for-do requires exactly two arguments");
     Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
     gc_frame_newslot(iter);
     // Stack slot for argument object
@@ -4216,11 +4221,11 @@ Object grace_for_do(Object self, int nparts, int *argcv,
 Object grace_octets(Object self, int npart, int *argcv,
         Object *argv, int flags) {
     if (argcv[0] != 1)
-        die("octets requires exactly one argument");
+        gracedie("octets requires exactly one argument");
     char *str = grcstring(argv[0]);
     int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL, NULL));
     if (slen % 2 != 0)
-        die("octets requires an even-length string");
+        gracedie("octets requires an even-length string");
     int len = slen / 2;
     char buf[len];
     int i, j;
@@ -4228,7 +4233,7 @@ Object grace_octets(Object self, int npart, int *argcv,
         int c1 = HEXVALC(str[j]);
         int c2 = HEXVALC(str[j+1]);
         if (c1 < 0 || c2 < 0)
-            die("octets requires only hexadecimal digits [0-9a-f]");
+            gracedie("octets requires only hexadecimal digits [0-9a-f]");
         buf[i] = 16 * c1 + c2;
     }
     return alloc_Octets(buf, len);
@@ -4312,6 +4317,10 @@ Object prelude_Error(Object self, int argc, int *argcv, Object *argv,
 Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return RuntimeErrorObject;
+}
+Object prelude_NoSuchMethodError(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return NoSuchMethodErrorObject;
 }
 Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {

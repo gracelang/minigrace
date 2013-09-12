@@ -83,6 +83,18 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
+        },
+        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
+            var bl = callmethod(this, "==", [1], obj);
+            if (Grace_isTrue(bl)) {
+                return callmethod(b, "apply", [1], obj);
+            } else {
+                return callmethod(e, "apply", [1], obj);
+            }
+        },
         "indices": function(argcv) {
             var l = [];
             for (var i=1; i<=this._value.length; i++)
@@ -189,6 +201,18 @@ GraceNum.prototype = {
         },
         "hashcode": function(argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
+        },
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
+        },
+        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
+            var bl = callmethod(this, "==", [1], obj);
+            if (Grace_isTrue(bl)) {
+                return callmethod(b, "apply", [1], obj);
+            } else {
+                return callmethod(e, "apply", [1], obj);
+            }
         },
         "inBase": function(argcv, other) {
             var mine = this._value;
@@ -300,6 +324,10 @@ GraceBoolean.prototype = {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
+        },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
@@ -403,6 +431,10 @@ GraceList.prototype = {
         "/=": function(argcv, other) {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
+        },
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
         },
         "prepended": function(argcv, item) {
             var l = [item];
