@@ -465,7 +465,7 @@ method compilemethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{"    // method " ++ textualSignature)
+    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     increaseindent
     out("  var curarg = 1;")
     for (o.signature.indices) do { partnr ->
