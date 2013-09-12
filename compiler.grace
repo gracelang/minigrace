@@ -26,7 +26,7 @@ if (util.target == "help") then {
         print("  {t}")
     }
     sys.exit(0)
-}/Developer/test/js/samples.js
+}
 
 if (util.interactive) then {
     interactive.startRepl
