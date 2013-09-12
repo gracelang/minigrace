@@ -184,54 +184,6 @@ method accept(t)onLineOfLastOr(other) {
 method tokenOnSameLine {
     (lastline == sym.line) || (sym.indent > lastIndent)
 }
-// Require a t as the current token; if not, raise a syntax error.
-method expect(t) {
-    if (sym.kind == t) then {
-        return true
-    }
-    errormessages.syntaxError("Expected {t}, got {sym.kind}: '{sym.value}'.")atPosition(sym.line, sym.linePos)
-}
-// Require a t OR s as the current token; if not, raise a syntax error.
-method expect(t)or(s) {
-    if (sym.kind == t) then {
-        return true
-    }
-    if (sym.kind == s) then {
-        return true
-    }
-    util.setPosition(sym.line, sym.linePos)
-    errormessages.syntaxError("Expected {t} or {s}, got {sym.kind}: '{sym.value}'.")atPosition(sym.line, sym.linePos)
-}
-// Require a t OR s OR u as the current token; if not, raise a syntax error.
-method expect(t)or(s)or(u) {
-    if (sym.kind == t) then {
-        return true
-    } elseif (sym.kind == s) then {
-        return true
-    } elseif (sym.kind == u) then {
-        return true
-    }
-    util.setPosition(sym.line, sym.linePos)
-    errormessages.syntaxError("Expected {t} or {s} or {u}, got {sym.kind}: '{sym.value}'.")atPosition(sym.line, sym.linePos)
-}
-// Expect block to consume at least one token
-method expectConsume(ablock) {
-    var sz := tokens.size
-    ablock.apply
-    if (tokens.size == sz) then {
-        util.setPosition(sym.line, sym.linePos)
-        errormessages.syntaxError("Unable to consume token: {sym.kind}: '{sym.value}'.")atPosition(sym.line, sym.linePos)
-    }
-}
-// Expect block to consume at least one token, or report string error
-method expectConsume(ablock)error(msg) {
-    var sz := tokens.size
-    ablock.apply
-    if (tokens.size == sz) then {
-        util.setPosition(sym.line, sym.linePos)
-        errormessages.syntaxError("Unable to consume token: {msg}.")atPosition(sym.line, sym.linePos)
-    }
-}
 // Check if block did consume at least one token.
 method didConsume(ablock) {
     var sz := tokens.size
@@ -2417,9 +2369,6 @@ method doclass {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
         pushidentifier // A class currently cannot be anonymous
-        if (!accept("dot")) then {
-            return doclassOld
-        }
         def cname = values.pop
         next
         var s := methodsignature(false)
@@ -2465,114 +2414,6 @@ method doclass {
             }
         }
         values.push(o)
-        minIndentLevel := localMinIndentLevel
-    }
-}
-
-method doclassOld {
-    if (true) then {
-        def localMinIndentLevel = minIndentLevel
-        generic
-        var superclass := false
-        if (accept("identifier") && (sym.value == "extends")) then {
-            next
-            expect("identifier")
-            identifier
-            generic
-            var nm := values.pop
-            if (accept("dot").not) then {
-                errormessages.syntaxError("extends must have '.new' invocation on right.")atPosition(sym.line, sym.linePos)
-            }
-            next
-            expect("identifier")
-            identifier
-            var mn := values.pop
-            var scargs := []
-            if (accept("lparen")) then {
-                next
-                while {accept("rparen").not} do {
-                    expectConsume {expression}
-                    var tmp := values.pop
-                    scargs.push(tmp)
-                }
-                next
-            }
-            superclass := ast.callNode.new(ast.memberNode.new(mn.value, nm),
-                [ast.callWithPart.new(mn.value, scargs)])
-        }
-        var cname := values.pop
-        if (cname.kind != "generic") then {
-            util.warning("Old class syntax: should be 'class {cname.value}.new'"
-                ++ " or other factory method name.\n")
-        }
-        if (accept("lbrace")) then {
-            values.push(object {
-                var kind := "lbrace"
-                var register := ""
-            })
-            next
-            var params := []
-            if (accept("identifier")) then {
-                // We have a parameter list, because everything else that
-                // can appear first in a class body is a keyword.
-                pushidentifier
-                var pid := values.pop
-                if (accept("colon")) then {
-                    next
-                    pushidentifier
-                    generic
-                    pid.dtype := values.pop
-                }
-                params.push(pid)
-                while {accept("comma")} do {
-                    next
-                    pushidentifier
-                    generic
-                    pid := values.pop
-                    if (accept("colon")) then {
-                        next
-                        pushidentifier
-                        generic
-                        pid.dtype := values.pop
-                    }
-                    params.push(pid)
-                }
-                if (accept("arrow")) then {
-                    next
-                } else {
-                    errormessages.syntaxError("Expected '->'.")atPosition(sym.line, sym.linePos)
-                }
-            }
-            var sz := values.size
-            while {(accept("rbrace")).not} do {
-                // Body of the class, the same as the body of an object.
-                vardec
-                methoddec
-                defdec
-                inheritsdec
-                if (values.size == sz) then {
-                    errormessages.syntaxError("Did not consume anything in class declaration.")atPosition(sym.line, sym.linePos)
-                }
-                sz := values.size
-            }
-            next
-            var rbody := []
-            var n := values.pop
-            while {n.kind != "lbrace"} do {
-                rbody.push(n)
-                n := values.pop
-            }
-            var body := []
-            for (rbody.indices) do { x ->
-                var p := rbody.pop
-                body.push(p)
-            }
-            var o := ast.classNode.new(cname, [ast.signaturePart.new("new", params)],
-                body, superclass, ast.identifierNode.new("new", false), false)
-            values.push(o)
-        } else {
-            errormessages.syntaxError("Class definition without body.")atPosition(sym.line, sym.linePos)
-        }
         minIndentLevel := localMinIndentLevel
     }
 }
@@ -3068,7 +2909,7 @@ method doanontype {
         auto_count := auto_count + 1
         next
         while {accept("rbrace").not} do {
-            expectConsume {domethodtype}
+            domethodtype
             methods.push(values.pop)
         }
         next
@@ -3112,7 +2953,7 @@ method dotype {
         if (accept("lbrace")) then {
             next
             while {accept("rbrace").not} do {
-                expectConsume {domethodtype}
+                domethodtype
                 methods.push(values.pop)
             }
             next
