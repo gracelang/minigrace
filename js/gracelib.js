@@ -1075,6 +1075,7 @@ function gracecode_io() {
 }
 
 function gracecode_sys() {
+    var startTime = (new Date).getTime()/1000;
     this.methods.argv = function() {
         return new GraceList([
             new GraceString("minigrace"),
@@ -1082,7 +1083,7 @@ function gracecode_sys() {
             new GraceString("js"),
         ]);
     };
-    this.methods.elapsed = function() {return new GraceNum((new Date).getTime()/1000);};
+    this.methods.elapsed = function() {return new GraceNum(((new Date).getTime()/1000)-startTime);};
     this.methods.exit = function() {
         throw "SystemExit";
     };
