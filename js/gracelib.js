@@ -1614,7 +1614,14 @@ GraceExceptionPacket.prototype = {
         "asString": function(argcv) {
             return new GraceString(this.exception.name + ": "
                     + this.message._value);
-        }
+        },
+        "asDebugString": function(argcv) {
+            return new GraceString(this.exception.name + ": "
+                    + this.message._value);
+        },
+        "lineNumber": function(argcv) {
+            return new GraceNum(window.lineNumber);
+        },
     },
     exctype: 'graceexception'
 };
@@ -1653,6 +1660,9 @@ GraceException.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "asString": function() {
+            return new GraceString(this.name);
+        }
     },
     className: 'Exception'
 }
