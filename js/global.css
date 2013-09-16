@@ -1,0 +1,109 @@
+.tabbox {
+    width: 100%;
+}
+.tab {
+    float: left;
+    border: 1px solid #888;
+    background: #eee;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    padding: 0px 5px;
+    cursor: default;
+}
+.tab:hover {
+    background: #e0e0e0;
+}
+.selected {
+    background: #fff;
+    border: 1px solid #bbb;
+}
+.selected:hover {
+    background: #fff;
+    border: 1px solid #bbb;
+}
+
+.tab input {
+    display: none;
+}
+    
+.close {
+    font-weight: bold;
+    font-family: arial;
+    font-size: 8pt;
+    color: #aaa;
+    border: 1px solid transparent;
+    display: block;
+    border-radius: 3px;
+    background: transparent;
+    text-align: center;
+    margin: 2px 0px 0px 5px;
+    width: 12px;
+    float: right;
+}
+
+.close:hover {
+        color: #fff;
+        border: 1px solid #aaa;
+        border-radius: 3px;
+        background: #bbb;
+        text-align: center;
+        margin: 2px 0px 0px 5px;
+        width: 12px;
+        float: right;
+}
+.selected .close {
+}
+#plus {
+    float: left;
+    border: 1px solid #888;
+    background: #eee;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    padding: 0px 5px;
+    cursor: default;
+    color: #666;
+}
+
+#code_tabs textarea {
+    display: none;
+}
+    
+canvas {border: 1px solid black;}
+        
+#output {
+    float: right;
+    margin-top: 1px;
+    width: 50%;
+}
+
+#output textarea {
+    width: 100%;
+}
+
+    
+#code_area {
+    float: left;
+    width: 50%;
+}
+#code_area textarea {
+    width: 99%;
+}
+
+#stderr_txt{
+    clear: both;
+    width: 100%;
+    font-family: Monospace;
+}
+
+#stdout_options {
+    float: right;
+}
+
+#code_options {
+    float: right;
+    margin-right: 30px;
+}
+
+a:visited {
+    color: red;
+}
