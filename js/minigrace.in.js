@@ -103,11 +103,13 @@ MiniGrace.prototype.compilerun = function(grace_code) {
     var compiled = false;
     if(grace_code != this.lastSourceCode ||
        this.mode != this.lastMode ||
-       this.lastModule != document.getElementById("modname").value) {
+       this.lastModule != document.getElementById("modname").value ||
+       this.visDefault != document.getElementById("defaultVisibility").value) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
         this.lastModule = document.getElementById("modname").value;
+        this.visDefault = document.getElementById("defaultVisibility").value;	
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {
