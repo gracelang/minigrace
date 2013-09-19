@@ -53,12 +53,8 @@ MiniGrace.prototype.compile = function(grace_code) {
         } else if (e == "SystemExit") {
             // pass
         } else if (e.exctype == 'graceexception') {
-            this.stderr_write("Internal compiler error, around line " + e.lineNumber
-                              + ": " + e.exception.name + ": "
-                              + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  From call to " + e.callStack[i] + "\n");
-            }
+            this.stderr_write("Internal compiler error!");
+            callmethod(e, "printBacktrace", [0]);
         } else {
             throw e;
         }
@@ -74,17 +70,7 @@ MiniGrace.prototype.trapErrors = function(func) {
         func();
     } catch (e) {
         if (e.exctype == 'graceexception') {
-            this.stderr_write("Error around line " + e.lineNumber
-                              + ": " + e.exception.name + ": "
-                              + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  From call to " + e.callStack[i] + "\n");
-            }
-            if (e.callStack.length > 0) {
-                this.stderr_write("Error around line " + e.lineNumber
-                                  + ": " + e.exception.name + ": "
-                                  + e.message._value + "\n");
-            }
+            callmethod(e, "printBacktrace", [0]);
         } else if (e != "SystemExit") {
             this.stderr_write("Runtime error around line " + lineNumber + "\n");
             throw e;

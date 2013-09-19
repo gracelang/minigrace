@@ -1,6 +1,15 @@
 var lineNumber = 0;
+var moduleName = "null";
 var superDepth = null;
 var invocationCount = 0;
+
+function setLineNumber(n) {
+    lineNumber = n;
+}
+
+function setModuleName(m) {
+    moduleName = m;
+}
 
 function GraceString(s) {
     this._value = s;
@@ -691,6 +700,12 @@ function Grace_egal(o1, o2) {
 function Grace_print(obj) {
     var s = callmethod(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
+    return GraceDone;
+}
+
+function Grace_errorPrint(obj) {
+    var s = callmethod(obj, "asString", [0]);
+    minigrace.stderr_write(s._value + "\n");
     return GraceDone;
 }
 
@@ -1596,9 +1611,11 @@ function GraceExceptionPacket(exception, message, data) {
     this.message = message;
     this.data = data;
     this.lineNumber = lineNumber;
+    this.moduleName = moduleName;
     this.callStack = [];
     for (var i=0; i<callStack.length; i++)
         this.callStack.push(callStack[i]);
+    this.superobj = Grace_allocObject();
 }
 GraceExceptionPacket.prototype = {
     methods: {
@@ -1615,20 +1632,49 @@ GraceExceptionPacket.prototype = {
             return new GraceString(this.exception.name + ": "
                     + this.message._value);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString(this.exception.name + ": "
-                    + this.message._value);
-        },
         "lineNumber": function(argcv) {
-            return new GraceNum(window.lineNumber);
+            return new GraceNum(this.lineNumber);
         },
+        "moduleName": function(argcv) {
+            return new GraceString(this.moduleName);
+        },
+        "backtrace": function(argcv) {
+            var bt = new GraceList([]);
+            for (var i=0; i<this.callStack.length; i++)
+                callmethod(bt, "push", [1], new GraceString(this.callStack[i]));
+            return bt;
+        },
+        "printBacktrace": function(argcv) {
+            var emptyS = new GraceString("");
+            var exceptionS = callmethod(this, "exception", [0]);
+            var opresult10 = callmethod(emptyS, "++", [1], exceptionS);
+            var onLineS = new GraceString(" on line ");
+            var opresult13 = callmethod(opresult10, "++", [1], onLineS);
+            var lineNumberS = callmethod(this, "lineNumber", [0]);
+            var opresult16 = callmethod(opresult13, "++", [1], lineNumberS);
+            var ofS = new GraceString(" of ");
+            var opresult19 = callmethod(opresult16, "++", [1], ofS);
+            var moduleNameS = callmethod(this, "moduleName", [0]);
+            var opresult22 = callmethod(opresult19, "++", [1], moduleNameS);
+            var colonS = new GraceString(": ");
+            var opresult25 = callmethod(opresult22, "++", [1], colonS);
+            var messageS = callmethod(this, "message", [0]);
+            var opresult28 = callmethod(opresult25, "++", [1], messageS);
+            var call32 = Grace_errorPrint(opresult28);
+            var bt = callmethod(this, "backtrace", [0]);
+            var cf = new GraceString("  called from ");
+            while (callmethod(bt, "size", [0])._value > 0) {
+                Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt,"pop", [0])));
+            };
+        }
     },
     exctype: 'graceexception'
 };
 
-function GraceException(name, par) {
+function GraceException(name, parent) {
     this.name = name;
-    this.par = par;
+    this.parent = parent;
+    this.superobj = Grace_allocObject();
 }
 GraceException.prototype = {
     methods: {
@@ -1650,18 +1696,32 @@ GraceException.prototype = {
             while (exc) {
                 if (exc.name == this.name)
                     return new GraceSuccessfulMatch(other);
-                exc = exc.par;
+                exc = exc.parent;
             }
             return new GraceFailedMatch(other);
         },
         "|": function(argcv, o) {
             return new GraceOrPattern(this, o);
         },
+        "==": function(argcv, o) {
+            if (o == this) return GraceTrue; // not just for efficiency, but
+                                             // also to avoid infinite regress
+            if (o.className != 'Exception') return GraceFalse;
+            if (o.name != this.name) return GraceFalse;
+            if (o.parent != this.parent) return GraceFalse;
+            return GraceTrue;
+        },
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
         "asString": function() {
             return new GraceString(this.name);
+        },
+        "parent": function() {
+            if (this.parent == false)
+                return this
+            else
+                return this.parent;
         }
     },
     className: 'Exception'

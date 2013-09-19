@@ -22,6 +22,7 @@ var modules := []
 var values := []
 var outfile
 var modname := "main"
+var previousModname := ""
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
@@ -191,8 +192,10 @@ method compileobjdefdec(o, selfr, pos) {
         out("  {selfr}.superobj = {val};")
     }
     if (o.dtype != false) then {
-        linenum := o.line
-        out "  lineNumber = {linenum};"
+        if (linenum != o.line) then {
+            linenum := o.line
+            out("  setLineNumber({linenum});")
+        }
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {val})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -248,8 +251,10 @@ method compileobjvardec(o, selfr, pos) {
         if (val == "undefined") then {
             return true
         }
-        linenum := o.line
-        out "  lineNumber = {linenum};"
+        if (linenum != o.line) then {
+            linenum := o.line
+            out("setLineNumber({linenum});")
+        }
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {val})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -481,8 +486,8 @@ method compilemethod(o, selfobj) {
             out("  curarg += argcv[{partnr - 1}] - {part.params.size};")
         } else {
             if (!o.selfclosure) then {
-                out "if (argcv[{partnr - 1}] != {part.params.size})"
-                out("  callmethod(RuntimeErrorObject, \"raise\", [1], new "
+                out "  if (argcv[{partnr - 1}] != {part.params.size})"
+                out("    callmethod(RuntimeErrorObject, \"raise\", [1], new "
                     ++ "GraceString(\"wrong number of arguments for list "
                     ++ "{partnr} of {textualSignature}\"));")
             }
@@ -511,8 +516,10 @@ method compilemethod(o, selfobj) {
                 if (p.dtype != false) then {
                     for (o.generics) do {g->
                         if (p.dtype.value == g.value) then {
-                            linenum := o.line
-                            out "  lineNumber = {linenum};"
+                            if (linenum != o.line) then {
+                                linenum := o.line
+                                out("  setLineNumber({linenum});")
+                            }
                             out "  if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
                             out "    [1], arguments[curarg2])))"
                             out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -806,8 +813,10 @@ method compiledefdec(o) {
         out("  this.methods[\"{nm}\"].debug = \"def\";")
     }
     if (o.dtype != false) then {
-        linenum := o.line
-        out "  lineNumber = {linenum};"
+        if (linenum != o.line) then {
+            linenum := o.line
+            out("  setLineNumber({linenum});")
+        }
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {varf(nm)})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -839,8 +848,10 @@ method compilevardec(o) {
     }
     if (o.dtype != false) then {
         if (val != "false") then {
-            linenum := o.line
-            out "  lineNumber = {linenum};"
+            if (linenum != o.line) then {
+                linenum := o.line
+                out("  setLineNumber({linenum});")
+            }
             out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
             out "    [1], {varf(nm)})))"
             out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -961,8 +972,8 @@ method compilecall(o) {
             call := call ++ ", " ++ arg
         }
         call := call ++ ");"
-        out("onOuter = true;");
-        out("onSelf = true;");
+        out("  onOuter = true;");
+        out("  onSelf = true;");
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
@@ -978,7 +989,7 @@ method compilecall(o) {
             call := call ++ ", " ++ arg
         }
         call := call ++ ");"
-        out("onSelf = true;");
+        out("  onSelf = true;");
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
@@ -1111,7 +1122,11 @@ method compilenode(o) {
     compilationDepth := compilationDepth + 1
     if (linenum != o.line) then {
         linenum := o.line
-        out("  lineNumber = " ++ linenum);
+        out("  setLineNumber({linenum});")
+    }
+    if (modname != previousModname) then {
+        previousModname := modname
+        out("  setModuleName(\"{modname}\");")
     }
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
