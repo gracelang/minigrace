@@ -22,7 +22,6 @@ var modules := []
 var values := []
 var outfile
 var modname := "main"
-var previousModname := ""
 var runmode := "build"
 var buildtype := "bc"
 var gracelibPath := "gracelib.o"
@@ -542,6 +541,11 @@ method compilemethod(o, selfobj) {
     }
     out("  var returnTarget = invocationCount;")
     out("  invocationCount++;")
+    // Setting the location is deliberately delayed to this point, so that
+    // argument checking errors are reported as errors at the request site
+    // --- which is where the error happens.
+    out("  setLineNumber({linenum});")
+    out("  setModuleName(\"{modname}\");")
     out("  try \{")
     increaseindent
     var ret := "undefined"
@@ -1123,10 +1127,6 @@ method compilenode(o) {
     if (linenum != o.line) then {
         linenum := o.line
         out("  setLineNumber({linenum});")
-    }
-    if (modname != previousModname) then {
-        previousModname := modname
-        out("  setModuleName(\"{modname}\");")
     }
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
