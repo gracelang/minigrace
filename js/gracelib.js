@@ -1546,7 +1546,7 @@ function callmethod(obj, methname, argcv) {
         overrideReceiver = null;
     }
     var beforeSize = callStack.length;
-    callStack.push(obj.className + "." + methname + " at line " + lineNumber);
+    callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
     var args = Array.prototype.slice.call(arguments, 3);
     for (var i=0; i<args.length; i++)
         if (typeof args[i] == 'undefined')
