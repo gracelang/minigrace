@@ -1,5 +1,5 @@
 
-class A {
+class A.new {
   method a {
     b
   }
@@ -8,7 +8,7 @@ class A {
   }
 }
 
-class B {
+class B.new {
   inherits A.new
   method b {
     print("B")
