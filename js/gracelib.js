@@ -1147,7 +1147,7 @@ function gracecode_util() {
                 var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
                 if(spacePos._value != false) {
                     minigrace.stderr_write("  " + errlinenum._value + ": " + line.substring(0, spacePos._value - 1) + " "
-                        + line.substring(spacePos._value) + "\n");
+                        + line.substring(spacePos._value - 1) + "\n");
                 } else {
                     minigrace.stderr_write("  " + errlinenum._value + ": " + line + "\n");
                 }
