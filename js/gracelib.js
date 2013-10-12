@@ -1508,7 +1508,7 @@ function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("Requested method on uninitialised value."));;
-    if (obj === undefined || !obj.methods)
+    if (!obj || obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
@@ -1547,23 +1547,29 @@ function callmethod(obj, methname, argcv) {
     }
     var beforeSize = callStack.length;
     callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
-    var args = Array.prototype.slice.call(arguments, 3);
-    for (var i=0; i<args.length; i++)
-        if (typeof args[i] == 'undefined')
-            throw new GraceExceptionPacket(RuntimeErrorObject,
-                    new GraceString("Uninitialised value used as argument."));;
-    if (meth.paramTypes)
-        checkmethodcall(meth, methname, obj, args);
-    args.unshift(argcv)
-    var ret = meth.apply(obj, args);
-    superDepth = origSuperDepth;
-    while (callStack.length > beforeSize)
-        callStack.pop();
-    sourceObject = oldSourceObject;
+    var thisModuleName = moduleName;
+    try {
+        var args = Array.prototype.slice.call(arguments, 3);
+        for (var i=0; i<args.length; i++)
+            if (typeof args[i] == 'undefined')
+                throw new GraceExceptionPacket(RuntimeErrorObject,
+                        new GraceString("Uninitialised value used as argument."));;
+        if (meth.paramTypes)
+            checkmethodcall(meth, methname, obj, args);
+        args.unshift(argcv)
+        var ret = meth.apply(obj, args);
+    } finally {
+        superDepth = origSuperDepth;
+        while (callStack.length > beforeSize)
+            callStack.pop();
+        sourceObject = oldSourceObject;
+        setModuleName(thisModuleName);
+    }
     return ret;
 }
 
 function catchCase(obj, cases, finallyblock) {
+    setModuleName("catch()case()...finally()");
     var i = 0;
     try {
         callmethod(obj, "apply")
@@ -1587,6 +1593,7 @@ function catchCase(obj, cases, finallyblock) {
 }
 
 function matchCase(obj, cases, elsecase) {
+    setModuleName("match()case()...else()");
     var i = 0;
     for (i = 0; i<cases.length; i++) {
         var ret = callmethod(cases[i], "match", [1], obj);

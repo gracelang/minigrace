@@ -122,12 +122,11 @@ method compileobjouter(selfr, outerRef) {
     auto_count := auto_count + 1
     var nm := escapestring("outer")
     var nmi := escapeident("outer")
-    out(selfr ++ ".outer = " ++ outerRef ++ ";")
-    out("    var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
+    out("  {selfr}.outer = {outerRef};")
+    out("  var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("    return this.outer;")
     out("  \}")
-    out(selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ modname ++
-        "_" ++ nmi ++ myc ++ ";")
+    out("  {selfr}.methods[\"{nm}\"] = reader_{modname}_{nmi}{myc};")
 }
 method compileobjtype(o, selfr, pos) {
     var val := "undefined"
@@ -193,8 +192,9 @@ method compileobjdefdec(o, selfr, pos) {
     if (o.dtype != false) then {
         if (linenum != o.line) then {
             linenum := o.line
-            out("  setLineNumber({linenum});")
+            out("  setLineNumber({linenum})    // typecheck in compileobjdefdec;")
         }
+        out "// typecheck in compileobjdefdec.  o.name = {o.name}; o.dtype = {o.dtype}; o = {o}"
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {val})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -252,7 +252,7 @@ method compileobjvardec(o, selfr, pos) {
         }
         if (linenum != o.line) then {
             linenum := o.line
-            out("setLineNumber({linenum});")
+            out("setLineNumber({linenum});    // typecheck in compileobjvardec")
         }
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {val})))"
@@ -303,7 +303,7 @@ method compileobject(o, outerRef, inheritingObject) {
         out "  {selfr}.data = inheritingObject.data;"
     }
     compileobjouter(selfr, outerRef)
-    out("function obj_init_{myc}() \{")
+    out("  function obj_init_{myc}() \{")
     increaseindent
     out("  var origSuperDepth = superDepth;")
     out("  superDepth = {selfr};")
@@ -313,6 +313,7 @@ method compileobject(o, outerRef, inheritingObject) {
             compilemethod(e, selfr)
         }
     }
+    increaseindent
     for (o.value) do { e ->
         out("sourceObject = {selfr};")
         if (e.kind == "method") then {
@@ -336,13 +337,14 @@ method compileobject(o, outerRef, inheritingObject) {
             compilenode(e)
         }
     }
+    decreaseindent
     out("  superDepth = origSuperDepth;")
     decreaseindent
-    out("\}")
+    out("  \}")
     if (inheritingObject) then {
-        out("obj_init_{myc}.apply(inheritingObject, []);")
+        out("  obj_init_{myc}.apply(inheritingObject, []);")
     } else {
-        out("obj_init_{myc}.apply({selfr}, []);")
+        out("  obj_init_{myc}.apply({selfr}, []);")
     }
     o.register := selfr
     inBlock := origInBlock
@@ -381,7 +383,7 @@ method compileblock(o) {
         out(varf(p.value))
     }
     decreaseindent
-    out(") \{")
+    out("  ) \{")
     increaseindent
     out("  sourceObject = this;")
     var ret := "undefined"
@@ -390,7 +392,7 @@ method compileblock(o) {
     }
     out("  return " ++ ret ++ ";")
     decreaseindent
-    out("\};")
+    out("  \};")
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
@@ -469,7 +471,7 @@ method compilemethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
+    out("  var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     increaseindent
     out("  var curarg = 1;")
     for (o.signature.indices) do { partnr ->
@@ -517,7 +519,7 @@ method compilemethod(o, selfobj) {
                         if (p.dtype.value == g.value) then {
                             if (linenum != o.line) then {
                                 linenum := o.line
-                                out("  setLineNumber({linenum});")
+                                out("  setLineNumber({linenum});    // generic check in compilemethod")
                             }
                             out "  if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
                             out "    [1], arguments[curarg2])))"
@@ -544,7 +546,7 @@ method compilemethod(o, selfobj) {
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
-    out("  setLineNumber({linenum});")
+    out("  setLineNumber({linenum});    // compilemethod")
     out("  setModuleName(\"{modname}\");")
     out("  try \{")
     increaseindent
@@ -562,7 +564,7 @@ method compilemethod(o, selfobj) {
     out("    \}")
     out("  \}")
     decreaseindent
-    out("\}")
+    out("  \}")
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     if (haveTypedParams) then {
@@ -571,7 +573,7 @@ method compilemethod(o, selfobj) {
     for (o.annotations) do {ann->
         if ((ann.kind == "identifier").andAlso
             {ann.value == "confidential"}) then {
-            out("func{myc}.confidential = true;")
+            out("  func{myc}.confidential = true;")
         }
     }
     out "  func{myc}.paramCounts = ["
@@ -580,8 +582,9 @@ method compilemethod(o, selfobj) {
         out("    {p},")
     }
     decreaseindent
-    out "];"
+    out "  ];"
     out "  func{myc}.variableArities = ["
+    increaseindent
     for (variableArities) do {p->
         if (p) then {
             out "    true,"
@@ -589,10 +592,13 @@ method compilemethod(o, selfobj) {
             out "    false,"
         }
     }
-    out "];"
+    decreaseindent
+    out "  ];"
     out("  {selfobj}.methods[\"{name}\"] = func{myc};")
     if (o.properties.contains("fresh")) then {
+        increaseindent
         compilefreshmethod(o, selfobj)
+        decreaseindent
     }
 }
 method compilefreshmethod(o, selfobj) {
@@ -819,7 +825,7 @@ method compiledefdec(o) {
     if (o.dtype != false) then {
         if (linenum != o.line) then {
             linenum := o.line
-            out("  setLineNumber({linenum});")
+            out("  setLineNumber({linenum});    // compiledefdec")
         }
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {varf(nm)})))"
@@ -854,7 +860,7 @@ method compilevardec(o) {
         if (val != "false") then {
             if (linenum != o.line) then {
                 linenum := o.line
-                out("  setLineNumber({linenum});")
+                out("  setLineNumber({linenum});    // compilevardec")
             }
             out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
             out "    [1], {varf(nm)})))"
@@ -887,7 +893,9 @@ method compilecatchcase(o) {
     if (false != o.finally) then {
         finally := compilenode(o.finally)
     }
+    out("  setLineNumber({o.line});    // compilecatchcase")
     out("  var catchres{myc} = catchCase({mainblock},cases{myc},{finally});")
+    out("  setModuleName(\"{modname}\");")
     o.register := "catchres" ++ myc
 }
 method compilematchcase(o) {
@@ -904,7 +912,9 @@ method compilematchcase(o) {
     if (false != o.elsecase) then {
         elsecase := compilenode(o.elsecase)
     }
+    out("  setLineNumber({o.line});    // compilematchcase")
     out("  var matchres{myc} = matchCase({matchee},cases{myc},{elsecase});")
+    out("  setModuleName(\"{modname}\");")
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
@@ -924,8 +934,8 @@ method compileop(o) {
     if (o.value == "%") then {
         rnm := "modulus"
     }
-    out("  var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-        ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+    out("  var {rnm}{auto_count} = callmethod({left}, "
+        ++ "\"{o.value}\", [1], {right});")
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
 }
@@ -1104,7 +1114,7 @@ method compileimport(o) {
     out "    throw new GraceExceptionPacket(RuntimeErrorObject, "
     out "      new GraceString('could not find module {snm}'));"
     out("  var " ++ varf(nm) ++ " = do_import(\"{fn}\", gracecode_{snm});")
-    if (o.dtype != false) then {
+    if ((o.dtype != false).andAlso{o.dtype.value != "Dynamic"}) then {
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {varf(nm)})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -1126,7 +1136,7 @@ method compilenode(o) {
     compilationDepth := compilationDepth + 1
     if (linenum != o.line) then {
         linenum := o.line
-        out("  setLineNumber({linenum});")
+        out("  setLineNumber({linenum});    // compilenode {o.kind}")
     }
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
@@ -1346,8 +1356,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     util.setline(1)
     out("function gracecode_" ++ modname ++ "() \{")
     increaseindent
+    out("  setModuleName(\"{modname}\");")
+    out("  if (callStack.length == 0)")
+    out("    callStack = [\"execution environment\"]")
     if (util.extensions.contains("NativePrelude")) then {
-        out("var Grace_prelude = window.Grace_native_prelude;")
+        out("  var Grace_prelude = window.Grace_native_prelude;")
     }
     for (values) do { o ->
         if (o.kind == "method") then {

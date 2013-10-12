@@ -55,6 +55,7 @@ MiniGrace.prototype.compile = function(grace_code) {
         } else if (e.exctype == 'graceexception') {
             this.stderr_write("Internal compiler error!");
             callmethod(e, "printBacktrace", [0]);
+            debugger;
         } else {
             throw e;
         }
@@ -72,7 +73,8 @@ MiniGrace.prototype.trapErrors = function(func) {
         if (e.exctype == 'graceexception') {
             callmethod(e, "printBacktrace", [0]);
         } else if (e != "SystemExit") {
-            this.stderr_write("Runtime error around line " + lineNumber + "\n");
+            this.stderr_write("Internal error around line " + lineNumber +
+                              " of module " + moduleName + "\n");
             throw e;
         }
     }
