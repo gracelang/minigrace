@@ -330,6 +330,18 @@ method resolveIdentifier(node) {
     }
     var nm := node.value
     util.setPosition(node.line, node.linePos)
+    if (node.inBind) then {
+        if (!haveBinding(nm)) then {
+            if (haveBinding(nm ++ ":=")) then {
+                if (getNameKind(nm ++ ":=") == "method") then {
+                    // Bare method call with no arguments
+                    def meth = findDeepMethod(nm ++ ":=")
+                    def meth2 = ast.memberNode.new(nm, meth.in)
+                    return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)])
+                }
+            }
+        }
+    }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
             util.syntax_error("Unable to resolve wildcard identifier.")
@@ -765,7 +777,18 @@ method resolve(values) {
             handleImport(n)
         }
     }
+    def vis = object {
+        inherits ast.baseVisitor
+        method visitBind(o) {
+            def d = o.dest
+            if (d.kind == "identifier") then {
+                d.inBind := true
+            }
+            return true
+        }
+    }
     for (values) do { v ->
+        v.accept(vis)
         def v' = resolveIdentifiers(v)
         vals.push(v')
         if (v'.kind == "method") then {

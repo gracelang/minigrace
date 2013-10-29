@@ -1252,6 +1252,7 @@ class identifierNode.new(name, dtype') {
     var register := ""
     var line := util.linenum
     var linePos := util.linepos
+    var inBind := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1265,11 +1266,13 @@ class identifierNode.new(name, dtype') {
         var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
         blkAfter))
         n.wildcard := wildcard
+        n.inBind := inBind
         n := blk.apply(n)
         n.line := line
         if (n.kind == "identifier") then {
             n.linePos := linePos
             n.wildcard := wildcard
+            n.inBind := inBind
         }
         blkAfter.apply(n)
         n
