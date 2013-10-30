@@ -614,9 +614,35 @@ def LexerClass = object {
                         def suggestion = errormessages.suggestion.new
                         suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
                         if(ordval == 9) then {
+                            if (instr) then {
+                                suggestion.replaceRange(linePosition, linePosition)
+                                    with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                                    onLine(lineNumber)
+                                errormessages.syntaxError("tabs cannot be "
+                                    ++ "written in the source code; "
+                                    ++ "use the Unicode escape \\u"
+                                    ++ padl(ordval.inBase 16, 4, "0")
+                                    ++ " instead")
+                                    atRange(lineNumber, linePosition, linePosition)
+                                    withSuggestion(suggestion)
+                            }
                             errormessages.syntaxError("Tabs are not allowed; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         } else {
+                            if (instr) then {
+                                suggestion.replaceRange(linePosition, linePosition)
+                                    with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                                    onLine(lineNumber)
+                                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                                    ++ "is not a valid whitespace character"
+                                    ++ " and cannot be "
+                                    ++ "written in the source code; "
+                                    ++ "use the Unicode escape \\u"
+                                    ++ padl(ordval.inBase 16, 4, "0")
+                                    ++ " instead")
+                                    atRange(lineNumber, linePosition, linePosition)
+                                    withSuggestion(suggestion)
+                            }
                             errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                                 ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
@@ -627,6 +653,19 @@ def LexerClass = object {
                         // Character is a control character other than
                         // carriage return or line feed.
                         def suggestion = errormessages.suggestion.new
+                        if (instr) then {
+                            suggestion.replaceRange(linePosition, linePosition)
+                                with("\\u{padl(ordval.inBase 16, 4, "0")}")
+                                onLine(lineNumber)
+                            errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                                ++ "is a control character and cannot be "
+                                ++ "written in the source code; "
+                                ++ "use the Unicode escape \\u"
+                                ++ padl(ordval.inBase 16, 4, "0")
+                                ++ " instead")
+                                atRange(lineNumber, linePosition, linePosition)
+                                withSuggestion(suggestion)
+                        }
                         suggestion.deleteChar(linePosition)onLine(lineNumber)
                         errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                             ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
