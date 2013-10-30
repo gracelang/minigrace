@@ -614,11 +614,11 @@ def LexerClass = object {
                         def suggestion = errormessages.suggestion.new
                         suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
                         if(ordval == 9) then {
-                            errormessages.syntaxError("Tabs are not allowed, use spaces instead.")atRange(lineNumber,
+                            errormessages.syntaxError("Tabs are not allowed; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         } else {
                             errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                                ++ "is not a valid whitespace character, use spaces instead.")atRange(lineNumber,
+                                ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         }
                     }
@@ -629,7 +629,7 @@ def LexerClass = object {
                         def suggestion = errormessages.suggestion.new
                         suggestion.deleteChar(linePosition)onLine(lineNumber)
                         errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                            ++ "is not a valid control character, use spaces instead.")atRange(lineNumber,
+                            ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
                             linePosition, linePosition)withSuggestion(suggestion)
                     }
                     if (atStart && (linePosition == 1)) then {
@@ -725,7 +725,7 @@ def LexerClass = object {
                                 && (ordval != 10) && (ordval != 13)
                                 && (ordval != 32)) then {
                                 errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                                    ++ "is not a valid character, use spaces instead.")atRange(
+                                    ++ "is not a valid character; use spaces instead.")atRange(
                                     lineNumber, linePosition, linePosition)
                             }
                         }

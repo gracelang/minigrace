@@ -345,7 +345,7 @@ method resolveIdentifier(node) {
     }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
-            errormessages.syntaxError("'_' can only be used as an identifier within a match case.")atRange(node.line, node.linePos, node.linePos)
+            errormessages.syntaxError("'_' can only be used as a parameter name")atRange(node.line, node.linePos, node.linePos)
         } else {
             def suggestions = []
             var suggestion
@@ -477,9 +477,9 @@ method checkRedefinition(ident) {
             .elementDeclarations.contains(ident.value)
         ) then {
             if(nk == "def") then {
-                errormessages.syntaxError("'{ident.value}' cannot be declared because it is already declared.")atPosition(ident.line, ident.linePos)
+                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope.")atPosition(ident.line, ident.linePos)
             } else {
-                errormessages.syntaxError("'{ident.value}' cannot be declared because it is already declared. To assign to the existing variable, remove 'var'.")atPosition(ident.line, ident.linePos)
+                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope. To assign to the existing variable, remove 'var'.")atPosition(ident.line, ident.linePos)
             }
         }
     }
