@@ -3120,6 +3120,12 @@ method statement {
 
 method checkUnexpectedTokenAfterStatement {
     if (sym.line == lastToken.line) then {
+        if ((sym.kind == "op") && (sym.value == "=")) then {
+            def sugg = errormessages.suggestion.new
+            sugg.replaceToken(sym)leading(false)trailing(false)with(":=")
+            errormessages.syntaxError("Assignment uses ':=', not '='.")
+                atRange(sym.line, sym.linePos, sym.linePos)withSuggestion(sugg)
+        }
         if (sym.kind != "rbrace") then {
             def suggestions = []
             var suggestion
