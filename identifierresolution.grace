@@ -12,6 +12,7 @@ class Scope.new(parent') {
     def elements = collections.map.new
     def elementScopes = collections.map.new
     def elementDeclarations = collections.map.new
+    def elementLines = collections.map.new
     def parent = parent'
     var hasParent := true
     var variety := "block"
@@ -21,6 +22,7 @@ class Scope.new(parent') {
     }
     method add(n)as(k) {
         elements.put(n, k)
+        elementLines.put(n, util.linenum)
     }
     method contains(n) {
         elements.contains(n)
@@ -480,13 +482,26 @@ method checkRedefinition(ident) {
         if (getNameScope(ident.value)
             .elementDeclarations.contains(ident.value)
         ) then {
+            def scp = getNameScope(ident.value)
+            var more := ""
+            if (scp.elementLines.contains(ident.value)) then {
+                more := " as a {scp.elements.get(ident.value)}"
+                    ++ " on line {scp.elementLines.get(ident.value)}"
+            }
             if(nk == "def") then {
-                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope.")atPosition(ident.line, ident.linePos)
+                errormessages.syntaxError("'{ident.value}' cannot be "
+                    ++ "redeclared because it is already declared in "
+                    ++ "scope{more}.")
+                    atRange(ident.line, ident.linePos,
+                        ident.linePos + ident.value.size - 1)
             } else {
-                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope. To assign to the existing variable, remove 'var'.")atPosition(ident.line, ident.linePos)
+                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope{more}. To assign to the existing variable, remove 'var'.")
+                    atRange(ident.line, ident.linePos,
+                        ident.linePos + ident.value.size - 1)
             }
         }
     }
+    util.setline(ident.line)
     scope.elementDeclarations.put(ident.value, true)
 }
 method resolveIdentifiers(topNode) {
@@ -496,6 +511,7 @@ method resolveIdentifiers(topNode) {
         return topNode
     }
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
+        util.setline(node.line)
         if (node.kind == "class") then {
             checkRedefinition(node.name)
             scope.add(node.name.value) as "def"
