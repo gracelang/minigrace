@@ -157,13 +157,14 @@ method initialise {
     }
     document := dom.document
     // Activate the canvas tab if it isn't already
-    def ts = document.getElementById("tab")
-    for (0..(ts.options.length-1)) do {i->
-        if (ts.options.item(i).value == "canvas_tab") then {
-            ts.selectedIndex := i
-            dom.window.tabswitch
-        }
-    }
+    //def ts = document.getElementById("tab")
+    //for (0..(ts.options.length-1)) do {i->
+    //    if (ts.options.item(i).value == "canvas_tab") then {
+    //        ts.selectedIndex := i
+    //        dom.window.tabswitch
+    //    }
+    //}
+    document.getElementById("tab_canvas").click
     initialised := true
     trig := dom.window.Math
     canvas := document.getElementById("standard-canvas")
