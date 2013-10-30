@@ -3120,7 +3120,8 @@ method statement {
 
 method checkUnexpectedTokenAfterStatement {
     if (sym.line == lastToken.line) then {
-        if ((sym.kind == "op") && (sym.value == "=")) then {
+        if ((sym.kind == "op") && (sym.value == "=")
+            && (lastToken.kind == "identifier")) then {
             def sugg = errormessages.suggestion.new
             sugg.replaceToken(sym)leading(false)trailing(false)with(":=")
             errormessages.syntaxError("Assignment uses ':=', not '='.")
