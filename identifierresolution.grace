@@ -495,9 +495,20 @@ method checkRedefinition(ident) {
                     atRange(ident.line, ident.linePos,
                         ident.linePos + ident.value.size - 1)
             } else {
-                errormessages.syntaxError("'{ident.value}' cannot be redeclared because it is already declared in scope{more}. To assign to the existing variable, remove 'var'.")
+                def suggs = collections.list.new
+                def sugg = errormessages.suggestion.new
+                if (sugg.replaceUntil("=")with("{ident.value} :=")
+                        onLine(ident.line)
+                    ) then {
+                    suggs.push(sugg)
+                }
+                errormessages.syntaxError("'{ident.value}' cannot be "
+                        ++ "redeclared because it is already declared in "
+                        ++ "scope{more}. To assign to the existing variable, "
+                        ++ "remove 'var' or 'def'.")
                     atRange(ident.line, ident.linePos,
                         ident.linePos + ident.value.size - 1)
+                    withSuggestions(suggs)
             }
         }
     }

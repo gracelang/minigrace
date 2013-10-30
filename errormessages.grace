@@ -34,6 +34,18 @@ class suggestion.new() {
         replaceRange(pos, pos)with(s)onLine(lineNumber)
     }
 
+    method replaceUntil(until)with(s)onLine(lineNumber) {
+        def line = getLine(lineNumber)
+        def len = until.size
+        for (1..line.size) do {i->
+            if (line.substringFrom(i)to(i + len - 1) == until) then {
+                replaceRange(1, i + len - 1)with(s)onLine(lineNumber)
+                return true
+            }
+        }
+        return false
+    }
+
     method deleteRange(start, end)onLine(lineNumber) {
         var start' := start
         def line = getLine(lineNumber)
