@@ -350,7 +350,11 @@ method resolveIdentifier(node) {
             def suggestions = []
             var suggestion
             for(scope.elements) do { v ->
-                if(errormessages.levenshtein(v, nm) <= 1) then {
+                var thresh := 1
+                if (nm.size > 5) then {
+                    thresh := ((nm.size - 2) / 4 + 1).truncate
+                }
+                if(errormessages.dameraulevenshtein(v, nm) <= thresh) then {
                     suggestion := errormessages.suggestion.new
                     suggestion.replaceRange(node.linePos, node.linePos + node.value.size - 1)with(v)onLine(node.line)
                     suggestions.push(suggestion)

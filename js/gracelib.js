@@ -1173,7 +1173,7 @@ function gracecode_util() {
         },
         semantic_error: function(argcv, s) {
             minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": error: " + s._value + "\n");
+                this._linepos._value + ": semantic error: " + s._value + "\n");
             if (this._linenum._value > 1)
                 minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
                     + callmethod(this._lines, "at",

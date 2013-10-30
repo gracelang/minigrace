@@ -259,33 +259,62 @@ class suggestion.new() {
     }
 }
 
-// Implemented http://en.wikipedia.org/wiki/Levenshtein_distance#Iterative_with_two_matrix_rows
-method levenshtein(s, t) {
+method dameraulevenshtein(s, t) {
+    // Calculate the Damerau-Levenshtein distance between sequences.
+    //
+    // This distance is the number of additions, deletions, substitutions,
+    // and transpositions needed to transform the first sequence into the
+    // second. Although generally used with strings, any sequences of
+    // comparable objects will work.
+    //
+    // Transpositions are exchanges of *consecutive* characters; all other
+    // operations are self-explanatory.
+    //
+    // This implementation is O(N*M) time and O(M) space, for N and M the
+    // lengths of the two sequences.
+    //
+    // >>> dameraulevenshtein("ba", "abc")
+    // 2
+    // >>> dameraulevenshtein("fee", "deed")
+    // 2
+    //
+    // codesnippet:D0DE4716-B6E6-4161-9219-2903BF8F547F
+    // Conceptually, this is based on a len(seq1) + 1 * len(seq2) + 1 matrix.
+    // However, only the current and two previous rows are needed at once,
+    // so we only store those.
     if(s == t) then { return 0 }
     if(s.size == 0) then { return t.size }
     if(t.size == 0) then { return s.size }
 
-    def v0 = PrimitiveArray.new(t.size + 1)
-    def v1 = PrimitiveArray.new(t.size + 1)
+    def oneago = PrimitiveArray.new(t.size + 1)
+    def thisrow = PrimitiveArray.new(t.size + 1)
+    def twoago = PrimitiveArray.new(t.size + 1)
 
-    for(0..(v0.size - 1)) do { i ->
-        v0[i] := i
-        v1[i] := 0
+    for(0..(oneago.size - 1)) do { i ->
+        oneago[i] := i
+        thisrow[i] := 0
     }
 
-    for(0..(s.size - 1)) do { i ->
-        v1[0] := i + 1
-        for(0..(t.size - 1)) do { j ->
-            def cost = if(s[i + 1] == t[j + 1]) then { 0 } else { 1 }
-            v1[j + 1] := min(v1[j] + 1, v0[j + 1] + 1, v0[j] + cost)
+    for(1..(s.size - 1)) do { x ->
+        thisrow[0] := x + 1
+        for(1..(t.size - 1)) do { y ->
+            def delcost = oneago[y] + 1
+            def addcost = thisrow[y - 1] + 1
+            def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
+            thisrow[y] := min(delcost, addcost, subcost)
+            if ((x > 1) && (y > 1) && (s[x] == t[y - 1])
+                && (s[x - 1] == t[y]) && (s[x] != t[y])) then {
+                thisrow[y] := min(thisrow[y], twoago[y - 2] + 1)
+            }
         }
 
-        for (0..(v0.size - 1)) do { j ->
-            v0[j] := v1[j]
+        for (0..(oneago.size - 1)) do { j ->
+            twoago[j] := oneago[j]
+            oneago[j] := thisrow[j]
         }
     }
 
-    v1[t.size]
+    thisrow[t.size - 1]
 }
 
 // Return the minimum number from the given arguments.
