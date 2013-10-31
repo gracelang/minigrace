@@ -64,8 +64,13 @@
                     var linenum = +bits[1];
                     var charnum = +bits[2];
                     var message = bits[3];
-                    editor.moveCursorTo(linenum - 1, charnum - 1);
-                    editor.getSelection().clearSelection();
+                    if (bits = line.match(/^.+\[[^:]+:([0-9]+)-([0-9]+)/)) {
+                        editor.moveCursorTo(linenum - 1, charnum - 1);
+                        editor.getSelection().setSelectionAnchor(linenum - 1, +bits[2]);
+                    } else {
+                        editor.moveCursorTo(linenum - 1, charnum - 1);
+                        editor.getSelection().clearSelection();
+                    }
                     editor.getSession().setAnnotations([{
                         row: linenum - 1,
                         column: charnum - 1,
