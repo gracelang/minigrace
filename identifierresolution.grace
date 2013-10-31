@@ -371,10 +371,12 @@ method resolveIdentifier(node) {
                 }
             }
 
-            suggestion := errormessages.suggestion.new
-            suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
-            suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
-            suggestions.push(suggestion)
+            if (!node.inBind) then {
+                suggestion := errormessages.suggestion.new
+                suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
+                suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
+                suggestions.push(suggestion)
+            }
             errormessages.syntaxError("Unknown variable or method name '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
                 node.line, node.linePos, node.linePos + node.value.size - 1)withSuggestions(suggestions)
         }
