@@ -53,21 +53,26 @@
             if (minigrace.compileError && ace) {
                 var lines = document.getElementById('stderr_txt').value.split("\n");
                 var bits;
+                var line;
                 for (var i=0; i<lines.length; i++) {
                     if (lines[i].substring(0, 10) != 'minigrace:') {
-                        bits = lines[i].split(':');
+                        line = lines[i];
                         break;
                     }
                 }
-                editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
-                editor.getSelection().clearSelection();
-                bits.shift();
-                editor.getSession().setAnnotations([{
-                    row: bits.shift() - 1,
-                    column: bits.shift() - 1,
-                    text: bits.join(":"),
-                    type: "error"
-                }]);
+                if (bits = line.match(/^.+\[([0-9]+):\(?([0-9]+).*?\]: (.+)$/)) {
+                    var linenum = +bits[1];
+                    var charnum = +bits[2];
+                    var message = bits[3];
+                    editor.moveCursorTo(linenum - 1, charnum - 1);
+                    editor.getSelection().clearSelection();
+                    editor.getSession().setAnnotations([{
+                        row: linenum - 1,
+                        column: charnum - 1,
+                        text: message,
+                        type: "error"
+                    }]);
+                }
             }
             scrollstdout();
         }
