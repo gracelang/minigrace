@@ -307,9 +307,9 @@ method dameraulevenshtein(s, t) {
         thisrow[i] := 0
     }
 
-    for(1..(s.size - 1)) do { x ->
-        thisrow[0] := x + 1
-        for(1..(t.size - 1)) do { y ->
+    for(1..s.size) do { x ->
+        thisrow[0] := x
+        for(1..t.size) do { y ->
             def delcost = oneago[y] + 1
             def addcost = thisrow[y - 1] + 1
             def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
@@ -326,7 +326,7 @@ method dameraulevenshtein(s, t) {
         }
     }
 
-    thisrow[t.size - 1]
+    thisrow[t.size]
 }
 
 // Return the minimum number from the given arguments.
