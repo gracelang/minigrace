@@ -1,0 +1,14 @@
+#!/bin/bash
+
+if [ -e ".git-generation-cache" ]
+then
+    exit 0
+fi
+
+mkdir -p .git-generation-cache
+for x in $(grep ']=' tools/generations.dat)
+do
+    RV=$(echo $x|cut -d'[' -f2|cut -d']' -f1)
+    ct=$(echo $x|cut -d= -f2)
+    echo $ct > .git-generation-cache/$RV
+done
