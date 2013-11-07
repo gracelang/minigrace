@@ -1017,6 +1017,7 @@ method generic {
     if (accept("lgeneric")) then {
         def id = values.pop
         def gens = []
+        def startToken = sym
         next
         while {accept("identifier")} do {
             identifier
@@ -1046,16 +1047,24 @@ method generic {
                 if(sym.kind != "rgeneric") then {
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(">")afterToken(lastToken)
-                    errormessages.syntaxError("A type containing a '<' must end with a '>'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+                    def suggestion2 = errormessages.suggestion.new
+                    suggestion2.insert(" ")beforeToken(startToken)
+                    def suggestions = [suggestion, suggestion2]
+                    errormessages.syntaxError("A type containing a '<' must end with a '>', or the '<' operator must have a space before it.")atPosition(
+                            lastToken.line, lastToken.linePos + lastToken.size)
+                        withSuggestions(suggestions)
                 }
             }
         }
         if(sym.kind != "rgeneric") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert(">")afterToken(lastToken)
-            errormessages.syntaxError("A type containing a '<' must end with a '>'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            def suggestion2 = errormessages.suggestion.new
+            suggestion2.insert(" ")beforeToken(startToken)
+            def suggestions = [suggestion, suggestion2]
+            errormessages.syntaxError("A type containing a '<' must end with a '>', or the '<' operator must have a space before it.")atPosition(
+                    lastToken.line, lastToken.linePos + lastToken.size)
+                withSuggestions(suggestions)
         }
         next
         values.push(ast.genericNode.new(id, gens))
@@ -1702,6 +1711,7 @@ method callrest {
     var genericIdents := false
     if (acceptSameLine "lgeneric") then {
         // Generic!
+        def startToken = sym
         next
         genericIdents := collections.list.new
         while {accept("identifier")} do {
@@ -1714,8 +1724,12 @@ method callrest {
         if(sym.kind != "rgeneric") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert(">")afterToken(lastToken)
-            errormessages.syntaxError("A type containing a '<' must end with a '>'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            def suggestion2 = errormessages.suggestion.new
+            suggestion2.insert(" ")beforeToken(startToken)
+            def suggestions = [suggestion, suggestion2]
+            errormessages.syntaxError("A method request containing a '<' must have a matching '>', or the '<' operator must have a space before it.")atPosition(
+                    lastToken.line, lastToken.linePos + lastToken.size)
+                withSuggestions(suggestions)
         }
         next
     }
@@ -3126,6 +3140,14 @@ method checkUnexpectedTokenAfterStatement {
             sugg.replaceToken(sym)leading(false)trailing(false)with(":=")
             errormessages.syntaxError("Assignment uses ':=', not '='.")
                 atRange(sym.line, sym.linePos, sym.linePos)withSuggestion(sugg)
+        }
+        if (sym.kind == "rgeneric") then {
+            def sugg = errormessages.suggestion.new
+            sugg.insert(" ")atPosition(sym.linePos)onLine(sym.line)
+            errormessages.syntaxError(
+                    "The '>' operator must have a space before it.")
+                atRange(sym.line, sym.linePos, sym.linePos)
+                withSuggestion(sugg)
         }
         if (sym.kind != "rbrace") then {
             def suggestions = []
