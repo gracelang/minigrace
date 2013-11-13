@@ -417,7 +417,6 @@ method compileclass(o, includeConstant) {
             compilenode(meth)
         }
         for (o.annotations) do {a->
-            io.error.write("pushing annotation {a.pretty(0)} to class {o.name}")
             con.annotations.push(a)
         }
         o.register := compilenode(con)
