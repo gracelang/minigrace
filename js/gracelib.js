@@ -203,7 +203,7 @@ GraceNum.prototype = {
             }
             if (before)
                 str = before + str;
-            return new GraceString(str); 
+            return new GraceString(str);
         },
         "truncate": function(argcv) {
             if (this._value < 0)
@@ -404,7 +404,7 @@ GraceList.prototype = {
 function GracePrimitiveArray(n) {
     this._value = [];
     for (var i=0; i<n; i++)
-        this._value.push(var_nothing);
+        this._value.push(var_done);
 }
 GracePrimitiveArray.prototype = {
     methods: {
@@ -598,7 +598,7 @@ function Grace_egal(o1, o2) {
 function Grace_print(obj) {
     var s = callmethod(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
-    return var_nothing;
+    return var_done;
 }
 
 function Grace_length(obj) {
@@ -620,6 +620,9 @@ GraceObject.prototype = {
         "/=": function(argcv, o) {
             var b = this.methods["=="].call(this, o);
             return b.methods["not"].call(b);
+        },
+        "asDebugString": function(argcv) {
+            return this.methods.asString();
         },
         "asString": function(argcv) {
             var s = "object {";
@@ -790,6 +793,7 @@ function classType(obj) {
 }
 
 var var_Dynamic = new GraceType("Dynamic");
+var var_Done = new GraceType("Done");
 var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(new GraceBoolean(true));
@@ -930,11 +934,11 @@ function gracecode_io() {
     };
     this._output = stdout;
     this.methods.input = function() {
-        return this._input;        
+        return this._input;
     };
     this._input = stdin;
     this.methods.error = function() {
-        return this._error;        
+        return this._error;
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
@@ -1257,11 +1261,11 @@ function gracecode_util() {
         },
         "lines:=": function(argcv, v) {
             this._lines = v;
-            return var_noSuchValue;
+            return var_done;
         },
         "cLines:=": function(argcv, v) {
             this._cLines = v;
-            return var_noSuchValue;
+            return var_done;
         },
         "suggestion": function() {
             return this._suggestion;
@@ -1459,7 +1463,7 @@ function catchCase(obj, cases, finallyblock) {
                 var ret = callmethod(cases[i], "match", [1],
                         e);
                 if (Grace_isTrue(ret))
-                    return var_nothing;
+                    return var_done;
             }
             throw e;
         } else {
@@ -1469,7 +1473,7 @@ function catchCase(obj, cases, finallyblock) {
         if (finallyblock != false)
             callmethod(finallyblock, "apply");
     }
-    return var_nothing;
+    return var_done;
 }
 
 function matchCase(obj, cases, elsecase) {
@@ -1606,9 +1610,8 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var var_nothing = new GraceObject();
-var_nothing.methods.asString = function() {return new GraceString("done");}
-var var_noSuchValue = var_nothing;
+var var_done = new GraceObject();
+var_done.methods.asString = function() { return new GraceString("done"); };
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 
@@ -1640,7 +1643,7 @@ Grace_prelude.methods["while()do"] = function(argcv, c, b) {
     while (Grace_isTrue(callmethod(c, "apply", [0]))) {
         callmethod(b, "apply", [0]);
     }
-    return var_nothing;
+    return var_done;
 }
 Grace_prelude.methods["for()do"] = function(argcv, c, b) {
     var iter = callmethod(c, "iterator", [0]);
@@ -1648,7 +1651,7 @@ Grace_prelude.methods["for()do"] = function(argcv, c, b) {
         var val = callmethod(iter, "next", [0]);
         callmethod(b, "apply", [1], val);
     }
-    return var_nothing;
+    return var_done;
 }
 Grace_prelude.methods["_methods"] = function() {
     var meths = [];

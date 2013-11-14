@@ -37,7 +37,7 @@
 // Intern module
 Object unicode_module = NULL;
 
-// Return a Grace String containing the Unicode name of the first 
+// Return a Grace String containing the Unicode name of the first
 // character in the String argument (e.g.,
 // "LATIN SMALL LETTER A WITH DIARESIS").
 Object unicode_name(Object self, int nparts, int *argcv,
@@ -254,7 +254,7 @@ Object unicode_lookup(Object self, int nparts, int *argcv,
             bot = mid;
         }
     }
-    return alloc_none();
+    return alloc_done();
 }
 
 // Create and return a Grace object with all the above functions as methods.

@@ -87,8 +87,8 @@ class evalVisitor.new {
             return replObj.new("replvar", true)
         } elseif (v.value == "false") then {
             return replObj.new("replvar", false)
-        } elseif (v.value == "nothing") then {
-            return replObj.new("replvar", nothing)
+        } elseif (v.value == "done") then {
+            return replObj.new("replvar", done)
         } else {
             // _env may not be the current object env, for example in closures
             if (_env.contains(v.value)) then {
@@ -940,7 +940,7 @@ method startRepl {
                                     && (val.kind != "import"))
                                     then {
                                     def res = visitor.getResult.val
-                                    if (nothing != res) then {
+                                    if (done != res) then {
                                         if (io.output.isatty) then {
                                             print("=> {res}")
                                         }

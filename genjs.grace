@@ -1288,7 +1288,7 @@ method processDialect(values') {
                 util.setPosition(v.line, 1)
                 errormessages.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
             } case { e : CheckerFailure ->
-                if (nothing != e.data) then {
+                if (done != e.data) then {
                     util.setPosition(e.data.line, e.data.linePos)
                 }
                 errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)

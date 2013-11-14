@@ -97,7 +97,7 @@ Object alloc_Boolean(int val);
 Object alloc_Octets(const char *data, int len);
 Object alloc_ConcatString(Object, Object);
 Object alloc_Undefined();
-Object alloc_none();
+Object alloc_done();
 Object alloc_ellipsis();
 Object alloc_MatchFailed();
 Object matchCase(Object, Object*, int, Object);
@@ -154,6 +154,7 @@ void gc_frame_setslot(int, Object);
 Object Object_Equals(Object, int, int *, Object*, int);
 Object Object_NotEquals(Object, int, int *, Object*, int);
 Object Object_asString(Object, int, int *, Object*, int);
+Object Singleton_asString(Object, int, int *, Object*, int);
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.
