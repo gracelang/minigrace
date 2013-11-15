@@ -65,7 +65,7 @@ Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
     int i;
     if (!s->method->type)
-        return alloc_none();
+        return alloc_done();
     gc_pause();
     Object l = alloc_List();
     int cargcv[] = {1};

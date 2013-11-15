@@ -91,7 +91,7 @@ Object repl_registerVisitor(Object self, int nparts, int *argcv, Object *args,
 
     gc_pause(); // temporary
     visitor = args[0];
-    return alloc_none();
+    return alloc_done();
 }
 
 Object repl_createobject(Object self, int nparts, int *argcv, Object *args,
@@ -129,7 +129,7 @@ Object repl_addmethod(Object self, int nparts, int *argcv, Object *args,
     gc_unpause();
     adddatum2(o, callinfo, pos);
 
-    return alloc_none();
+    return alloc_done();
 }
 
 Object module_repl_init() {
