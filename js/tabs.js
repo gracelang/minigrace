@@ -476,9 +476,8 @@ function addFileLine() {
         "input" : input,
         "button" : button,
         "name" : function() {
-            var name = this.input.value;
-            name = name.split(".");
-            return name[0].replace(/\W/g, '');
+            var name = this.input.value.split("\\");
+            return name[name.length - 1].split(".")[0];
         },
         "close" : function() {
             document.getElementById("files").removeChild(file.body);
