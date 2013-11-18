@@ -100,7 +100,9 @@ GraceString.prototype = {
             return new GraceAndPattern(this, o);
         },
     },
-    className: "String"
+    className: "String",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 GraceString.prototype.methods["[]"] = GraceString.prototype.methods["at"];
 
@@ -224,6 +226,8 @@ GraceNum.prototype = {
         },
     },
     className: "Number",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GraceBoolean(b) {
@@ -301,6 +305,8 @@ GraceBoolean.prototype = {
         },
     },
     className: "Boolean",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GraceList(l) {
@@ -400,6 +406,8 @@ GraceList.prototype = {
         },
     },
     className: "List",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GracePrimitiveArray(n) {
@@ -466,6 +474,8 @@ GracePrimitiveArray.prototype = {
         },
     },
     className: "PrimitiveArray",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GraceOrPattern(l, r) {
@@ -506,6 +516,8 @@ GraceOrPattern.prototype = {
         }
     },
     className: "OrPattern",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GraceAndPattern(l, r) {
@@ -548,6 +560,8 @@ GraceAndPattern.prototype = {
         }
     },
     className: "AndPattern",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function Grace_isTrue(o) {
@@ -669,6 +683,8 @@ function Grace_allocObject() {
         data: {},
         className: "Object",
         mutable: false,
+        definitionModule: "unknown",
+        definitionLine: 0,
     };
 }
 
@@ -761,6 +777,8 @@ GraceType.prototype = {
     },
     typeMethods: [],
     className: "Type",
+    definitionModule: "unknown",
+    definitionLine: 0,
 };
 
 function GraceBlock_match(argcv, o) {
@@ -977,6 +995,8 @@ function gracecode_io() {
     this.methods.realpath = function(junk, x) {
         return x;
     };
+    this.definitionModule = "io";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1003,6 +1023,8 @@ function gracecode_sys() {
         o.methods['contains'] = function() {return new GraceBoolean(false);};
         return o;
     };
+    this.definitionModule = "sys";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1061,6 +1083,8 @@ function gracecode_unicode() {
             return new GraceString(String.fromCharCode(n._value));
         },
     };
+    this.definitionModule = "unicode";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1290,6 +1314,8 @@ function gracecode_util() {
     };
 
     util_module = this;
+    this.definitionModule = "util";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1354,6 +1380,8 @@ function gracecode_mirrors() {
             return alloc_Mirror(o);
         }
     };
+    this.definitionModule = "mirrors";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1363,6 +1391,8 @@ function gracecode_random() {
             return new GraceNum(Math.random());
         }
     };
+    this.definitionModule = "random";
+    this.definitionLine = 0;
     return this;
 }
 
@@ -1421,6 +1451,12 @@ function callmethod(obj, methname, argcv) {
         }
     }
     if (typeof(meth) != "function") {
+        callStack.push(obj.className + "." + methname
+                + " (defined nowhere"
+                + " in object at "
+                + obj.definitionModule + ":" + obj.definitionLine + ")"
+                + " at " + moduleName
+                + ":" + lineNumber);
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No such method '" + methname + "' on " +
                     obj.className + "."));;
@@ -1438,8 +1474,14 @@ function callmethod(obj, methname, argcv) {
         overrideReceiver = null;
     }
     var beforeSize = callStack.length;
-    callStack.push(obj.className + "." + methname + " at line " + lineNumber
-            + " of " + moduleName);
+    callStack.push(obj.className + "." + methname
+            + " (defined at " + (meth.definitionModule ?
+                    "" + meth.definitionModule + ":" + meth.definitionLine
+                    : "unknown location")
+            + " in object at "
+            + obj.definitionModule + ":" + obj.definitionLine + ")"
+            + " at " + moduleName
+            + ":" + lineNumber);
     var args = Array.prototype.slice.call(arguments, 3);
     for (var i=0; i<args.length; i++)
         if (typeof args[i] == 'undefined')

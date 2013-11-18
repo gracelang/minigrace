@@ -57,8 +57,8 @@ MiniGrace.prototype.compile = function(grace_code) {
                 + " of " + e.moduleName
                 + ": " + e.exception.name + ": "
                 + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  From call to " + e.callStack[i] + "\n");
+            for (i=0; i<e.callStack.length; i++) {
+                this.stderr_write("  Called " + e.callStack[i] + "\n");
             }
         } else {
             throw e;
@@ -79,8 +79,8 @@ MiniGrace.prototype.trapErrors = function(func) {
                 + " of " + e.moduleName
                 + ": " + e.exception.name + ": "
                 + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  From call to " + e.callStack[i] + "\n");
+            for (i=0; i<e.callStack.length; i++) {
+                this.stderr_write("  Called " + e.callStack[i] + "\n");
             }
             if (e.callStack.length > 0) {
                 this.stderr_write("Error around line " + e.lineNumber

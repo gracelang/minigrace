@@ -295,6 +295,8 @@ method compileobject(o, outerRef, inheritingObject) {
         }
     }
     out("var " ++ selfr ++ " = Grace_allocObject();")
+    out "{selfr}.definitionModule = \"{modname}\";"
+    out "{selfr}.definitionLine = {o.line};"
     if (inheritingObject) then {
         out "var inho{myc} = inheritingObject;"
         out "while (inho{myc}.superobj) inho{myc} = inho{myc}.superobj;"
@@ -575,6 +577,8 @@ method compilemethod(o, selfobj) {
     }
     out "];"
     out("{selfobj}.methods[\"{name}\"] = func{myc};")
+    out "func{myc}.definitionLine = {o.line};"
+    out "func{myc}.definitionModule = \"{modname}\";"
     if (o.properties.contains("fresh")) then {
         compilefreshmethod(o, selfobj)
     }
@@ -1329,6 +1333,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     if (util.extensions.contains("NativePrelude")) then {
         out("var Grace_prelude = window.Grace_native_prelude;")
     }
+    out "this.definitionModule = \"{modname}\";"
+    out "this.definitionLine = 0;"
     for (values) do { o ->
         if (o.kind == "method") then {
             compilenode(o)
