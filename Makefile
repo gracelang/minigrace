@@ -63,6 +63,8 @@ js/StandardPrelude.js: StandardPrelude.grace minigrace
 js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js js/gracelib.js js/dom.js
 	@echo Generating minigrace.js from minigrace.in.js...
 	cat js/minigrace.in.js > js/minigrace.js
+	echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
+	echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 	cat js/dom.js >> js/minigrace.js
 	cat js/gracelib.js >> js/minigrace.js
 	cat js/StandardPrelude.js >> js/minigrace.js
