@@ -22,7 +22,9 @@ and is required on some platforms.
 To bootstrap from a tarball, run `tools/tarball-bootstrap` and it will
 provide instructions for downloading the correct tarball. You can then
 run the script again, passing in the path to the downloaded tarball,
-after which `make` will compile the latest version.
+after which `make` will compile the latest version. If you run
+`tools/tarball-bootstrap -a` it will attempt to download the correct
+file itself and then build from it.
 
 After the first build you should be able to `git pull` and `make`
 without bootstrapping again. You will sometimes need to `make clean`

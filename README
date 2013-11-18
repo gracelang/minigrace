@@ -8,11 +8,12 @@ Minigrace should work on POSIX-compliant systems, and is known to work
 on Linux, NetBSD, and Mac OS X. It requires a properly-configured GCC on
 the path, which may require installing development tools.
 
-Tarball distributions should compile with `./configure && make`. The Git
-repository is able to bootstrap itself with `make` on some systems, but
-it is recommended to bootstrap from a tarball by running the
-`tools/tarball-bootstrap` script. More detailed build instructions are
-in <doc/build>.
+Tarball distributions should compile with just `./configure && make`.
+
+The Git repository is able to bootstrap itself with `make` on some
+systems, but it is recommended first to bootstrap from a tarball by
+running `tools/tarball-bootstrap -a`. More detailed build instructions
+are in <doc/build>.
 
 After building there will be a `minigrace` executable in the root. This
 executable supports a few different modes and options, described in
