@@ -1368,6 +1368,13 @@ method compile(vl, of, mn, rm, bt, glpath) {
     def gctText = xmodule.gctAsString(gct)
     out "if (gctCache)"
     out "  gctCache['{escapestring(modname)}'] = \"{escapestring(gctText)}\";"
+    out "if (originalSourceLines) \{"
+    out "  originalSourceLines[\"{modname}\"] = ["
+    for (util.cLines) do {l->
+        out "    \"{l}\","
+    }
+    out "  ];"
+    out "\}"
     for (output) do { o ->
         outprint(o)
     }

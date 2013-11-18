@@ -89,6 +89,15 @@ MiniGrace.prototype.trapErrors = function(func) {
                     + ": " + e.exception.name + ": "
                     + e.message._value + "\n");
             }
+            if (originalSourceLines[e.moduleName]) {
+                var lines = originalSourceLines[e.moduleName];
+                for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
+                    if (lines[i-1]) {
+                        for (var j=0; j<4-i.toString().length; j++)
+                            this.stderr_write(" ");
+                        this.stderr_write("" + i + ": " + lines[i-1] + "\n");
+                    }
+            }
         } else if (e != "SystemExit") {
             this.stderr_write("Runtime error around line " + lineNumber + "\n");
             throw e;

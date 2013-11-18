@@ -946,6 +946,7 @@ stderr.methods.write = function(junk, s) {
 stderr.methods.close = function() {};
 
 var gctCache = {};
+var originalSourceLines = {};
 
 function gracecode_io() {
     this.methods.output = function() {
