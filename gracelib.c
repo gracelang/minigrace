@@ -2981,11 +2981,28 @@ start:
     Object originalself = self;
     Object realself = self;
     Method *m = findmethod(&self, &realself, name, superdepth, &callflags);
-    sprintf(callstack[calldepth], "%s%s.%s (defined at %s:%i in object at %s:%i) at %s:%i", (istail ? "tailcall " : ""),
-            self->class->name, name, m ? m->definitionModule : "<nowhere>",
-            m ? m->definitionLine : 0,
-            originalself->class->definitionModule,
-            originalself->class->definitionLine,
+    char objDesc[256];
+    char methDesc[256];
+    int unknownmodule = originalself->class->definitionModule == NULL
+        ||strcmp(originalself->class->definitionModule, "unknown") == 0;
+    if (originalself->class->definitionLine
+            && !unknownmodule)
+        sprintf(objDesc, " in object at %s:%i",
+                originalself->class->definitionModule,
+                originalself->class->definitionLine);
+    else if (!unknownmodule)
+        sprintf(objDesc, " in %s module",
+                originalself->class->definitionModule);
+    else
+        objDesc[0] = 0;
+    if (m)
+        sprintf(methDesc, "at %s:%i", m->definitionModule,
+                m->definitionLine);
+    else
+        strcpy(methDesc, "nowhere");
+    sprintf(callstack[calldepth], "%s%s.%s (defined %s%s) at %s:%i", (istail ? "tailcall " : ""),
+            self->class->name, name, methDesc,
+            objDesc,
             modulename,
             linenumber);
     if (track_callgraph && calldepth > 0) {

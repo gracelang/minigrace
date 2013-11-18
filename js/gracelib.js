@@ -1451,11 +1451,16 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
+    var objDesc = "";
+    if (obj.definitionLine && obj.definitionModule != "unknown")
+        objDesc = " in object at " + obj.definitionModule
+            + ":" + obj.definitionLine;
+    else if (obj.definitionModule != "unknown")
+        objDesc = " in " + obj.definitionModule + " module";
     if (typeof(meth) != "function") {
         callStack.push(obj.className + "." + methname
                 + " (defined nowhere"
-                + " in object at "
-                + obj.definitionModule + ":" + obj.definitionLine + ")"
+                + objDesc + ")"
                 + " at " + moduleName
                 + ":" + lineNumber);
         throw new GraceExceptionPacket(RuntimeErrorObject,
@@ -1479,8 +1484,7 @@ function callmethod(obj, methname, argcv) {
             + " (defined at " + (meth.definitionModule ?
                     "" + meth.definitionModule + ":" + meth.definitionLine
                     : "unknown location")
-            + " in object at "
-            + obj.definitionModule + ":" + obj.definitionLine + ")"
+            + objDesc + ")"
             + " at " + moduleName
             + ":" + lineNumber);
     var args = Array.prototype.slice.call(arguments, 3);
