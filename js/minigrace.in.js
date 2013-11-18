@@ -5,6 +5,7 @@ function MiniGrace() {
     this.modname = "main";
     this.lastSourceCode = "";
     this.lastMode = "";
+    this.lastModname
 
     this.generated_output = ""
 
@@ -115,10 +116,12 @@ MiniGrace.prototype.run = function() {
 // Returns true if the program was compiled, or false if the program has not been modified.    
 MiniGrace.prototype.compilerun = function(grace_code) {
     var compiled = false;
-    if (grace_code != this.lastSourceCode || this.mode != this.lastMode) {
+    if (grace_code != this.lastSourceCode || this.mode != this.lastMode
+            || this.modname != this.lastModname) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
+        this.lastModname = this.modname;
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {
