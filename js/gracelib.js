@@ -1407,6 +1407,7 @@ function callmethod(obj, methname, argcv) {
     if (overrideReceiver != null)
         isSuper = true;
     superDepth = obj;
+    var origModuleName = moduleName;
     if (typeof(meth) != "function") {
         var s = obj;
         isSuper = true;
@@ -1447,11 +1448,15 @@ function callmethod(obj, methname, argcv) {
     if (meth.paramTypes)
         checkmethodcall(meth, methname, obj, args);
     args.unshift(argcv)
-    var ret = meth.apply(obj, args);
-    superDepth = origSuperDepth;
-    while (callStack.length > beforeSize)
-        callStack.pop();
-    sourceObject = oldSourceObject;
+    try {
+        var ret = meth.apply(obj, args);
+    } finally {
+        superDepth = origSuperDepth;
+        while (callStack.length > beforeSize)
+            callStack.pop();
+        sourceObject = oldSourceObject;
+        moduleName = origModuleName;
+    }
     return ret;
 }
 

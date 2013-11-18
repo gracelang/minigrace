@@ -529,6 +529,7 @@ method compilemethod(o, selfobj) {
     }
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
+    out "moduleName = \"{modname}\";"
     out("try \{")
     increaseindent
     var ret := "undefined"
@@ -1107,7 +1108,6 @@ method compilenode(o) {
         linenum := o.line
         out("lineNumber = " ++ linenum);
     }
-    out "moduleName = \"{modname}\";"
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
     }
