@@ -3079,9 +3079,16 @@ start:
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "Available methods are:\n");
+    int len = 0;
     for (i=0; i<c->nummethods; i++) {
-        fprintf(stderr, "  %s\n", c->methods[i].name);
+        len += 2 + strlen(c->methods[i].name);
+        if (len > 80) {
+            fprintf(stderr, "\n");
+            len = strlen(c->methods[i].name);
+        }
+        fprintf(stderr, "  %s", c->methods[i].name);
     }
+    fprintf(stderr, "\n");
     die("Method lookup error: no %s in %s.",
             name, self->class->name);
     exit(1);
