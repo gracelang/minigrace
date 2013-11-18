@@ -31,6 +31,7 @@ var compilationDepth := 0
 def staticmodules = mgcollections.set.new
 def topLevelTypes = mgcollections.map.new
 var dialectHasAtModuleEnd := false
+var debugMode := false
 
 method increaseindent() {
     indent := indent ++ "  "
@@ -533,15 +534,25 @@ method compilemethod(o, selfobj) {
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
     out "moduleName = \"{modname}\";"
+    if (debugMode) then {
+        out "var myframe = new StackFrame(\"{name}\");"
+        out "stackFrames.push(myframe);"
+    }
     out("try \{")
     increaseindent
     var ret := "undefined"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
+    if (debugMode) then {
+        out "stackFrames.pop();"
+    }
     out("return " ++ ret)
     decreaseindent
     out("\} catch(e) \{")
+    if (debugMode) then {
+        out "stackFrames.pop();"
+    }
     out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
     out("    return e.returnvalue;")
     out("  \} else \{")
@@ -794,6 +805,9 @@ method compiledefdec(o) {
         snm := o.name.value
     }
     nm := snm
+    if (debugMode) then {
+        out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
+    }
     declaredvars.push(nm)
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
@@ -826,6 +840,9 @@ method compilevardec(o) {
     } else {
         out("var " ++ varf(nm) ++ ";")
         val := "false"
+    }
+    if (debugMode) then {
+        out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
         compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
@@ -1316,6 +1333,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     runmode := rm
     buildtype := bt
     gracelibPath := glpath
+    if (util.extensions.contains("Debug")) then {
+        debugMode := true
+    }
     util.log_verbose("generating ECMAScript code.")
     topLevelTypes.put("String", true)
     topLevelTypes.put("Number", true)
@@ -1336,6 +1356,10 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
+    if (debugMode) then {
+        out "myframe = new StackFrame(\"{modname} module\");"
+        out "stackFrames.push(myframe);"
+    }
     for (values) do { o ->
         if (o.kind == "method") then {
             compilenode(o)
@@ -1359,6 +1383,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     if (dialectHasAtModuleEnd) then {
         out("callmethod(Grace_prelude,\"atModuleEnd\", [1], this);")
+    }
+    if (debugMode) then {
+        out "stackFrames.pop();"
     }
     out("return this;")
     decreaseindent

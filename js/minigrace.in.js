@@ -5,9 +5,11 @@ function MiniGrace() {
     this.modname = "main";
     this.lastSourceCode = "";
     this.lastMode = "";
-    this.lastModname
+    this.lastModname = "";
+    this.debugMode = false;
+    this.lastDebugMode = false;
 
-    this.generated_output = ""
+    this.generated_output = "";
 
     this.stdout_write = function(value) {
         
@@ -45,6 +47,9 @@ MiniGrace.prototype.compile = function(grace_code) {
         // Do nothing
     } else {
         callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
+    }
+    if (this.debugMode) {
+        callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
     }
     try {
         gracecode_compiler.call(Grace_allocModule(":user:"));
@@ -98,6 +103,32 @@ MiniGrace.prototype.trapErrors = function(func) {
                         this.stderr_write("" + i + ": " + lines[i-1] + "\n");
                     }
             }
+            if (e.stackFrames.length > 0) {
+                this.stderr_write("Stack frames:\n");
+                for (var i=0; i<e.stackFrames.length; i++) {
+                    this.stderr_write("  " + e.stackFrames[i].methodName + "\n");
+                    var stderr_write = this.stderr_write;
+                    e.stackFrames[i].forEach(function(name, value) {
+                        stderr_write("    " + name);
+                        var debugString = "unknown";
+                        try {
+                            if (typeof value == "undefined") {
+                                debugString = "uninitialised";
+                            } else {
+                                var debugString = callmethod(value,
+                                    "asDebugString", [0])._value;
+                            }
+                        } catch(e) {
+                            debugString = "<[Error calling asDebugString]>";
+                        }
+                        debugString = debugString.replace("\\", "\\\\");
+                        debugString = debugString.replace("\n", "\\n");
+                        if (debugString.length > 60)
+                            debugString = debugString.substring(0,57) + "...";
+                        stderr_write(" = " + debugString + "\n");
+                    });
+                }
+            }
         } else if (e != "SystemExit") {
             this.stderr_write("Runtime error around line " + lineNumber + "\n");
             throw e;
@@ -108,6 +139,7 @@ MiniGrace.prototype.trapErrors = function(func) {
 MiniGrace.prototype.run = function() {
     importedModules = {};
     callStack = [];
+    stackFrames = [];
     var code = minigrace.generated_output;
     lineNumber = 1;
     moduleName = this.modname;
@@ -126,11 +158,13 @@ MiniGrace.prototype.run = function() {
 MiniGrace.prototype.compilerun = function(grace_code) {
     var compiled = false;
     if (grace_code != this.lastSourceCode || this.mode != this.lastMode
-            || this.modname != this.lastModname) {
+            || this.modname != this.lastModname
+            || this.debugMode != this.lastDebugMode) {
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
         this.lastModname = this.modname;
+        this.lastDebugMode = this.debugMode;
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {

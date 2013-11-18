@@ -99,6 +99,9 @@ GraceString.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "asDebugString": function(argcv) {
+            return new GraceString("\"" + this._value + "\"");
+        },
     },
     className: "String",
     definitionModule: "unknown",
@@ -224,6 +227,9 @@ GraceNum.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "asDebugString": function(argcv) {
+            return new GraceString("" + this._value);
+        },
     },
     className: "Number",
     definitionModule: "unknown",
@@ -302,6 +308,9 @@ GraceBoolean.prototype = {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
+        },
+        "asDebugString": function(argcv) {
+            return new GraceString("" + this._value);
         },
     },
     className: "Boolean",
@@ -404,6 +413,9 @@ GraceList.prototype = {
             }
             return res;
         },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
+        },
     },
     className: "List",
     definitionModule: "unknown",
@@ -472,6 +484,9 @@ GracePrimitiveArray.prototype = {
         "iterator": function(argcv) {
             return new GracePrimitiveArrayIterator(this._value);
         },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
+        },
     },
     className: "PrimitiveArray",
     definitionModule: "unknown",
@@ -513,7 +528,10 @@ GraceOrPattern.prototype = {
                     + callmethod(this._left, "asString", [0])._value
                     + ", " + callmethod(this._right, "asString", [0])._value
                     + ")>");
-        }
+        },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
+        },
     },
     className: "OrPattern",
     definitionModule: "unknown",
@@ -557,7 +575,10 @@ GraceAndPattern.prototype = {
                     + callmethod(this._left, "asString", [0])._value
                     + ", " + callmethod(this._right, "asString", [0])._value
                     + ")>");
-        }
+        },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
+        },
     },
     className: "AndPattern",
     definitionModule: "unknown",
@@ -947,6 +968,24 @@ stderr.methods.close = function() {};
 
 var gctCache = {};
 var originalSourceLines = {};
+var stackFrames = [];
+
+function StackFrame(methodName) {
+    this.methodName = methodName;
+    this.variables = {};
+}
+StackFrame.prototype = {
+    addVar: function(name, accessor) {
+        this.variables[name] = accessor;
+    },
+    getVar: function(name) {
+        return this.variables[name]();
+    },
+    forEach: function(f) {
+        for (var v in this.variables)
+            f(v, this.getVar(v));
+    },
+};
 
 function gracecode_io() {
     this.methods.output = function() {
@@ -1557,8 +1596,11 @@ function GraceExceptionPacket(exception, message, data) {
     this.lineNumber = lineNumber;
     this.moduleName = moduleName;
     this.callStack = [];
+    this.stackFrames = [];
     for (var i=0; i<callStack.length; i++)
         this.callStack.push(callStack[i]);
+    for (var i=0; i<stackFrames.length; i++)
+        this.stackFrames.push(stackFrames[i]);
 }
 GraceExceptionPacket.prototype = {
     methods: {
