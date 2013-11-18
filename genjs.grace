@@ -114,6 +114,7 @@ method compilearray(o) {
 }
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
+    util.setline(o.line)
     var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)])
     var r := compilenode(c)
     o.register := r

@@ -92,7 +92,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             if (originalSourceLines[e.moduleName]) {
                 var lines = originalSourceLines[e.moduleName];
                 for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
-                    if (lines[i-1]) {
+                    if (lines[i-1] != undefined) {
                         for (var j=0; j<4-i.toString().length; j++)
                             this.stderr_write(" ");
                         this.stderr_write("" + i + ": " + lines[i-1] + "\n");
