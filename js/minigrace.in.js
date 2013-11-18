@@ -54,6 +54,7 @@ MiniGrace.prototype.compile = function(grace_code) {
             // pass
         } else if (e.exctype == 'graceexception') {
             this.stderr_write("Internal compiler error, around line " + e.lineNumber
+                + " of " + e.moduleName
                 + ": " + e.exception.name + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
@@ -75,6 +76,7 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.stderr_write("Error around line " + e.lineNumber
+                + " of " + moduleName
                 + ": " + e.exception.name + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
@@ -82,6 +84,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             }
             if (e.callStack.length > 0) {
                 this.stderr_write("Error around line " + e.lineNumber
+                    + " of " + moduleName
                     + ": " + e.exception.name + ": "
                     + e.message._value + "\n");
             }
@@ -97,6 +100,7 @@ MiniGrace.prototype.run = function() {
     callStack = [];
     var code = minigrace.generated_output;
     lineNumber = 1;
+    moduleName = this.modname;
     eval(code);
     var theModule;
     eval("theModule = gracecode_" + this.modname + ";");

@@ -1,4 +1,5 @@
 var lineNumber = 0;
+var moduleName = "???";
 var superDepth = null;
 var invocationCount = 0;
 
@@ -1436,7 +1437,8 @@ function callmethod(obj, methname, argcv) {
         overrideReceiver = null;
     }
     var beforeSize = callStack.length;
-    callStack.push(obj.className + "." + methname + " at line " + lineNumber);
+    callStack.push(obj.className + "." + methname + " at line " + lineNumber
+            + " of " + moduleName);
     var args = Array.prototype.slice.call(arguments, 3);
     for (var i=0; i<args.length; i++)
         if (typeof args[i] == 'undefined')
@@ -1501,6 +1503,7 @@ function GraceExceptionPacket(exception, message, data) {
     this.message = message;
     this.data = data;
     this.lineNumber = lineNumber;
+    this.moduleName = moduleName;
     this.callStack = [];
     for (var i=0; i<callStack.length; i++)
         this.callStack.push(callStack[i]);

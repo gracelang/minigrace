@@ -194,6 +194,7 @@ method compileobjdefdec(o, selfr, pos) {
     if (o.dtype != false) then {
         linenum := o.line
         out "lineNumber = {linenum};"
+        out "moduleName = \"{modname}\";"
         out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "  [1], {val})))"
         out "    throw new GraceExceptionPacket(TypeErrorObject,"
@@ -251,6 +252,7 @@ method compileobjvardec(o, selfr, pos) {
         }
         linenum := o.line
         out "lineNumber = {linenum};"
+        out "moduleName = \"{modname}\";"
         out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "  [1], {val})))"
         out "    throw new GraceExceptionPacket(TypeErrorObject,"
@@ -504,6 +506,7 @@ method compilemethod(o, selfobj) {
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
                             out "lineNumber = {linenum};"
+                            out "moduleName = \"{modname}\";"
                             out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
                             out "  [1], arguments[curarg2])))"
                             out "    throw new GraceExceptionPacket(TypeErrorObject,"
@@ -798,6 +801,7 @@ method compiledefdec(o) {
     if (o.dtype != false) then {
         linenum := o.line
         out "lineNumber = {linenum};"
+        out "moduleName = \"{modname}\";"
         out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "  [1], {varf(nm)})))"
         out "    throw new GraceExceptionPacket(TypeErrorObject,"
@@ -830,6 +834,7 @@ method compilevardec(o) {
         if (val != "false") then {
             linenum := o.line
             out "lineNumber = {linenum};"
+            out "moduleName = \"{modname}\";"
             out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
             out "  [1], {varf(nm)})))"
             out "    throw new GraceExceptionPacket(TypeErrorObject,"
@@ -1102,6 +1107,7 @@ method compilenode(o) {
         linenum := o.line
         out("lineNumber = " ++ linenum);
     }
+    out "moduleName = \"{modname}\";"
     if (o.kind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
     }

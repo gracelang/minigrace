@@ -1259,6 +1259,7 @@ method compilecatchcase(o) {
         out("  params[{idx}] = {e};")
     }
     out "  setline({o.line});"
+    out "  setmodule(modulename);"
     out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
         ++ "{finally});")
     out("  gc_frame_end(frame{myc});")
@@ -2008,6 +2009,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
+    out "  self->class->definitionModule = modulename;"
     out("  gc_root(self);")
     if (util.extensions.contains("NativePrelude")) then {
         out("  prelude = grace_prelude();")
