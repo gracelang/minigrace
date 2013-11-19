@@ -2824,6 +2824,7 @@ method methodsignature(sameline) {
 // following, as in "import parser".
 method doimport {
     if (accept("keyword") && (sym.value == "import")) then {
+        def importline = sym.line
         next
         if(sym.kind != "string") then {
             var suggestion := errormessages.suggestion.new
@@ -2866,6 +2867,7 @@ method doimport {
         }
         pushidentifier
         def n = values.pop
+        util.setline(importline)
         def o = ast.importNode.new(p.value, n.value)
         if (accept("colon")) then {
             next
