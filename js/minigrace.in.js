@@ -3,6 +3,7 @@ function MiniGrace() {
     this.vis = "standard";
     this.mode = "js";
     this.modname = "main";
+    this.verbose = true;
     this.lastSourceCode = "";
     this.lastMode = "";
     this.lastModname = "";

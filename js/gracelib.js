@@ -1187,7 +1187,8 @@ function gracecode_util() {
             return new GraceNum(30);
         },
         log_verbose: function(argcv, s) {
-            minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
+            if (minigrace.verbose)
+                minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
         },
         outprint: function(argcv, s) {
             minigrace.stdout_write(s._value + "\n");
