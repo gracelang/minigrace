@@ -9,6 +9,7 @@ function MiniGrace() {
     this.lastModname = "";
     this.debugMode = false;
     this.lastDebugMode = false;
+    this.printStackFrames = true;
 
     this.generated_output = "";
 
@@ -106,7 +107,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                         this.stderr_write("" + i + ": " + lines[i-1] + "\n");
                     }
             }
-            if (e.stackFrames.length > 0) {
+            if (e.stackFrames.length > 0 && this.printStackFrames) {
                 this.stderr_write("Stack frames:\n");
                 for (var i=0; i<e.stackFrames.length; i++) {
                     this.stderr_write("  " + e.stackFrames[i].methodName + "\n");

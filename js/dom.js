@@ -10,7 +10,7 @@ function wrapDOMFunction(obj, fn) {
 function wrapDOMField(o, obj, k) {
     o.methods[k + ":="] = function(argcv, val) {
         obj[k] = wrapGraceObject(val);
-        return var_noSuchValue;
+        return var_done;
     }
     return function() {
         return wrapDOMObject(obj[k]);
@@ -23,7 +23,7 @@ function wrapDOMObject(obj) {
         case "number":
             return new GraceNum(obj);
         case "undefined":
-            return var_noSuchValue;
+            return var_done;
     }
     if (obj._graceWrapper)
         return obj._graceWrapper;
@@ -59,7 +59,7 @@ function wrapDOMObject(obj) {
 
 function wrapGraceObject(o) {
     if (o === undefined)
-        return var_noSuchValue;
+        return var_done;
     if (o instanceof GraceString) {
         return o._value;
     }
