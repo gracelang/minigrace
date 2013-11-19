@@ -664,7 +664,7 @@ GraceObject.prototype = {
             var s = "object {";
             for (var i in this.data) {
                 try {
-                    s += "var " + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
+                    s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
                 } catch (e) {
                     s += "var " + i + ";"
                 }
@@ -688,10 +688,12 @@ GraceObjectMethods = {
         return callmethod(t, "not", [0]);
     },
     "asString": function(argcv) {
-        var s = "object {";
+        var s = "object(";
+        s += this.definitionModule + ":" + this.definitionLine;
+        s += ") {";
         for (var i in this.data) {
             try {
-                s += "var " + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
+                s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
             } catch (e) {
                 s += "var " + i + ";"
             }

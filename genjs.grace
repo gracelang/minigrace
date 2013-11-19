@@ -263,6 +263,7 @@ method compileobjvardec(o, selfr, pos) {
     }
 }
 method compileclass(o) {
+    util.setline(o.line)
     var signature := o.signature
     var mbody := [ast.objectNode.new(o.value, o.superclass)]
     var newmeth := ast.methodNode.new(o.constructor, signature, mbody,
@@ -271,7 +272,10 @@ method compileclass(o) {
         newmeth.generics := o.generics
     }
     newmeth.properties.put("fresh", true)
-    var obody := [newmeth]
+    def dbBody = [ast.stringNode.new("class {o.name.value}")]
+    def dbMeth = ast.methodNode.new(
+        ast.identifierNode.new("asDebugString", false), [], dbBody, false)
+    var obody := [newmeth, dbMeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
