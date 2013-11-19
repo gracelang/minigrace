@@ -465,17 +465,28 @@ method compilemethod(o, selfobj) {
     out("var func" ++ myc ++ " = function(argcv) \{")
     increaseindent
     out("var curarg = 1;")
+    if (debugMode) then {
+        out "var myframe = new StackFrame(\"{name}\");"
+    }
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         for (part.params) do { p ->
             out("var {varf(p.value)} = arguments[curarg];")
             out("curarg++;")
+            if (debugMode) then {
+                out "myframe.addVar(\"{escapestring(p.value)}\","
+                out "  function() \{return {varf(p.value)};});"
+            }
         }
         if (part.vararg != false) then {
             out("var {varf(part.vararg.value)} = new GraceList("
                 ++ "Array.prototype.slice.call(arguments, curarg, "
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("curarg += argcv[{partnr - 1}] - {part.params.size};")
+            if (debugMode) then {
+                out "myframe.addVar(\"{escapestring(part.vararg.value)}\","
+                out "  function() \{return {varf(part.vararg.value)};});"
+            }
         } else {
             if (!o.selfclosure) then {
                 out "if (argcv[{partnr - 1}] !=  func{myc}.paramCounts[{partnr - 1}])"
@@ -535,7 +546,6 @@ method compilemethod(o, selfobj) {
     out("invocationCount++;")
     out "moduleName = \"{modname}\";"
     if (debugMode) then {
-        out "var myframe = new StackFrame(\"{name}\");"
         out "stackFrames.push(myframe);"
     }
     out("try \{")
