@@ -77,10 +77,12 @@ MiniGrace.prototype.compile = function(grace_code) {
 }
 
 MiniGrace.prototype.trapErrors = function(func) {
+    this.exception = null;
     try {
         func();
     } catch (e) {
         if (e.exctype == 'graceexception') {
+            this.exception = e;
             this.stderr_write("Error around line " + e.lineNumber
                 + " of " + e.moduleName
                 + ": " + e.exception.name + ": "
