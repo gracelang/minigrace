@@ -57,6 +57,9 @@ class list.new(*a) {
         }
         s ++ ")"
     }
+    method asDebugString {
+        asString
+    }
     method extend(l) {
         for (l) do {i->
             push(i)
@@ -151,6 +154,9 @@ class set.new(*a) {
             }
         }
         s ++ ")"
+    }
+    method asDebugString {
+        asString
     }
     method -(o) {
         def ret = set.new
@@ -269,6 +275,9 @@ class map.new {
             }
         }
         s ++ "]"
+    }
+    method asDebugString {
+        asString
     }
     method iter {
         object {

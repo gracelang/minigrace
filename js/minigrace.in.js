@@ -119,7 +119,9 @@ MiniGrace.prototype.trapErrors = function(func) {
                                     "asDebugString", [0])._value;
                             }
                         } catch(e) {
-                            debugString = "<[Error calling asDebugString]>";
+                            debugger
+                            debugString = "<[Error calling asDebugString"
+                                + ": " + e.message._value + "]>";
                         }
                         debugString = debugString.replace("\\", "\\\\");
                         debugString = debugString.replace("\n", "\\n");

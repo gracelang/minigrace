@@ -663,7 +663,11 @@ GraceObject.prototype = {
         "asString": function(argcv) {
             var s = "object {";
             for (var i in this.data) {
-                s += "var " + i + " = " + this.data[i]._value;
+                try {
+                    s += "var " + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
+                } catch (e) {
+                    s += "var " + i + ";"
+                }
             }
             return new GraceString(s + "}");
         },
@@ -686,7 +690,11 @@ GraceObjectMethods = {
     "asString": function(argcv) {
         var s = "object {";
         for (var i in this.data) {
-            s += "var " + i + " = " + this.data[i]._value + " ";
+            try {
+                s += "var " + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
+            } catch (e) {
+                s += "var " + i + ";"
+            }
         }
         return new GraceString(s + "}");
     },
@@ -914,6 +922,7 @@ GraceHashMap.prototype.methods.asString = function() {
     s += "}]";
     return new GraceString(s);
 }
+GraceHashMap.prototype.methods.asDebugString = GraceHashMap.prototype.methods.asString;
 
 function GraceListIterator(l) {
     this._value = l;
