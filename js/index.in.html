@@ -113,8 +113,8 @@
         function modeswitch() {
             var mode = document.getElementById('mode').value;
             if (mode != 'js' && mode != 'testall') {
-                document.getElementById('tab').selectedIndex = 1;
-                tabswitch();
+                document.getElementById('output-select').selectedIndex = 1;
+                outputswitch();
             }
             if (mode != 'testall') {
                 minigrace.mode = mode;
@@ -201,9 +201,9 @@
             testnext();
         }
 
-        function tabswitch() {
+        function outputswitch() {
             var tb = document.getElementById('tabbox');
-            var next = document.getElementById('tab').value;
+            var next = document.getElementById('output-select').value;
             for (var i = 0; i < tb.children.length; i++) {
                 var c = tb.children[i];
                 if (c.nodeName.toLowerCase() == "div") {
@@ -252,10 +252,10 @@
   </div>
   <div id="tabbox">
    View
-   <select id="tab" onchange="tabswitch()">
+   <select id="output-select" onchange="tabswitch()">
     <option value="stdout_tab">Program output
     <option value="js_tab">Generated code
-    <option value="canvas_tab">Canvas
+    <option value="canvas">Canvas
    </select>:
    <span id="stdout_options">
     <input type="checkbox" id="autoscroll" onclick="scrollstdout()" checked>Auto scroll</input>
@@ -264,7 +264,7 @@
    <div id="js_tab" style="display: none;">
     <textarea id="js_txt" rows="20" cols="60"></textarea>
    </div>
-   <div id="canvas_tab" style="display: none;">
+   <div id="canvas" style="display: none;">
     <canvas id="standard-canvas" width="500" height="250"></canvas>
    </div>
    <div id="stdout_tab">

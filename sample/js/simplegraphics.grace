@@ -1,10 +1,10 @@
 import "dom" as dom
 def document = dom.document
-def ts = document.getElementById("tab")
+def ts = document.getElementById("output-select")
 for (0..(ts.options.length-1)) do {i->
-    if (ts.options.item(i).value == "canvas_tab") then {
+    if (ts.options.item(i).value == "canvas") then {
         ts.selectedIndex := i
-        dom.window.tabswitch
+        dom.window.outputswitch
     }
 }
 
