@@ -184,7 +184,7 @@ method start {
     def mctx = canvas.getContext("2d")
     dom.for(steps) waiting(delay)do {step->
         mctx.fillStyle := "white"
-        mctx.fillRect(0, 0, 500, 250)
+        mctx.fillRect(0, 0, 500, 500)
         x := 150
         y := 225
         turtleAngle := 0
