@@ -1,0 +1,91 @@
+{
+    "loopinvariant": {
+        "name": "Loop invariants dialect",
+        "dir": "dialects"
+    },
+    "loopinvariant_example": {
+        "name": "Loop invariant example",
+        "dir": "dialects",
+        "requires": ["loopinvariant"]
+    },
+    "fsm": {
+        "name": "Finite state machine dialect",
+        "dir": "dialects"
+    },
+    "fsm_example": {
+        "name": "FSM client code",
+        "requires": ["fsm"],
+        "dir": "dialects"
+    },
+    "ObjectAssociations": {
+        "name": "Object associations dialect",
+        "dir": "dialects"
+    },
+    "ObjectAssociations_example": {
+        "name": "OA client code",
+        "dir": "dialects",
+        "requires": ["ObjectAssociations"]
+    },
+    "StaticGrace": {
+        "name": "Static Grace dialect",
+        "dir": "dialects"
+    },
+    "dialect": {
+        "name": "Dialect dialect",
+        "dir": "dialects"
+    },
+    "dialect_example": {
+        "name": "Dialect client code",
+        "dir": "dialects",
+        "requires": ["dialect"]
+    },
+    "grapl": {
+        "name": "GrAPL dialect",
+        "dir": "dialects"
+    },
+    "grapl_example": {
+        "name": "GrAPL example",
+        "dir": "dialects",
+        "requires": ["grapl"]
+    },
+    "simplegraphics": {
+        "name": "Simple graphics module",
+        "dir": "js",
+        "requires": []
+    },
+    "simplegraphics_example": {
+        "name": "Simple graphics demo",
+        "dir": "graphics",
+        "requires": ["simplegraphics"]
+    },
+    "turtle": {
+        "name": "Turtle graphics module",
+        "dir": "js",
+        "requires": []
+    },
+    "logo": {
+        "name": "Logo-like dialect",
+        "dir": "graphics",
+        "requires": ["turtle"]
+    },
+    "logo_example": {
+        "name": "Logo-like client code",
+        "dir": "graphics",
+        "requires": ["turtle", "logo"]
+    },
+    "pong": {
+        "name": "DOM Pong",
+        "dir": "js",
+        "requires": []
+    },
+    "sniff": {
+        "name": "Sniff graphics dialect",
+        "dir": "js",
+        "requires": []
+    },
+    "sniffpong": {
+        "name": "Sniff-based pong",
+        "dir": "js",
+        "requires": ["sniff"]
+    }
+}
