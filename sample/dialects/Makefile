@@ -1,4 +1,4 @@
-DIALECTS = StaticGrace fsm ObjectAssociations dialect grapl loopinvariant
+DIALECTS = StaticGrace fsm ObjectAssociations dialect grapl loopinvariant literalblock
 SAMPLES = fsm_example ObjectAssociations_example dialect_example.gso grapl_example loopinvariant_example
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))

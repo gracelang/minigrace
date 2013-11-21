@@ -17,6 +17,15 @@
         "requires": ["fsm"],
         "dir": "dialects"
     },
+    "literalblock": {
+        "name": "Literal block dialect",
+        "dir": "dialects"
+    },
+    "literal_test": {
+        "name": "Test for literal block dialect",
+        "dir": "dialects",
+        "requires": ["literalblock"]
+    },
     "ObjectAssociations": {
         "name": "Object associations dialect",
         "dir": "dialects"
