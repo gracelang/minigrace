@@ -1,30 +1,36 @@
 {
     "loopinvariant": {
         "name": "Loop invariants dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A small sample dialect enforcing loop invariants."
     },
     "loopinvariant_example": {
         "name": "Loop invariant example",
         "dir": "dialects",
-        "requires": ["loopinvariant"]
+        "requires": ["loopinvariant"],
+        "description": "Example using loop invariants dialect."
     },
     "fsm": {
         "name": "Finite state machine dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A dialect for implementing finite state machines as modules."
     },
     "fsm_example": {
         "name": "FSM client code",
         "requires": ["fsm"],
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "Example using finite state machine dialect."
     },
     "literalblock": {
         "name": "Literal block dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A dialect enforcing that while loops are written with literal blocks, and offering errors and suggestions when they are not."
     },
     "literal_test": {
         "name": "Test for literal block dialect",
         "dir": "dialects",
-        "requires": ["literalblock"]
+        "requires": ["literalblock"],
+        "description": "Example code producing an error from the literal block dialect"
     },
     "ObjectAssociations": {
         "name": "Object associations dialect",
@@ -33,68 +39,82 @@
     "ObjectAssociations_example": {
         "name": "OA client code",
         "dir": "dialects",
-        "requires": ["ObjectAssociations"]
+        "requires": ["ObjectAssociations"],
+        "description": "Example using the object associations dialect."
     },
     "StaticGrace": {
         "name": "Static Grace dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A dialect enforcing that static type annotations are always present."
     },
     "dialect": {
         "name": "Dialect dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A dialect to assist in writing other dialects."
     },
     "dialect_example": {
         "name": "Dialect client code",
         "dir": "dialects",
-        "requires": ["dialect"]
+        "requires": ["dialect"],
+        "description": "Example using the Dialect dialect to implement the StaticGrace dialect in a more concise way."
     },
     "grapl": {
         "name": "GrAPL dialect",
-        "dir": "dialects"
+        "dir": "dialects",
+        "description": "A Grace rendition of parts of APL, showing the use of operator definitions and other language features."
     },
     "grapl_example": {
         "name": "GrAPL example",
         "dir": "dialects",
-        "requires": ["grapl"]
+        "requires": ["grapl"],
+        "description": "Example using simple APL programs with the GrAPL dialect."
     },
     "simplegraphics": {
         "name": "Simple graphics module",
         "dir": "js",
-        "requires": []
+        "requires": [],
+        "description": "Cross-platform graphics library."
     },
     "simplegraphics_example": {
         "name": "Simple graphics demo",
         "dir": "graphics",
-        "requires": ["simplegraphics"]
+        "requires": ["simplegraphics"],
+        "description": "Example using the cross-platform simple graphics library."
     },
     "turtle": {
         "name": "Turtle graphics module",
         "dir": "js",
-        "requires": []
+        "requires": [],
+        "description": "Library to draw a turtle on the screen and allow it to be moved around by code."
     },
     "logo": {
         "name": "Logo-like dialect",
         "dir": "graphics",
-        "requires": ["turtle"]
+        "requires": ["turtle"],
+        "description": "A dialect providing procedural turtle graphics access."
     },
     "logo_example": {
         "name": "Logo-like client code",
         "dir": "graphics",
-        "requires": ["turtle", "logo"]
+        "requires": ["turtle", "logo"],
+        "description": "Example using the Logo-like turtle graphics dialect to draw a picture."
     },
     "pong": {
         "name": "DOM Pong",
         "dir": "js",
-        "requires": []
+        "requires": [],
+        "description": "Pong implemented on top of the HTML document object model directly."
     },
     "sniff": {
         "name": "Sniff graphics dialect",
         "dir": "js",
-        "requires": []
+        "requires": [],
+        "description": "A dialect giving Scratch-like graphics."
     },
     "sniffpong": {
         "name": "Sniff-based pong",
         "dir": "js",
-        "requires": ["sniff"]
+        "requires": ["sniff"],
+        "description": "Example code in the Sniff dialect, implementing Pong."
     }
 }
