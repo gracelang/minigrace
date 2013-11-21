@@ -3945,7 +3945,7 @@ Object dlmodule(const char *name) {
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle)
-        gracedie("failed to load dynamic module '%s'", buf);
+        gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
     strcpy(buf, "module_");
     int new_size = 0;
     char c;

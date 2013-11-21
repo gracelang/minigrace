@@ -40,6 +40,7 @@ class forNode.new(over, body') {
     def body = body'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitFor(self)) then {
             self.value.accept(visitor)
@@ -74,6 +75,7 @@ class whileNode.new(cond, body') {
     def body = body'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitWhile(self)) then {
             self.value.accept(visitor)
@@ -116,6 +118,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     def elseblock = elseblock'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     var handledIdentifiers := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIf(self)) then {
@@ -191,6 +194,7 @@ class blockNode.new(params', body') {
     var register := ""
     var matchingPattern := false
     var line := util.linenum
+    var linePos := util.linepos
     var extraRuntimeData := false
     for (params') do {p->
         p.accept(patternMarkVisitor)
@@ -283,6 +287,7 @@ class catchCaseNode.new(block, cases', finally') {
     def finally = finally'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCatchCase(self)) then {
             self.value.accept(visitor)
@@ -342,6 +347,7 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     def elsecase = elsecase'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMatchCase(self)) then {
             self.value.accept(visitor)
@@ -418,6 +424,7 @@ class methodTypeNode.new(name', signature', rtype') {
     def rtype = rtype'
     var generics := []
     var line := util.linenum
+    var linePos := util.linepos
     var register := ""
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethodType(self)) then {
@@ -505,6 +512,7 @@ class typeNode.new(name', methods') {
     def intersectionTypes = []
     def annotations = collections.list.new
     var line := util.linenum
+    var linePos := util.linepos
     var generics := []
     var nominal := false
     var anonymous := false
@@ -661,6 +669,7 @@ class methodNode.new(name', signature', body', dtype') {
     var selfclosure := false
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     def annotations = collections.list.new
     var properties := collections.map.new
     method accept(visitor : ASTVisitor) {
@@ -817,6 +826,7 @@ class callNode.new(what, with') {
     def value = what
     def with = with'
     var line := 0 + util.linenum
+    var linePos := util.linepos
     var register := ""
     var generics := false
     var isPattern := false
@@ -926,6 +936,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     var generics := false
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     def superclass = superclass'
     def annotations = collections.list.new
     var instanceMethods := collections.list.new
@@ -1053,6 +1064,7 @@ class objectNode.new(body, superclass') {
     def value = body
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     def superclass = superclass'
     var otype := false
     var classname := "object"
@@ -1116,6 +1128,7 @@ class arrayNode.new(values) {
     def value = values
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitArray(self)) then {
             for (self.value) do { ax ->
@@ -1163,6 +1176,7 @@ class memberNode.new(what, in') {
     def in = in'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMember(self)) then {
             self.in.accept(visitor)
@@ -1205,6 +1219,7 @@ class genericNode.new(base, params') {
     def params = params'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitGeneric(self)) then {
             self.value.accept(visitor)
@@ -1321,6 +1336,7 @@ class octetsNode.new(n) {
     def value = n
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitOctets(self)
     }
@@ -1336,6 +1352,7 @@ class stringNode.new(v) {
     var value := v
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitString(self)
     }
@@ -1377,6 +1394,7 @@ class numNode.new(val) {
     def value = val
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitNum(self)
     }
@@ -1404,6 +1422,7 @@ class opNode.new(op, l, r) {
     def right = r
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitOp(self)) then {
             self.left.accept(visitor)
@@ -1459,6 +1478,7 @@ class indexNode.new(expr, index') {
     def index = index'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIndex(self)) then {
             self.value.accept(visitor)
@@ -1504,6 +1524,7 @@ class bindNode.new(dest', val') {
     def value = val'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitBind(self)) then {
             self.dest.accept(visitor)
@@ -1550,6 +1571,7 @@ class defDecNode.new(name', val, dtype') {
     var dtype := dtype'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     def annotations = collections.list.new
     var data := false
     method accept(visitor : ASTVisitor) {
@@ -1629,6 +1651,7 @@ class varDecNode.new(name', val', dtype') {
     var dtype := dtype'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
@@ -1707,6 +1730,7 @@ class importNode.new(path', name) {
     def path = path'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     var dtype := false
     def linePos = 1
     method accept(visitor : ASTVisitor) {
@@ -1742,6 +1766,7 @@ class dialectNode.new(path') {
     def value = path'
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitDialect(self)
     }
@@ -1774,6 +1799,7 @@ class returnNode.new(expr) {
     def value = expr
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitReturn(self)) then {
             self.value.accept(visitor)
@@ -1809,6 +1835,7 @@ class inheritsNode.new(expr) {
     def value = expr
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitInherits(self)) then {
             self.value.accept(visitor)
@@ -1844,6 +1871,7 @@ class blankNode.new {
     def value = "blank"
     var register := ""
     var line := util.linenum
+    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1866,7 +1894,9 @@ class signaturePart.new(*values) {
     var params := []
     var vararg := false
     var generics := []
-    def line = util.linenum
+    var line := util.linenum
+    var linePos := util.linepos
+    var lineLength := 0
     if (values.size > 0) then {
         name := values[1]
     }
@@ -1911,7 +1941,9 @@ method callWithPart {
                 method map(blk) {
                     map(blk)before {} after {}
                 }
-                def line = util.linenum
+                var line := util.linenum
+                var linePos := util.linepos
+                var lineLength := 0
             }
         }
     }

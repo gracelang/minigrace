@@ -1332,8 +1332,9 @@ method processDialect(values') {
             } case { e : CheckerFailure ->
                 if (done != e.data) then {
                     util.setPosition(e.data.line, e.data.linePos)
+                    errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
                 }
-                errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                errormessages.syntaxError("Dialect failure: {e.message}.")atPosition(util.linenum, 0)
             }
         }
     }

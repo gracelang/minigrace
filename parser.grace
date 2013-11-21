@@ -1734,6 +1734,8 @@ method callrest {
         next
     }
     if (acceptSameLine("lparen")) then {
+        part.line := sym.line
+        part.linePos := sym.linePos
         tok := sym
         hadcall := true
         methn := meth.value
@@ -1839,6 +1841,9 @@ method callrest {
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("A method call beginning with a '(' must end with a ')'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+        }
+        if (sym.line == part.line) then {
+            part.lineLength := sym.linePos - part.linePos
         }
         ln := linenum
         next
@@ -2700,6 +2705,7 @@ method methodsignature(sameline) {
     var vararg := false
     if (accept("lparen")) then {
         def lparen = sym
+        part.linePos := sym.linePos
         next
         var id
         var comma := false
@@ -2791,6 +2797,9 @@ method methodsignature(sameline) {
             }
             errormessages.syntaxError("A part of a method beginning with a '(' must end with a ')'.")atRange(
                 lastToken.line, lastToken.linePos, lastToken.linePos)withSuggestion(suggestion)
+        }
+        if (sym.line == part.line) then {
+            part.lineLength := sym.linePos - part.linePos
         }
         next
         if ((!sameline && accept("identifier")) ||
