@@ -13,6 +13,7 @@ class Scope.new(parent') {
     def elementScopes = collections.map.new
     def elementDeclarations = collections.map.new
     def elementLines = collections.map.new
+    def elementTokens = collections.map.new
     def parent = parent'
     var hasParent := true
     var variety := "block"
@@ -435,7 +436,27 @@ method resolveIdentifiersActual(node) {
         }
         if (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
-                errormessages.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant. To make it a variable use 'var' instead of 'def' in the declaration.")atLine(node.line)
+                def name = node.dest.value
+                def scp = getNameScope(name)
+                var more := ""
+                def suggestions = []
+                if (scp.elementLines.contains(name)) then {
+                    more := " on line {scp.elementLines.get(name)}"
+                }
+                if (scp.elementTokens.contains(name)) then {
+                    def tok = scp.elementTokens.get(name)
+                    def sugg = errormessages.suggestion.new
+                    var eq := tok
+                    while {(eq.kind != "op") || (eq.value != "=")} do {
+                        eq := eq.next
+                    }
+                    sugg.replaceToken(eq)with(":=")
+                    sugg.replaceToken(tok)with("var")
+                    suggestions.push(sugg)
+                }
+                errormessages.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant. To make it a variable use 'var' instead of 'def' in the declaration{more}.")
+                    atLine(node.line)
+                    withSuggestions(suggestions)
             }
         }
     }
@@ -674,6 +695,9 @@ method resolveIdentifiers(topNode) {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
                 scope.add(node.name.value)as "def"
+                if (false != node.startToken) then {
+                    scope.elementTokens.put(node.name.value, node.startToken)
+                }
             } else {
                 scope.add(node.name.value)
             }

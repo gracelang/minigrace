@@ -2124,6 +2124,7 @@ method defdec {
                 o.annotations.push(ast.identifierNode.new("public", false))
             }
         }
+        o.startToken := defTok
         values.push(o)
     }
 }
