@@ -608,12 +608,26 @@ def LexerClass = object {
                 var atStart := true
                 linePosition := 0
                 util.log_verbose("lexing.")
+                def badSeparator = unicode.pattern("Z", 9)not(32, 8232)
+                def badControl =  unicode.pattern("C")not(10, 13)
+                def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
+                    ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
+                def identifierChar = unicode.pattern("L", "N", 95, 39)
+                def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
+                    "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
+                def digitB = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
+                    "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
+                def operatorChar = unicode.pattern("Sm", "So",
+                    "-".ord, "&".ord, "|".ord, ":".ord,
+                   "%".ord, "^".ord, "@".ord, "?".ord,
+                   "*".ord, "/".ord, "+".ord, "!".ord
+                    )
+                def iGTLT = unicode.pattern("i".ord, "<".ord, ">".ord)
                 for (input) do { c ->
                     linePosition := linePosition + 1
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
-                    if ((unicode.isSeparator(ordval) && (ordval != 32) &&
-                        (ordval != 8232)) || (ordval == 9)) then {
+                    if (badSeparator.match(ordval)) then {
                         // Character is whitespace, but not an ASCII space or
                         // Unicode LINE SEPARATOR, or is a tab
                         def suggestion = errormessages.suggestion.new
@@ -653,8 +667,7 @@ def LexerClass = object {
                                 linePosition, linePosition)withSuggestion(suggestion)
                         }
                     }
-                    if (unicode.isControl(ordval) && (ordval != 10)
-                        && (ordval != 13)) then {
+                    if (badControl.match(ordval)) then {
                         // Character is a control character other than
                         // carriage return or line feed.
                         def suggestion = errormessages.suggestion.new
@@ -705,32 +718,32 @@ def LexerClass = object {
                             newmode := "I"
                             inBackticks := true
                         }
-                        ct := isidentifierchar(ordval)
-                        if (ct) then {
+                        if (identifierChar.match(ordval)) then {
                             newmode := "i"
                         }
                         ct := ((ordval >= 48) && (ordval <=57))
-                        if (ct && (mode != "i")) then {
-                            newmode := "m"
+                        if (digit.match(ordval)) then {
+                            if (mode != "i") then {
+                                newmode := "m"
+                            }
                         }
-                        if ((((ordval >= 97) && (ordval <=122)) || ((ordval >= 65) && (ordval <= 90)))  && (mode == "m")) then {
-                            newmode := "m"
+                        if (mode == "m") then {
+                            if (((ordval >= 97) && (ordval <=122)) || ((ordval >= 65) && (ordval <= 90))) then {
+                                newmode := "m"
+                            }
                         }
                         if ((mode == "i") && (c == "<")) then {
                             newmode := "<"
-                        } elseif (((mode == "i") || (mode == ">")
-                            || (mode == "<"))
+                        } elseif (iGTLT.match(mode)
                             && (c == ">")) then {
                             if (mode == ">") then {
                                 modechange(tokens, mode, accum)
                             }
                             newmode := ">"
-                        } elseif (isoperatorchar(c, ordval)) then {
+                        } elseif (operatorChar.match(ordval)) then {
                             newmode := "o"
                         }
-                        if ((c == "(") || (c == ")") || (c == ",") || (c == ".")
-                            || (c == "\{") || (c == "}") || (c == "[")
-                            || (c == "]") || (c == ";")) then {
+                        if (selfModes.match(ordval)) then {
                             newmode := c
                         }
                         if ((c == "#") && (mode != "p")) then {
