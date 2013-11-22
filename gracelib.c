@@ -4245,6 +4245,18 @@ Object grace_for_do(Object self, int nparts, int *argcv,
     }
     return done;
 }
+void grace_iterate(Object iterable, void(*callback)(Object, void *),
+        void *userdata) {
+    Object iter = callmethod(iterable, "iter", 0, NULL, NULL);
+    gc_frame_newslot(iter);
+    // Stack slot for argument object
+    int slot = gc_frame_newslot(NULL);
+    int partcv[] = {1};
+    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL, NULL);
+        callback(val, userdata);
+    }
+}
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
 Object grace_octets(Object self, int npart, int *argcv,
         Object *argv, int flags) {
