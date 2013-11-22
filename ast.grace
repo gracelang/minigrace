@@ -1330,6 +1330,9 @@ class identifierNode.new(name, dtype') {
         }
         s
     }
+    method asString {
+        "<Identifier[{value}]>"
+    }
 }
 class octetsNode.new(n) {
     def kind = "octets"
