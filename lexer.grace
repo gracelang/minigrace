@@ -460,8 +460,13 @@ def LexerClass = object {
             // characters are Unicode letters, Unicode numbers, apostrophe,
             // and (currently) underscore.
             method isidentifierchar(ov) {
-                if (unicode.isLetter(ov) || unicode.isNumber(ov)
-                    || (ov == 95) || (ov == 39)) then {
+                if (unicode.isLetter(ov)) then {
+                    return true
+                }
+                if (unicode.isNumber(ov)) then {
+                    return true
+                }
+                if ((ov == 95) || (ov == 39)) then {
                     // 95 is _, 39 is '
                     true
                 } else {
@@ -757,15 +762,21 @@ def LexerClass = object {
                             mode := "c"
                             newmode := mode
                         }
-                        if ((newmode == mode) && (mode == "n")
-                            && (unicode.isSeparator(ordval).not)
-                            && (unicode.isControl(ordval).not)) then {
-                            if ((unicode.isSeparator(ordval).not)
-                                && (ordval != 10) && (ordval != 13)
-                                && (ordval != 32)) then {
-                                errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
-                                    ++ "is not a valid character; use spaces instead.")atRange(
-                                    lineNumber, linePosition, linePosition)
+                        if (mode == "n") then {
+                            if (mode == newmode) then {
+                                if (unicode.isSeparator(ordval).not) then {
+                                    if (unicode.isControl(ordval).not) then {
+                                        if (ordval != 10) then {
+                                            if (ordval != 13) then {
+                                                if (ordval != 32) then {
+                                                        errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
+                                                            ++ "is not a valid character; use spaces instead.")atRange(
+                                                            lineNumber, linePosition, linePosition)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         if ((c == ".") && (accum == "..")) then {
@@ -776,20 +787,26 @@ def LexerClass = object {
                             accum := ""
                         }
                     }
-                    if ((mode == "x") && (c == "\"") && (escaped.not)) then {
-                        // End of octet literal
-                        newmode := "n"
-                        instr := false
+                    if ((mode == "x") && (c == "\"")) then {
+                        if (escaped.not) then {
+                            // End of octet literal
+                            newmode := "n"
+                            instr := false
+                        }
                     }
-                    if ((mode == "\"") && (c == "\"") && (escaped.not)) then {
-                        // End of string literal
-                        newmode := "n"
-                        instr := false
-                        if (interpString) then {
-                            modechange(tokens, mode, accum)
-                            modechange(tokens, ")", ")")
-                            mode := newmode
-                            interpString := false
+                    if (mode == "\"") then {
+                        if (c == "\"") then {
+                            if (escaped.not) then {
+                                // End of string literal
+                                newmode := "n"
+                                instr := false
+                                if (interpString) then {
+                                    modechange(tokens, mode, accum)
+                                    modechange(tokens, ")", ")")
+                                    mode := newmode
+                                    interpString := false
+                                }
+                            }
                         }
                     }
                     if ((mode == "I") && (inBackticks) && (c == "`")) then {
