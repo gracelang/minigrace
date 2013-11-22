@@ -87,7 +87,7 @@ Object CurlEasy_onReceive(Object self, int nparts, int *argcv,
     curl_easy_setopt(r->handle, CURLOPT_WRITEFUNCTION, &CurlEasy__receive);
     curl_easy_setopt(r->handle, CURLOPT_WRITEDATA, argv[0]);
     r->objects[0] = argv[0];
-    return alloc_none();
+    return alloc_done();
 }
 
 size_t CurlEasy__receiveHeader(char *ptr, size_t size, size_t nmemb,
@@ -106,7 +106,7 @@ Object CurlEasy_onHeader(Object self, int nparts, int *argcv,
     curl_easy_setopt(r->handle, CURLOPT_HEADERFUNCTION, &CurlEasy__receiveHeader);
     curl_easy_setopt(r->handle, CURLOPT_HEADERDATA, argv[0]);
     r->objects[2] = argv[0];
-    return alloc_none();
+    return alloc_done();
 }
 
 Object CurlEasy_url_assign(Object self, int nparts, int *argcv, Object *argv,
@@ -114,21 +114,21 @@ Object CurlEasy_url_assign(Object self, int nparts, int *argcv, Object *argv,
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
     curl_easy_setopt(r->handle, CURLOPT_URL, grcstring(argv[0]));
     r->objects[1] = argv[0];
-    return alloc_none();
+    return alloc_done();
 }
 
 Object CurlEasy_includeResponseHeader(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
     curl_easy_setopt(r->handle, CURLOPT_HEADER, istrue(argv[0]));
-    return alloc_none();
+    return alloc_done();
 }
 
 Object CurlEasy_followLocation(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct CurlEasyObject *r = (struct CurlEasyObject *)self;
     curl_easy_setopt(r->handle, CURLOPT_FOLLOWLOCATION, istrue(argv[0]));
-    return alloc_none();
+    return alloc_done();
 }
 
 Object CurlEasy_responseCode(Object self, int nparts, int *argcv, Object *argv,
