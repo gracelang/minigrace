@@ -151,7 +151,7 @@ MiniGrace.prototype.run = function() {
     moduleName = this.modname;
     eval(code);
     var theModule;
-    eval("theModule = gracecode_" + this.modname + ";");
+    eval("theModule = gracecode_" + this.modname.replace('/', '$') + ";");
     window['gracecode_' + this.modname] = theModule;
     testpass = false;
     var modname = this.modname;

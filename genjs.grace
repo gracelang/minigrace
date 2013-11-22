@@ -45,6 +45,18 @@ method decreaseindent() {
     }
 }
 
+method formatModname(name) {
+    var snm := "gracecode_"
+    for (name) do {c->
+        if (c == "/") then {
+            snm := snm ++ "$"
+        } else {
+            snm := snm ++ c
+        }
+    }
+    snm
+}
+
 method out(s) {
     output.push(indent ++ s)
 }
@@ -1091,41 +1103,25 @@ method compileoctets(o) {
 }
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
-    var snm := ""
-    for (o.value) do {c->
-        if (c == "/") then {
-            snm := ""
-        } else {
-            snm := snm ++ c
-        }
-    }
     var fn := escapestring(o.value)
-    out("this.outer = do_import(\"{fn}\", gracecode_{snm});")
+    out("this.outer = do_import(\"{fn}\", {formatModname(o.value)});")
     out("var Grace_prelude = this.outer;")
     o.register := "undefined"
 }
 method compileimport(o) {
     out("// Import of " ++ o.path)
-    var snm := ""
-    for (o.path) do {c->
-        if (c == "/") then {
-            snm := ""
-        } else {
-            snm := snm ++ c
-        }
-    }
     var nm := escapestring(o.value)
     var fn := escapestring(o.path)
-    out("if (typeof gracecode_{snm} == 'undefined')")
+    out("if (typeof {formatModname(o.path)} == 'undefined')")
     out "  throw new GraceExceptionPacket(RuntimeErrorObject, "
-    out "    new GraceString('could not find module {snm}'));"
-    out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", gracecode_{snm});")
+    out "    new GraceString('could not find module {o.value}'));"
+    out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     if (o.dtype != false) then {
         out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "  [1], {varf(nm)})))"
         out "    throw new GraceExceptionPacket(TypeErrorObject,"
         out "          new GraceString(\"expected \""
-        out "          + \"module {snm} to be of type {o.dtype.value}\"))";
+        out "          + \"module {o.value} to be of type {o.dtype.value}\"))";
     }
     o.register := "undefined"
 }
@@ -1364,7 +1360,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         }
     }
     util.setline(1)
-    out("function gracecode_" ++ modname ++ "() \{")
+    out("function {formatModname(modname)} () \{")
     increaseindent
     if (util.extensions.contains("NativePrelude")) then {
         out("var Grace_prelude = window.Grace_native_prelude;")
