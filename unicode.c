@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 // unicode.c defines a Grace module "unicode", which can be compiled either
 // to LLVM bitcode (called unicode.gco) and linked statically, or to
@@ -33,6 +34,8 @@
 // The necessary headers for interacting with the rest of the system
 // (should be an actual header)
 #include "gracelib.h"
+
+extern ClassData Number;
 
 // Intern module
 Object unicode_module = NULL;
@@ -257,11 +260,123 @@ Object unicode_lookup(Object self, int nparts, int *argcv,
     return alloc_done();
 }
 
+#define UNICODEPATTERN_CODEPOINT 1
+#define UNICODEPATTERN_CLASS 2
+#define UNICODEPATTERN_CODEPOINT_NOT 3
+#define UNICODEPATTERN_CLASS_NOT 4
+struct UnicodePatternElement {
+    int type;
+    union {
+        int codepoint;
+        char class[3];
+    };
+};
+struct UnicodePattern {
+    OBJECT_HEADER;
+    int size;
+    struct UnicodePatternElement elements[];
+};
+ClassData UnicodePattern;
+
+Object UnicodePattern_match(Object self, int nparts, int *argcv,
+        Object *argv, int flags) {
+    struct UnicodePattern *pat = (struct UnicodePattern *)self;
+    Object other = argv[0];
+    Object o = argv[0];
+    char *classname = o->class->name;
+    if (strcmp(classname, "String") == 0
+            || strcmp(classname, "ConcatString") == 0)
+        o = callmethod(argv[0], "ord", 0, NULL, NULL);
+    int v = integerfromAny(o);
+    int cindex = UnicodeRecords[v].category;
+    const char *cat = Unicode_Categories[cindex];
+    int successful = 0;
+    for (int j=0; j<pat->size; j++) {
+        if (pat->elements[j].type == UNICODEPATTERN_CODEPOINT) {
+            if (v == pat->elements[j].codepoint)
+                successful = 1;
+        } else if (pat->elements[j].type == UNICODEPATTERN_CLASS) {
+            const char *needle = pat->elements[j].class;
+            if (needle[0] == cat[0]) {
+                if (!needle[1])
+                    successful = 1;
+                if (needle[1] == cat[1])
+                    successful = 1;
+            }
+        } else if (pat->elements[j].type == UNICODEPATTERN_CODEPOINT_NOT) {
+            if (v == pat->elements[j].codepoint)
+                successful = 0;
+        } else if (pat->elements[j].type == UNICODEPATTERN_CLASS_NOT) {
+            const char *needle = pat->elements[j].class;
+            if (needle[0] == cat[0]) {
+                if (!needle[1])
+                    successful = 0;
+                if (needle[1] == cat[1])
+                    successful = 0;
+            }
+        }
+    }
+    if (successful) {
+        return alloc_SuccessfulMatch(argv[0], NULL);
+    }
+    return alloc_FailedMatch(other, NULL);
+}
+
+Object unicode_pattern_not(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    if (!UnicodePattern) {
+        UnicodePattern = alloc_class("UnicodePattern", 1);
+        add_Method(UnicodePattern, "match", &UnicodePattern_match);
+    }
+    int size = argcv[0];
+    int size2 = argcv[1];
+    Object me = alloc_obj(sizeof(struct UnicodePattern) - sizeof(struct Object)
+            + sizeof(struct UnicodePatternElement) * (size + size2),
+            UnicodePattern);
+    struct UnicodePattern *pat = (struct UnicodePattern *)me;
+    pat->size = size + size2;
+    for (int j=0; j<size; j++) {
+        Object o = args[j];
+        if (o->class == Number) {
+            pat->elements[j].type = UNICODEPATTERN_CODEPOINT;
+            int n = integerfromAny(o);
+            pat->elements[j].codepoint = n;
+        } else {
+            pat->elements[j].type = UNICODEPATTERN_CLASS;
+            const char *cc = grcstring(o);
+            char *bf = pat->elements[j].class;
+            strcpy(bf, cc);
+        }
+    }
+    for (int j=size; j<size+size2; j++) {
+        Object o = args[j];
+        if (o->class == Number) {
+            pat->elements[j].type = UNICODEPATTERN_CODEPOINT_NOT;
+            int n = integerfromAny(o);
+            pat->elements[j].codepoint = n;
+        } else {
+            pat->elements[j].type = UNICODEPATTERN_CLASS_NOT;
+            const char *cc = grcstring(o);
+            char *bf = pat->elements[j].class;
+            strcpy(bf, cc);
+        }
+    }
+    return me;
+}
+
+Object unicode_pattern(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int argcv2[2];
+    argcv2[0] = argcv[0];
+    argcv2[1] = 0;
+    return unicode_pattern_not(self, 2, argcv2, args, flags);
+}
+
 // Create and return a Grace object with all the above functions as methods.
 Object module_unicode_init() {
     if (unicode_module != NULL)
         return unicode_module;
-    ClassData c = alloc_class("Module<unicode>", 13);
+    ClassData c = alloc_class("Module<unicode>", 15);
     add_Method(c, "category", &unicode_category);
     add_Method(c, "bidirectional", &unicode_bidirectional);
     add_Method(c, "combining", &unicode_combining);
@@ -275,6 +390,8 @@ Object module_unicode_init() {
     add_Method(c, "isNumber", &unicode_isNumber);
     add_Method(c, "isSymbolMathematical", &unicode_isSymbolMathematical);
     add_Method(c, "lookup", &unicode_lookup);
+    add_Method(c, "pattern", &unicode_pattern);
+    add_Method(c, "pattern()not", &unicode_pattern_not);
     Object o = alloc_newobj(0, c);
     unicode_module = o;
     gc_root(o);
