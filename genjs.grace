@@ -1381,6 +1381,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             out("var type_{typeid} = var_{typeid};")
         }
     }
+    def imported = mgcollections.list.new
     for (values) do { o ->
         if (o.kind == "inherits") then {
             def sup = compilenode(o.value)
@@ -1390,6 +1391,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
         }
         if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
+        }
+        if (o.kind == "import") then {
+            imported.push(o.path)
+        }
+        if (o.kind == "dialect") then {
+            imported.push(o.value)
         }
     }
     if (dialectHasAtModuleEnd) then {
@@ -1401,6 +1408,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("return this;")
     decreaseindent
     out("\}")
+    out "{formatModname(modname)}.imports = ["
+    for (imported) do {imp->
+        out "'{imp}',"
+    }
+    out "];"
     xmodule.writeGCT(modname, modname ++ ".gct")
         fromValues(values)modules(staticmodules)
     def gct = xmodule.parseGCT(modname, modname ++ ".gct")
