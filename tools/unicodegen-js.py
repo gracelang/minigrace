@@ -25,6 +25,8 @@ for c in data:
         break
     if c[2] not in categories:
         categories.add(c[2])
+    if c[2][0] not in categories:
+        categories.add(c[2][0])
     if c[4] not in bidirectionals:
         bidirectionals.add(c[4])
     if num == 9:
@@ -86,9 +88,9 @@ for c in categories:
     start = -1
     end = -1
     for cp in codepoints:
-        if cp[2] == c and start == -1:
+        if (cp[2] == c or cp[2][0] == c) and start == -1:
             start = eval("0x" + cp[0])
-        elif start != -1 and cp[2] != c:
+        elif start != -1 and cp[2] != c and cp[2][0] != c:
             end = eval("0x" + cp[0]) - 1
             if start == end:
                 fp.write(str(start) + ", ")
