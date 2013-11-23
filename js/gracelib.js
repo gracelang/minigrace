@@ -1133,11 +1133,71 @@ function gracecode_unicode() {
         create: function(argcv, n) {
             return new GraceString(String.fromCharCode(n._value));
         },
+        pattern: function(argcv) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            return new GraceUnicodePattern(args);
+        },
+        "pattern()not": function(argcv) {
+            var args = Array.prototype.slice.call(arguments, 1, argcv[0] + 1);
+            var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
+            return new GraceUnicodePattern(args, args2);
+        },
     };
     this.definitionModule = "unicode";
     this.definitionLine = 0;
     return this;
 }
+
+function GraceUnicodePattern(pos, neg) {
+    this.pos = pos;
+    this.neg = neg;
+}
+
+GraceUnicodePattern.prototype = {
+    methods: {
+        match: function(argcv, o) {
+            var success = false;
+            var cc = o._value;
+            if (cc.charCodeAt)
+                cc = cc.charCodeAt(0);
+            for (var i=0; i<this.pos.length; i++) {
+                var t = this.pos[i];
+                if (typeof t._value == "number") {
+                    if (cc == t._value) {
+                        success = true;
+                        break;
+                    }
+                } else {
+                    if (unicode.isCategory(cc, t._value)) {
+                        success = true;
+                        break;
+                    }
+                }
+            }
+            if (this.neg) {
+                if (this.pos.length == 0)
+                    success = true;
+                for (var i=0; i<this.neg.length; i++) {
+                    var t = this.neg[i];
+                    if (typeof t._value == "number") {
+                        if (cc == t._value) {
+                            success = false;
+                            break;
+                        }
+                    } else {
+                        if (unicode.isCategory(cc, t._value)) {
+                            success = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (success)
+                return new GraceSuccessfulMatch(o);
+            return new GraceFailedMatch(o);
+        }
+    }
+};
 
 var util_module = false;
 
