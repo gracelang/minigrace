@@ -351,7 +351,7 @@ def LexerClass = object {
                         tokens.push(tok)
                         done := true
                     } elseif (mode == "d") then {
-                        indentLevel := accum.size
+                        indentLevel := linePosition - 1//accum.size
                         done := true
                     } elseif (mode == "n") then {
                         done := true
@@ -612,6 +612,8 @@ def LexerClass = object {
                 def badControl =  unicode.pattern("C")not(10, 13)
                 def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
+                def brackets = unicode.pattern("(".ord, ")".ord,
+                    "\{".ord, "}".ord, "[".ord, "]".ord)
                 def identifierChar = unicode.pattern("L", "N", 95, 39)
                 def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
                     "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
@@ -623,8 +625,8 @@ def LexerClass = object {
                    "*".ord, "/".ord, "+".ord, "!".ord
                     )
                 def iGTLT = unicode.pattern("i".ord, "<".ord, ">".ord)
-                for (input) do { c ->
-                    linePosition := linePosition + 1
+                def notcp = unicode.pattern()not("c".ord, "p".ord)
+                def mainBlock = { c->
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
                     if (badSeparator.match(ordval)) then {
@@ -689,15 +691,17 @@ def LexerClass = object {
                             ++ "is a control character and cannot be written in the source code; consider using spaces instead.")atRange(lineNumber,
                             linePosition, linePosition)withSuggestion(suggestion)
                     }
-                    if (atStart && (linePosition == 1)) then {
-                        if (c == "#") then {
-                            mode := "p"
-                            newmode := mode
-                        } else {
-                            atStart := false
+                    if (atStart) then {
+                        if (linePosition == 1) then {
+                            if (c == "#") then {
+                                mode := "p"
+                                newmode := mode
+                            } else {
+                                atStart := false
+                            }
                         }
                     }
-                    if (instr || inBackticks) then {
+                    if (instr) then {
 
                     } elseif ((mode != "c") && (mode != "p")) then {
                         // Not in a comment, so look for a mode.
@@ -708,15 +712,6 @@ def LexerClass = object {
                             // Beginning of a string
                             newmode := "\""
                             instr := true
-                            if (prev == "x") then {
-                                // Or, actually of an Octet literal
-                                newmode := "x"
-                                mode := "n"
-                            }
-                        }
-                        if (c == "`") then {
-                            newmode := "I"
-                            inBackticks := true
                         }
                         if (identifierChar.match(ordval)) then {
                             newmode := "i"
@@ -728,8 +723,12 @@ def LexerClass = object {
                             }
                         }
                         if (mode == "m") then {
-                            if (((ordval >= 97) && (ordval <=122)) || ((ordval >= 65) && (ordval <= 90))) then {
+                            if ((ordval >= 97) && (ordval <=122)) then {
                                 newmode := "m"
+                            } else {
+                                if ((ordval >= 65) && (ordval <= 90)) then {
+                                    newmode := "m"
+                                }
                             }
                         }
                         if ((mode == "i") && (c == "<")) then {
@@ -746,34 +745,47 @@ def LexerClass = object {
                         if (selfModes.match(ordval)) then {
                             newmode := c
                         }
-                        if ((c == "#") && (mode != "p")) then {
-                            if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
-                                if(tokens.size == 0) then {
-                                    def suggestion = errormessages.suggestion.new
-                                    suggestion.addLine(1, util.lines.at(lineNumber))
-                                    suggestion.addLine(lineNumber, "")
-                                    errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
-                                        lineNumber)withSuggestion(suggestion)
+                        if (c == "#") then {
+                            if (mode != "p") then {
+                                if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
+                                    if(tokens.size == 0) then {
+                                        def suggestion = errormessages.suggestion.new
+                                        suggestion.addLine(1, util.lines.at(lineNumber))
+                                        suggestion.addLine(lineNumber, "")
+                                        errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
+                                            lineNumber)withSuggestion(suggestion)
+                                    } else {
+                                        errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
+                                            lineNumber)
+                                    }
                                 } else {
-                                    errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
-                                        lineNumber)
+                                    def suggestion = errormessages.suggestion.new
+                                    suggestion.replaceChar(linePosition)with("//")onLine(lineNumber)
+                                    errormessages.syntaxError("'#' is not allowed here. For a comment use '//'.")atRange(
+                                        lineNumber, linePosition, linePosition)withSuggestion(suggestion)
                                 }
-                            } else {
-                                def suggestion = errormessages.suggestion.new
-                                suggestion.replaceChar(linePosition)with("//")onLine(lineNumber)
-                                errormessages.syntaxError("'#' is not allowed here. For a comment use '//'.")atRange(
-                                    lineNumber, linePosition, linePosition)withSuggestion(suggestion)
                             }
                         }
-                        if ((c == ".") && (accum == ".")) then {
-                            // Special handler for .. operator
-                            mode := "o"
-                            newmode := mode
+                        if (c == ".") then {
+                            if (accum == ".") then {
+                                // Special handler for .. operator
+                                mode := "o"
+                                newmode := mode
+                            }
+                            if (accum == "..") then {
+                                // Special handler for ... identifier
+                                mode := "n"
+                                newmode := mode
+                                modechange(tokens, "i", "...")
+                                accum := ""
+                            }
                         }
-                        if ((c == "/") && (accum == "/")) then {
-                            // Start of comment
-                            mode := "c"
-                            newmode := mode
+                        if (c == "/") then {
+                            if (accum == "/") then {
+                                // Start of comment
+                                mode := "c"
+                                newmode := mode
+                            }
                         }
                         if (mode == "n") then {
                             if (mode == newmode) then {
@@ -782,29 +794,17 @@ def LexerClass = object {
                                         if (ordval != 10) then {
                                             if (ordval != 13) then {
                                                 if (ordval != 32) then {
+                                                    if (c != ".") then{
                                                         errormessages.syntaxError("{unicode.name(c)} (U+{padl(ordval.inBase 16, 4, "0")}) "
                                                             ++ "is not a valid character; use spaces instead.")atRange(
                                                             lineNumber, linePosition, linePosition)
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                        if ((c == ".") && (accum == "..")) then {
-                            // Special handler for ... identifier
-                            mode := "n"
-                            newmode := mode
-                            modechange(tokens, "i", "...")
-                            accum := ""
-                        }
-                    }
-                    if ((mode == "x") && (c == "\"")) then {
-                        if (escaped.not) then {
-                            // End of octet literal
-                            newmode := "n"
-                            instr := false
                         }
                     }
                     if (mode == "\"") then {
@@ -822,32 +822,28 @@ def LexerClass = object {
                             }
                         }
                     }
-                    if ((mode == "I") && (inBackticks) && (c == "`")) then {
-                        // End of backticked identifier
-                        newmode := "n"
-                        inBackticks := false
-                        backtickIdent := true
-                    }
                     if (newmode != mode) then {
                         // This character is the beginning of a different
                         // lexical mode - process the old one now.
                         modechange(tokens, mode, accum)
-                        if ((newmode == "}") && (interpdepth > 0)) then {
-                            // Find the position of the opening brace to check in the interpolation is empty.
-                            if (util.lines.at(tokens.last.line)[tokens.last.linePos] == "\{") then {
-                                def suggestion = errormessages.suggestion.new
-                                suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
-                                errormessages.syntaxError("A string interpolation cannot be empty.")atRange(
-                                    lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                        if (interpdepth > 0) then {
+                            if (newmode == "}") then {
+                                // Find the position of the opening brace to check in the interpolation is empty.
+                                if (util.lines.at(tokens.last.line)[tokens.last.linePos] == "\{") then {
+                                    def suggestion = errormessages.suggestion.new
+                                    suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
+                                    errormessages.syntaxError("A string interpolation cannot be empty.")atRange(
+                                        lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
+                                }
+                                modechange(tokens, ")", ")")
+                                modechange(tokens, "o", "++")
+                                newmode := "\""
+                                instr := true
+                                interpdepth := interpdepth - 1
                             }
-                            modechange(tokens, ")", ")")
-                            modechange(tokens, "o", "++")
-                            newmode := "\""
-                            instr := true
-                            interpdepth := interpdepth - 1
                         }
                         mode := newmode
-                        if (instr || inBackticks) then {
+                        if (instr) then {
                             // String accum should skip the opening quote, but
                             // other modes' should include their first
                             // character.
@@ -855,15 +851,12 @@ def LexerClass = object {
                         } else {
                             accum := c
                         }
-                        if ((mode == "(") || (mode == ")") || (mode == "[")
-                            || (mode == "]") || (mode == "\{")
-                            || (mode == "}")) then {
+                        if (brackets.match(mode)) then {
                             modechange(tokens, mode, accum)
                             mode := "n"
                             newmode := "n"
                             accum := ""
                         }
-                        backtickIdent := false
                     } elseif (instr) then {
                         if (c == "\n") then {
                             if (interpdepth > 0) then {
@@ -1001,11 +994,6 @@ def LexerClass = object {
                         } else {
                             accum := accum ++ c
                         }
-                    } elseif (inBackticks) then {
-                        if (c == "\n") then {
-                            errormessages.syntaxError("Newlines not permitted in backtick identifiers.")atPosition(lineNumber, linePosition)
-                        }
-                        accum := accum ++ c
                     } elseif ((c == "\n") || (c == "\r")) then {
                         // Linebreaks terminate any open tokens
                         modechange(tokens, mode, accum)
@@ -1015,11 +1003,13 @@ def LexerClass = object {
                     } else {
                         accum := accum ++ c
                     }
-                    if ((accum == "...") && {mode == "o"}) then {
+                    if (accum == "...") then {
+                        if (mode == "o") then {
                             modechange(tokens, "i", "...")
                             newmode := "n"
                             mode := newmode
                             accum := ""
+                        }
                     }
                     if (c == "\n") then {
                         // Linebreaks increment the line counter and insert a
@@ -1030,16 +1020,32 @@ def LexerClass = object {
                         linePosition := 0
                         startPosition := 1
                     }
+                }
+                for (input) do { c ->
+                    linePosition := linePosition + 1
+                    if (c == " ") then {
+                        if (mode == "d") then {
+                        } else {
+                            if (mode != "n") then {
+                                mainBlock.apply(c)
+                            }
+                        }
+                    } else {
+                        mainBlock.apply(c)
+                    }
                     prev := c
                 }
                 linePosition := linePosition + 1
-                if ((mode == "\"") && instr) then {
-                    def suggestion = errormessages.suggestion.new
-                    suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
-                    errormessages.syntaxError("A string must end with a '\"'.")atPosition(
-                        lineNumber, linePosition)withSuggestion(suggestion)
-                } elseif ((mode == "x") && instr) then {
-                    errormessages.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
+                if (instr) then {
+                    if (mode == "\"") then {
+                        def suggestion = errormessages.suggestion.new
+                        suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
+                        errormessages.syntaxError("A string must end with a '\"'.")atPosition(
+                            lineNumber, linePosition)withSuggestion(suggestion)
+                    }
+                    if (mode == "x") then {
+                        errormessages.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
+                    }
                 }
                 modechange(tokens, mode, accum)
                 tokens
