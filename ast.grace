@@ -34,13 +34,18 @@ method maybeMap(n, b, before, after) {
     n
 }
 
-class forNode.new(over, body') {
-    def kind = "for"
-    def value = over
-    def body = body'
+class baseNode.new {
     var register := ""
     var line := util.linenum
     var linePos := util.linepos
+    var lineLength := 0
+}
+
+class forNode.new(over, body') {
+    inherits baseNode.new
+    def kind = "for"
+    def value = over
+    def body = body'
     method accept(visitor : ASTVisitor) {
         if (visitor.visitFor(self)) then {
             self.value.accept(visitor)
@@ -70,12 +75,10 @@ class forNode.new(over, body') {
     }
 }
 class whileNode.new(cond, body') {
+    inherits baseNode.new
     def kind = "while"
     def value = cond
     def body = body'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitWhile(self)) then {
             self.value.accept(visitor)
@@ -112,13 +115,11 @@ class whileNode.new(cond, body') {
     }
 }
 class ifNode.new(cond, thenblock', elseblock') {
+    inherits baseNode.new
     def kind = "if"
     def value = cond
     def thenblock = thenblock'
     def elseblock = elseblock'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     var handledIdentifiers := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIf(self)) then {
@@ -186,15 +187,13 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
 }
 class blockNode.new(params', body') {
+    inherits baseNode.new
     def kind = "block"
     def value = "block"
     def params = params'
     def body = body'
     def selfclosure = true
-    var register := ""
     var matchingPattern := false
-    var line := util.linenum
-    var linePos := util.linepos
     var extraRuntimeData := false
     for (params') do {p->
         p.accept(patternMarkVisitor)
@@ -281,13 +280,11 @@ class blockNode.new(params', body') {
     }
 }
 class catchCaseNode.new(block, cases', finally') {
+    inherits baseNode.new
     def kind = "catchcase"
     def value = block
     def cases = cases'
     def finally = finally'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCatchCase(self)) then {
             self.value.accept(visitor)
@@ -341,13 +338,11 @@ class catchCaseNode.new(block, cases', finally') {
     }
 }
 class matchCaseNode.new(matchee, cases', elsecase') {
+    inherits baseNode.new
     def kind = "matchcase"
     def value = matchee
     def cases = cases'
     def elsecase = elsecase'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMatchCase(self)) then {
             self.value.accept(visitor)
@@ -418,14 +413,12 @@ class methodTypeNode.new(name', signature', rtype') {
     //     object {
     //         ...
     //     }
+    inherits baseNode.new
     def kind = "methodtype"
     def value = name'
     def signature = signature'
     def rtype = rtype'
     var generics := []
-    var line := util.linenum
-    var linePos := util.linepos
-    var register := ""
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethodType(self)) then {
             if (self.rtype != false) then {
@@ -505,18 +498,16 @@ class methodTypeNode.new(name', signature', rtype') {
     }
 }
 class typeNode.new(name', methods') {
+    inherits baseNode.new
     def kind = "type"
     def value = name'
     def methods = methods'
     def unionTypes = []
     def intersectionTypes = []
     def annotations = collections.list.new
-    var line := util.linenum
-    var linePos := util.linepos
     var generics := []
     var nominal := false
     var anonymous := false
-    var register := ""
     method accept(visitor : ASTVisitor) {
         if (visitor.visitType(self)) then {
             if (self.unionTypes.size > 0) then {
@@ -659,6 +650,7 @@ class methodNode.new(name', signature', body', dtype') {
     //     object {
     //         ...
     //     }
+    inherits baseNode.new
     def kind = "method"
     def value = name'
     def signature = signature'
@@ -667,9 +659,6 @@ class methodNode.new(name', signature', body', dtype') {
     var varargs := false
     var generics := []
     var selfclosure := false
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     def annotations = collections.list.new
     var properties := collections.map.new
     method accept(visitor : ASTVisitor) {
@@ -822,12 +811,10 @@ class callNode.new(what, with') {
     //     object {
     //         ...
     //     }
+    inherits baseNode.new
     def kind = "call"
     def value = what
     def with = with'
-    var line := 0 + util.linenum
-    var linePos := util.linepos
-    var register := ""
     var generics := false
     var isPattern := false
     method accept(visitor : ASTVisitor) {
@@ -927,6 +914,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     //     object {
     //         ...
     //     }
+    inherits baseNode.new
     def kind = "class"
     def value = body'
     def name = name'
@@ -934,9 +922,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def signature = signature'
     var dtype := dtype'
     var generics := false
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     def superclass = superclass'
     def annotations = collections.list.new
     var instanceMethods := collections.list.new
@@ -1060,11 +1045,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
 }
 class objectNode.new(body, superclass') {
+    inherits baseNode.new
     def kind = "object"
     def value = body
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     def superclass = superclass'
     var otype := false
     var classname := "object"
@@ -1124,11 +1107,9 @@ class objectNode.new(body, superclass') {
     }
 }
 class arrayNode.new(values) {
+    inherits baseNode.new
     def kind = "array"
     def value = values
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitArray(self)) then {
             for (self.value) do { ax ->
@@ -1171,12 +1152,10 @@ class arrayNode.new(values) {
     }
 }
 class memberNode.new(what, in') {
+    inherits baseNode.new
     def kind = "member"
     var value := what
     def in = in'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMember(self)) then {
             self.in.accept(visitor)
@@ -1214,12 +1193,10 @@ class memberNode.new(what, in') {
     }
 }
 class genericNode.new(base, params') {
+    inherits baseNode.new
     def kind = "generic"
     def value = base
     def params = params'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitGeneric(self)) then {
             self.value.accept(visitor)
@@ -1260,13 +1237,11 @@ class genericNode.new(base, params') {
     }
 }
 class identifierNode.new(name, dtype') {
+    inherits baseNode.new
     def kind = "identifier"
     var value := name
     var wildcard := false
     var dtype := dtype'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     var inBind := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
@@ -1335,11 +1310,9 @@ class identifierNode.new(name, dtype') {
     }
 }
 class octetsNode.new(n) {
+    inherits baseNode.new
     def kind = "octets"
     def value = n
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitOctets(self)
     }
@@ -1351,11 +1324,9 @@ class octetsNode.new(n) {
     }
 }
 class stringNode.new(v) {
+    inherits baseNode.new
     def kind = "string"
     var value := v
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitString(self)
     }
@@ -1393,11 +1364,9 @@ class stringNode.new(v) {
     }
 }
 class numNode.new(val) {
+    inherits baseNode.new
     def kind = "num"
     def value = val
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitNum(self)
     }
@@ -1419,13 +1388,11 @@ class numNode.new(val) {
     }
 }
 class opNode.new(op, l, r) {
+    inherits baseNode.new
     def kind = "op"
     def value = op
     def left = l
     def right = r
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitOp(self)) then {
             self.left.accept(visitor)
@@ -1476,12 +1443,10 @@ class opNode.new(op, l, r) {
     }
 }
 class indexNode.new(expr, index') {
+    inherits baseNode.new
     def kind = "index"
     def value = expr
     def index = index'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIndex(self)) then {
             self.value.accept(visitor)
@@ -1522,12 +1487,10 @@ class indexNode.new(expr, index') {
     }
 }
 class bindNode.new(dest', val') {
+    inherits baseNode.new
     def kind = "bind"
     def dest = dest'
     def value = val'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitBind(self)) then {
             self.dest.accept(visitor)
@@ -1568,13 +1531,11 @@ class bindNode.new(dest', val') {
     }
 }
 class defDecNode.new(name', val, dtype') {
+    inherits baseNode.new
     def kind = "defdec"
     def name = name'
     def value = val
     var dtype := dtype'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     def annotations = collections.list.new
     var data := false
     var startToken := false
@@ -1649,13 +1610,11 @@ class defDecNode.new(name', val, dtype') {
     }
 }
 class varDecNode.new(name', val', dtype') {
+    inherits baseNode.new
     def kind = "vardec"
     def name = name'
     def value = val'
     var dtype := dtype'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
@@ -1729,12 +1688,10 @@ class varDecNode.new(name', val', dtype') {
     }
 }
 class importNode.new(path', name) {
+    inherits baseNode.new
     def kind = "import"
     def value = name
     def path = path'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     var dtype := false
     def linePos = 1
     method accept(visitor : ASTVisitor) {
@@ -1766,11 +1723,9 @@ class importNode.new(path', name) {
     }
 }
 class dialectNode.new(path') {
+    inherits baseNode.new
     def kind = "dialect"
     def value = path'
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         visitor.visitDialect(self)
     }
@@ -1799,11 +1754,9 @@ class dialectNode.new(path') {
     }
 }
 class returnNode.new(expr) {
+    inherits baseNode.new
     def kind = "return"
     def value = expr
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitReturn(self)) then {
             self.value.accept(visitor)
@@ -1835,11 +1788,9 @@ class returnNode.new(expr) {
     }
 }
 class inheritsNode.new(expr) {
+    inherits baseNode.new
     def kind = "inherits"
     def value = expr
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
         if (visitor.visitInherits(self)) then {
             self.value.accept(visitor)
@@ -1871,11 +1822,9 @@ class inheritsNode.new(expr) {
     }
 }
 class blankNode.new {
+    inherits baseNode.new
     def kind = "blank"
     def value = "blank"
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
     method accept(visitor : ASTVisitor) {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1893,14 +1842,12 @@ class blankNode.new {
 }
 
 class signaturePart.new(*values) {
+    inherits baseNode.new
     def kind = "signaturepart"
     var name := ""
     var params := []
     var vararg := false
     var generics := []
-    var line := util.linenum
-    var linePos := util.linepos
-    var lineLength := 0
     if (values.size > 0) then {
         name := values[1]
     }
@@ -1926,6 +1873,7 @@ method callWithPart {
     object {
         method new(*values) {
             object {
+                inherits baseNode.new
                 def kind = "callwithpart"
                 var name := ""
                 var args := []
@@ -1945,9 +1893,6 @@ method callWithPart {
                 method map(blk) {
                     map(blk)before {} after {}
                 }
-                var line := util.linenum
-                var linePos := util.linepos
-                var lineLength := 0
             }
         }
     }
