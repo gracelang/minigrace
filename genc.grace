@@ -48,6 +48,7 @@ var importHook := false
 var subprocesses := collections.list.new
 var linkfiles := collections.list.new
 var dialectHasAtModuleEnd := false
+var dialectHasAtModuleStart := false
 
 method out(s) {
     output.push(s)
@@ -1519,6 +1520,12 @@ method compiledialect(o) {
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
+    if (dialectHasAtModuleEnd) then {
+        out("  partcv[0] = 1;")
+        out("  params[0] = alloc_String(\"{escapestring(modname)}\");")
+        out("  callmethodflags(prelude, \"atModuleStart\", "
+            ++ "1, partcv, params, CFLAG_SELF);")
+    }
     o.register := "done"
 }
 method compileimport(o) {
@@ -1903,6 +1910,9 @@ method processImports(values') {
                         }
                         if (m.name == "atModuleEnd") then {
                             dialectHasAtModuleEnd := true
+                        }
+                        if (m.name == "atModuleStart") then {
+                            dialectHasAtModuleStart := true
                         }
                     }
                 } case { e : RuntimeError ->
