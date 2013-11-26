@@ -1,18 +1,8 @@
 import "dom" as dom
-def document = dom.document
-def ts = document.getElementById("output-select")
-for (0..(ts.options.length-1)) do {i->
-    if (ts.options.item(i).value == "canvas") then {
-        ts.selectedIndex := i
-        dom.window.outputswitch
-    }
-}
 
-def canvas = document.getElementById("standard-canvas")
-def ctx = canvas.getContext("2d")
-ctx.lineWidth := 1
-ctx.fillStyle := "black"
-ctx.fillRect(0, 0, 500, 250)
+var document
+var canvas
+var ctx
 
 def Colour = object {
     method r(r)g(g)b(b) {
@@ -42,6 +32,22 @@ def Pi = 3.141592653589793
 
 def white = Colour.r 255 g 255 b 255
 def black = Colour.r 0 g 0 b 0
+
+method initialise {
+    document := dom.document
+    def ts = document.getElementById("output-select")
+    for (0..(ts.options.length-1)) do {i->
+        if (ts.options.item(i).value == "canvas") then {
+            ts.selectedIndex := i
+            dom.window.outputswitch
+        }
+    }
+    canvas := document.getElementById("standard-canvas")
+    ctx := canvas.getContext("2d")
+    ctx.lineWidth := 1
+    ctx.fillStyle := "black"
+    ctx.fillRect(0, 0, 500, 250)
+}
 
 method fillRect(x, y, w, h)with(col) {
     ctx.fillStyle := col.asDomString
