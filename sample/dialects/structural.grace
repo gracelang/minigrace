@@ -517,6 +517,9 @@ def anObjectType = object {
     scope.variables.at("String") put(pattern)
     scope.variables.at("List") put(pattern)
 
+    scope.variables.at("self") put(dynamic)
+    scope.variables.at("super") put(dynamic)
+    scope.variables.at("outer") put(dynamic)
     scope.variables.at("done") put(self.done)
     scope.variables.at("true") put(boolean)
     scope.variables.at("false") put(boolean)

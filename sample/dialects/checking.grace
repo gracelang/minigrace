@@ -1,3 +1,5 @@
+import "ast" as ast
+
 import "StandardPrelude" as prelude
 
 inherits prelude.new
@@ -161,8 +163,11 @@ method runRules(node) {
 // Type checker
 
 // Checks the defined rules on the given AST.
-method typeCheck(ast) -> Done {
-    for(ast) do { node ->
+method typeCheck(nodes) -> Done {
+    // Sets the baseType.
+    typeOf(ast.objectNode.new([], false))
+
+    for(nodes) do { node ->
         node.accept(astVisitor)
     }
 }
@@ -336,6 +341,8 @@ def astVisitor = object {
         return false
     }
 
+    var baseType := false
+
     method visitClass(node) -> Boolean {
         checkMatch(node)
 
@@ -365,7 +372,13 @@ def astVisitor = object {
                 }
             }
 
-            for(node.value) do { stmt ->
+            def body = node.value
+            scope.variables.at("super")
+                put(if((body.size > 0).andAlso {
+                    Inherits.match(body.first)
+                }) then { typeOf(body.first.value) } else { baseType })
+
+            for(body) do { stmt ->
                 stmt.accept(self)
             }
         }
@@ -388,9 +401,19 @@ def astVisitor = object {
                         }
                     }
                 }
+
+                if(baseType == false) then {
+                    baseType := oType
+                }
             }
 
-            for(node.value) do { stmt ->
+            def body = node.value
+            scope.variables.at("super")
+                put(if((body.size > 0).andAlso {
+                    Inherits.match(body.first)
+                }) then { typeOf(body.first.value) } else { baseType })
+
+            for(body) do { stmt ->
                 stmt.accept(self)
             }
         }
