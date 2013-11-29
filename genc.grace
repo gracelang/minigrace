@@ -476,12 +476,15 @@ method compileobject(o, outerRef) {
     out("  selfslot = &stackframe->slots[0];")
     out("  *selfslot = self;")
     out("  setframeelementname(stackframe, 0, \"self\");")
+    out "  Object thisouter{myc} = (*(struct UserObject *)self).data[0], lowerouter{myc} = thisouter{myc};"
     out "  if (inheritingObject{myc}) \{"
     out "    struct UserObject *inho{myc} = (struct UserObject *)inheritingObject{myc};"
     out "    while (inho{myc}->super != GraceDefaultObject) inho{myc} = (struct UserObject *)inho{myc}->super;"
     out "    inho{myc}->super = {selfr};"
     out "    self = inheritingObject{myc};"
     out "    *selfslot = self;"
+    out "    lowerouter{myc} = (*(struct UserObject *)self).data[0];"
+    out "    (*(struct UserObject *)self).data[0] = thisouter{myc};"
     out "  \}"
     for (o.value) do { e ->
         if (e.kind == "method") then {
@@ -555,6 +558,7 @@ method compileobject(o, outerRef) {
     out("objclass{myc} = {selfr}->class;")
     out("  objclass{myc}->definitionModule = modulename;")
     out("  objclass{myc}->definitionLine = {o.line};")
+    out "  (*(struct UserObject *)self).data[0] = lowerouter{myc};"
     out("  self = oldself{myc};")
     out("  selfslot = oldselfslot{myc};")
     out("  stackframe = oldstackframe{myc};")
