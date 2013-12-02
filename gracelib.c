@@ -1075,11 +1075,15 @@ Object BuiltinList_indices(Object self, int nparts, int *argcv,
 Object BuiltinList_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size == 0)
+        die("empty list has no first element");
     return sself->items[0];
 }
 Object BuiltinList_last(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size == 0)
+        die("empty list has no last element");
     return sself->items[sself->size-1];
 }
 Object BuiltinList_prepended(Object self, int nparts, int *argcv,
