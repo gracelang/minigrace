@@ -125,6 +125,11 @@ backendtests: test
 
 alltests: test regrtest
 
+samples-%:
+	$(MAKE) -C sample/$*
+
+samples: samples-dialects samples-graphics samples-js
+
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
 	rm -f unicode.gco unicode.gso unicode.gcn
@@ -159,4 +164,4 @@ install: minigrace
 Makefile.conf: configure
 	./configure
 
-.PHONY: all clean selfhost-stats test js c selftest install
+.PHONY: all clean selfhost-stats test js c selftest install samples sample-%
