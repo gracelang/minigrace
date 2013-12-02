@@ -325,6 +325,7 @@ GraceList.prototype = {
     methods: {
         "push": function(argcv, val) {
             this._value.push(val);
+            return var_done;
         },
         "size": function(argcv) {
             //dbg("called size: " + this._value.length);
@@ -345,9 +346,11 @@ GraceList.prototype = {
         },
         "at()put": function(argcv, idx, val) {
             this._value[idx._value-1] = val;
+            return var_done;
         },
         "[]:=": function(argcv, idx, val) {
             this._value[idx._value-1] = val;
+            return var_done;
         },
         "asString": function(argcv) {
             var s = "[";
@@ -418,7 +421,6 @@ GraceList.prototype = {
         },
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
-            debugger
             return new GraceList(l);
         }
     },
@@ -450,9 +452,11 @@ GracePrimitiveArray.prototype = {
         },
         "at()put": function(argcv, idx, val) {
             this._value[idx._value] = val;
+            return var_done;
         },
         "[]:=": function(argcv, idx, val) {
             this._value[idx._value] = val;
+            return var_done;
         },
         "asString": function(argcv) {
             var s = "[";
@@ -832,7 +836,7 @@ function GraceBlock_match(argcv, o) {
         var rv = callmethod(this, "applyIndirectly", [1], bindings);
         return new GraceSuccessfulMatch(rv);
     }
-    return new GraceFailedMatch(rv);
+    return new GraceFailedMatch(o);
 }
 
 function classType(obj) {
