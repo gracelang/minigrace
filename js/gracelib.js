@@ -416,6 +416,11 @@ GraceList.prototype = {
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
         },
+        "++": function(argcv, other) {
+            var l = this._value.concat(other._value);
+            debugger
+            return new GraceList(l);
+        }
     },
     className: "List",
     definitionModule: "unknown",
@@ -1540,7 +1545,8 @@ function callmethodsuper(obj, methname, argcv) {
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(RuntimeErrorObject,
-                new GraceString("Requested method on uninitialised value."));;
+                new GraceString("Requested method on uninitialised value "
+                    + "around " + moduleName + ":" + lineNumber));;
     if (obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
@@ -1602,7 +1608,9 @@ function callmethod(obj, methname, argcv) {
     for (var i=0; i<args.length; i++)
         if (typeof args[i] == 'undefined')
             throw new GraceExceptionPacket(RuntimeErrorObject,
-                    new GraceString("Uninitialised value used as argument."));;
+                    new GraceString("Uninitialised value used as argument "
+                        + "to " + methname + " "
+                        + "around " + moduleName + ":" + lineNumber));;
     if (meth.paramTypes)
         checkmethodcall(meth, methname, obj, args);
     args.unshift(argcv)
