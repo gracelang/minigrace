@@ -118,6 +118,10 @@ def aMethodType = object {
         }
     }
 
+    method member(name : String) ofType(rType : ObjectType) -> MethodType {
+        signature([aMixPart.withName(name) parameters([])]) returnType(rType)
+    }
+
     method fromNode(node) -> MethodType {
         match(node) case { meth : Method | MethodSignature ->
             def signature = []
@@ -177,7 +181,7 @@ type ObjectType = {
 def anObjectType = object {
 
     method fromMethods(methods' : List<MethodType>) -> ObjectType { object {
-        def baseMethods = if(base == false)
+        def baseMethods = if(base == dynamic)
             then { [] } else { base.methods }
 
         def methods : List<MethodType> is public = baseMethods ++ methods'
@@ -232,12 +236,12 @@ def anObjectType = object {
                 }
             }
 
-            def original = self
+            def hack = anObjectType
             return object {
-                inherits fromMethods(combine)
+                inherits hack.fromMethods(combine)
 
                 method asString -> String is override {
-                    "{original} | {other}"
+                    "{outer} | {other}"
                 }
             }
         }
@@ -326,7 +330,7 @@ def anObjectType = object {
     }
 
     method fromIdentifier(ident : Identifier) -> ObjectType {
-        scope.types.find(ident)
+        scope.types.find(ident.value) butIfMissing { dynamic }
     }
 
     method fromBlock(block) -> ObjectType {
@@ -406,7 +410,7 @@ def anObjectType = object {
         }
     }
 
-    var base : ObjectType is readable := false
+    var base : ObjectType is readable := dynamic
     def done : ObjectType is public = fromMethods([]) withName("Done")
     base := fromMethods([]) withName("Object")
 
@@ -508,22 +512,23 @@ def anObjectType = object {
     scope.types.at("String") put(string)
     scope.types.at("List") put(list)
 
-    scope.variables.at("Dynamic") put(pattern)
-    scope.variables.at("Done") put(pattern)
-    scope.variables.at("Object") put(pattern)
-    scope.variables.at("Pattern") put(pattern)
-    scope.variables.at("Boolean") put(pattern)
-    scope.variables.at("Number") put(pattern)
-    scope.variables.at("String") put(pattern)
-    scope.variables.at("List") put(pattern)
+    addVar("Dynamic") ofType(pattern)
+    addVar("Done") ofType(pattern)
+    addVar("Object") ofType(pattern)
+    addVar("Pattern") ofType(pattern)
+    addVar("Boolean") ofType(pattern)
+    addVar("Number") ofType(pattern)
+    addVar("String") ofType(pattern)
+    addVar("List") ofType(pattern)
 
-    scope.variables.at("self") put(dynamic)
-    scope.variables.at("super") put(dynamic)
-    scope.variables.at("outer") put(dynamic)
-    scope.variables.at("done") put(self.done)
-    scope.variables.at("true") put(boolean)
-    scope.variables.at("false") put(boolean)
+    addVar("done") ofType(self.done)
+    addVar("true") ofType(boolean)
+    addVar("false") ofType(boolean)
+}
 
+method addVar(name : String) ofType(oType : ObjectType) is confidential {
+    scope.variables.at(name) put(oType)
+    scope.methods.at(name) put(aMethodType.member(name) ofType(oType))
 }
 
 
@@ -545,7 +550,17 @@ rule { obj : ObjectLiteral ->
                 }
             }
         } case { meth : Method ->
-            methods.push(aMethodType.fromNode(meth))
+            var isPublic := true
+            for(meth.annotations) doWithBreak { ann, break' ->
+                if(ann.value == "confidential") then {
+                    isPublic := false
+                    break'.apply
+                }
+            }
+
+            if(isPublic) then {
+                methods.push(aMethodType.fromNode(meth))
+            }
         } case { defd : Def | Var ->
             for(defd.annotations) do { ann ->
                 if((ann.value == "public") || (ann.value == "readable")) then {
@@ -583,83 +598,98 @@ rule { _ : ArrayLiteral ->
 def RequestError = TypeError.refine("Request TypeError")
 
 rule { req : Request ->
-    def rType = match(req.value) case { memb : Member ->
-        typeOf(memb.in)
+    match(req.value) case { memb : Member ->
+        def rec = memb.in
+        def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
+            def frame = scope.types.stack.last
+            frame.atKey("Self") do { t -> t } else {
+                def methods = scope.methods.stack.last.values
+                def sType = anObjectType.fromMethods(methods)
+                frame.at("Self") put(sType)
+                sType
+            }
+        } else {
+            typeOf(rec)
+        }
+
+        if(rType.isDynamic) then {
+            anObjectType.dynamic
+        } else {
+            def name = memb.value
+
+            match(rType.getMethod(name)) case { (noSuchMethod) ->
+                RequestError.raiseWith("no such method '{name}' in " ++
+                    "`{rec.toGrace(0)}` of type '{rType}'", memb)
+            } case { meth : MethodType ->
+                check(req) against(meth)
+            }
+        }
     } case { ident : Identifier ->
-        // TODO Type the prelude
-        anObjectType.dynamic
+        find(req) atScope(scope.methods.stack.size)
     }
+}
 
-    if(rType.isDynamic) then {
-        anObjectType.dynamic
-    } else {
-        def rec = req.value.in
-        def name = req.value.value
+method check(req : Request)
+        against(meth : MethodType) -> ObjectType is confidential {
+    def name = meth.name
 
-        match(rType.getMethod(name)) case { (noSuchMethod) ->
-            RequestError.raiseWith("no such method '{name}' in " ++
-                "`{rec.toGrace(0)}` of type '{rType}'", req.value)
-        } case { meth : MethodType ->
-            for(meth.signature) and(req.with) do { part, args' ->
-                def params = part.parameters
-                def args   = args'.args
+    for(meth.signature) and(req.with) do { part, args' ->
+        def params = part.parameters
+        def args   = args'.args
 
-                def pSize = params.size
-                def aSize = args.size
+        def pSize = params.size
+        def aSize = args.size
 
-                if(aSize != pSize) then {
-                    def which = if(aSize > pSize) then { "many" } else { "few" }
-                    def where = if(aSize > pSize) then {
-                        args.at(pSize + 1)
-                    } else {
-                        // Can we get beyond the final argument?
-                        req.value
-                    }
-
-                    RequestError
-                        .raiseWith("too {which} arguments to method part " ++
-                            "'{part.name}', expected {pSize} but got {aSize}",
-                            where)
-                }
-
-                for(params) and(args) do { param, arg ->
-                    def pType = param.typeAnnotation
-
-                    if(typeOf(arg).isSubtypeOf(pType).not) then {
-                        RequestError.raiseWith("the expression " ++
-                            "`{arg.toGrace(0)}` does not satisfy the type of" ++
-                            " parameter '{param}' in the method '{name}'", arg)
-                    }
-                }
+        if(aSize != pSize) then {
+            def which = if(aSize > pSize) then { "many" } else { "few" }
+            def where = if(aSize > pSize) then {
+                args.at(pSize + 1)
+            } else {
+                // Can we get beyond the final argument?
+                req.value
             }
 
-            meth.returnType
+            RequestError
+                .raiseWith("too {which} arguments to method part " ++
+                    "'{part.name}', expected {pSize} but got {aSize}",
+                    where)
         }
+
+        for(params) and(args) do { param, arg ->
+            def pType = param.typeAnnotation
+            def aType = typeOf(arg)
+
+            if(typeOf(arg).isSubtypeOf(pType).not) then {
+                RequestError.raiseWith("the expression " ++
+                    "`{arg.toGrace(0)}` of type '{aType}' does not " ++
+                    "satisfy the type of parameter '{param}' in the " ++
+                    "method '{name}'", arg)
+            }
+        }
+    }
+
+    return meth.returnType
+}
+
+method find(req : Request) atScope(i : Number) -> ObjectType is confidential {
+    if(i == 0) then {
+        return anObjectType.dynamic
+    }
+
+    def sType = anObjectType.fromMethods(scope.methods.stack.at(i).values)
+
+    return match(sType.getMethod(req.value.value)) case { (noSuchMethod) ->
+        find(req) atScope(i - 1)
+    } case { meth : MethodType ->
+        check(req) against(meth)
     }
 }
 
 rule { memb : Member ->
-    def rec = memb.in
-    def rType = typeOf(rec)
-
-    if(rType.isDynamic) then {
-        anObjectType.dynamic
-    } else {
-        def name = memb.value
-
-        match(rType.getMethod(name)) case { (noSuchMethod) ->
-            RequestError.raiseWith("no such method '{name}' in " ++
-                "`{rec.toGrace(0)}` of type '{rType}'", memb)
-        } case { meth : MethodType ->
-            if((meth.signature.size > 1) ||
-                    (meth.signature.first.parameters.size > 0)) then {
-                RequestError.raiseWith("cannot access method '{meth}' as " ++
-                    "a member, the method requires parameters", memb)
-            }
-
-            meth.returnType
-        }
-    }
+    typeOf(ast.callNode.new(memb, [object {
+        def name is public = memb.value
+        def args is public = []
+    }]))
 }
 
 rule { op : Operator ->
@@ -676,7 +706,14 @@ rule { op : Operator ->
                 "`{rec.toGrace(0)}` of type '{rType}'", op)
         } case { meth : MethodType ->
             def arg = op.right
-            def param = meth.signature.first.parameters.first
+            def params = meth.signature.first.parameters
+
+            if(params.size == 0) then {
+                RequestError.raiseWith("the definition of operator method " ++
+                    "{name} is missing parameters", op)
+            }
+
+            def param = params.first
             def pType = param.typeAnnotation
 
             if(typeOf(arg).isSubtypeOf(pType).not) then {
@@ -801,7 +838,8 @@ def MethodError = TypeError.refine("Method TypeError")
 
 rule { meth : Method ->
     def name = meth.value.value
-    def returnType = anObjectType.fromDType(meth.dtype)
+    def mType = aMethodType.fromNode(meth)
+    def returnType = mType.returnType
 
     if(meth.body.size == 0) then {
         if(anObjectType.done.isSubtypeOf(returnType).not) then {
@@ -841,6 +879,8 @@ rule { meth : Method ->
     if((sig.size == 1).andAlso { sig.first.params.size == 0 }) then {
         scope.variables.at(name) put(returnType)
     }
+
+    scope.methods.at(name) put(mType)
 }
 
 method check(node) matches(eType : ObjectType)
@@ -856,8 +896,16 @@ method check(node) matches(eType : ObjectType)
 
 // Type declaration.
 
+def TypeDeclarationError = TypeError.refine("TypeDeclarationError")
+
 rule { typeD : TypeDeclaration ->
     def name = typeD.value
+
+    if(scope.types.stack.last.containsKey(name)) then {
+        TypeDeclarationError.raiseWith("the type '{name}' uses the same " ++
+            "name as another type in the same scope", typeD)
+    }
+
     def oType = anObjectType.fromDType(typeD)
 
     scope.types.at(name) put(oType)
@@ -939,7 +987,25 @@ rule { defd : Def | Var ->
         }
     }
 
-    scope.variables.at(defd.name.value) put(defType)
+    def name = defd.name.value
+    scope.variables.at(name) put(defType)
+
+    for(defd.annotations) do { ann ->
+        if(ann.value == "public") then {
+            scope.methods.at(name) put(aMethodType.member(name) ofType(defType))
+
+            if(defd.kind == "vardec") then {
+                def name' = name ++ ":="
+                def param = aParam.withName(name) ofType(defType)
+                def sig = [aMixPart.withName(name') parameters([param])]
+
+                scope.methods.at(name')
+                    put(aMethodType.signature(sig) returnType(anObjectType.done))
+            }
+
+            return
+        }
+    }
 }
 
 rule { bind : Bind ->
@@ -983,7 +1049,38 @@ rule { block : BlockLiteral ->
 // Identifier references.
 
 rule { ident : Identifier ->
-    scope.variables.find(ident)
+    match(ident.value) case { "outer" ->
+        outerAt(scope.size)
+    } else {
+        scope.variables.find(ident.value) butIfMissing { anObjectType.dynamic }
+    }
+}
+
+method outerAt(i : Number) -> ObjectType is confidential {
+    // Required to cope with not knowing the prelude.
+    if(i <= 1) then {
+        return anObjectType.dynamic
+    }
+
+    def vStack = scope.variables.stack
+    def curr = vStack.at(i)
+
+    return curr.atKey("outer") do { t -> t } else {
+        def prev = outerAt(i - 1)
+
+        def mStack = scope.methods.stack
+
+        def vars = vStack.at(i - 1)
+        def meths = mStack.at(i - 1).values
+
+        def oType = anObjectType.fromMethods(meths)
+        def mType = aMethodType.member("outer") ofType(oType)
+
+        curr.at("outer") put(oType)
+        mStack.at(i).at("outer") put(mType)
+
+        oType
+    }
 }
 
 

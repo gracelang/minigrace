@@ -9,6 +9,8 @@ inherits prelude.new
 
 def CheckerFailure = Error.refine("CheckerFailure")
 
+def InternalError = CheckerFailure.refine("InternalError")
+
 
 // Helper Map
 
@@ -44,6 +46,26 @@ class aMutableMap.empty {
         entries.push(anEntry.from(key) to(value))
     }
 
+    method keys -> List {
+        def keys' = []
+
+        for(entries) do { entry ->
+            keys'.push(entry.key)
+        }
+
+        return keys'
+    }
+
+    method values -> List {
+        def values' = []
+
+        for(entries) do { entry ->
+            values'.push(entry.value)
+        }
+
+        return values'
+    }
+
     method containsKey(key) -> Boolean {
         atKey(key) do { _ -> return true }
 
@@ -51,9 +73,18 @@ class aMutableMap.empty {
     }
 
     method atKey(key) do(block) -> Done {
+        atKey(key) do(block) else {}
+        return
+    }
+
+    method atKey(key) do(block) else(block') {
         for(entries) do { entry ->
-            if(entry.key == key) then { block.apply(entry.value) }
+            if(entry.key == key) then {
+                return block.apply(entry.value)
+            }
         }
+
+        return block'.apply
     }
 
     method asString -> String is override {
@@ -102,9 +133,7 @@ class aStack.ofKind(kind : String) is confidential {
         stack.last.at(name) put(value)
     }
 
-    method find(ident : Identifier) {
-        def name = ident.value
-
+    method find(name : String) butIfMissing(bl) {
         var i := stack.size
         while { i > 0 } do {
             stack.at(i).atKey(name) do { value ->
@@ -114,21 +143,27 @@ class aStack.ofKind(kind : String) is confidential {
             i := i - 1
         }
 
-        CheckerFailure.raiseWith("reference to undefined {kind} {name}",
-            ident)
+        return bl.apply
     }
 
 }
 
 def scope = object {
     def variables is public = aStack.ofKind("variable")
+    def methods is public = aStack.ofKind("method")
     def types is public = aStack.ofKind("type")
+
+    method size -> Number {
+        variables.stack.size
+    }
 
     method enter(bl) -> Done {
         variables.stack.push(aMutableMap.empty)
+        methods.stack.push(aMutableMap.empty)
         types.stack.push(aMutableMap.empty)
         bl.apply
         variables.stack.pop
+        methods.stack.pop
         types.stack.pop
         done
     }
@@ -165,11 +200,10 @@ method runRules(node) {
 // Checks the defined rules on the given AST.
 method typeCheck(nodes) -> Done {
     // Sets the baseType.
-    typeOf(ast.objectNode.new([], false))
+    ast.objectNode.new([], false).accept(astVisitor)
 
-    for(nodes) do { node ->
-        node.accept(astVisitor)
-    }
+    // Runs the check on the module object.
+    ast.objectNode.new(nodes, false).accept(astVisitor)
 }
 
 type AstNode = { kind -> String }
@@ -295,6 +329,8 @@ def astVisitor = object {
 
     method visitMethodType(node) -> Boolean {
         checkMatch(node)
+
+        return false
     }
 
     method visitType(node) -> Boolean {
