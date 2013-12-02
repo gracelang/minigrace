@@ -138,5 +138,19 @@
         "categories": ["Dialect examples", "Graphics"],
         "requires": ["sniff"],
         "description": "Example code in the Sniff dialect, implementing Pong."
+    },
+    "checking": {
+        "name": "Checker dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": [],
+        "description": "A dialect for implementing typecheckers."
+    },
+    "structural": {
+        "name": "Structural typechecking dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": ["checking"],
+        "description": "A typechecking dialect enforcing structural subtyping."
     }
 }
