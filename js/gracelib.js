@@ -1524,6 +1524,8 @@ function checkmethodcall(func, methname, obj, args) {
         var p = pt[i];
         if (!p || p.length == 0)
             continue;
+        if (!args[i])
+            continue;
         var t = p[0];
         if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
             throw new GraceExceptionPacket(RuntimeErrorObject,
