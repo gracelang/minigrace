@@ -214,7 +214,7 @@ method compileobjdefdec(o, selfr, pos) {
         out "  [1], {val})))"
         out "    throw new GraceExceptionPacket(TypeErrorObject,"
         out "          new GraceString(\"expected \""
-        out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.value}\"))";
+        out "          + \"initial value of def '{o.name.value}' to be of type {escapestring(o.dtype.toGrace(0))}\"))";
     }
 }
 method compileobjvardec(o, selfr, pos) {
