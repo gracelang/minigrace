@@ -1745,6 +1745,9 @@ GraceException.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "asString": function(argcv) {
+            return new GraceString(this.name);
+        },
     },
     className: 'Exception'
 }
