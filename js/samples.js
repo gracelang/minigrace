@@ -26,6 +26,20 @@ var samples = {
         'dir': 'dialects',
         'requires': ['ObjectAssociations'],
     },
+    'checking': {
+        'name': 'Type checker dialect',
+        'dir': 'dialects',
+    },
+    'structural': {
+        'name': 'Structural typing dialect',
+        'dir': 'dialects',
+        'requires': ['checking'],
+    },
+    'structural_example': {
+        'name': 'Structural typing example',
+        'dir': 'dialects',
+        'requires': ['checking', 'structural'],
+    },
     'StaticGrace': {
         'name': 'Static Grace dialect',
         'dir': 'dialects',

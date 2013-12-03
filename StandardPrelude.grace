@@ -33,6 +33,7 @@ class BasicPattern.new {
     }
 }
 class MatchAndDestructuringPattern.new(pat, items') {
+    inherits BasicPattern.new
     def pattern = pat
     def items = items'
     method match(o) {
@@ -64,12 +65,14 @@ class MatchAndDestructuringPattern.new(pat, items') {
 }
 
 class VariablePattern.new(nm) {
+    inherits BasicPattern.new
     method match(o) {
         SuccessfulMatch.new(o, [o])
     }
 }
 
 class BindingPattern.new(pat) {
+    inherits BasicPattern.new
     method match(o) {
         def bindings = [o]
         def m = pat.match(o)
@@ -84,12 +87,14 @@ class BindingPattern.new(pat) {
 }
 
 class WildcardPattern.new {
+    inherits BasicPattern.new
     method match(o) {
         SuccessfulMatch.new(done, [])
     }
 }
 
 class AndPattern.new(p1, p2) {
+    inherits BasicPattern.new
     method match(o) {
         def m1 = p1.match(o)
         if (!m1) then {
@@ -111,6 +116,7 @@ class AndPattern.new(p1, p2) {
 }
 
 class OrPattern.new(p1, p2) {
+    inherits BasicPattern.new
     method match(o) {
         if (p1.match(o)) then {
             return SuccessfulMatch.new(o, [])

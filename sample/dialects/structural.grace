@@ -16,7 +16,7 @@ type MethodType = {
     name -> String
     signature -> List<MixPart>
     returnType -> ObjectType
-    matches(other : MethodType) -> Boolean
+    isSpecialisationOf(other : MethodType) -> Boolean
 }
 
 type Param = {
@@ -74,7 +74,7 @@ def aMethodType = object {
                     var once := false
                     for(part.parameters) do { param ->
                         if(once) then {
-                            show := ", "
+                            show := "{show}, "
                         }
                         show := "{show}{param}"
                         once := true
@@ -87,8 +87,16 @@ def aMethodType = object {
 
             show := "{show} -> {returnType}"
 
-            // Currently doesn't allow specialisation of any types.
-            method matches(other : MethodType) -> Boolean {
+            // Determines if this method is a specialisation of the given one.
+            method isSpecialisationOf(other : MethodType) -> Boolean {
+                if(self == other) then {
+                    return true
+                }
+
+                if(name != other.name) then {
+                    return false
+                }
+
                 if(other.signature.size != signature.size) then {
                     return false
                 }
@@ -101,17 +109,15 @@ def aMethodType = object {
                     for(part.parameters) and(part'.parameters) do { p, p' ->
                         def pt = p.typeAnnotation
                         def pt' = p'.typeAnnotation
-                        if(pt != pt') then {
-                            if(pt.isDynamic.not && pt'.isDynamic.not) then {
-                                return false
-                            }
+
+                        // Contravariant in parameter types.
+                        if(pt'.isSubtypeOf(pt).not) then {
+                            return false
                         }
                     }
                 }
 
-                return (returnType == other.returnType).orElse {
-                    returnType.isDynamic || other.returnType.isDynamic
-                }
+                return returnType.isSubtypeOf(other.returnType)
             }
 
             def asString : String is public, override = show
@@ -123,7 +129,7 @@ def aMethodType = object {
     }
 
     method fromNode(node) -> MethodType {
-        match(node) case { meth : Method | MethodSignature ->
+        match(node) case { meth : Method | Class | MethodSignature ->
             def signature = []
 
             for(meth.signature) do { part ->
@@ -137,7 +143,7 @@ def aMethodType = object {
                 signature.push(aMixPart.withName(part.name) parameters(params))
             }
 
-            def rType = match(meth) case { m : Method ->
+            def rType = match(meth) case { m : Method | Class ->
                 m.dtype
             } case { m : MethodSignature ->
                 meth.rtype
@@ -149,6 +155,8 @@ def aMethodType = object {
             def signature = [aMixPart.withName(defd.name.value) parameters([])]
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
+        } else {
+            prelude.Exception.raiseWith("unrecognised method node", node)
         }
     }
 
@@ -181,10 +189,8 @@ type ObjectType = {
 def anObjectType = object {
 
     method fromMethods(methods' : List<MethodType>) -> ObjectType { object {
-        def baseMethods = if(base == dynamic)
-            then { [] } else { base.methods }
-
-        def methods : List<MethodType> is public = baseMethods ++ methods'
+        def methods : List<MethodType> is public = if(base == dynamic)
+            then { [] } else { base.methods } ++ methods'
 
         method getMethod(name : String) -> MethodType | noSuchMethod {
             for(methods) do { meth ->
@@ -198,21 +204,37 @@ def anObjectType = object {
 
         def isDynamic : Boolean is public = false
 
+        // Necessary to prevent infinite loops of subtype testing.
+        def currentlyTesting = []
+
         method isSubtypeOf(other : ObjectType) -> Boolean {
+            if(self == other) then {
+                return true
+            }
+
             if(other.isDynamic) then {
                 return true
             }
 
+            // If this test is already being performed, assume it succeeds.
+            if(currentlyTesting.contains(other)) then {
+                return true
+            }
+
+            currentlyTesting.push(other)
+
             for(other.methods) doWithContinue { a, continue ->
                 for(methods) do { b ->
-                    if(a.matches(b)) then {
+                    if(b.isSpecialisationOf(a)) then {
                         continue.apply
                     }
                 }
 
+                currentlyTesting.pop
                 return false
             }
 
+            currentlyTesting.pop
             return true
         }
 
@@ -225,12 +247,15 @@ def anObjectType = object {
             for(methods) doWithContinue { meth, continue ->
                 for(other.methods) do { meth'->
                     if(meth.name == meth'.name) then {
-                        if(meth.matches(meth').not) then {
+                        if(meth.isSpecialisationOf(meth')) then {
+                            combine.push(meth)
+                        } elseif(meth'.isSpecialisationOf(meth)) then {
+                            combine.push(meth')
+                        } else {
                             TypeError.raise("cannot produce intersection of " ++
                                 "incompatible types '{self}' and '{other}'")
                         }
 
-                        combine.push(meth)
                         continue.apply
                     }
                 }
@@ -251,14 +276,21 @@ def anObjectType = object {
             if(other.isDynamic) then { return dynamic }
 
             def combine = []
+            def twice = []
 
             for(methods) doWithContinue { meth, continue ->
-                for(other.methods) doWithContinue { meth' ->
+                for(other.methods) do { meth' ->
                     if(meth.name == meth'.name) then {
-                        if(meth.matches(meth').not) then {
+                        if(meth.isSpecialisationOf(meth')) then {
+                            combine.push(meth)
+                        } elseif(meth'.isSpecialisationOf(meth)) then {
+                            combine.push(meth')
+                        } else {
                             TypeError.raise("cannot produce union of " ++
                                 "incompatible types '{self}' and '{other}'")
                         }
+
+                        twice.push(meth.name)
 
                         continue.apply
                     }
@@ -268,15 +300,17 @@ def anObjectType = object {
             }
 
             for(other.methods) do { meth ->
-                combine.push(meth)
+                if(twice.contains(meth.name).not) then {
+                    combine.push(meth)
+                }
             }
 
-            def original = self
+            def hack = anObjectType
             object {
-                inherits fromMethods(combine)
+                inherits hack.fromMethods(combine)
 
                 method asString -> String is override {
-                    "{original} & {other}"
+                    "{outer} & {other}"
                 }
             }
         }
@@ -308,16 +342,54 @@ def anObjectType = object {
     }
 
     method fromDType(dtype) -> ObjectType {
-        return match(dtype) case { (false) ->
+        match(dtype) case { (false) ->
             dynamic
         } case { lit : TypeDeclaration ->
+            def intersection = lit.intersectionTypes
+            if(intersection.size > 1) then {
+                var oType := fromDType(intersection.first)
+
+                for(2..(intersection.size - 1)) do { i ->
+                    oType := oType & fromDType(intersection.at(i))
+                }
+
+                return if(lit.value != false) then {
+                    object {
+                        inherits oType & fromDType(intersection.last)
+
+                        def asString : String is public, override = lit.value
+                    }
+                } else {
+                    oType & fromDType(intersection.last)
+                }
+            }
+
+            def union = lit.unionTypes
+            if(union.size > 1) then {
+                var oType := fromDType(union.first)
+
+                for(2..(union.size - 1)) do { i ->
+                    oType := oType | fromDType(union.at(i))
+                }
+
+                return if(lit.value != false) then {
+                    object {
+                        inherits oType | fromDType(union.last)
+
+                        def asString : String is public, override = lit.value
+                    }
+                } else {
+                    oType | fromDType(union.last)
+                }
+            }
+
             def methods = []
 
             for(lit.methods) do { mType ->
                 methods.push(aMethodType.fromNode(mType))
             }
 
-            if(lit.value != false) then {
+            if((lit.value != false).andAlso { lit.value.at(1) != "<" }) then {
                 anObjectType.fromMethods(methods) withName(lit.value)
             } else {
                 anObjectType.fromMethods(methods)
@@ -325,7 +397,7 @@ def anObjectType = object {
         } case { ident : Identifier ->
             anObjectType.fromIdentifier(ident)
         } else {
-            prelude.Error.raise("unrecognised type node {dtype.kind}")
+            prelude.Exception.raise("unrecognised object type node", dtype)
         }
     }
 
@@ -356,20 +428,22 @@ def anObjectType = object {
         }
     }
 
-    def dynamic : ObjectType is public = object {
-        def methods : List<MethodType> is public = []
+    method dynamic -> ObjectType {
+        object {
+            def methods : List<MethodType> is public = []
 
-        method getMethod(_ : String) -> noSuchMethod { noSuchMethod }
+            method getMethod(_ : String) -> noSuchMethod { noSuchMethod }
 
-        def isDynamic : Boolean is public = true
+            def isDynamic : Boolean is public = true
 
-        method isSubtypeOf(_ : ObjectType) -> Boolean { true }
+            method isSubtypeOf(_ : ObjectType) -> Boolean { true }
 
-        method |(_ : ObjectType) -> dynamic { dynamic }
+            method |(_ : ObjectType) -> dynamic { dynamic }
 
-        method &(_ : ObjectType) -> dynamic { dynamic }
+            method &(_ : ObjectType) -> dynamic { dynamic }
 
-        def asString : String is public, override = "Dynamic"
+            def asString : String is public, override = "Dynamic"
+        }
     }
 
     method blockTaking(params : List<Parameter>)
@@ -534,47 +608,10 @@ method addVar(name : String) ofType(oType : ObjectType) is confidential {
 
 // Object literals.
 
+def ObjectError = TypeError.refine("ObjectError")
+
 rule { obj : ObjectLiteral ->
-    def methods = []
-
-    var isDynamic := false
-    for(obj.value) doWithBreak { stmt, break ->
-        match(stmt) case { inh : Inherits ->
-            def iType = typeOf(inh.value)
-            if(iType.isDynamic) then {
-                isDynamic := true
-                break.apply
-            } else {
-                for(iType.methods) do { meth ->
-                    methods.push(meth)
-                }
-            }
-        } case { meth : Method ->
-            var isPublic := true
-            for(meth.annotations) doWithBreak { ann, break' ->
-                if(ann.value == "confidential") then {
-                    isPublic := false
-                    break'.apply
-                }
-            }
-
-            if(isPublic) then {
-                methods.push(aMethodType.fromNode(meth))
-            }
-        } case { defd : Def | Var ->
-            for(defd.annotations) do { ann ->
-                if((ann.value == "public") || (ann.value == "readable")) then {
-                    methods.push(aMethodType.fromNode(defd))
-                }
-            }
-        } else {}
-    }
-
-    if(isDynamic) then {
-        anObjectType.dynamic
-    } else {
-        anObjectType.fromMethods(methods)
-    }
+    scope.enter { processBody(obj.value) }
 }
 
 
@@ -601,12 +638,8 @@ rule { req : Request ->
     match(req.value) case { memb : Member ->
         def rec = memb.in
         def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
-            def frame = scope.types.stack.last
-            frame.atKey("Self") do { t -> t } else {
-                def methods = scope.methods.stack.last.values
-                def sType = anObjectType.fromMethods(methods)
-                frame.at("Self") put(sType)
-                sType
+            scope.types.find("Self") butIfMissing {
+                prelude.Exception.raiseWith("type of self missing", rec)
             }
         } else {
             typeOf(rec)
@@ -766,6 +799,7 @@ rule { req : If ->
     }
 
     def then = anObjectType.fromBlockBody(req.thenblock)
+
     def else = anObjectType.fromBlockBody(req.elseblock)
 
     then | else
@@ -841,42 +875,51 @@ rule { meth : Method ->
     def mType = aMethodType.fromNode(meth)
     def returnType = mType.returnType
 
-    if(meth.body.size == 0) then {
-        if(anObjectType.done.isSubtypeOf(returnType).not) then {
-            MethodError.raiseWith("the method '{name}' declares a result of " ++
-                "type '{returnType}', but has no body", meth)
-        }
-    } else {
-        def lastNode = match(meth.body.last) case { ret : Return ->
-            ret.value
-        } else { expr ->
-            expr
+    scope.enter {
+        for(meth.signature) do { part ->
+            for(part.params) do { param ->
+                scope.variables.at(param.value)
+                    put(anObjectType.fromDType(param.dtype))
+            }
         }
 
-        def lastType = typeOf(lastNode)
-        if(lastType.isSubtypeOf(returnType).not) then {
-            MethodError.raiseWith("the method '{name}' declares a result of " ++
-                "type '{returnType}', but returns an expression of type " ++
-                "'{lastType}'", lastNode)
+        collectTypes(meth.body)
+
+        for(meth.body) do { stmt ->
+            checkTypes(stmt)
+
+            stmt.accept(object {
+                inherits ast.baseVisitor
+
+                method visitReturn(ret) is override {
+                    check(ret.value) matches(returnType) inMethod(name)
+                }
+
+                method visitMethod(node) is override {
+                    false
+                }
+            })
+        }
+
+        if(meth.body.size == 0) then {
+            if(anObjectType.done.isSubtypeOf(returnType).not) then {
+                MethodError.raiseWith("the method '{name}' declares a " ++
+                    "result of type '{returnType}', but has no body", meth)
+            }
+        } else {
+            def lastNode = meth.body.last
+            if(Return.match(lastNode).not) then {
+                def lastType = typeOf(lastNode)
+                if(lastType.isSubtypeOf(returnType).not) then {
+                    MethodError.raiseWith("the method '{name}' declares a " ++
+                        "result of type '{returnType}', but returns an " ++
+                        "expression of type '{lastType}'", lastNode)
+                }
+            }
         }
     }
 
-    for(meth.body) do { stmt ->
-        stmt.accept(object {
-            inherits ast.baseVisitor
-
-            method visitReturn(ret) is override {
-                check(ret.value) matches(returnType) inMethod(name)
-            }
-
-            method visitMethod(node) is override {
-                false
-            }
-        })
-    }
-
-    def sig = meth.signature
-    if((sig.size == 1).andAlso { sig.first.params.size == 0 }) then {
+    if(isMember(mType)) then {
         scope.variables.at(name) put(returnType)
     }
 
@@ -894,72 +937,43 @@ method check(node) matches(eType : ObjectType)
 }
 
 
-// Type declaration.
-
-def TypeDeclarationError = TypeError.refine("TypeDeclarationError")
-
-rule { typeD : TypeDeclaration ->
-    def name = typeD.value
-
-    if(scope.types.stack.last.containsKey(name)) then {
-        TypeDeclarationError.raiseWith("the type '{name}' uses the same " ++
-            "name as another type in the same scope", typeD)
-    }
-
-    def oType = anObjectType.fromDType(typeD)
-
-    scope.types.at(name) put(oType)
-    scope.variables.at(name) put(anObjectType.pattern)
-}
-
-
 // Class declaration.
 
 def ClassError = TypeError.refine("Class TypeError")
 
 rule { cls : Class ->
-    def methods = []
-
-    var isDynamic := false
-    for(cls.value) doWithBreak { stmt, break ->
-        match(stmt) case { inh : Inherits ->
-            def iType = typeOf(inh.value)
-            if(iType.isDynamic) then {
-                isDynamic := true
-                break.apply
-            } else {
-                for(iType.methods) do { meth ->
-                    methods.push(meth)
-                }
+    def name = cls.name.value
+    def dType = anObjectType.fromDType(cls.dtype)
+    def cType = scope.enter {
+        for(cls.signature) do { part ->
+            for(part.params) do { param ->
+                scope.variables.at(param.value)
+                    put(anObjectType.fromDType(param.dtype))
             }
-        } case { meth : Method ->
-            methods.push(aMethodType.fromNode(meth))
-        } case { defd : Def | Var ->
-            for(defd.annotations) do { ann ->
-                if((ann.value == "public") || (ann.value == "readable")) then {
-                    methods.push(aMethodType.fromNode(defd))
-                }
-            }
-        } else {}
-    }
-
-    if(isDynamic) then {
-        anObjectType.isDynamic
-    } else {
-        def name = cls.name.value
-
-        def dType = anObjectType.fromDType(cls.dtype)
-        def aType = anObjectType.fromMethods(methods)
-
-        if(aType.isSubtypeOf(dType).not) then {
-            ClassError.raiseWith("class '{name}' declares a result of type " ++
-                "'{dType}', but constructs an object of type '{aType}'", cls)
         }
 
-        scope.variables.at(name)
-            put(anObjectType.fromMethods([aMethodType.fromNode(cls)]))
+        def aType = processBody(cls.value)
+        if(aType.isDynamic) then {
+            anObjectType.dynamic
+        } else {
+            if(aType.isSubtypeOf(dType).not) then {
+                ClassError.raiseWith("the class '{name}' declares a result " ++
+                    "of type '{dType}', but constructs an object of type " ++
+                    "'{aType}'", cls)
+            }
 
-        aType
+            aType
+        }
+    }
+
+    scope.variables.at(name)
+        put(anObjectType.fromMethods([aMethodType.fromNode(cls)]))
+
+    if(dType.isDynamic) then {
+        // Class type inference.
+        cType
+    } else {
+        dType
     }
 }
 
@@ -1035,6 +1049,19 @@ rule { imp : Import ->
 rule { block : BlockLiteral ->
     def body = block.body
 
+    scope.enter {
+        for(block.params) do { param ->
+            scope.variables.at(param.value)
+                put(anObjectType.fromDType(param.dtype))
+        }
+
+        collectTypes(body)
+
+        for(body) do { stmt ->
+            checkTypes(stmt)
+        }
+    }
+
     def parameters = []
     for(block.params) do { param ->
         parameters.push(aParam.withName(param.value)
@@ -1084,10 +1111,150 @@ method outerAt(i : Number) -> ObjectType is confidential {
 }
 
 
-// Method parameters.
+// Typing methods.
 
-rule { param : Parameter ->
-    scope.variables.at(param.value) put(anObjectType.fromDType(param.dtype))
+method processBody(body : List) -> ObjectType is confidential {
+    // Collect the declarative types directly in the object body.
+    collectTypes(body)
+
+    // Inheritance typing.
+    def hasInherits = (body.size > 0).andAlso { Inherits.match(body.first) }
+    def superType = if(hasInherits) then {
+        def inheriting = body.first.value
+        inheriting.accept(object {
+            inherits ast.baseVisitor
+
+            def illegal = ["self", "super"]
+
+            method visitIdentifier(ident) {
+                if(illegal.contains(ident.value)) then {
+                    ObjectError.raiseWith("reference to '{ident.value}' " ++
+                        "in inheritance clause", ident)
+                }
+            }
+        })
+
+        typeOf(inheriting)
+    } else {
+        anObjectType.base
+    }
+
+    scope.variables.at("super") put(superType)
+
+    // If the super type is dynamic, then we can't know anything about the
+    // self type.  TODO We actually can, because an object cannot have two
+    // methods with the same name.
+    def publicType = if(superType.isDynamic) then {
+        scope.types.at("Self") put(superType)
+        superType
+    } else {
+        // Collect the method types to add the two self types.
+        def publicMethods = []
+        def methods = []
+
+        for(body) do { stmt ->
+            match(stmt) case { meth : Method ->
+                def mType = aMethodType.fromNode(meth)
+                methods.push(mType)
+                if(isPublic(meth)) then {
+                    publicMethods.push(mType)
+                }
+
+                scope.methods.at(mType.name) put(mType)
+                if(isMember(mType)) then {
+                    scope.variables.at(mType.name) put(mType.returnType)
+                }
+            } case { defd : Def | Var ->
+                if(isPublic(defd)) then {
+                    def mType = aMethodType.fromNode(defd)
+                    methods.push(mType)
+                    publicMethods.push(mType)
+                }
+            } else {}
+        }
+
+        scope.types.at("Self") put(anObjectType.fromMethods(methods))
+        anObjectType.fromMethods(publicMethods)
+    }
+
+    scope.variables.at("self") put(publicType)
+
+    // Type-check the object body.
+    def indices = if(hasInherits) then {
+        2..body.size
+    } else {
+        body.indices
+    }
+
+    for(indices) do { i ->
+        checkTypes(body.at(i))
+    }
+
+    return publicType
+}
+
+
+def TypeDeclarationError = TypeError.refine("TypeDeclarationError")
+
+// The first pass over a body, collecting all type declarations so that they can
+// reference one another declaratively.
+method collectTypes(nodes : List) -> Done is confidential {
+    def names = []
+    def types = []
+    def placeholders = []
+
+    for(nodes) do { node ->
+        match(node) case { td : TypeDeclaration ->
+            if(names.contains(td.value)) then {
+                TypeDeclarationError.raiseWith("the type 'A' uses the same " ++
+                    "name as another type in the same scope", td)
+            }
+
+            names.push(td.value)
+
+            // In order to allow the types to be declarative, the scope needs
+            // to be populated by placeholder types first.
+            def placeholder = anObjectType.dynamic
+            types.push(td)
+            placeholders.push(placeholder)
+            scope.types.at(td.value) put(placeholder)
+        }
+    }
+
+    for(types) and(placeholders) do { td, ph ->
+        def oType = anObjectType.fromDType(td)
+        prelude.become(ph, oType)
+    }
+}
+
+
+// Determines if a node is publicly available.
+method isPublic(node : Method | Def | Var) -> Boolean is confidential {
+    match(node) case { _ : Method ->
+        for(node.annotations) do { ann ->
+            if(ann.value == "confidential") then {
+                return false
+            }
+        }
+
+        true
+    } else {
+        for(node.annotations) do { ann ->
+            if((ann.value == "public") || (ann.value == "readable")) then {
+                return true
+            }
+        }
+
+        false
+    }
+}
+
+
+// Determines if a method will be accessed as a member.
+method isMember(mType : MethodType) -> Boolean is confidential {
+    (mType.signature.size == 1).andAlso {
+        mType.signature.first.parameters.size == 0
+    }
 }
 
 

@@ -219,10 +219,15 @@ method outprint(s) {
 // - spacePos: The position in the error line that a space should be inserted, or false.
 // - suggestions: A (possibly empty) list of suggestions to correct the error.
 method syntaxError(message, errlinenum, position, arr, spacePos, suggestions) {
+    generalError("Syntax error: {message}", errlinenum, position, arr, spacePos,
+        suggestions)
+}
+
+method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
     if (vtagv) then {
         io.error.write("[" ++ vtagv ++ "]")
     }
-    io.error.write("{modnamev}.grace[{errlinenum}{position}]: Syntax error: {message}\n")
+    io.error.write("{modnamev}.grace[{errlinenum}{position}]: {message}\n")
     if ((errlinenum > 1) && (lines.size > 1)) then {
         io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
     }

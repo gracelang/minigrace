@@ -9,8 +9,6 @@ inherits prelude.new
 
 def CheckerFailure = Error.refine("CheckerFailure")
 
-def InternalError = CheckerFailure.refine("InternalError")
-
 
 // Helper Map
 
@@ -157,22 +155,33 @@ def scope = object {
         variables.stack.size
     }
 
-    method enter(bl) -> Done {
+    method enter(bl) {
         variables.stack.push(aMutableMap.empty)
         methods.stack.push(aMutableMap.empty)
         types.stack.push(aMutableMap.empty)
-        bl.apply
+
+        def result = bl.apply
+
         variables.stack.pop
         methods.stack.pop
         types.stack.pop
-        done
+
+        return result
+    }
+
+    method asString -> String is override {
+        "scope<{size}>"
     }
 }
 
-method typeOf(node) {
+method checkTypes(node) {
     node.accept(astVisitor)
+}
+
+method typeOf(node) {
+    checkTypes(node)
     cache.atKey(node) do { value -> return value }
-    Error.raise("unrecognised expression node {node.kind}")
+    CheckerFailure.raiseWith("cannot type non-expression", node)
 }
 
 method runRules(node) {
@@ -199,9 +208,6 @@ method runRules(node) {
 
 // Checks the defined rules on the given AST.
 method typeCheck(nodes) -> Done {
-    // Sets the baseType.
-    ast.objectNode.new([], false).accept(astVisitor)
-
     // Runs the check on the module object.
     ast.objectNode.new(nodes, false).accept(astVisitor)
 }
@@ -248,7 +254,6 @@ def Import is public = aNodePattern.forKind("import")
 def Dialect is public = aNodePattern.forKind("dialect")
 def Return is public = aNodePattern.forKind("return")
 def Inherits is public = aNodePattern.forKind("inherits")
-def Parameter is public = aNodePattern.forKind("parameter")
 
 def astVisitor = object {
 
@@ -266,61 +271,15 @@ def astVisitor = object {
     }
 
     method visitIf(node) -> Boolean {
-        node.value.accept(self)
-
-        scope.enter {
-            for(node.thenblock) do { stmt ->
-                stmt.accept(self)
-            }
-        }
-
-        scope.enter {
-            for(node.elseblock) do { stmt ->
-                stmt.accept(self)
-            }
-        }
-
         checkMatch(node)
-
-        return false
     }
 
     method visitBlock(node) -> Boolean {
-        scope.enter {
-            for(node.params) do { param ->
-                checkMatch(object {
-                    def kind : String is public = "parameter"
-                    def value : String is public = param.value
-                    def dtype is public = param.dtype
-                    def line : Number is public = param.line
-                    def linePos : Number is public = param.linePos
-                })
-            }
-
-            for(node.body) do { stmt ->
-                stmt.accept(self)
-            }
-        }
-
         checkMatch(node)
-
-        return false
     }
 
     method visitMatchCase(node) -> Boolean {
-        node.value.accept(self)
-
-        for(node.cases) do { case ->
-            case.accept(self)
-        }
-
-        if(node.elsecase != false) then {
-            node.elsecase.accept(self)
-        }
-
         checkMatch(node)
-
-        return false
     }
 
     method visitCatchCase(node) -> Boolean {
@@ -338,30 +297,18 @@ def astVisitor = object {
     }
 
     method visitMethod(node) -> Boolean {
-        scope.enter {
-            for(node.signature) do { part ->
-                for(part.params) do { param ->
-                    checkMatch(object {
-                        def kind : String is public = "parameter"
-                        def value : String is public = param.value
-                        def dtype is public = param.dtype
-                        def line : Number is public = param.line
-                        def linePos : Number is public = param.linePos
-                    })
-                }
-            }
-
-            for(node.body) do { stmt ->
-                stmt.accept(self)
-            }
-        }
-
         checkMatch(node)
+
+        for(node.body) do { stmt ->
+            stmt.accept(self)
+        }
 
         return false
     }
 
     method visitCall(node) -> Boolean {
+        checkMatch(node)
+
         match(node.value) case { memb : Member ->
             memb.in.accept(self)
         } else {}
@@ -372,51 +319,17 @@ def astVisitor = object {
             }
         }
 
-        checkMatch(node)
-
         return false
     }
-
-    var baseType := false
 
     method visitClass(node) -> Boolean {
         checkMatch(node)
 
-        scope.enter {
-            cache.atKey(node) do { cType ->
-                scope.variables.at("self") put(cType)
-
-                for(cType.methods) do { meth ->
-                    def sig = meth.signature
-                    if(sig.size == 1) then {
-                        if(sig.first.parameters.size == 0) then {
-                            scope.variables.at(meth.name) put(meth.returnType)
-                        }
-                    }
-                }
-            }
-
-            for(node.signature) do { part ->
-                for(part.params) do { param ->
-                    checkMatch(object {
-                        def kind : String is public = "parameter"
-                        def value : String is public = param.value
-                        def dtype is public = param.dtype
-                        def line : Number is public = param.line
-                        def linePos : Number is public = param.linePos
-                    })
-                }
-            }
-
-            def body = node.value
-            scope.variables.at("super")
-                put(if((body.size > 0).andAlso {
-                    Inherits.match(body.first)
-                }) then { typeOf(body.first.value) } else { baseType })
-
-            for(body) do { stmt ->
-                stmt.accept(self)
-            }
+        if(node.superclass != false) then {
+            node.superclass.accept(self)
+        }
+        for(node.value) do { stmt ->
+            stmt.accept(self)
         }
 
         return false
@@ -424,37 +337,6 @@ def astVisitor = object {
 
     method visitObject(node) -> Boolean {
         checkMatch(node)
-
-        scope.enter {
-            cache.atKey(node) do { oType ->
-                scope.variables.at("self") put(oType)
-
-                for(oType.methods) do { meth ->
-                    def sig = meth.signature
-                    if(sig.size == 1) then {
-                        if(sig.first.parameters.size == 0) then {
-                            scope.variables.at(meth.name) put(meth.returnType)
-                        }
-                    }
-                }
-
-                if(baseType == false) then {
-                    baseType := oType
-                }
-            }
-
-            def body = node.value
-            scope.variables.at("super")
-                put(if((body.size > 0).andAlso {
-                    Inherits.match(body.first)
-                }) then { typeOf(body.first.value) } else { baseType })
-
-            for(body) do { stmt ->
-                stmt.accept(self)
-            }
-        }
-
-        return false
     }
 
     method visitArray(node) -> Boolean {

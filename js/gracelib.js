@@ -1285,8 +1285,12 @@ function gracecode_util() {
         // - spacePos: The position in the error line that a space should be inserted, or false.
         // - suggestions: A (possibly empty) list of suggestions to correct the error.
         "syntaxError": function(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
+            callmethod(this, "generalError", [6], new GraceString("Syntax error: " + message._value), errlinenum,
+                position, arr, spacePos, suggestions);
+        },
+        "generalError": function(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
             minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + position._value
-                + "]: Syntax error: " + message._value + "\n");
+                + "]: " + message._value + "\n");
 
             if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
                 minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
@@ -1851,6 +1855,14 @@ Grace_prelude.methods["_methods"] = function() {
 }
 Grace_prelude.methods["clone"] = function(argcv, obj) {
   return obj;
+}
+Grace_prelude.methods["become"] = function(argcv, a, b) {
+    for(var k in a) {
+        var t = a[k];
+        a[k] = b[k];
+        b[k] = t;
+    }
+    return var_done;
 }
 
 var PrimitiveArrayClass = new GraceObject();

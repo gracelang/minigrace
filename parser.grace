@@ -359,6 +359,7 @@ method dotyperef {
             errormessages.syntaxError("A type name or type expression must follow '|'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
+        unionTypes.push(values.pop)
     }
     if (unionTypes.size > 0) then {
         var unionName := "Union<"
