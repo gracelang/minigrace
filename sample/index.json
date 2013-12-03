@@ -152,5 +152,12 @@
         "categories": ["Dialects"],
         "requires": ["checking"],
         "description": "A typechecking dialect enforcing structural subtyping."
+    },
+    "structural_example": {
+        "name": "Structural typing example",
+        "description": "Sample code for the structural checking dialect.",
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "requires": ["structural"]
     }
 }
