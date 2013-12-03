@@ -760,8 +760,8 @@ method compileif(o) {
     auto_count := auto_count + 1
     out("if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
     increaseindent
-    var tret := "undefined"
-    var fret := "undefined"
+    var tret := "var_done"
+    var fret := "var_done"
     for (o.thenblock) do { l->
         tret := compilenode(l)
     }

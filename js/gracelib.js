@@ -983,6 +983,7 @@ stdin.methods.close = function() {};
 var stderr = Grace_allocObject();
 stderr.methods.write = function(junk, s) {
     minigrace.stderr_write(s._value);
+    return var_done;
 }
 stderr.methods.close = function() {};
 
@@ -997,6 +998,7 @@ function StackFrame(methodName) {
 StackFrame.prototype = {
     addVar: function(name, accessor) {
         this.variables[name] = accessor;
+        return var_done;
     },
     getVar: function(name) {
         return this.variables[name]();
@@ -1004,6 +1006,7 @@ StackFrame.prototype = {
     forEach: function(f) {
         for (var v in this.variables)
             f(v, this.getVar(v));
+        return var_done;
     },
 };
 
@@ -1221,6 +1224,7 @@ function gracecode_util() {
             return stdin;
         },
         parseargs: function(argcv) {
+            return var_done;
         },
         target: function(argcv) {
             return new GraceString(minigrace.mode);
@@ -1242,6 +1246,7 @@ function gracecode_util() {
             lineNumber = l._value;
             this._linenum = l;
             this._linepos = p;
+            return var_done;
         },
         buildtype: function(argcv) {
             return new GraceString("normal");
@@ -1258,15 +1263,18 @@ function gracecode_util() {
         log_verbose: function(argcv, s) {
             if (minigrace.verbose)
                 minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
+            return var_done;
         },
         outprint: function(argcv, s) {
             minigrace.stdout_write(s._value + "\n");
+            return var_done;
         },
         engine: function(argcv) {
             return new GraceString("js");
         },
         debug: function(argcv, s) {
             dbg(s._value);
+            return var_done;
         },
         interactive: function(argcv) {
             return new GraceBoolean(false);
@@ -1402,6 +1410,7 @@ function gracecode_util() {
                 extv = new GraceBoolean(true);
             }
             callmethod(extensionsMap, "put", [2], extn, extv);
+            return var_done;
         },
         "lines": function(argcv) {
             return this._lines;
