@@ -1895,6 +1895,7 @@ method callrest {
                 meth := methn
             }
         }
+        util.setline(lnum)
         tmp := ast.callNode.new(meth, signature)
         tmp.generics := genericIdents
         values.push(tmp)
