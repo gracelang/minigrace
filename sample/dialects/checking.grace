@@ -121,6 +121,16 @@ method rule(block) -> Done {
     rules.push(block)
 }
 
+// Short fail-with-message
+
+// Will be updated with each node examined
+var currentLine := 0
+method fail(message) {
+    CheckerFailure.raiseWith(message, object {
+        def line is public = currentLine
+        def linePos is public = 1
+    })
+}
 
 // Scope
 
@@ -186,7 +196,7 @@ method typeOf(node) {
 
 method runRules(node) {
     cache.atKey(node) do { value -> return value }
-
+    currentLine := node.line
     for(rules) do { rule ->
         def matched = rule.match(node)
         if(matched) then {
