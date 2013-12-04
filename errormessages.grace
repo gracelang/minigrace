@@ -392,6 +392,21 @@ method error(message) atPosition(errlinenum, errpos)
     util.generalError(message, errlinenum, ":({errpos})", arr, errpos, suggestions)
 }
 
+method error(message)atLine(errlinenum)withSuggestions(suggestions) {
+    var arr := "----"
+    for (1..errlinenum.asString.size) do {
+        arr := arr ++ "-"
+    }
+    for (1..util.lines.at(errlinenum).size) do {
+        arr := arr ++ "^"
+    }
+    util.generalError(message, errlinenum, "", arr, false, suggestions)
+}
+
+method error(message)atLine(errlinenum) {
+    error(message)atLine(errlinenum)withSuggestions([])
+}
+
 method syntaxError(message)atLine(errlinenum) {
     syntaxError(message)atLine(errlinenum)withSuggestions([])
 }
