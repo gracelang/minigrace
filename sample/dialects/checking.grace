@@ -229,6 +229,9 @@ method typeCheck(nodes) -> Done {
     // Runs the check on the module object.
     ast.objectNode.new(nodes, false).accept(astVisitor)
 }
+method check(nodes) -> Done {
+    typeCheck(nodes)
+}
 
 type AstNode = { kind -> String }
 
