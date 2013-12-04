@@ -1,6 +1,7 @@
 dialect "checking"
 
 import "ast" as ast
+import "util" as util
 import "StandardPrelude" as prelude
 
 inherits prelude.new
@@ -893,6 +894,7 @@ rule { meth : Method ->
 
                 method visitReturn(ret) is override {
                     check(ret.value) matches(returnType) inMethod(name)
+                    return false
                 }
 
                 method visitMethod(node) is override {
