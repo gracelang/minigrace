@@ -125,7 +125,7 @@ backendtests: test
 
 alltests: test regrtest
 
-samples-%:
+samples-%: minigrace
 	$(MAKE) -C sample/$*
 
 samples: samples-dialects samples-graphics samples-js
