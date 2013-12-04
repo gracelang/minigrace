@@ -1768,8 +1768,8 @@ function do_import(modname, func) {
         return importedModules[modname];
     }
     if (!func)
-        throw new GraceExceptionPacket(RuntimeErrorObject,
-            new GraceString("Could not find module '" + modname + "'."));
+        throw new GraceExceptionPacket(ImportErrorObject,
+            new GraceString("Could not find module '" + modname + "'"));
     var origSuperDepth = superDepth;
     superDepth = Grace_allocModule(modname);
     var f = func.call(superDepth);
@@ -1817,6 +1817,7 @@ ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
 var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
+var ImportErrorObject = new GraceException("ImportError", RuntimeErrorObject);
 var TypeErrorObject = new GraceException("TypeError", RuntimeErrorObject);
 
 var Grace_native_prelude = Grace_allocObject();

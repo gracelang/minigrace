@@ -1921,7 +1921,7 @@ method processImports(values') {
                     }
                 } case { e : RuntimeError ->
                     util.setPosition(v.line, 1)
-                    errormessages.syntaxError("Dialect '{nm}' failed to load: {e}.")atLine(v.line)
+                    errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
                 } case { e : CheckerFailure ->
                     if (done != e.data) then {
                         util.setPosition(e.data.line, e.data.linePos)
