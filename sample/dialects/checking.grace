@@ -255,7 +255,9 @@ def MatchCase is public = aNodePattern.forKind("matchcase")
 def CatchCase is public = aNodePattern.forKind("catchcase")
 def MethodSignature is public = aNodePattern.forKind("methodtype")
 def TypeDeclaration is public = aNodePattern.forKind("type")
+def TypeAnnotation is public = aNodePattern.forKind("dtype")
 def Method is public = aNodePattern.forKind("method")
+def Parameter is public = aNodePattern.forKind("parameter")
 def Request is public = aNodePattern.forKind("call")
 def Class is public = aNodePattern.forKind("class")
 def ObjectLiteral is public = aNodePattern.forKind("object")
@@ -296,7 +298,17 @@ def astVisitor = object {
     }
 
     method visitBlock(node) -> Boolean {
-        checkMatch(node)
+        runRules(node)
+
+        for(node.parameters) do { param ->
+            runRules(aParameter.fromNode(param))
+        }
+
+        for(node.body) do { stmt ->
+            stmt.accept(self)
+        }
+
+        return false
     }
 
     method visitMatchCase(node) -> Boolean {
@@ -308,7 +320,13 @@ def astVisitor = object {
     }
 
     method visitMethodType(node) -> Boolean {
-        checkMatch(node)
+        runRules(node)
+
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
 
         return false
     }
@@ -318,7 +336,13 @@ def astVisitor = object {
     }
 
     method visitMethod(node) -> Boolean {
-        checkMatch(node)
+        runRules(node)
+
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
 
         for(node.body) do { stmt ->
             stmt.accept(self)
@@ -346,9 +370,16 @@ def astVisitor = object {
     method visitClass(node) -> Boolean {
         checkMatch(node)
 
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
+
         if(node.superclass != false) then {
             node.superclass.accept(self)
         }
+
         for(node.value) do { stmt ->
             stmt.accept(self)
         }
@@ -424,5 +455,20 @@ def astVisitor = object {
         checkMatch(node)
     }
 
+}
+
+class aTypeAnnotation.fromNode(node) -> TypeAnnotation is confidential {
+    def kind is public = "dtype"
+    def value is public = node
+    def line is public = node.line
+    def linePos is public = node.linePos
+}
+
+class aParameter.fromNode(node) -> Parameter is confidential {
+    def kind is public = "parameter"
+    def value is public = node.value
+    def dtype is public = node.dtype
+    def line is public = node.line
+    def linePos is public = node.linePos
 }
 
