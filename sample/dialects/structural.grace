@@ -1,4 +1,4 @@
-dialect "checking"
+dialect "dialect"
 
 import "ast" as ast
 import "util" as util

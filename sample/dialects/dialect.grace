@@ -1,297 +1,477 @@
 import "ast" as ast
-import "mgcollections" as collections
-import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.new
 
-def patterns = collections.list.new
-def bannedIdentifiers = collections.set.new
-def CheckerFailure = Exception.refine "CheckerFailure"
+import "StandardPrelude" as prelude
 
-method visitWithPatterns(o) {
-    for (patterns) do {pat->
-        def mat = pat.pattern.match(o)
-        if (pat.isFailure) then {
-            if (mat.andAlso {mat.result}) then {
-                fail(pat.message)at(o)
+inherits prelude.new
+
+
+// Checker error
+
+def CheckerFailure = Error.refine("CheckerFailure")
+
+
+// Helper Map
+
+def MapException = Exception.refine("MapException")
+
+class anEntry.from(key') to(value') is confidential {
+    def key is public = key'
+    var value is public := value'
+}
+
+class aMutableMap.empty {
+
+    def entries = []
+
+    method isEmpty -> Boolean { size == 0 }
+
+    method size -> Number { entries.size }
+
+    method at(key) {
+        atKey(key) do { value -> return value }
+
+        MapException.raise("No such value at key {key}")
+    }
+
+    method at(key) put(value) -> Done {
+        for(entries) do { entry ->
+            if(entry.key == key) then {
+                entry.value := value
+                return done
             }
         }
+
+        entries.push(anEntry.from(key) to(value))
     }
-    return true
+
+    method keys -> List {
+        def keys' = []
+
+        for(entries) do { entry ->
+            keys'.push(entry.key)
+        }
+
+        return keys'
+    }
+
+    method values -> List {
+        def values' = []
+
+        for(entries) do { entry ->
+            values'.push(entry.value)
+        }
+
+        return values'
+    }
+
+    method containsKey(key) -> Boolean {
+        atKey(key) do { _ -> return true }
+
+        return false
+    }
+
+    method atKey(key) do(block) -> Done {
+        atKey(key) do(block) else {}
+        return
+    }
+
+    method atKey(key) do(block) else(block') {
+        for(entries) do { entry ->
+            if(entry.key == key) then {
+                return block.apply(entry.value)
+            }
+        }
+
+        return block'.apply
+    }
+
+    method asString -> String is override {
+        if(isEmpty) then {
+            return "\{\}"
+        }
+
+        var out := "\{"
+
+        var once := false
+        for(entries) do { entry ->
+            if(once) then {
+                out := "{out},"
+            }
+            out := "{out} {entry.key} => {entry.value}"
+            once := true
+        }
+
+        return "{out} \}"
+    }
+
 }
 
-def patternVisitor = object {
-    inherits ast.baseVisitor
 
-    method visitFor(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitWhile(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitIf(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitBlock(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitMatchCase(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitCatchCase(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitMethodType(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitType(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitMethod(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitCall(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitClass(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitObject(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitArray(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitMember(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitGeneric(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitIdentifier(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitOctets(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitString(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitNum(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitOp(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitIndex(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitBind(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitDefDec(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitVarDec(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitImport(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitReturn(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitInherits(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
-    method visitDialect(o) -> Boolean is public {
-        visitWithPatterns(o)
-    }
+
+// Rules
+
+// The defined type rules.
+def rules = []
+
+// The cached type assignments.
+def cache = aMutableMap.empty
+
+// Creates a new type rule.
+method rule(block) -> Done {
+    rules.push(block)
 }
 
+// Short fail-with-message
+
+// Will be updated with each node examined
+var currentLine := 0
+method fail(message) {
+    CheckerFailure.raiseWith(message, object {
+        def line is public = currentLine
+        def linePos is public = 1
+    })
+}
 method fail(msg)when(pat) {
-    patterns.push(object {
-        def pattern is public, readable = pat
-        def message is public, readable = msg
-        def isFailure is public, readable = true
-    })
+    rule { x ->
+        def mat = pat.match(x)
+        if (mat.andAlso {mat.result}) then {
+            fail(msg)
+        }
+    }
 }
-method fail(msg)at(o) {
-    CheckerFailure.raiseWith(msg, object {
-                def line is public, readable = o.line
-                def linePos is public, readable = 1
-            })
-}
-method do(pat) {
-    patterns.push(object {
-        def pattern is public, readable = pat
-        def message is public, readable = "non-failure pattern"
-        def isFailure is public, readable = false
-    })
+method when(pat)error(msg) {
+    fail(msg)when(pat)
 }
 
-def Block' is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "block") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
+// Scope
+
+class aStack.ofKind(kind : String) is confidential {
+    def stack is public = [aMutableMap.empty]
+
+    method at(name : String) put(value) -> Done {
+        stack.last.at(name) put(value)
     }
-}
-def Type' is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "type") then {
-            return SuccessfulMatch.new(o, [])
+
+    method find(name : String) butIfMissing(bl) {
+        var i := stack.size
+        while { i > 0 } do {
+            stack.at(i).atKey(name) do { value ->
+                return value
+            }
+
+            i := i - 1
         }
-        return FailedMatch.new(o)
+
+        return bl.apply
     }
+
 }
-def Method is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "method") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
+
+def scope = object {
+    def variables is public = aStack.ofKind("variable")
+    def methods is public = aStack.ofKind("method")
+    def types is public = aStack.ofKind("type")
+
+    method size -> Number {
+        variables.stack.size
     }
-}
-def Call is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "call") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
+
+    method enter(bl) {
+        variables.stack.push(aMutableMap.empty)
+        methods.stack.push(aMutableMap.empty)
+        types.stack.push(aMutableMap.empty)
+
+        def result = bl.apply
+
+        variables.stack.pop
+        methods.stack.pop
+        types.stack.pop
+
+        return result
     }
-}
-def Class is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "class") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Object is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "object") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Member is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "member") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Identifier is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "identifier") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Op is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "op") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Index is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "index") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Bind is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "bind") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def DefDec is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "defdec") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def VarDec is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "vardec") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Import is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "import") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Return is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "return") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
-    }
-}
-def Inherits is public, readable = object {
-    inherits BasicPattern.new
-    method match(o) is public {
-        if (o.kind == "inherits") then {
-            return SuccessfulMatch.new(o, [])
-        }
-        return FailedMatch.new(o)
+
+    method asString -> String is override {
+        "scope<{size}>"
     }
 }
 
-method prohibit(ident) {
-    bannedIdentifiers.add(ident)
+method checkTypes(node) {
+    node.accept(astVisitor)
 }
 
-patterns.push(object {
-    def pattern is public, readable = {
-        o : Identifier -> if (bannedIdentifiers.contains(o.value)) then {
-            CheckerFailure.raiseWith("\"{o.value}\" is not a valid identifier "
-                ++ "in this dialect", o)
+method typeOf(node) {
+    checkTypes(node)
+    cache.atKey(node) do { value -> return value }
+    CheckerFailure.raiseWith("cannot type non-expression", node)
+}
+
+method runRules(node) {
+    cache.atKey(node) do { value -> return value }
+    currentLine := node.line
+    for(rules) do { rule ->
+        def matched = rule.match(node)
+        if(matched) then {
+            def result = matched.result
+
+            if(done != result) then {
+                cache.at(node) put(result)
+            }
+
+            return result
         }
     }
-    // This can't actually come up:
-    def message is public, readable = "used banned identifier"
-    def isFailure is public, readable = true
-})
 
-method check(l) {
-    for (l) do {n->
-        n.accept(patternVisitor)
+    return false
+}
+
+
+// Type checker
+
+// Checks the defined rules on the given AST.
+method typeCheck(nodes) -> Done {
+    // Runs the check on the module object.
+    ast.objectNode.new(nodes, false).accept(astVisitor)
+}
+method check(nodes) -> Done {
+    typeCheck(nodes)
+}
+
+type AstNode = { kind -> String }
+
+class aNodePattern.forKind(kind : String) -> Pattern {
+    inherits BasicPattern.new
+
+    method match(obj : Object) {
+        match(obj) case { node : AstNode ->
+            if(kind == node.kind) then {
+                SuccessfulMatch.new(node, [])
+            } else {
+                FailedMatch.new(obj)
+            }
+        } else { FailedMatch.new(obj) }
     }
 }
+
+def If is public = aNodePattern.forKind("if")
+def BlockLiteral is public = aNodePattern.forKind("block")
+def MatchCase is public = aNodePattern.forKind("matchcase")
+def CatchCase is public = aNodePattern.forKind("catchcase")
+def MethodSignature is public = aNodePattern.forKind("methodtype")
+def TypeDeclaration is public = aNodePattern.forKind("type")
+def TypeAnnotation is public = aNodePattern.forKind("dtype")
+def Method is public = aNodePattern.forKind("method")
+def Parameter is public = aNodePattern.forKind("parameter")
+def Request is public = aNodePattern.forKind("call")
+def Class is public = aNodePattern.forKind("class")
+def ObjectLiteral is public = aNodePattern.forKind("object")
+def ArrayLiteral is public = aNodePattern.forKind("array")
+def Member is public = aNodePattern.forKind("member")
+def Generic is public = aNodePattern.forKind("generic")
+def Identifier is public = aNodePattern.forKind("identifier")
+def OctetsLiteral is public = aNodePattern.forKind("octets")
+def StringLiteral is public = aNodePattern.forKind("string")
+def NumberLiteral is public = aNodePattern.forKind("num")
+def Operator is public = aNodePattern.forKind("op")
+def Index is public = aNodePattern.forKind("index")
+def Bind is public = aNodePattern.forKind("bind")
+def Def is public = aNodePattern.forKind("defdec")
+def Var is public = aNodePattern.forKind("vardec")
+def Import is public = aNodePattern.forKind("import")
+def Dialect is public = aNodePattern.forKind("dialect")
+def Return is public = aNodePattern.forKind("return")
+def Inherits is public = aNodePattern.forKind("inherits")
+
+def astVisitor = object {
+
+    method checkMatch(node) -> Boolean {
+        runRules(node)
+        return true
+    }
+
+    method visitFor(node) -> Boolean {
+        Error.raise("for is no longer special-cased")
+    }
+
+    method visitWhile(node) -> Boolean {
+        Error.raise("while is no longer special-cased")
+    }
+
+    method visitIf(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitBlock(node) -> Boolean {
+        runRules(node)
+
+        for(node.parameters) do { param ->
+            runRules(aParameter.fromNode(param))
+        }
+
+        for(node.body) do { stmt ->
+            stmt.accept(self)
+        }
+
+        return false
+    }
+
+    method visitMatchCase(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitCatchCase(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitMethodType(node) -> Boolean {
+        runRules(node)
+
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
+
+        return false
+    }
+
+    method visitType(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitMethod(node) -> Boolean {
+        runRules(node)
+
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
+
+        for(node.body) do { stmt ->
+            stmt.accept(self)
+        }
+
+        return false
+    }
+
+    method visitCall(node) -> Boolean {
+        checkMatch(node)
+
+        match(node.value) case { memb : Member ->
+            memb.in.accept(self)
+        } else {}
+
+        for(node.with) do { part ->
+            for(part.args) do { arg ->
+                arg.accept(self)
+            }
+        }
+
+        return false
+    }
+
+    method visitClass(node) -> Boolean {
+        checkMatch(node)
+
+        for(node.signature) do { part ->
+            for(part.params) do { param ->
+                runRules(aParameter.fromNode(param))
+            }
+        }
+
+        if(node.superclass != false) then {
+            node.superclass.accept(self)
+        }
+
+        for(node.value) do { stmt ->
+            stmt.accept(self)
+        }
+
+        return false
+    }
+
+    method visitObject(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitArray(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitMember(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitGeneric(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitIdentifier(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitOctets(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitString(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitNum(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitOp(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitIndex(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitBind(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitDefDec(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitVarDec(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitImport(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitReturn(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitInherits(node) -> Boolean {
+        checkMatch(node)
+    }
+
+    method visitDialect(node) -> Boolean {
+        checkMatch(node)
+    }
+
+}
+
+class aTypeAnnotation.fromNode(node) -> TypeAnnotation is confidential {
+    def kind is public = "dtype"
+    def value is public = node
+    def line is public = node.line
+    def linePos is public = node.linePos
+}
+
+class aParameter.fromNode(node) -> Parameter is confidential {
+    def kind is public = "parameter"
+    def value is public = node.value
+    def dtype is public = node.dtype
+    def line is public = node.line
+    def linePos is public = node.linePos
+}
+
