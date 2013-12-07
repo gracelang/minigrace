@@ -1,6 +1,6 @@
 // Loop invariant dialect
 import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.new
+inherits StandardPrelude.methods
 
 def InvariantFailure = Error.refine "InvariantFailure"
 

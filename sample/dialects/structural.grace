@@ -4,7 +4,7 @@ import "ast" as ast
 import "util" as util
 import "StandardPrelude" as prelude
 
-inherits prelude.new
+inherits prelude.methods
 
 
 // Type error.

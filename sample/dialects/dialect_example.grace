@@ -1,6 +1,6 @@
 dialect "dialect"
 import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.new
+inherits StandardPrelude.methods
 
 // This example implements most of the StaticGrace dialect.
 // It must be compiled as a dynamic module to be used.

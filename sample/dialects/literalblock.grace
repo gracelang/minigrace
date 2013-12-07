@@ -4,8 +4,8 @@
 // user when they write the condition in parentheses.
 import "ast" as ast
 import "errormessages" as errormessages
-import "StandardPrelude" as sp
-inherits sp.new
+import "StandardPrelude" as StandardPrelude
+inherits StandardPrelude.methods
 
 def CheckerFailure = Error.refine "CheckerFailure"
 

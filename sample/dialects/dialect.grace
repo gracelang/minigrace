@@ -2,7 +2,7 @@ import "ast" as ast
 
 import "StandardPrelude" as prelude
 
-inherits prelude.new
+inherits prelude.methods
 
 
 // Checker error

@@ -1,6 +1,6 @@
 import "mgcollections" as collections
 import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.new
+inherits StandardPrelude.methods
 
 method Relationship<From, To> {
     object {
