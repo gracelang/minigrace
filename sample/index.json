@@ -61,7 +61,7 @@
         "name": "Dialect dialect",
         "dir": "dialects",
         "categories": ["Dialects"],
-        "description": "A dialect to assist in writing other dialects."
+        "description": "A dialect to assist in writing other dialects and checkers."
     },
     "dialect_example": {
         "name": "Dialect client code",
@@ -139,18 +139,11 @@
         "requires": ["sniff"],
         "description": "Example code in the Sniff dialect, implementing Pong."
     },
-    "checking": {
-        "name": "Checker dialect",
-        "dir": "dialects",
-        "categories": ["Dialects"],
-        "requires": [],
-        "description": "A dialect for implementing typecheckers."
-    },
     "structural": {
         "name": "Structural typechecking dialect",
         "dir": "dialects",
         "categories": ["Dialects"],
-        "requires": ["checking"],
+        "requires": ["dialect"],
         "description": "A typechecking dialect enforcing structural subtyping."
     },
     "structural_example": {
@@ -159,5 +152,12 @@
         "dir": "dialects",
         "categories": ["Dialect examples"],
         "requires": ["structural"]
+    },
+    "dbc": {
+        "name": "Design-by-contract dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": [],
+        "description": "A simple dialect including loop invariants and preconditions."
     }
 }

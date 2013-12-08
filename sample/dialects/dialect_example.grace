@@ -6,9 +6,9 @@ inherits StandardPrelude.methods
 // It must be compiled as a dynamic module to be used.
 
 fail "var declaration must have a static type"
-    when { n : VarDec -> n.decType.value == "Dynamic" }
+    when { n : Var-> n.decType.value == "Dynamic" }
 fail "def declaration must have a static type"
-    when { n : DefDec -> n.decType.value == "Dynamic" }
+    when { n : Def-> n.decType.value == "Dynamic" }
 fail "method must have a static return type"
     when { n : Method -> n.decType.value == "Dynamic" }
 fail "method parameters must have a static type"

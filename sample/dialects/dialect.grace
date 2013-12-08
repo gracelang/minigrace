@@ -131,6 +131,9 @@ method fail(message) {
         def linePos is public = 1
     })
 }
+method fail(message)at(p) {
+    CheckerFailure.raiseWith(message, p)
+}
 method fail(msg)when(pat) {
     rule { x ->
         def mat = pat.match(x)
