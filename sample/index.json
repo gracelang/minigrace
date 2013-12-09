@@ -28,6 +28,7 @@
     "literalblock": {
         "name": "Literal block dialect",
         "dir": "dialects",
+        "requires": ["dialect"],
         "categories": ["Dialects"],
         "description": "A dialect enforcing that while loops are written with literal blocks, and offering errors and suggestions when they are not."
     },
