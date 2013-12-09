@@ -1,4 +1,5 @@
 import "ast" as ast
+import "errormessages" as errormessages
 
 import "StandardPrelude" as prelude
 
@@ -134,6 +135,24 @@ method fail(message) {
 method fail(message)at(p) {
     CheckerFailure.raiseWith(message, p)
 }
+method fail(message)from(startPos)to(endPos)suggest(sugg) {
+    def o = object {
+        def line is public = currentLine
+        def posStart is public = startPos
+        def posEnd is public = endPos
+        def suggestions is public = [sugg]
+    }
+    CheckerFailure.raiseWith(message, o)
+}
+method fail(message)from(startPos)to(endPos) {
+    def o = object {
+        def line is public = currentLine
+        def posStart is public = startPos
+        def posEnd is public = endPos
+        def suggestions is public = []
+    }
+    CheckerFailure.raiseWith(message, o)
+}
 method fail(msg)when(pat) {
     rule { x ->
         def mat = pat.match(x)
@@ -141,6 +160,9 @@ method fail(msg)when(pat) {
             fail(msg)
         }
     }
+}
+method createSuggestion {
+    errormessages.suggestion.new
 }
 method when(pat)error(msg) {
     fail(msg)when(pat)
