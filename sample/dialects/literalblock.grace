@@ -2,55 +2,55 @@
 // be a literal block written inline in the source code, to avoid
 // any potential confusion with (). It offers a suggestion to the
 // user when they write the condition in parentheses.
-import "ast" as ast
+dialect "dialect"
 import "errormessages" as errormessages
 import "StandardPrelude" as StandardPrelude
 inherits StandardPrelude.methods
 
-def CheckerFailure = Error.refine "CheckerFailure"
-
-method checker(tree) {
-    def vis = object {
-        inherits ast.baseVisitor
-        method visitCall(call) {
-            if (call.value.value == "while()do") then {
-                checkWhile(call)
-            }
-            return true
-        }
-    }
-    for (tree) do {node->
-        node.accept(vis)
+// The dialect dialect provides a shortcut While pattern which
+// matches while()do requests and destructures the AST node into
+// the condition and the body.
+rule { req : While(cond, _) ->
+    if (cond.kind != "block") then {
+        reportWhile(req)
     }
 }
 
-method checkWhile(call) {
-    // Ensure that the condition (the only argument in the first part of
-    // argument list) is a literal block:
-    if (call.with[1].args[1].kind != "block") then {
-        def badPart = call.with[1]
-        def badArg = call.with[1].args[1]
-        def suggestions = []
-        if (badPart.lineLength > 0) then {
-            // This covers the possible ()/{} confusion and offers a
-            // suggestion of what the user may have meant, but ignores
-            // multiple-line conditions or literals because it is difficult
-            // to suggest a sensible intention the user may have had.
-            def suggestion = errormessages.suggestion.new
-            suggestion.replaceChar(badPart.linePos + badPart.lineLength)
-                with("}")
-                onLine(badPart.line)
-            suggestion.replaceChar(badPart.linePos)
-                with("\{")
-                onLine(badPart.line)
-            badPart.linePos
-            suggestions.push(suggestion)
-        }
-        // Report an error to the user, highlighting the part of the
-        // code that is incorrect.
-        errormessages.syntaxError "The condition of a while loop must be written in \{}."
-            atRange(badPart.line, badPart.linePos,
-                badPart.linePos + badPart.lineLength)
-            withSuggestions(suggestions)
+method reportWhile(req) {
+    // Get a reference to the entire condition 'part' of the request.
+    // We will use this to generate the suggestion of replacing the
+    // parentheses with braces, if applicable.
+    def badPart = req.with[1]
+    def suggestions = []
+    // Ignore certain degenerate cases where there is no condition, and
+    // situations where the condition spanned multiple lines since they
+    // are likely to be a different kind of mistake. In all of these
+    // cases the source line length of the part's argument list will be
+    // reported as zero.
+    if (badPart.lineLength > 0) then {
+        // We will suggest replacing the () used in the condition with {}.
+        // The suggestions system allows modifying the code the user
+        // wrote to something that they may have meant, and then printing
+        // out the suggestion with "Did you mean?".
+        def suggestion = errormessages.suggestion.new
+        // These replacements must occur right to left, so that
+        // offsets in parts accessed later on are still valid.
+        suggestion.replaceChar(badPart.linePos + badPart.lineLength)
+            with("}")
+            onLine(badPart.line)
+        suggestion.replaceChar(badPart.linePos)
+            with("\{")
+            onLine(badPart.line)
+        suggestions.push(suggestion)
     }
+    // Report an error to the user, highlighting the part of the
+    // code that is incorrect.
+    errormessages.syntaxError "The condition of a while loop must be written in \{}."
+        atRange(badPart.line, badPart.linePos,
+            badPart.linePos + badPart.lineLength)
+        withSuggestions(suggestions)
+}
+
+method checker(code) {
+    check(code)
 }
