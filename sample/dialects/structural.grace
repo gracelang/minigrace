@@ -1262,7 +1262,7 @@ method isMember(mType : MethodType) -> Boolean is confidential {
 
 // Run the type rules.
 method checker(nodes) {
-    typeCheck(nodes)
+    check(nodes)
 }
 
 

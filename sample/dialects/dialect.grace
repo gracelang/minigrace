@@ -211,32 +211,30 @@ method typeOf(node) {
 method runRules(node) {
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
+
+    var result := done
     for(rules) do { rule ->
         def matched = rule.match(node)
         if(matched) then {
-            def result = matched.result
+            def result' = matched.result
 
-            if(done != result) then {
+            if(done != result') then {
+                result := result'
                 cache.at(node) put(result)
             }
-
-            return result
         }
     }
 
-    return false
+    return result
 }
 
 
 // Type checker
 
 // Checks the defined rules on the given AST.
-method typeCheck(nodes) -> Done {
+method check(nodes) -> Done {
     // Runs the check on the module object.
     ast.objectNode.new(nodes, false).accept(astVisitor)
-}
-method check(nodes) -> Done {
-    typeCheck(nodes)
 }
 
 type AstNode = { kind -> String }
@@ -249,7 +247,7 @@ class aNodePattern.forKind(kind : String) -> Pattern {
             if(kind == node.kind) then {
                 SuccessfulMatch.new(node, [])
             } else {
-                FailedMatch.new(obj)
+                FailedMatch.new(node)
             }
         } else { FailedMatch.new(obj) }
     }
@@ -284,6 +282,43 @@ def Dialect is public = aNodePattern.forKind("dialect")
 def Return is public = aNodePattern.forKind("return")
 def Inherits is public = aNodePattern.forKind("inherits")
 
+// Special requests patterns.
+
+class aRequestPattern.forName(name : String) -> Pattern {
+    inherits BasicPattern.new
+
+    method match(obj : Object) {
+        match(obj) case { node : AstNode ->
+            if((node.kind == "call").andAlso {
+                node.value.value == name
+            }) then {
+                SuccessfulMatch.new(node, makeBindings(node))
+            } else {
+                FailedMatch.new(node)
+            }
+        } else { FailedMatch.new(obj) }
+    }
+
+    method makeBindings(node) { [] }
+}
+
+def While is public = object {
+    inherits aRequestPattern.forName("while()do")
+
+    method makeBindings(node) -> List is override {
+        def sig = node.with
+        [node.with[1].args[1], node.with[2].args[1]]
+    }
+}
+
+def For is public = object {
+    inherits aRequestPattern.forName("for()do")
+
+    method makeBindings(node) -> List is override {
+        [node.with[1].args[1], node.with[2].args[1]]
+    }
+}
+
 def astVisitor = object {
 
     method checkMatch(node) -> Boolean {
@@ -306,7 +341,7 @@ def astVisitor = object {
     method visitBlock(node) -> Boolean {
         runRules(node)
 
-        for(node.parameters) do { param ->
+        for(node.params) do { param ->
             runRules(aParameter.fromNode(param))
         }
 
