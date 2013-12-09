@@ -93,7 +93,8 @@ MiniGrace.prototype.run = function() {
     var modname = this.modname;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
-            getVariableValues(theModule.call({methods:{}, data: {}, className: modname}));
+            GraceDebugger.that = {methods:{}, data: {}, className: modname};
+            GraceDebugger.run(theModule, GraceDebugger.that);
         } else {
             theModule.call({methods:{}, data: {}, className: modname});
         }

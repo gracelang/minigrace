@@ -36,8 +36,7 @@
             <div id="tabs" class="tabbox">
                 <div id="code_options">
                     <input type="checkbox" id="acetoggle" onchange="toggleAce()" checked />Ace
-                    <input type="checkbox" id="debugtoggle" />Debug
-                    <span style="color: blue;cursor:pointer;" onclick="alert('At this point it only outputs the variable values of the currently run module at the end of running the javascript function the grace program was compiled into. This means it catches the final values of variables in grace programs that don\'t use gtk or timers');">*</span>
+                    <input type="checkbox" id="debugtoggle" onchange="toggleDebugger()" /><a href="debugger.html">Debugger</a>
                 </div>
                 <div id="plus" onclick="addCodeTab()">+</div>
                 <div class="tabbox" style="border: 1px solid transparent;"></div>
@@ -79,10 +78,35 @@
             </div>
         </div>
         <!-- End output Boxes -->
-        <br />
-        
+        <div style="clear: both;"></div>
         <textarea id="stderr_txt" rows="9" cols="60"></textarea>
+        <div id="debugger">
+            <table style="width: 100%;"><tr><td class="debugger_td_border">
+                <div id="debugger_buttons">
+                    <button onclick="GraceDebugger['backStep']();go();">Back-step</button>
+                    <button onclick="GraceDebugger['restart']();go()">Restart</button>
+                    <button onclick="GraceDebugger['continue']();go();">Continue</button>
+                    <button onclick="GraceDebugger['step']();go()">Step</button>
+                </div>
+        
+                <div class="breakpoints">
+                    Breakpoints <!--(<span id="debugger_module">main</span>)-->
+                    <div id="breakpoints">
+                        <span style="color: #aaa;">(No breakpoints added yet)</span>
+                    </div>
+                    <button onclick="GraceDebugger.breakpoints.add();">Add a breakpoint</button> <input id="add_break" />
+                </div>
+            </td><td class="debugger_td_border">
+                <div id="debugger_vars_display">
+                    Variables: 
+                    <div></div>
+                </div>
+            </td></tr></table>
+        </div>
     </div>
+
+    <div style="clear: both;"></div>
+
     <input type="button" id="compilerun_but" value="Go" onclick="go()" />
     Target:
     <select id="mode" onchange="modeswitch()">
