@@ -1888,6 +1888,16 @@ method checkimport(nm) {
     }
 }
 method processImports(values') {
+    type LinePos = {
+        line -> Number
+        linePos -> Number
+    }
+    type RangeSuggestions = {
+        line -> Number
+        posStart -> Number
+        posEnd -> Number
+        suggestions
+    }
     if (util.runmode == "make") then {
         log_verbose("checking imports.")
         if (util.extensions.contains("ImportHook")) then {
@@ -1923,10 +1933,18 @@ method processImports(values') {
                     util.setPosition(v.line, 1)
                     errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
                 } case { e : CheckerFailure ->
-                    if (done != e.data) then {
-                        util.setPosition(e.data.line, e.data.linePos)
-                        errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
-                    }
+                    match (e.data)
+                        case { lp : LinePos ->
+                            util.setPosition(e.data.line, e.data.linePos)
+                            errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                        }
+                        case { rs : RangeSuggestions ->
+                            errormessages.error("{e.exception}: {e.message}.")
+                                atRange(rs.line, rs.posStart,
+                                    rs.posEnd)
+                                withSuggestions(rs.suggestions)
+                        }
+                        case { _ -> }
                     errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
                 }
             }
