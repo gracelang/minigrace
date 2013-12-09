@@ -371,15 +371,28 @@ method resolveIdentifier(node) {
                     suggestions.push(suggestion)
                 }
             }
-
-            if (!node.inBind) then {
+            var offerString := !node.inBind
+            var highlightLength := node.value.size
+            if (node.value.replace "()" with "XX" != node.value) then {
+                offerString := false
+                var i := 0
+                var found := false
+                for (node.value) do {c->
+                    if ((c == "(") && (!found)) then {
+                        highlightLength := i
+                        found := true
+                    }
+                    i := i + 1
+                }
+            }
+            if (offerString) then {
                 suggestion := errormessages.suggestion.new
                 suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
                 suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
                 suggestions.push(suggestion)
             }
             errormessages.syntaxError("Unknown variable or method name '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
-                node.line, node.linePos, node.linePos + node.value.size - 1)withSuggestions(suggestions)
+                node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
     }
     if (nm == "outer") then {
