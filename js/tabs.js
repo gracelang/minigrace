@@ -34,8 +34,8 @@ minigrace.stdout_write = function(value) {
             document.getElementById('stderr_txt').value = "";
             minigrace.modname = document.getElementById('modname').value;
             var compiled = minigrace.compilerun(getCode());
-            if(!compiled)
-            document.getElementById('stderr_txt').value = old_stderr;
+            if(!compiled  && !document.getElementById('debugtoggle').checked)
+                document.getElementById('stderr_txt').value = old_stderr;
             document.getElementById('js_txt').value = minigrace.generated_output;
             if (minigrace.compileError && ace) {
                 var lines = document.getElementById('stderr_txt').value.split("\n");
@@ -378,6 +378,7 @@ function addCodeTab(name, code, file) {
 // runs when page is finished loading to set everything up
 function startup() {
     document.getElementById("acetoggle").checked = true;
+    document.getElementById("debugtoggle").checked = false;
     if (ace) {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
@@ -414,7 +415,7 @@ function startup() {
         document.getElementById("tabs").style.marginBottom = "2px";
      } else {
          document.getElementById("code_txt_real").style.display = "none";
-         document.getElementById("code_options").style.display = "none";
+         document.getElementById("acetoggle").parentNode.style.display = "none";
          getCode = function() {
              return document.getElementById("code_txt").value;
          }

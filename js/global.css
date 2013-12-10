@@ -94,6 +94,7 @@ canvas {border: 1px solid black;}
     float: left;
     width: 100%;
     font-family: Monospace;
+    margin-right: 1px;
 }
 
 #stdout_options {
