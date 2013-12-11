@@ -1,7 +1,7 @@
 include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
-STABLE=e96f7f426e0898fa165845322f6b29d10b0166fc
+STABLE=fc50ae14211c9e09db1942ba2f56dadfa565a6aa
 all: minigrace $(OTHER_MODULES)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
