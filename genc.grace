@@ -1993,7 +1993,6 @@ method compile(vl, of, mn, rm, bt) {
     outprint("#include <gracelib.h>")
     outprint("#include <stdlib.h>")
     outprint("#ifndef __CYGWIN__")
-    outprint("#pragma weak main")
     outprint("#endif")
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
