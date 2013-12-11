@@ -269,7 +269,7 @@ struct UnicodePatternElement {
     union {
         int codepoint;
         char class[3];
-    };
+    } data;
 };
 struct UnicodePattern {
     OBJECT_HEADER;
@@ -293,10 +293,10 @@ Object UnicodePattern_match(Object self, int nparts, int *argcv,
     int successful = 0;
     for (int j=0; j<pat->size; j++) {
         if (pat->elements[j].type == UNICODEPATTERN_CODEPOINT) {
-            if (v == pat->elements[j].codepoint)
+            if (v == pat->elements[j].data.codepoint)
                 successful = 1;
         } else if (pat->elements[j].type == UNICODEPATTERN_CLASS) {
-            const char *needle = pat->elements[j].class;
+            const char *needle = pat->elements[j].data.class;
             if (needle[0] == cat[0]) {
                 if (!needle[1])
                     successful = 1;
@@ -304,10 +304,10 @@ Object UnicodePattern_match(Object self, int nparts, int *argcv,
                     successful = 1;
             }
         } else if (pat->elements[j].type == UNICODEPATTERN_CODEPOINT_NOT) {
-            if (v == pat->elements[j].codepoint)
+            if (v == pat->elements[j].data.codepoint)
                 successful = 0;
         } else if (pat->elements[j].type == UNICODEPATTERN_CLASS_NOT) {
-            const char *needle = pat->elements[j].class;
+            const char *needle = pat->elements[j].data.class;
             if (needle[0] == cat[0]) {
                 if (!needle[1])
                     successful = 0;
@@ -340,11 +340,11 @@ Object unicode_pattern_not(Object self, int nparts, int *argcv,
         if (o->class == Number) {
             pat->elements[j].type = UNICODEPATTERN_CODEPOINT;
             int n = integerfromAny(o);
-            pat->elements[j].codepoint = n;
+            pat->elements[j].data.codepoint = n;
         } else {
             pat->elements[j].type = UNICODEPATTERN_CLASS;
             const char *cc = grcstring(o);
-            char *bf = pat->elements[j].class;
+            char *bf = pat->elements[j].data.class;
             strcpy(bf, cc);
         }
     }
@@ -353,11 +353,11 @@ Object unicode_pattern_not(Object self, int nparts, int *argcv,
         if (o->class == Number) {
             pat->elements[j].type = UNICODEPATTERN_CODEPOINT_NOT;
             int n = integerfromAny(o);
-            pat->elements[j].codepoint = n;
+            pat->elements[j].data.codepoint = n;
         } else {
             pat->elements[j].type = UNICODEPATTERN_CLASS_NOT;
             const char *cc = grcstring(o);
-            char *bf = pat->elements[j].class;
+            char *bf = pat->elements[j].data.class;
             strcpy(bf, cc);
         }
     }
