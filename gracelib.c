@@ -16,6 +16,7 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "gracelib.h"
 #define IN_GRACELIB 1
@@ -2622,6 +2623,23 @@ Object io_spawnv(Object self, int nparts, int *argcv,
     }
     return alloc_Process(pid);
 }
+Object io_listdir(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    DIR *dp;
+    Object ret = alloc_BuiltinList();
+    Object argobj = args[0];
+    char *strval = grcstring(argobj);
+    if((dp = opendir(strval)) == NULL) {
+        return ret;
+    }
+    struct dirent *entry;
+    int partcv[] = {1};
+    while((entry = readdir(dp)) != NULL){
+        Object str = alloc_String(entry->d_name);
+        callmethod(ret,"push",1,partcv,&str);
+    }
+    return ret;
+}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -2630,7 +2648,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 10, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2641,6 +2659,7 @@ Object module_io_init() {
     add_Method(IOModule, "spawn", &io_spawn);
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
+    add_Method(IOModule, "listdir", &io_listdir);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
