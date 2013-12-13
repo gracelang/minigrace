@@ -1992,8 +1992,11 @@ method compile(vl, of, mn, rm, bt) {
     buildtype := bt
     outprint("#include <gracelib.h>")
     outprint("#include <stdlib.h>")
-    outprint("#ifndef __CYGWIN__")
-    outprint("#endif")
+    if (!util.extensions.contains("NoMain")) then {
+        outprint "#ifndef __CYGWIN__"
+        outprint "#pragma weak main"
+        outprint "#endif"
+    }
     outprint("static char compilerRevision[] = \"{buildinfo.gitrevision}\";")
     outprint("static Object undefined;")
     outprint("extern Object done;")
