@@ -1775,26 +1775,27 @@ method parseGCT(path, filepath) {
     xmodule.parseGCT(path,
         filepath.replace(".gcn")with(".gct").replace(".gso")with(".gct"))
 }
-method addTransitiveImports(filepath, epath) {
+method addTransitiveImports(filepath, epath, line) {
     def data = parseGCT(epath, filepath)
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
                 errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(1)
+                    ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(line)
             }
-            checkimport(m)
+            checkimport(m, line)
         }
     }
     if (data.contains("path")) then {
         def path = data.get("path").first
         if (path != epath) then {
             errormessages.syntaxError("Imported module '{epath}' compiled with"
-                ++ " different path '{path}'.")atLine(1)
+                ++ " different path '{path}'.")atLine(line)
         }
     }
 }
-method checkimport(nm) {
+
+method checkimport(nm, line) {
     var exists := false
     var ext := false
     var cmd
@@ -1811,69 +1812,43 @@ method checkimport(nm) {
             return true
         }
     }
-    if (io.exists("{sys.execPath}/{nm}.gso") &&
-        {!util.extensions.contains("Static")}) then {
-        exists := true
-        addTransitiveImports("{sys.execPath}/{nm}.gso", nm)
-    } elseif (io.exists(nm ++ ".gso") &&
-        {!util.extensions.contains("Static")}) then {
-        exists := true
-        addTransitiveImports("{nm}.gso", nm)
-    } elseif (io.exists(io.realpath(sys.execPath)
-        ++ "/../lib/minigrace/{nm}.gso") &&
-            {!util.extensions.contains("Static")}) then {
-        exists := true
-        addTransitiveImports(io.realpath(sys.execPath)
-            ++ "/../lib/minigrace/{nm}.gso", nm)
-    } elseif(nm == "StandardPrelude") then {
-        exists := true
+    var locationList := collections.list.new
+    locationList.push("")
+    locationList.push("{sys.execPath}/")
+    locationList.push("/usr/lib/grace/modules/")
+    var homePath := sys.environ["HOME"]
+    locationList.push("{homePath}/.local/lib/grace/modules/")
+    locationList.push("{sys.execPath}/../lib/minigrace/modules/")
+    if(nm == "StandardPrelude") then {
         staticmodules.add(nm)
-        addTransitiveImports(io.realpath(sys.execPath)
-            ++ "/StandardPrelude.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/modules/{nm}.gcn")) then {
-        exists := true
-        linkfiles.push("{sys.execPath}/modules/{nm}.gcn")
-        staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/modules/{nm}.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")) then {
-        exists := true
-        linkfiles.push("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn")
-        staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/../lib/minigrace/modules/{nm}.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/{nm}.gcn") && {
-            !io.exists("{nm}.grace")
-        }) then {
-        // Find static modules like unicode alongside compiler,
-        // but not modules compiled from Grace code here.
-        exists := true
-        linkfiles.push("{sys.execPath}/{nm}.gcn")
-        staticmodules.add(nm)
-        addTransitiveImports("{sys.execPath}/{nm}.gcn", nm)
-    } elseif (io.exists("{sys.execPath}/../lib/minigrace/{nm}.gcn") && {
-            !io.exists("{nm}.grace")
-        }) then {
-        // Find static modules like unicode alongside compiler,
-        // but not modules compiled from Grace code here.
-        exists := true
-        linkfiles.push("{sys.execPath}/../lib/minigrace/{nm}.gcn")
-        addTransitiveImports("{sys.execPath}/../lib/minigrace/{nm}.gcn", nm)
-    } elseif (io.exists(nm ++ ".gcn").andAlso {!util.importDynamic}) then {
-        if (io.newer(nm ++ ".gcn", nm ++ ".grace")) then {
-            exists := true
-            linkfiles.push(nm ++ ".gcn")
-            addTransitiveImports(nm ++ ".gcn", nm)
-            staticmodules.add(nm)
-        }
+        addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
+        return
     }
-    if (exists.not) then {
-        if (io.exists(nm ++ ".gc")) then {
-            ext := ".gc"
-        }
-        if (io.exists(nm ++ ".grace")) then {
-            ext := ".grace"
-        }
-        if (ext != false) then {
-            cmd := argv.first ++ " --target c --make " ++ nm ++ ext
+    for(locationList) do { location ->
+        if (exists != false) then {
+            // Do nothing here: this will mean that the rest of the
+            // list will just run out when we find it early on.
+        } elseif (io.exists("{location}{nm}.gso").andAlso
+                {!util.extensions.contains("Static")}) then {
+            exists := true
+            addTransitiveImports("{location}{nm}.gso", nm, line)
+        } elseif (io.exists("{location}{nm}.gcn")) then {
+            exists := true
+            if(util.importDynamic.not.andAlso 
+                    {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")}) then{
+                linkfiles.push("{location}{nm}.gcn")
+                staticmodules.add(nm)
+                addTransitiveImports("{location}{nm}.gcn", nm, line)
+            } else {
+                linkfiles.push("{location}{nm}.gcn")
+                staticmodules.add(nm)
+                addTransitiveImports("{location}{nm}.gcn", nm, line)
+            }
+        } elseif (io.exists("{location}{nm}.grace")) then {
+            // Check for the .grace file first so that we know that
+            // when we look for .gcn the corresponding .grace won't exist.
+            exists := true
+            cmd := "{argv.first} --target c --make \"{location}{nm}.grace\""
             cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
             if (util.verbosity > 30) then {
                 cmd := cmd ++ " --verbose"
@@ -1889,14 +1864,12 @@ method checkimport(nm) {
                 cmd := cmd ++ " --import-dynamic --dynamic-module"
             }
             if (util.recurse) then {
-                spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm])
+                spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
             }
-            exists := true
             if (!util.importDynamic) then {
-                linkfiles.push(nm ++ ".gcn")
+                linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)
             }
-            ext := false
         }
     }
     if ((nm == "sys") || (nm == "io")) then {
@@ -1904,9 +1877,11 @@ method checkimport(nm) {
         staticmodules.add(nm)
     }
     if (exists.not) then {
-        errormessages.syntaxError("Failed finding import of '{nm}'.")atLine(1)
+        errormessages.syntaxError("Failed finding import of '{nm}'.")
+            atLine(line)
     }
 }
+
 method processImports(values') {
     type LinePos = {
         line -> Number
@@ -1927,11 +1902,11 @@ method processImports(values') {
         for (values') do { v ->
             if (v.kind == "import") then {
                 var nm := v.path
-                checkimport(nm)
+                checkimport(nm, v.line)
             }
             if (v.kind == "dialect") then {
                 var nm := v.value
-                checkimport(nm)
+                checkimport(nm, v.line)
                 log_verbose("loading dialect for checkers.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
                 catch {
@@ -1980,7 +1955,7 @@ method processImports(values') {
                 if (!p.success) then {
                     imperrors.push(nm)
                 } else {
-                    addTransitiveImports(pth[1], pth[2])
+                    addTransitiveImports(pth[1], pth[2], pth[3])
                 }
             }
         }
