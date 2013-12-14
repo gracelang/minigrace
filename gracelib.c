@@ -3793,8 +3793,8 @@ Object UserObj_Equals(Object self, int nparts, int *argcv,
             Method *om = findmethodsimple(other, m->name);
             if (!om || !(om->flags & MFLAG_DEF))
                 return alloc_Boolean(0);
-            Object myval = callmethod(self, m->name, 0, NULL, NULL);
-            Object otval = callmethod(other, m->name, 0, NULL, NULL);
+            Object myval = callmethodself(self, m->name, 0, NULL, NULL);
+            Object otval = callmethodself(other, m->name, 0, NULL, NULL);
             int partcv[] = {1};
             if (!istrue(callmethod(myval, "==", 1, partcv, &otval)))
                 return alloc_Boolean(0);
