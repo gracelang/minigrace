@@ -1033,7 +1033,7 @@ rule { bind : Bind ->
 
     if(vType.isSubtypeOf(dType).not) then {
         DefError.raiseWith("the expression `{value.toGrace(0)}` of type " ++
-            "'{vType}' does not the satisfy the type '{dType}' of " ++
+            "'{vType}' does not satisfy the type '{dType}' of " ++
             "`{dest.toGrace(0)}`", value)
     }
 }
