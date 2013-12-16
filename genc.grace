@@ -1315,11 +1315,22 @@ method compilematchcase(o) {
 method compileop(o) {
     def myc = auto_count
     auto_count := auto_count + 1
-    var left := compilenode(o.left)
-    out("  int op_slot_left_{myc} = gc_frame_newslot({left});")
     var right := compilenode(o.right)
     out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
+    if ((o.left.kind == "identifier").andAlso {o.left.value == "super"}) then {
+        var len := o.value.size + 1
+        var evl := escapestring2(o.value)
+        out("  params[0] = {right};")
+        out("  partcv[0] = 1;")
+        out("  Object opresult{myc} = callmethod4(self, "
+            ++ "\"{evl}\", 1, partcv, params, ((flags >> 24) & 0xff) + 1,"
+            ++ "CFLAG_SELF);")
+        o.register := "opresult{myc}"
+        return true
+    }
+    var left := compilenode(o.left)
+    out("  int op_slot_left_{myc} = gc_frame_newslot({left});")
     if ((o.value == "+") || (o.value == "*") || (o.value == "/") ||
         (o.value == "-") || (o.value == "%")) then {
         var rnm := "sum"

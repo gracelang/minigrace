@@ -947,7 +947,6 @@ method compilematchcase(o) {
     o.register := "matchres" ++ myc
 }
 method compileop(o) {
-    var left := compilenode(o.left)
     var right := compilenode(o.right)
     auto_count := auto_count + 1
     var rnm := "opresult"
@@ -963,8 +962,15 @@ method compileop(o) {
     if (o.value == "%") then {
         rnm := "modulus"
     }
-    out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-        ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+    if ((o.left.kind == "identifier") && (o.left.value == "super")) then {
+        out("var " ++ rnm ++ auto_count ++ " = callmethodsuper(this"
+            ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
+    } else {
+        var left := compilenode(o.left)
+        auto_count := auto_count + 1
+        out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
+            ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+    }
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
 }
