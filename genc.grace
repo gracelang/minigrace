@@ -1135,6 +1135,15 @@ method compileif(o) {
 }
 method compileidentifier(o) {
     var name := escapeident(o.value)
+    if (name == "super") then {
+        def sugg = errormessages.suggestion.new
+        sugg.replaceRange(o.linePos, o.linePos + 4)with "this" onLine(o.line)
+        errormessages.syntaxError("'super' cannot be used except on the "
+                ++ "left-hand side of the . in a method request. "
+                ++ "Use 'this' instead.")
+            atRange(
+                o.line, o.linePos, o.linePos + 4)withSuggestion(sugg)
+    }
     if (name == "self") then {
         o.register := "self"
     } elseif (name == "__compilerRevision") then {
