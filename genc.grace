@@ -1825,26 +1825,32 @@ method checkimport(nm, line) {
         return
     }
     for(locationList) do { location ->
-        if (exists != false) then {
-            // Do nothing here: this will mean that the rest of the
-            // list will just run out when we find it early on.
-        } elseif (io.exists("{location}{nm}.gso").andAlso
+        if (exists.not && io.exists("{location}{nm}.gso").andAlso
                 {!util.extensions.contains("Static")}) then {
             exists := true
             addTransitiveImports("{location}{nm}.gso", nm, line)
-        } elseif (io.exists("{location}{nm}.gcn")) then {
-            exists := true
+        } 
+        if (exists.not && io.exists("{location}{nm}.gcn")) then {
             if(util.importDynamic.not.andAlso 
                     {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")}) then{
-                linkfiles.push("{location}{nm}.gcn")
-                staticmodules.add(nm)
-                addTransitiveImports("{location}{nm}.gcn", nm, line)
-            } else {
+                //Find static modules where the .gcn is either newer
+                //or the same age as the corresponding .grace file
+                //i.e. whether we need to recompile again or not
+                exists := true
                 linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)
                 addTransitiveImports("{location}{nm}.gcn", nm, line)
             }
-        } elseif (io.exists("{location}{nm}.grace")) then {
+            if(!io.exists("{location}{nm}.grace")) then {
+                // Find static modules like unicode alongside compiler,
+                // but not modules compiled from Grace code here.
+                exists := true
+                linkfiles.push("{location}{nm}.gcn")
+                staticmodules.add(nm)
+                addTransitiveImports("{location}{nm}.gcn", nm, line)
+            }
+        } 
+        if (exists.not && io.exists("{location}{nm}.grace")) then {
             // Check for the .grace file first so that we know that
             // when we look for .gcn the corresponding .grace won't exist.
             exists := true
