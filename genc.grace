@@ -1842,20 +1842,23 @@ method checkimport(nm, line) {
                 staticmodules.add(nm)
                 addTransitiveImports("{location}{nm}.gcn", nm, line)
             }
-            // if(!io.exists("{location}{nm}.grace")) then {
-            //     // Find static modules like unicode alongside compiler,
-            //     // but not modules compiled from Grace code here.
-            //     exists := true
-            //     linkfiles.push("{location}{nm}.gcn")
-            //     staticmodules.add(nm)
-            //     addTransitiveImports("{location}{nm}.gcn", nm, line)
-            // }
         } 
         if (exists.not && io.exists("{location}{nm}.grace")) then {
             // Check for the .grace file first so that we know that
             // when we look for .gcn the corresponding .grace won't exist.
             exists := true
-            cmd := "{argv.first} --target c --make \"{location}{nm}.grace\""
+            var slash := false
+            for(argv.first) do {letter ->
+                if(letter == "/") then {
+                    slash := true
+                }
+            }
+
+            if(slash) then {
+                cmd := "{argv.first} --target c --make \"{nm}.grace\""
+            }else{
+                cmd := "{sys.execPath}/{argv.first} --target c --make \"{nm}.grace\""
+            }
             cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
             if (util.verbosity > 30) then {
                 cmd := cmd ++ " --verbose"
@@ -1871,6 +1874,9 @@ method checkimport(nm, line) {
                 cmd := cmd ++ " --import-dynamic --dynamic-module"
             }
             if (util.recurse) then {
+                if(location != "") then {
+                    cmd := "cd {location} && "++cmd
+                }
                 spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
             }
             if (!util.importDynamic) then {
