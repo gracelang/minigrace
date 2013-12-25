@@ -14,8 +14,10 @@
 // MirrorMethods support four methods:
 //   name -> String
 //   request(arglists : List of Lists) -> Any
-//   partcount -> Number
-//   paramcounts -> List of Numbers
+//   partcount -> Number            the number of parts in the method name
+//   paramcounts -> List of N umbers, of length partcount; the nth
+//                                  number being the number of parameters in the nth parameter list,
+//                                  or zero if there is no such list.
 // A sample use might be:
 //   mirrors.reflect(1).getMethod("+").request([[2]]) == 3
 
