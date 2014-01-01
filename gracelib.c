@@ -98,7 +98,6 @@ ClassData BuiltinListIter;
 ClassData PrimitiveArray;
 ClassData Undefined;
 ClassData Done;
-ClassData Nothing;
 ClassData ellipsisClass;
 ClassData File;
 ClassData IOModule;
@@ -868,7 +867,7 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_Exception(char *name, Object parent) {
     if (!Exception) {
-        Exception = alloc_class("Exception", 10);
+        Exception = alloc_class("Exception", 11);
         add_Method(Exception, "match", &Exception_match);
         add_Method(Exception, "refine", &Exception_refine);
         add_Method(Exception, "raise", &Exception_raise);
@@ -973,7 +972,7 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index > sself->size) {
-        gracedie("Error: list index out of bounds: %i/%i",
+        gracedie("Error: list index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
@@ -1021,7 +1020,7 @@ Object BuiltinList_index(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     int index = integerfromAny(args[0]);
     if (index > sself->size) {
-        gracedie("Error: list index out of bounds: %i > %i\n",
+        gracedie("Error: list index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
@@ -1186,7 +1185,7 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
     int index = integerfromAny(args[0]);
     if (index >= sself->size) {
-        gracedie("Error: array index out of bounds: %i/%i\n",
+        gracedie("Error: array index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
@@ -3044,24 +3043,6 @@ start:
         gracedie("Maximum call stack depth exceeded.");
     }
     int searchdepth = (callflags >> 24) & 0xff;
-    if (m != NULL && m->flags & MFLAG_PRIVATE
-            && ((originalself != self && realself != sourceObject)
-                || !(callflags & CFLAG_SELF))) {
-        // Handle private field access by checking depth (only when
-        // required).
-        if (originalself != realself && callflags & CFLAG_SELF &&
-                originalself->flags & OFLAG_USEROBJ) {
-            struct UserObject *uo1 = (struct UserObject *)originalself;
-            for (int i=0; i<searchdepth; i++)
-                uo1 = (struct UserObject *)uo1->super;
-            if ((Object)uo1 != realself)
-                gracedie("no method %s in %s. Did you mean the local %s defined at %s:%i?",
-                    name, self->class->name, name, m->definitionModule, m->definitionLine);
-        } else {
-            gracedie("no method %s in %s. Did you mean the local %s defined at %s:%i?",
-                name, self->class->name, name, m->definitionModule, m->definitionLine);
-        }
-    }
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
         gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
@@ -3129,7 +3110,7 @@ start:
         if (len > 80) {
             fprintf(stderr, "\n");
             len = strlen(c->methods[i].name);
-        }
+    }
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");

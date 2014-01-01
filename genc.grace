@@ -1137,10 +1137,10 @@ method compileidentifier(o) {
     var name := escapeident(o.value)
     if (name == "super") then {
         def sugg = errormessages.suggestion.new
-        sugg.replaceRange(o.linePos, o.linePos + 4)with "this" onLine(o.line)
-        errormessages.syntaxError("'super' cannot be used except on the "
-                ++ "left-hand side of the . in a method request. "
-                ++ "Use 'this' instead.")
+        sugg.replaceRange(o.linePos, o.linePos + 4)with "self" onLine(o.line)
+        errormessages.syntaxError("'super' can be used only to the "
+                ++ "left of the . in a method request. "
+                ++ "Use 'self' instead?")
             atRange(
                 o.line, o.linePos, o.linePos + 4)withSuggestion(sugg)
     }
@@ -1273,7 +1273,6 @@ method compilecatchcase(o) {
         out("  params[{idx}] = {e};")
     }
     out "  setline({o.line});"
-    out "  setmodule(modulename);"
     out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
         ++ "{finally});")
     out("  gc_frame_end(frame{myc});")

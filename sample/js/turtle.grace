@@ -157,20 +157,24 @@ method initialise {
     }
     document := dom.document
     // Activate the canvas tab if it isn't already
-    def ts = document.getElementById("output-select")
-    for (0..(ts.options.length-1)) do {i->
-        if (ts.options.item(i).value == "canvas") then {
-            ts.selectedIndex := i
-            dom.window.outputswitch
-        }
-    }
+    //def ts = document.getElementById("tab")
+    //for (0..(ts.options.length-1)) do {i->
+    //    if (ts.options.item(i).value == "canvas_tab") then {
+    //        ts.selectedIndex := i
+    //        dom.window.tabswitch
+    //    }
+    //}
+    document.getElementById("tab_canvas").click
     initialised := true
     trig := dom.window.Math
     canvas := document.getElementById("standard-canvas")
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
     ctx.fillStyle := "white"
-    ctx.fillRect(0, 0, 500, 500)
+    ctx.fillRect(0, 0, 250, 250)
+    ctx.strokeStyle := "black"
+    ctx.rect(0, 0, 250, 250)
+    ctx.stroke
 }
 method start {
     initialise
@@ -184,7 +188,7 @@ method start {
     def mctx = canvas.getContext("2d")
     dom.for(steps) waiting(delay)do {step->
         mctx.fillStyle := "white"
-        mctx.fillRect(0, 0, 500, 500)
+        mctx.fillRect(0, 0, 500, 250)
         x := 150
         y := 225
         turtleAngle := 0

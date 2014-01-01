@@ -1,6 +1,0 @@
-*.gc
-*.o
-*.gso
-*.js
-!gracelib.js
-!minigrace.in.js

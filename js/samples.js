@@ -104,16 +104,16 @@ var samples = {
     },
 };
 
-window.onload = function() {
-    var sm = document.getElementById('sample');
-    sm.innerHTML = "";
-    for (var s in samples) {
-        var opt = document.createElement('option');
-        opt.value = s;
-        opt.innerHTML = samples[s].name;
-        sm.appendChild(opt);
-    }
-};
+/*window.onload = function() {
+ var sm = document.getElementById('sample');
+ sm.innerHTML = "";
+ for (var s in samples) {
+ var opt = document.createElement('option');
+ opt.value = s;
+ opt.innerHTML = samples[s].name;
+ sm.appendChild(opt);
+ }
+ };*/
 
 function loadSampleJS(k) {
     if (window[k])
@@ -130,7 +130,7 @@ function loadSampleJS(k) {
         window['gracecode_' + k] = theModule;
     } else {
         alert("Loading sample JavaScript code failed: retrieving " + k +
-                " returned " + req.status);
+              " returned " + req.status);
     }
     req.open("GET", "./sample/" + sample.dir + '/' + k + ".gct", false);
     req.send(null);
@@ -138,7 +138,7 @@ function loadSampleJS(k) {
         gctCache[k] = req.responseText;
     } else {
         alert("Loading sample JavaScript code metadata failed: retrieving "
-                + k + " returned " + req.status);
+              + k + " returned " + req.status + "\n./sample/" + sample.dir + '/' + k + ".gct");
     }
 }
 
@@ -153,11 +153,11 @@ function loadsample(k) {
     req.open("GET", "./sample/" + sample.dir + '/' + k + ".grace", false);
     req.send(null);
     if (req.status == 200) {
-        if (ace)
-            editor.setValue(req.responseText, -1);
-        document.getElementById("code_txt").value = req.responseText;
-        document.getElementById('modname').value = k;
+        /*if (ace)
+         editor.setValue(req.responseText, -1);
+         document.getElementById("code_txt").value = req.responseText;
+         document.getElementById('modname').value = k;*/
+        addCodeTab(k, req.responseText);
     }
     document.getElementById('stderr_txt').value += "\nUI: done loading sample.\n";
-    updateDownloadLink();
 }
