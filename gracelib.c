@@ -2264,7 +2264,7 @@ Object Boolean_not(Object self, int nparts, int *argcv,
 }
 Object Boolean_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    return alloc_Boolean(self == args[0] && ((flags >> 24 && 255) == 0));
+    return alloc_Boolean(self == args[0] && ((flags >> 24 & 255) == 0));
 }
 Object Boolean_NotEquals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2965,7 +2965,7 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     if (t == NULL || nparts == 0 || argcv == NULL || argv == NULL)
         return 1;
     int partcv[] = {1};
-    for (i = 0; i < nparts, i < t->nparts; i++) {
+    for (i = 0; i < nparts && i < t->nparts; i++) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
@@ -3087,10 +3087,8 @@ start:
         return ret;
     }
     if (m) {
-        char buf[1024];
-        sprintf(buf, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
+        fprintf(stderr, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
                 self->class->name, name, linenumber);
-        fprintf(stderr, buf);
         exit(1);
     }
     if (error_jump_set) {
