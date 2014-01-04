@@ -104,7 +104,10 @@ var GraceDebugger = {
             var space = depth + "  "
             if(obj != null) {
                 if(obj._value) {
-                    return obj._value;
+                    if(obj.className == "String")
+                        return "\"" + obj._value + "\"";
+                    else
+                        return obj._value;
                 } else if(obj.data) {
                     var str = "{\n";
                     for(var i in obj.data) {
@@ -129,8 +132,13 @@ var GraceDebugger = {
                     var returnedVar = variable([0])
                     if(returnedVar) {
                         if(returnedVar._value) {
-                            table += "<tr><td>" + i + "</td><td>"
-                                  + returnedVar._value + "</td></tr>\n";
+                            if(returnedVar.className == "String") {
+                                table += "<tr><td>" + i + "</td><td>\""
+                                      + returnedVar._value + "\"</td></tr>\n";
+                            } else {
+                                table += "<tr><td>" + i + "</td><td>"
+                                      + returnedVar._value + "</td></tr>\n";
+                            }
                         } else {
                             table += "<tr><td>" + i + "</td><td>"
                                   + prb(returnedVar, "") + "</td></tr>\n";
@@ -242,4 +250,5 @@ GraceDebugger.breakpoints = {
     points : [],
     enabled : [],
 };
+
 
