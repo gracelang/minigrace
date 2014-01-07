@@ -9,7 +9,7 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 
 var tmp
-var indent := ""
+var indent:String := ""
 var verbosity := 30
 var pad1 := 1
 var auto_count := 0
@@ -64,6 +64,12 @@ method formatModname(name) {
 method noteLineNumber(n)comment(c) {
     priorLineSeen := n
     priorLineComment := c
+}
+
+method forceLineNumber(n)comment(c) {
+    noteLineNumber(n)comment(c)
+    output.push "{indent}  setLineNumber({priorLineSeen})    // {priorLineComment};"
+    priorLineEmitted := priorLineSeen
 }
 
 method out(s) {
@@ -323,9 +329,9 @@ method compileobject(o, outerRef, inheritingObject) {
             superobj := e.value
         }
     }
-    out("  var " ++ selfr ++ " = Grace_allocObject();")
-    out "{selfr}.definitionModule = \"{modname}\";"
-    out "{selfr}.definitionLine = {o.line};"
+    out "  var {selfr} = Grace_allocObject();"
+    out "  {selfr}.definitionModule = \"{modname}\";"
+    out "  {selfr}.definitionLine = {o.line};"
     if (inheritingObject) then {
         out "  var inho{myc} = inheritingObject;"
         out "  while (inho{myc}.superobj) inho{myc} = inho{myc}.superobj;"
@@ -367,14 +373,14 @@ method compileobject(o, outerRef, inheritingObject) {
             compilenode(e)
         }
     }
+
+    out "superDepth = origSuperDepth;"
     decreaseindent
-    out("  superDepth = origSuperDepth;")
-    decreaseindent
-    out("  \}")
+    out "\}"
     if (inheritingObject) then {
-        out("  obj_init_{myc}.apply(inheritingObject, []);")
+        out "obj_init_{myc}.apply(inheritingObject, []);"
     } else {
-        out("  obj_init_{myc}.apply({selfr}, []);")
+        out "obj_init_{myc}.apply({selfr}, []);"
     }
     o.register := selfr
     inBlock := origInBlock
@@ -585,7 +591,7 @@ method compilemethod(o, selfobj) {
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
-    noteLineNumber(linenum)comment("compilemethod")
+    forceLineNumber(linenum)comment("compilemethod")
     out("  setModuleName(\"{modname}\");")
     if (debugMode) then {
         out "stackFrames.push(myframe);"
