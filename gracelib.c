@@ -3927,9 +3927,8 @@ int find_gso(const char *name, char *buf) {
     struct stat st;
 
     strcpy(buf1, sep);
-
     //an array of strings ot hold the locations to look
-    char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+    char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
 
     if(home != NULL){
         char buf2[PATH_MAX];
@@ -3938,13 +3937,16 @@ int find_gso(const char *name, char *buf) {
     }
     if(gmp != NULL){
         char buf3[PATH_MAX];
-        strcpy(buf3, gmp);
-        locations[4] = strcat(buf3, "/");
+        locations[4] = strcpy(buf3, gmp);
+    }
+    if(compilerModulePath != NULL){
+        char buf4[PATH_MAX];
+        locations[5] = strcpy(buf4, compilerModulePath);
     }
     
     int i = 0;
 
-    for(i = 0; i < 6; i++){
+    for(i = 0; i < 7; i++){
         if(locations[i] == NULL){
             continue;
         }
