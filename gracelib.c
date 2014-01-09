@@ -2744,8 +2744,8 @@ Object sys_exit(Object self, int nparts, int *argcv,
     exit(i);
     return NULL;
 }
-Object sys_execPath(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
+
+char *execPathHelper(){
     char *ep = ARGV[0];
     if (ep[0] == '/') {
         // Absolute path - needs no work
@@ -2773,7 +2773,12 @@ Object sys_execPath(Object self, int nparts, int *argcv,
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
     char *dn = dirname(epm);
-    return alloc_String(dn);
+    return dn;
+}
+
+Object sys_execPath(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    return alloc_String(execPathHelper());
 }
 Object sys_environ(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -3913,60 +3918,46 @@ int find_gso(const char *name, char *buf) {
     // 4) Path of the compiler used to build
     // 5) Path of the compiler used to build/../lib/minigrace
     // 6) .
+
+
+    char *sep = execPathHelper();
+    char *gmp = getenv("GRACE_MODULE_PATH");
+    char *home = getenv("HOME");
+    char buf1[PATH_MAX];
     struct stat st;
-    char *ep = ARGV[0];
-    char epm[strlen(ep) + 1];
-    strcpy(epm, ep);
-    char *dn = dirname(epm);
-    strcpy(buf, dn);
-    strcat(buf, "/");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
+
+    strcpy(buf1, sep);
+
+    //an array of strings ot hold the locations to look
+    char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+
+    if(home != NULL){
+        char buf2[PATH_MAX];
+        strcpy(buf2, home); 
+        locations[3] = strcat(buf2, "/.local/lib/grace/modules");
     }
-    realpath(dn, buf);
-    strcpy(buf, dn);
-    strcat(buf, "/../lib/minigrace/");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
+    if(gmp != NULL){
+        char buf3[PATH_MAX];
+        strcpy(buf3, gmp);
+        locations[4] = strcat(buf3, "/");
     }
-    if (getenv("GRACE_MODULE_PATH") != NULL) {
-        char *gmp = getenv("GRACE_MODULE_PATH");
-        strcpy(buf, gmp);
+    
+    int i = 0;
+
+    for(i = 0; i < 6; i++){
+        if(locations[i] == NULL){
+            continue;
+        }
+        strcpy(buf, locations[i]);
         strcat(buf, "/");
         strcat(buf, name);
         strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
+
+        if(stat(buf, &st) == 0){
             return 1;
         }
     }
-    if (compilerModulePath != NULL) {
-        char *gmp = compilerModulePath;
-        strcpy(buf, gmp);
-        strcat(buf, "/");
-        strcat(buf, name);
-        strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
-            return 1;
-        }
-        gmp = compilerModulePath;
-        strcpy(buf, gmp);
-        strcat(buf, "/../lib/minigrace/");
-        strcat(buf, name);
-        strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
-            return 1;
-        }
-    }
-    strcpy(buf, "./");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
-    }
+
     return 0;
 }
 Object dlmodule(const char *name) {
