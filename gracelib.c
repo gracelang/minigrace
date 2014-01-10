@@ -179,6 +179,7 @@ struct BlockObject {
     jmp_buf *retpoint;
     Object super;
     Object *data;
+    int ndata;
 };
 struct TypeObject {
     OBJECT_HEADER;
@@ -446,6 +447,9 @@ Object gracebecome(Object subObject, Object superObject) {
     sub->data = (Object *)(sup->data);
     sup->class = subclass;
     sup->data = subdata;
+    int tmpndata = sub->ndata;
+    sub->ndata = sup->ndata;
+    sup->ndata = tmpndata;
     return superObject;
 }
 Object graceunbecome(Object topObj) {
@@ -2909,7 +2913,11 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
     int callflags = *cflags;
     Method *m = NULL;
     ClassData c = self->class;
+    Method *methods = c->methods;
+    char *this_class_name = c->name;
     for (i=0; i < c->nummethods; i++) {
+        Method this_method = c->methods[i];
+        char *this_name = c->methods[i].name;
         if (strcmp(c->methods[i].name, name) == 0) {
             m = &c->methods[i];
             break;
@@ -3746,6 +3754,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
     o->data = glmalloc(sizeof(Object) * 3);
     o->super = NULL;
+    o->ndata = 3;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
 }
@@ -3764,8 +3773,9 @@ Object setsuperobj(Object sub, Object super) {
 }
 void UserObj__mark(struct UserObject *o) {
     int i;
-    for (i=0; o->data[i] != NULL; i++) {
-        gc_mark(o->data[i]);
+    for (i=0; i<o->ndata; i++) {
+        if (o->data[i])
+            gc_mark(o->data[i]);
     }
     if (o->super)
         gc_mark(o->super);
@@ -3854,6 +3864,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     for (i=0; i<numFields; i++)
         uo->data[i] = NULL;
     uo->super = GraceDefaultObject;
+    uo->ndata = numFields;
     return o;
 }
 Object alloc_userobj(int numMethods, int numFields) {
@@ -4424,7 +4435,8 @@ Object grace_prelude() {
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);
-    _prelude = alloc_userobj2(0, 7, c);
+    _prelude = alloc_userobj2(0, 0, c);
+    struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);
     prelude = _prelude;
     return _prelude;

@@ -54,6 +54,7 @@ struct UserObject {
     jmp_buf *retpoint;
     Object super;
     Object *data;
+    int ndata;
 };
 
 struct StackFrameObject {
