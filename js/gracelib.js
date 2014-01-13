@@ -2,7 +2,6 @@ var lineNumber = 0;
 var moduleName = "null";
 var superDepth = null;
 var invocationCount = 0;
-
 function setLineNumber(n) {
     lineNumber = n;
 }
@@ -485,7 +484,7 @@ GraceList.prototype = {
             return this._value[this._value.length-1];
         },
         "reduce": function(argcv, initial, block) {
-            var res = initial
+            var res = initial;
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 res = callmethod(block, "apply", [2], res, v)
@@ -494,7 +493,7 @@ GraceList.prototype = {
         },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
-    },
+        },
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
             return new GraceList(l);
@@ -502,14 +501,15 @@ GraceList.prototype = {
     },
     className: "List",
     definitionModule: "unknown",
-    definitionLine: 0,
+    definitionLine: 0
 };
 
 function GracePrimitiveArray(n) {
     this._value = [];
     for (var i=0; i<n; i++)
         this._value.push(GraceDone);
-}
+};
+
 GracePrimitiveArray.prototype = {
     methods: {
         "size": function(argcv) {
@@ -588,15 +588,15 @@ GracePrimitiveArray.prototype = {
         },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
-        }
+        },
         "reduce": function(argcv, initial, block) {
-            var res = initial
+            var res = initial;
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
                 res = callmethod(block, "apply", [2], res, v);
             }
             return res;
-    },
+        },
     },
     className: "PrimitiveArray",
     definitionModule: "unknown",
@@ -1772,15 +1772,14 @@ function callmethod(obj, methname, argcv) {
         for (var i=0; i<args.length; i++)
             if (typeof args[i] == 'undefined')
                 throw new GraceExceptionPacket(RuntimeErrorObject,
-                    new GraceString("Uninitialised value used as argument "
-                        + "to " + methname + " "
-                        + "around " + moduleName + ":" + lineNumber));;
+                                               new GraceString("Uninitialised value used as argument "
+                                                               + "to " + methname + " "
+                                                               + "around " + moduleName + ":" + lineNumber));;
         if (meth.paramTypes)
             checkmethodcall(meth, methname, obj, args);
         args.unshift(argcv)
-
-    var thisModuleName = moduleName;
-    try {
+        
+        var thisModuleName = moduleName;
         var ret = meth.apply(obj, args);
     } finally {
         superDepth = origSuperDepth;
