@@ -62,29 +62,41 @@ method formatModname(name) {
 }
 
 method noteLineNumber(n)comment(c) {
+    // remember the current line number, so that it can be generated if needed
     priorLineSeen := n
     priorLineComment := c
 }
 
 method forceLineNumber(n)comment(c) {
+    // force the generation of code that sets the line number.  
+    // Used at the start of a method
     noteLineNumber(n)comment(c)
     output.push "{indent}  setLineNumber({priorLineSeen})    // {priorLineComment};"
     priorLineEmitted := priorLineSeen
 }
 
 method out(s) {
+    // output code, but first output code to set the line number
     if (priorLineSeen != priorLineEmitted) then {
         output.push "{indent}  setLineNumber({priorLineSeen})    // {priorLineComment};"
         priorLineEmitted := priorLineSeen
     }
     output.push(indent ++ s)
 }
+
+method outUnnumbered(s) {
+    // output code that does not correspond to any source line
+    output.push(indent ++ s)
+}
+
 method outprint(s) {
     util.outprint(s)
 }
+
 method log_verbose(s) {
     util.log_verbose(s)
 }
+
 method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
@@ -98,6 +110,7 @@ method escapeident(vn) {
     }
     nm
 }
+
 method escapestring(s) {
     var os := ""
     for (s) do {c->
@@ -349,7 +362,6 @@ method compileobject(o, outerRef, inheritingObject) {
             compilemethod(e, selfr)
         }
     }
-    increaseindent
     for (o.value) do { e ->
         out("sourceObject = {selfr};")
         if (e.kind == "method") then {
@@ -408,18 +420,27 @@ method compileblock(o) {
     out("  block{myc}.methods[\"match\"] = GraceBlock_match;")
     out("  block" ++ myc ++ ".receiver = this;")
     out("  block{myc}.className = 'block<{modname}:{o.line}>';")
-    out("  block" ++ myc ++ ".real = function(")
-    increaseindent
+    var paramList := ""
     var first := true
-    for (o.params) do {p->
-        if (first.not) then {
-            out(",")
+    for (o.params) do { each ->
+        if (first) then {
+            paramList := varf(each.value)
+        } else {
+            paramList := paramList ++ ", " ++ varf(each.value)
         }
-        first := false
-        out(varf(p.value))
     }
-    decreaseindent
-    out("  ) \{")
+    out("  block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
+//    increaseindent
+//    var first := true
+//    for (o.params) do {p->
+//        if (first.not) then {
+//            out(",")
+//        }
+//        first := false
+//        out(varf(p.value))
+//    }
+//    decreaseindent
+//    out("  ) \{")
     increaseindent
     out("  sourceObject = this;")
     var ret := "undefined"
@@ -791,14 +812,15 @@ method compilewhile(o) {
 method compileif(o) {
     var myc := auto_count
     auto_count := auto_count + 1
-    out "var if{myc} = GraceDone;"
+    outUnnumbered "  var if{myc} = GraceDone;"
     out("  if (Grace_isTrue(" ++ compilenode(o.value) ++ ")) \{")
     var tret := "undefined"
     var fret := "undefined"
+    increaseindent
     for (o.thenblock) do { l->
         tret := compilenode(l)
     }
-    out("if" ++ myc ++ " = " ++ tret ++ ";")
+    out("  if" ++ myc ++ " = " ++ tret ++ ";")
     decreaseindent
     if (o.elseblock.size > 0) then {
         out("  \} else \{")
@@ -809,7 +831,7 @@ method compileif(o) {
         out("if" ++ myc ++ " = " ++ fret ++ ";")
         decreaseindent
     }
-    out("\}")
+    out("  \}")
     o.register := "if" ++ myc
 }
 method compileidentifier(o) {
@@ -848,7 +870,7 @@ method compilebind(o) {
         val := compilenode(val)
         var nm := dest.value
         usedvars.push(nm)
-        out(varf(nm) ++ " = " ++ val ++ ";")
+        out "  {varf(nm)} = {val};"
         o.register := val
     } elseif (dest.kind == "member") then {
         if (dest.value.substringFrom(dest.value.size - 1)to(dest.value.size)
@@ -1078,8 +1100,8 @@ method compilecall(o) {
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
-        var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude"
-            ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
+        var call := "  var call" ++ auto_count ++ " = callmethod(Grace_prelude, \""
+            ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
@@ -1160,7 +1182,7 @@ method compiledialect(o) {
     out("this.outer = do_import(\"{fn}\", {formatModname(o.value)});")
     out("var Grace_prelude = this.outer;")
     if (dialectHasAtModuleStart) then {
-        out "callmethod(Grace_prelude,\"atModuleStart\", [1], "
+        out "callmethod(Grace_prelude, \"atModuleStart\", [1], "
         out "  new GraceString(\"{escapestring(modname)}\"));"
     }
     o.register := "undefined"
@@ -1479,7 +1501,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         }
     }
     if (dialectHasAtModuleEnd) then {
-        out("  callmethod(Grace_prelude,\"atModuleEnd\", [1], this);")
+        out("  callmethod(Grace_prelude, \"atModuleEnd\", [1], this);")
     }
     if (debugMode) then {
         out "stackFrames.pop();"

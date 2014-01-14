@@ -562,6 +562,7 @@ method block {
         minIndentLevel := minInd - 1
         statementIndent := startIndent
         next
+        util.setline(btok.line)
         var o := ast.blockNode.new(params, body)
         if (isMatchingBlock) then {
             if (params.size > 0) then {
