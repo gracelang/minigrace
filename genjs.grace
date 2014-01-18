@@ -908,6 +908,7 @@ method compiledefdec(o) {
         if (ast.findAnnotation(o, "parent")) then {
             out("  this.superobj = {val};")
         }
+        out("  this.methods[\"{nm}\"].debug = \"def\";")
     }
     if (o.dtype != false) then {
         linenum := o.line
@@ -918,7 +919,6 @@ method compiledefdec(o) {
         out "            new GraceString(\"expected \""
         out "            + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))"
     }
-    out("  this.methods[\"{nm}\"].debug = \"def\";")
     o.register := val
 }
 method compilevardec(o) {
@@ -943,6 +943,7 @@ method compilevardec(o) {
         compilenode(ast.methodNode.new(assignID,
             [ast.signaturePart.new(assignID.value, [tmpID])],
             [ast.bindNode.new(o.name, tmpID)], false))
+        out("  this.methods[\"{nm}\"].debug = \"var\";")
     }
     if (o.dtype != false) then {
         if (val != "false") then {
@@ -955,7 +956,6 @@ method compilevardec(o) {
             out "            + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
         }
     }
-    out("  this.methods[\"{nm}\"].debug = \"var\";")
     o.register := val
 }
 method compileindex(o) {
