@@ -120,9 +120,21 @@ A sample use might be:
 This module is only available in the native compiler, on architectures
 that support dynamic modules.
 
-random
+math
 ------
-The random module provides one method:
+The math module provides several method:
+  sin -> Number
+    Returns the sine of the input number
+  cos -> Number
+    Returns the cosine of the input number
+  tan -> Number
+    Returns the tangent of the input number
+  asin -> Number
+    Returns the arcsin of the input number
+  acos -> Number
+    Returns the arccos of the input number
+  atan -> Number
+    Returns the arctangent of the input number
   random -> Number
     Returns a random number in the interval [0, 1].
 

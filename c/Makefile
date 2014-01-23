@@ -26,8 +26,8 @@ mirrors.gso: mirrors.c gracelib.h
 mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
 
-random.gso: random.c gracelib.h
-	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o random.gso random.c
+math.gso: math.c gracelib.h
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o math.gso math.c
 curl.gso: curl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o curl.gso curl.c -lcurl
 

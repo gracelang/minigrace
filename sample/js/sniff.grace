@@ -1,6 +1,6 @@
 import "mgcollections" as collections
 import "dom" as dom
-import "random" as randomModule
+import "math" as mathModule
 
 import "StandardPrelude" as sp
 inherits sp.new
@@ -357,7 +357,7 @@ method background(col) {
     backgroundColour := col
 }
 method random(n) {
-    (n * randomModule.random).truncate
+    (n * mathModule.random).truncate
 }
 method randomPoint {
     point.x(canvasWidth / 10 + random(canvasWidth * 0.8))

@@ -1519,13 +1519,31 @@ function gracecode_mirrors() {
     return this;
 }
 
-function gracecode_random() {
+function gracecode_math() {
     this.methods = {
+        'sin': function(argcv, value) {
+            return new GraceNum(Math.sin(value));
+        }
+        'cos': function(argcv, value) {
+            return new GraceNum(Math.cos(value));
+        }
+        'tan': function(argcv, value) {
+            return new GraceNum(Math.tan(value));
+        }
+        'asin': function(argcv, value) {
+            return new GraceNum(Math.asin(value));
+        }
+        'acos': function(argcv, value) {
+            return new GraceNum(Math.acos(value));
+        }
+        'atan': function(argcv, value) {
+            return new GraceNum(Math.atan(value));
+        }
         'random': function(argcv) {
             return new GraceNum(Math.random());
         }
     };
-    this.definitionModule = "random";
+    this.definitionModule = "math";
     this.definitionLine = 0;
     return this;
 }

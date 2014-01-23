@@ -1,4 +1,4 @@
-import "random" as random
+import "math" as math
 import "mgcollections" as collections
 
 type Vector = {
@@ -246,9 +246,9 @@ method n(n') {
             def ret = vector.new
             def used = collections.set.new
             for (1..n') do {i->
-                var num := 1 + (random.random * o).truncate
+                var num := 1 + (math.random * o).truncate
                 while {used.contains(num)} do {
-                    num := 1 + (random.random * o).truncate
+                    num := 1 + (math.random * o).truncate
                 }
                 used.add(num)
                 ret.data.push(num)

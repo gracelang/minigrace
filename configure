@@ -9,7 +9,7 @@ OTHER_MODULES=
 
 other_modules=(
     mirrors
-    random
+    math
     repl
 )
 
