@@ -425,6 +425,7 @@ method compileblock(o) {
     for (o.params) do { each ->
         if (first) then {
             paramList := varf(each.value)
+            first := false
         } else {
             paramList := paramList ++ ", " ++ varf(each.value)
         }
