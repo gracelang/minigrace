@@ -1819,6 +1819,10 @@ method checkimport(nm, line) {
     var homePath := sys.environ["HOME"]
     locationList.push("{homePath}/.local/lib/grace/modules/")
     locationList.push("{sys.execPath}/../lib/minigrace/modules/")
+    if(buildinfo.includepath != "") then {
+        locationList.push("{buildinfo.includepath}/")
+    }
+    
     if(nm == "StandardPrelude") then {
         staticmodules.add(nm)
         addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
@@ -2177,6 +2181,9 @@ method compile(vl, of, mn, rm, bt) {
         util.runOnNew {
             out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
         } else {}
+        if(buildinfo.includepath != "") then {
+            out("  setIncludePath(\"{buildinfo.includepath}\");")
+        }
         out("  gracelib_argv(argv);")
         out("  Object params[1];")
         out("  undefined = alloc_Undefined();")
@@ -2205,7 +2212,14 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
-        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        cmd := ""
+
+        if(buildinfo.includepath == "") then {
+            print("buildinfo includepath is undefined");
+            cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\"" 
+        }else{
+            cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        }
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
             sys.exit(1)
@@ -2222,15 +2236,22 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
-            cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
-                ++ "\"{modname}.gcn\" "
-                ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
+            if(buildinfo.includepath == "")then{
+                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
+                    ++ "\"{modname}.gcn\" "
+                    ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
+            }else{
+                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
+                    ++ "\"{modname}.gcn\" "
+                    ++ "\"{buildinfo.includepath}/gracelib.o\" "
+                
+            }
             for (linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking")
+                io.error.write("Failed linking, is this the one that is failing?")
                 sys.exit(1)
             }
         }
@@ -2251,7 +2272,7 @@ method compile(vl, of, mn, rm, bt) {
                     exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
                 }
             }
-            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
+            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.c\" "
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.")

@@ -3910,6 +3910,11 @@ char * compilerModulePath;
 void setCompilerModulePath(char *s) {
     compilerModulePath = s;
 }
+
+char *includePath = NULL;
+void setIncludePath(char *s) {
+    includePath = s;
+}
 int find_gso(const char *name, char *buf) {
     // Try:
     // 1) dirname(argv[0])
@@ -3928,7 +3933,7 @@ int find_gso(const char *name, char *buf) {
 
     strcpy(buf1, sep);
     //an array of strings ot hold the locations to look
-    char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+    char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules"), NULL}; 
 
     if(home != NULL){
         char buf2[PATH_MAX];
@@ -3943,10 +3948,15 @@ int find_gso(const char *name, char *buf) {
         char buf4[PATH_MAX];
         locations[5] = strcpy(buf4, compilerModulePath);
     }
+
+    if(includePath != NULL){
+        char buf4[PATH_MAX];
+        locations[7] = strcpy(buf4, includePath);
+    }
     
     int i = 0;
 
-    for(i = 0; i < 7; i++){
+    for(i = 0; i < 8; i++){
         if(locations[i] == NULL){
             continue;
         }
@@ -3954,6 +3964,7 @@ int find_gso(const char *name, char *buf) {
         strcat(buf, "/");
         strcat(buf, name);
         strcat(buf, ".gso");
+
 
         if(stat(buf, &st) == 0){
             return 1;

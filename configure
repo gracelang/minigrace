@@ -6,6 +6,7 @@ PREFIX=.
 LDFLAGS=
 UNICODE_LDFLAGS=
 OTHER_MODULES=
+INCLUDE_PATH=
 
 other_modules=(
     mirrors
@@ -57,11 +58,16 @@ do
     elif [ "$1" = "--static" ]
     then
         STATIC=y
+    elif [ "$1" = "--includepath" ] || [ "$1" = "-I" ]
+    then
+        INCLUDE_PATH=`readlink -f $2` #convert the potentially relative path to absolute before storing it
+        shift
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
         echo " --prefix <path>"
         echo " --static {tarball only}"
+        echo " --gracepath <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
@@ -225,6 +231,7 @@ UNICODE_LDFLAGS = $UNICODE_LDFLAGS
 UNICODE_MODULE = $UNICODE_MODULE
 STATIC_MODULES = $STATIC_MODULES
 OTHER_MODULES = ${OTHER_MODULES[@]}
+INCLUDE_PATH = $INCLUDE_PATH
 EOT
 
 if [ "$ADVISE_END" ]

@@ -19,6 +19,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "#pragma DefaultVisibility=public" > buildinfo.grace
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" >> buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
+	echo "method includepath {\"$(INCLUDE_PATH)\" }" >> buildinfo.grace
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
