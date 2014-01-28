@@ -67,7 +67,7 @@ do
         echo "Available flags:"
         echo " --prefix <path>"
         echo " --static {tarball only}"
-        echo " --gracepath <path>"
+        echo " [--inlcudepath | -I] <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
