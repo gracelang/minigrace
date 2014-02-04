@@ -7,6 +7,7 @@ LDFLAGS=
 UNICODE_LDFLAGS=
 OTHER_MODULES=
 INCLUDE_PATH=
+MODULE_PATH=
 
 other_modules=(
     mirrors
@@ -51,23 +52,28 @@ fail() {
 
 while [ $# -gt 0 ]
 do
-    if [ "$1" = "--prefix" ]
+    if [ "$1" = "--prefix" ] || [ "$1" = "-p" ]
     then
-        PREFIX=$2
+        PREFIX=`readlink -f $2`
         shift
     elif [ "$1" = "--static" ]
     then
         STATIC=y
-    elif [ "$1" = "--includepath" ] || [ "$1" = "-I" ]
+    elif [ "$1" = "--includepath" ] || [ "$1" = "-i" ]
     then
         INCLUDE_PATH=`readlink -f $2` #convert the potentially relative path to absolute before storing it
+        shift
+    elif [ "$1" = "--lib" ] || [ "$1" = "-l" ]
+    then
+        MODULE_PATH=`readlink -f $2`
         shift
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
-        echo " --prefix <path>"
+        echo " [--prefix | -p] <path>"
         echo " --static {tarball only}"
         echo " [--inlcudepath | -I] <path>"
+        echo " [--lib | -l] <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
@@ -75,6 +81,18 @@ do
     fi
     shift
 done
+
+if [ "$INCLUDE_PATH" = "" ] && [ "$PREFIX" != "" ]
+then
+    echo "Include path is going to be defined relative to prefix"
+    INCLUDE_PATH="$PREFIX/lib/grace/modules"  #These are the defaults, relative to PREFIX
+fi
+
+if [ "$MODULE_PATH" = "" ] && [ "$PREFIX" != "" ]
+then
+    echo "Library path is going to be defined relative ot prefix"
+    MODULE_PATH="$PREFIX/lib/grace/modules"
+fi
 
 checkcurl() {
     echo -n "Checking for libcurl... "
@@ -232,6 +250,7 @@ UNICODE_MODULE = $UNICODE_MODULE
 STATIC_MODULES = $STATIC_MODULES
 OTHER_MODULES = ${OTHER_MODULES[@]}
 INCLUDE_PATH = $INCLUDE_PATH
+MODULE_PATH = $MODULE_PATH
 EOT
 
 if [ "$ADVISE_END" ]
