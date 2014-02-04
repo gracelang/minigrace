@@ -1993,7 +1993,22 @@ method compile(vl, of, mn, rm, bt) {
     util.log_verbose "generating C code..."
     var argv := sys.argv
     var cmd
-    values := vl
+    if (util.extensions.contains("ClassWrap")) then {
+        values := []
+        def inner = []
+        for (vl) do { v->
+            if ((v.kind == "import") || (v.kind == "dialect")) then {
+                values.push(v)
+            } else {
+                inner.push(v)
+            }
+        }
+        values.push(ast.methodNode.new(ast.identifierNode.new("new", false),
+            [ast.signaturePart.new("new")],
+            [ast.objectNode.new(inner, false)], false))
+    } else {
+        values := vl
+    }
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
