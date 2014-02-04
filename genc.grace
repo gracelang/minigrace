@@ -1819,8 +1819,8 @@ method checkimport(nm, line) {
     var homePath := sys.environ["HOME"]
     locationList.push("{homePath}/.local/lib/grace/modules/")
     locationList.push("{sys.execPath}/../lib/minigrace/modules/")
-    if(buildinfo.includepath != "") then {
-        locationList.push("{buildinfo.includepath}/")
+    if(buildinfo.modulepath != "") then {
+        locationList.push("{buildinfo.modulepath}/")
     }
     
     if(nm == "StandardPrelude") then {
@@ -2181,8 +2181,8 @@ method compile(vl, of, mn, rm, bt) {
         util.runOnNew {
             out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
         } else {}
-        if(buildinfo.includepath != "") then {
-            out("  setIncludePath(\"{buildinfo.includepath}\");")
+        if(buildinfo.modulepath != "") then {
+            out("  setModulePath(\"{buildinfo.modulepath}\");")
         }
         out("  gracelib_argv(argv);")
         out("  Object params[1];")
@@ -2235,22 +2235,26 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
-            if(buildinfo.includepath == "")then{
+
+            if(io.exists("{util.gracelibPath}/gracelib.o")) then {
                 cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                     ++ "\"{modname}.gcn\" "
                     ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
-            }else{
+            } elseif(buildinfo.includepath != "") then {
                 cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                     ++ "\"{modname}.gcn\" "
                     ++ "\"{buildinfo.includepath}/gracelib.o\" "
-                
+            }else{
+                io.error.write("Try setting the include path before moving the executable")
+
             }
+
             for (linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking, is this the one that is failing?")
+                io.error.write("Failed linking")
                 sys.exit(1)
             }
         }

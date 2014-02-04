@@ -3911,19 +3911,11 @@ void setCompilerModulePath(char *s) {
     compilerModulePath = s;
 }
 
-char *includePath = NULL;
-void setIncludePath(char *s) {
-    includePath = s;
+char *modulePath = NULL;
+void setModulePath(char *s) {
+    modulePath = s;
 }
 int find_gso(const char *name, char *buf) {
-    // Try:
-    // 1) dirname(argv[0])
-    // 2) dirname(argv[0])/../lib/minigrace
-    // 3) GRACE_MODULE_PATH
-    // 4) Path of the compiler used to build
-    // 5) Path of the compiler used to build/../lib/minigrace
-    // 6) .
-
 
     char *sep = execPathHelper();
     char *gmp = getenv("GRACE_MODULE_PATH");
@@ -3942,16 +3934,16 @@ int find_gso(const char *name, char *buf) {
     }
     if(gmp != NULL){
         char buf3[PATH_MAX];
-        locations[4] = strcpy(buf3, gmp);
+        locations[4] = strncpy(buf3, gmp, PATH_MAX);
     }
     if(compilerModulePath != NULL){
         char buf4[PATH_MAX];
-        locations[5] = strcpy(buf4, compilerModulePath);
+        locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
     }
 
-    if(includePath != NULL){
-        char buf4[PATH_MAX];
-        locations[7] = strcpy(buf4, includePath);
+    if(modulePath != NULL){
+        char buf5[PATH_MAX];
+        locations[7] = strncpy(buf5, modulePath, PATH_MAX);
     }
     
     int i = 0;
@@ -3960,7 +3952,7 @@ int find_gso(const char *name, char *buf) {
         if(locations[i] == NULL){
             continue;
         }
-        strcpy(buf, locations[i]);
+        strncpy(buf, locations[i], PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
         strcat(buf, ".gso");
