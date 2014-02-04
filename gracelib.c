@@ -3927,22 +3927,22 @@ int find_gso(const char *name, char *buf) {
     //an array of strings ot hold the locations to look
     char *locations[] = {".", sep, "/usr/lib/grace/modules", NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules"), NULL}; 
 
+    char buf2[PATH_MAX];
     if(home != NULL){
-        char buf2[PATH_MAX];
         strcpy(buf2, home); 
         locations[3] = strcat(buf2, "/.local/lib/grace/modules");
     }
+    char buf3[PATH_MAX];
     if(gmp != NULL){
-        char buf3[PATH_MAX];
         locations[4] = strncpy(buf3, gmp, PATH_MAX);
     }
+    char buf4[PATH_MAX];
     if(compilerModulePath != NULL){
-        char buf4[PATH_MAX];
         locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
     }
 
+    char buf5[PATH_MAX];
     if(modulePath != NULL){
-        char buf5[PATH_MAX];
         locations[7] = strncpy(buf5, modulePath, PATH_MAX);
     }
     
