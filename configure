@@ -2,12 +2,13 @@
 
 DISTRIB=tree
 PLATFORM=$(uname)
-PREFIX=.
+PREFIX="/usr"
 LDFLAGS=
 UNICODE_LDFLAGS=
 OTHER_MODULES=
 INCLUDE_PATH=
 MODULE_PATH=
+OBJECT_PATH=
 
 other_modules=(
     mirrors
@@ -72,7 +73,7 @@ do
         echo "Available flags:"
         echo " [--prefix | -p] <path>"
         echo " --static {tarball only}"
-        echo " [--inlcudepath | -I] <path>"
+        echo " [--includepath | -I] <path>"
         echo " [--lib | -l] <path>"
         exit 0
     else
@@ -84,15 +85,15 @@ done
 
 if [ "$INCLUDE_PATH" = "" ] && [ "$PREFIX" != "" ]
 then
-    echo "Include path is going to be defined relative to prefix"
-    INCLUDE_PATH="$PREFIX/lib/grace/modules"  #These are the defaults, relative to PREFIX
+    INCLUDE_PATH="$PREFIX/include"  #These are the defaults, relative to PREFIX
 fi
 
 if [ "$MODULE_PATH" = "" ] && [ "$PREFIX" != "" ]
 then
-    echo "Library path is going to be defined relative ot prefix"
     MODULE_PATH="$PREFIX/lib/grace/modules"
 fi
+
+OBJECT_PATH=`dirname $MODULE_PATH`
 
 checkcurl() {
     echo -n "Checking for libcurl... "
@@ -251,6 +252,7 @@ STATIC_MODULES = $STATIC_MODULES
 OTHER_MODULES = ${OTHER_MODULES[@]}
 INCLUDE_PATH = $INCLUDE_PATH
 MODULE_PATH = $MODULE_PATH
+OBJECT_PATH = $OBJECT_PATH
 EOT
 
 if [ "$ADVISE_END" ]

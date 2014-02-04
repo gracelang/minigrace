@@ -22,6 +22,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method prefix { \"$(PREFIX)\" }" >> buildinfo.grace
 	echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo.grace
 	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
+	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<

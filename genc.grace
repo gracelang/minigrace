@@ -2212,13 +2212,9 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
-        cmd := ""
 
-        if(buildinfo.includepath == "") then {
-            cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -o \"{modname}.gcn\" -c \"{modname}.c\"" 
-        }else{
-            cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
-        }
+        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
             sys.exit(1)
@@ -2243,7 +2239,7 @@ method compile(vl, of, mn, rm, bt) {
             } elseif(buildinfo.includepath != "") then {
                 cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                     ++ "\"{modname}.gcn\" "
-                    ++ "\"{buildinfo.includepath}/gracelib.o\" "
+                    ++ "\"{buildinfo.objectpath}/gracelib.o\" "
             }else{
                 io.error.write("Try setting the include path before moving the executable")
 
