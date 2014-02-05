@@ -53,6 +53,21 @@ if (util.target == "json") then {
 }
 
 var values := parser.parse(tokens)
+if (util.extensions.contains("ClassWrap")) then {
+    def vl = values
+    values := []
+    def inner = []
+    for (vl) do { v->
+        if ((v.kind == "import") || (v.kind == "dialect")) then {
+            values.push(v)
+        } else {
+            inner.push(v)
+        }
+    }
+    values.push(ast.methodNode.new(ast.identifierNode.new("new", false),
+        [ast.signaturePart.new("new")],
+        [ast.objectNode.new(inner, false)], false))
+}
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
