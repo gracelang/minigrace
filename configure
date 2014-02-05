@@ -68,13 +68,18 @@ do
     then
         MODULE_PATH=`readlink -f $2`
         shift
+    elif [ "$1" = "--objectpath" ] || [ "$1" = "-o" ]
+    then
+        OBJECT_PATH=`readlink -f $2`
+        shift
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
         echo " [--prefix | -p] <path>"
         echo " --static {tarball only}"
-        echo " [--includepath | -I] <path>"
+        echo " [--includepath | -i] <path>"
         echo " [--lib | -l] <path>"
+        echo " [--objectpath | -o] <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
@@ -83,17 +88,20 @@ do
     shift
 done
 
-if [ "$INCLUDE_PATH" = "" ] && [ "$PREFIX" != "" ]
+if [ "$INCLUDE_PATH" = "" ]
 then
     INCLUDE_PATH="$PREFIX/include"  #These are the defaults, relative to PREFIX
 fi
 
-if [ "$MODULE_PATH" = "" ] && [ "$PREFIX" != "" ]
+if [ "$MODULE_PATH" = "" ]
 then
     MODULE_PATH="$PREFIX/lib/grace/modules"
 fi
 
-OBJECT_PATH=`dirname $MODULE_PATH`
+if [ "$OBJECT_PATH" = "" ] 
+then
+    OBJECT_PATH=`dirname $MODULE_PATH`
+fi
 
 checkcurl() {
     echo -n "Checking for libcurl... "

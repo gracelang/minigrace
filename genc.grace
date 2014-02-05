@@ -1815,13 +1815,12 @@ method checkimport(nm, line) {
     var locationList := collections.list.new
     locationList.push("")
     locationList.push("{sys.execPath}/")
-    locationList.push("/usr/lib/grace/modules/")
-    var homePath := sys.environ["HOME"]
-    locationList.push("{homePath}/.local/lib/grace/modules/")
-    locationList.push("{sys.execPath}/../lib/minigrace/modules/")
     if(buildinfo.modulepath != "") then {
         locationList.push("{buildinfo.modulepath}/")
     }
+    var homePath := sys.environ["HOME"]
+    locationList.push("{homePath}/.local/lib/grace/modules/")
+    locationList.push("{sys.execPath}/../lib/minigrace/modules/")
     
     if(nm == "StandardPrelude") then {
         staticmodules.add(nm)
