@@ -48,6 +48,7 @@ install: selfhost
 	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
+	install -m 644 mgcollections.grace $(MODULE_PATH)
 
 
 test: minigrace
