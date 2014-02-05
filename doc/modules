@@ -1,3 +1,16 @@
+Module files will be found in several locations. Grace source files of
+modules in these locations will be automatically compiled if the module
+is imported. The searched locations are:
+  * The current directory
+  * Next to the compiler executable
+  * The module path set at ./configure time. By default this is
+    $PREFIX/lib/grace/modules, or /usr/lib/grace/modules if no
+    installation prefix was given.
+  * ~/.local/lib/grace/modules
+  * ../lib/minigrace/modules relative to the compiler executable.
+Both Grace source code and dynamic modules (like the built-in "unicode")
+are found in these locations.
+
 The Minigrace distribution includes some additional modules that may be
 useful in user code. They are briefly described here.
 
@@ -122,7 +135,7 @@ that support dynamic modules.
 
 math
 ------
-The math module provides several method:
+The math module provides several methods:
   sin -> Number
     Returns the sine of the input number
   cos -> Number

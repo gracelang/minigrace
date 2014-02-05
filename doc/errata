@@ -20,18 +20,6 @@ The compiler also supports the following extensions used internally,
 which are not part of the language and are subject to change:
 - Lists, constructed with [] and supporting indexing with [] and []:=
   and methods size, push, pop, first, last, and indices.
-- Multiple modules with separate compilation. A file foo.grace defines
-  a module foo, which can be accessed in another module using an import
-  statement:
-    import "test/example" as eg
-  Module files must be in the current directory or inside "modules/"
-  next to the compiler. Imports should not use relative paths if the
-  importing module is expected to be imported itself. Only modules in
-  the current directory will be compiled implicitly; all others must be
-  already compiled using the correct path as the name. Dynamic modules
-  (like the built-in "unicode") are found at runtime next to the
-  executable. All methods and top-level var and def statements bind
-  methods on the module object.
 - Methods defined in the prelude can always be accessed through the
   implicitly-bound "prelude" object.
 - Character codes for length-one strings can be obtained with the "ord"

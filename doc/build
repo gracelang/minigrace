@@ -48,6 +48,14 @@ served over HTTP for the test cases to load. The JavaScript back- and
 front-ends are suitable for quick testing, but have some limitations
 compared to the native compiler.
 
+Installation
+------------
+The `make install` target will install Minigrace and its libraries into
+the location you specified with the --prefix option to the configure
+script, or /usr if no prefix was given. If $PREFIX/bin is on your path
+after this you will be able to run `minigrace` from anywhere. This works
+for both tarball and Git builds.
+
 Platform notes
 --------------
 On both Mac OS X and Cygwin building from the git repository requires
