@@ -2922,7 +2922,6 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
     char *this_class_name = c->name;
     for (i=0; i < c->nummethods; i++) {
         Method this_method = c->methods[i];
-        char *this_name = c->methods[i].name;
         if (strcmp(c->methods[i].name, name) == 0) {
             m = &c->methods[i];
             break;
