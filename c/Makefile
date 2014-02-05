@@ -42,11 +42,12 @@ gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
-install: minigrace
-	install -d $(PREFIX)/bin $(PREFIX)/lib/minigrace $(PREFIX)/include
+install: selfhost
+	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
-	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/minigrace
-	install gracelib.h $(PREFIX)/include/gracelib.h
+	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
+	install -m 755 gracelib.o $(OBJECT_PATH)
+	install -m 644 gracelib.h $(INCLUDE_PATH)
 
 
 test: minigrace
