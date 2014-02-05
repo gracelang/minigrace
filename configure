@@ -53,33 +53,33 @@ fail() {
 
 while [ $# -gt 0 ]
 do
-    if [ "$1" = "--prefix" ] || [ "$1" = "-p" ]
+    if [ "$1" = "--prefix" ]
     then
         PREFIX=`readlink -f $2`
         shift
     elif [ "$1" = "--static" ]
     then
         STATIC=y
-    elif [ "$1" = "--includepath" ] || [ "$1" = "-i" ]
+    elif [ "$1" = "--includedir" ]
     then
         INCLUDE_PATH=`readlink -f $2` #convert the potentially relative path to absolute before storing it
         shift
-    elif [ "$1" = "--lib" ] || [ "$1" = "-l" ]
+    elif [ "$1" = "--libdir" ]
     then
         MODULE_PATH=`readlink -f $2`
         shift
-    elif [ "$1" = "--objectpath" ] || [ "$1" = "-o" ]
+    elif [ "$1" = "--objectpath" ]
     then
         OBJECT_PATH=`readlink -f $2`
         shift
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
-        echo " [--prefix | -p] <path>"
+        echo " --prefix <path>"
         echo " --static {tarball only}"
-        echo " [--includepath | -i] <path>"
-        echo " [--lib | -l] <path>"
-        echo " [--objectpath | -o] <path>"
+        echo " --includedir <path>"
+        echo " --libdir <path>"
+        echo " --objectpath <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
