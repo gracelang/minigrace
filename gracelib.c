@@ -57,6 +57,8 @@ Object alloc_AndPattern(Object l, Object r);
 Object alloc_ExceptionPacket(Object msg, Object exception);
 Object alloc_Exception(char *name, Object parent);
 
+int find_resource(const char *name, char *buf);
+
 int gc_period = 100000;
 int rungc();
 int expand_living();
@@ -2644,6 +2646,17 @@ Object io_listdir(Object self, int nparts, int *argcv,
     }
     return ret;
 }
+Object io_findResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *strval = grcstring(args[0]);
+    char buf[PATH_MAX];
+    if (find_resource(strval, buf)) {
+        return alloc_String(buf);
+    } else {
+        gracedie("Resource '%s' not found.", strval);
+        return NULL;
+    }
+}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -2652,7 +2665,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 12, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2664,6 +2677,7 @@ Object module_io_init() {
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
+    add_Method(IOModule, "findResource", &io_findResource);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
@@ -3914,7 +3928,7 @@ char *modulePath = NULL;
 void setModulePath(char *s) {
     modulePath = s;
 }
-int find_gso(const char *name, char *buf) {
+int find_resource(const char *name, char *buf) {
 
     char *sep = execPathHelper();
     char *gmp = getenv("GRACE_MODULE_PATH");
@@ -3923,7 +3937,6 @@ int find_gso(const char *name, char *buf) {
     struct stat st;
 
     strcpy(buf1, sep);
-    //an array of strings ot hold the locations to look
     char *locations[] = {".", sep, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
 
     char buf5[PATH_MAX];
@@ -3953,7 +3966,6 @@ int find_gso(const char *name, char *buf) {
         strncpy(buf, locations[i], PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
-        strcat(buf, ".gso");
 
 
         if(stat(buf, &st) == 0){
@@ -3962,6 +3974,12 @@ int find_gso(const char *name, char *buf) {
     }
 
     return 0;
+}
+int find_gso(const char *name, char *buf) {
+    char nbuf[strlen(name) + 5];
+    strcpy(nbuf, name);
+    strcat(nbuf, ".gso");
+    return find_resource(nbuf, buf);
 }
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
