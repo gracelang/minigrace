@@ -2,3 +2,5 @@
 ignore file unicodedata.h
 ignore file known-good/independent/minigrace-initial.ll
 ignore file js/unicodedata.js
+ignore file .gitalyse
+ignore file .mailmap
