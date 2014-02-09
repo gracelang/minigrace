@@ -1888,7 +1888,7 @@ method checkimport(nm, line) {
             }
         }
     }
-    if ((nm == "sys") || (nm == "io")) then {
+    if ((nm == "sys") || (nm == "io") || (nm == "imports")) then {
         exists := true
         staticmodules.add(nm)
     }

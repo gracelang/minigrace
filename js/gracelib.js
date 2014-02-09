@@ -1094,6 +1094,44 @@ function gracecode_sys() {
     return this;
 }
 
+function gracecode_imports() {
+    var extensions = {
+        'txt': Grace_allocObject(),
+    };
+    extensions.txt.methods.loadResource = function(junk, path) {
+        var req = new XMLHttpRequest();
+        req.open('GET', 'https://' + path._value, false);
+        req.send(null);
+        if (req.status == 200) {
+            return new GraceString(req.responseText);
+        }
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("Error loading resource '" + path._value
+                    + "'."));
+    };
+    this.methods.registerExtension = function(junk, ext, handler) {
+        extensions[ext._value] = handler;
+    };
+    this.methods.loadResource = function(junk, importpath) {
+        path = importpath._value;
+        var slashPos = path.lastIndexOf('/');
+        var dotpos = path.indexOf('.', slashPos);
+        if (dotpos <= 0)
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("No extension in path '" + path._value
+                        + "'."));
+        var ext = path.substr(dotpos + 1);
+        if (extensions[ext]) {
+            return callmethod(extensions[ext], "loadResource", [1], importpath);
+        }
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("No mapping for extension '" + ext + "'."));
+    };
+    this.definitionModule = "imports";
+    this.definitionLine = 0;
+    return this;
+}
+
 function gracecode_unicode() {
     this.methods = {
         isLetter: function(argcv, s) {

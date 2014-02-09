@@ -2820,6 +2820,101 @@ Object module_sys_init() {
     gc_root(o);
     return o;
 }
+ClassData ImportsModule;
+Object importsmodule;
+Object stringResourceHandler;
+struct ImportsModule {
+    OBJECT_HEADER;
+    struct imports_extension_pair *extensions;
+};
+struct imports_extension_pair {
+    char extension[32];
+    Object handler;
+    struct imports_extension_pair *next;
+};
+struct imports_extension_pair *alloc_imports_extension(const char *ext,
+        Object handler) {
+    struct imports_extension_pair *ret = glmalloc(sizeof(struct imports_extension_pair));
+    if (strlen(ext) > 31)
+        gracedie("Cannot register an import extension longer than 31 chars.");
+    strcpy(ret->extension, ext);
+    ret->handler = handler;
+    ret->next = NULL;
+    return ret;
+}
+void imports__mark(struct ImportsModule *o) {
+    struct imports_extension_pair *h = o->extensions;
+    while (h) {
+        gc_mark(h->handler);
+        h = h->next;
+    }
+}
+Object StringResourceHandler_loadResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *res = grcstring(args[0]);
+    char path[PATH_MAX];
+    if (!find_resource(res, path))
+        gracedie("Could not find resource '%s'.", res);
+    FILE *file = fopen(path, "r");
+    int bsize = 128;
+    int pos = 0;
+    char *buf = malloc(bsize);
+    pos += fread(buf, sizeof(char), bsize, file);
+    while (!feof(file)) {
+        bsize *= 2;
+        buf = realloc(buf, bsize);
+        pos += fread(buf+pos, sizeof(char), bsize-pos-1, file);
+    }
+    buf[pos] = 0;
+    Object str = alloc_String(buf);
+    free(buf);
+    return str;
+}
+Object imports_loadResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *res = grcstring(args[0]);
+    char *slash = strrchr(res, '/');
+    if (!slash)
+        slash = res;
+    char *ext = strchr(slash, '.');
+    if (!ext)
+        gracedie("No extension in resource '%s'.", res);
+    ext++;
+    struct ImportsModule *o = (struct ImportsModule *)self;
+    struct imports_extension_pair *h = o->extensions;
+    while (h) {
+        if (strcmp(ext, h->extension) == 0)
+            return callmethod(h->handler, "loadResource", 1, argcv, args);
+        h = h->next;
+    }
+    gracedie("No handler for extension '%s'.", ext);
+    return NULL;
+}
+Object imports_registerExtension(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ImportsModule *o = (struct ImportsModule *)self;
+    const char *ext = grcstring(args[0]);
+    Object handler = args[1];
+    struct imports_extension_pair *pair = alloc_imports_extension(ext, handler);
+    pair->next = o->extensions;
+    o->extensions = pair;
+    return done;
+}
+Object module_imports_init() {
+    if (importsmodule != NULL)
+        return importsmodule;
+    stringResourceHandler = alloc_userobj(1, 0);
+    add_Method(stringResourceHandler->class, "loadResource", &StringResourceHandler_loadResource);
+    ImportsModule = alloc_class2("Module<imports>", 2, (void*)&imports__mark);
+    add_Method(ImportsModule, "registerExtension", &imports_registerExtension);
+    add_Method(ImportsModule, "loadResource", &imports_loadResource);
+    Object o = alloc_obj(sizeof(struct imports_extension_pair*), ImportsModule);
+    struct ImportsModule *im = (struct ImportsModule *)o;
+    im->extensions = alloc_imports_extension("txt", stringResourceHandler);
+    importsmodule = o;
+    gc_root(o);
+    return o;
+}
 Object alloc_done() {
     if (done != NULL)
         return done;
