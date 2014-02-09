@@ -46,6 +46,13 @@ GraceString.prototype = {
             var s = this._value;
             return new GraceString(s.substring(from._value - 1, to._value));
         },
+        "startsWith": function(argcv, needle) {
+            var s = this._value;
+            var n = needle._value;
+            if (s.substring(0, n.length) == n)
+                return new GraceBoolean(true);
+            return new GraceBoolean(false);
+        },
         "asString": function(argcv) { return this ; },
         "encode": function(argcv) { return this ; }, // TODO this is a hack
         "==": function(argcv, other) {

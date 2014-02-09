@@ -48,6 +48,7 @@ Object String_size(Object , int, int*, Object *, int flags);
 Object String_at(Object , int, int*, Object *, int flags);
 Object String_replace_with(Object , int, int*, Object *, int flags);
 Object String_substringFrom_to(Object , int, int*, Object *, int flags);
+Object String_startsWith(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
@@ -1535,6 +1536,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
+        add_Method(String, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
@@ -1661,6 +1663,14 @@ Object String_substringFrom_to(Object self,
     }
     return alloc_String(buf);
 }
+Object String_startsWith(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (strncmp(sstr, needle, strlen(needle)) == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
 Object String_replace_with(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
@@ -1704,7 +1714,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 24);
+        String = alloc_class("String", 25);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1719,6 +1729,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
+        add_Method(String, "startsWith", &String_startsWith);
         add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
