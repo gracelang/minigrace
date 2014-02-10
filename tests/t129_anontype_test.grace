@@ -1,4 +1,4 @@
-method foo(x : { bar -> String }) {
+method foo(x : type { bar -> String }) {
     print(x.bar)
 }
 

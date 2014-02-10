@@ -317,7 +317,7 @@ method dotypeterm {
         dotrest
         don'tTakeBlock := false
     } else {
-        if (accept("lbrace")) then {
+        if (accept("keyword").andAlso { sym.value == "type" }) then {
             doanontype
         }
     }
@@ -1391,8 +1391,8 @@ method term {
         identifier
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
-    } elseif (accept("lbrace") && braceIsType) then {
-        dotypeterm
+    } elseif (accept("keyword").andAlso { sym.value == "type" }) then {
+        doanontype
     } elseif (accept("lbrace")) then {
         block
     } elseif (accept("lsquare")) then {
@@ -2760,8 +2760,7 @@ method methodsignature(sameline) {
             dtype := false
             if (accept("colon")) then {
                 next
-                if (accept("identifier") || {accept("lbrace")}) then {
-                    dotyperef
+                if (didConsume { dotyperef }) then {
                     dtype := values.pop
                 } else {
                     def suggestions = []
@@ -2971,7 +2970,14 @@ method domethodtype {
 }
 
 method doanontype {
-    if (accept("lbrace")) then {
+    if (accept("keyword").andAlso { sym.value == "type" }) then {
+        next
+        if (!accept("lbrace")) then {
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceToken(sym) with("\{")
+            errormessages.syntaxError "Anonymous types must open with braces."
+                atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+        }
         def methods = []
         def mc = auto_count
         auto_count := auto_count + 1
@@ -3018,6 +3024,7 @@ method dotype {
         }
         next
         def methods = []
+        // Special case for type declarations.
         if (accept("lbrace")) then {
             next
             while {accept("rbrace").not} do {
