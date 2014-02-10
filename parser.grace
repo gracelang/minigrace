@@ -2415,6 +2415,13 @@ method doclass {
         }
         pushidentifier // A class currently cannot be anonymous
         def cname = values.pop
+        if (!accept("dot")) then {
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceToken(sym) with(".")
+            errormessages.syntaxError "A class must have a dot after the object name."
+                atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                withSuggestion(suggestion)
+        }
         next
         var s := methodsignature(false)
         var csig := s.sig
