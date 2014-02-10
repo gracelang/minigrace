@@ -392,7 +392,18 @@ method resolveIdentifier(node) {
                 suggestions.push(suggestion)
             }
             if (node.inRequest) then {
-                errormessages.syntaxError "Unknown method name '{nm}'. This may be due to a spelling mistake or trying to access a method within another scope."
+                var extra := ""
+                if (node.value == "while") then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.append " do \{ \}" onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+                if (node.value == "for") then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.append " do \{ aVarName -> \}" onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+                errormessages.syntaxError "Unknown method name '{nm}'. This may be due to a spelling mistake or trying to access a method within another scope.{extra}"
                     atRange(node.line, node.linePos, node.linePos +
                         highlightLength - 1)
                     withSuggestions(suggestions)
