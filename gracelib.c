@@ -1536,7 +1536,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
-        add_Method(String, "startsWith", &String_startsWith);
+        add_Method(ConcatString, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
