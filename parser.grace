@@ -2413,16 +2413,22 @@ method doclass {
             errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
-        pushidentifier // A class currently cannot be anonymous
-        def cname = values.pop
-        if (!accept("dot")) then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.replaceToken(sym) with(".")
-            errormessages.syntaxError "A class must have a dot after the object name."
-                atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
-                withSuggestion(suggestion)
+        def cname = if (!(util.extensions.contains("ClassMethods") &&
+                (tokens.first.kind != "dot"))) then {
+            pushidentifier // A class currently cannot be anonymous
+            def cname' = values.pop
+            if (!accept("dot")) then {
+                def suggestion = errormessages.suggestion.new
+                suggestion.replaceToken(sym) with(".")
+                errormessages.syntaxError "A class must have a dot after the object name."
+                    atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                    withSuggestion(suggestion)
+            }
+            next
+            cname'
+        } else {
+            false
         }
-        next
         var s := methodsignature(false)
         var csig := s.sig
         var constructorName := s.m
@@ -2454,8 +2460,12 @@ method doclass {
         }
         next
         util.setline(btok.line)
-        var o :=
+        def o = if (false == cname) then {
+            ast.methodNode.new(constructorName, csig,
+                [ast.objectNode.new(body, false)], false)
+        } else {
             ast.classNode.new(cname, csig, body, false, constructorName, dtype)
+        }
         o.generics := s.generics
         if (false != anns) then {
             o.annotations.extend(anns)
