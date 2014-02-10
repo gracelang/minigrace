@@ -28,6 +28,10 @@ class replClass.new {
     var methods := collections.map.new
 }
 
+type HasKind = {
+    kind
+}
+
 class evalVisitor.new {
     inherits ast.baseVisitor
     def ReturnException = Exception.refine "ReturnException"
@@ -66,7 +70,7 @@ class evalVisitor.new {
 
     method resolve(val) {
         def result = match(val)
-            case { v : {kind} ->
+            case { v : HasKind ->
                 if ((v.kind == "replvar") || (v.kind == "replobj") ||
                     (v.kind == "replblock")) then {
                     val

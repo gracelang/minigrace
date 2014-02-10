@@ -247,7 +247,8 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "type") then {
         return [arg, []]
     }
-    Error.raise "Compiler logic error: fell through when rewriting match block"
+    Error.raise("Compiler logic error: fell through when rewriting match block"
+        ++ ": unexpected kind '{arg.kind}'.")
 }
 method rewritematchblock(blk) {
     def arg = blk.params[1]
