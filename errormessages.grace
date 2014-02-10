@@ -68,6 +68,11 @@ class suggestion.new() {
         replaceRange(pos, pos)with("")onLine(lineNumber)
     }
 
+    method append(s)onLine(lineNumber) {
+        def line = getLine(lineNumber)
+        addLine(lineNumber, line ++ s)
+    }
+
     method insert(s)atPosition(pos)onLine(lineNumber) {
         def line = getLine(lineNumber)
         if(pos == 1) then {
