@@ -3200,6 +3200,10 @@ method checkUnexpectedTokenAfterStatement {
                 suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value})")
                 suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value}")
+                suggestion.append ")" onLine(sym.line)
+                suggestions.push(suggestion)
             }
             def nextTok = findNextValidToken("rbrace")
             if(nextTok == sym) then {
