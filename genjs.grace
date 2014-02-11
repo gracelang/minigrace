@@ -92,11 +92,9 @@ method outUnnumbered(s) {
 method outprint(s) {
     util.outprint(s)
 }
-
 method log_verbose(s) {
     util.log_verbose(s)
 }
-
 method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
@@ -110,7 +108,6 @@ method escapeident(vn) {
     }
     nm
 }
-
 method escapestring(s) {
     var os := ""
     for (s) do {c->
@@ -236,7 +233,7 @@ method compileobjdefdec(o, selfr, pos) {
     if (ast.findAnnotation(o, "parent")) then {
         out("  {selfr}.superobj = {val};")
     }
-    if (o.dtype != false) then {
+    if ((o.dtype != false).andAlso{o.dtype.value != "Dynamic"}) then {
         linenum := o.line
         noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
         out "// typecheck in compileobjdefdec.  o.name = {o.name}; o.dtype = {o.dtype}; o = {o}"
@@ -291,7 +288,7 @@ method compileobjvardec(o, selfr, pos) {
     if (!isWritable) then {
         out("  writer_{modname}_{nmi}{myc}.confidential = true;")
     }
-    if (o.dtype != false) then {
+    if ((o.dtype != false).andAlso{o.dtype.value != "Dynamic"}) then {
         if (val == "undefined") then {
             return true
         }
@@ -431,17 +428,6 @@ method compileblock(o) {
         }
     }
     out("  block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
-//    increaseindent
-//    var first := true
-//    for (o.params) do {p->
-//        if (first.not) then {
-//            out(",")
-//        }
-//        first := false
-//        out(varf(p.value))
-//    }
-//    decreaseindent
-//    out("  ) \{")
     increaseindent
     out("  sourceObject = this;")
     var ret := "undefined"
@@ -774,7 +760,7 @@ method compilemethodtypes(func, o) {
             // We store information for static top-level types only:
             // absent information is treated as Dynamic (and unchecked).
             if (false != p.dtype) then {
-                if ((p.dtype.kind == "identifier")
+                if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Dynamic"}
                     || (p.dtype.kind == "type")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
@@ -829,7 +815,7 @@ method compileif(o) {
         for (o.elseblock) do { l->
             fret := compilenode(l)
         }
-        out("if" ++ myc ++ " = " ++ fret ++ ";")
+        out("  if" ++ myc ++ " = " ++ fret ++ ";")
         decreaseindent
     }
     out("  \}")
@@ -839,10 +825,10 @@ method compileidentifier(o) {
     var name := o.value
     if (name == "super") then {
         def sugg = errormessages.suggestion.new
-        sugg.replaceRange(o.linePos, o.linePos + 4)with "this" onLine(o.line)
+        sugg.replaceRange(o.linePos, o.linePos + 4)with "self" onLine(o.line)
         errormessages.syntaxError("'super' cannot be used except on the "
                 ++ "left-hand side of the . in a method request. "
-                ++ "Use 'this' instead.")
+                ++ "Use 'self' instead.")
             atRange(
                 o.line, o.linePos, o.linePos + 4)withSuggestion(sugg)
     }
@@ -1218,11 +1204,12 @@ method compilenode(o) {
     compilationDepth := compilationDepth + 1
     linenum := o.line
     noteLineNumber(o.line)comment("compilenode {o.kind}")
-    if (o.kind == "num") then {
+    def oKind = o.kind
+    if (oKind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
     }
     var l := ""
-    if (o.kind == "string") then {
+    if (oKind == "string") then {
         l := o.value.size
         l := l + 1
         var os := ""
@@ -1233,25 +1220,25 @@ method compilenode(o) {
         o.register := "string" ++ auto_count
         auto_count := auto_count + 1
     }
-    if (o.kind == "index") then {
+    if (oKind == "index") then {
         compileindex(o)
     }
-    if (o.kind == "octets") then {
+    if (oKind == "octets") then {
         compileoctets(o)
     }
-    if (o.kind == "dialect") then {
+    if (oKind == "dialect") then {
         compiledialect(o)
     }
-    if (o.kind == "import") then {
+    if (oKind == "import") then {
         compileimport(o)
     }
-    if (o.kind == "return") then {
+    if (oKind == "return") then {
         compilereturn(o)
     }
-    if (o.kind == "generic") then {
+    if (oKind == "generic") then {
         o.register := compilenode(o.value)
     }
-    if ((o.kind == "identifier")
+    if ((oKind == "identifier")
         && ((o.value == "true") || (o.value == "false"))) then {
         var val := 0
         if (o.value == "true") then {
@@ -1260,55 +1247,55 @@ method compilenode(o) {
         out("  var bool" ++ auto_count ++ " = new GraceBoolean(" ++ o.value ++ ")")
         o.register := "bool" ++ auto_count
         auto_count := auto_count + 1
-    } elseif (o.kind == "identifier") then {
+    } elseif (oKind == "identifier") then {
         compileidentifier(o)
     }
-    if (o.kind == "defdec") then {
+    if (oKind == "defdec") then {
         compiledefdec(o)
     }
-    if (o.kind == "vardec") then {
+    if (oKind == "vardec") then {
         compilevardec(o)
     }
-    if (o.kind == "block") then {
+    if (oKind == "block") then {
         compileblock(o)
     }
-    if (o.kind == "method") then {
+    if (oKind == "method") then {
         compilemethod(o, "this")
     }
-    if (o.kind == "array") then {
+    if (oKind == "array") then {
         compilearray(o)
     }
-    if (o.kind == "bind") then {
+    if (oKind == "bind") then {
         compilebind(o)
     }
-    if (o.kind == "while") then {
+    if (oKind == "while") then {
         compilewhile(o)
     }
-    if (o.kind == "if") then {
+    if (oKind == "if") then {
         compileif(o)
     }
-    if (o.kind == "catchcase") then {
+    if (oKind == "catchcase") then {
         compilecatchcase(o)
     }
-    if (o.kind == "matchcase") then {
+    if (oKind == "matchcase") then {
         compilematchcase(o)
     }
-    if (o.kind == "class") then {
+    if (oKind == "class") then {
         compileclass(o)
     }
-    if (o.kind == "object") then {
+    if (oKind == "object") then {
         compileobject(o, "this", false)
     }
-    if (o.kind == "type") then {
+    if (oKind == "type") then {
         compiletype(o)
     }
-    if (o.kind == "member") then {
+    if (oKind == "member") then {
         compilemember(o)
     }
-    if (o.kind == "for") then {
+    if (oKind == "for") then {
         compilefor(o)
     }
-    if ((o.kind == "call")) then {
+    if ((oKind == "call")) then {
         if ((o.value.value == "print") && (o.value.in.value == "prelude")) then {
             var args := []
             for (o.with) do { part ->
@@ -1328,7 +1315,7 @@ method compilenode(o) {
             compilecall(o)
         }
     }
-    if (o.kind == "op") then {
+    if (oKind == "op") then {
         compileop(o)
     }
     compilationDepth := compilationDepth - 1
@@ -1496,7 +1483,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         }
         if (o.kind == "import") then {
             imported.push(o.path)
-    }
+        }
         if (o.kind == "dialect") then {
             imported.push(o.value)
         }
