@@ -1906,6 +1906,35 @@ Grace_prelude.methods["while()do"] = function(argcv, c, b) {
         throw new GraceExceptionPacket(TypeErrorObject,
             new GraceString("expected Block for argument condition (1) of "
                 + "while()do, got " + c.className));
+    if (Grace_prelude.methods["while()do"] &&
+            Grace_prelude.methods["while()do"].safe) {
+        var count = 0;
+        var runningTime = 0;
+        var runningCount = 0;
+        var startTime = new Date();
+        var diff;
+        while (Grace_isTrue(callmethod(c, "apply", [0]))) {
+            count++;
+            if (count % 100000 == 0 && ((diff=new Date()-startTime) > 5000)) {
+                var totTime = runningTime + diff;
+                var totIterations = runningCount + count;
+                if (confirm("A while loop is taking a long time to run. Do you want to stop the program? " + totIterations + " iterations of the loop have taken "
+                            + totTime + "ms so far."
+                            + "\n\nChoose OK to stop the loop or Cancel to "
+                            + "let it continue."))
+                    throw new GraceExceptionPacket(RuntimeErrorObject,
+                        new GraceString("user abort of possibly-infinite loop."));
+                else {
+                    runningCount += count;
+                    runningTime += diff;
+                    count = 0;
+                    startTime = new Date();
+                }
+            }
+            callmethod(b, "apply", [0]);
+        }
+        return var_nothing;
+    }
     while (Grace_isTrue(callmethod(c, "apply", [0]))) {
         callmethod(b, "apply", [0]);
     }
