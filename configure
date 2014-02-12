@@ -2,14 +2,17 @@
 
 DISTRIB=tree
 PLATFORM=$(uname)
-PREFIX=.
+PREFIX="/usr"
 LDFLAGS=
 UNICODE_LDFLAGS=
 OTHER_MODULES=
+INCLUDE_PATH='$(PREFIX)/include'
+MODULE_PATH='$(PREFIX)/lib/grace/modules'
+OBJECT_PATH='$(PREFIX)/lib/grace'
 
 other_modules=(
     mirrors
-    random
+    math
     repl
 )
 
@@ -52,16 +55,32 @@ while [ $# -gt 0 ]
 do
     if [ "$1" = "--prefix" ]
     then
-        PREFIX=$2
+        PREFIX=`readlink -f $2`
         shift
     elif [ "$1" = "--static" ]
     then
         STATIC=y
+    elif [ "$1" = "--includedir" ]
+    then
+        INCLUDE_PATH=`readlink -f $2` #convert the potentially relative path to absolute before storing it
+        shift
+    elif [ "$1" = "--libdir" ]
+    then
+        MODULE_PATH=`readlink -f $2`/grace/modules
+        OBJECT_PATH=`readlink -f $2`/grace
+        shift
+    elif [ "$1" = "--objectpath" ]
+    then
+        OBJECT_PATH=`readlink -f $2`
+        shift
     elif [ "$1" = "--help" ]
     then
         echo "Available flags:"
         echo " --prefix <path>"
         echo " --static {tarball only}"
+        echo " --includedir <path>"
+        echo " --libdir <path>"
+        echo " --objectpath <path>"
         exit 0
     else
         echo "Unknown argument '$1'."
@@ -69,6 +88,21 @@ do
     fi
     shift
 done
+
+if [ "$INCLUDE_PATH" = "" ]
+then
+    INCLUDE_PATH="$PREFIX/include"  #These are the defaults, relative to PREFIX
+fi
+
+if [ "$MODULE_PATH" = "" ]
+then
+    MODULE_PATH="$PREFIX/lib/grace/modules"
+fi
+
+if [ "$OBJECT_PATH" = "" ] 
+then
+    OBJECT_PATH=`dirname $MODULE_PATH`
+fi
 
 checkcurl() {
     echo -n "Checking for libcurl... "
@@ -225,6 +259,9 @@ UNICODE_LDFLAGS = $UNICODE_LDFLAGS
 UNICODE_MODULE = $UNICODE_MODULE
 STATIC_MODULES = $STATIC_MODULES
 OTHER_MODULES = ${OTHER_MODULES[@]}
+INCLUDE_PATH = $INCLUDE_PATH
+MODULE_PATH = $MODULE_PATH
+OBJECT_PATH = $OBJECT_PATH
 EOT
 
 if [ "$ADVISE_END" ]

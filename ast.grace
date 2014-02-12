@@ -1243,6 +1243,7 @@ class identifierNode.new(name, dtype') {
     var wildcard := false
     var dtype := dtype'
     var inBind := false
+    var inRequest := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1257,12 +1258,14 @@ class identifierNode.new(name, dtype') {
         blkAfter))
         n.wildcard := wildcard
         n.inBind := inBind
+        n.inRequest := inRequest
         n := blk.apply(n)
         n.line := line
         if (n.kind == "identifier") then {
             n.linePos := linePos
             n.wildcard := wildcard
             n.inBind := inBind
+            n.inRequest := inRequest
         }
         blkAfter.apply(n)
         n

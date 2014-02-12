@@ -247,7 +247,8 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "type") then {
         return [arg, []]
     }
-    Error.raise "Compiler logic error: fell through when rewriting match block"
+    Error.raise("Compiler logic error: fell through when rewriting match block"
+        ++ ": unexpected kind '{arg.kind}'.")
 }
 method rewritematchblock(blk) {
     def arg = blk.params[1]
@@ -371,7 +372,7 @@ method resolveIdentifier(node) {
                     suggestions.push(suggestion)
                 }
             }
-            var offerString := !node.inBind
+            var offerString := !node.inBind && !node.inRequest
             var highlightLength := node.value.size
             if (node.value.replace "()" with "XX" != node.value) then {
                 offerString := false
@@ -390,6 +391,23 @@ method resolveIdentifier(node) {
                 suggestion.insert("\"")atPosition(node.linePos + node.value.size)onLine(node.line)
                 suggestion.insert("\"")atPosition(node.linePos)onLine(node.line)
                 suggestions.push(suggestion)
+            }
+            if (node.inRequest) then {
+                var extra := ""
+                if (node.value == "while") then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.append " do \{ \}" onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+                if (node.value == "for") then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.append " do \{ aVarName -> \}" onLine(node.line)
+                    suggestions.push(suggestion)
+                }
+                errormessages.syntaxError "Unknown method name '{nm}'. This may be due to a spelling mistake or trying to access a method within another scope.{extra}"
+                    atRange(node.line, node.linePos, node.linePos +
+                        highlightLength - 1)
+                    withSuggestions(suggestions)
             }
             errormessages.syntaxError("Unknown variable or method name '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
@@ -883,6 +901,13 @@ method resolve(values) {
             def d = o.dest
             if (d.kind == "identifier") then {
                 d.inBind := true
+            }
+            return true
+        }
+        method visitCall(o) {
+            def d = o.value
+            if (d.kind == "identifier") then {
+                d.inRequest := true
             }
             return true
         }

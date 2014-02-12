@@ -17,11 +17,11 @@ method for(it)invariant(inv)do(blk) {
 }
 
 method while(c)invariant(inv)do(blk) {
-    while (c) do {i->
+    while (c) do {
         if (! inv.apply) then {
             InvariantFailure.raise "Loop invariant not satisfied."
         }
-        blk.apply(i)
+        blk.apply
     }
     if (! inv.apply) then {
         InvariantFailure.raise "Loop invariant not satisfied."

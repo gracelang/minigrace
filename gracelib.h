@@ -54,6 +54,7 @@ struct UserObject {
     jmp_buf *retpoint;
     Object super;
     Object *data;
+    int ndata;
 };
 
 struct StackFrameObject {
@@ -169,6 +170,7 @@ void gracelib_stats();
 void addtoclosure(Object, Object *);
 void glfree(void *);
 void setCompilerModulePath(char *);
+void setModulePath(char *);
 Object *getfromclosure(Object, int);
 void addmethod2(Object, char *, Object (*)(Object, int, int*, Object*, int));
 Method *addmethod2pos(Object, char *, Object (*)(Object, int, int*, Object*, int), int);

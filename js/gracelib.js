@@ -53,6 +53,13 @@ GraceString.prototype = {
             var s = this._value;
             return new GraceString(s.substring(from._value - 1, to._value));
         },
+        "startsWith": function(argcv, needle) {
+            var s = this._value;
+            var n = needle._value;
+            if (s.substring(0, n.length) == n)
+                return new GraceBoolean(true);
+            return new GraceBoolean(false);
+        },
         "asString": function(argcv) { return this ; },
         "asDebugString": function(argcv) {
             var patt = /"/gm;
@@ -1170,6 +1177,9 @@ function gracecode_io() {
     this.methods.realpath = function(junk, x) {
         return x;
     };
+    this.methods.findResource = function(junk, path) {
+        return path;
+    }
     this.definitionModule = "io";
     this.definitionLine = 0;
     return this;
@@ -1201,6 +1211,44 @@ function gracecode_sys() {
         return o;
     };
     this.definitionModule = "sys";
+    this.definitionLine = 0;
+    return this;
+}
+
+function gracecode_imports() {
+    var extensions = {
+        'txt': Grace_allocObject(),
+    };
+    extensions.txt.methods.loadResource = function(junk, path) {
+        var req = new XMLHttpRequest();
+        req.open('GET', 'https://' + path._value, false);
+        req.send(null);
+        if (req.status == 200) {
+            return new GraceString(req.responseText);
+        }
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("Error loading resource '" + path._value
+                    + "'."));
+    };
+    this.methods.registerExtension = function(junk, ext, handler) {
+        extensions[ext._value] = handler;
+    };
+    this.methods.loadResource = function(junk, importpath) {
+        path = importpath._value;
+        var slashPos = path.lastIndexOf('/');
+        var dotpos = path.indexOf('.', slashPos);
+        if (dotpos <= 0)
+            throw new GraceExceptionPacket(RuntimeErrorObject,
+                    new GraceString("No extension in path '" + path._value
+                        + "'."));
+        var ext = path.substr(dotpos + 1);
+        if (extensions[ext]) {
+            return callmethod(extensions[ext], "loadResource", [1], importpath);
+        }
+        throw new GraceExceptionPacket(RuntimeErrorObject,
+                new GraceString("No mapping for extension '" + ext + "'."));
+    };
+    this.definitionModule = "imports";
     this.definitionLine = 0;
     return this;
 }
@@ -1668,13 +1716,31 @@ function gracecode_mirrors() {
     return this;
 }
 
-function gracecode_random() {
+function gracecode_math() {
     this.methods = {
+        'sin': function(argcv, value) {
+            return new GraceNum(Math.sin(value));
+        },
+        'cos': function(argcv, value) {
+            return new GraceNum(Math.cos(value));
+        },
+        'tan': function(argcv, value) {
+            return new GraceNum(Math.tan(value));
+        },
+        'asin': function(argcv, value) {
+            return new GraceNum(Math.asin(value));
+        },
+        'acos': function(argcv, value) {
+            return new GraceNum(Math.acos(value));
+        },
+        'atan': function(argcv, value) {
+            return new GraceNum(Math.atan(value));
+        },
         'random': function(argcv) {
             return new GraceNum(Math.random());
-        }
+        },
     };
-    this.definitionModule = "random";
+    this.definitionModule = "math";
     this.definitionLine = 0;
     return this;
 }

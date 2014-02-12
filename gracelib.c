@@ -48,6 +48,7 @@ Object String_size(Object , int, int*, Object *, int flags);
 Object String_at(Object , int, int*, Object *, int flags);
 Object String_replace_with(Object , int, int*, Object *, int flags);
 Object String_substringFrom_to(Object , int, int*, Object *, int flags);
+Object String_startsWith(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
@@ -56,6 +57,8 @@ Object alloc_AndPattern(Object l, Object r);
 
 Object alloc_ExceptionPacket(Object msg, Object exception);
 Object alloc_Exception(char *name, Object parent);
+
+int find_resource(const char *name, char *buf);
 
 int gc_period = 100000;
 int rungc();
@@ -178,6 +181,7 @@ struct BlockObject {
     jmp_buf *retpoint;
     Object super;
     Object *data;
+    int ndata;
 };
 struct TypeObject {
     OBJECT_HEADER;
@@ -421,6 +425,9 @@ Object gracebecome(Object subObject, Object superObject) {
     sub->data = (Object *)(sup->data);
     sup->class = subclass;
     sup->data = subdata;
+    int tmpndata = sub->ndata;
+    sub->ndata = sup->ndata;
+    sup->ndata = tmpndata;
     return superObject;
 }
 Object graceunbecome(Object topObj) {
@@ -1531,6 +1538,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom()to",
                 &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
@@ -1657,6 +1665,14 @@ Object String_substringFrom_to(Object self,
     }
     return alloc_String(buf);
 }
+Object String_startsWith(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    if (strncmp(sstr, needle, strlen(needle)) == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
 Object String_replace_with(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
@@ -1700,7 +1716,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 24);
+        String = alloc_class("String", 25);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1715,6 +1731,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
+        add_Method(String, "startsWith", &String_startsWith);
         add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
@@ -2642,6 +2659,17 @@ Object io_listdir(Object self, int nparts, int *argcv,
     }
     return ret;
 }
+Object io_findResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *strval = grcstring(args[0]);
+    char buf[PATH_MAX];
+    if (find_resource(strval, buf)) {
+        return alloc_String(buf);
+    } else {
+        gracedie("Resource '%s' not found.", strval);
+        return NULL;
+    }
+}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -2650,7 +2678,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 12, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2662,6 +2690,7 @@ Object module_io_init() {
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
+    add_Method(IOModule, "findResource", &io_findResource);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
@@ -2742,8 +2771,8 @@ Object sys_exit(Object self, int nparts, int *argcv,
     exit(i);
     return NULL;
 }
-Object sys_execPath(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
+
+char *execPathHelper(){
     char *ep = ARGV[0];
     if (ep[0] == '/') {
         // Absolute path - needs no work
@@ -2771,7 +2800,12 @@ Object sys_execPath(Object self, int nparts, int *argcv,
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
     char *dn = dirname(epm);
-    return alloc_String(dn);
+    return dn;
+}
+
+Object sys_execPath(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    return alloc_String(execPathHelper());
 }
 Object sys_environ(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2796,6 +2830,101 @@ Object module_sys_init() {
     struct SysModule *so = (struct SysModule*)o;
     so->argv = argv_List;
     sysmodule = o;
+    gc_root(o);
+    return o;
+}
+ClassData ImportsModule;
+Object importsmodule;
+Object stringResourceHandler;
+struct ImportsModule {
+    OBJECT_HEADER;
+    struct imports_extension_pair *extensions;
+};
+struct imports_extension_pair {
+    char extension[32];
+    Object handler;
+    struct imports_extension_pair *next;
+};
+struct imports_extension_pair *alloc_imports_extension(const char *ext,
+        Object handler) {
+    struct imports_extension_pair *ret = glmalloc(sizeof(struct imports_extension_pair));
+    if (strlen(ext) > 31)
+        gracedie("Cannot register an import extension longer than 31 chars.");
+    strcpy(ret->extension, ext);
+    ret->handler = handler;
+    ret->next = NULL;
+    return ret;
+}
+void imports__mark(struct ImportsModule *o) {
+    struct imports_extension_pair *h = o->extensions;
+    while (h) {
+        gc_mark(h->handler);
+        h = h->next;
+    }
+}
+Object StringResourceHandler_loadResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *res = grcstring(args[0]);
+    char path[PATH_MAX];
+    if (!find_resource(res, path))
+        gracedie("Could not find resource '%s'.", res);
+    FILE *file = fopen(path, "r");
+    int bsize = 128;
+    int pos = 0;
+    char *buf = malloc(bsize);
+    pos += fread(buf, sizeof(char), bsize, file);
+    while (!feof(file)) {
+        bsize *= 2;
+        buf = realloc(buf, bsize);
+        pos += fread(buf+pos, sizeof(char), bsize-pos-1, file);
+    }
+    buf[pos] = 0;
+    Object str = alloc_String(buf);
+    free(buf);
+    return str;
+}
+Object imports_loadResource(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *res = grcstring(args[0]);
+    char *slash = strrchr(res, '/');
+    if (!slash)
+        slash = res;
+    char *ext = strchr(slash, '.');
+    if (!ext)
+        gracedie("No extension in resource '%s'.", res);
+    ext++;
+    struct ImportsModule *o = (struct ImportsModule *)self;
+    struct imports_extension_pair *h = o->extensions;
+    while (h) {
+        if (strcmp(ext, h->extension) == 0)
+            return callmethod(h->handler, "loadResource", 1, argcv, args);
+        h = h->next;
+    }
+    gracedie("No handler for extension '%s'.", ext);
+    return NULL;
+}
+Object imports_registerExtension(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ImportsModule *o = (struct ImportsModule *)self;
+    const char *ext = grcstring(args[0]);
+    Object handler = args[1];
+    struct imports_extension_pair *pair = alloc_imports_extension(ext, handler);
+    pair->next = o->extensions;
+    o->extensions = pair;
+    return done;
+}
+Object module_imports_init() {
+    if (importsmodule != NULL)
+        return importsmodule;
+    stringResourceHandler = alloc_userobj(1, 0);
+    add_Method(stringResourceHandler->class, "loadResource", &StringResourceHandler_loadResource);
+    ImportsModule = alloc_class2("Module<imports>", 2, (void*)&imports__mark);
+    add_Method(ImportsModule, "registerExtension", &imports_registerExtension);
+    add_Method(ImportsModule, "loadResource", &imports_loadResource);
+    Object o = alloc_obj(sizeof(struct imports_extension_pair*), ImportsModule);
+    struct ImportsModule *im = (struct ImportsModule *)o;
+    im->extensions = alloc_imports_extension("txt", stringResourceHandler);
+    importsmodule = o;
     gc_root(o);
     return o;
 }
@@ -2911,7 +3040,10 @@ Method *findmethod(Object *selfp, Object *realselfp, const char *name,
     int callflags = *cflags;
     Method *m = NULL;
     ClassData c = self->class;
+    Method *methods = c->methods;
+    char *this_class_name = c->name;
     for (i=0; i < c->nummethods; i++) {
+        Method this_method = c->methods[i];
         if (strcmp(c->methods[i].name, name) == 0) {
             m = &c->methods[i];
             break;
@@ -3089,10 +3221,8 @@ start:
         return ret;
     }
     if (m) {
-        char buf[1024];
-        sprintf(buf, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
+        fprintf(stderr, "Method returned null: %s.%s on line %i. This is a bug in the compiler runtime or an external native module. Terminating the program.\n",
                 self->class->name, name, linenumber);
-        fputs(buf, stderr);
         exit(1);
     }
     if (error_jump_set) {
@@ -3750,6 +3880,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
             alloc_obj(sizeof(struct BlockObject) - sizeof(struct Object), c));
     o->data = glmalloc(sizeof(Object) * 3);
     o->super = NULL;
+    o->ndata = 3;
     o->flags |= FLAG_BLOCK;
     return (Object)o;
 }
@@ -3768,8 +3899,9 @@ Object setsuperobj(Object sub, Object super) {
 }
 void UserObj__mark(struct UserObject *o) {
     int i;
-    for (i=0; o->data[i] != NULL; i++) {
-        gc_mark(o->data[i]);
+    for (i=0; i<o->ndata; i++) {
+        if (o->data[i])
+            gc_mark(o->data[i]);
     }
     if (o->super)
         gc_mark(o->super);
@@ -3858,6 +3990,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     for (i=0; i<numFields; i++)
         uo->data[i] = NULL;
     uo->super = GraceDefaultObject;
+    uo->ndata = numFields;
     return o;
 }
 Object alloc_userobj(int numMethods, int numFields) {
@@ -3898,69 +4031,63 @@ char * compilerModulePath;
 void setCompilerModulePath(char *s) {
     compilerModulePath = s;
 }
-int find_gso(const char *name, char *buf) {
-    // Try:
-    // 1) dirname(argv[0])
-    // 2) dirname(argv[0])/../lib/minigrace
-    // 3) GRACE_MODULE_PATH
-    // 4) Path of the compiler used to build
-    // 5) Path of the compiler used to build/../lib/minigrace
-    // 6) .
+
+char *modulePath = NULL;
+void setModulePath(char *s) {
+    modulePath = s;
+}
+int find_resource(const char *name, char *buf) {
+
+    char *sep = execPathHelper();
+    char *gmp = getenv("GRACE_MODULE_PATH");
+    char *home = getenv("HOME");
+    char buf1[PATH_MAX];
     struct stat st;
-    char *ep = ARGV[0];
-    char epm[strlen(ep) + 1];
-    strcpy(epm, ep);
-    char *dn = dirname(epm);
-    strcpy(buf, dn);
-    strcat(buf, "/");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
+
+    strcpy(buf1, sep);
+    char *locations[] = {".", sep, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+
+    char buf5[PATH_MAX];
+    if(modulePath != NULL){
+        locations[2] = strncpy(buf5, modulePath, PATH_MAX);
     }
-    realpath(dn, buf);
-    strcpy(buf, dn);
-    strcat(buf, "/../lib/minigrace/");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
+    char buf2[PATH_MAX];
+    if(home != NULL){
+        strcpy(buf2, home); 
+        locations[3] = strcat(buf2, "/.local/lib/grace/modules");
     }
-    if (getenv("GRACE_MODULE_PATH") != NULL) {
-        char *gmp = getenv("GRACE_MODULE_PATH");
-        strcpy(buf, gmp);
+    char buf3[PATH_MAX];
+    if(gmp != NULL){
+        locations[4] = strncpy(buf3, gmp, PATH_MAX);
+    }
+    char buf4[PATH_MAX];
+    if(compilerModulePath != NULL){
+        locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
+    }
+
+    int i = 0;
+
+    for(i = 0; i < 8; i++){
+        if(locations[i] == NULL){
+            continue;
+        }
+        strncpy(buf, locations[i], PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
-        strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
+
+
+        if(stat(buf, &st) == 0){
             return 1;
         }
     }
-    if (compilerModulePath != NULL) {
-        char *gmp = compilerModulePath;
-        strcpy(buf, gmp);
-        strcat(buf, "/");
-        strcat(buf, name);
-        strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
-            return 1;
-        }
-        gmp = compilerModulePath;
-        strcpy(buf, gmp);
-        strcat(buf, "/../lib/minigrace/");
-        strcat(buf, name);
-        strcat(buf, ".gso");
-        if (stat(buf, &st) == 0) {
-            return 1;
-        }
-    }
-    strcpy(buf, "./");
-    strcat(buf, name);
-    strcat(buf, ".gso");
-    if (stat(buf, &st) == 0) {
-        return 1;
-    }
+
     return 0;
+}
+int find_gso(const char *name, char *buf) {
+    char nbuf[strlen(name) + 5];
+    strcpy(nbuf, name);
+    strcat(nbuf, ".gso");
+    return find_resource(nbuf, buf);
 }
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
@@ -4353,7 +4480,10 @@ Object minigrace_credits(Object self, int argc, int *argcv,
     "Minigrace contains code by:\n"
     " * Michael Homer\n"
     " * Timothy Jones\n"
-    " * Jan Larres\n";
+    " * Daniel Gibbs\n"
+    " * Jan Larres\n"
+    " * Scott Weston\n"
+    "Further information may be found in doc/authors in the source code.\n";
     fprintf(stdout, "%s", w);
     return done;
 }
@@ -4434,7 +4564,8 @@ Object grace_prelude() {
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);
-    _prelude = alloc_userobj2(0, 7, c);
+    _prelude = alloc_userobj2(0, 0, c);
+    struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);
     prelude = _prelude;
     return _prelude;

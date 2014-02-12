@@ -317,7 +317,7 @@ method dotypeterm {
         dotrest
         don'tTakeBlock := false
     } else {
-        if (accept("lbrace")) then {
+        if (accept("keyword").andAlso { sym.value == "type" }) then {
             doanontype
         }
     }
@@ -1392,8 +1392,8 @@ method term {
         identifier
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
-    } elseif (accept("lbrace") && braceIsType) then {
-        dotypeterm
+    } elseif (accept("keyword").andAlso { sym.value == "type" }) then {
+        doanontype
     } elseif (accept("lbrace")) then {
         block
     } elseif (accept("lsquare")) then {
@@ -2414,9 +2414,22 @@ method doclass {
             errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
-        pushidentifier // A class currently cannot be anonymous
-        def cname = values.pop
-        next
+        def cname = if (!(util.extensions.contains("ClassMethods") &&
+                (tokens.first.kind != "dot"))) then {
+            pushidentifier // A class currently cannot be anonymous
+            def cname' = values.pop
+            if (!accept("dot")) then {
+                def suggestion = errormessages.suggestion.new
+                suggestion.replaceToken(sym) with(".")
+                errormessages.syntaxError "A class must have a dot after the object name."
+                    atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                    withSuggestion(suggestion)
+            }
+            next
+            cname'
+        } else {
+            false
+        }
         var s := methodsignature(false)
         var csig := s.sig
         var constructorName := s.m
@@ -2448,8 +2461,12 @@ method doclass {
         }
         next
         util.setline(btok.line)
-        var o :=
+        def o = if (false == cname) then {
+            ast.methodNode.new(constructorName, csig,
+                [ast.objectNode.new(body, false)], false)
+        } else {
             ast.classNode.new(cname, csig, body, false, constructorName, dtype)
+        }
         o.generics := s.generics
         if (false != anns) then {
             o.annotations.extend(anns)
@@ -2744,8 +2761,7 @@ method methodsignature(sameline) {
             dtype := false
             if (accept("colon")) then {
                 next
-                if (accept("identifier") || {accept("lbrace")}) then {
-                    dotyperef
+                if (didConsume { dotyperef }) then {
                     dtype := values.pop
                 } else {
                     def suggestions = []
@@ -2955,7 +2971,14 @@ method domethodtype {
 }
 
 method doanontype {
-    if (accept("lbrace")) then {
+    if (accept("keyword").andAlso { sym.value == "type" }) then {
+        next
+        if (!accept("lbrace")) then {
+            def suggestion = errormessages.suggestion.new
+            suggestion.replaceToken(sym) with("\{")
+            errormessages.syntaxError "Anonymous types must open with braces."
+                atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+        }
         def methods = []
         def mc = auto_count
         auto_count := auto_count + 1
@@ -3002,6 +3025,7 @@ method dotype {
         }
         next
         def methods = []
+        // Special case for type declarations.
         if (accept("lbrace")) then {
             next
             while {accept("rbrace").not} do {
@@ -3177,6 +3201,21 @@ method checkUnexpectedTokenAfterStatement {
                 suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value})")
                 suggestions.push(suggestion)
+                if (false != sym.next) then {
+                    def n = sym.next
+                    if (n.line == sym.line) then {
+                        suggestion := errormessages.suggestion.new
+                        suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value}")
+                        suggestion.append ")" onLine(sym.line)
+                            onLine(sym.line)
+                        suggestions.push(suggestion)
+                    }
+                }
+                if (values.last.kind == "identifier") then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.replaceToken(sym)leading(false)trailing(false)with("\"{sym.value}\"")
+                    suggestions.push(suggestion)
+                }
             }
             def nextTok = findNextValidToken("rbrace")
             if(nextTok == sym) then {

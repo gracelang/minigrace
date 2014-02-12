@@ -1,3 +1,16 @@
+Module files will be found in several locations. Grace source files of
+modules in these locations will be automatically compiled if the module
+is imported. The searched locations are:
+  * The current directory
+  * Next to the compiler executable
+  * The module path set at ./configure time. By default this is
+    $PREFIX/lib/grace/modules, or /usr/lib/grace/modules if no
+    installation prefix was given.
+  * ~/.local/lib/grace/modules
+  * ../lib/minigrace/modules relative to the compiler executable.
+Both Grace source code and dynamic modules (like the built-in "unicode")
+are found in these locations.
+
 The Minigrace distribution includes some additional modules that may be
 useful in user code. They are briefly described here.
 
@@ -120,9 +133,21 @@ A sample use might be:
 This module is only available in the native compiler, on architectures
 that support dynamic modules.
 
-random
+math
 ------
-The random module provides one method:
+The math module provides several methods:
+  sin -> Number
+    Returns the sine of the input number
+  cos -> Number
+    Returns the cosine of the input number
+  tan -> Number
+    Returns the tangent of the input number
+  asin -> Number
+    Returns the arcsin of the input number
+  acos -> Number
+    Returns the arccos of the input number
+  atan -> Number
+    Returns the arctangent of the input number
   random -> Number
     Returns a random number in the interval [0, 1].
 

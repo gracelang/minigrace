@@ -19,6 +19,10 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "#pragma DefaultVisibility=public" > buildinfo.grace
 	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" >> buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
+	echo "method prefix { \"$(PREFIX)\" }" >> buildinfo.grace
+	echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo.grace
+	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
+	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
@@ -36,8 +40,8 @@ curl.gso: curl.c gracelib.h
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
 
-random.gso: random.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o random.gso -shared -fPIC random.c
+math.gso: math.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o math.gso -shared -fPIC math.c
 
 repl.gso: repl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
@@ -76,10 +80,10 @@ js/%.js: %.grace minigrace
 
 js/index.html: js/index.in.html js/ace.in.html js/minigrace.js
 	@echo Generating index.html from index.in.html...
-	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@ 
+	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c random.c
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) StandardPrelude.grace $(UNICODE_MODULE) mirrors.c random.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
 
 tarball: minigrace
 	touch c/Makefile.conf
@@ -133,7 +137,7 @@ samples: samples-dialects samples-graphics samples-js
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
 	rm -f unicode.gco unicode.gso unicode.gcn
-	rm -f mirrors.gso random.gso
+	rm -f mirrors.gso math.gso
 	rm -f debugger.o
 	rm -f repl.gso
 	rm -rf l1 l2 buildinfo.grace
@@ -156,10 +160,12 @@ known-good/%:
 	rm -f known-good/*out
 
 install: minigrace
-	install -d $(PREFIX)/bin $(PREFIX)/lib/minigrace $(PREFIX)/include
+	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
-	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/minigrace/
-	install gracelib.h $(PREFIX)/include/gracelib.h
+	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
+	install -m 755 gracelib.o $(OBJECT_PATH)
+	install -m 644 gracelib.h $(INCLUDE_PATH)
+	install -m 644 mgcollections.grace $(MODULE_PATH)
 
 Makefile.conf: configure
 	./configure

@@ -26,8 +26,9 @@ interop:
     Provides hints for how to write glue code for interoperability
     between Grace code and other systems for use with Minigrace.
 modules:
-    Documents the modules included in the Minigrace distribution that
-    might be useful in user code.
+    Describes the locations imported modules are found, and documents
+    the modules included in the Minigrace distribution that might be
+    useful in user code.
 unicode:
     Defines the behaviour of Minigrace with regard to Unicode, including
     how strings behave and are defined, which characters are valid in

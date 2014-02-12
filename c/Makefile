@@ -26,8 +26,8 @@ mirrors.gso: mirrors.c gracelib.h
 mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
 
-random.gso: random.c gracelib.h
-	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o random.gso random.c
+math.gso: math.c gracelib.h
+	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o math.gso math.c
 curl.gso: curl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o curl.gso curl.c -lcurl
 
@@ -42,11 +42,13 @@ gracelib.o: gracelib.c StandardPrelude.c debugger.o
 	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 
-install: minigrace
-	install -d $(PREFIX)/bin $(PREFIX)/lib/minigrace $(PREFIX)/include
+install: selfhost
+	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
-	install -m 755 unicode.gso $(OTHER_MODULES) gracelib.o $(PREFIX)/lib/minigrace
-	install gracelib.h $(PREFIX)/include/gracelib.h
+	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
+	install -m 755 gracelib.o $(OBJECT_PATH)
+	install -m 644 gracelib.h $(INCLUDE_PATH)
+	install -m 644 mgcollections.grace $(MODULE_PATH)
 
 
 test: minigrace
