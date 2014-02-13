@@ -329,8 +329,10 @@ method dotyperef {
     var op := false
     def unionTypes = []
     if(didConsume({dotypeterm}).not) then {
+        checkBadAnonymousType
         def suggestions = []
         var suggestion := errormessages.suggestion.new
+        suggestion := errormessages.suggestion.new
         suggestion.insert(" «type name»")afterToken(lastToken)
         suggestions.push(suggestion)
         suggestion := errormessages.suggestion.new
@@ -349,6 +351,7 @@ method dotyperef {
         }
         next
         if(didConsume({dotypeterm}).not) then {
+            checkBadAnonymousType
             def suggestions = []
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" «type name»")afterToken(lastToken)
@@ -379,6 +382,7 @@ method dotyperef {
         }
         next
         if(didConsume({dotypeterm}).not) then {
+            checkBadAnonymousType
             def suggestions = []
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" «type name»")afterToken(lastToken)
@@ -1931,6 +1935,7 @@ method callrest {
                 }
                 next
                 if(didConsume({expression}).not) then {
+                    checkBadAnonymousType
                     def suggestions = []
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken("rparen")
@@ -1986,6 +1991,7 @@ method callrest {
                     }
                     next
                     if(didConsume({expression}).not) then {
+                        checkBadAnonymousType
                         def suggestions = []
                         var suggestion := errormessages.suggestion.new
                         def nextTok = findNextValidToken("rparen")
@@ -2938,6 +2944,7 @@ method methodsignature(sameline) {
                 if (didConsume { dotyperef }) then {
                     dtype := values.pop
                 } else {
+                    checkBadAnonymousType
                     def suggestions = []
                     var suggestion := errormessages.suggestion.new
                     suggestion.insert(" «type name»")afterToken(lastToken)
@@ -3357,6 +3364,16 @@ method checkBadOperators {
         def sugg = errormessages.suggestion.new
         sugg.insert(" ")beforeToken(sym)
         errormessages.syntaxError("The '>' operator requires a space before it.")
+            atRange(sym.line, sym.linePos, sym.linePos)
+            withSuggestion(sugg)
+    }
+}
+
+method checkBadAnonymousType {
+    if (sym.kind == "lbrace") then {
+        def sugg = errormessages.suggestion.new
+        sugg.insert("type ") beforeToken(sym)
+        errormessages.syntaxError("Anonymous type literals must be written with the 'type' keyword'.")
             atRange(sym.line, sym.linePos, sym.linePos)
             withSuggestion(sugg)
     }
