@@ -1071,7 +1071,162 @@ method generic {
         values.push(ast.genericNode.new(id, gens))
     }
 }
-method catchcase {
+method trycatch {
+    if (!(accept("identifier") && (sym.value == "try"))) then {
+        return 0
+    }
+    def localmin = minIndentLevel
+    def catchTok = sym
+    next
+    if (accept("lbrace")) then {
+        block
+    } else {
+        if(sym.kind != "lparen") then {
+            def suggestion = errormessages.suggestion.new
+            // Look ahead for a rbrace, rparen, or catch.
+            def nextTok = findNextToken({ t -> (t.kind == "rbrace")
+                || ((t.kind == "rparen") && (t.line == catchTok.line))
+                || ((t.kind == "identifier") && (t.value == "catch")) })
+            if(nextTok == false) then {
+                suggestion.insert(" \{}")afterToken(catchTok)
+            } elseif(nextTok.kind == "rbrace") then {
+                suggestion.insert(" \{")afterToken(catchTok)
+            } elseif(nextTok.kind == "rparen") then {
+                if(nextTok == sym) then {
+                    suggestion.insert("(«expression»")afterToken(lastToken)andTrailingSpace(true)
+                } else {
+                    suggestion.insert("(")afterToken(lastToken)andTrailingSpace(true)
+                }
+            } elseif(nextTok.kind == "identifier") then {
+                suggestion.insert(" \{")afterToken(catchTok)
+                suggestion.insert("\} ")beforeToken(nextTok)
+            }
+            errormessages.syntaxError("A catch statement must have either a block or an expression in parentheses after the 'catch'.")atPosition(
+                catchTok.line, catchTok.linePos + catchTok.size + 1)withSuggestion(suggestion)
+        }
+        next
+        if(didConsume({expression}).not) then {
+            def suggestion = errormessages.suggestion.new
+            def nextTok = findNextValidToken("rparen")
+            if(nextTok == sym) then {
+                suggestion.insert("«expression»")afterToken(lastToken)
+            } else {
+                suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+            }
+            errormessages.syntaxError("A catch statement must have either a block or an expression in parentheses after the 'catch'.")atPosition(
+                sym.line, sym.linePos)withSuggestion(suggestion)
+        }
+        if(sym.kind != "rparen") then {
+            def suggestion = errormessages.suggestion.new
+            suggestion.insert(")")afterToken(lastToken)
+            errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
+                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+        }
+        next
+    }
+    def mainblock = values.pop
+    def cases = []
+    var finally := false
+    while {accept("identifier") && (sym.value == "catch")} do {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            if(didConsume({expression}).not) then {
+                def suggestion = errormessages.suggestion.new
+                def nextTok = findNextValidToken("rparen")
+                if(nextTok == sym) then {
+                    suggestion.insert("«expression»")afterToken(lastToken)
+                } else {
+                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+                }
+                errormessages.syntaxError("A try-catch statement must have either a matching block or an expression in parentheses after the 'catch'.")atPosition(
+                    sym.line, sym.linePos)withSuggestion(suggestion)
+            }
+            if(sym.kind != "rparen") then {
+                def suggestion = errormessages.suggestion.new
+                suggestion.insert(")")afterToken(lastToken)
+                errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
+                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            }
+            next
+        } else {
+            def suggestions = []
+            def nextTok = findNextTokenIndentedAt(lastToken)
+            var suggestion := errormessages.suggestion.new
+            if(nextTok == false) then {
+                suggestion.insert(" }")afterToken(tokens.last)
+                suggestion.insert(" \{")afterToken(lastToken)
+                suggestions.push(suggestion)
+            } elseif(nextTok == sym) then {
+                suggestion.insert(" («expression»)")afterToken(lastToken)
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.insert(" \{ «match expression» }")afterToken(lastToken)
+                suggestions.push(suggestion)
+            } else {
+                suggestion.insert(" }")afterToken(nextTok.prev)
+                suggestion.insert(" \{")afterToken(lastToken)
+                suggestions.push(suggestion)
+            }
+            errormessages.syntaxError("A try-catch statement must have either a matching block or an expression in parentheses after the 'catch'.")atPosition(
+                sym.line, sym.linePos)withSuggestions(suggestions)
+        }
+        cases.push(values.pop)
+    }
+    if (accept("identifier") && (sym.value == "finally")) then {
+        next
+        if (accept("lbrace")) then {
+            block
+        } elseif (accept("lparen")) then {
+            next
+            if(didConsume({expression}).not) then {
+                def suggestion = errormessages.suggestion.new
+                def nextTok = findNextValidToken("rparen")
+                if(nextTok == sym) then {
+                    suggestion.insert("«expression»")afterToken(lastToken)
+                } else {
+                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+                }
+                errormessages.syntaxError("A catch statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
+                    sym.line, sym.linePos)withSuggestion(suggestion)
+            }
+            if(sym.kind != "rparen") then {
+                def suggestion = errormessages.suggestion.new
+                suggestion.insert(")")afterToken(lastToken)
+                errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
+                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            }
+            next
+        } else {
+            def suggestions = []
+            def nextTok = findNextTokenIndentedAt(lastToken)
+            var suggestion := errormessages.suggestion.new
+            if(nextTok == false) then {
+                suggestion.insert(" }")afterToken(tokens.first)
+                suggestion.insert(" \{")afterToken(lastToken)
+                suggestions.push(suggestion)
+            } elseif(nextTok == sym) then {
+                suggestion.insert(" («expression»)")afterToken(lastToken)
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.insert(" \{ «expression» }")afterToken(lastToken)
+                suggestions.push(suggestion)
+            } else {
+                suggestion.insert(" }")afterToken(nextTok.prev)
+                suggestion.insert(" \{")afterToken(lastToken)
+                suggestions.push(suggestion)
+            }
+            errormessages.syntaxError("A try-finally statement must have either a block or an expression in parentheses after the 'finally'.")atPosition(
+                sym.line, sym.linePos)withSuggestions(suggestions)
+        }
+        finally := values.pop
+    }
+    values.push(ast.catchCaseNode.new(mainblock, cases, finally))
+    minIndentLevel := localmin
+}
+method catchcase { // TODO: This construct is DEPRECATED. Remove it.
     if (!(accept("identifier") && (sym.value == "catch"))) then {
         return 0
     }
@@ -1387,6 +1542,8 @@ method term {
         matchcase
     } elseif(accept("identifier") && (sym.value == "catch")) then {
         catchcase
+    } elseif(accept("identifier") && (sym.value == "try")) then {
+        trycatch
     } elseif (accept("identifier")) then {
         identifier
     } elseif (accept("keyword") && (sym.value == "object")) then {
