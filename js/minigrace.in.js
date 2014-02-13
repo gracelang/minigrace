@@ -7,6 +7,7 @@ function MiniGrace() {
     this.lastSourceCode = "";
     this.lastMode = "";
     this.lastModname = "";
+    this.breakLoops = false;
     this.debugMode = false;
     this.lastDebugMode = false;
     this.printStackFrames = true;
@@ -133,6 +134,9 @@ MiniGrace.prototype.trapErrors = function(func) {
             this.stderr_write("Runtime error around line " + lineNumber + "\n");
             throw e;
         }
+    } finally {
+        if (Grace_prelude.methods["while()do"])
+            Grace_prelude.methods["while()do"].safe = false;
     }
 }
 
@@ -149,6 +153,8 @@ MiniGrace.prototype.run = function() {
     window['gracecode_' + this.modname] = theModule;
     testpass = false;
     var modname = this.modname;
+    if (Grace_prelude.methods["while()do"])
+        Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
             GraceDebugger.that = {methods:{}, data: {}, className: modname};
