@@ -1966,7 +1966,7 @@ method callrest {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("A method call must have an expression after a ','.")atPosition(
+                    errormessages.syntaxError("A method request must have an expression after a ','.")atPosition(
                         sym.line, sym.linePos)withSuggestions(suggestions)
                 }
                 // For matching blocks - same as above
@@ -2012,7 +2012,7 @@ method callrest {
             checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError("A method call beginning with a '(' must end with a ')'.")atPosition(
+            errormessages.syntaxError("A method request beginning with a '(' must end with a ')'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         if (sym.line == part.line) then {
@@ -2109,7 +2109,7 @@ method callmprest(meth, signature, tok) {
                     errormessages.syntaxError("A for loop must have either a loop body in braces, or a block in parentheses.")atPosition(
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 }
-                errormessages.syntaxError("A multi-part method call must have parentheses around each part of the method.")atPosition(
+                errormessages.syntaxError("A multi-part method request must have parentheses around each part of the method.")atPosition(
                     sym.line, sym.linePos)withSuggestion(suggestion)
             } else {
                 if(methname == "while()do") then {
@@ -2122,7 +2122,7 @@ method callmprest(meth, signature, tok) {
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 } else {
                     suggestion.insert("()")afterToken(lastToken)
-                    errormessages.syntaxError("A multi-part method call must end with '()'.")atPosition(
+                    errormessages.syntaxError("A multi-part method request must end with '()'.")atPosition(
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 }
             }
@@ -2159,7 +2159,7 @@ method callmprest(meth, signature, tok) {
                         suggestion.deleteTokenRange(sym, nextTok.prev)leading(true)trailing(false)
                     }
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("A method call must have an expression or a ')' after a '('.")atPosition(
+                    errormessages.syntaxError("A method request must have an expression or a ')' after a '('.")atPosition(
                         sym.line, sym.linePos)withSuggestions(suggestions)
                 }
             }
@@ -2180,7 +2180,7 @@ method callmprest(meth, signature, tok) {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("A method call must have an expression after a ','.")atPosition(
+                    errormessages.syntaxError("A method request must have an expression after a ','.")atPosition(
                         sym.line, sym.linePos)withSuggestions(suggestions)
                 }
             }
@@ -2194,7 +2194,7 @@ method callmprest(meth, signature, tok) {
                 checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
-                errormessages.syntaxError("A part of a multi-part method call beginning with a '(' must end with a ')'.")atPosition(
+                errormessages.syntaxError("A part of a multi-part method request beginning with a '(' must end with a ')'.")atPosition(
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
             }
         }
