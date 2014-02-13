@@ -1,15 +1,15 @@
 
-catch {
+try {
     var x := 1
     x.nonExistentMethod
-} case {
+} catch {
     e : Error -> print "OK; Caught an error."
 }
 
-catch {
+try {
     Exception.raise "OK"
-} case {
+} catch {
     e : Error -> print "Failed; caught Exception as Error."
-} case {
+} catch {
     e : Exception -> print "{e.message}; Caught a manual exception."
 }

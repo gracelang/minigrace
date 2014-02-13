@@ -1,10 +1,10 @@
 
 var count := 0
-catch {
+try {
     print "OK; inside main block."
     Exception.raise "OK"
     print "Failed; exception did not terminate block."
-} case {
+} catch {
     e : Exception ->
         print "OK."
         count := count + 1

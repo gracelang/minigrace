@@ -2,18 +2,18 @@
 var count := 0
 
 method foo(x) {
-    catch (x)
-        case { e : Exception -> print "Failed; no exception was raised." }
+    try (x)
+        catch { e : Exception -> print "Failed; no exception was raised." }
         finally { print "OK." ; count := count + 1}
 }
 
 method bar(x) {
-    catch { foo(x) }
+    try { foo(x) }
         finally { print "OK." ; count := count + 2 }
 }
 
 method baz {
-    catch {
+    try {
         bar { return 1 }
     } finally {
         print "OK."
