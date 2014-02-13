@@ -638,7 +638,7 @@ method doif {
             }
         }
         if(sym.kind != "rparen") then {
-            checkSingleEquals
+            checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -772,7 +772,7 @@ method doif {
                     }
                 }
                 if(sym.kind != "rparen") then {
-                    checkSingleEquals
+                    checkBadOperators
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(")")afterToken(lastToken)
                     errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -979,7 +979,7 @@ method prefixop {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1120,7 +1120,7 @@ method trycatch {
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         if(sym.kind != "rparen") then {
-            checkSingleEquals
+            checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1149,7 +1149,7 @@ method trycatch {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1198,7 +1198,7 @@ method trycatch {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1278,7 +1278,7 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         if(sym.kind != "rparen") then {
-            checkSingleEquals
+            checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1307,7 +1307,7 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1356,7 +1356,7 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1431,7 +1431,7 @@ method matchcase {
     }
     def matchee = values.pop
     if(sym.kind != "rparen") then {
-        checkSingleEquals
+        checkBadOperators
         def suggestion = errormessages.suggestion.new
         suggestion.insert(")")afterToken(lastToken)
         errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1458,7 +1458,7 @@ method matchcase {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1507,7 +1507,7 @@ method matchcase {
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1594,7 +1594,7 @@ method expression {
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         if(sym.kind != "rparen") then {
-            checkSingleEquals
+            checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -1750,7 +1750,7 @@ method expressionrest {
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 }
                 if(sym.kind != "rparen") then {
-                    checkSingleEquals
+                    checkBadOperators
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(")")afterToken(lastToken)
                     errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
@@ -2009,7 +2009,7 @@ method callrest {
             part.args.push(tmp)
         }
         if(sym.kind != "rparen") then {
-            checkSingleEquals
+            checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
             errormessages.syntaxError("A method call beginning with a '(' must end with a ')'.")atPosition(
@@ -2191,7 +2191,7 @@ method callmprest(meth, signature, tok) {
         }
         if (isTerm.not) then {
             if(sym.kind != "rparen") then {
-                checkSingleEquals
+                checkBadOperators
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert(")")afterToken(lastToken)
                 errormessages.syntaxError("A part of a multi-part method call beginning with a '(' must end with a ')'.")atPosition(
@@ -3345,11 +3345,18 @@ method statement {
     }
 }
 
-method checkSingleEquals {
+method checkBadOperators {
     if (sym.value == "=") then {
         def sugg = errormessages.suggestion.new
         sugg.insert("=")afterToken(sym)
         errormessages.syntaxError("Use '==' to test equality, not '='.")
+            atRange(sym.line, sym.linePos, sym.linePos)
+            withSuggestion(sugg)
+    }
+    if (sym.kind == "rgeneric") then {
+        def sugg = errormessages.suggestion.new
+        sugg.insert(" ")beforeToken(sym)
+        errormessages.syntaxError("The '>' operator requires a space before it.")
             atRange(sym.line, sym.linePos, sym.linePos)
             withSuggestion(sugg)
     }
