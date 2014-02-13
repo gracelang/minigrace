@@ -2353,17 +2353,19 @@ method vardec {
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
             }
             val := values.pop
-        }
-        if (accept("op") && (sym.value == "=")) then {
-            def suggestions = []
-            var suggestion := errormessages.suggestion.new
-            suggestion.replaceToken(sym)with(":=")
-            suggestions.push(suggestion)
-            suggestion := errormessages.suggestion.new
-            suggestion.replaceToken(varTok)with("def")
-            suggestions.push(suggestion)
-            errormessages.syntaxError("A variable declaration must use ':=' instead of '='. A constant declaration uses 'def' and '='.")atRange(
-                sym.line, sym.linePos, sym.linePos)withSuggestions(suggestions)
+        } else {
+            if (accept("op") && (sym.value == "=")) then {
+                def suggestions = []
+                var suggestion := errormessages.suggestion.new
+                suggestion.replaceToken(sym)with(":=")
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.replaceToken(varTok)with("def")
+                suggestions.push(suggestion)
+                errormessages.syntaxError("A variable declaration must use ':=' instead of '='. A constant declaration uses 'def' and '='.")
+                    atRange(sym.line, sym.linePos, sym.linePos)
+                    withSuggestions(suggestions)
+            }
         }
         var o := ast.varDecNode.new(name, val, dtype)
         var hasVisibility := false
