@@ -1878,7 +1878,7 @@ method checkimport(nm, line, isDialect) {
             if (util.importDynamic) then {
                 cmd := cmd ++ " --import-dynamic --dynamic-module"
             }
-            if (util.recurse) then {
+            if (util.recurse || isDialect) then {
                 if(location != "") then {
                     cmd := "cd {location} && "++cmd
                 }
@@ -1888,8 +1888,9 @@ method checkimport(nm, line, isDialect) {
                     // we try to run loadDynamic on it. Block here.
                     process.wait
                 }
+                //addTransitiveImports("{location}{nm}.gso", nm, line)
             }
-            if (!util.importDynamic) then {
+            if (!util.importDynamic && !isDialect) then {
                 linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)
             }
