@@ -2216,7 +2216,7 @@ method defdec {
         }
         pushidentifier
         var val := false
-        var dtype := ast.identifierNode.new("Dynamic", false)
+        var dtype := ast.identifierNode.new("Unknown", false)
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -2309,7 +2309,7 @@ method vardec {
         }
         pushidentifier
         var val := false
-        var dtype := ast.identifierNode.new("Dynamic", false)
+        var dtype := ast.identifierNode.new("Unknown", false)
         var name := values.pop
         if (accept("colon")) then {
             next

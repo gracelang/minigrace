@@ -684,7 +684,7 @@ method compilemethod(o, selfobj, pos) {
             slot := slot + 1
             numslots := numslots + 1
             if (param.dtype != false) then {
-                if ((param.dtype.value != "Dynamic")
+                if ((param.dtype.value != "Unknown")
                     && ((param.dtype.kind == "identifier")
                         || (param.dtype.kind == "type"))) then {
                     haveTypedParams := true
@@ -737,7 +737,7 @@ method compilemethod(o, selfobj, pos) {
         out("  \} else \{")
         for (o.generics) do {g->
             var gn := escapeident(g.value)
-            out("    *var_{gn} = Dynamic;")
+            out("    *var_{gn} = Unknown;")
         }
         out("  \}")
         out("// End generics")
@@ -1027,7 +1027,7 @@ method compilemethodtypes(litname, o) {
     for (o.signature) do { part ->
         for (part.params) do { p ->
             // We store information for static top-level types only:
-            // absent information is treated as Dynamic (and unchecked).
+            // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
                 if ((p.dtype.kind == "identifier")
                     || (p.dtype.kind == "type")) then {
@@ -2016,6 +2016,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object Number;")
     outprint("extern Object Boolean;")
     outprint("extern Object Dynamic;")
+    outprint("extern Object Unknown;")
     outprint("extern Object List;")
     outprint("extern Object Block;")
     outprint("extern Object Done;")
@@ -2093,6 +2094,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  type_Boolean = Boolean;")
     out("  Object *var_Dynamic = alloc_var();")
     out("  *var_Dynamic = Dynamic;")
+    out("  Object *var_Unknown = alloc_var();")
+    out("  *var_Unknown= Unknown;")
     out("  Object *var_List = alloc_var();")
     out("  *var_List = List;")
     out("  Object *var_Type = alloc_var();")

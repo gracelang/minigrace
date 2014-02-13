@@ -443,7 +443,7 @@ def anObjectType = object {
 
             method &(_ : ObjectType) -> dynamic { dynamic }
 
-            def asString : String is public, override = "Dynamic"
+            def asString : String is public, override = "Unknown"
         }
     }
 
@@ -578,7 +578,7 @@ def anObjectType = object {
     addTo(list) name("++") params(list) returns (list)
     addTo(list) name("reduce") params(dynamic, fold) returns (dynamic)
 
-    scope.types.at("Dynamic") put(dynamic)
+    scope.types.at("Unknown") put(dynamic)
     scope.types.at("Done") put(done)
     scope.types.at("Object") put(base)
     scope.types.at("Pattern") put(pattern)
@@ -587,6 +587,7 @@ def anObjectType = object {
     scope.types.at("String") put(string)
     scope.types.at("List") put(list)
 
+    addVar("Unknown") ofType(pattern)
     addVar("Dynamic") ofType(pattern)
     addVar("Done") ofType(pattern)
     addVar("Object") ofType(pattern)

@@ -829,6 +829,7 @@ method resolve(values) {
     preludeObj.add "while()do"
     preludeObj.add "print"
     builtinObj.add "Object" as "def"
+    builtinObj.add "Unknown" as "def"
     builtinObj.add "Dynamic" as "def"
     builtinObj.add "String" as "def"
     builtinObj.add "Number" as "def"
