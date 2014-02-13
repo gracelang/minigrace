@@ -606,7 +606,7 @@ method compilemethod(o, selfobj) {
     }
     out("  try \{")
     increaseindent
-    var ret := "var_done"
+    var ret := "GraceDone"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
