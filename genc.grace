@@ -28,6 +28,7 @@ var bblock := "entry"
 var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
+var dynamicmodules := collections.set.new
 def importnames = collections.map.new
 var values := []
 var outfile
@@ -1779,6 +1780,9 @@ method parseGCT(path, filepath) {
 }
 method addTransitiveImports(filepath, epath, line) {
     def data = parseGCT(epath, filepath)
+    if (data.contains "dialect") then {
+        checkimport(data.get("dialect").first, line, true)
+    }
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
@@ -1832,7 +1836,10 @@ method checkimport(nm, line, isDialect) {
     for(locationList) do { location ->
         if (exists.not && io.exists("{location}{nm}.gso").andAlso
                 {!util.extensions.contains("Static")}) then {
-            exists := true
+            if (io.newer("{location}{nm}.gso", "{location}{nm}.grace")) then {
+                exists := true
+                dynamicmodules.add(nm)
+            }
             addTransitiveImports("{location}{nm}.gso", nm, line)
         } 
         if (exists.not && io.exists("{location}{nm}.gcn")) then {
@@ -1887,6 +1894,7 @@ method checkimport(nm, line, isDialect) {
                     // We must wait for the .gso to be built before
                     // we try to run loadDynamic on it. Block here.
                     process.wait
+                    dynamicmodules.add(nm)
                 }
                 //addTransitiveImports("{location}{nm}.gso", nm, line)
             }
@@ -2274,8 +2282,11 @@ method compile(vl, of, mn, rm, bt) {
             }
         }
         log_verbose("done.")
+        def allmodules = collections.set.new
+        allmodules.extend(staticmodules)
+        allmodules.extend(dynamicmodules)
         xmodule.writeGCT(modname, modname ++ ".gct")
-            fromValues(values)modules(staticmodules)
+            fromValues(values)modules(allmodules)
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
                 cmd := "./" ++ modname

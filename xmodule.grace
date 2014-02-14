@@ -61,6 +61,7 @@ method gctAsString(data) {
 method generateGCT(path)fromValues(values)modules(modules) {
     def methods = collections.list.new
     def confidentials = collections.list.new
+    var theDialect := false
     for (values) do { v->
         if (v.kind == "vardec") then {
             if (ast.isPublic(v)) then {
@@ -90,6 +91,8 @@ method generateGCT(path)fromValues(values)modules(modules) {
             methods.push(v.name.value)
         } elseif (v.kind == "type") then {
             methods.push(v.value)
+        } elseif (v.kind == "dialect") then {
+            theDialect := v.value
         }
     }
     def gct = collections.map.new
@@ -97,6 +100,9 @@ method generateGCT(path)fromValues(values)modules(modules) {
     gct.put("path", collections.list.new(path))
     gct.put("public", methods)
     gct.put("confidential", confidentials)
+    if (false != theDialect) then {
+        gct.put("dialect", collections.list.new(theDialect))
+    }
     def classes = collections.list.new
     for (values) do {val->
         if (val.kind == "class") then {
