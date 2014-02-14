@@ -4456,7 +4456,7 @@ Object minigrace_obj;
 Object minigrace_warranty(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     char *w =
-    "Copyright (C) 2011-2013 Michael Homer and authors\n"
+    "Copyright (C) 2011-2014 Michael Homer and authors\n"
     "This program is free software: you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation, either version 3 of the License, or\n"
