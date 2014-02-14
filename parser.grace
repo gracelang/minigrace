@@ -1243,6 +1243,9 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
     def localmin = minIndentLevel
     def catchTok = sym
     next
+    util.warning("The catch-case statement is deprecated and will be "
+        ++ "removed in a future version of the compiler. Use try-catch "
+        ++ "instead.")
     if (accept("lbrace")) then {
         block
     } else {
