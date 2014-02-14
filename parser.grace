@@ -1184,6 +1184,15 @@ method trycatch {
         }
         cases.push(values.pop)
     }
+    if (accept("identifier")onLineOf(catchTok) && (sym.value == "case")) then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.replaceToken(sym)with("catch")
+        errormessages.syntaxError("A try-catch statement starts with a "
+                ++ "'try' and then zero or more 'catch' blocks; there "
+                ++ "are no 'case' blocks.")
+            atRange(sym.line, sym.linePos, sym.linePos + 3)
+            withSuggestion(suggestion)
+    }
     if (accept("identifier") && (sym.value == "finally")) then {
         next
         if (accept("lbrace")) then {
