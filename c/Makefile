@@ -8,6 +8,11 @@ selfhost: minigrace $(CFILES:.c=.grace)
 	rm -f $(CFILES:.c=.gcn)
 	./minigrace --make --verbose --target c --module minigrace compiler.grace
 
+buildinfo.grace: Makefile.conf
+	awk '/prefix/ { $$4 = "\"$(PREFIX)\"" } ; /includepath/ { $$4 = "\"$(INCLUDE_PATH)\"" } ; /modulepath/ { $$4 = "\"$(MODULE_PATH)\"" } ; /objectpath/ { $$4 = "\"$(OBJECT_PATH)\"" } ; { print }' buildinfo.grace > buildinfo.grace.new
+	rm -f buildinfo.grace
+	mv buildinfo.grace.new buildinfo.grace
+
 %.o: %.c
 	gcc -g -I. -std=c99 -c -o $@ $<
 
