@@ -480,11 +480,11 @@ class evalVisitor.new {
                         s.accept(self)
                     }
                 } else {
-                    catch {
+                    try {
                         for (meth.body) do { s ->
                             s.accept(self)
                         }
-                    } case {
+                    } catch {
                         e : ReturnException ->
                             if (e.message != name) then {
                                 raiseagain := e.message

@@ -1941,7 +1941,7 @@ method processImports(values') {
                 checkimport(nm, v.line, true)
                 log_verbose("loading dialect for checkers.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
-                catch {
+                try {
                     def dobj = mirrors.loadDynamicModule(nm)
                     def mths = mirrors.reflect(dobj).methods
                     for (mths) do { m->
@@ -1956,10 +1956,10 @@ method processImports(values') {
                             dialectHasAtModuleStart := true
                         }
                     }
-                } case { e : RuntimeError ->
+                } catch { e : RuntimeError ->
                     util.setPosition(v.line, 1)
                     errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
-                } case { e : CheckerFailure ->
+                } catch { e : CheckerFailure ->
                     match (e.data)
                         case { lp : LinePos ->
                             util.setPosition(e.data.line, e.data.linePos)
