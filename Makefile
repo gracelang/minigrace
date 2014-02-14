@@ -106,6 +106,7 @@ selftest: minigrace
 	rm -rf selftest
 
 minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
+	[ -e .git/hooks/commit-msg ] || ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 # Giant hack! Not suitable for use.

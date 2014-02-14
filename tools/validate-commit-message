@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Enforce that the commit message is correctly formatted.
+# It must:
+#  - Have a subject line 50 characters or under starting with a
+#    capital letter.
+#  - Have a body following a blank line.
+#  - Have no line over 72 characters.
+
+FILENAME="$1"
+errors=()
+
+error() {
+    errors=(${errors:+"${errors[@]}"}
+        "$1"
+    )
+}
+
+if ! grep -q '^[^#]' "$FILENAME"
+then
+    echo "Blank message; aborting commit."
+    exit 1
+fi
+
+if ! head -1 "$FILENAME" | awk '/.{51}/ { exit 1 }'
+then
+    error "1. The subject of the commit message must be 50 characters or under"
+fi
+
+if ! awk 'NR == 1 { if (/^[a-z ]/) exit 1 ; else exit 0 }' "$FILENAME"
+then
+    error "1. The subject line must start with a capital letter."
+fi
+
+if ! awk 'NR == 2 { if (/^$/) exit 0 ; else exit 1 }' "$FILENAME"
+then
+    error "2. This line must be blank."
+fi
+
+if [ $(wc -l "$FILENAME" | awk '{ print $1 }') -lt 3 ]
+then
+    error "3. There is only a subject and no body."
+fi
+
+if ! awk 'NR == 3 { if (/^#/) exit 1 ; else exit 0 }' "$FILENAME"
+then
+    error "3. There is only a subject and no body."
+fi
+
+if ! awk 'NR == 3 { if (/^$/) exit 1 ; else exit 0 }' "$FILENAME"
+then
+    error "3. The body must start here and this line must be non-empty."
+fi
+
+LN=$(awk 'NR > 2 { if (/^.{73}/) { print NR ; FAIL = 1} }' "$FILENAME")
+if [ "$LN" ]
+then
+    for ln in $LN
+    do
+        error "$ln. Body lines must be under 72 characters."
+    done
+fi
+
+if [ ${#errors} -gt 0 ]
+then
+    echo "*********************************************************"
+    echo "Formatting errors in commit message. Revise and resubmit."
+    echo "Erase all non-comment lines to abort commit."
+    echo "*********************************************************"
+    atline=$(awk '/^#/ { print NR ; exit 0}' "$FILENAME")
+    if [ "$atline" ]
+    then
+        atline=$((atline - 1))
+    else
+        atline=$(wc -l "$FILENAME" | awk '{print $1}')
+    fi
+    head -n $atline "$FILENAME" > /tmp/msg-$$
+    echo >>/tmp/msg-$$
+    echo "# COMMIT MESSAGE FORMAT ERRORS:" >> /tmp/msg-$$
+    for err in "${errors[@]}"
+    do
+        echo "# $err" >> /tmp/msg-$$
+    done
+    echo "# Erase all non-comment lines to abort the commit." >> /tmp/msg-$$
+    echo >> /tmp/msg-$$
+    atline=$((atline + 1))
+    tail -n +$atline "$FILENAME" >> /tmp/msg-$$
+    cat /tmp/msg-$$ > "$FILENAME"
+    rm -f /tmp/msg-$$
+    ed="$VISUAL"
+    [ "$ed" ] || ed="$EDITOR"
+    [ "$ed" ] || ed="vi"
+    $ed "$FILENAME"
+    exec "$0" "$FILENAME"
+else
+    exit 0
+fi
