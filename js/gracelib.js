@@ -971,7 +971,9 @@ function classType(obj) {
     return t;
 }
 
-var var_Dynamic = new GraceType("Dynamic");
+var var_Unknown = new GraceType("Unknown");
+var var_Dynamic = var_Unknown;
+var var_Done = new GraceType("Done");
 var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(new GraceBoolean(true));
@@ -982,6 +984,7 @@ var_List.typeMethods = ["==", "!=", "push", "pop", "at", "at()put",
 var type_String = var_String;
 var type_Number = var_Number;
 var type_Boolean = var_Boolean;
+var type_Unknown = var_Unknown;
 var type_Dynamic = var_Dynamic;
 var type_List = var_List;
 var var_Block = new GraceType("Block");

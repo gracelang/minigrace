@@ -116,6 +116,7 @@ ClassData ExceptionPacket;
 ClassData Exception;
 
 Object Dynamic;
+Object Unknown;
 Object List;
 Object prelude = NULL;
 
@@ -4192,8 +4193,9 @@ void gracelib_argv(char **argv) {
     hash_init = rand();
     alloc_Float64(1);
     alloc_Boolean(0);
-    Dynamic = alloc_Type("Dynamic", 0);
-    gc_root(Dynamic);
+    Unknown = alloc_Type("Unknown", 0);
+    gc_root(Unknown);
+    Dynamic = Unknown;
     List = alloc_Type("List", 14);
     gc_root(List);
     add_Method((ClassData)List, "==", NULL);

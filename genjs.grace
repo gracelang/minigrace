@@ -507,7 +507,7 @@ method compilemethod(o, selfobj) {
     for (o.signature) do { part ->
         for (part.params) do {p->
             if (p.dtype != false) then {
-                if ((p.dtype.value != "Dynamic")
+                if ((p.dtype.value != "Unknown")
                     && ((p.dtype.kind == "identifier")
                         || (p.dtype.kind == "type"))) then {
                     haveTypedParams := true
@@ -561,7 +561,7 @@ method compilemethod(o, selfobj) {
         }
         out("  \} else \{")
         for (o.generics) do {g->
-            out("    {varf(g.value)} = var_Dynamic;")
+            out("    {varf(g.value)} = var_Unknown;")
         }
         out("  \}")
         out("// End generics")
@@ -672,7 +672,7 @@ method compilefreshmethod(o, selfobj) {
     for (o.signature) do { part ->
         for (part.params) do {p->
             if (p.dtype != false) then {
-                if ((p.dtype.value != "Dynamic")
+                if ((p.dtype.value != "Unknown")
                     && ((p.dtype.kind == "identifier")
                         || (p.dtype.kind == "type"))) then {
                     haveTypedParams := true
@@ -709,7 +709,7 @@ method compilefreshmethod(o, selfobj) {
         }
         out("  \} else \{")
         for (o.generics) do {g->
-            out("    {varf(g.value)} = var_Dynamic;")
+            out("  {varf(g.value)} = var_Unknown;")
         }
         out("  \}")
         out("// End generics")
@@ -758,7 +758,7 @@ method compilemethodtypes(func, o) {
     for (o.signature) do { part ->
         for (part.params) do {p->
             // We store information for static top-level types only:
-            // absent information is treated as Dynamic (and unchecked).
+            // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
                 if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Dynamic"}
                     || (p.dtype.kind == "type")) then {
