@@ -233,10 +233,9 @@ method compileobjdefdec(o, selfr, pos) {
     if (ast.findAnnotation(o, "parent")) then {
         out("  {selfr}.superobj = {val};")
     }
-    if ((o.dtype != false).andAlso{o.dtype.value != "Dynamic"}) then {
+    if (o.dtype.value != "Unknown") then {
         linenum := o.line
         noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
-        out "// typecheck in compileobjdefdec.  o.name = {o.name}; o.dtype = {o.dtype}; o = {o}"
         out "  if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
         out "    [1], {val})))"
         out "      throw new GraceExceptionPacket(TypeErrorObject,"
@@ -288,7 +287,7 @@ method compileobjvardec(o, selfr, pos) {
     if (!isWritable) then {
         out("  writer_{modname}_{nmi}{myc}.confidential = true;")
     }
-    if ((o.dtype != false).andAlso{o.dtype.value != "Dynamic"}) then {
+    if ((o.dtype != false).andAlso{o.dtype.value != "Unknown"}) then {
         if (val == "undefined") then {
             return true
         }
