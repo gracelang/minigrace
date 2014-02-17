@@ -2,11 +2,19 @@ function toggleDebugger() {
     var std_err = document.getElementById("stderr_txt");
     var dbgmenu = document.getElementById("debugger");
     if (document.getElementById("debugtoggle").checked) {
+        if(ace) {
+            editor.session.setBreakpoints(
+                                          GraceDebugger.breakpoints.points.map(
+                                                                               function(x){return x - 1;}));
+        }
         std_err.style.width="49.5%";
         dbgmenu.style.display = "table";
     } else {
+        if(ace) {
+            editor.session.clearBreakpoints();
+        }
         dbgmenu.style.display = "none";
-        std_err.style.width = "100%";        
+        std_err.style.width = "100%";
     }
 }
 
@@ -16,11 +24,13 @@ var GraceDebugger = {
     lineCount : function () {
         this.currentRunCount++;
     },
-
+    
     SetStatus : function (value) {
         minigrace.stderr_write(value + "\n");
     },
-
+    
+    "default" : window.setLineNumber,
+    
     "backStep" : function () {
         window.setLineNumber = function (n) {
             lineNumber = n;
@@ -32,7 +42,7 @@ var GraceDebugger = {
             }
         }
     },
-
+    
     "restart" : function() {
         this.lastRunCount = 0;
         window.setLineNumber = function (n) {
@@ -45,7 +55,7 @@ var GraceDebugger = {
             }
         }
     },
-
+    
     "continue" : function () {
         window.setLineNumber = function (n) {
             lineNumber = n;
@@ -57,7 +67,7 @@ var GraceDebugger = {
             }
         }
     },
-
+    
     "step" : function () {
         window.setLineNumber = function (n) {
             lineNumber = n;
@@ -69,7 +79,7 @@ var GraceDebugger = {
             }
         }
     },
-
+    
     
     run : function (module, obj) {
         this.lastRunCount = this.currentRunCount;
@@ -77,20 +87,16 @@ var GraceDebugger = {
         this.SetStatus("Program running....");
         try {
             window.clearstdout();
-            this.VariableValues(module.call(obj));
+            this.VariableListBase(module.call(obj));
             GraceDebugger.lineCount();  // this is so back-step will stop at the line before the end of the program (would stop two lines before the end without this)
             this.SetStatus("Program has finished running");
-	    window.setLineNumber = function (n) {
-                lineNumber = n;
-            }
+            window.setLineNumber = this["default"];
         } catch(e) {
-	    window.setLineNumber = function (n) {
-                lineNumber = n;
-            }
+            window.setLineNumber = this["default"];
             if(e.exctype && e.exctype == "breakpoint") {
-                this.VariableValues(e.that);
+                this.VariableListBase(e.that);
                 this.SetStatus("Program stopped on line " + lineNumber);
-
+                
             } else {
                 this.SetStatus("Program errored!");
                 throw e;
@@ -98,63 +104,107 @@ var GraceDebugger = {
         }
         
     },
-
-    VariableValues : function (that) {
-        function prb(obj, depth) {
-            var space = depth + "  "
-            if(obj != null) {
-                if(obj._value) {
-                    if(obj.className == "String")
-                        return "\"" + obj._value + "\"";
-                    else
-                        return obj._value;
-                } else if(obj.data) {
-                    var str = "{\n";
-                    for(var i in obj.data) {
-                        str += space + i + ":" + prb(obj.data[i], space) + ",\n";
-                    }
-                    str += depth + "}";
-                    return str;
-                } else {
-                    return "unknown";
-                }
-            } else {
-                return "undefined";
-            }
-        }
-        
-        var table = "Variables <div>";
-        if(that && that.methods) {
-            table += "<table class=\"debugger_vars_display\">";
-            for(var i in that.methods) {
+    
+    
+    VariableListBase : function (that) {
+        var list = document.createElement("ul");
+        if (that && that.methods) {
+            for (var i in that.methods) {
                 var variable = that.methods[i];
-                if(variable.debug) {
-                    var returnedVar = variable([0])
-                    if(returnedVar) {
-                        if(returnedVar._value) {
-                            if(returnedVar.className == "String") {
-                                table += "<tr><td>" + i + "</td><td>\""
-                                      + returnedVar._value + "\"</td></tr>\n";
-                            } else {
-                                table += "<tr><td>" + i + "</td><td>"
-                                      + returnedVar._value + "</td></tr>\n";
-                            }
-                        } else {
-                            table += "<tr><td>" + i + "</td><td>"
-                                  + prb(returnedVar, "") + "</td></tr>\n";
-                        }
-                    } else {
-                        table += "<tr><td>" + i
-                              + "</td><td>undefined</td></tr>\n";
-                    }
+                if (variable.debug) {
+                    this.VariableListItem(variable([0]), i, list);
                 }
             }
-            table += "</table>";
+            document.getElementById("debugger_vars_display").innerHTML = "Variables:";
+            document.getElementById("debugger_vars_display").appendChild(list);
         } else {
-            table += "<span style=\"color: #aaa;\">(No variables set)</span>";
-	}
-        table += "</div>";
-        document.getElementById("debugger_vars_display").innerHTML = table;
+            document.getElementById("debugger_vars_display").innerHTML = "Variables:<br /><span style=\"color: #aaa;\">(No variables set)</span>";
+        }
+        document.getElementById("debugger_vars_display").className = "treeview";
+    },
+    
+    
+    // adds a variable to the list
+    VariableListItem : function (obj, name, ul) {
+        var li = document.createElement("li");
+        li.variable = obj;
+        
+        if (obj && obj.className) {
+            switch(obj.className) {
+                case "String":
+                    if (obj._value) {
+                        li.innerHTML = name + " : \"" + obj._value + "\"";
+                    } else {
+                        li.innerHTML = name + " : \"\"";
+                    }
+                    break;
+                    
+                case "Number":
+                    if (obj._value) {
+                        li.innerHTML = name + " : " + obj._value;
+                    } else {
+                        li.innerHTML = name + " : 0";
+                    }
+                    break;
+                    
+                case "Boolean":
+                    if (obj._value) {
+                        li.innerHTML = name + " : " + obj._value;
+                    } else {
+                        li.innerHTML = name + " : false";
+                    }
+                    break;
+                    
+                case "Object":
+                    li.className = "submenu";
+                    li.style.backgroundImage='url("closed.png")';
+                    
+                    var top_span = document.createElement("span");
+                    var sub_ul = document.createElement("ul");
+                    
+                    top_span.innerHTML = name + " : ";
+                    sub_ul.style.display = "none";
+                    
+                    li.appendChild(top_span);
+                    li.appendChild(sub_ul);
+                    
+                    li.onclick = function(e) {
+                        GraceDebugger.toggleObjList(e, this, name);
+                    }
+                    
+                    sub_ul.onclick = function(e) {
+                        e.stopPropagation();
+                    }
+                    break;
+                    
+                default: // other types we've yet to define introspection for
+                    li.innerHTML = name + " : " + obj.className;
+            }
+            
+            // Undefined
+        } else {
+            li.innerHTML = name + " := undefined";
+        }
+        ul.appendChild(li);
+    },
+    
+    
+    // opens up or closes an object list
+    toggleObjList : function (e, li, name) {
+        e.stopPropagation();
+        var sub_ul = li.getElementsByTagName("ul")[0];
+        
+        if(sub_ul.style.display == "block") { // hide
+            li.style.backgroundImage='url("closed.png")';
+            sub_ul.style.display = "none";
+        } else { // show
+            li.style.backgroundImage='url("open.png")';
+            sub_ul.innerHTML = "";
+            sub_ul.style.display = "block";
+            
+            for(obj in li.variable.data)
+                GraceDebugger.VariableListItem(li.variable.data[obj], obj, sub_ul);
+        }
     },
 };
 
@@ -175,20 +225,27 @@ GraceDebugger.breakpoints = {
     refresh : function () {
         var bpString = "";
         for (var i=0;i<this.points.length;i++) {
+            var lineNum = this.points[i];
             if (this.enabled[i]) {
                 bpString += "<div>" + this.points[i]
-                    + ' <button onclick="GraceDebugger.breakpoints.toggle(' + i + ');">Disable</button><button onclick="GraceDebugger.breakpoints.remove('
-                    + i + ');">Remove</button></div>';
+                + ' <button onclick="GraceDebugger.breakpoints.toggle(' + lineNum + ');">Disable</button><button onclick="GraceDebugger.breakpoints.remove('
+                + lineNum + ');">Remove</button></div>';
             } else {
-                bpString += "<div>" + this.points[i] 
-                    + ' <button onclick="GraceDebugger.breakpoints.toggle('
-                    + i + ');">Enable</button><button onclick="GraceDebugger.breakpoints.remove('
-                    + i + ');">Remove</button></div>';
+                bpString += "<div>" + lineNum
+                + ' <button onclick="GraceDebugger.breakpoints.toggle('
+                + lineNum + ');">Enable</button><button onclick="GraceDebugger.breakpoints.remove('
+                + lineNum + ');">Remove</button></div>';
             }
+        }
+        if(ace) {
+            editor.session.clearBreakpoints();
+            editor.session.setBreakpoints(
+                                          GraceDebugger.breakpoints.points.map(
+                                                                               function(x){return x - 1;}));
         }
         document.getElementById("breakpoints").innerHTML = bpString;
     },
-
+    
     // add a breakpoint to the current module using the number in the correct input field
     add : function () {
         num = Number(document.getElementById("add_break").value);
@@ -219,25 +276,31 @@ GraceDebugger.breakpoints = {
             GraceDebugger.SetStatus("Cannot add breakpoint - invalid breakpoint number.");
         }
     },
-  
+    
     // toggle breakpoint
-    toggle : function (index) {
-        if (this.enabled[index]) {
-            GraceDebugger.SetStatus("Breakpoint for line " + this.points[index] + " disabled.");
-        } else {
-            GraceDebugger.SetStatus("Breakpoint for line " + this.points[index] + " enabled.");
-        }
+    toggle : function (num) {
+        var index = this.points.indexOf(num);
+        if (index != -1) {
+            if (this.enabled[index]) {
+                GraceDebugger.SetStatus("Breakpoint for line " + num + " disabled.");
+            } else {
+                GraceDebugger.SetStatus("Breakpoint for line " + num + " enabled.");
+            }
             this.enabled[index] = !this.enabled[index];
             this.refresh();
+        }
     },
-  
-    remove : function (index) {
-        this.enabled.splice(index, 1);
-        GraceDebugger.SetStatus("Breakpoint for line " + this.points[index] + " removed.");
-        this.points.splice(index, 1);
-        this.refresh();
+    
+    remove : function (num) {
+        var index = this.points.indexOf(num);
+        if (index != -1) {
+            this.enabled.splice(index, 1);
+            GraceDebugger.SetStatus("Breakpoint for line " + num + " removed.");
+            this.points.splice(index, 1);
+            this.refresh();
+        }
     },
-
+    
     isHere : function (num) {
         var index = this.points.indexOf(num);
         if (index > -1 && this.enabled[index]) {
@@ -246,7 +309,7 @@ GraceDebugger.breakpoints = {
             return false;
         }
     },
-
+    
     points : [],
     enabled : [],
 };

@@ -25,7 +25,7 @@
 .tab input {
     display: none;
 }
-    
+
 .close {
     font-weight: bold;
     font-family: arial;
@@ -42,14 +42,14 @@
 }
 
 .close:hover {
-        color: #fff;
-        border: 1px solid #aaa;
-        border-radius: 3px;
-        background: #bbb;
-        text-align: center;
-        margin: 2px 0px 0px 5px;
-        width: 12px;
-        float: right;
+    color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background: #bbb;
+    text-align: center;
+    margin: 2px 0px 0px 5px;
+    width: 12px;
+    float: right;
 }
 .selected .close {
 }
@@ -67,9 +67,9 @@
 #code_tabs textarea {
     display: none;
 }
-    
+
 canvas {border: 1px solid black;}
-        
+
 #output {
     float: right;
     margin-top: 1px;
@@ -80,7 +80,6 @@ canvas {border: 1px solid black;}
     width: 100%;
 }
 
-    
 #code_area {
     float: left;
     width: 50%;
@@ -107,7 +106,7 @@ canvas {border: 1px solid black;}
 }
 
 a:visited {
-    color: red;
+    color: blue;
 }
 
 #debugger {
@@ -133,18 +132,14 @@ a:visited {
 	padding: 3px;}
 
 #breakpoints {
-	overflow: auto;
-	height: 70px;}
+    overflow: auto;
+    height: 70px;}
 
 #add_break {
 	width: 2cm;}
 
 .debugger_vars_display	{
 	padding: 3px 5px 3px 5px;}
-
-#debugger_vars_display div	{
-	overflow: auto;	
-	height: 120px;}
 
 .debugger_vars_display	{
 	border-collapse: collapse;
@@ -156,3 +151,31 @@ a:visited {
 
 #debugger_status {
 	padding-left: 5px;}
+
+#debugger_vars_display>ul{
+    overflow: auto;
+	height: 120px;}
+
+#debugger_vars_display ul{
+	margin: 0;
+	padding: 0;}
+
+#debugger_vars_display li{
+	background: white url("list.png") no-repeat left center;
+	list-style-type: none;
+	padding-left: 22px;
+	margin-bottom: 3px;}
+
+#debugger_vars_display li.submenu{
+	background: white url(closed.png) no-repeat left 1px;
+	cursor: pointer;}
+
+#debugger_vars_display li.submenu ul{
+	display: none;}
+
+#debugger_vars_display .submenu ul li{
+	cursor: default;}
+.ace_gutter-cell.ace_breakpoint{
+    border-radius: 20px 0px 0px 20px;
+    box-shadow: 0px 0px 1px 1px red inset;
+}

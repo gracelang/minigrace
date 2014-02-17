@@ -1,205 +1,205 @@
 var ace;
 var goldenOutput = "";
 var goldenOutputOffset = 0;
-        
+
 // Setup stderr.
 minigrace.stderr_write = function(value) {
     var stderr = document.getElementById("stderr_txt");
     stderr.value += value;
     stderr.scrollTop = stderr.scrollHeight;
 };
-        
+
 // Setup stdin.
 minigrace.stdin_read = function() {
     return prompt("Input: ");
 }
-        
+
 // Setup stdout.
 minigrace.stdout_write = function(value) {
     var stdout = document.getElementById("stdout_txt");
     stdout.value += value;
-            scrollstdout();
-        };
-        
-        function go() {
-            if (ace)
-            editor.getSession().clearAnnotations();
-            if (document.getElementById('mode').value == 'testall') {
-                document.getElementById('mode').selectedIndex = 0;
-                modeswitch();
-                testall();
-                return;
+    scrollstdout();
+};
+
+function go() {
+    if (ace)
+        editor.getSession().clearAnnotations();
+    if (document.getElementById('mode').value == 'testall') {
+        document.getElementById('mode').selectedIndex = 0;
+        modeswitch();
+        testall();
+        return;
+    }
+    var old_stderr = document.getElementById('stderr_txt').value;
+    document.getElementById('stderr_txt').value = "";
+    minigrace.modname = document.getElementById('modname').value;
+    var compiled = minigrace.compilerun(getCode());
+    if(!compiled  && !document.getElementById('debugtoggle').checked)
+        document.getElementById('stderr_txt').value = old_stderr;
+    document.getElementById('js_txt').value = minigrace.generated_output;
+    if (minigrace.compileError && ace) {
+        var lines = document.getElementById('stderr_txt').value.split("\n");
+        var bits;
+        for (var i=0; i<lines.length; i++) {
+            if (lines[i].substring(0, 10) != 'minigrace:') {
+                bits = lines[i].split(':');
+                break;
             }
-            var old_stderr = document.getElementById('stderr_txt').value;
-            document.getElementById('stderr_txt').value = "";
-            minigrace.modname = document.getElementById('modname').value;
-            var compiled = minigrace.compilerun(getCode());
-            if(!compiled  && !document.getElementById('debugtoggle').checked)
-                document.getElementById('stderr_txt').value = old_stderr;
-            document.getElementById('js_txt').value = minigrace.generated_output;
-            if (minigrace.compileError && ace) {
-                var lines = document.getElementById('stderr_txt').value.split("\n");
-                var bits;
-                for (var i=0; i<lines.length; i++) {
-                    if (lines[i].substring(0, 10) != 'minigrace:') {
-                        bits = lines[i].split(':');
-                        break;
-                    }
-                }
-                editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
-                editor.getSelection().clearSelection();
-                bits.shift();
-                editor.getSession().setAnnotations([{
-                                                    row: bits.shift() - 1,
-                                                    column: bits.shift() - 1,
-                                                    text: bits.join(":"),
-                                                    type: "error"
-                                                    }]);
-            }
-            scrollstdout();
         }
-        
-        function loadtest(testname) {
+        editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
+        editor.getSelection().clearSelection();
+        bits.shift();
+        editor.getSession().setAnnotations([{
+                                            row: bits.shift() - 1,
+                                            column: bits.shift() - 1,
+                                            text: bits.join(":"),
+                                            type: "error"
+                                            }]);
+    }
+    scrollstdout();
+}
+
+function loadtest(testname) {
+    document.getElementById('stderr_txt').value = "";
+    document.getElementById('defaultVisibility').selectedIndex = 1;
+    selectvisibility();
+    var req = new XMLHttpRequest();
+    req.open("GET", "tests/" + testname + "_test.grace", false);
+    req.send(null);
+    if (req.status == 200) {
+        if (ace)
+            editor.setValue(req.responseText, -1);
+        document.getElementById("code_txt").value = req.responseText;
+        document.getElementById("modname").value = testname;
+        minigrace.modname = testname;
+    }
+    if (testname.indexOf("_fail") == -1) {
+        req.open("GET", "tests/" + testname + ".out", false);
+        req.send(null);
+        if (req.status == 200) {
+            document.getElementById("stdout_txt").value = "Golden output:\n" + req.responseText + "=================================\n";
+            goldenOutput = req.responseText;
+            goldenOutputOffset = document.getElementById("stdout_txt").value.length;
+        }
+    } else {
+        document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
+    }
+}
+
+function modeswitch() {
+    var mode = document.getElementById('mode').value;
+    if (mode != 'js' && mode != 'testall') {
+        outputTabManager(document.getElementById("tab_stdout"), 'js_tab');
+    }
+    if (mode != 'testall') {
+        minigrace.mode = mode;
+    }
+}
+
+function testall() {
+    var tc = document.getElementById('testcases');
+    var passes = 0;
+    var tests = 0;
+    var failures = [];
+    var idx = 0;
+    var overallStartTime = (new Date).getTime();
+    var fetchTime = 0;
+    var compileTime = 0;
+    var runTime = 0;
+    function testnext() {
+        function testthis() {
+            tests++;
+            tc.selectedIndex = idx;
+            var st = (new Date).getTime();
+            loadtest(tc.children[idx].value);
+            var et = (new Date).getTime();
+            fetchTime += (et - st);
+            var op = passes;
             document.getElementById('stderr_txt').value = "";
-            document.getElementById('defaultVisibility').selectedIndex = 1;
-            selectvisibility();
-            var req = new XMLHttpRequest();
-            req.open("GET", "tests/" + testname + "_test.grace", false);
-            req.send(null);
-            if (req.status == 200) {
-                if (ace)
-                editor.setValue(req.responseText, -1);
-                document.getElementById("code_txt").value = req.responseText;
-                document.getElementById("modname").value = testname;
-                minigrace.modname = testname;
+            st = (new Date).getTime();
+            minigrace.compile(getCode());
+            et = (new Date).getTime();
+            compileTime += (et - st);
+            document.getElementById('js_txt').value = minigrace.generated_output;
+            st = (new Date).getTime();
+            if (!minigrace.compileError) {
+                minigrace.run();
+                if (goldenOutput != "") {
+                    var realOut = stdout_txt.value.substr(goldenOutputOffset);
+                    if (realOut == goldenOutput) {
+                        stderr_txt.value += "\nTest passed.";
+                        passes = passes + 1;
+                    } else {
+                        stderr_txt.value += "\nTest failed.";
+                    }
+                    stderr_txt.scrollTop = stderr_txt.scrollHeight;
+                    goldenOutput = "";
+                    setTimeout("stdout_txt.style.background = ''", 2500);
+                }
             }
-            if (testname.indexOf("_fail") == -1) {
-                req.open("GET", "tests/" + testname + ".out", false);
-                req.send(null);
-                if (req.status == 200) {
-                    document.getElementById("stdout_txt").value = "Golden output:\n" + req.responseText + "=================================\n";
-                    goldenOutput = req.responseText;
-                    goldenOutputOffset = document.getElementById("stdout_txt").value.length;
+            et = (new Date).getTime();
+            runTime += (et - st);
+            if (tc.children[idx].value.indexOf("_fail") != -1) {
+                if (stderr_txt.value.indexOf("error") != -1) {
+                    passes++;
+                } else {
+                    failures.push(tc.children[idx].value);
                 }
             } else {
-                document.getElementById("stdout_txt").value = "Expected result: syntax error.\n=================================\n";
+                if (op == passes)
+                    failures.push(tc.children[idx].value);
             }
-        }
-        
-        function modeswitch() {
-            var mode = document.getElementById('mode').value;
-            if (mode != 'js' && mode != 'testall') {
-                outputTabManager(document.getElementById("tab_stdout"), 'js_tab');
-            }
-            if (mode != 'testall') {
-                minigrace.mode = mode;
-            }
-        }
-        
-        function testall() {
-            var tc = document.getElementById('testcases');
-            var passes = 0;
-            var tests = 0;
-            var failures = [];
-            var idx = 0;
-            var overallStartTime = (new Date).getTime();
-            var fetchTime = 0;
-            var compileTime = 0;
-            var runTime = 0;
-            function testnext() {
-                function testthis() {
-                    tests++;
-                    tc.selectedIndex = idx;
-                    var st = (new Date).getTime();
-                    loadtest(tc.children[idx].value);
-                    var et = (new Date).getTime();
-                    fetchTime += (et - st);
-                    var op = passes;
-                    document.getElementById('stderr_txt').value = "";
-                    st = (new Date).getTime();
-                    minigrace.compile(getCode());
-                    et = (new Date).getTime();
-                    compileTime += (et - st);
-                    document.getElementById('js_txt').value = minigrace.generated_output;
-                    st = (new Date).getTime();
-                    if (!minigrace.compileError) {
-                        minigrace.run();
-                        if (goldenOutput != "") {
-                            var realOut = stdout_txt.value.substr(goldenOutputOffset);
-                            if (realOut == goldenOutput) {
-                                stderr_txt.value += "\nTest passed.";
-                                passes = passes + 1;
-                            } else {
-                                stderr_txt.value += "\nTest failed.";
-                            }
-                            stderr_txt.scrollTop = stderr_txt.scrollHeight;
-                            goldenOutput = "";
-                            setTimeout("stdout_txt.style.background = ''", 2500);
-                        }
-                    }
-                    et = (new Date).getTime();
-                    runTime += (et - st);
-                    if (tc.children[idx].value.indexOf("_fail") != -1) {
-                        if (stderr_txt.value.indexOf("error") != -1) {
-                            passes++;
-                        } else {
-                            failures.push(tc.children[idx].value);
-                        }
-                    } else {
-                        if (op == passes)
-                        failures.push(tc.children[idx].value);
-                    }
-                    idx++;
-                    stderr_txt.value = ("Ran " + idx + "/"
-                                        + tc.children.length + " tests.\n\n"
-                                        + stderr_txt.value);
-                    testnext();
-                }
-                if (idx < tc.children.length) {
-                    setTimeout(testthis, 0);
-                } else {
-                    var overallEndTime = (new Date).getTime();
-                    stderr_txt.value = "Ran all tests. Passed: " +
-                    passes + "/" + tests;
-                    if (failures.length > 0) {
-                        stderr_txt.value += "\nFailures: ";
-                        for (var i=0; i<failures.length; i++)
-                        stderr_txt.value += "\n  " + failures[i];
-                    }
-                    stderr_txt.value += "\nTook " + (
-                                                     overallEndTime - overallStartTime) +
-                    "ms real time, " + fetchTime + "ms fetching, "
-                    + compileTime + "ms compiling, "
-                    + runTime + "ms running.";
-                }
-            }
+            idx++;
+            stderr_txt.value = ("Ran " + idx + "/"
+                                + tc.children.length + " tests.\n\n"
+                                + stderr_txt.value);
             testnext();
         }
-        
-        function clearstdout() {
-            document.getElementById("stdout_txt").value = "";
-        }
-        
-        function scrollstdout() {
-            if(document.getElementById("autoscroll").checked) {
-                var stdout = document.getElementById("stdout_txt");
-                stdout.scrollTop = stdout.scrollHeight;
+        if (idx < tc.children.length) {
+            setTimeout(testthis, 0);
+        } else {
+            var overallEndTime = (new Date).getTime();
+            stderr_txt.value = "Ran all tests. Passed: " +
+            passes + "/" + tests;
+            if (failures.length > 0) {
+                stderr_txt.value += "\nFailures: ";
+                for (var i=0; i<failures.length; i++)
+                    stderr_txt.value += "\n  " + failures[i];
             }
+            stderr_txt.value += "\nTook " + (
+                                             overallEndTime - overallStartTime) +
+            "ms real time, " + fetchTime + "ms fetching, "
+            + compileTime + "ms compiling, "
+            + runTime + "ms running.";
         }
-        
-        function selectvisibility() {
-            minigrace.vis = document.getElementById("defaultVisibility").value;
-        }
-        window.addEventListener("load", function() {
-            document.getElementById('stdout_txt').value = "";
-            document.getElementById('stderr_txt').value = "";
-            if (window.location.hash) {
-                if (window.location.hash.substring(0, 8) == "#sample=") {
-                    var s = window.location.hash.substring(8);
-                    loadsample(s);
-                }
-            }
-        });
+    }
+    testnext();
+}
+
+function clearstdout() {
+    document.getElementById("stdout_txt").value = "";
+}
+
+function scrollstdout() {
+    if(document.getElementById("autoscroll").checked) {
+        var stdout = document.getElementById("stdout_txt");
+        stdout.scrollTop = stdout.scrollHeight;
+    }
+}
+
+function selectvisibility() {
+    minigrace.vis = document.getElementById("defaultVisibility").value;
+}
+window.addEventListener("load", function() {
+                        document.getElementById('stdout_txt').value = "";
+                        document.getElementById('stderr_txt').value = "";
+                        if (window.location.hash) {
+                        if (window.location.hash.substring(0, 8) == "#sample=") {
+                        var s = window.location.hash.substring(8);
+                        loadsample(s);
+                        }
+                        }
+                        });
 
 
 /***************************************/
@@ -267,7 +267,7 @@ function addCodeTab(name, code, file) {
         number : tabCount,
         //codeObject : null
     };
-
+    
     if(typeof name == "string")
         tab.name = name;
     if(code)
@@ -290,7 +290,7 @@ function addCodeTab(name, code, file) {
     tab.tabObject.body.appendChild(tab.tabObject.close);
     tab.tabObject.body.appendChild(tab.tabObject.span);
     tab.tabObject.body.appendChild(tab.tabObject.input);
-
+    
     tab.changeName = function(name) {
         if(typeof name == "string") {
             this.name = name;
@@ -357,7 +357,7 @@ function addCodeTab(name, code, file) {
     tab.tabObject.span.addEventListener("dblclick", tab.nameEditStart, false);
     tab.tabObject.input.addEventListener("keydown", tab.nameEditFinish, false);
     
-
+    
     document.getElementById("tabs").appendChild(tab.tabObject.body);
     document.getElementById("tabs").appendChild(document.getElementById("plus"));
     
@@ -392,7 +392,7 @@ function startup() {
         editor.getSession().setUseSoftTabs(true);
         editor.getSession().setTabSize(4);
         editor.commands.bindKeys({"ctrl-l":null, "ctrl-shift-r":null, "ctrl-r":null, "ctrl-t":null})
-
+        
         document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
         document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
         document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
@@ -412,15 +412,38 @@ function startup() {
                 return document.getElementById("code_txt").value;
             }
         }
-        document.getElementById("tabs").style.marginBottom = "2px";
-     } else {
-         document.getElementById("code_txt_real").style.display = "none";
-         document.getElementById("acetoggle").parentNode.style.display = "none";
-         getCode = function() {
-             return document.getElementById("code_txt").value;
-         }
-     }
-
+        
+        // debugger stuff
+        editor.on("guttermousedown", function(e){
+                  if (document.getElementById("debugtoggle").checked) {
+                  var target = e.domEvent.target;
+                  if (target.className.indexOf("ace_gutter-cell") == -1)
+                  return;
+                  if (!editor.isFocused())
+                  return;
+                  if (e.clientX > 25 + target.getBoundingClientRect().left)
+                  return;
+                  
+                  var row = e.getDocumentPosition().row;
+                  if (e.editor.session.$breakpoints[row]) {
+                  //e.editor.session.clearBreakpoint(row);
+                  GraceDebugger.breakpoints.remove(row+1);
+                  } else {
+                  //e.editor.session.setBreakpoint(row);
+                  document.getElementById("add_break").value = row + 1;
+                  document.getElementById("bpadd").click();
+                  }
+                  e.stop();
+                  }
+                  });
+    } else {
+        document.getElementById("code_txt_real").style.display = "none";
+        document.getElementById("acetoggle").parentNode.style.display = "none";
+        getCode = function() {
+            return document.getElementById("code_txt").value;
+        }
+    }
+    
     addCodeTab("main","print \"Hello, world!\"");
     document.getElementById("code_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
     document.getElementById("stdout_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
@@ -451,7 +474,7 @@ function toggleAce() {
         document.getElementById('code_txt_real').style.display = 'none';
         document.getElementById('code_txt').style.display = 'inline';
         document.getElementById('code_area').style.paddingBottom = "0px";
-
+        
     }
 }
 
