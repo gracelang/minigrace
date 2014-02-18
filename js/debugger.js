@@ -19,7 +19,6 @@ function toggleDebugger() {
 }
 
 
-
 var GraceDebugger = {
     currentRunCount : 0,
     lastRunCount : 0,
@@ -104,7 +103,6 @@ var GraceDebugger = {
                 throw e;
             }
         }
-        
     },
     
     

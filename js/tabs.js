@@ -34,7 +34,7 @@ function go() {
     document.getElementById('stderr_txt').value = "";
     minigrace.modname = document.getElementById('modname').value;
     var compiled = minigrace.compilerun(getCode());
-    if (!compiled  && !document.getElementById('debugtoggle').checked)
+    if (!compiled && !document.getElementById('debugtoggle').checked)
         document.getElementById('stderr_txt').value = old_stderr;
     document.getElementById('js_txt').value = minigrace.generated_output;
     if (minigrace.compileError && ace) {
@@ -45,6 +45,11 @@ function go() {
                 bits = lines[i].split(':');
                 break;
             }
+            idx++;
+            stderr_txt.value = ("Ran " + idx + "/"
+                                + tc.children.length + " tests.\n\n"
+                                + stderr_txt.value);
+            testnext();
         }
         editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
         editor.getSelection().clearSelection();
