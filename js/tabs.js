@@ -352,7 +352,8 @@ function addCodeTab(name, code, file) {
             GraceDebugger.breakpoints.points = tab.debug.points;
             GraceDebugger.breakpoints.enable = tab.debug.enable;
             GraceDebugger.lastRunCount = tab.debug.lineCount;
-            GraceDebugger.breakpoints.refresh();
+            if (document.getElementById('debugtoggle').checked)
+                GraceDebugger.breakpoints.refresh();
         }
     }
 
