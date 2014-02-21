@@ -15,6 +15,7 @@ l1
 l2
 minigrace
 UnicodeData.txt
+NameAliases.txt
 unicodegen.py
 misc
 tests/test.log
