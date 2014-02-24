@@ -1,0 +1,17 @@
+math's methods are: 
+    asString
+    asDebugString
+    sin
+    cos
+    tan
+    asin
+    acos
+    atan
+    random
+    pi
+    π
+    sqrt
+    abs
+sqrt(16) = 4
+sin(90°) = 1
+sin(0) = 0

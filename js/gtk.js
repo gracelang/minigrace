@@ -455,7 +455,7 @@ function gracecode_gtk() {
 					}
 		            break;
 					
-					/*case "clicked":
+                /*case "clicked":
 					 if(typeof this.clicker == "undefined") {
 					 this.clicker = function(event) {
 					 var rect = canvas.getBoundingClientRect();
@@ -628,7 +628,7 @@ function gracecode_gdk() {
     return o;
 }
 
-// Only used to grab images
+// Used only to grab images
 function gracecode_cairo() {
     var o = Grace_allocObject();
     o.methods.image_surface_create_from_png  = function (argcv) {
@@ -641,25 +641,3 @@ function gracecode_cairo() {
     return o;
 }
 
-
-function gracecode_math() {
-    var o = Grace_allocObject();
-	
-    o.methods.Pi = function() {
-        return new GraceNum(3.14159);
-    };
-	
-    o.methods.sqrt = function(x) {
-        return new GraceNum(Math.sqrt(x));
-	};
-	
-    o.methods.sqr = function(x) {
-        return new GraceNum(x*x);
-    };
-	
-    o.methods.absValue = function(n) {
-        return new GraceNum(Math.abs(n));
-    };
-	
-    return o;
-}

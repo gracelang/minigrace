@@ -41,6 +41,7 @@ GraceString.prototype = {
             var s = this._value;
             var os = "";
             var sl = what._value.length;
+            var i;
             while ((i = s.indexOf(what._value)) != -1) {
                 os += s.substr(0, i);
                 os += wth._value;
@@ -130,9 +131,6 @@ GraceString.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString("\"" + this._value + "\"");
-    },
     },
     className: "String",
     definitionModule: "unknown",
@@ -251,7 +249,7 @@ GraceNum.prototype = {
             }
             if (before)
                 str = before + str;
-            return new GraceString(str); 
+            return new GraceString(str);
         },
         "truncate": function(argcv) {
             if (this._value < 0)
@@ -269,9 +267,6 @@ GraceNum.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString("" + this._value);
-    },
     },
     className: "Number",
     definitionModule: "unknown",
@@ -358,9 +353,6 @@ GraceBoolean.prototype = {
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString("" + this._value);
-    },
     },
     className: "Boolean",
     definitionModule: "unknown",
@@ -498,9 +490,6 @@ GraceList.prototype = {
             }
             return res;
         },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
-        },
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
             return new GraceList(l);
@@ -593,9 +582,6 @@ GracePrimitiveArray.prototype = {
         "iterator": function(argcv) {
             return new GracePrimitiveArrayIterator(this._value);
         },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
-        },
         "reduce": function(argcv, initial, block) {
             var res = initial;
             for (var i=0; i<this._value.length; i++) {
@@ -645,7 +631,7 @@ GraceOrPattern.prototype = {
                     + callmethod(this._left, "asString", [0])._value
                     + ", " + callmethod(this._right, "asString", [0])._value
                     + ")>");
-    },
+        },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
         },
@@ -692,7 +678,7 @@ GraceAndPattern.prototype = {
                     + callmethod(this._left, "asString", [0])._value
                     + ", " + callmethod(this._right, "asString", [0])._value
                     + ")>");
-    },
+        },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
         },
@@ -781,21 +767,26 @@ GraceObject.prototype = {
             return b.methods["not"].call(b);
         },
         "asDebugString": function(argcv) {
-            return this.methods.asString();
-        },
-        "asString": function(argcv) {
             var s = "object {";
             for (var i in this.data) {
                 try {
                     s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
                 } catch (e) {
                     s += "var " + i + ";"
-            }
+                }
             }
             return new GraceString(s + "}");
         },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
+        "asString": function(argcv) {
+            var s = "object {";
+            for (var i in this.data) {
+                try {
+                    s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value + "; ";
+                } catch (e) {
+                    s += "var " + i + ";"
+                }
+            }
+            return new GraceString(s + "}");
         }
     },
     data: {}
@@ -813,21 +804,27 @@ GraceObjectMethods = {
         var t = callmethod(this, "==", [1], other);
         return callmethod(t, "not", [0]);
     },
-    "asString": function(argcv) {
-        var s = "object(";
-        s += this.definitionModule + ":" + this.definitionLine;
-        s += ") {";
+    "asDebugString": function(argcv) {
+        var s = "object {";
         for (var i in this.data) {
             try {
                 s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
             } catch (e) {
                 s += "var " + i + ";"
-        }
+            }
         }
         return new GraceString(s + "}");
     },
-    "asDebugString": function(argcv) {
-        return callmethod(this, "asString", [0]);
+    "asString": function(argcv) {
+        var s = "object {";
+        for (var i in this.data) {
+            try {
+                s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value + "; ";
+            } catch (e) {
+                s += "var " + i + ";"
+            }
+        }
+        return new GraceString(s + "}");
     }
 };
 
@@ -1182,7 +1179,10 @@ function gracecode_io() {
     };
     this.methods.findResource = function(junk, path) {
         return path;
-    }
+    };
+    this.methods.asString = function(argcv) {
+        return new GraceString('the "io" module');
+    };
     this.definitionModule = "io";
     this.definitionLine = 0;
     return this;
@@ -1212,6 +1212,9 @@ function gracecode_sys() {
         o.methods['[]:='] = o.methods['at()put'];
         o.methods['contains'] = function() {return GraceFalse;};
         return o;
+    };
+    this.methods.asString = function(argcv) {
+        return new GraceString('the "sys" module');
     };
     this.definitionModule = "sys";
     this.definitionLine = 0;
@@ -1250,6 +1253,9 @@ function gracecode_imports() {
         }
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No mapping for extension '" + ext + "'."));
+    };
+    this.methods.asString = function(argcv) {
+        return new GraceString('the "imports" module');
     };
     this.definitionModule = "imports";
     this.definitionLine = 0;
@@ -1319,6 +1325,9 @@ function gracecode_unicode() {
             var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
             return new GraceUnicodePattern(args, args2);
         },
+        'asString': function(argcv) {
+            return new GraceString('the "unicode" module');
+        }
     };
     this.definitionModule = "unicode";
     this.definitionLine = 0;
@@ -1712,6 +1721,9 @@ function gracecode_mirrors() {
         },
         'reflect': function(argcv, o) {
             return alloc_Mirror(o);
+        },
+        'asString': function(argcv) {
+            return new GraceString('the "mirrors" module');
         }
     };
     this.definitionModule = "mirrors";
@@ -1721,27 +1733,45 @@ function gracecode_mirrors() {
 
 function gracecode_math() {
     this.methods = {
-        'sin': function(argcv, value) {
-            return new GraceNum(Math.sin(value));
+        'asString': function(argcv) {
+            return new GraceString('the "math" module');
         },
-        'cos': function(argcv, value) {
-            return new GraceNum(Math.cos(value));
+        'asDebugString': function(argcv) {
+            return callmethod(this, "asString", [0]);
         },
-        'tan': function(argcv, value) {
-            return new GraceNum(Math.tan(value));
+        'sin': function(argcv, a) {
+            return new GraceNum(Math.sin(a._value));
         },
-        'asin': function(argcv, value) {
-            return new GraceNum(Math.asin(value));
+        'cos': function(argcv, a) {
+            return new GraceNum(Math.cos(a._value));
         },
-        'acos': function(argcv, value) {
-            return new GraceNum(Math.acos(value));
+        'tan': function(argcv, a) {
+            return new GraceNum(Math.tan(a._value));
         },
-        'atan': function(argcv, value) {
-            return new GraceNum(Math.atan(value));
+        'asin': function(argcv, a) {
+            return new GraceNum(Math.asin(a._value));
+        },
+        'acos': function(argcv, a) {
+            return new GraceNum(Math.acos(a._value));
+        },
+        'atan': function(argcv, a) {
+            return new GraceNum(Math.atan(a._value));
         },
         'random': function(argcv) {
             return new GraceNum(Math.random());
         },
+        'pi': function(argcv) {
+            return new GraceNum(3.141592653589793)
+        },
+        'π': function(argcv) {
+            return new GraceNum(3.141592653589793)
+        },
+        'sqrt': function(argcv, a) {
+            return new GraceNum(Math.sqrt(a._value));
+        },
+        'abs': function(argcv, a) {
+            return new GraceNum(Math.abs(a._value));
+        }
     };
     this.definitionModule = "math";
     this.definitionLine = 0;
@@ -1759,8 +1789,8 @@ function checkmethodcall(func, methname, obj, args) {
             continue;
         var t = p[0];
         if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
-            throw new GraceExceptionPacket(RuntimeErrorObject,
-                    new GraceString("Runtime type error: expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + "."));
+            throw new GraceExceptionPacket(TypeErrorObject,
+                    new GraceString("expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + "."));
         }
     }
 }
@@ -1989,6 +2019,9 @@ GraceException.prototype = {
         "raiseWith": function(argcv, msg, data) {
             throw new GraceExceptionPacket(this, msg, data)
         },
+        "raise()with": function(argcv, msg, data) {
+            throw new GraceExceptionPacket(this, msg, data)
+        },
         "match": function(argcv, other) {
             if (!other.exception)
                 return new GraceFailedMatch(other);
@@ -2164,7 +2197,7 @@ Grace_prelude.methods["_methods"] = function() {
     return l;
 }
 Grace_prelude.methods["clone"] = function(argcv, obj) {
-  return obj;
+    return obj;
 }
 Grace_prelude.methods["become"] = function(argcv, a, b) {
     for(var k in a) {
