@@ -166,11 +166,11 @@ method compileobjouter(selfr, outerRef) {
     auto_count := auto_count + 1
     var nm := escapestring("outer")
     var nmi := escapeident("outer")
-    out("  {selfr}.outer = {outerRef};")
-    out("  var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
-    out("    return this.outer;")
-    out("  \}")
-    out("  {selfr}.methods[\"{nm}\"] = reader_{modname}_{nmi}{myc};")
+    out("{selfr}.outer = {outerRef};")
+    out("var reader_" ++ modname ++ "_" ++ nmi ++ myc ++ " = function() \{")
+    out("  return this.outer;")
+    out("\}")
+    out("{selfr}.methods[\"{nm}\"] = reader_{modname}_{nmi}{myc};")
 }
 method compileobjtype(o, selfr, pos) {
     var val := "undefined"
@@ -598,7 +598,7 @@ method compilemethod(o, selfobj) {
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
     forceLineNumber(linenum)comment("compilemethod")
-    out("  setModuleName(\"{modname}\");")
+    out("setModuleName(\"{modname}\");")
     if (debugMode) then {
         out "stackFrames.push(myframe);"
     }
@@ -895,7 +895,7 @@ method compiledefdec(o) {
         if (ast.findAnnotation(o, "parent")) then {
             out("this.superobj = {val};")
         }
-        out("  this.methods[\"{nm}\"].debug = \"def\";")
+        out("this.methods[\"{nm}\"].debug = \"def\";")
     }
     if (o.dtype != false) then {
         linenum := o.line
@@ -930,7 +930,7 @@ method compilevardec(o) {
         compilenode(ast.methodNode.new(assignID,
             [ast.signaturePart.new(assignID.value, [tmpID])],
             [ast.bindNode.new(o.name, tmpID)], false))
-        out("  this.methods[\"{nm}\"].debug = \"var\";")
+        out("this.methods[\"{nm}\"].debug = \"var\";")
     }
     if (o.dtype != false) then {
         if (val != "false") then {
