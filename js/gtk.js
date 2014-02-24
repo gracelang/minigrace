@@ -640,26 +640,3 @@ function gracecode_cairo() {
     };
     return o;
 }
-
-
-function gracecode_math() {
-    var o = Grace_allocObject();
-	
-    o.methods.Pi = function() {
-        return new GraceNum(3.14159);
-    };
-	
-    o.methods.sqrt = function(x) {
-        return new GraceNum(Math.sqrt(x));
-	};
-	
-    o.methods.sqr = function(x) {
-        return new GraceNum(x*x);
-    };
-	
-    o.methods.absValue = function(n) {
-        return new GraceNum(Math.abs(n));
-    };
-	
-    return o;
-}

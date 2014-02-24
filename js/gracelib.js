@@ -1742,6 +1742,18 @@ function gracecode_math() {
         'random': function(argcv) {
             return new GraceNum(Math.random());
         },
+        'Pi': function(argcv) {
+            return new GraceNum(3.14159);
+        },
+        'sqrt': function(argcv, value) {
+            return new GraceNum(Math.sqrt(value));
+        },
+        'sqr': function(argcv, value) {
+            return new GraceNum(value*value);
+        },
+        'absValue': function(argcv, value) {
+            return new GraceNum(Math.abs(value));
+        },
     };
     this.definitionModule = "math";
     this.definitionLine = 0;
