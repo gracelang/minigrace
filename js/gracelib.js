@@ -196,7 +196,7 @@ GraceNum.prototype = {
             return new GraceNum(-this._value)
         },
         "asString": function(argcv) {
-            return new GraceString("" + this._value)
+            return new GraceString((Math.round(this._value * 1000000) / 1000000).toString())
         },
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
