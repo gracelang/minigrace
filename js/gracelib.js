@@ -1125,28 +1125,6 @@ GraceStringIterator.prototype.methods.next = function() {
     return rv;
 }
 
-function GraceObjectIterator(obj) {
-    this._value = obj.data;
-    
-    this._keys = [];
-    for(i in obj.data)
-        this._keys.push(i);
-    
-    this._trueIndex = 0;
-    this._index = this._keys[this._trueIndex];
-    this._max = this._keys.length;
-}
-GraceObjectIterator.prototype = Grace_allocObject();
-GraceObjectIterator.prototype.methods.havemore = function() {
-    return ((this._trueIndex < this._max) ? GraceTrue : GraceFalse);
-}
-GraceObjectIterator.prototype.methods.next = function() {
-    var rv = this._value[this._index];
-    this._trueIndex++;
-    this._index = this._keys[this._trueIndex];
-    return rv;
-}
-
 function GraceIterator(obj) {
     this._value = obj;
     
@@ -1168,7 +1146,6 @@ GraceIterator.prototype.methods.next = function() {
     this._index = this._keys[this._trueIndex];
     return rv;
 }
-
 
 var stdout = Grace_allocObject();
 stdout.methods.write = function(junk, s) {
