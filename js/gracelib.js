@@ -132,7 +132,10 @@ GraceString.prototype = {
         },
         "asDebugString": function(argcv) {
             return new GraceString("\"" + this._value + "\"");
-    },
+        },
+        "debugValue": function(argcv) {
+            return new GraceString("\"" + this._value + "\"");
+        },
     },
     className: "String",
     definitionModule: "unknown",
@@ -202,6 +205,9 @@ GraceNum.prototype = {
         },
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
+        },
+        "debugValue": function(argcv) {
+            return new GraceString("" + this._value);
         },
         "==": function(argcv, other) {
             if (this == other)
@@ -333,6 +339,9 @@ GraceBoolean.prototype = {
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
         },
+        "debugValue": function(argcv) {
+            return new GraceString("" + this._value);
+        },
         "==": function(argcv, other) {
             if (this == other)
                 return GraceTrue;
@@ -444,6 +453,12 @@ GraceList.prototype = {
             s += "]";
             return new GraceString(s);
         },
+        "debugValue": function(argcv) {
+            return new GraceString("List");
+        },
+        "debugIterator": function(argcv) {
+            return new GraceListIterator(this._value);
+        },
         "contains": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
@@ -520,7 +535,6 @@ function GracePrimitiveArray(n) {
 GracePrimitiveArray.prototype = {
     methods: {
         "size": function(argcv) {
-            //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
         },
         "at": function(argcv, other) {
@@ -573,6 +587,12 @@ GracePrimitiveArray.prototype = {
             s += ")";
             return new GraceString(s);
         },
+        "debugValue": function(argcv) {
+            return new GraceString("PrimArray");
+        },
+        "debugIterator": function(argcv) {
+            return new GraceIterator(this._value);
+        },
         "contains": function(argcv, other) {
             for (var i=0; i<this._value.length; i++) {
                 var v = this._value[i];
@@ -591,7 +611,7 @@ GracePrimitiveArray.prototype = {
             return callmethod(t, "not", [0]);
         },
         "iterator": function(argcv) {
-            return new GracePrimitiveArrayIterator(this._value);
+            return new GraceIterator(this._value);
         },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
@@ -645,7 +665,7 @@ GraceOrPattern.prototype = {
                     + callmethod(this._left, "asString", [0])._value
                     + ", " + callmethod(this._right, "asString", [0])._value
                     + ")>");
-    },
+        },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
         },
@@ -780,9 +800,6 @@ GraceObject.prototype = {
             var b = this.methods["=="].call(this, o);
             return b.methods["not"].call(b);
         },
-        "asDebugString": function(argcv) {
-            return this.methods.asString();
-        },
         "asString": function(argcv) {
             var s = "object {";
             for (var i in this.data) {
@@ -790,13 +807,22 @@ GraceObject.prototype = {
                     s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
                 } catch (e) {
                     s += "var " + i + ";"
-            }
+                }
             }
             return new GraceString(s + "}");
         },
         "asDebugString": function(argcv) {
             return callmethod(this, "asString", [0]);
-        }
+        },
+        "debugValue": function(argcv) {
+            return new GraceString("object");
+        },
+        "debugIterator": function(argcv) {
+            return new GraceIterator(this.data);
+        },
+        "iterator": function(argcv) {
+            return new GraceIterator(this.data);
+        },
     },
     data: {}
 };
@@ -822,13 +848,22 @@ GraceObjectMethods = {
                 s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
             } catch (e) {
                 s += "var " + i + ";"
-        }
+            }
         }
         return new GraceString(s + "}");
     },
     "asDebugString": function(argcv) {
         return callmethod(this, "asString", [0]);
-    }
+    },
+    "debugValue": function(argcv) {
+        return new GraceString("object");
+    },
+    "debugIterator": function(argcv) {
+        return new GraceIterator(this.data);
+    },
+    "iterator": function(argcv) {
+        return new GraceIterator(this.data);
+    },
 };
 
 function Grace_allocObject() {
@@ -838,6 +873,9 @@ function Grace_allocObject() {
             "!=": GraceObjectMethods["!="],
             "asDebugString": GraceObjectMethods["asDebugString"],
             "asString": GraceObjectMethods["asString"],
+            "debugValue": GraceObjectMethods["debugValue"],
+            "debugIterator": GraceObjectMethods["debugIterator"],
+            "iterator": GraceObjectMethods["iterator"],
         },
         superobj: null,
         data: {},
@@ -1086,6 +1124,51 @@ GraceStringIterator.prototype.methods.next = function() {
     this._index++;
     return rv;
 }
+
+function GraceObjectIterator(obj) {
+    this._value = obj.data;
+    
+    this._keys = [];
+    for(i in obj.data)
+        this._keys.push(i);
+    
+    this._trueIndex = 0;
+    this._index = this._keys[this._trueIndex];
+    this._max = this._keys.length;
+}
+GraceObjectIterator.prototype = Grace_allocObject();
+GraceObjectIterator.prototype.methods.havemore = function() {
+    return ((this._trueIndex < this._max) ? GraceTrue : GraceFalse);
+}
+GraceObjectIterator.prototype.methods.next = function() {
+    var rv = this._value[this._index];
+    this._trueIndex++;
+    this._index = this._keys[this._trueIndex];
+    return rv;
+}
+
+function GraceIterator(obj) {
+    this._value = obj;
+    
+    this._keys = [];
+    for(i in obj)
+        this._keys.push(i);
+    
+    this._trueIndex = 0;
+    this._index = this._keys[this._trueIndex];
+    this._max = this._keys.length;
+}
+GraceIterator.prototype = Grace_allocObject();
+GraceIterator.prototype.methods.havemore = function() {
+    return ((this._trueIndex < this._max) ? GraceTrue : GraceFalse);
+}
+GraceIterator.prototype.methods.next = function() {
+    var rv = this._value[this._index];
+    this._trueIndex++;
+    this._index = this._keys[this._trueIndex];
+    return rv;
+}
+
 
 var stdout = Grace_allocObject();
 stdout.methods.write = function(junk, s) {
