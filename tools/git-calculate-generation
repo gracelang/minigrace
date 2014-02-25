@@ -26,6 +26,10 @@ findgen() {
     then
         echo 1674
         return 0
+    elif [ "88855bc35225a388b52f1574488df3486543f510" = "$h" ]
+    then
+        echo 1926
+        return 0
     fi
     if [ "$KNOWN" ] && [ "${known[$h]}" ]
     then

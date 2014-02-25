@@ -28,6 +28,7 @@ var bblock := "entry"
 var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
+var dynamicmodules := collections.set.new
 def importnames = collections.map.new
 var values := []
 var outfile
@@ -1752,7 +1753,8 @@ method compilenode(o) {
 }
 method spawnSubprocess(id, cmd, data) {
     if (subprocesses.size < util.jobs) then {
-        return subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
+        subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
+        return subprocesses[subprocesses.size][2] 
     }
     var alive := 0
     var firstAlive := false
@@ -1769,6 +1771,7 @@ method spawnSubprocess(id, cmd, data) {
         firstAlive[2].wait
     }
     subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
+    return subprocesses.at(subprocesses.size)[2]
 }
 method parseGCT(path, filepath) {
     xmodule.parseGCT(path,
@@ -1776,13 +1779,16 @@ method parseGCT(path, filepath) {
 }
 method addTransitiveImports(filepath, epath, line) {
     def data = parseGCT(epath, filepath)
+    if (data.contains "dialect") then {
+        checkimport(data.get("dialect").first, line, true)
+    }
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
                 errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
                     ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(line)
             }
-            checkimport(m, line)
+            checkimport(m, line, false)
         }
     }
     if (data.contains("path")) then {
@@ -1794,7 +1800,7 @@ method addTransitiveImports(filepath, epath, line) {
     }
 }
 
-method checkimport(nm, line) {
+method checkimport(nm, line, isDialect) {
     var exists := false
     var ext := false
     var cmd
@@ -1829,7 +1835,10 @@ method checkimport(nm, line) {
     for(locationList) do { location ->
         if (exists.not && io.exists("{location}{nm}.gso").andAlso
                 {!util.extensions.contains("Static")}) then {
-            exists := true
+            if (io.newer("{location}{nm}.gso", "{location}{nm}.grace")) then {
+                exists := true
+                dynamicmodules.add(nm)
+            }
             addTransitiveImports("{location}{nm}.gso", nm, line)
         } 
         if (exists.not && io.exists("{location}{nm}.gcn")) then {
@@ -1869,19 +1878,26 @@ method checkimport(nm, line) {
                 cmd := cmd ++ " --vtag " ++ util.vtag
             }
             cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-            if (util.dynamicModule) then {
+            if (util.dynamicModule || isDialect) then {
                 cmd := cmd ++ " --dynamic-module"
             }
             if (util.importDynamic) then {
                 cmd := cmd ++ " --import-dynamic --dynamic-module"
             }
-            if (util.recurse) then {
+            if (util.recurse || isDialect) then {
                 if(location != "") then {
                     cmd := "cd {location} && "++cmd
                 }
-                spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
+                var process := spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
+                if(isDialect) then {
+                    // We must wait for the .gso to be built before
+                    // we try to run loadDynamic on it. Block here.
+                    process.wait
+                    dynamicmodules.add(nm)
+                }
+                //addTransitiveImports("{location}{nm}.gso", nm, line)
             }
-            if (!util.importDynamic) then {
+            if (!util.importDynamic && !isDialect) then {
                 linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)
             }
@@ -1917,14 +1933,14 @@ method processImports(values') {
         for (values') do { v ->
             if (v.kind == "import") then {
                 var nm := v.path
-                checkimport(nm, v.line)
+                checkimport(nm, v.line, false)
             }
             if (v.kind == "dialect") then {
                 var nm := v.value
-                checkimport(nm, v.line)
+                checkimport(nm, v.line, true)
                 log_verbose("loading dialect for checkers.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
-                catch {
+                try {
                     def dobj = mirrors.loadDynamicModule(nm)
                     def mths = mirrors.reflect(dobj).methods
                     for (mths) do { m->
@@ -1939,10 +1955,10 @@ method processImports(values') {
                             dialectHasAtModuleStart := true
                         }
                     }
-                } case { e : RuntimeError ->
+                } catch { e : RuntimeError ->
                     util.setPosition(v.line, 1)
                     errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
-                } case { e : CheckerFailure ->
+                } catch { e : CheckerFailure ->
                     match (e.data)
                         case { lp : LinePos ->
                             util.setPosition(e.data.line, e.data.linePos)
@@ -2265,8 +2281,11 @@ method compile(vl, of, mn, rm, bt) {
             }
         }
         log_verbose("done.")
+        def allmodules = collections.set.new
+        allmodules.extend(staticmodules)
+        allmodules.extend(dynamicmodules)
         xmodule.writeGCT(modname, modname ++ ".gct")
-            fromValues(values)modules(staticmodules)
+            fromValues(values)modules(allmodules)
         if (buildtype == "run") then {
             if (modname[1] != "/") then {
                 cmd := "./" ++ modname
