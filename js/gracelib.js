@@ -1824,7 +1824,7 @@ function gracecode_math() {
         },
         'abs': function(argcv, a) {
             return new GraceNum(Math.abs(a._value));
-        }
+        },
         'absValue': function(argcv, value) {
             return new GraceNum(Math.abs(value));
         },
