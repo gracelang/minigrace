@@ -164,7 +164,7 @@ var GraceDebugger = {
                 }
             }
         } else {
-            li.innerHTML = name + " := undefined";
+            li.innerHTML = name + " : undefined";
         }
         ul.appendChild(li);
     },
