@@ -137,7 +137,7 @@ var GraceDebugger = {
                 var sub_ul = document.createElement("ul");
 
                 if (obj.methods.debugValue) {
-                    top_span.innerHTML = name + " : " + obj.methods.debugValue()._value;
+                    top_span.innerHTML = name + " : " + callmethod(obj, "debugValue", [0])._value;
                 } else {
                     top_span.innerHTML = name + " : ";
                 }
