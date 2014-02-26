@@ -40,6 +40,23 @@ for c in data:
     foo.add(c[0])
     last = c
 
+with open("NameAliases.txt") as fp:
+    for line in fp:
+        if line.startswith('#'):
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        row = line.split(";")
+        num = eval("0x" + row[0])
+        if num >= 0x20000:
+            break
+        if row[2] != 'control':
+            continue
+        if codepoints[num]:
+            cp = codepoints[num]
+            cp[1] = row[1]
+
 
 fp = open("unicodedata.h", "w")
 fp.write("""

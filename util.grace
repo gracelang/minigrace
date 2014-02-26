@@ -18,7 +18,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "c"
-var versionNumber := "0.0.8"
+var versionNumber := "0.0.9"
 var extensionsv := mgcollections.map.new
 var recurse := true
 var dynamicModule := false
@@ -182,7 +182,7 @@ method parseargs {
         if (infilev.isatty) then {
             print("minigrace {versionNumber}.{buildinfo.gitgeneration} / "
                 ++ buildinfo.gitrevision)
-            print "Copyright (C) 2011-2013 Michael Homer"
+            print "Copyright (C) 2011-2014 Michael Homer"
             print("This is free software with ABSOLUTELY NO WARRANTY. "
                 ++ "Say minigrace.w for details.")
             print ""

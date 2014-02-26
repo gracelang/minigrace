@@ -44,6 +44,23 @@ for c in data:
     foo.add(c[0])
     last = c
 
+with open("NameAliases.txt") as fp:
+    for line in fp:
+        if line.startswith('#'):
+            continue
+        line = line.strip()
+        if not line:
+            continue
+        row = line.split(";")
+        num = eval("0x" + row[0])
+        if num >= 0x20000:
+            break
+        if row[2] != 'control':
+            continue
+        if codepoints[num]:
+            cp = codepoints[num]
+            cp[1] = row[1]
+
 
 fp = open("unicodedata.js", "w")
 fp.write("""
@@ -76,6 +93,10 @@ for cp in codepoints:
         char = "\\" + char
     if num >= 0x202a and num <= 0x202e: # LTR modifiers
         continue
+    if cp[2].startswith("C"):
+        if num >= 0x10000:
+            continue
+        char = "\\u" + cp[0]
     fp.write("\"" + char + "\":\"" + cp[1] + "\",\n")
 fp.write("};\n")
 

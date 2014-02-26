@@ -1185,6 +1185,15 @@ method trycatch {
         }
         cases.push(values.pop)
     }
+    if (accept("identifier")onLineOf(catchTok) && (sym.value == "case")) then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.replaceToken(sym)with("catch")
+        errormessages.syntaxError("A try-catch statement starts with a "
+                ++ "'try' and then zero or more 'catch' blocks; there "
+                ++ "are no 'case' blocks.")
+            atRange(sym.line, sym.linePos, sym.linePos + 3)
+            withSuggestion(suggestion)
+    }
     if (accept("identifier") && (sym.value == "finally")) then {
         next
         if (accept("lbrace")) then {
@@ -1244,6 +1253,9 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
     def localmin = minIndentLevel
     def catchTok = sym
     next
+    util.warning("The catch-case statement is deprecated and will be "
+        ++ "removed in a future version of the compiler. Use try-catch "
+        ++ "instead.")
     if (accept("lbrace")) then {
         block
     } else {
@@ -3422,7 +3434,6 @@ method checkUnexpectedTokenAfterStatement {
                         suggestion := errormessages.suggestion.new
                         suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value}")
                         suggestion.append ")" onLine(sym.line)
-                            onLine(sym.line)
                         suggestions.push(suggestion)
                     }
                 }
