@@ -133,9 +133,6 @@ GraceString.prototype = {
         "asDebugString": function(argcv) {
             return new GraceString("\"" + this._value + "\"");
         },
-        "debugValue": function(argcv) {
-            return new GraceString("\"" + this._value + "\"");
-        },
     },
     className: "String",
     definitionModule: "unknown",
@@ -206,9 +203,6 @@ GraceNum.prototype = {
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
         },
-        "debugValue": function(argcv) {
-            return new GraceString("" + this._value);
-        },
         "==": function(argcv, other) {
             if (this == other)
                 return GraceTrue;
@@ -275,9 +269,6 @@ GraceNum.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString("" + this._value);
-    },
     },
     className: "Number",
     definitionModule: "unknown",
@@ -338,9 +329,6 @@ GraceBoolean.prototype = {
         },
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
-        },
-        "debugValue": function(argcv) {
-            return new GraceString("" + this._value);
         },
         "==": function(argcv, other) {
             if (this == other)
@@ -820,9 +808,6 @@ GraceObject.prototype = {
         "debugIterator": function(argcv) {
             return new GraceIterator(this.data);
         },
-        "iterator": function(argcv) {
-            return new GraceIterator(this.data);
-        },
     },
     data: {}
 };
@@ -861,9 +846,6 @@ GraceObjectMethods = {
     "debugIterator": function(argcv) {
         return new GraceIterator(this.data);
     },
-    "iterator": function(argcv) {
-        return new GraceIterator(this.data);
-    },
 };
 
 function Grace_allocObject() {
@@ -875,7 +857,6 @@ function Grace_allocObject() {
             "asString": GraceObjectMethods["asString"],
             "debugValue": GraceObjectMethods["debugValue"],
             "debugIterator": GraceObjectMethods["debugIterator"],
-            "iterator": GraceObjectMethods["iterator"],
         },
         superobj: null,
         data: {},
@@ -1855,7 +1836,7 @@ function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("Requested method on uninitialised value around " 
-					+ moduleName + ":" + lineNumber));;
+                    + moduleName + ":" + lineNumber));
     if (!obj || obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];

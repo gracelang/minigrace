@@ -128,60 +128,41 @@ var GraceDebugger = {
     VariableListItem : function (obj, name, ul) {
         var li = document.createElement("li");
         li.variable = obj;
-        
-        if (obj && obj.className) {
-            switch(obj.className) {
-                case "String":
-                    if (obj._value) {
-                        li.innerHTML = name + " : \"" + obj._value + "\"";
-                    } else {
-                        li.innerHTML = name + " : \"\"";
-                    }
-                    break;
-                    
-                case "Number":
-                    if (obj._value) {
-                        li.innerHTML = name + " : " + obj._value;
-                    } else {
-                        li.innerHTML = name + " : 0";
-                    }
-                    break;
-                    
-                case "Boolean":
-                    if (obj._value) {
-                        li.innerHTML = name + " : " + obj._value;
-                    } else {
-                        li.innerHTML = name + " : false";
-                    }
-                    break;
-                    
-                case "Object":
-                    li.className = "submenu";
-                    li.style.backgroundImage='url("closed.png")';
-                    
-                    var top_span = document.createElement("span");
-                    var sub_ul = document.createElement("ul");
-                    
+
+        if (obj && obj.methods) {
+            if (obj.methods.debugIterator) {
+                li.className = "submenu";
+                li.style.backgroundImage='url("closed.png")';
+                var top_span = document.createElement("span");
+                var sub_ul = document.createElement("ul");
+
+                if (obj.methods.debugValue) {
+                    top_span.innerHTML = name + " : " + obj.methods.debugValue()._value;
+                } else {
                     top_span.innerHTML = name + " : ";
-                    sub_ul.style.display = "none";
+                }
                     
-                    li.appendChild(top_span);
-                    li.appendChild(sub_ul);
+                sub_ul.style.display = "none";
                     
-                    li.onclick = function(e) {
-                        GraceDebugger.toggleObjList(e, this, name);
-                    }
+                li.appendChild(top_span);
+                li.appendChild(sub_ul);
                     
-                    sub_ul.onclick = function(e) {
-                        e.stopPropagation();
-                    }
-                    break;
-                    
-                default: // other types we've yet to define introspection for
-                    li.innerHTML = name + " : " + obj.className;
+                li.onclick = function(e) {
+                    GraceDebugger.toggleObjList(e, this, name);
+                }
+                
+                sub_ul.onclick = function(e) {
+                    e.stopPropagation();
+                }
+            } else {
+                if (obj.methods.debugValue) {
+                    li.innerHTML = name + " : " + callmethod(obj, "debugValue", [0])._value;
+                } else if (obj.methods.asDebugString) {
+                    li.innerHTML = name + " : " + callmethod(obj, "asDebugString", [0])._value;
+                } else {
+                    li.innerHTML = name + " : ";
+                }
             }
-            
-            // Undefined
         } else {
             li.innerHTML = name + " := undefined";
         }
@@ -202,8 +183,12 @@ var GraceDebugger = {
             sub_ul.innerHTML = "";
             sub_ul.style.display = "block";
             
-            for(obj in li.variable.data)
-                GraceDebugger.VariableListItem(li.variable.data[obj], obj, sub_ul);
+            var iter = callmethod(li.variable, "debugIterator", [0]);
+            while (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
+                var name = iter._index;
+                var val = callmethod(iter, "next", [0]);
+                GraceDebugger.VariableListItem(val, name, sub_ul);
+            }
         }
     },
 };
@@ -313,5 +298,4 @@ GraceDebugger.breakpoints = {
     points : [],
     enabled : [],
 };
-
 
