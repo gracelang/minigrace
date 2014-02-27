@@ -2112,7 +2112,7 @@ function dbg(o) {
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
 var GraceDone = new GraceObject();
 GraceDone.methods.asString = function() {return new GraceString("done");}
-var var_done = GraceDOne // for backward compatibility; case matters
+var var_done = GraceDone // for backward compatibility; case matters
 
 var ellipsis = Grace_allocObject();
 ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
