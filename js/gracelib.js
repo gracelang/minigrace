@@ -1848,7 +1848,7 @@ function callmethod(obj, methname, argcv) {
                 + " at " + moduleName
                 + ":" + lineNumber);
         throw new GraceExceptionPacket(RuntimeErrorObject,
-                new GraceString("No method '" + methname + "' on " +
+                new GraceString("no method " + methname + " in " +
                     obj.className + "."));;
     }
     if (meth.confidential && !onSelf) {
