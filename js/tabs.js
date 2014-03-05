@@ -130,7 +130,12 @@ function testall() {
             if (!minigrace.compileError) {
                 minigrace.run();
                 if (goldenOutput != "") {
-                    var realOut = stdout_txt.value.substr(goldenOutputOffset);
+                    var realOut = "";
+                    if (document.getElementById('debugtoggle').checked)
+                        realOut = stdout_txt.value;
+                    else
+                        realOut = stdout_txt.value.substr(goldenOutputOffset);
+
                     if (realOut == goldenOutput) {
                         stderr_txt.value += "\nTest passed.";
                         passes = passes + 1;
