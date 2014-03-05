@@ -56,3 +56,6 @@ java/grace/lib/StandardPrelude.java
 java/grace/lib/StandardPrelude.grace
 minigrace.xcodeproj
 minigrace.xcodeproj/*
+minigrace.xcworkspace
+minigrace.xcworkspace/*
+.gitignore~
