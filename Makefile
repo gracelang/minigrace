@@ -170,5 +170,12 @@ install: minigrace
 
 Makefile.conf: configure
 	./configure
+    
+blackWeb: js samples
+	rsync -az js/index.html js/global.css js/*.js js/ace tests sample black@cs.pdx.edu:public_html/minigrace/js
+    
+graceWeb: js samples
+	rsync -az js/index.html js/global.css js/*.js js/ace tests sample grace@cs.pdx.edu:public_html/minigrace/js
+
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%
