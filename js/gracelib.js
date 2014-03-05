@@ -1679,7 +1679,7 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     var providedLen = callmethod(argList, "size", [0])._value;
     if (providedLen != requiredLen) {
         throw new GraceExceptionPacket(RuntimeErrorObject,
-                                       new GraceString("wrong number of argument lists in 'reflect'" ));
+                                       new GraceString("wrong number of argument lists in 'request'" ));
     }
     var allArgs = [this.obj, this.name, []];
     for (var outerIx = 1; outerIx <= providedLen; outerIx++) {
@@ -1864,21 +1864,22 @@ function callmethod(obj, methname, argcv) {
         overrideReceiver = null;
     }
     var beforeSize = callStack.length;
-    callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
+    if (lineNumber == 0) {
+        callStack.push(obj.className + "." + methname + " in " + moduleName);
+    } else {
+        callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
+    }
     var thisModuleName = moduleName;
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
             if (typeof args[i] == 'undefined')
                 throw new GraceExceptionPacket(RuntimeErrorObject,
-                                               new GraceString("Uninitialised value used as argument "
-                                                               + "to " + methname + " "
-                                                               + "around " + moduleName + ":" + lineNumber));;
+                                       new GraceString("Uninitialised value used as argument to " +
+                                                      methname + " at line " + lineNumber + " of " + moduleName + "."));;
         if (meth.paramTypes)
             checkmethodcall(meth, methname, obj, args);
-        args.unshift(argcv)
-        
-        var thisModuleName = moduleName;
+        args.unshift(argcv);
         var ret = meth.apply(obj, args);
     } finally {
         superDepth = origSuperDepth;
@@ -1891,7 +1892,8 @@ function callmethod(obj, methname, argcv) {
 }
 
 function catchCase(obj, cases, finallyblock) {
-    setModuleName("catch()case()...finally()");
+    setModuleName("try()catch()...finally()");
+    setLineNumber(0);
     var i = 0;
     try {
         callmethod(obj, "apply")
@@ -1916,6 +1918,7 @@ function catchCase(obj, cases, finallyblock) {
 
 function matchCase(obj, cases, elsecase) {
     setModuleName("match()case()...else()");
+    setLineNumber(0);
     var i = 0;
     for (i = 0; i<cases.length; i++) {
         var ret = callmethod(cases[i], "match", [1], obj);
@@ -1977,27 +1980,19 @@ GraceExceptionPacket.prototype = {
             return bt;
         },
         "printBacktrace": function(argcv) {
-            var emptyS = new GraceString("");
-            var exceptionS = callmethod(this, "exception", [0]);
-            var opresult10 = callmethod(emptyS, "++", [1], exceptionS);
-            var onLineS = new GraceString(" on line ");
-            var opresult13 = callmethod(opresult10, "++", [1], onLineS);
-            var lineNumberS = callmethod(this, "lineNumber", [0]);
-            var opresult16 = callmethod(opresult13, "++", [1], lineNumberS);
-            var ofS = new GraceString(" of ");
-            var opresult19 = callmethod(opresult16, "++", [1], ofS);
-            var moduleNameS = callmethod(this, "moduleName", [0]);
-            var opresult22 = callmethod(opresult19, "++", [1], moduleNameS);
-            var colonS = new GraceString(": ");
-            var opresult25 = callmethod(opresult22, "++", [1], colonS);
-            var messageS = callmethod(this, "message", [0]);
-            var opresult28 = callmethod(opresult25, "++", [1], messageS);
-            var call32 = Grace_errorPrint(opresult28);
+            var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
+            var lineNumber = callmethod(this, "lineNumber", [0]);
+            var moduleName = callmethod(this, "moduleName", [0]);
+            var errMsg = callmethod(exceptionName, "++", [1], new GraceString(" on line "));
+            errMsg = callmethod(callmethod(errMsg, "++", [1], lineNumber), "++", [1], new GraceString(" of "));
+            errMsg = callmethod(callmethod(errMsg, "++", [1], moduleName), "++", [1], new GraceString(": "));
+            errMsg = callmethod(errMsg, "++", [1], callmethod(this, "message", [0]));
+            Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
             var cf = new GraceString("  called from ");
             while (callmethod(bt, "size", [0])._value > 0) {
-                Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt,"pop", [0])));
-            };
+                Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt, "pop", [0])));
+            }
         }
     },
     exctype: 'graceexception'
