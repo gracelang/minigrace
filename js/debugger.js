@@ -130,7 +130,16 @@ var GraceDebugger = {
         li.variable = obj;
 
         if (obj && obj.methods) {
-            if (obj.methods.debugIterator) {
+            // if a debugIterator exists and if either there's no debugIteratorEnabled set or it is set to true
+	    var doIterator = false;
+	    if  (obj.methods.debugIterator) {
+                if (typeof obj.data.debugIteratorEnabled == "undefined") {
+                    doIterator = true;
+		} else if (obj.data.debugIteratorEnabled._value) {
+                    doIterator = true;
+		}
+	    }
+            if (doIterator) {
                 li.className = "submenu";
                 li.style.backgroundImage='url("closed.png")';
                 var top_span = document.createElement("span");
