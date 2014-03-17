@@ -45,11 +45,6 @@ function go() {
                 bits = lines[i].split(':');
                 break;
             }
-            idx++;
-            stderr_txt.value = ("Ran " + idx + "/"
-                                + tc.children.length + " tests.\n\n"
-                                + stderr_txt.value);
-            testnext();
         }
         editor.moveCursorTo(bits[1] - 1, bits[2] - 1);
         editor.getSelection().clearSelection();
@@ -502,6 +497,7 @@ function startup() {
                 e.stop();
             }
         });
+        GraceDebugger.cache.init();
     } else {
         document.getElementById("code_txt_real").style.display = "none";
         document.getElementById("acetoggle").parentNode.style.display = "none";

@@ -13,6 +13,13 @@ function toggleDebugger() {
         if(ace) {
             editor.session.clearBreakpoints();
         }
+        GraceDebugger.cache.clear();
+
+	// the following function assignment is a hack, fix later
+	stdin.methods.read = function() {
+            return new GraceString(minigrace.stdin_read());
+        }
+
         dbgmenu.style.display = "none";
         std_err.style.width = "100%";
     }
@@ -97,7 +104,6 @@ var GraceDebugger = {
             if(e.exctype && e.exctype == "breakpoint") {
                 this.VariableListBase(e.that);
                 this.SetStatus("Program stopped on line " + lineNumber);
-                
             } else {
                 this.SetStatus("Program errored!");
                 throw e;
@@ -131,14 +137,14 @@ var GraceDebugger = {
 
         if (obj && obj.methods) {
             // if a debugIterator exists and if either there's no debugIteratorEnabled set or it is set to true
-	    var doIterator = false;
-	    if  (obj.methods.debugIterator) {
+            var doIterator = false;
+            if  (obj.methods.debugIterator) {
                 if (typeof obj.data.debugIteratorEnabled == "undefined") {
                     doIterator = true;
-		} else if (obj.data.debugIteratorEnabled._value) {
+                } else if (obj.data.debugIteratorEnabled._value) {
                     doIterator = true;
-		}
-	    }
+                }
+            }
             if (doIterator) {
                 li.className = "submenu";
                 li.style.backgroundImage='url("closed.png")';
@@ -307,4 +313,95 @@ GraceDebugger.breakpoints = {
     points : [],
     enabled : [],
 };
+
+
+/* data cache */
+function functionCache(modname, name) {
+    this.modname = modname;
+    this.name = name;
+
+    eval(
+ "this.run = function() {\n"
++"    var modname = \"" + modname + "\";\n"
++"    var name = \"" + name + "\";\n"
++"    var this_ = GraceDebugger.cache.get(modname, name);\n"
++"    var ret;\n"
++"    if (this_.index == this_.cache.length) {\n"
++"        ret = this_.func();\n"
++"        this_.add(ret);\n"
++"    } else {\n"
++"        ret = this_.cache[this_.index].value;\n"
++"    }\n"
++"    this_.index++;\n"
++"    return ret;\n"
++"}\n"
+    );
+
+    this.cache = [];
+    this.index = 0;
+    
+    this.start = function() {
+        if (this.index != 0) {
+            // clear unused part of the cache from last run
+            /*if (this.index < this.cache.length) {
+                this.cache = this.cache.slice(0, this.index);
+            }*/
+            this.index = 0;
+        }
+        eval("do_import(this.modname, gracecode_" + this.modname + ");");
+	if (this.modname != "io" || this.name != "read") {
+            this.func = importedModules[this.modname].methods[this.name];
+            importedModules[this.modname].methods[this.name] = this.run;
+	} else {
+            this.func = function() {
+                return new GraceString(minigrace.stdin_read());
+            };
+            stdin.methods.read = this.run;
+	}
+    }
+
+    this.reset = function() {
+        this.index = 0;
+        this.cache = [];
+    }
+
+    this.clear = function() {
+        this.cache = [];
+    }
+
+    this.add = function(value) {
+        var obj = {
+            value : value
+        }
+        this.cache.push(obj);
+    }
+}
+
+GraceDebugger.cache = {
+    names : [
+        {module: "math", func : "random"}, 
+        {module: "io", func : "read"}
+    ],
+    caches : [],
+    init : function () {
+        for (var i=0;i<this.names.length;i++) {
+            this.caches.push(new functionCache(this.names[i].module, this.names[i].func));
+        }
+    },
+    start : function () {
+        for (var i=0;i<this.caches.length;i++) {
+            this.caches[i].start();
+        }
+    },
+    clear : function () {
+        for (var i=0;i<this.caches.length;i++) {
+            this.caches[i].clear();
+        }
+    },
+    get : function(nodname, func) {
+        for (var i=0;i<this.names.length;i++)
+            if (this.names[i].module == nodname && this.names[i].func == func) 
+                return this.caches[i];
+    }
+}
 
