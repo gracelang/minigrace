@@ -9,11 +9,18 @@
 	border: 1px inset gray;
 	padding: 3px 0px 9px 3px;}
 
-#d p	{display: none;}
+#d p	{display: none;
+	background: #aaf;}
+
 #Ddefault {display: block;}
 
 #stderr_txt {width: 49.5%;}
 #debugger {display: table;}
+
+.highlight {/*background-color: white;*/
+	transition: background-color 1s ease-in 0s;}
+
+.highlight:hover {background-color: #aaf;}
     </style>
     <script src="minigrace.in.js" type="text/javascript"></script>
     <script src="debugger.js" type="text/javascript"></script>
@@ -35,6 +42,8 @@ function describe(index) {
 </head>
 <body>
     <h2>Debugger Documentation</h2>
+    
+    <p>This page details the Minigrace Debugger. To access the debugger, simply check the debugger check box </p>
 
     <ol>
         <li>Interface</li>
@@ -48,28 +57,28 @@ function describe(index) {
     <h3>Interface</h3>
 
     <div class="interfacebox" onmouseout='describe("Ddefault");'>
-    <span onmouseover='describe("Dtoggle");'><input type="checkbox" id="debugtoggle" onchange="toggleDebugger()" checked />Debugger</span><br />
-        <textarea id="stderr_txt" rows="9" cols="60" onmouseover='describe("Derr");'></textarea>
+    <span onmouseover='describe("Dtoggle");' class="highlight"><input type="checkbox" id="debugtoggle" onchange="toggleDebugger()" checked />Debugger</span><br />
+        <textarea id="stderr_txt" rows="8" cols="60" onmouseover='describe("Derr");' class="highlight"></textarea>
         <div id="text_areas">
             <div id="debugger">
                 <table style="width: 100%;"><tr><td class="debugger_td_border">
                     <div id="debugger_buttons">
-                        <button onmouseover='describe("Dback");'>Back-step</button>
-                        <button onmouseover='describe("Drestart");'>Restart</button>
-                        <button onmouseover='describe("Dcontinue");'>Continue</button>
-                        <button onmouseover='describe("Dstep");'>Step</button>
+                        <button onmouseover='describe("Dback");' class="highlight">Back-step</button>
+                        <button onmouseover='describe("Drestart");' class="highlight">Restart</button>
+                        <button onmouseover='describe("Dcontinue");' class="highlight">Continue</button>
+                        <button onmouseover='describe("Dstep");' class="highlight">Step</button>
                     </div>
                     
                     <div class="breakpoints">
-                        <span onmouseover='describe("Dbreakpoints");'>Breakpoints <!--(<span id="debugger_module">main</span>)--></span>
-                        <div id="breakpoints" onmouseover='describe("Dbreakpoint");'>
+                        <span onmouseover='describe("Dbreakpoints");' class="highlight">Breakpoints <!--(<span id="debugger_module">main</span>)--></span>
+                        <div id="breakpoints" onmouseover='describe("Dbreakpoint");' class="highlight">
                             <span style="color: #aaa;">(No breakpoints added yet)</span>
                         </div>
-                        <button onclick="GraceDebugger.breakpoints.add();" onmouseover='describe("Dadd");'>Add a breakpoint</button>
-                        <input id="add_break" onmouseover='describe("Dadd");' />
+                        <button onclick="GraceDebugger.breakpoints.add();" onmouseover='describe("Dadd");' class="highlight">Add a breakpoint</button>
+                        <input id="add_break" onmouseover='describe("Dadd");' class="highlight" />
                     </div>
-                </td><td class="debugger_td_border">
-                    <div id="debugger_vars_display" onmouseover='describe("Dvariables");'>
+                </td><td class="debugger_td_border highlight" onmouseover='describe("Dvariables");'>
+                    <div id="debugger_vars_display">
                          Variables: 
                          <div></div>
                     </div>
@@ -79,7 +88,7 @@ function describe(index) {
     </div>
 
     <div id="d">
-        <p id="Ddefault" style="display: inline;">Mouse over parts of the interface above to see a quick explanation of what each part does.</p>
+        <p id="Ddefault" style="background: white; display: inline;">Mouse over parts of the interface above to see a quick explanation of what each part does.</p>
         <p id="Dtoggle"><b>Debugger Toggle:</b> Unchecking this checkbox will hide the debugger interface, checking it again will show it again.</p>
         <p id="Derr"><b>Standard Error:</b> This is the textarea where standard error and logging messages are printed to.</p>
         <p id="Dback"><b>Back-Step:</b> This button will take the debugger to the line just before whatever line it's currently stopped on.</p>

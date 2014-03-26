@@ -2,7 +2,7 @@ function toggleDebugger() {
     var std_err = document.getElementById("stderr_txt");
     var dbgmenu = document.getElementById("debugger");
     if (document.getElementById("debugtoggle").checked) {
-        if(ace) {
+        if(typeof ace != "undefined") {
             editor.session.setBreakpoints(
                 GraceDebugger.breakpoints.points.map(
                     function(x){return x - 1;}));
@@ -10,14 +10,16 @@ function toggleDebugger() {
         std_err.style.width="49.5%";
         dbgmenu.style.display = "table";
     } else {
-        if(ace) {
+        if(typeof ace != "undefined") {
             editor.session.clearBreakpoints();
         }
         GraceDebugger.cache.clear();
 
-	// the following function assignment is a hack, fix later
-	stdin.methods.read = function() {
-            return new GraceString(minigrace.stdin_read());
+        // the following function assignment is a hack, fix later
+        if(typeof stdin != "undefined") {
+            stdin.methods.read = function() {
+                return new GraceString(minigrace.stdin_read());
+            }
         }
 
         dbgmenu.style.display = "none";
@@ -138,12 +140,12 @@ var GraceDebugger = {
         if (obj && obj.methods) {
             // if a debugIterator exists and if either there's no debugIteratorEnabled set or it is set to true
             var doIterator = false;
-            if  (obj.methods.debugIterator) {
-                if (typeof obj.data.debugIteratorEnabled == "undefined") {
-                    doIterator = true;
-                } else if (obj.data.debugIteratorEnabled._value) {
-                    doIterator = true;
-                }
+            if  (obj.methods.debugIterator &&
+                (typeof obj.data == "undefined"
+                || typeof obj.data.debugIteratorEnabled == "undefined"
+                || obj.data.debugIteratorEnabled._value)
+            ) {
+                doIterator = true;
             }
             if (doIterator) {
                 li.className = "submenu";
@@ -327,7 +329,7 @@ function functionCache(modname, name) {
 +"    var this_ = GraceDebugger.cache.get(modname, name);\n"
 +"    var ret;\n"
 +"    if (this_.index == this_.cache.length) {\n"
-+"        ret = this_.func();\n"
++"        ret = this_.method();\n"
 +"        this_.add(ret);\n"
 +"    } else {\n"
 +"        ret = this_.cache[this_.index].value;\n"
@@ -349,15 +351,15 @@ function functionCache(modname, name) {
             this.index = 0;
         }
         eval("do_import(this.modname, gracecode_" + this.modname + ");");
-	if (this.modname != "io" || this.name != "read") {
-            this.func = importedModules[this.modname].methods[this.name];
+        if (this.modname != "io" || this.name != "read") {
+            this.method = importedModules[this.modname].methods[this.name];
             importedModules[this.modname].methods[this.name] = this.run;
-	} else {
-            this.func = function() {
+        } else {
+            this.method = function() {
                 return new GraceString(minigrace.stdin_read());
             };
             stdin.methods.read = this.run;
-	}
+        }
     }
 
     this.reset = function() {
@@ -378,14 +380,20 @@ function functionCache(modname, name) {
 }
 
 GraceDebugger.cache = {
+    // Note that to get input to be cached required special-casing it, but it
+    // should be possible to upgrade the code to not need this special-case.
+    // special case code located in: functionCache.start, toggleDebugger
+    //
+    // To add any other method to cache, specify the module and method below
+    // in the names array.
     names : [
-        {module: "math", func : "random"}, 
-        {module: "io", func : "read"}
+        {module: "math", method : "random"}, 
+        {module: "io", method : "read"}
     ],
     caches : [],
     init : function () {
         for (var i=0;i<this.names.length;i++) {
-            this.caches.push(new functionCache(this.names[i].module, this.names[i].func));
+            this.caches.push(new functionCache(this.names[i].module, this.names[i].method));
         }
     },
     start : function () {
@@ -398,9 +406,9 @@ GraceDebugger.cache = {
             this.caches[i].clear();
         }
     },
-    get : function(nodname, func) {
+    get : function(nodname, method) {
         for (var i=0;i<this.names.length;i++)
-            if (this.names[i].module == nodname && this.names[i].func == func) 
+            if (this.names[i].module==nodname && this.names[i].method==method)
                 return this.caches[i];
     }
 }
