@@ -151,6 +151,25 @@ function falseStartup() {
     along with their values or an expandable menu option to display variables within the given variable.
     lists and objects are the most common variables types that may have a menu option.
     If the program is interrupted before a variable is declared, it will not appear in the display.</p>
+    <p>It is possible to adjust how the debugger displays an object from within Grace.
+    To change the value displayed by an object, add a debugValue method to the object that will return a string.
+    <pre>    method debugValue() {
+        "\"Type == object\"" 
+    }</pre>
+    The above example will make the object display a value of "Type == object".</p>
+    <p>To change the variables within the object that are displayed, add a debugIterator to the object that will return an iterator.
+    <pre>    method debugIterator() {
+        return object {
+            var b := 1
+            var test
+        }.debugIterator()
+    }</pre>
+    The above example will make the object show itself as having a variable b with a value of 1 and a variable test with an undefined value.</p>
+
+    <p>To stop an object from having an expandable menu, the following to the object:
+    <pre>    var debugIteratorEnabled := false</pre>
+    The object will now show up as a variable without an expandable menu option.</p>
+
     <br />
 
     <h3 id="cached">Cached Values</h3>
