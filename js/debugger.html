@@ -63,17 +63,17 @@ function falseStartup() {
     <p>This page details the Minigrace Debugger. To access the debugger, simply check the debugger check box </p>
 
     <ol>
-        <li>Interface</li>
-        <li>Breakpoints</li>
-        <li>Restart and Continue</li>
-        <li>Step and Backstep</li>
-        <li>Variables</li>
-        <li>Cached Values</li>
-        <li>Actual Workings</li>
+        <li><a href="#interface">Interface</a></li>
+        <li><a href="#breakpoints_link">Breakpoints</a></li>
+        <li><a href="#restart">Restart and Continue</a></li>
+        <li><a href="#step">Step and Backstep</a></li>
+        <li><a href="#variables">Variables</a></li>
+        <li><a href="#cached">Cached Values</a></li>
+        <li><a href="#actual">Actual Workings</a></li>
     </ol>
 
-    <h3>Interface</h3>
-
+    <h3 id="interface">Interface</h3>
+    
     <div class="interfacebox" onmouseout='describe("Ddefault");'>
     <span>
         <input type="checkbox" id="acetoggle" onchange="toggleAce()" checked />Ace
@@ -125,39 +125,53 @@ function falseStartup() {
         <p id="Dadd"><b>Add a breakpoint:</b> Enter a number greater than or equal to 1 and click <b>Add a breakpoint</b> to add a breakpoint.</p>
         <p id="Dvariables"><b>Variable List:</b> This is where variables that are in existence at the time the program stops or is interrupted can be seen.</p>
     </div>
+    <br />
 
-
-    <h3>Breakpoints</h3>
+    <h3 id="breakpoints_link">Breakpoints</h3>
     <p>A Breakpoint is an intentional stopping point in the program.
     If ace is enabled, then you can set breakpoints by clicking on the space just to the left of the line number, and click again to disable it.
     Otherwise, place a breakpoint in the program by typing the line number you want to stop at and clicking the <b>Add a breakpoint</b> button.
     Remove a breakpoint by clicking <b>Remove</b>, disable it by clicking <b>Disable</b>.
     Breakpoints only stop the program if the program is started by clicking either the <b>Restart</b> or <b>Continue</b> buttons.</p>
+    <br />
 
-    <h3>Restart and Continue</h3>
+    <h3 id="restart">Restart and Continue</h3>
     <p>The <b>Restart</b> and <b>Continue</b> buttons run the program until it hits a breakpoint or finishes execution.</p>
     <b>Continue</b> will run the debugger past wherever the program last stopped until the next breakpoint,
     while <b>Restart</b> will stop at the first breakpoint the program encounters.</p>
+    <br />
 
-    <h3>Step and Back-step</h3>
+    <h3 id="step">Step and Back-step</h3>
     <p><b>Step</b> will pause the program just after the last line the program paused on.
     <b>Back-Step</b> will pause the program just before the last line the program paused on.</p>
+    <br />
 
-    <h3>Variables</h3>
+    <h3 id="variables">Variables</h3>
     <p>All variables created in the current scope of the program should be displayed in the variables section,
     along with their values or an expandable menu option to display variables within the given variable.
     lists and objects are the most common variables types that may have a menu option.
     If the program is interrupted before a variable is declared, it will not appear in the display.</p>
+    <br />
 
-    <h3>Cached Values</h3>
-    For programs that use the random method from the math module or the input.read method from the io module,
+    <h3 id="cached">Cached Values</h3>
+    <p>For programs that use the random method from the math module or the input.read method from the io module,
     Caching is done on these methods to prevent odd behavior from the debugger.
-    To clear the cache, simply uncheck then reacheck the debugger check box.
+    To clear the cache, simply uncheck then reacheck the debugger check box.</p>
+    <p><b>For Developers:</b> As of writing this, to add a new method to the list of methods to be cached, you need to edit debugger.js to add the name of the module and method that will be cached.
+    Find "GraceDebugger.cache = {" and inside the definition should be the following lines:
+    <pre>    names : [
+        {module: "math", method : "random"},</pre>
+    Add the following line just after the above, but change "module name" and "method name" to the appropriate values.
+    <pre>        {module: "module name", method : "method name"},</pre>
+    That should cause the debugger to start caching that method's return values.</p>
+    <br />
 
-    <h3>Actual Workings</h3>
+
+    <h3 id="actual">Actual Workings</h3>
     <p>This Debugger does not actually pause the program mid-execution, but instead interrupts it based on line changes.
     It resumes by running the program again, but changing where the interrupt occurs so that it seems to stop and resume.
-    Because of this, any non-deterministic behavior the program contains will as of now potentially cause unpredictable behavior.</p>
+    Because of this, any non-deterministic behavior the program contains may cause unpredictable behavior.
+    The Caching system was put in place to help deal with this issue.</p>
 
 
    <input type="hidden" value="js" id="mode" />
