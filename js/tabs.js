@@ -497,7 +497,6 @@ function startup() {
                 e.stop();
             }
         });
-        GraceDebugger.cache.init();
     } else {
         document.getElementById("code_txt_real").style.display = "none";
         document.getElementById("acetoggle").parentNode.style.display = "none";
@@ -505,6 +504,7 @@ function startup() {
             return document.getElementById("code_txt").value;
         }
     }
+    GraceDebugger.cache.init();
     
     addCodeTab("main","print \"Hello, world!\"");
     document.getElementById("code_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
@@ -525,7 +525,6 @@ function startup() {
 
 // allow ace to be turned on and off in the browser
 function toggleAce() {
-    //<input type="checkbox" id="acetoggle" checked>Ace</input>
     if (document.getElementById("acetoggle").checked) {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';

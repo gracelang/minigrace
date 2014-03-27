@@ -242,8 +242,8 @@ GraceDebugger.breakpoints = {
         if(typeof ace != "undefined") {
             editor.session.clearBreakpoints();
             editor.session.setBreakpoints(
-                                          GraceDebugger.breakpoints.points.map(
-                                                                               function(x){return x - 1;}));
+                GraceDebugger.breakpoints.points.map(
+                    function(x){return x - 1;}));
         }
         document.getElementById("breakpoints").innerHTML = bpString;
     },
