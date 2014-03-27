@@ -239,7 +239,7 @@ GraceDebugger.breakpoints = {
                 + lineNum + ');">Remove</button></div>';
             }
         }
-        if(ace) {
+        if(typeof ace != "undefined") {
             editor.session.clearBreakpoints();
             editor.session.setBreakpoints(
                                           GraceDebugger.breakpoints.points.map(

@@ -511,7 +511,7 @@ function startup() {
     document.getElementById("stdout_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
     
     // get samples to work
-    if (samples) {
+    if (typeof samples != "undefined") {
         var sm = document.getElementById('sample');
         for (var s in samples) {
             var opt = document.createElement('option');
