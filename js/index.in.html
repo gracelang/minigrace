@@ -115,19 +115,19 @@
     <input type="button" id="compilerun_but" value="Go" onclick="go()" />
     Target:
     <select id="mode" onchange="modeswitch()">
-       <option value="js" />JavaScript
-       <option value="c" />C
-       <option value="lex" />Tokens
-       <option value="parse" />AST
-       <option value="grace" />Grace
-       <option value="testall" />All tests (slow)
-   </select>
+        <option value="js">JavaScript</option>
+        <option value="c">C</option>
+        <option value="lex">Tokens</option>
+        <option value="parse">AST</option>
+        <option value="grace">Grace</option>
+        <option value="testall">All tests (slow)</option>
+    </select>
     Module name: <input type="text" value="main" id="modname" size="16"
     onchange='this.selected.changeName(this.value);'/>
     Visibility:
     <select id="defaultVisibility" onchange="selectvisibility();">
-      <option value="standard">Standard
-      <option value="public">All accessible
+        <option value="standard">Standard</option>
+        <option value="public">All accessible</option>
     </select>
     <span style="font-size: smaller;">
     minigrace-js
@@ -138,7 +138,7 @@
     <br />
     <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
     <select id="testcases">
-<!--[!SH[ls tests | grep _test.grace | while read fn ; do if echo "$fn" | grep -q fail ; then o=$(echo "$fn"|cut -d_ -f1-3) ; else o=$(echo "$fn"|cut -d_ -f1-2) ; fi ; o2=$(sed -e s/^t//<<<$o) ; echo "  <option value=\"$o\">$o2</option>" ; done]!]-->
+<!--[!SH[ls tests | grep "_test.grace" | sed 's/^t//g' | sed 's/_test.grace//g' | awk '{print "        <option value=\"t"$1"\">"$1"</option>"}']!]-->
     </select>
     <input type="button" value="Load sample:" onclick="loadsample(document.getElementById('sample').value)" />
     <select id="sample"><option></option><!--Will be populated dynamically//--></select>
