@@ -19,8 +19,8 @@ method require( precondition : Predicate )
  if (!precondition.apply) 
    then {print "preX"; InvariantFailure.raise "Precondition Failure"} 
  var result 
- catch {print "body"; result := body.apply; print "ydob"}
-   case { _ -> print "ux"; InvariantFailure.raise "Unexpected Exception" }
+ try {print "body"; result := body.apply; print "ydob"}
+   catch { _ -> print "ux"; InvariantFailure.raise "Unexpected Exception" }
    finally {
      print "fin"
      if (!postcondition.apply(result)) 

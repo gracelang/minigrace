@@ -170,5 +170,19 @@ install: minigrace
 
 Makefile.conf: configure
 	./configure
+    
+WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample tests sample
+
+tarWeb: js samples
+	tar -cvf webfiles.tar $(WEBFILES)
+#	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
+#	subdirectory that tar creates readable and executable by your web daemon.
+    
+blackWeb: js samples
+	rsync -az $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+    
+graceWeb: js samples
+	rsync -az $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%
