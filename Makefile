@@ -171,7 +171,7 @@ install: minigrace
 Makefile.conf: configure
 	./configure
     
-WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample tests sample
+WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample tests sample js/debugger.html js/*.png
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES)
