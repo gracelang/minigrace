@@ -157,6 +157,7 @@ MiniGrace.prototype.run = function() {
         Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
+            GraceDebugger.cache.start();
             GraceDebugger.that = {methods:{}, data: {}, className: modname};
             GraceDebugger.run(theModule, GraceDebugger.that);
         } else {
@@ -176,7 +177,7 @@ MiniGrace.prototype.compilerun = function(grace_code) {
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;
         this.lastModule = document.getElementById("modname").value;
-        this.visDefault = document.getElementById("defaultVisibility").value;	
+        this.visDefault = document.getElementById("defaultVisibility").value;        
         compiled = true;
     }
     if (!this.compileError && this.mode == 'js') {

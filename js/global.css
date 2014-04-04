@@ -132,8 +132,8 @@ a:visited {
 	padding: 3px;}
 
 #breakpoints {
-    overflow: auto;
-    height: 70px;}
+	overflow: auto;
+	height: 70px;}
 
 #add_break {
 	width: 2cm;}
@@ -153,7 +153,7 @@ a:visited {
 	padding-left: 5px;}
 
 #debugger_vars_display>ul{
-    overflow: auto;
+	overflow: auto;
 	height: 120px;}
 
 #debugger_vars_display ul{

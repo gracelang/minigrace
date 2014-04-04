@@ -34,7 +34,7 @@ function go() {
     document.getElementById('stderr_txt').value = "";
     minigrace.modname = document.getElementById('modname').value;
     var compiled = minigrace.compilerun(getCode());
-    if(!compiled  && !document.getElementById('debugtoggle').checked)
+    if (!compiled && !document.getElementById('debugtoggle').checked)
         document.getElementById('stderr_txt').value = old_stderr;
     document.getElementById('js_txt').value = minigrace.generated_output;
     if (minigrace.compileError && ace) {
@@ -50,11 +50,11 @@ function go() {
         editor.getSelection().clearSelection();
         bits.shift();
         editor.getSession().setAnnotations([{
-                                            row: bits.shift() - 1,
-                                            column: bits.shift() - 1,
-                                            text: bits.join(":"),
-                                            type: "error"
-                                            }]);
+            row: bits.shift() - 1,
+            column: bits.shift() - 1,
+            text: bits.join(":"),
+            type: "error"
+        }]);
     }
     scrollstdout();
 }
@@ -125,7 +125,12 @@ function testall() {
             if (!minigrace.compileError) {
                 minigrace.run();
                 if (goldenOutput != "") {
-                    var realOut = stdout_txt.value.substr(goldenOutputOffset);
+                    var realOut = "";
+                    if (document.getElementById('debugtoggle').checked)
+                        realOut = stdout_txt.value;
+                    else
+                        realOut = stdout_txt.value.substr(goldenOutputOffset);
+
                     if (realOut == goldenOutput) {
                         stderr_txt.value += "\nTest passed.";
                         passes = passes + 1;
@@ -191,26 +196,27 @@ function selectvisibility() {
     minigrace.vis = document.getElementById("defaultVisibility").value;
 }
 window.addEventListener("load", function() {
-                        document.getElementById('stdout_txt').value = "";
-                        document.getElementById('stderr_txt').value = "";
-                        if (window.location.hash) {
-                        if (window.location.hash.substring(0, 8) == "#sample=") {
-                        var s = window.location.hash.substring(8);
-                        loadsample(s);
-                        }
-                        }
-                        });
+    document.getElementById('stdout_txt').value = "";
+    document.getElementById('stderr_txt').value = "";
+    if (window.location.hash) {
+        if (window.location.hash.substring(0, 8) == "#sample=") {
+            var s = window.location.hash.substring(8);
+            loadsample(s);
+        }
+    }
+});
 
 
 /***************************************/
 /****     Start of Tabs Section     ****/
 /***************************************/
+// manages the tabs on the right hand side of the screen (Program output/Generated code/Canvas)
 function outputTabManager(that, target) {
-    if(!that.className.match("selected")) {
+    if (!that.className.match("selected")) {
         var divs = document.getElementById("output").getElementsByTagName("div");
-        for(var i=0;i<divs.length;i++) {
-            if(divs[i].className) {
-                if(divs[i].className.match("selected")) {
+        for (var i=0;i<divs.length;i++) {
+            if (divs[i].className) {
+                if (divs[i].className.match("selected")) {
                     divs[i].className = that.className;
                 }
             } else {
@@ -219,36 +225,43 @@ function outputTabManager(that, target) {
         }
         that.className += " selected";
         document.getElementById(target).style.display = "inline";
-        if(target == "stdout_tab")
+        if (target == "stdout_tab")
             document.getElementById("stdout_options").style.display = "inline";
     }
 }
 
 var tabs = [];
+// if the active tab is closed, select a new one
 tabs.lostSelected = function (index) {
-    if(this.length > 0 && index >= 0) {
-        if(index < this.length) {
-            this[index].select();
+    if (this.length > 0 && index >= 0) {
+        if (index < this.length) {
+            // select tab to the right of closed tab
+            this[index].select(); 
         } else {
+            // select tab furthest to the right
             this[this.length-1].select();
         }
         
-    } else {
+    } else { // create new tab and select it
         addCodeTab();
         this[0].select();
     }
 }
+
+// deselect all tabs
 tabs.deselectAll = function()
 {
-    for(var i = 0; i < this.length; i++) {
+    for (var i = 0; i < this.length; i++) {
         this[i].deselect();
     }
 }
+
+// save code from all tabs into codeArray, then return codeArray
 tabs.getAllCode = function()
 {
     var codeArray = [];
-    for(var i = 0; i < this.length; i++) {
-        if(this[i].isSelected) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i].isSelected) {
             codeArray.push(getCode());
         } else {
             codeArray.push(this[i].code);
@@ -258,6 +271,7 @@ tabs.getAllCode = function()
 }
 var tabCount = 0;
 
+// create a new tab
 function addCodeTab(name, code, file) {
     var tab = {
         name : "new" + tabCount,
@@ -265,12 +279,17 @@ function addCodeTab(name, code, file) {
         tabObject : null,
         isSelected : false,
         number : tabCount,
-        //codeObject : null
+        debug : {
+            that : null,
+            points : [],
+            enabled : [],
+            lineCount : 0,
+        }, 
     };
     
-    if(typeof name == "string")
+    if (typeof name == "string")
         tab.name = name;
-    if(code)
+    if (code)
         tab.code = code;
     
     tab.tabObject = {
@@ -292,7 +311,7 @@ function addCodeTab(name, code, file) {
     tab.tabObject.body.appendChild(tab.tabObject.input);
     
     tab.changeName = function(name) {
-        if(typeof name == "string") {
+        if (typeof name == "string") {
             this.name = name;
             this.tabObject.span.innerHTML = name;
             this.tabObject.input.value = name;
@@ -301,14 +320,18 @@ function addCodeTab(name, code, file) {
             }
         }
     }
+
+    // stores given string as user grace code for this tab
     tab.setCode = function(code) {
         tab.code = code;
-        if(tab.isSelected) {
+        if (tab.isSelected) {
             document.getElementById("code_txt").value = tab.code;
             if(typeof ace != "undefined")
                 editor.setValue(tab.code, -1);
         }
     }
+
+    // selects this tab (display code and mod style)
     tab.select = function() {
         tabs.deselectAll();
         tab.tabObject.body.className = "tab selected";
@@ -316,32 +339,70 @@ function addCodeTab(name, code, file) {
         document.getElementById("modname").selected = tab;
         tab.isSelected = true;
         tab.setCode(tab.code);
+
+        // check debugger exists and works like we think it does
+        if (GraceDebugger
+        && GraceDebugger.currentRunCount > -1 
+        && GraceDebugger.breakpoints 
+        && GraceDebugger.breakpoints.points 
+        && GraceDebugger.breakpoints.enabled) {
+        // set breakpoints, object view, linecount
+        // refresh breakpoints, variable list
+            GraceDebugger.VariableListBase(tab.debug.that);
+            GraceDebugger.breakpoints.points = tab.debug.points;
+            GraceDebugger.breakpoints.enable = tab.debug.enable;
+            GraceDebugger.lastRunCount = tab.debug.lineCount;
+            if (document.getElementById('debugtoggle').checked)
+                GraceDebugger.breakpoints.refresh();
+        }
     }
+
+    // deselects this tab (save code and mod style)
     tab.deselect = function() {
-        if(tab.isSelected) {
+        if (tab.isSelected) {
             tab.tabObject.body.className = "tab";
             tab.isSelected = false;
             tab.code = getCode();
+            
+            // check debugger exists and works like we think it does
+            if (GraceDebugger 
+            && GraceDebugger.currentRunCount > -1  
+            && GraceDebugger.breakpoints  
+            && GraceDebugger.breakpoints.points  
+            && GraceDebugger.breakpoints.enabled) {
+                // save breakpoins, that, and linecount,
+                if (document.getElementById("debugger_vars_display").that)
+                    tab.debug.that = document.getElementById("debugger_vars_display").that;
+                tab.debug.points = GraceDebugger.breakpoints.points;
+                tab.debug.enable = GraceDebugger.breakpoints.enable;
+                tab.debug.lineCount = GraceDebugger.lastRunCount;
+            }
         }
     }
+
+    // close this tab (and associated file if any)
     tab.close = function(e) {
         e.stopPropagation();
         document.getElementById("tabs").removeChild(tab.tabObject.body);
         var index = tabs.indexOf(tab);
-		if(index != -1) {
-			tabs.splice(index, 1);
-		}
-        if(tab.isSelected) {
+        if (index != -1) {
+            tabs.splice(index, 1);
+        }
+        if (tab.isSelected) {
             tabs.lostSelected(index);
         }
-        if(tab.file) {
+        if (tab.file) {
             tab.file.close();
         }
     }
+
+    // start renaming process by providing input field
     tab.nameEditStart = function() {
         tab.tabObject.span.style.display = "none";
         tab.tabObject.input.style.display = "inline";
     }
+
+    // finish renaming process by returning tab to normal with new name
     tab.nameEditFinish = function(event) {
         if(event.keyCode && event.keyCode == 13) {
             tab.changeName(tab.tabObject.input.value);
@@ -365,7 +426,7 @@ function addCodeTab(name, code, file) {
     tabCount++;
     tab.select();
     
-    if(file) {
+    if (file) {
         tab.file = file;
     }
     
@@ -415,27 +476,27 @@ function startup() {
         
         // debugger stuff
         editor.on("guttermousedown", function(e){
-                  if (document.getElementById("debugtoggle").checked) {
-                  var target = e.domEvent.target;
-                  if (target.className.indexOf("ace_gutter-cell") == -1)
-                  return;
-                  if (!editor.isFocused())
-                  return;
-                  if (e.clientX > 25 + target.getBoundingClientRect().left)
-                  return;
+            if (document.getElementById("debugtoggle").checked) {
+                var target = e.domEvent.target;
+                if (target.className.indexOf("ace_gutter-cell") == -1)
+                    return;
+                if (!editor.isFocused())
+                    return;
+                if (e.clientX > 25 + target.getBoundingClientRect().left)
+                    return;
                   
-                  var row = e.getDocumentPosition().row;
-                  if (e.editor.session.$breakpoints[row]) {
-                  //e.editor.session.clearBreakpoint(row);
-                  GraceDebugger.breakpoints.remove(row+1);
-                  } else {
-                  //e.editor.session.setBreakpoint(row);
-                  document.getElementById("add_break").value = row + 1;
-                  document.getElementById("bpadd").click();
-                  }
-                  e.stop();
-                  }
-                  });
+                var row = e.getDocumentPosition().row;
+                if (e.editor.session.$breakpoints[row]) {
+                    //e.editor.session.clearBreakpoint(row);
+                    GraceDebugger.breakpoints.remove(row+1);
+                } else {
+                    //e.editor.session.setBreakpoint(row);
+                    document.getElementById("add_break").value = row + 1;
+                    document.getElementById("bpadd").click();
+                }
+                e.stop();
+            }
+        });
     } else {
         document.getElementById("code_txt_real").style.display = "none";
         document.getElementById("acetoggle").parentNode.style.display = "none";
@@ -443,13 +504,14 @@ function startup() {
             return document.getElementById("code_txt").value;
         }
     }
+    GraceDebugger.cache.init();
     
     addCodeTab("main","print \"Hello, world!\"");
     document.getElementById("code_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
     document.getElementById("stdout_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
     
     // get samples to work
-    if(samples) {
+    if (typeof samples != "undefined") {
         var sm = document.getElementById('sample');
         for (var s in samples) {
             var opt = document.createElement('option');
@@ -463,8 +525,7 @@ function startup() {
 
 // allow ace to be turned on and off in the browser
 function toggleAce() {
-    //<input type="checkbox" id="acetoggle" checked>Ace</input>
-    if(document.getElementById("acetoggle").checked) {
+    if (document.getElementById("acetoggle").checked) {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
         editor.setValue(document.getElementById("code_txt").value, -1);
