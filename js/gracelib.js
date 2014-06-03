@@ -958,6 +958,9 @@ GraceType.prototype = {
         },
         "asString": function(argcv) {
             return new GraceString("Type<" + this.name + ">");
+        },
+        "asDebugString": function(argcv) {
+            return callmethod(this, "asString", [0]);
         }
     },
     typeMethods: [],
