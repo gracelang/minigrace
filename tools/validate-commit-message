@@ -87,11 +87,12 @@ then
     tail -n +$atline "$FILENAME" >> /tmp/msg-$$
     cat /tmp/msg-$$ > "$FILENAME"
     rm -f /tmp/msg-$$
-    ed="$VISUAL"
-    [ "$ed" ] || ed="$EDITOR"
-    [ "$ed" ] || ed="vi"
-    $ed "$FILENAME"
-    exec "$0" "$FILENAME"
+#    ed="$VISUAL"
+#    [ "$ed" ] || ed="$EDITOR"
+#    [ "$ed" ] || ed="vi"
+#    $ed "$FILENAME"
+#    exec "$0" "$FILENAME"
+    echo "validate failed; message in $FILENAME"
 else
     exit 0
 fi
