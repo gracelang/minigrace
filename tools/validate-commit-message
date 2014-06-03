@@ -52,7 +52,7 @@ then
     error "3. The body must start here and this line must be non-empty."
 fi
 
-LN=$(awk 'NR > 2 { if (/^.{73}/) { print NR ; FAIL = 1} }' "$FILENAME")
+LN=$(awk 'NR > 2 { if (/^[^#].{72}/) { print NR ; FAIL = 1} }' "$FILENAME")
 if [ "$LN" ]
 then
     for ln in $LN
@@ -81,6 +81,7 @@ then
     do
         echo "# $err" >> /tmp/msg-$$
     done
+    cat /tmp/msg-$$
     echo "# Erase all non-comment lines to abort the commit." >> /tmp/msg-$$
     echo >> /tmp/msg-$$
     atline=$((atline + 1))
