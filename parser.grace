@@ -2607,8 +2607,7 @@ method doclass {
             errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
-        def cname = if (!(util.extensions.contains("ClassMethods") &&
-                (tokens.first.kind != "dot"))) then {
+        def cname = if (tokens.first.kind == "dot") then {
             pushidentifier // A class currently cannot be anonymous
             def cname' = values.pop
             if (!accept("dot")) then {
