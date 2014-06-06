@@ -128,12 +128,18 @@ class OrPattern.new(p1, p2) {
     }
 }
 
-type XandY = type { 
+type Point = type { 
     x -> Number
     y -> Number
+    asString -> String
+    distanceTo(other:Point) -> Number
+    -(other:Point) -> Point
+    +(other:Point) -> Point
+    length -> Number
+    ==(other:Point) -> Boolean
 }
 
-class Point2D.x(x')y(y') {
+class point2D.x(x')y(y') {
     def x is readable = x'
     def y is readable = y'
     method asString {"({x}@{y})"}
@@ -145,7 +151,7 @@ class Point2D.x(x')y(y') {
 }
 
 method point(x,y) {
-    return Point2D.x(x)y(y)
+    return point2D.x(x)y(y)
 }
 
 def _standardPrelude = self
