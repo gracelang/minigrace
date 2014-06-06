@@ -725,26 +725,9 @@ function Grace_egal(o1, o2) {
             "&&", [1], callmethod(t2, "match", [1], o1));
     if (!Grace_isTrue(tm))
         return GraceFalse;
-    for (d in o1.methods) {
-        if (d == "outer")
-            continue;
-        var meth = o1.methods[d];
-        var tmp = o2;
-        while (tmp != null && tmp != undefined
-                && typeof(tmp.methods[d]) != "function")
-            tmp = tmp.superobj;
-        if (tmp == null || tmp == undefined)
-            return GraceFalse;
-        if (meth == tmp.methods[d])
-            continue;
-        if (meth.def && !tmp.methods[d].def)
-            return GraceFalse;
-        if (!meth.def && meth != tmp.methods[d])
-            return GraceFalse;
-        if (o1.data[d] && !tmp.data[d])
-            return GraceFalse;
+    for (d in o1.data) {
         var leftdata = o1.data[d];
-        var rightdata = tmp.data[d];
+        var rightdata = o2.data[d];
         if (!Grace_isTrue(callmethod(leftdata, "==", [1], rightdata)))
             return GraceFalse;
     }
@@ -823,20 +806,8 @@ GraceObjectMethods = {
         var t = callmethod(this, "==", [1], other);
         return callmethod(t, "not", [0]);
     },
-    "/=": function(argcv, other) {
-        var t = callmethod(this, "==", [1], other);
-        return callmethod(t, "not", [0]);
-    },
     "asDebugString": function(argcv) {
-        var s = "object {";
-        for (var i in this.data) {
-            try {
-                s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
-            } catch (e) {
-                s += "var " + i + ";"
-            }
-        }
-        return new GraceString(s + "}");
+        return callmethod(this, "asString", [0])
     },
     "debugValue": function(argcv) {
         return new GraceString("object");
@@ -845,10 +816,16 @@ GraceObjectMethods = {
         return new GraceIterator(this.data);
     },
     "asString": function(argcv) {
+        return callmethod(this, "basicAsString", [0])
+    },
+    "basicAsString": function(argcv) {
+        // should not be overridden.
         var s = "object {";
+        var firstTime = true;
         for (var i in this.data) {
+            if (firstTime) firstTime = false; else s += ", ";
             try {
-                s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value + "; ";
+                s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
             } catch (e) {
                 s += "var " + i + ";"
             }
@@ -866,6 +843,7 @@ function Grace_allocObject() {
             "asString": GraceObjectMethods["asString"],
             "debugValue": GraceObjectMethods["debugValue"],
             "debugIterator": GraceObjectMethods["debugIterator"],
+            "basicAsString": GraceObjectMethods["basicAsString"]
         },
         superobj: null,
         data: {},
