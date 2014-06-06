@@ -1180,7 +1180,7 @@ method compileimport(o) {
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
     out "  throw new GraceExceptionPacket(RuntimeErrorObject, "
-    out "    new GraceString('could not find module {o.value}'));"
+    out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     if (o.dtype != false) then {
         out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
@@ -1422,6 +1422,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             topLevelTypes.put(typeid, true)
         }
     }
+    out "do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
     util.setline(1)
     out("function {formatModname(modname)} () \{")
     increaseindent

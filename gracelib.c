@@ -897,6 +897,20 @@ Object alloc_Exception(char *name, Object parent) {
     return o;
 }
 
+Object Float64_Point(Object self, int nparts, int *argcv,
+                     Object *args, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("@ requires an argument");
+    Object other = args[0];
+    assertClass(other, Number);
+    Object params[2];
+    int partcv[1];
+    params[0] = self;
+    params[1] = other;
+    partcv[0] = 2;
+    return callmethodflags(prelude, "point", 1, partcv, params, CFLAG_SELF);
+}
+
 Object String_Equals(Object self, int nparts, int *argcv,
         Object *params, int flags) {
     Object other = params[0];
@@ -2154,13 +2168,14 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 27, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 28, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
         add_Method(Number, "/", &Float64_Div);
         add_Method(Number, "^", &Float64_Exp);
         add_Method(Number, "%", &Float64_Mod);
+        add_Method(Number, "@", &Float64_Point);
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
         add_Method(Number, "hashcode", &Float64_hashcode);

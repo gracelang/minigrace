@@ -171,6 +171,9 @@ GraceNum.prototype = {
             var s = this._value % other._value;
             return new GraceNum(s)
         },
+        "@": function(argcv, other) {
+            return callmethod(Grace_prelude, "point", [2], this, other)
+        },
         "++": function(argcv, other) {
             var t = callmethod(this, "asString", [0]);
             return callmethod(t, "++", [1], other);

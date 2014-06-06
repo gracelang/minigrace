@@ -128,6 +128,17 @@ class OrPattern.new(p1, p2) {
     }
 }
 
+class Point2D.x(x')y(y') {
+    def x is readable = x'
+    def y is readable = y'
+    method asString {"({x}@{y})"}
+    method +(other) {point(x + other.x, y + other.y)} 
+}
+
+method point(x,y) {
+    return Point2D.x(x)y(y)
+}
+
 def _standardPrelude = self
 def BasicGrace = object {
     method new {
