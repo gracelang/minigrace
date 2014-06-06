@@ -1401,6 +1401,7 @@ method processDialect(values') {
 method compile(vl, of, mn, rm, bt, glpath) {
     var argv := sys.argv
     var cmd
+    def isPrelude = util.extensions.contains("NativePrelude")
     values := vl
     outfile := of
     modname := mn
@@ -1422,14 +1423,16 @@ method compile(vl, of, mn, rm, bt, glpath) {
             topLevelTypes.put(typeid, true)
         }
     }
-    out "do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
+    if (isPrelude.not) then {
+        out "do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
+    }
     util.setline(1)
     out("function {formatModname(modname)} () \{")
     increaseindent
     out("setModuleName(\"{modname}\");")
     out("if (callStack.length == 0)")
     out("  callStack = [\"execution environment\"]")
-    if (util.extensions.contains("NativePrelude")) then {
+    if (isPrelude) then {
         out("var Grace_prelude = window.Grace_native_prelude;")
     }
     out "this.definitionModule = \"{modname}\";"
