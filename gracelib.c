@@ -414,6 +414,21 @@ int integerfromAny(Object p) {
     int i = atoi(c);
     return i;
 }
+
+Object _bindingClass = NULL;
+Object grace_bindingClass() {
+    if (_bindingClass == NULL)
+        _bindingClass = callmethod(prelude, "binding", 0, NULL, NULL);
+    return _bindingClass;
+}
+
+Object _point2DClass = NULL;
+Object grace_point2DClass() {
+    if (_point2DClass == NULL)
+        _point2DClass = callmethod(prelude, "point2D", 0, NULL, NULL);
+    return _point2DClass;
+}
+
 Object gracebecome(Object subObject, Object superObject) {
     struct UserObject *sub = (struct UserObject *)subObject;
     struct UserObject *sup = (struct UserObject *)superObject;
@@ -483,6 +498,18 @@ Object Object_asString(Object receiver, int nparts, int *argcv,
 Object Singleton_asString(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     return alloc_String(receiver->class->name);
+}
+
+Object Object_bind(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+        gracedie("binary operator :: requires an argument");
+    Object other = args[0];
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = self;
+    params[1] = other;
+    return callmethod(grace_bindingClass(), "key()value", 2, partcv, params);
 }
 
 Object Object_concat(Object receiver, int nparts, int *argcv,
@@ -777,12 +804,13 @@ Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
 }
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class3("ExceptionPacket", 9,
+        ExceptionPacket = alloc_class3("ExceptionPacket", 10,
                 (void*)&ExceptionPacket__mark,
                 (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
         add_Method(ExceptionPacket, "exception", &ExceptionPacket_exception);
         add_Method(ExceptionPacket, "asString", &ExceptionPacket_asString);
+        add_Method(ExceptionPacket, "::", &Object_bind);
         add_Method(ExceptionPacket, "lineNumber", &ExceptionPacket_lineNumber);
         add_Method(ExceptionPacket, "moduleName", &ExceptionPacket_moduleName);
         add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
@@ -875,7 +903,7 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_Exception(char *name, Object parent) {
     if (!Exception) {
-        Exception = alloc_class("Exception", 11);
+        Exception = alloc_class("Exception", 12);
         add_Method(Exception, "match", &Exception_match);
         add_Method(Exception, "refine", &Exception_refine);
         add_Method(Exception, "raise", &Exception_raise);
@@ -885,6 +913,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(Exception, "!=", &Object_NotEquals);
         add_Method(Exception, "asString", &Exception_asString);
         add_Method(Exception, "asDebugString", &Object_asString);
+        add_Method(Exception, "::", &Object_bind);
         add_Method(Exception, "|", &literal_or);
         add_Method(Exception, "&", &literal_and);
     }
@@ -900,15 +929,14 @@ Object alloc_Exception(char *name, Object parent) {
 Object Float64_Point(Object self, int nparts, int *argcv,
                      Object *args, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-    gracedie("@ requires an argument");
+        gracedie("binary operator @ requires a single argument");
     Object other = args[0];
     assertClass(other, Number);
     Object params[2];
-    int partcv[1];
+    int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    partcv[0] = 2;
-    return callmethodflags(prelude, "point", 1, partcv, params, CFLAG_SELF);
+    return callmethod(grace_point2DClass(), "x()y", 2, partcv, params);
 }
 
 Object String_Equals(Object self, int nparts, int *argcv,
@@ -1152,9 +1180,10 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 20, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 21, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
+        add_Method(BuiltinList, "::", &Object_bind);
         add_Method(BuiltinList, "at", &BuiltinList_index);
         add_Method(BuiltinList, "[]", &BuiltinList_index);
         add_Method(BuiltinList, "at()put", &BuiltinList_indexAssign);
@@ -1218,13 +1247,15 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
 }
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("PrimitiveArray", 9, (void*)&BuiltinList_mark,
+        PrimitiveArray = alloc_class3("PrimitiveArray", 10, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "asString", &BuiltinList_asString);
+        add_Method(PrimitiveArray, "asDebugString", &BuiltinList_asString);
+        add_Method(PrimitiveArray, "::", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
@@ -1540,6 +1571,7 @@ Object alloc_ConcatString(Object left, Object right) {
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
+        add_Method(ConcatString, "::", &Object_bind);
         add_Method(ConcatString, "++", &String_concat);
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
@@ -1731,8 +1763,9 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 25);
+        String = alloc_class("String", 23);
         add_Method(String, "asString", &identity_function);
+        add_Method(String, "::", &Object_bind);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_at);
@@ -1919,8 +1952,9 @@ Object Octets_decode(Object receiver, int nparts, int *argcv,
 }
 Object alloc_Octets(const char *data, int len) {
     if (Octets == NULL) {
-        Octets = alloc_class("Octets", 8);
+        Octets = alloc_class("Octets", 9);
         add_Method(Octets, "asString", &Octets_asString);
+        add_Method(Octets, "::", &Object_bind);
         add_Method(Octets, "++", &Octets_Concat);
         add_Method(Octets, "at", &Octets_at);
         add_Method(Octets, "[]", &Octets_at);
@@ -2168,7 +2202,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 28, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 27, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2186,6 +2220,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, ">=", &Float64_GreaterOrEqual);
         add_Method(Number, "..", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
+        add_Method(Number, "::", &Object_bind);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
@@ -2313,6 +2348,7 @@ Object alloc_Boolean(int val) {
     if (Boolean == NULL) {
         Boolean = alloc_class("Boolean", 13);
         add_Method(Boolean, "asString", &Boolean_asString);
+        add_Method(Boolean, "::", &Object_bind);
         add_Method(Boolean, "&", &literal_and);
         add_Method(Boolean, "|", &literal_or);
         add_Method(Boolean, "&&", &Boolean_AndAnd);
@@ -2947,11 +2983,12 @@ Object module_imports_init() {
 Object alloc_done() {
     if (done != NULL)
         return done;
-    Done = alloc_class("done", 4);
+    Done = alloc_class("done", 5);
     add_Method(Done, "==", &Object_Equals);
     add_Method(Done, "!=", &Object_NotEquals);
     add_Method(Done, "asDebugString", &Singleton_asString);
     add_Method(Done, "asString", &Singleton_asString);
+    add_Method(Done, "::", &Object_bind);
     Object o = alloc_obj(0, Done);
     done = o;
     gc_root(o);
@@ -2960,8 +2997,9 @@ Object alloc_done() {
 Object alloc_ellipsis() {
     if (ellipsis != NULL)
         return ellipsis;
-    ellipsisClass = alloc_class("ellipsis", 4);
+    ellipsisClass = alloc_class("ellipsis", 5);
     add_Method(ellipsisClass, "asString", &Object_asString);
+    add_Method(ellipsisClass, "::", &Object_bind);
     add_Method(ellipsisClass, "++", &Object_concat);
     add_Method(ellipsisClass, "==", &Object_Equals);
     add_Method(ellipsisClass, "!=", &Object_NotEquals);
@@ -3585,10 +3623,11 @@ Object Type_asString(Object self, int nparts, int *argcv,
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 6);
+        Type = alloc_class("Type", 7);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
+        add_Method(Type, "::", &Object_bind);
         add_Method(Type, "match", &Type_match);
         add_Method(Type, "&", &literal_and);
         add_Method(Type, "|", &literal_or);
@@ -3625,7 +3664,7 @@ static inline void initialise_Class() {
         Class->flags = 3;
         Class->class = Class;
         Class->name = "ClassOf<Class>";
-        Class->methods = glmalloc(sizeof(Method) * 4);
+        Class->methods = glmalloc(sizeof(Method) * 5);
         Class->nummethods = 3;
         Class->mark = NULL;
         Class->release = (void *)&ClassData__release;
@@ -3633,6 +3672,7 @@ static inline void initialise_Class() {
         add_Method(Class, "&", &literal_and);
         add_Method(Class, "|", &literal_or);
         add_Method(Class, "asString", &Class_asString);
+        add_Method(Class, "::", &Object_bind);
     }
 }
 ClassData alloc_class(const char *name, int nummethods) {
@@ -3794,7 +3834,7 @@ Object Integer32_isInteger32(Object self, int nparts, int *argcv,
 ClassData Integer32 = NULL;
 Object alloc_Integer32(int i) {
     if (Integer32 == NULL) {
-        Integer32 = alloc_class("Integer32", 15);
+        Integer32 = alloc_class("Integer32", 16);
         add_Method(Integer32, "==", &Integer32_Equals);
         add_Method(Integer32, "!=", &Integer32_NotEquals);
         add_Method(Integer32, "/=", &Integer32_NotEquals);
@@ -3809,6 +3849,7 @@ Object alloc_Integer32(int i) {
         add_Method(Integer32, "&", &Integer32_And);
         add_Method(Integer32, "|", &Integer32_Or);
         add_Method(Integer32, "asString", &Integer32_asString);
+        add_Method(Integer32, "::", &Object_bind);
         add_Method(Integer32, "isInteger32", &Integer32_isInteger32);
     }
     Object o = alloc_obj(sizeof(int32_t), Integer32);
@@ -3887,6 +3928,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "match", &Block_match);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "asDebugString", &Object_asString);
+    add_Method(c, "::", &Object_bind);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "pattern", &Block_pattern);
@@ -3978,7 +4020,7 @@ void UserObj__release(struct UserObject *o) {
 Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (GraceDefaultObject == NULL) {
-        ClassData dc = alloc_class2("DefaultObject", 6,
+        ClassData dc = alloc_class2("DefaultObject", 7,
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
                 sizeof(struct Object), dc);
@@ -3992,6 +4034,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
         addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
+        addmethod2(GraceDefaultObject, "::", &Object_bind);
     }
     if (c == NULL) {
         c = alloc_class3("Object", numMethods + 1,
@@ -4211,7 +4254,7 @@ void gracelib_argv(char **argv) {
     Unknown = alloc_Type("Unknown", 0);
     gc_root(Unknown);
     Dynamic = Unknown;
-    List = alloc_Type("List", 14);
+    List = alloc_Type("List", 15);
     gc_root(List);
     add_Method((ClassData)List, "==", NULL);
     add_Method((ClassData)List, "!=", NULL);
@@ -4226,6 +4269,7 @@ void gracelib_argv(char **argv) {
     add_Method((ClassData)List, "++", NULL);
     add_Method((ClassData)List, "asString", NULL);
     add_Method((ClassData)List, "asDebugString", NULL);
+    add_Method((ClassData)List, "::", NULL);
     ExceptionObject = alloc_Exception("Exception", NULL);
     gc_root(ExceptionObject);
     ErrorObject = alloc_Exception("Error", ExceptionObject);
@@ -4564,8 +4608,9 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 16, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
+    add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
