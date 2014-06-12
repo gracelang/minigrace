@@ -158,7 +158,7 @@ class anEnumerable.trait {
     method iter { return self.iterator }
 }
 
-def aList = object {
+def aList is readable = object {
     inherits aCollectionFactory.trait
 
     method withAll(a) {
@@ -199,8 +199,8 @@ def aList = object {
                 if (size == inner.size) then { expand }
                 self
             }
-            method push(x) { add(x) }
-            method addLast(x) { add(x) }
+            method push(x) { add(x) }       // compatibility
+            method addLast(x) { add(x) }    // compatibility
             method removeLast {
                 def result = inner.at(size - 1)
                 size := size - 1
@@ -257,6 +257,7 @@ def aList = object {
                 }
                 self
             }
+            method extend(l) { addAll(l); done }    // compatibility
             method contains(element) {
                 do { each -> if (each == element) then { return true } }
                 return false
@@ -315,7 +316,7 @@ def aList = object {
     }
 }
 
-def aSet = object {
+def aSet is readable = object {
     inherits aCollectionFactory.trait
 
     method withAll(a:Collection) {
@@ -532,18 +533,30 @@ def aSet = object {
     }
 }
 
+type Binding = {
+    key -> Object
+    value -> Object
+    hashcode -> Number
+    == -> Boolean
+}
+
 class aBinding.key(k)value(v) {
     method key {k}
     method value {v}
     method asString { "{k}=>{v}" }
     method asDebugString { asString }
     method hashcode { (k.hashcode * 1021) + v.hashcode }
+    method == (other) {
+        match (other)
+            case {o:Binding -> (k == o.key) && (v == o.value) }
+            case {_ -> return false }
+    }
 }
 
-def aDictionary = object {
+def aDictionary is readable = object {
     inherits aCollectionFactory.trait
     method at(k)put(v) {
-            aDictionary.empty.at(k)put(v)
+            self.empty.at(k)put(v)
     }
     method withAll(initialBindings) {
         object {
@@ -703,7 +716,7 @@ def aDictionary = object {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.key
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = outer.bindings
+                    def outerIterator = bindings
                     method havemore { outerIterator.havemore }
                     method next { outerIterator.next.key }
                 }
@@ -714,7 +727,7 @@ def aDictionary = object {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.value
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = outer.bindings
+                    def outerIterator = bindings
                     method havemore { outerIterator.havemore }
                     method next { outerIterator.next.value }
                 }
@@ -814,7 +827,7 @@ def aDictionary = object {
     }
 }
 
-def aRange = object {
+def aRange is readable = object {
     method from(lower)to(upper) {
         object {
             inherits anEnumerable.trait
@@ -930,9 +943,9 @@ def aRange = object {
             }
             method do(block1) {
                 var val := start
-                while {val <= stop} do {
+                while {val >= stop} do {
                     block1.apply(val)
-                    val := val + 1
+                    val := val - 1
                 }
             }
             method reversed {
@@ -972,17 +985,5 @@ def aRange = object {
             }
         }
     }
-
 }
 
-// for compatibility with mgCollections
-
-//  These definitions are for comptability with mgCollections.  They cause the
-//  parser to crash if there is a method called map in anEnumerable.trait
-//  The method map in anIterable.trait causes no problems!
-//class map.with(*a) {
-//    inherits aDictionary.withAll(a)
-//    method get(k) { at(k) }
-//    method put(k, v) { at(k)put(v) }
-//    method contains(k) { containsKey(k) }
-//}
