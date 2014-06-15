@@ -1857,6 +1857,7 @@ function callmethod(obj, methname, argcv) {
         isSuper = true;
     superDepth = obj;
     var origModuleName = moduleName;
+    var origLineNumber = lineNumber;
     if (typeof(meth) != "function") {
         var s = obj;
         isSuper = true;
@@ -1903,7 +1904,6 @@ function callmethod(obj, methname, argcv) {
     } else {
         callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
     }
-    var thisModuleName = moduleName;
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
@@ -1920,7 +1920,8 @@ function callmethod(obj, methname, argcv) {
         while (callStack.length > beforeSize)
             callStack.pop();
         sourceObject = oldSourceObject;
-        setModuleName(thisModuleName);
+        setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
     }
     return ret;
 }
