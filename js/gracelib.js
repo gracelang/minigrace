@@ -712,6 +712,8 @@ function Grace_egal(o1, o2) {
     for (d in o1.data) {
         var leftdata = o1.data[d];
         var rightdata = o2.data[d];
+        if (typeof rightdata == 'undefined')
+            return GraceFalse;
         if (!Grace_isTrue(callmethod(leftdata, "==", [1], rightdata)))
             return GraceFalse;
     }
