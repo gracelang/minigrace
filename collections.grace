@@ -543,7 +543,7 @@ type Binding = {
 class aBinding.key(k)value(v) {
     method key {k}
     method value {v}
-    method asString { "{k}=>{v}" }
+    method asString { "{k}::{v}" }
     method asDebugString { asString }
     method hashcode { (k.hashcode * 1021) + v.hashcode }
     method == (other) {
