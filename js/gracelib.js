@@ -2260,6 +2260,6 @@ function Grace_allocModule(modname) {
         return this.outer;
     }
     mod.outer = Grace_prelude;
-    mod.className = "module<" + modname + ">";
+    mod.className = "Module<" + modname + ">";
     return mod;
 }
