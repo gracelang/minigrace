@@ -27,11 +27,13 @@ js/StandardPrelude.js
 js/minigrace.js
 js/ast.js
 js/buildinfo.js
+js/collections.js
 js/compiler.js
 js/errormessages.js
 js/genc.js
 js/genjs.js
 js/genjson.js
+js/gUnit.js
 js/identifierresolution.js
 js/lexer.js
 js/mgcollections.js
