@@ -44,7 +44,7 @@ type EmptyCollectionFactory = {
     empty -> Collection
 }
 
-class aCollectionFactory.trait {
+class collectionFactory.trait {
     // requires withAll
     method new(*a) { self.withAll(a) }
     method with(*a) { self.withAll(a) }
@@ -52,7 +52,7 @@ class aCollectionFactory.trait {
     // method withAll(a) { subobjectResponsibility.raise "withAll()" }
 }
 
-class anIterator.trait {
+class iterable.trait {
     // requires next, havemore
     //    method havemore { subobjectResponsibility.raise "havemore" }
     //    method next is abstract { subobjectResponsibility.raise "next" }
@@ -73,7 +73,7 @@ class anIterator.trait {
     }
     method map(block1) {
         return object {                     // this "return" is to work around a compiler bug
-            inherits anIterator.trait
+            inherits iterable.trait
             method havemore { outer.havemore }
             method next { block1.apply(outer.next) }
         }
@@ -87,7 +87,7 @@ class anIterator.trait {
     // return an iterator that emits only those elements of the underlying
     // iterator for which selectionCondition holds.
         return object {                     // this "return" is to work around a compiler bug
-            inherits anIterator.trait
+            inherits iterable.trait
             var cache
             var cacheLoaded := false
             method havemore {
@@ -122,7 +122,7 @@ class anIterator.trait {
     method asDebugString { self.asString }
 }
 
-class anEnumerable.trait {
+class enumerable.trait {
     // requires do, iterator
     method iterator { subobjectResponsibility.raise "iterator" }
     method do { subobjectResponsibility.raise "do" }
@@ -158,12 +158,12 @@ class anEnumerable.trait {
     method iter { return self.iterator }
 }
 
-def aList is readable = object {
-    inherits aCollectionFactory.trait
+def list is readable = object {
+    inherits collectionFactory.trait
 
     method withAll(a) {
         object {
-            inherits anEnumerable.trait
+            inherits enumerable.trait
             var inner := PrimitiveArray.new(a.size * 2 + 1)
             var size is readable := 0
             for (a) do {x->
@@ -208,7 +208,7 @@ def aList is readable = object {
             }
             method addFirst(x) {
                 if (size == inner.size) then { expand }
-                for (aRange.from(size)downTo(1)) do {i->
+                for (range.from(size)downTo(1)) do {i->
                     inner.at(i)put(inner.at(i-1))
                 }
                 inner.at(0)put(x)
@@ -229,7 +229,7 @@ def aList is readable = object {
             }
             method pop { removeLast }
             method indices {
-                aRange.from(1)to(size)
+                range.from(1)to(size)
             }
             method first { at(1) }
             method second { at(2) }
@@ -237,7 +237,7 @@ def aList is readable = object {
             method fourth { at(4) }
             method last { at(size) }
             method ++(o) {
-                def l = aList.withAll(self)
+                def l = list.withAll(self)
                 for (o) do {it->
                     l.push(it)
                 }
@@ -286,7 +286,7 @@ def aList is readable = object {
             }
             method iterator {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     var idx := 1
                     method asDebugString { "aListIterator<{idx}>" }
                     method asString { "aListIterator" }
@@ -316,12 +316,12 @@ def aList is readable = object {
     }
 }
 
-def aSet is readable = object {
-    inherits aCollectionFactory.trait
+def set is readable = object {
+    inherits collectionFactory.trait
 
     method withAll(a:Collection) {
         object {
-            inherits anEnumerable.trait
+            inherits enumerable.trait
             var inner := PrimitiveArray.new(if (a.size > 1)
                 then {a.size * 3 + 1} else {8})
             def unused = object { 
@@ -441,7 +441,7 @@ def aSet is readable = object {
                 s ++ "\}"
             }
             method -(o) {
-                def result = aSet.new
+                def result = set.empty
                 for (self) do {v->
                     if (!o.contains(v)) then {
                         result.add(v)
@@ -469,7 +469,7 @@ def aSet is readable = object {
             }
             method iterator {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     var count := 1
                     var idx := 0
                     method havemore {
@@ -526,7 +526,7 @@ def aSet is readable = object {
             }
 
             method copy {
-                aSet.withAll(self)
+                set.withAll(self)
             }
 
         }
@@ -540,7 +540,7 @@ type Binding = {
     == -> Boolean
 }
 
-class aBinding.key(k)value(v) {
+class binding.key(k)value(v) {
     method key {k}
     method value {v}
     method asString { "{k}::{v}" }
@@ -553,14 +553,14 @@ class aBinding.key(k)value(v) {
     }
 }
 
-def aDictionary is readable = object {
-    inherits aCollectionFactory.trait
+def dictionary is readable = object {
+    inherits collectionFactory.trait
     method at(k)put(v) {
             self.empty.at(k)put(v)
     }
     method withAll(initialBindings) {
         object {
-            inherits anEnumerable.trait
+            inherits enumerable.trait
             var size is readable := 0
             var inner := PrimitiveArray.new(8)
             def unused = object { 
@@ -587,7 +587,7 @@ def aDictionary is readable = object {
                 if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
                     size := size + 1
                 }
-                inner.at(t)put(aBinding.key(key')value(value'))
+                inner.at(t)put(binding.key(key')value(value'))
                 if ((size * 2) > inner.size) then { expand }
                 self    // for chaining
             }
@@ -712,7 +712,7 @@ def aDictionary is readable = object {
             }
             method keys {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.key
                     // This would use stateful inheritance, and save two lines.
@@ -723,7 +723,7 @@ def aDictionary is readable = object {
             }
             method values {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.value
                     // This would use stateful inheritance, and save two lines.
@@ -735,7 +735,7 @@ def aDictionary is readable = object {
             method iterator { values }
             method bindings {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     var count := 1
                     var idx := 0
                     var elt
@@ -817,7 +817,7 @@ def aDictionary is readable = object {
             }
 
             method copy {
-                def newCopy = aDictionary.empty
+                def newCopy = dictionary.empty
                 self.keyAndValuesDo{ k, v ->
                     newCopy.at(k)put(v)
                 }
@@ -827,25 +827,25 @@ def aDictionary is readable = object {
     }
 }
 
-def aRange is readable = object {
+def range is readable = object {
     method from(lower)to(upper) {
         object {
-            inherits anEnumerable.trait
+            inherits enumerable.trait
             def start = lower.truncate
             def stop = upper.truncate
             if (start != lower) then {
                 RuntimeError.raise "lower bound {lower}" ++ 
-                    " in aRange.from()to() is not an integer"
+                    " in range.from()to() is not an integer"
             }
             if (stop != upper) then {
                 RuntimeError.raise "upper bound {upper}" ++ 
-                    " in aRange.from()to() is not an integer"
+                    " in range.from()to() is not an integer"
             }
             def size is readable = 
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
             method iterator -> Iterator {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     var val := start
                     method havemore {
                         val <= stop
@@ -892,11 +892,11 @@ def aRange is readable = object {
             }
 
             method asString -> String{
-                return "aRange.from({lower})to({upper})"
+                return "range.from({lower})to({upper})"
             }
 
             method asList{
-                var result := aList.empty
+                var result := list.empty
                 for (self) do { each -> result.add(each) }
                 result
             }
@@ -904,22 +904,22 @@ def aRange is readable = object {
     }
     method from(upper)downTo(lower) {
         object {
-            inherits anEnumerable.trait
+            inherits enumerable.trait
             def start = upper.truncate
             def stop = lower.truncate
             if (start != upper) then {
                 RuntimeError.raise "upper bound {upper}" ++ 
-                    " in aRange.from({upper})downTo({lower}) is not an integer"
+                    " in range.from({upper})downTo({lower}) is not an integer"
             }
             if (stop != lower) then {
                 RuntimeError.raise "lower bound {lower}" ++
-                    " in aRange.from({upper})downTo({lower}) is not an integer"
+                    " in range.from({upper})downTo({lower}) is not an integer"
             }
             def size is readable = 
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
             method iterator {
                 object {
-                    inherits anIterator.trait
+                    inherits iterable.trait
                     var val := start
                     method havemore {
                         val >= stop
@@ -969,11 +969,11 @@ def aRange is readable = object {
             }
 
             method asString -> String{
-                return "aRange.from({upper})downTo({lower})"
+                return "range.from({upper})downTo({lower})"
             }
 
             method asList{
-                var result := aList.empty
+                var result := list.empty
 
                 def iter = self.iterator
 

@@ -6,8 +6,8 @@
 
 import "mirrors" as mirror
 import "collections" as collections
-def aList = collections.aList
-def aSet = collections.aSet
+def list = collections.list
+def set = collections.set
 
 type Object = { 
     == (Object) -> Boolean
@@ -109,92 +109,94 @@ class assertion.trait {
 }
 
 
-class aTestCaseNamed(name') -> TestCase {
-    inherits assertion.trait
-         
-    method setup { }
-    method teardown { }
+method testCaseNamed(name') -> TestCase {
+    object {
+        inherits assertion.trait
+             
+        method setup { }
+        method teardown { }
 
-    method run (result) {
-        result.testStarted(name)
-        try {
+        method run (result) {
+            result.testStarted(name)
             try {
-                setup
-                def methodImage = mirror.reflect(self).getMethod(name)
-                methodImage.request([[]])
-            } finally { teardown }
-        } catch {e: self.failure ->
-            result.testFailed(name)withMessage(e.message)
-        } catch {e: Exception ->
-            result.testErrored(name)withMessage(e.message)
-        }
-    }
-
-    method debug (result) {
-        result.testStarted(name)
-        try {
-            print ""
-            print "debugging method {name} ..."
-            try {
-                setup
-                def methodImage = mirror.reflect(self).getMethod(name)
-                methodImage.request([[]])
-            } finally { teardown }
-        } catch {e: self.failure ->
-            result.testFailed(name)withMessage(e.message)
-            printBackTrace(e) limitedTo(8)
-        } catch {e: Exception ->
-            result.testErrored(name)withMessage(e.message)
-            printBackTrace(e) limitedTo(8)
-        }
-    }
-    
-    method printBackTrace(exceptionPacket) limitedTo(callLimit) {
-        def ex = exceptionPacket.exception
-        def msg = exceptionPacket.message
-        def lineNr = exceptionPacket.lineNumber
-        print "{ex} on line {lineNr}: {msg}"
-        def bt = exceptionPacket.backtrace
-        var backTraceLimit := callLimit
-        while {bt.size > 0} do {
-            backTraceLimit := backTraceLimit - 1
-            if (backTraceLimit <= 0) then {
-                print "..."
-                return
+                try {
+                    setup
+                    def methodImage = mirror.reflect(self).getMethod(name)
+                    methodImage.request([[]])
+                } finally { teardown }
+            } catch {e: self.failure ->
+                result.testFailed(name)withMessage(e.message)
+            } catch {e: Exception ->
+                result.testErrored(name)withMessage(e.message)
             }
-            print("  called from " ++ bt.pop)
         }
-    }
-    
-    method printFullBacktrace(exceptionPacket) {
-        print "backtrace:"
-        def bt = exceptionPacket.backtrace
-        while {bt.size > 0} do {
-            print("  called from " ++ bt.pop)
+
+        method debug (result) {
+            result.testStarted(name)
+            try {
+                print ""
+                print "debugging method {name} ..."
+                try {
+                    setup
+                    def methodImage = mirror.reflect(self).getMethod(name)
+                    methodImage.request([[]])
+                } finally { teardown }
+            } catch {e: self.failure ->
+                result.testFailed(name)withMessage(e.message)
+                printBackTrace(e) limitedTo(8)
+            } catch {e: Exception ->
+                result.testErrored(name)withMessage(e.message)
+                printBackTrace(e) limitedTo(8)
+            }
         }
-    }
+        
+        method printBackTrace(exceptionPacket) limitedTo(callLimit) {
+            def ex = exceptionPacket.exception
+            def msg = exceptionPacket.message
+            def lineNr = exceptionPacket.lineNumber
+            print "{ex} on line {lineNr}: {msg}"
+            def bt = exceptionPacket.backtrace
+            var backTraceLimit := callLimit
+            while {bt.size > 0} do {
+                backTraceLimit := backTraceLimit - 1
+                if (backTraceLimit <= 0) then {
+                    print "..."
+                    return
+                }
+                print("  called from " ++ bt.pop)
+            }
+        }
+        
+        method printFullBacktrace(exceptionPacket) {
+            print "backtrace:"
+            def bt = exceptionPacket.backtrace
+            while {bt.size > 0} do {
+                print("  called from " ++ bt.pop)
+            }
+        }
 
-    method runAndPrintResults {
-        def result = aTestResult
-        self.run(result)
-        print(result.detailedSummary)
-    }
-    
-    method debugAndPrintResults {
-        def result = aTestResult
-        self.debug(result)
-        print(result.detailedSummary)
-    }
+        method runAndPrintResults {
+            def result = testResult
+            self.run(result)
+            print(result.detailedSummary)
+        }
+        
+        method debugAndPrintResults {
+            def result = testResult
+            self.debug(result)
+            print(result.detailedSummary)
+        }
 
-    def size is public = 1
+        def size is public = 1
 
-    method name {name'}
+        method name {name'}
+    }
 }
 
 
-class aTestResult{
-    var failSet := aSet.empty
-    var errorSet := aSet.empty
+class testResult {
+    var failSet := set.empty
+    var errorSet := set.empty
     var runCount := 0
     
     method testStarted(name) {
@@ -202,11 +204,11 @@ class aTestResult{
     }
     
     method testFailed(name)withMessage(msg) {
-        failSet.add(aTestRecordFor(name)message(msg))
+        failSet.add(testRecordFor(name)message(msg))
     }
     
     method testErrored(name)withMessage(msg) {
-        errorSet.add(aTestRecordFor(name)message(msg))
+        errorSet.add(testRecordFor(name)message(msg))
     }
     
     method summary {
@@ -236,11 +238,11 @@ class aTestResult{
     }
     
     method errors {
-        aSet.withAll(errorSet)
+        set.withAll(errorSet)
     }
     
     method erroredTestNames {
-        errorSet.map{each -> each.name}.onto(aSet)
+        errorSet.map{each -> each.name}.onto(set)
     }
     
     method numberOfFailures {
@@ -248,11 +250,11 @@ class aTestResult{
     }
     
     method failures {
-        aSet.withAll(failSet)
+        set.withAll(failSet)
     }
     
     method failedTestNames {
-        failSet.map{each -> each.name}.onto(aSet)
+        failSet.map{each -> each.name}.onto(set)
     }
     
     method numberOfRuns {
@@ -260,19 +262,19 @@ class aTestResult{
     }
 }
 
-class aTestRecordFor(testName)message(testMsg) {
+class testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
     method hashcode {testName.hashcode}
 }
 
-def aTestSuite is readable = object {
-    inherits collections.aCollectionFactory.trait
+def testSuite is readable = object {
+    inherits collections.collectionFactory.trait
     method withAll(initialContents) -> TestSuite {
         object {
-            inherits collections.anEnumerable.trait
-            def tests = aList.new
+            inherits collections.enumerable.trait
+            def tests = list.empty
             for (initialContents) do { each -> self.add(each) }
                     
             method add(e) { tests.push(e) }
@@ -294,13 +296,13 @@ def aTestSuite is readable = object {
             }
             
             method runAndPrintResults {
-                def result = aTestResult
+                def result = testResult
                 self.run(result)
                 print(result.detailedSummary)
             }
             
             method debugAndPrintResults {
-                def result = aTestResult
+                def result = testResult
                 self.debug(result)
                 print(result.detailedSummary)
             }
