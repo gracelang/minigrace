@@ -1432,9 +1432,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("setModuleName(\"{modname}\");")
     out("if (callStack.length == 0)")
     out("  callStack = [\"execution environment\"]")
-    if (isPrelude) then {
-        out("var Grace_prelude = window.Grace_native_prelude;")
-    }
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     if (debugMode) then {
