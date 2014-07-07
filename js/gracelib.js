@@ -131,11 +131,27 @@ GraceString.prototype = {
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
         },
+        "startsWithSpace": function(argcv) {
+            if (this._value.charCodeAt(0) == 32) return GraceTrue; else return GraceFalse;
+        },
+        "startsWithPeriod": function(argcv) {
+            if (this._value.charCodeAt(0) == 46) return GraceTrue; else return GraceFalse;
+        },
+        "startsWithDigit": function(argcv) {
+            if ((this._value.charCodeAt(0) >= 48)&&(this._value.charCodeAt(0) <= 57)) return GraceTrue;
+            else return GraceFalse;
+        },
         "asDebugString": function(argcv) {
             return new GraceString("\"" + this._value + "\"");
         },
+        "startsWithLetter": function(argcv) {
+            var c = this._value.charCodeAt(0);
+            if (((c >= 97) && (c <= 122)) || ((c >= 65) && (c <= 90)))
+                return GraceTrue;
+            else return GraceFalse;
+        },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: "String",
@@ -175,7 +191,7 @@ GraceNum.prototype = {
             return new GraceNum(s)
         },
         "@": function(argcv, other) {
-            return callmethod(Grace_prelude, "point", [2], this, other)
+            return callmethod(GracePoint2DClass(), "x()y", [1, 1], this, other);
         },
         "++": function(argcv, other) {
             var t = callmethod(this, "asString", [0]);
@@ -277,7 +293,7 @@ GraceNum.prototype = {
             return new GraceAndPattern(this, o);
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         }
     },
     className: "Number",
@@ -366,7 +382,7 @@ GraceBoolean.prototype = {
             return new GraceFailedMatch(o);
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: "Boolean",
@@ -516,7 +532,7 @@ GraceList.prototype = {
             return new GraceList(l);
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: "List",
@@ -628,7 +644,7 @@ GracePrimitiveArray.prototype = {
             return res;
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: "PrimitiveArray",
@@ -676,7 +692,7 @@ GraceOrPattern.prototype = {
             return callmethod(this, "asString", [0]);
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: "OrPattern",
@@ -781,7 +797,7 @@ GraceObject.prototype = {
             return new GraceString(s + "}");
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     data: {}
@@ -870,7 +886,7 @@ GraceMatchResult.prototype.methods.asString = function() {
     return new GraceString(s);
 }
 GraceMatchResult.prototype.methods["::"] = function(argcv, other) {
-    return callmethod(Grace_prelude, "bind", [2], this, other)
+    return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
 }
 
 function GraceSuccessfulMatch(result, bindings) {
@@ -936,7 +952,7 @@ GraceType.prototype = {
             return callmethod(this, "asString", [0]);
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     typeMethods: [],
@@ -1413,7 +1429,7 @@ GraceUnicodePattern.prototype = {
         }
     },
     "::": function(argcv, other) {
-        return callmethod(Grace_prelude, "bind", [2], this, other)
+        return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
     },
 };
 
@@ -1726,7 +1742,7 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
 }
 
 GraceMirrorMethod.prototype.methods['::'] = function(argcv, other) {
-    return callmethod(Grace_prelude, "bind", [2], this, other)
+    return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
 }
 
 function alloc_Mirror(o) {
@@ -2032,7 +2048,7 @@ GraceExceptionPacket.prototype = {
             }
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     exctype: 'graceexception'
@@ -2094,7 +2110,7 @@ GraceException.prototype = {
                 return this.parent;
         },
         "::": function(argcv, other) {
-            return callmethod(Grace_prelude, "bind", [2], this, other)
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
     className: 'Exception'
@@ -2253,6 +2269,21 @@ PrimitiveArrayClass.methods["new"] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
 };
 Grace_prelude.methods["PrimitiveArray"] = function() { return PrimitiveArrayClass; };
+
+
+var _point2DClass = 'undefined';
+function GracePoint2DClass() {
+    if (_point2DClass == 'undefined')
+        _point2DClass = callmethod(Grace_prelude, "point2D", [0]);
+    return _point2DClass
+}
+
+var _bindingClass = 'undefined';
+function GraceBindingClasss() {
+    if (_bindingClass == 'undefined')
+        _bindingClass = callmethod(Grace_prelude, "binding", [0]);
+    return _bindingClass
+}
 
 function Grace_allocModule(modname) {
     var mod = Grace_allocObject();
