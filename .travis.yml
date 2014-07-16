@@ -1,0 +1,3 @@
+language: c
+script:
+  - ./tools/tarball-bootstrap -a && make && make test

@@ -17,7 +17,7 @@ then
     pushd "$(git rev-parse --show-toplevel)" >/dev/null
     rev=$(awk -F= '/STABLE=/ { print $2 }' Makefile)
     ver=$(tools/calculate-version $rev)
-    url=http://ecs.vuw.ac.nz/~mwh/minigrace/dist/minigrace-$ver.tar.bz2
+    url=http://ecs.vuw.ac.nz/~tim/minigrace/dist/minigrace-$ver.tar.bz2
     echo Will fetch tarball from $url...
     if wget --version >/dev/null 2>&1
     then
