@@ -131,7 +131,8 @@ MiniGrace.prototype.trapErrors = function(func) {
                 }
             }
         } else if (e != "SystemExit") {
-            this.stderr_write("Runtime error around line " + lineNumber + "\n");
+            this.stderr_write("Internal error around line "
+                + lineNumber + ": " + e + "\n");
             throw e;
         }
     } finally {
