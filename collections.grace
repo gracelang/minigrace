@@ -158,6 +158,10 @@ class enumerable.trait {
     method iter { return self.iterator }
 }
 
+method max(a,b) is confidential {
+    if (a > b) then { a } else { b }
+}
+
 def list is readable = object {
     inherits collectionFactory.trait
 
@@ -193,28 +197,48 @@ def list is readable = object {
                 inner.at(n-1)put(x)
                 self
             }
-            method add(x) {
-                inner.at(size)put(x)
-                size := size + 1
-                if (size == inner.size) then { expand }
+            method add(*x) {
+                addAll(x)
+            }
+            method addAll(l) {
+                if ((size + l.size) > inner.size) then {
+                    expandTo(max(size + l.size, size * 2))
+                }
+                for (l) do {each ->
+                    inner.at(size)put(each)
+                    size := size + 1
+                }
                 self
             }
-            method push(x) { add(x) }       // compatibility
-            method addLast(x) { add(x) }    // compatibility
+            method push(x) {
+                if (size == inner.size) then { expandTo(inner.size * 2) }
+                inner.at(size)put(x)
+                size := size + 1
+                self
+            }
+            method addLast(*x) { addAll(x) }    // compatibility
             method removeLast {
                 def result = inner.at(size - 1)
                 size := size - 1
                 result
             }
-            method addFirst(x) {
-                if (size == inner.size) then { expand }
-                for (range.from(size)downTo(1)) do {i->
-                    inner.at(i)put(inner.at(i-1))
+            method addAllFirst(l) {
+                def increase = l.size
+                if ((size + increase) > inner.size) then {
+                    expandTo(max(size + increase, size * 2))
                 }
-                inner.at(0)put(x)
-                size := size + 1
+                for (range.from(size-1)downTo(0)) do {i->
+                    inner.at(i+increase)put(inner.at(i))
+                }
+                var insertionIndex := 0
+                for (l) do {each ->
+                    inner.at(insertionIndex)put(each)
+                    insertionIndex := insertionIndex + 1
+                }
+                size := size + increase
                 self
             }
+            method addFirst(*l) { addAllFirst(l) }
             method removeFirst {
                 removeAt(1)
             }
@@ -250,12 +274,6 @@ def list is readable = object {
                     if (i < (size-1)) then { s := s ++ "," }
                 }
                 s ++ ">"
-            }
-            method addAll(l) {
-                for (l) do {i->
-                    push(i)
-                }
-                self
             }
             method extend(l) { addAll(l); done }    // compatibility
             method contains(element) {
@@ -300,10 +318,8 @@ def list is readable = object {
                 }
             }
 
-            method expand is confidential {
-                def c = inner.size
-                def n = c * 2
-                def newInner = PrimitiveArray.new(n)
+            method expandTo(newSize) is confidential {
+                def newInner = PrimitiveArray.new(newSize)
                 for (0..(size-1)) do {i->
                     newInner.at(i)put(inner.at(i))
                 }
@@ -339,7 +355,7 @@ def set is readable = object {
             }
             for (a) do { x-> add(x) }
 
-            method add(*elements) {
+            method addAll(elements) {
                 for (elements) do { x ->
                     if (! contains(x)) then {
                         var t := findPositionForAdd(x)
@@ -352,6 +368,9 @@ def set is readable = object {
                 }
                 self    // for chaining
             }
+            
+            method add(*elements) { addAll(elements) }
+
             method remove(*elements) {
                 for (elements) do { x ->
                     remove(x)ifAbsent{noSuchObject.raise "set does not contain {x}"}
@@ -879,16 +898,22 @@ def range is readable = object {
             method reversed {
                 from(upper)downTo(lower)
             }
-            method ==(other){
-                if (self.size != other.size) then { return false }
-                def selfIter = self.iterator
-                def otherIter = other.iterator
-                while {selfIter.havemore} do {
-                    if (selfIter.next != otherIter.next) then {
+            method ==(other) {
+                match (other)
+                    case {o:Collection ->
+                        if (self.size != other.size) then { return false }
+                        def selfIter = self.iterator
+                        def otherIter = other.iterator
+                        while {selfIter.havemore} do {
+                            if (selfIter.next != otherIter.next) then {
+                                return false
+                            }
+                        }
+                        return true
+                    } 
+                    case {_ ->
                         return false
                     }
-                }
-                return true
             }
 
             method asString -> String{
@@ -951,21 +976,22 @@ def range is readable = object {
             method reversed {
                 from(lower)to(upper)
             }
-            method ==(other:Collection){
-                if (self.size != other.size) then {
-                    return false
-                }
-
-                def selfIter = self.iterator
-                def otherIter = other.iterator
-
-                while {selfIter.havemore} do {
-                    if (selfIter.next != otherIter.next) then {
+            method ==(other){
+                match (other)
+                    case {o:Collection ->
+                        if (self.size != other.size) then { return false }
+                        def selfIter = self.iterator
+                        def otherIter = other.iterator
+                        while {selfIter.havemore} do {
+                            if (selfIter.next != otherIter.next) then {
+                                return false
+                            }
+                        }
+                        return true
+                    } 
+                    case {_ ->
                         return false
                     }
-                }
-
-                return true
             }
 
             method asString -> String{
