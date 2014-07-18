@@ -2279,7 +2279,7 @@ function GracePoint2DClass() {
 }
 
 var _bindingClass = 'undefined';
-function GraceBindingClasss() {
+function GraceBindingClass() {
     if (_bindingClass == 'undefined')
         _bindingClass = callmethod(Grace_prelude, "binding", [0]);
     return _bindingClass
