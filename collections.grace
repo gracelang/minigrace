@@ -371,13 +371,15 @@ def set is readable = object {
             
             method add(*elements) { addAll(elements) }
 
-            method remove(*elements) {
+            method removeAll(elements) {
                 for (elements) do { x ->
-                    remove(x)ifAbsent{noSuchObject.raise "set does not contain {x}"}
+                    remove (x) ifAbsent {
+                        noSuchObject.raise "set does not contain {x}"
+                    }
                 }
                 self    // for chaining
             }
-            method remove(*elements)ifAbsent(block) {
+            method removeAll(elements)ifAbsent(block) {
                 for (elements) do { x ->
                     var t := findPosition(x)
                     if (inner.at(t) == x) then {
@@ -389,6 +391,15 @@ def set is readable = object {
                 }
                 self    // for chaining
             }
+            
+            method remove(*elements)ifAbsent(block) {
+                removeAll(elements) ifAbsent(block)
+            }
+            
+            method remove(*elements) {
+                removeAll(elements)
+            }
+
             method contains(x) {
                 var t := findPosition(x)
                 if (inner.at(t) == x) then {
@@ -633,7 +644,7 @@ def dictionary is readable = object {
                 }
                 return false
             }
-            method removeKey(*keys) {
+            method removeAllKeys(keys) {
                 for (keys) do { k ->
                     var t := findPosition(k)
                     if (inner.at(t).key == k) then {
@@ -645,7 +656,10 @@ def dictionary is readable = object {
                 }
                 return self
             }
-            method removeValue(*removals) {
+            method removeKey(*keys) {
+                removeAllKeys(keys)
+            }
+            method removeAllValues(removals) {
                 for (0..(inner.size-1)) do {i->
                     def a = inner.at(i)
                     if (removals.contains(a.value)) then {
@@ -654,6 +668,9 @@ def dictionary is readable = object {
                     }
                 }
                 return self
+            }
+            method removeValue(*removals) {
+                removeAllValues(removals)
             }
             method containsValue(v) {
                 self.valuesDo{ each ->
