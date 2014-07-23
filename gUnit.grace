@@ -5,9 +5,6 @@
 
 
 import "mirrors" as mirror
-import "collections" as collections
-def list = collections.list
-def set = collections.set
 
 type Object = { 
     == (Object) -> Boolean
@@ -93,7 +90,7 @@ class assertion.trait {
         } catch { raisedException:desiredException ->
             completedNormally := false
         } catch { raisedException ->
-            failBecause "code raised exception {raisedException.exception} instead of {desiredException}" 
+            failBecause "code raised exception {raisedException.exception}:\"raisedException.message\" instead of {desiredException}" 
         }
         if (completedNormally) then {failBecause "code did not raise an exception"}
     }

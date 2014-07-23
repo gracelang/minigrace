@@ -3,6 +3,9 @@
 inherits _prelude
 var isStandardPrelude := true
 
+import "collectionsPrelude" as coll
+def collections is readable = coll
+
 class SuccessfulMatch.new(result', bindings') {
     inherits true
     def result = result'
@@ -139,13 +142,6 @@ type Point = type {
     ==(other:Object) -> Boolean
 }
 
-type Binding = type {
-    key -> Object
-    value -> Object
-    asString -> String
-    ==(other:Object) -> Boolean
-}
-
 class point2D.x(x')y(y') {
     def x is readable = x'
     def y is readable = y'
@@ -162,19 +158,31 @@ class point2D.x(x')y(y') {
     }
 }
 
+type Block0<R> = collections.Block0<R>
+type Block1<T,R> = collections.Block1<T,R>
+type Block2<S,T,R> = collections.Block1<T,R>
 
-class binding.key(k)value(v) {
-    method key {k}
-    method value {v}
-    method asString { "{k}::{v}" }
-    method asDebugString { asString }
-    method hashcode { (k.hashcode * 1021) + v.hashcode }
-    method ==(other) {
-        match (other)
-            case {o:Binding -> (k == other.key) && (v == other.value)}
-            case {_ -> false }
-    }
-}
+type IndexableCollection<T> = collections.IndexableCollection
+type Collection = collections.Collection
+type Dictionary = collections.Dictionary
+type Binding = collections.Binding
+type Iterator<T> = collections.Iterator<T>
+type CollectionFactory = collections.CollectionFactory
+type EmptyCollectionFactory = collections.EmptyCollectionFactory
+
+def BoundsError is public = collections.BoundsError
+def Exhausted is public = collections.Exhausted
+def NoSuchObject is public = collections.NoSuchObject
+def RequestError is public = collections.RequestError
+
+def collectionFactory is public = collections.collectionFactory
+def iterable is public = collections.iterable
+def enumerable is public = collections.enumerable
+def list is public = collections.list
+def set is public = collections.set
+def dictionary is public = collections.dictionary
+def binding is public = collections.binding
+def range is public = collections.range
 
 def _standardPrelude = self
 def BasicGrace = object {
@@ -188,3 +196,5 @@ method new {
 method methods {
     _prelude.clone(self)
 }
+
+

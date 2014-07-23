@@ -6,7 +6,7 @@ all: minigrace $(OTHER_MODULES)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
-JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/gUnit.js
+JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js
 
 ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
 MINIGRACE_BUILD_SUBPROCESSES = 2
@@ -30,9 +30,10 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
-gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace
-	l1/minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
+gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace collectionsPrelude.grace
+	l1/minigrace --make --noexec -XNoMain collectionsPrelude.grace
+	l1/minigrace --make --noexec -XNoMain StandardPrelude.grace
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
@@ -63,6 +64,10 @@ js: js/index.html
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
 	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
+    
+js/collectionsPrelude.js: collectionsPrelude.grace minigrace
+	./minigrace --verbose --target js -XNativePrelude -o js/collectionsPrelude.js collectionsPrelude.grace
+
 
 js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js js/gracelib.js js/dom.js
 	@echo Generating minigrace.js from minigrace.in.js...
@@ -141,6 +146,7 @@ clean:
 	rm -f mirrors.gso math.gso
 	rm -f debugger.o
 	rm -f repl.gso
+	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f $(SOURCEFILES:.grace=.gco)
@@ -173,18 +179,20 @@ install: minigrace
 Makefile.conf: configure
 	./configure
     
-WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample tests sample js/debugger.html js/*.png
+WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample js/debugger.html js/*.png
 
 tarWeb: js samples
-	tar -cvf webfiles.tar $(WEBFILES)
+	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
     
 blackWeb: js samples
-	rsync -az $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz tests sample black@cs.pdx.edu:public_html/minigrace
     
 graceWeb: js samples
-	rsync -az $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz tests sample grace@cs.pdx.edu:public_html/minigrace
 
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%

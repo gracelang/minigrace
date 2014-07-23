@@ -62,12 +62,13 @@ MiniGrace.prototype.compile = function(grace_code) {
         } else if (e == "SystemExit") {
             // pass
         } else if (e.exctype == 'graceexception') {
-            this.stderr_write("Internal compiler error, around line " + e.lineNumber
+            this.compileError = true;
+            this.stderr_write("Internal compiler error at line " + e.lineNumber
                 + " of " + e.moduleName
                 + ": " + e.exception.name + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from" + e.callStack[i] + "\n");
+                this.stderr_write("  called from " + e.callStack[i] + "\n");
             }
         } else {
             throw e;

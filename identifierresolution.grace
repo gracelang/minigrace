@@ -49,6 +49,21 @@ class Scope.new(parent') {
     method new {
         Scope.new(self)
     }
+    method asString {
+        var result := "\nTop:\n    "
+        var s := self
+        while {s.hasParent} do {
+            for (s.elements) do { each ->
+                result := result ++ each.asString ++ " "
+            }
+            result := result ++ "\nParent:\n    "
+            s := s.parent
+        }
+        for (s.elements) do { each ->
+            result := result ++ each.asString ++ " "
+        }
+        return result ++ "\n"
+    }
 }
 
 def builtinObj = Scope.new(object { })
@@ -404,12 +419,12 @@ method resolveIdentifier(node) {
                     suggestion.append " do \{ aVarName -> \}" onLine(node.line)
                     suggestions.push(suggestion)
                 }
-                errormessages.syntaxError "Unknown method name '{nm}'. This may be due to a spelling mistake or trying to access a method within another scope.{extra}"
+                errormessages.syntaxError "Unknown method '{nm}'. This may be due to a spelling mistake or trying to access a method within another scope.{extra}"
                     atRange(node.line, node.linePos, node.linePos +
                         highlightLength - 1)
                     withSuggestions(suggestions)
             }
-            errormessages.syntaxError("Unknown variable or method name '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
+            errormessages.syntaxError("Unknown variable or method '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
     }

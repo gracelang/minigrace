@@ -261,6 +261,10 @@ static Object ExceptionObject;
 static Object ErrorObject;
 static Object RuntimeErrorObject;
 static Object NoSuchMethodErrorObject;
+static Object ProgrammingErrorObject;
+static Object ResourceExceptionObject;
+static Object TypeErrorObject;
+static Object EnvironmentExceptionObject;
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -4276,8 +4280,16 @@ void gracelib_argv(char **argv) {
     gc_root(ErrorObject);
     RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
     gc_root(RuntimeErrorObject);
-    NoSuchMethodErrorObject = alloc_Exception("No such method", RuntimeErrorObject);
+    NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingErrorObject);
     gc_root(NoSuchMethodErrorObject);
+    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
+    gc_root(ExceptionObject);
+    ResourceExceptionObject = alloc_Exception("ResourceException", ExceptionObject);
+    gc_root(ResourceExceptionObject);
+    TypeErrorObject = alloc_Exception("TypeError", ProgrammingErrorObject);
+    gc_root(TypeErrorObject);
+    EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ExceptionObject);
+    gc_root(EnvironmentExceptionObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -4576,9 +4588,21 @@ Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return RuntimeErrorObject;
 }
-Object prelude_NoSuchMethodError(Object self, int argc, int *argcv, Object *argv,
+Object prelude_NoSuchMethod(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return NoSuchMethodErrorObject;
+}
+Object prelude_ProgrammingError(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return ProgrammingErrorObject;
+}
+Object prelude_ResourceException(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return ResourceExceptionObject;
+}
+Object prelude_EnvironmentException(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return EnvironmentExceptionObject;
 }
 Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {
@@ -4608,7 +4632,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 17, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 21, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4619,6 +4643,10 @@ Object grace_prelude() {
     add_Method(c, "Exception", &prelude_Exception);
     add_Method(c, "Error", &prelude_Error);
     add_Method(c, "RuntimeError", &prelude_RuntimeError);
+    add_Method(c, "NoSuchMethod", &prelude_NoSuchMethod);
+    add_Method(c, "ProgrammingError", &prelude_ProgrammingError);
+    add_Method(c, "ResourceException", &prelude_ResourceException);
+    add_Method(c, "EnvironmentException", &prelude_EnvironmentException);
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;

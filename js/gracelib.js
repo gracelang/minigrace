@@ -964,7 +964,7 @@ GraceType.prototype = {
 function GraceBlock_match(argcv, o) {
     if (!this.pattern) {
         if (argcv.length != 1 || argcv[0] != 1) {
-            throw new GraceExceptionPacket(RuntimeErrorObject,
+            throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("Block is not a matching block"));
         }
         var rv = callmethod(this, "apply", [1], o);
@@ -998,15 +998,11 @@ var var_String = classType(new GraceString(""));
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(new GraceBoolean(true));
 var var_Type = classType(var_Boolean);
-var var_List = new GraceType("List");
-var_List.typeMethods = ["==", "!=", "push", "pop", "at", "at()put",
-    "[]", "[]:=", "size", "iterator", "++", "asString", "asDebugString"];
 var type_String = var_String;
 var type_Number = var_Number;
 var type_Boolean = var_Boolean;
 var type_Unknown = var_Unknown;
 var type_Dynamic = var_Dynamic;
-var type_List = var_List;
 var var_Block = new GraceType("Block");
 var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
@@ -1277,7 +1273,7 @@ function gracecode_imports() {
         if (req.status == 200) {
             return new GraceString(req.responseText);
         }
-        throw new GraceExceptionPacket(RuntimeErrorObject,
+        throw new GraceExceptionPacket(EnvironmentExceptionObject,
                 new GraceString("Error loading resource '" + path._value
                     + "'."));
     };
@@ -1289,7 +1285,7 @@ function gracecode_imports() {
         var slashPos = path.lastIndexOf('/');
         var dotpos = path.indexOf('.', slashPos);
         if (dotpos <= 0)
-            throw new GraceExceptionPacket(RuntimeErrorObject,
+            throw new GraceExceptionPacket(EnvironmentExceptionObject,
                     new GraceString("No extension in path '" + path._value
                         + "'."));
         var ext = path.substr(dotpos + 1);
@@ -1726,8 +1722,8 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     var requiredLen = theFunction.paramCounts.length;
     var providedLen = callmethod(argList, "size", [0])._value;
     if (providedLen != requiredLen) {
-        throw new GraceExceptionPacket(RuntimeErrorObject,
-                                       new GraceString("wrong number of argument lists in 'request'" ));
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                   new GraceString("wrong number of argument lists in 'request'" ));
     }
     var allArgs = [this.obj, this.name, []];
     for (var outerIx = 1; outerIx <= providedLen; outerIx++) {
@@ -1863,9 +1859,8 @@ function callmethodsuper(obj, methname, argcv) {
 
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
-        throw new GraceExceptionPacket(RuntimeErrorObject,
-                new GraceString("Requested method on uninitialised value around " 
-                    + moduleName + ":" + lineNumber));
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("Requested method on uninitialised value."));
     if (!obj || obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
@@ -1900,12 +1895,12 @@ function callmethod(obj, methname, argcv) {
                 + objDesc + ")"
                 + " at " + moduleName
                 + ":" + lineNumber);
-        throw new GraceExceptionPacket(RuntimeErrorObject,
+        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method " + methname + " in " +
-                    obj.className + "."));;
+                    obj.className + "."));
     }
     if (meth.confidential && !onSelf) {
-        throw new GraceExceptionPacket(RuntimeErrorObject,
+        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " from outside."));
     }
     onSelf = false;
@@ -1926,9 +1921,8 @@ function callmethod(obj, methname, argcv) {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
             if (typeof args[i] == 'undefined')
-                throw new GraceExceptionPacket(RuntimeErrorObject,
-                                       new GraceString("Uninitialised value used as argument to " +
-                                                      methname + " at line " + lineNumber + " of " + moduleName + "."));;
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                       new GraceString("Uninitialised value used as argument to " + methname + "."));
         if (meth.paramTypes)
             checkmethodcall(meth, methname, obj, args);
         args.unshift(argcv);
@@ -2173,9 +2167,13 @@ ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
 
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
+var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
+var EnvironmentExceptionObject = new GraceException("EnvironmentException", ExceptionObject);
+var ResourceExceptionObject = new GraceException("ResourceException", ExceptionObject);
 var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
-var ImportErrorObject = new GraceException("ImportError", RuntimeErrorObject);
-var TypeErrorObject = new GraceException("TypeError", RuntimeErrorObject);
+var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionObject);
+var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
+var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
 
 var Grace_native_prelude = Grace_allocObject();
 var Grace_prelude = Grace_native_prelude;
@@ -2186,17 +2184,29 @@ Grace_prelude.methods["Exception"] = function(argcv) {
 Grace_prelude.methods["Error"] = function(argcv) {
     return ErrorObject;
 }
+Grace_prelude.methods["ProgrammingError"] = function(argcv) {
+    return ProgrammingErrorObject;
+}
+Grace_prelude.methods["EnvironmentException"] = function(argcv) {
+    return EnvironmentExceptionObject;
+}
+Grace_prelude.methods["ResourceException"] = function(argcv) {
+    return ResourceExceptionObject;
+}
 Grace_prelude.methods["RuntimeError"] = function(argcv) {
     return RuntimeErrorObject;
 }
 Grace_prelude.methods["TypeError"] = function(argcv) {
     return TypeErrorObject;
 }
+Grace_prelude.methods["NoSuchMethod"] = function(argcv) {
+    return NoSuchMethodErrorObject;
+}
 Grace_prelude.methods["while()do"] = function(argcv, c, b) {
     if (c.className == "Boolean" || c.className == "Number")
         throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("expected Block for argument condition (1) of "
-                + "while()do, got " + c.className));
+            new GraceString("expected Block for first argument of "
+                            + "while()do, got " + c.className + "."));
     if (Grace_prelude.methods["while()do"] &&
             Grace_prelude.methods["while()do"].safe) {
         var count = 0;
@@ -2213,7 +2223,7 @@ Grace_prelude.methods["while()do"] = function(argcv, c, b) {
                             + totTime + "ms so far."
                             + "\n\nChoose OK to stop the loop or Cancel to "
                             + "let it continue."))
-                    throw new GraceExceptionPacket(RuntimeErrorObject,
+                    throw new GraceExceptionPacket(ResourceExceptionObject,
                         new GraceString("user abort of possibly-infinite loop."));
                 else {
                     runningCount += count;
