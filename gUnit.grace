@@ -53,7 +53,7 @@ type TestSuite = TestCase & type {
 
 
 class assertion.trait {
-    def failure is readable = Error.refine "Assertion Failure"
+    def AssertionFailure is readable = Exception.refine "AssertionFailure"
     
     method failBecause(str) {
         assert (false) description (str)
@@ -62,7 +62,7 @@ class assertion.trait {
     method assert(bb: Boolean)description(str) {
         if (! bb) 
         then {
-            failure.raise(str)
+            AssertionFailure.raise(str)
         }        
     }
 
@@ -121,7 +121,7 @@ method testCaseNamed(name') -> TestCase {
                     def methodImage = mirror.reflect(self).getMethod(name)
                     methodImage.request([[]])
                 } finally { teardown }
-            } catch {e: self.failure ->
+            } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
             } catch {e: Exception ->
                 result.testErrored(name)withMessage(e.message)
@@ -138,7 +138,7 @@ method testCaseNamed(name') -> TestCase {
                     def methodImage = mirror.reflect(self).getMethod(name)
                     methodImage.request([[]])
                 } finally { teardown }
-            } catch {e: self.failure ->
+            } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
                 printBackTrace(e) limitedTo(8)
             } catch {e: Exception ->
