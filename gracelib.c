@@ -4280,10 +4280,10 @@ void gracelib_argv(char **argv) {
     gc_root(ErrorObject);
     RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
     gc_root(RuntimeErrorObject);
+    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
+    gc_root(ProgrammingErrorObject);
     NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingErrorObject);
     gc_root(NoSuchMethodErrorObject);
-    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
-    gc_root(ExceptionObject);
     ResourceExceptionObject = alloc_Exception("ResourceException", ExceptionObject);
     gc_root(ResourceExceptionObject);
     TypeErrorObject = alloc_Exception("TypeError", ProgrammingErrorObject);
