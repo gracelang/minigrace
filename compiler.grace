@@ -106,7 +106,7 @@ if (util.target == "imports") then {
     def vis = object {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {
-            imps.add(o.value.value)
+            imps.add(o.path)
         }
     }
     for (values) do {v->

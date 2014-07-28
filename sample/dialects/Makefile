@@ -12,11 +12,32 @@ all: $(DIALECT_MODULES) $(SAMPLES) $(DIALECTS_JS)
 %.js: %.grace
 	../../minigrace --target js -o $@ $<
 
-dialect_example.gso: dialect_example.grace dialect.gso
+dialect_example.gso: dialect_example.grace dialect.grace
 	../../minigrace --dynamic-module $<
+
+fsm_example: fsm fsm_example.grace
+	../../minigrace fsm_example.grace
+
+ObjectAssociations_example: ObjectAssociations ObjectAssociations_example.grace
+	../../minigrace ObjectAssociations_example.grace
+
+grapl_example: grapl grapl_example.grace
+	../../minigrace grapl_example.grace
+
+loopinvariant_example: loopinvariant loopinvariant_example.grace
+	../../minigrace loopinvariant_example.grace
+
+literalblock.gso: dialect.grace dialect.c literalblock.grace
+	../../minigrace --dynamic-module literalblock.grace
+
+structural.gso: dialect.grace dialect.c structural.grace
+	../../minigrace --dynamic-module structural.grace
+
+literal_test: literalblock.grace literal_test.grace
+	../../minigrace literal_test.grace
 
 %: %.grace $(DIALECT_MODULES)
 	../../minigrace --make $<
 
 clean:
-	rm -f *.gso *.gct *.gcn *.c *.js fsm_example ObjectAssociations_example dialect_example.gso
+	rm -fR *.gso *.c *.gct *.gcn *.c *.js *.gso.dSYM $(SAMPLES) $(DIALECTS)

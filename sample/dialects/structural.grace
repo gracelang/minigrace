@@ -10,6 +10,7 @@ inherits prelude.methods
 // Type error.
 
 def TypeError is public = CheckerFailure.refine("TypeError")
+type List = prelude.List
 
 // Method signature information.
 

@@ -1,7 +1,7 @@
 import "ast" as ast
 import "errormessages" as errormessages
 
-import "StandardPrelude" as prelude
+//import "StandardPrelude" as prelude
 
 inherits prelude.methods
 

@@ -2,7 +2,7 @@ include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=2ce9dea8cb9270965e330440a996d49322a00730
-all: minigrace $(OTHER_MODULES)
+all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
@@ -13,7 +13,8 @@ MINIGRACE_BUILD_SUBPROCESSES = 2
 endif
 
 echo:
-	echo $(MINIGRACE_BUILD_SUBPROCESSES)
+	@echo MINIGRACE_BUILD_SUBPROCESSES = $(MINIGRACE_BUILD_SUBPROCESSES)
+	@echo WEBFILES = $(WEBFILES)
 
 buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "#pragma DefaultVisibility=public" > buildinfo.grace
@@ -23,6 +24,9 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo.grace
 	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
+    
+%.gct: %.grace
+	./minigrace --make --noexec $<
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
@@ -59,7 +63,7 @@ l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) $(UNICODE_MO
 l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.h $(OTHER_MODULES)
 	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) gracelib.o gracelib.h $(UNICODE_MODULE) $(OTHER_MODULES) ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 
-js: js/index.html
+js: js/index.html $(GRACE_MODULES:%.grace=js/%.js)
 
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
@@ -69,16 +73,11 @@ js/collectionsPrelude.js: collectionsPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/collectionsPrelude.js collectionsPrelude.grace
 
 
-js/minigrace.js: js/minigrace.in.js $(JSSOURCEFILES) js/StandardPrelude.js js/gracelib.js js/dom.js
+js/minigrace.js: js/minigrace.in.js minigrace
 	@echo Generating minigrace.js from minigrace.in.js...
 	cat js/minigrace.in.js > js/minigrace.js
 	echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
-	cat js/dom.js >> js/minigrace.js
-	cat js/gracelib.js >> js/minigrace.js
-	cat js/StandardPrelude.js >> js/minigrace.js
-	for f in $(JSSOURCEFILES) ; do cat $$f >> js/minigrace.js ; done
-	cat js/unicodedata.js >> js/minigrace.js
 
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
@@ -160,6 +159,9 @@ clean:
 	rm -f js/minigrace.js
 	( cd c ; rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o )
 	rm -f minigrace.gco minigrace
+	( cd sample/dialects; make clean )
+	( cd sample/graphics; make clean )
+	( cd sample/js; make clean )
 
 known-good/%:
 	rm -rf l1 l2 # We must regenerate files so #include updated
@@ -174,12 +176,13 @@ install: minigrace
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 collections.grace $(MODULE_PATH)
-	install -m 644 gUnit.grace $(MODULE_PATH)
+	for gm in $(GRACE_MODULES) ; do install -m 644 $gm $(MODULE_PATH) ; done
 
 Makefile.conf: configure
 	./configure
     
-WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample js/debugger.html js/*.png
+WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample js/debugger.html \
+js/*.png $(GRACE_MODULES:%.grace=js/%.js)
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample

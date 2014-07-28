@@ -1829,7 +1829,7 @@ method checkimport(nm, line, isDialect) {
     
     if(nm == "StandardPrelude") then {
         staticmodules.add(nm)
-        addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
+//        addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
         return
     }
     for(locationList) do { location ->
