@@ -103,6 +103,18 @@ class assertion.trait {
         } catch { raisedException -> // do nothing: it's ok to raise some other exception
         }
     }
+    
+    method assert(value) hasType (DesiredType) {
+        match (value)
+            case { _:DesiredType -> assert (true) }
+            case { _ -> failBecause "{value} does not have type {DesiredType}" }
+    }
+    
+    method deny(value) hasType (UndesiredType) {
+        match (value)
+            case { _:UndesiredType -> failBecause "{value} has type {UndesiredType}" }
+            case { _ -> assert (true) }
+    }
 }
 
 
