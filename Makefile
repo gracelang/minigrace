@@ -8,6 +8,16 @@ REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js
 
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
+js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
+js/collectionsPrelude.js js/StandardPrelude.js js/compiler.js js/lexer.js \
+js/ast.js js/parser.js js/genc.js js/genjs.js js/buildinfo.js \
+js/identifierresolution.js js/genjson.js js/collections.js js/mgcollections.js \
+js/xmodule.js js/unicodedata.js js/errormessages.js js/gUnit.js js/ace/ace.js \
+js/ace/mode-grace.js js/sample js/debugger.html js/*.png \
+$(GRACE_MODULES:%.grace=js/%.js)
+
+
 ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
 MINIGRACE_BUILD_SUBPROCESSES = 2
 endif
@@ -25,7 +35,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
     
-%.gct: %.grace
+%.gct: %.grace gracelib.o
 	./minigrace --make --noexec $<
 
 %.o: %.c
@@ -63,7 +73,7 @@ l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) $(UNICODE_MO
 l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.h $(OTHER_MODULES)
 	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) gracelib.o gracelib.h $(UNICODE_MODULE) $(OTHER_MODULES) ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 
-js: js/index.html $(GRACE_MODULES:%.grace=js/%.js)
+js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
@@ -85,6 +95,9 @@ js/%.js: %.grace minigrace
 js/index.html: js/index.in.html js/ace.in.html js/minigrace.js
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
+
+js/ace/ace.js:
+	(cd js/ace; wget --no-check-certificate https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js)
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
@@ -180,9 +193,6 @@ install: minigrace
 
 Makefile.conf: configure
 	./configure
-    
-WEBFILES = js/index.html js/global.css js/*.js js/ace js/tests js/sample js/debugger.html \
-js/*.png $(GRACE_MODULES:%.grace=js/%.js)
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
