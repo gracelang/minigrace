@@ -104,7 +104,7 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile m
     
 # the above target fails on Darwin because sed -i needs an argument (sed -i '').  The invocation of
 # sed seems to be unnecessary, since there are no "../gracelib.h" paths in the .c files.
-# I've left it there for reference, and in case it is necessary on some other platform
+# I've left it here for reference, and in case it is necessary on some other platform
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude collectionsPrelude.grace && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && rm -f *.gcn $(UNICODE_MODULE)
