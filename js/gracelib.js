@@ -142,7 +142,11 @@ GraceString.prototype = {
             else return GraceFalse;
         },
         "asDebugString": function(argcv) {
-            return new GraceString("\"" + this._value + "\"");
+            var quote = new GraceString("\"");
+            var self = callmethod(this, "_escape", [0]);
+            var qSelf = callmethod(quote, "++", [1], self);
+            var qSelfq = callmethod(qSelf, "++", [1], quote);
+            return qSelfq;
         },
         "startsWithLetter": function(argcv) {
             var c = this._value.charCodeAt(0);
@@ -540,10 +544,10 @@ GraceList.prototype = {
     definitionLine: 0
 };
 
-function GracePrimitiveArray(n) {
-    this._value = [];
-    for (var i=0; i<n; i++)
-        this._value.push(GraceDone);
+function GracePrimitiveArray(len) {
+    this._value = new Array(len);
+//    this._value.fill(undefined);
+//    elements are all undefined by default
 };
 
 GracePrimitiveArray.prototype = {
@@ -575,27 +579,28 @@ GracePrimitiveArray.prototype = {
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
                 var v = this._value[i];
-                if (v.methods["asString"])
+                if ((v) && (v.methods) &&
+                    (v.methods["asString"]))
                     s += callmethod(v, "asString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
-                    s += "((" + q + ")), "
+                    s += "‹" + q + "›"
                 }
             }
             s += "]";
             return new GraceString(s);
         },
         "asDebugString": function(argcv) {
-            var s = "PrimArray(";
+            var s = "primArray(";
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
                 var v = this._value[i];
-                if (v.methods["asDebugString"])
+                if ((v) && (v.methods) && (v.methods["asDebugString"]))
                     s += callmethod(v, "asDebugString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
-                    s += "((" + q + ")), "
+                    s += "‹" + q + "›"
                 }
             }
             s += ")";
@@ -647,7 +652,7 @@ GracePrimitiveArray.prototype = {
             return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
     },
-    className: "PrimitiveArray",
+    className: "primitiveArray",
     definitionModule: "unknown",
     definitionLine: 0,
 };
@@ -2134,6 +2139,9 @@ function dbgp(o, d) {
     var ind = "";
     for (i=0; i<d; i++)
         ind += "  ";
+    if (typeof(o) == 'undefined') {
+        return "undefined";
+    }
     if (typeof(o) == "function") {
         return "function";
     }
@@ -2279,6 +2287,7 @@ PrimitiveArrayClass.methods["new"] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
 };
 Grace_prelude.methods["PrimitiveArray"] = function() { return PrimitiveArrayClass; };
+Grace_prelude.methods["primitiveArray"] = function() { return PrimitiveArrayClass; };
 
 
 var _point2DClass = 'undefined';

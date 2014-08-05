@@ -50,6 +50,7 @@ Object String_replace_with(Object , int, int*, Object *, int flags);
 Object String_substringFrom_to(Object , int, int*, Object *, int flags);
 Object String_startsWith(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
+Object makeQuotedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
 Object alloc_OrPattern(Object l, Object r);
@@ -497,6 +498,10 @@ Object Object_asString(Object receiver, int nparts, int *argcv,
     char buf[40];
     sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
     return alloc_String(buf);
+}
+Object Object_asDebugString(Object receiver, int nparts, int *argcv,
+                       Object* params, int flags) {
+    return callmethod(receiver, "asString", 0, NULL, NULL);
 }
 
 Object Singleton_asString(Object receiver, int nparts, int *argcv,
@@ -1249,16 +1254,76 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     }
     return sself->items[index];
 }
+Object PrimitiveArray_asString(Object self, int nparts, int *argcv,
+                            Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    int len = sself->size;
+    int i = 0;
+    int partcv[] = {1};
+    Object other;
+    gc_pause();
+    Object s = alloc_String("[");
+    other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
+    s = callmethod(s, "++", 1, partcv, &other);
+    other = alloc_String(": ");
+    s = callmethod(s, "++", 1, partcv, &other);
+    Object c = alloc_String(", ");
+    for (i=0; i<len; i++) {
+        Object nextItem = sself->items[i];
+        if (nextItem == undefined) {
+            other = alloc_String("‹undefined›");
+        } else {
+            other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
+        }
+        s = callmethod(s, "++", 1, partcv, &other);
+        if (i != len-1)
+            s = callmethod(s, "++", 1, partcv, &c);
+    }
+    Object cb = alloc_String("]");
+    s = callmethod(s, "++", 1, partcv, &cb);
+    gc_unpause();
+    return s;
+}
+Object PrimitiveArray_asDebugString(Object self, int nparts, int *argcv,
+                             Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    int len = sself->size;
+    int i = 0;
+    int partcv[] = {1};
+    Object other;
+    gc_pause();
+    Object s = alloc_String("primArray(");
+    other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
+    s = callmethod(s, "++", 1, partcv, &other);
+    other = alloc_String(": ");
+    s = callmethod(s, "++", 1, partcv, &other);
+    Object c = alloc_String(", ");
+    for (i=0; i<len; i++) {
+        Object nextItem = sself->items[i];
+        if (nextItem == undefined) {
+            other = alloc_String("‹undefined›");
+        } else {
+            other = callmethod(sself->items[i], "asDebugString", 0, NULL, NULL);
+        }
+        s = callmethod(s, "++", 1, partcv, &other);
+        if (i != len-1)
+            s = callmethod(s, "++", 1, partcv, &c);
+    }
+    Object cb = alloc_String(")");
+    s = callmethod(s, "++", 1, partcv, &cb);
+    gc_unpause();
+    return s;
+}
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("PrimitiveArray", 10, (void*)&BuiltinList_mark,
-                (void*)&BuiltinList__release);
+        PrimitiveArray = alloc_class3("primitiveArray", 10, (void*)&BuiltinList_mark,
+                                      (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
-        add_Method(PrimitiveArray, "asString", &BuiltinList_asString);
-        add_Method(PrimitiveArray, "asDebugString", &BuiltinList_asString);
+        add_Method(PrimitiveArray, "asString", &PrimitiveArray_asString);
+        add_Method(PrimitiveArray, "asDebugString", &PrimitiveArray_asDebugString);
         add_Method(PrimitiveArray, "::", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
@@ -1479,6 +1544,19 @@ Object ConcatString__escape(Object self, int nparts, int *argcv,
     Object o = makeEscapedString(c);
     return o;
 }
+Object ConcatString_QuotedString(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = grcstring(self);
+    int partcv[] = {1};
+    gc_pause();
+    Object q = alloc_String("\"");
+    Object esc = makeQuotedString(p);
+    Object qesc = callmethod(q, "++", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    gc_unpause();
+    return result;
+}
 Object ConcatString_ord(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -1571,10 +1649,11 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 24,
+        ConcatString = alloc_class3("ConcatString", 25,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
+        add_Method(ConcatString, "asDebugString", &ConcatString_QuotedString);
         add_Method(ConcatString, "::", &Object_bind);
         add_Method(ConcatString, "++", &String_concat);
         add_Method(ConcatString, "size", &String_size);
@@ -1631,6 +1710,7 @@ Object alloc_ConcatString(Object left, Object right) {
     return o;
 }
 Object String__escape(Object, int, int*, Object*, int flags);
+Object String_QuotedString(Object, int, int*, Object*, int flags);
 Object String_length(Object, int, int*, Object*, int flags);
 Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
@@ -1767,8 +1847,10 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 23);
+        String = alloc_class("String", 24);
         add_Method(String, "asString", &identity_function);
+        add_Method(String, "asDebugString", &String_QuotedString
+                   );
         add_Method(String, "::", &Object_bind);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1861,11 +1943,43 @@ Object makeEscapedString(char *p) {
     buf[op] = 0;
     return alloc_String(buf);
 }
+Object makeQuotedString(char *p) {
+    int len = strlen(p);
+    char buf[len * 3 + 1];
+    int op;
+    int ip;
+    for (ip=0, op=0; ip<len; ip++, op++) {
+        if (p[ip] == '"') {
+            buf[op++] = '\\';
+            buf[op] = '"';
+        } else if (p[ip] == '\\') {
+            buf[op++] = '\\';
+            buf[op] = '\\';
+        } else {
+            buf[op] = p[ip];
+        }
+    }
+    buf[op] = 0;
+    return alloc_String(buf);
+}
 Object String__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     char *p = sself->body;
     return makeEscapedString(p);
+}
+Object String_QuotedString(Object self, int nparts, int *argcv,
+                      Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = sself->body;
+    int partcv[] = {1};
+    gc_pause();
+    Object q = alloc_String("\"");
+    Object esc = makeQuotedString(p);
+    Object qesc = callmethod(q, "++", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    gc_unpause();
+    return result;
 }
 Object String_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2206,7 +2320,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 27, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 28, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2224,6 +2338,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, ">=", &Float64_GreaterOrEqual);
         add_Method(Number, "..", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
+        add_Method(Number, "asDebugString", &Object_asDebugString);
         add_Method(Number, "::", &Object_bind);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
@@ -2350,8 +2465,9 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 13);
+        Boolean = alloc_class("Boolean", 14);
         add_Method(Boolean, "asString", &Boolean_asString);
+        add_Method(Boolean, "asDebugString", &Object_asDebugString);
         add_Method(Boolean, "::", &Object_bind);
         add_Method(Boolean, "&", &literal_and);
         add_Method(Boolean, "|", &literal_or);
@@ -4632,7 +4748,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 21, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 22, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4651,6 +4767,7 @@ Object grace_prelude() {
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
+    add_Method(c, "primitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);
