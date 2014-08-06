@@ -2114,6 +2114,8 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_Type = Type;")
     out("  Object *var__prelude = alloc_var();")
     out("  *var__prelude = grace_prelude();")
+    out("  Object *var_prelude = alloc_var();")
+    out("  *var_prelude = grace_prelude();")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")

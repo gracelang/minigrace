@@ -2,9 +2,9 @@ dialect "dialect"
 
 import "ast" as ast
 import "util" as util
-import "StandardPrelude" as prelude
+import "StandardPrelude" as stdPrel
 
-inherits prelude.methods
+inherits stdPrel.methods
 
 
 // Type error.

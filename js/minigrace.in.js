@@ -87,9 +87,9 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("Error around line " + e.lineNumber
-                + " of " + e.moduleName
-                + ": " + e.exception.name + ": "
+            this.stderr_write("" + e.exception.name + "at line "
+                + e.lineNumber
+                + " of " + e.moduleName + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  called from " + e.callStack[i] + "\n");
@@ -113,7 +113,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                         var debugString = "unknown";
                         try {
                             if (typeof value == "undefined") {
-                                debugString = "uninitialised";
+                                debugString = "‹undefined›";
                             } else {
                                 var debugString = callmethod(value,
                                     "asDebugString", [0])._value;
@@ -133,7 +133,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             }
         } else if (e != "SystemExit") {
             this.stderr_write("Internal error around line "
-                + lineNumber + ": " + e + "\n");
+                + lineNumber + " of " + moduleName + ": " + e + "\n");
             throw e;
         }
     } finally {

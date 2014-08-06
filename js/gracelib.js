@@ -651,6 +651,17 @@ GracePrimitiveArray.prototype = {
         "::": function(argcv, other) {
             return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
+        "sort": function(argcv, compareBlock) {
+            function compareFun(a, b) {
+                var res = callmethod(compareBlock, "apply", [2], a, b);
+                if (res.className == "Number") return res._value;
+                throw new GraceExceptionPacket(TypeErrorObject,
+                       new GraceString("compare block in primitiveArray.sort method " +
+                                       "did not return a number"));
+            }
+            this._value.sort(compareFun);
+            return this;
+        }
     },
     className: "primitiveArray",
     definitionModule: "unknown",

@@ -302,7 +302,33 @@ void gracedie(char *msg, ...) {
                 RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Error around line %i: RuntimeError: ", linenumber);
+    fprintf(stderr, "RuntimeError at line %i of %s: ", linenumber, modulename);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
+    backtrace();
+    int fl = linenumber - 2;
+    if (fl < 0) fl = 0;
+    for (; fl<linenumber+1; fl++)
+        if (moduleSourceLines[fl])
+            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
+        else
+            break;
+    va_end(args);
+    if (getenv("GRACE_DEBUGGER"))
+        debugger();
+    exit(1);
+}
+void graceRaise(Object exceptionKind, char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    if (error_jump_set) {
+        char buf[strlen(msg) * 4 + 1024];
+        vsprintf(buf, msg, args);
+        currentException = alloc_ExceptionPacket(alloc_String(buf), exceptionKind);
+        longjmp(error_jump, 1);
+    }
+    struct ExceptionObject *ek = (struct ExceptionObject *)exceptionKind;
+    fprintf(stderr, "%s at line %i of %s: ", ek->name, linenumber, modulename);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
     backtrace();
@@ -331,7 +357,7 @@ void debug(char *msg, ...) {
 
 void assertClass(Object obj, ClassData cl) {
     if (obj->class != cl)
-        gracedie("expected instance of %s; got a %s", cl->name,
+        graceRaise(TypeErrorObject, "expected instance of %s; got %s", cl->name,
                 obj->class->name);
 }
 
@@ -1314,9 +1340,31 @@ Object PrimitiveArray_asDebugString(Object self, int nparts, int *argcv,
     gc_unpause();
     return s;
 }
+
+static Object compareBlock;
+
+int compareFun(const void *a, const void *b) {
+    int partcv[] = {2};
+    Object params[2];
+    params[0] = *(Object*) a;
+    params[1] = *(Object*) b;
+    Object res = callmethod(compareBlock, "apply", 1, partcv, params);
+    assertClass(res, Number);
+    return integerfromAny(res);
+}
+
+Object PrimitiveArray_sort(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    compareBlock = args[0];
+    size_t len = sself->size;
+    int partcv[] = {1};
+    qsort(sself->items, len, sizeof(Object), &compareFun);
+    return self;
+}
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("primitiveArray", 10, (void*)&BuiltinList_mark,
+        PrimitiveArray = alloc_class3("primitiveArray", 11, (void*)&BuiltinList_mark,
                                       (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
@@ -1328,6 +1376,7 @@ Object alloc_PrimitiveArray(int size) {
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
+        add_Method(PrimitiveArray, "sort", &PrimitiveArray_sort);
     }
     int i;
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);
@@ -4712,6 +4761,10 @@ Object prelude_ProgrammingError(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return ProgrammingErrorObject;
 }
+Object prelude_TypeError(Object self, int argc, int *argcv, Object *argv,
+                                int flags) {
+    return TypeErrorObject;
+}
 Object prelude_ResourceException(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return ResourceExceptionObject;
@@ -4748,7 +4801,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 22, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 23, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4761,6 +4814,7 @@ Object grace_prelude() {
     add_Method(c, "RuntimeError", &prelude_RuntimeError);
     add_Method(c, "NoSuchMethod", &prelude_NoSuchMethod);
     add_Method(c, "ProgrammingError", &prelude_ProgrammingError);
+    add_Method(c, "TypeError", &prelude_TypeError);
     add_Method(c, "ResourceException", &prelude_ResourceException);
     add_Method(c, "EnvironmentException", &prelude_EnvironmentException);
     add_Method(c, "octets", &grace_octets);
