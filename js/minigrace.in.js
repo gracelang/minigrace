@@ -87,9 +87,8 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("" + e.exception.name + "at line "
-                + e.lineNumber
-                + " of " + e.moduleName + ": "
+            this.stderr_write("" + e.exception.name + " at line "
+                + e.lineNumber + " of " + e.moduleName + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  called from " + e.callStack[i] + "\n");
