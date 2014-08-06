@@ -116,18 +116,18 @@ type Dictionary<K,T> = {
     at(k:K) -> T
     [](k:K) -> T
     containsKey(k:K) -> Boolean
+    containsValue(v:T) -> Boolean
     removeAllKeys(keys:Collection<K>) -> Dictionary<K,T>
     removeKey(*keys:K) -> Dictionary<K,T>
-    removeAllValues(removals:Collection<K>) -> Dictionary<K,T>
-    removeValue(*removals:K) -> Dictionary<K,T>
-    containsValue(v:T) -> Boolean
+    removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
+    removeValue(*removals:T) -> Dictionary<K,T>
     keys -> Iterator<K>
     values -> Iterator<T>
     bindings -> Iterator<Binding<K,T>>
     keysAndValuesDo(action:Block2<K,T,Done>) -> Done
     keysDo(action:Block1<K,Done>) -> Done
     valuesDo(action:Block1<T,Done>) -> Done
-    do(action:Block1<K,Done>) -> Done
+    do(action:Block1<T,Done>) -> Done
     ==(other:Object) -> Boolean
     copy -> Dictionary<K,T>
 }
