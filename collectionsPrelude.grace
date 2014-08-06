@@ -63,13 +63,20 @@ type List<T> = {
     at(n: Number)put(x: T) -> List<T>
     []:=(n: Number,x: T) -> List<T> 
     add(x: T) -> List<T>
-    addLast(x: T) -> List<T>    // compatibility
-    removeLast -> T 
+    addFirst(x: T) -> List<T>
+    addLast(x: T) -> List<T>    // same as add
     addFirst(x: T) -> List<T> 
     removeFirst -> T 
     removeAt(n: Number) -> T
+    removeLast -> T
+    remove(*v:T)
+    remove(*v:T) ifAbsent(action:Block0<Done>)
+    removeAll(vs: Collection<T>)
+    removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)
+    indexOf(v:T)
+    indexOf<U>(v:T) ifAbsent(action:Block0<U>)
     pop -> T
-    indices -> Collection<T>   // range type?
+    indices -> Collection<T>
     first -> T 
     second -> T
     third -> T
@@ -324,7 +331,7 @@ method max(a,b) is confidential {
 def sequence is readable = object {
     inherits collectionFactory.trait
 
-    method withAll(*a:Collection<T>) {
+    method withAll(*a:Collection) {
         object {
             inherits indexable.trait
             var size is readable := 0
@@ -517,6 +524,31 @@ def list is readable = object {
                 }
                 size := size - 1
                 return removed
+            }
+            method remove(*v:T) {
+                removeAll(v)
+            }
+            method remove(*v:T) ifAbsent(action:Block0<Done>) {
+                removeAll(v) ifAbsent (action)
+            }
+            method removeAll(vs: Collection<T>) {
+                removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
+            }
+            method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+                for (vs) do { each -> 
+                    def ix = indexOf(each) ifAbsent {return action.apply}
+                    removeAt(ix)
+                }
+                self
+            }
+            method indexOf(sought:T)  {
+                indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }
+            }
+            method indexOf(sought:T) ifAbsent(action:Block0)  {
+                keysAndValuesDo { ix, v ->
+                    if (v == sought) then { return ix }
+                }
+                action.apply
             }
             method pop { removeLast }
             method indices {
