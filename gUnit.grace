@@ -136,7 +136,7 @@ method testCaseNamed(name') -> TestCase {
             } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
             } catch {e: Exception ->
-                result.testErrored(name)withMessage(e.message)
+                result.testErrored(name)withMessage "{e.exception}: {e.message}"
             }
         }
 
