@@ -15,6 +15,7 @@ def CheckerFailure = Error.refine("CheckerFailure")
 
 def MapException = Exception.refine("MapException")
 
+
 class anEntry.from(key') to(value') is confidential {
     def key is public = key'
     var value is public := value'

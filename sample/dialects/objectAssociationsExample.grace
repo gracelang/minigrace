@@ -1,4 +1,4 @@
-dialect "ObjectAssociations"
+dialect "objectAssociations"
 def Attends = Relationship<Student, Course>
 def Teaches = Relationship<Course, Faculty>
 def Prerequisites = ReflexiveRelationship<Course>

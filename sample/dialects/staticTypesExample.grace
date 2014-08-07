@@ -1,4 +1,4 @@
-dialect "structural"
+dialect "static-types"
 
 type Foo = {
     bar(a : Number) -> String

@@ -1,4 +1,4 @@
-SAMPLES = logo simplegraphics_example
+SAMPLES = logo simpleGraphicsExample
 SAMPLES_JS = $(addsuffix .js,$(SAMPLES))
 
 all: $(SAMPLES_JS)

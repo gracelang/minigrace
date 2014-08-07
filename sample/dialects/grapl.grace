@@ -34,16 +34,11 @@ class vector.new {
     method ×(v) {
         self * v
     }
-    method /(v) {
+    method /(v) { // compression: select elements from v according to 1s in self
         def tmp = vector.new
         for (data.indices) do {i->
             if (data.at(i) == 1) then {
-                //tmp.data.push(v.data.at(i))
-            }
-        }
-        for (v.data.indices) do {i->
-            if (v.data.at(i) == 1) then {
-                tmp.data.push(data.at(i))
+                tmp.data.push(v.data.at(i))
             }
         }
         tmp
