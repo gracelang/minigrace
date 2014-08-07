@@ -398,10 +398,14 @@ method compileblock(o) {
     var origInBlock := inBlock
     inBlock := true
     var myc := auto_count
+    def nParams = o.params.size
     auto_count := auto_count + 1
     out("var block" ++ myc ++ " = Grace_allocObject();")
     out("block" ++ myc ++ ".methods[\"apply\"] = function() \{")
     out("  var args = Array.prototype.slice.call(arguments, 1);")
+    out("  if (args.length != {nParams})")
+    out("    callmethod(ProgrammingErrorObject, \"raise\", [1], new "
+                    ++ "GraceString(\"wrong number of arguments for apply({nParams})\"));")
     out("  return this.real.apply(this.receiver, args);")
     out("\}")
     out("block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(argcv, a) \{")
@@ -541,19 +545,22 @@ method compilemethod(o, selfobj) {
                 out "  function() \{return {varf(part.vararg.value)};});"
             }
         } else {
-            if (!o.selfclosure) then {
-                out "if (argcv[{partnr - 1}] != {part.params.size})"
-                out("  callmethod(RuntimeErrorObject, \"raise\", [1], new "
-                    ++ "GraceString(\"wrong number of arguments for list "
-                    ++ "{partnr} of {textualSignature}\"));")
+            out "if (argcv[{partnr - 1}] != {part.params.size})"
+            def msgSuffix = if (o.signature.size < 2) then { 
+                textualSignature
+            } else { 
+                "{part.name} (arg list {partnr}) of {textualSignature}"
             }
+            out("  callmethod(ProgrammingErrorObject, \"raise\", [1], new "
+                ++ "GraceString(\"wrong number of arguments for "
+                ++ msgSuffix ++ "\"));")
         }
     }
     if (o.generics.size > 0) then {
         out("// Start generics")
         out("if (argcv.length == 1 + {o.signature.size}) \{")
         out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
-        out("    callmethod(RuntimeErrorObject, \"raise\", [1], "
+        out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("  \}")
         for (o.generics) do {g->
@@ -703,7 +710,7 @@ method compilefreshmethod(o, selfobj) {
         out("// Start generics")
         out("if (argcv.length == 1 + {o.signature.size}) \{")
         out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
-        out("    callmethod(RuntimeErrorObject, \"raise\", [1], "
+        out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("  \}")
         for (o.generics) do {g->
@@ -1183,7 +1190,7 @@ method compileimport(o) {
     var nm := escapestring(o.value)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
-    out "  throw new GraceExceptionPacket(RuntimeErrorObject, "
+    out "  throw new GraceExceptionPacket(EnvironmentErrorObject, "
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     if (o.dtype != false) then {

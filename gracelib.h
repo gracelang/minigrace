@@ -136,6 +136,8 @@ struct StackFrameObject *getclosureframe(Object);
 
 void setline(int);
 void gracedie(char *msg, ...);
+void graceRaise(Object, char *msg, ...);
+Object ProgrammingError();
 
 void grace_register_shutdown_function(void(*)());
 void grace_iterate(Object iterable, void(*callback)(Object, void *),
@@ -193,3 +195,4 @@ void setmodule(const char *);
 void setsource(char *sl[]);
 Object grace_userobj_outer(Object, int, int*, Object*, int);
 Object grace_prelude();
+Object ProgrammingError();

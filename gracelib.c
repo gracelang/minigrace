@@ -267,6 +267,8 @@ static Object ResourceExceptionObject;
 static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
 
+Object ProgrammingError() { return ProgrammingErrorObject; }
+
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
