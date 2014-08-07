@@ -1006,6 +1006,14 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         }
         s
     }
+
+    method decType {
+        if (dtype == false) then {
+            return identifierNode.new("Unknown", false)
+        }
+        return dtype
+    }
+
     method toGrace(depth : Number) -> String {
         var spc := ""
         for (0..(depth - 1)) do { i ->

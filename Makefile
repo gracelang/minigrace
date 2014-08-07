@@ -6,17 +6,19 @@ all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
-JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js
+JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
+GRACE_MODULES = gUnit.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
 js/collectionsPrelude.js js/StandardPrelude.js js/compiler.js js/lexer.js \
 js/ast.js js/parser.js js/genc.js js/genjs.js js/buildinfo.js \
 js/identifierresolution.js js/genjson.js js/collections.js js/mgcollections.js \
-js/xmodule.js js/unicodedata.js js/errormessages.js js/gUnit.js js/ace/ace.js \
-js/ace/mode-grace.js js/sample js/debugger.html js/*.png \
+js/xmodule.js js/unicodedata.js js/errormessages.js js/gUnit.js js/ace \
+js/sample js/debugger.html js/*.png \
 $(GRACE_MODULES:%.grace=js/%.js)
 
+ace-code: js/ace/ace.js
 
 ifeq ($(MINIGRACE_BUILD_SUBPROCESSES),)
 MINIGRACE_BUILD_SUBPROCESSES = 2
@@ -34,7 +36,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo.grace
 	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
-    
+
 %.gct: %.grace gracelib.o
 	./minigrace --make --noexec $<
 
@@ -78,7 +80,7 @@ js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
 	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
-    
+
 js/collectionsPrelude.js: collectionsPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/collectionsPrelude.js collectionsPrelude.grace
 
@@ -205,14 +207,17 @@ tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
-    
-blackWeb: js samples
-	rsync -alz $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
-	rsync -alz tests sample black@cs.pdx.edu:public_html/minigrace
-    
-graceWeb: js samples
-	rsync -alz $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
-	rsync -alz tests sample grace@cs.pdx.edu:public_html/minigrace
 
+blackWeb: js samples ace-code
+	rsync -alz $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz sample black@cs.pdx.edu:public_html/minigrace
+
+graceWeb: js samples ace-code
+	rsync -alz $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+	rsync -alz sample grace@cs.pdx.edu:public_html/minigrace
+
+bruceWeb: js samples ace-code
+	rsync -alz $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
+	rsync -alz sample kim@project.cs.pomona.edu:www/minigrace/js
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%
