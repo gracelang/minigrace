@@ -5,8 +5,10 @@ print(N)
 print(N + 2)
 print(+/N)
 
-// Standard Lotto example
-print(L[⍋(L ← (n 6 ? 40))])
-// Calculate primes up to 20 - note that the / function has its parameters
-// reversed here, because of Grace's evaluation order.
-print((P ← (n 1 ↓ ι 20))/ ~(P∊(P∘·*P)))
+// Standard Lotto example -- deal 6 numbers less than 40, and sort them
+print "Lotto numbers: { L[⍋(L ← (n 6 ? 40))] }"
+
+// Calculate primes up to 20
+print "numbers up to 20: { (T ← (n 1 ↓ ι 20)) }"
+print "primes up to 20: { (~(T∊(T∘·*T))) / T }"
+
