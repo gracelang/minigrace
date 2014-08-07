@@ -209,15 +209,15 @@ tarWeb: js samples
 #	subdirectory that tar creates readable and executable by your web daemon.
 
 blackWeb: js samples ace-code
-	rsync -alz $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
-	rsync -alz sample black@cs.pdx.edu:public_html/minigrace
+	rsync -a -l -z $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+	rsync -a -l -z sample black@cs.pdx.edu:public_html/minigrace
 
 graceWeb: js samples ace-code
-	rsync -alz $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
-	rsync -alz sample grace@cs.pdx.edu:public_html/minigrace
+	rsync -a -l -z $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+	rsync -a -l -z sample grace@cs.pdx.edu:public_html/minigrace
 
 bruceWeb: js samples ace-code
-	rsync -alz $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
-	rsync -alz sample kim@project.cs.pomona.edu:www/minigrace/js
+	rsync -a -l -z $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
+	rsync -a -l -z sample kim@project.cs.pomona.edu:www/minigrace
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%
