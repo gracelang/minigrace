@@ -1,7 +1,10 @@
 *.js
-*_example
-ObjectAssociations
+objectAssociations
 dialect
 fsm
 grapl
-loopinvariant
+loopInvariant
+fsmExample
+graplExample
+loopInvariantExample
+objectAssociationsExample

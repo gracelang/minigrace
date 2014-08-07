@@ -1,0 +1,5 @@
+test"quotes"hello""world
+And a new
+line
+Some \backslashes \now
+	Tabs	here

@@ -1,0 +1,7 @@
+[4: 17, 20, 10, 5]
+[4: 5, 10, 17, 20]
+[0: ]
+[0: ]
+[7: a, w, q, b, d, z, t]
+[7: a, b, d, q, t, w, z]
+Correctly raised TypeError
