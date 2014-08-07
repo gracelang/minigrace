@@ -27,6 +27,15 @@ class FailedMatch.new(result') {
 type Extractable = {
     extract
 }
+
+method repeat(n)times(action) {
+    var ix := n
+    while {n > 0} do { 
+        ix := ix - 1
+        action.apply 
+    }
+}
+
 class BasicPattern.new {
     method &(o) {
         AndPattern.new(self, o)
