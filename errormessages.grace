@@ -357,10 +357,10 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestion(s
 method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
     var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do {
+    for (2..(startpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
-    for (startpos..endpos) do {
+    for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
     util.syntaxError(message, errlinenum, ":{loc}", arr, false, suggestions)
@@ -369,10 +369,10 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
 method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
     var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do {
+    for (2..(startpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
-    for (startpos..endpos) do {
+    for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
     util.generalError(message, errlinenum, ":{loc}", arr, false, suggestions)
@@ -392,7 +392,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestion(suggesti
 
 method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggestions) {
     var arr := "----"
-    for (2..(errpos + errlinenum.asString.size)) do {
+    for (2..(errpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
@@ -402,7 +402,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
 method error(message) atPosition(errlinenum, errpos)
         withSuggestions(suggestions) {
     var arr := "----"
-    for (2..(errpos + errlinenum.asString.size)) do {
+    for (2..(errpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
@@ -411,10 +411,10 @@ method error(message) atPosition(errlinenum, errpos)
 
 method error(message)atLine(errlinenum)withSuggestions(suggestions) {
     var arr := "----"
-    for (1..errlinenum.asString.size) do {
+    for (1..errlinenum.asString.size) do { _ ->
         arr := arr ++ "-"
     }
-    for (1..util.lines.at(errlinenum).size) do {
+    for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
     util.generalError(message, errlinenum, "", arr, false, suggestions)
@@ -434,10 +434,10 @@ method syntaxError(message)atLine(errlinenum)withSuggestion(suggestion') {
 
 method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
     var arr := "----"
-    for (1..errlinenum.asString.size) do {
+    for (1..errlinenum.asString.size) do { _ ->
         arr := arr ++ "-"
     }
-    for (1..util.lines.at(errlinenum).size) do {
+    for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
     util.syntaxError(message, errlinenum, "", arr, false, suggestions)

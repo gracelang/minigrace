@@ -290,7 +290,7 @@ method semantic_error(s) {
         }
     }
     var arr := "----"
-    for (2..(lineposv + linenumv.asString.size)) do {
+    for (2..(lineposv + linenumv.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     if (lines.size >= linenumv) then {

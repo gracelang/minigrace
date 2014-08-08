@@ -96,7 +96,7 @@ class vector.new {
         def indices = ret.data
         def used = collections.set.new
         var min := 1
-        for (1..data.size) do {
+        for (1..data.size) do {_->
             for (data.indices) do {i->
                 if (data.at(i) < data.at(min)) then {
                     if (!used.contains(i)) then {
@@ -119,7 +119,7 @@ class vector.new {
         def indices = ret.data
         def used = collections.set.new
         var max := 1
-        for (1..data.size) do {
+        for (1..data.size) do {_->
             for (data.indices) do {i->
                 if (data.at(i) > data.at(max)) then {
                     if (!used.contains(i)) then {
