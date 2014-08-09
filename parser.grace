@@ -3270,7 +3270,7 @@ method checkIndent {
         if ((sym.linePos - 1) != minIndentLevel) then {
             def suggestions = []
             var suggestion := errormessages.suggestion.new
-            for(1..(minIndentLevel - (sym.linePos - 1))) do {
+            for(1..(minIndentLevel - (sym.linePos - 1))) do { _ ->
                 suggestion.insert(" ")atPosition(1)onLine(sym.line)
             }
             suggestions.push(suggestion)
@@ -3279,7 +3279,7 @@ method checkIndent {
             var tok := lastToken
             while {(tok.linePos != (tok.indent + 1)) || (tok.indent >= minIndentLevel)} do { tok := tok.prev }
             var line := ""
-            for(1..(tok.indent)) do {
+            for(1..(tok.indent)) do { _ ->
                 line := line ++ " "
             }
             line := line ++ "}"
