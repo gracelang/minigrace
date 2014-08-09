@@ -157,7 +157,7 @@ def aMethodType = object {
             def signature = [aMixPart.withName(defd.name.value) parameters([])]
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
-        } else {
+        } case { _ ->
             stdPrelude.Exception.raiseWith("unrecognised method node", node)
         }
     }
@@ -398,7 +398,7 @@ def anObjectType = object {
             }
         } case { ident : Identifier ->
             anObjectType.fromIdentifier(ident)
-        } else {
+        } case { _ ->
             stdPrelude.Exception.raise("unrecognised object type node", dtype)
         }
     }
@@ -841,7 +841,7 @@ rule { req : CatchCase ->
         if(params.size > 0) then {
             RequestError.raiseWith("Too many parameters to catch", bl)
         }
-    } else {}
+    }
 
     for(req.cases) do { case ->
         match(case) case { bl : BlockLiteral ->
@@ -853,7 +853,7 @@ rule { req : CatchCase ->
                 RequestError.raiseWith("{which} parameters to case of catch",
                     bl)
             }
-        } else {}
+        }
     }
 
     if(req.finally != false) then {
@@ -862,7 +862,7 @@ rule { req : CatchCase ->
             if(params.size > 0) then {
                 RequestError.raiseWith("Too many parameters to finally", bl)
             }
-        } else {}
+        }
     }
 
     anObjectType.done
@@ -1082,7 +1082,7 @@ rule { block : BlockLiteral ->
 rule { ident : Identifier ->
     match(ident.value) case { "outer" ->
         outerAt(scope.size)
-    } else {
+    } case { _ ->
         scope.variables.find(ident.value) butIfMissing { anObjectType.dynamic }
     }
 }
@@ -1174,7 +1174,7 @@ method processBody(body : List) -> ObjectType is confidential {
                     methods.push(mType)
                     publicMethods.push(mType)
                 }
-            } else {}
+            }
         }
 
         scope.types.at("Self") put(anObjectType.fromMethods(methods))
@@ -1242,7 +1242,7 @@ method isPublic(node : Method | Def | Var) -> Boolean is confidential {
         }
 
         true
-    } else {
+    } case { _ ->
         for(node.annotations) do { ann ->
             if((ann.value == "public") || (ann.value == "readable")) then {
                 return true

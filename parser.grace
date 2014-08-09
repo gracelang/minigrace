@@ -1506,55 +1506,55 @@ method matchcase {
         }
         cases.push(values.pop)
     }
-    if (accept("identifier") && (sym.value == "else")) then {
-        next
-        if (accept("lbrace")) then {
-            block
-        } elseif (accept("lparen")) then {
-            next
-            if(didConsume({expression}).not) then {
-                def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
-                if(nextTok == sym) then {
-                    suggestion.insert("«expression»")afterToken(lastToken)
-                } else {
-                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
-                }
-                errormessages.syntaxError("A match statement must have either a block or an expression in parentheses after the 'else'.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
-            }
-            if(sym.kind != "rparen") then {
-                checkBadOperators
-                def suggestion = errormessages.suggestion.new
-                suggestion.insert(")")afterToken(lastToken)
-                errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
-                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-            }
-            next
-        } else {
-            def suggestions = []
-            def nextTok = findNextTokenIndentedAt(lastToken)
-            var suggestion := errormessages.suggestion.new
-            if(nextTok == false) then {
-                suggestion.insert(" }")afterToken(tokens.first)
-                suggestion.insert(" \{")afterToken(lastToken)
-                suggestions.push(suggestion)
-            } elseif(nextTok == sym) then {
-                suggestion.insert(" («expression»)")afterToken(lastToken)
-                suggestions.push(suggestion)
-                suggestion := errormessages.suggestion.new
-                suggestion.insert(" \{ «expression» }")afterToken(lastToken)
-                suggestions.push(suggestion)
-            } else {
-                suggestion.insert(" }")afterToken(nextTok.prev)
-                suggestion.insert(" \{")afterToken(lastToken)
-                suggestions.push(suggestion)
-            }
-            errormessages.syntaxError("A match statement must have either a block or an expression in parentheses after the 'else'.")atPosition(
-                sym.line, sym.linePos)withSuggestions(suggestions)
-        }
-        elsecase := values.pop
-    }
+//    if (accept("identifier") && (sym.value == "else")) then {
+//        next
+//        if (accept("lbrace")) then {
+//            block
+//        } elseif (accept("lparen")) then {
+//            next
+//            if(didConsume({expression}).not) then {
+//                def suggestion = errormessages.suggestion.new
+//                def nextTok = findNextValidToken("rparen")
+//                if(nextTok == sym) then {
+//                    suggestion.insert("«expression»")afterToken(lastToken)
+//                } else {
+//                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+//                }
+//                errormessages.syntaxError("A match statement must have either a block or an expression in parentheses after the 'else'.")atPosition(
+//                    sym.line, sym.linePos)withSuggestion(suggestion)
+//            }
+//            if(sym.kind != "rparen") then {
+//                checkBadOperators
+//                def suggestion = errormessages.suggestion.new
+//                suggestion.insert(")")afterToken(lastToken)
+//                errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
+//                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+//            }
+//            next
+//        } else {
+//            def suggestions = []
+//            def nextTok = findNextTokenIndentedAt(lastToken)
+//            var suggestion := errormessages.suggestion.new
+//            if(nextTok == false) then {
+//                suggestion.insert(" }")afterToken(tokens.first)
+//                suggestion.insert(" \{")afterToken(lastToken)
+//                suggestions.push(suggestion)
+//            } elseif(nextTok == sym) then {
+//                suggestion.insert(" («expression»)")afterToken(lastToken)
+//                suggestions.push(suggestion)
+//                suggestion := errormessages.suggestion.new
+//                suggestion.insert(" \{ «expression» }")afterToken(lastToken)
+//                suggestions.push(suggestion)
+//            } else {
+//                suggestion.insert(" }")afterToken(nextTok.prev)
+//                suggestion.insert(" \{")afterToken(lastToken)
+//                suggestions.push(suggestion)
+//            }
+//            errormessages.syntaxError("A match statement must have either a block or an expression in parentheses after the 'else'.")atPosition(
+//                sym.line, sym.linePos)withSuggestions(suggestions)
+//        }
+//        elsecase := values.pop
+//    }
     values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
     minIndentLevel := localmin
 }

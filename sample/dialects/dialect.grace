@@ -266,13 +266,14 @@ class aNodePattern.forKind(kind : String) -> Pattern {
     inherits BasicPattern.new
 
     method match(obj : Object) {
-        match(obj) case { node : AstNode ->
+        match(obj) 
+          case { node : AstNode ->
             if(kind == node.kind) then {
                 SuccessfulMatch.new(node, [])
             } else {
                 FailedMatch.new(node)
             }
-        } else { FailedMatch.new(obj) }
+          } case { _ -> FailedMatch.new(obj) }
     }
 }
 
@@ -311,7 +312,8 @@ class aRequestPattern.forName(name : String) -> Pattern {
     inherits BasicPattern.new
 
     method match(obj : Object) {
-        match(obj) case { node : AstNode ->
+        match(obj) 
+          case { node : AstNode ->
             if((node.kind == "call").andAlso {
                 node.value.value == name
             }) then {
@@ -319,7 +321,8 @@ class aRequestPattern.forName(name : String) -> Pattern {
             } else {
                 FailedMatch.new(node)
             }
-        } else { FailedMatch.new(obj) }
+          } case { _ -> FailedMatch.new(obj)
+          }
     }
 
     method makeBindings(node) { [] }
@@ -420,7 +423,7 @@ def astVisitor = object {
 
         match(node.value) case { memb : Member ->
             memb.in.accept(self)
-        } else {}
+        } case { _ -> }
 
         for(node.with) do { part ->
             for(part.args) do { arg ->
