@@ -409,6 +409,26 @@ def sequenceTest = object {
         method testSequenceIteratorToSetDuplicates {
             assert (sequence.with(1,1,2,2,4).iterator.asSet) shouldBe (set.with(1, 2, 4))
         }
+        method testSequenceCopySorted {
+            def input = sequence.with(5, 3, 11, 7, 2)
+            def output = input.copySorted
+            assert (output) shouldBe (sequence.with(2, 3, 5, 7, 11))
+            assert (output.asString.startsWith "sequence") description
+                ".copySorted does not produce a sequence"
+        }
+        method testSequenceCopySortedBy {
+            def input = sequence.with(5, 3, 11, 7, 2)
+            def output = input.copySortedBy {l, r -> 
+                if (l == r) then {0}
+                    elseif (l < r) then {1}
+                    else {-1}
+                }
+            assert (input) shouldBe (sequence.with(5, 3, 11, 7, 2))
+            assert (output) shouldBe (sequence.with(11, 7, 5, 3, 2))
+            assert (output.asString.startsWith "sequence") description
+                ".copySorted does not produce a sequence"
+        }
+
     }
 }
 
@@ -742,6 +762,30 @@ def listTest = object {
         }
         method testListIteratorToSetDuplicates {
             assert (list.with(1,1,2,2,4).iterator.asSet) shouldBe (set.with(1, 2, 4))
+        }
+        method testListSort {
+            def input = list.with(7, 6, 4, 1)
+            def output = list.with(1, 4, 6, 7)
+            assert (input.sort) shouldBe (output)
+            assert (input) shouldBe (output)
+        }
+        method testListSortBlock {
+            def input = list.with(6, 7, 4, 1)
+            def output = list.with(7, 6, 4, 1)
+            assert (input.sortBy{a, b -> b - a}) shouldBe (output)
+            assert (input) shouldBe (output)
+        }        
+        method testListCopySorted {
+            def input = list.with(7, 6, 4, 1)
+            def output = list.with(1, 4, 6, 7)
+            assert (input.copySorted) shouldBe (output)
+            assert (input) shouldBe (list.with(7, 6, 4, 1))
+        }
+        method testListCopySortedBlock {
+            def input = list.with(6, 7, 4, 1)
+            def output = list.with(7, 6, 4, 1)
+            assert (input.copySortedBy{a, b -> b-a}) shouldBe (output)
+            assert (input) shouldBe (list.with(6, 7, 4, 1))
         }
     }
 }
@@ -1165,20 +1209,31 @@ def dictionaryTest = object {
 }
 
 def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
-
+print "binding"
+bindingTests.runAndPrintResults
 def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
 //sequenceTests.debugAndPrintResults
+print "sequence"
+sequenceTests.runAndPrintResults
 def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 //listTests.debugAndPrintResults
+print "list"
+listTests.runAndPrintResults
 def rangeTests = gU.testSuite.fromTestMethodsIn(rangeTest)
 //rangeTests.debugAndPrintResults
+print "range"
+rangeTests.runAndPrintResults
 def setTests = gU.testSuite.fromTestMethodsIn(setTest)
 //setTests.debugAndPrintResults
+print "set"
+setTests.runAndPrintResults
 def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
-def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests)
+print "dictionary"
+dictTests.runAndPrintResults
+//def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests)
 
 //dictTests.runAndPrintResults
-allTests.runAndPrintResults
+//allTests.runAndPrintResults
 
 //setTest.forMethod("testSetRemove5").debugAndPrintResults
 //listTest.forMethod("testMapAndFilter").debugAndPrintResults

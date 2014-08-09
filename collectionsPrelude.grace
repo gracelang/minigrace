@@ -428,6 +428,16 @@ def sequence is readable = object {
                     }
                 }
             }
+            method copySorted {
+                asList.sortBy { l, r ->
+                    if (l == r) then {0} 
+                        elseif (l < r) then {-1} 
+                        else {1}
+                }.asSequence
+            }
+            method copySortedBy(sortBlock:Block2){
+                asList.sortBy(sortBlock:Block2).asSequence
+            }
         }
     }
 }
@@ -632,7 +642,23 @@ def list is readable = object {
                 }
                 inner := newInner
             }
-
+            method sortBy(sortBlock:Block2) {
+                inner.sortInitial(size) by(sortBlock)
+                self
+            }
+            method sort {
+                sortBy { l, r ->
+                    if (l == r) then {0} 
+                        elseif (l < r) then {-1} 
+                        else {1}
+                }
+            }
+            method copySortedBy(sortBlock:Block2) {
+                copy.sortBy(sortBlock:Block2)
+            }
+            method copySorted {
+                copy.sort
+            }
             method copy {
                 outer.withAll(self)
             }
@@ -845,7 +871,6 @@ def set is readable = object {
                     }
                 }
             }
-            
             method ==(other) {
                 match (other)
                     case {o:Collection ->
@@ -861,7 +886,6 @@ def set is readable = object {
                         return false
                     }
             }
-
             method copy {
                 outer.withAll(self)
             }
@@ -1037,7 +1061,7 @@ def dictionary is readable = object {
                         }
                     }
                 }
-//                self.do { a -> s := s ++ "{a.key}=>{a.value}" }
+//                self.do { a -> s := s ++ "{a.key}::{a.value}" }
 //                    separatedBy { s := s ++ ", " }
                 return (s ++ "]")
             }
@@ -1051,7 +1075,6 @@ def dictionary is readable = object {
                     } else {
                         s := s ++ "{i}:{a.asDebugString}"
                     }
-
                 }
                 s ++ "]"
             }
@@ -1261,13 +1284,17 @@ def range is readable = object {
             }
 
             method asString -> String{
-                return "range.from({lower})to({upper})"
+                "range.from({lower})to({upper})"
             }
 
             method asList{
                 var result := list.empty
                 for (self) do { each -> result.add(each) }
                 result
+            }
+            
+            method asSequence {
+                self
             }
         }
     }
@@ -1336,7 +1363,7 @@ def range is readable = object {
             method reversed {
                 from(lower)to(upper)
             }
-            method ==(other){
+            method ==(other) {
                 match (other)
                     case {o:Collection ->
                         if (self.size != other.size) then { return false }
@@ -1353,21 +1380,11 @@ def range is readable = object {
                         return false
                     }
             }
-
-            method asString -> String{
-                return "range.from({upper})downTo({lower})"
+            method asString -> String {
+                "range.from({upper})downTo({lower})"
             }
-
-            method asList{
-                var result := list.empty
-
-                def iter = self.iterator
-
-                while {iter.havemore} do {
-                    result.add(iter.next)
-                }
-
-                result
+            method asSequence {
+                self
             }
         }
     }

@@ -1358,8 +1358,8 @@ int compareFun(const void *a, const void *b) {
 Object PrimitiveArray_sort(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
-    compareBlock = args[0];
-    size_t len = sself->size;
+    compareBlock = args[1];
+    size_t len = integerfromAny(args[0]);
     int partcv[] = {1};
     qsort(sself->items, len, sizeof(Object), &compareFun);
     return self;
@@ -1378,7 +1378,7 @@ Object alloc_PrimitiveArray(int size) {
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
-        add_Method(PrimitiveArray, "sort", &PrimitiveArray_sort);
+        add_Method(PrimitiveArray, "sortInitial()by", &PrimitiveArray_sort);
     }
     int i;
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);

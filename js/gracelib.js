@@ -651,7 +651,9 @@ GracePrimitiveArray.prototype = {
         "::": function(argcv, other) {
             return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         },
-        "sort": function(argcv, compareBlock) {
+        "sortInitial()by": function(argcv, length, compareBlock) {
+            var origLength = this._value.length
+            this._value.length = length._value
             function compareFun(a, b) {
                 var res = callmethod(compareBlock, "apply", [2], a, b);
                 if (res.className == "Number") return res._value;
@@ -660,6 +662,7 @@ GracePrimitiveArray.prototype = {
                                        "did not return a number"));
             }
             this._value.sort(compareFun);
+            this._value.length = origLength
             return this;
         }
     },
