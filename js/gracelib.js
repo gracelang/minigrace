@@ -822,7 +822,7 @@ GraceObject.prototype = {
     data: {}
 };
 
-GraceObjectMethods = {
+var GraceObjectMethods = {
     "==": function(argcv, o) {
         return Grace_egal(this, o);
     },
@@ -1034,7 +1034,7 @@ var type_None = var_None;
 var var_Void = var_None;
 var type_Void = var_None;
 var var_MatchFailed = Grace_allocObject();
-var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
+var var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
 
 function GraceHashMap() {
     this.table = {};
