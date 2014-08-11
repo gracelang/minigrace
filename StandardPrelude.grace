@@ -30,7 +30,7 @@ type Extractable = {
 
 method repeat(n)times(action) {
     var ix := n
-    while {n > 0} do { 
+    while {ix > 0} do { 
         ix := ix - 1
         action.apply 
     }
