@@ -1,3 +1,5 @@
+"use strict";
+
 var lineNumber = 0;
 var moduleName = "null";
 var superDepth = null;
@@ -63,11 +65,17 @@ GraceString.prototype = {
         },
         "asString": function(argcv) { return this ; },
         "asDebugString": function(argcv) {
+            var quote = new GraceString("\"");
+            var self = callmethod(this, "_escape", [0]);
+            var qSelf = callmethod(quote, "++", [1], self);
+            var qSelfq = callmethod(qSelf, "++", [1], quote);
+            return qSelfq;
+        },
+        "encode": function(argcv) {
             var patt = /"/gm;
             var s = '"' + this._value.replace(patt, '\\"') + '"';
             return new GraceString(s);
-        },
-        "encode": function(argcv) { return this ; }, // TODO this is a hack
+        }, // TODO this is a hack
         "==": function(argcv, other) {
             if (this == other)
                 return GraceTrue;
@@ -140,13 +148,6 @@ GraceString.prototype = {
         "startsWithDigit": function(argcv) {
             if ((this._value.charCodeAt(0) >= 48)&&(this._value.charCodeAt(0) <= 57)) return GraceTrue;
             else return GraceFalse;
-        },
-        "asDebugString": function(argcv) {
-            var quote = new GraceString("\"");
-            var self = callmethod(this, "_escape", [0]);
-            var qSelf = callmethod(quote, "++", [1], self);
-            var qSelfq = callmethod(qSelf, "++", [1], quote);
-            return qSelfq;
         },
         "startsWithLetter": function(argcv) {
             var c = this._value.charCodeAt(0);
@@ -744,7 +745,7 @@ function Grace_egal(o1, o2) {
             "&&", [1], callmethod(t2, "match", [1], o1));
     if (!Grace_isTrue(tm))
         return GraceFalse;
-    for (d in o1.data) {
+    for (var d in o1.data) {
         var leftdata = o1.data[d];
         var rightdata = o2.data[d];
         if (typeof rightdata == 'undefined')
@@ -938,8 +939,7 @@ function GraceType(name) {
 GraceType.prototype = {
     methods: {
         "match": function(argcv, other) {
-            var i;
-            for (i=0; i<this.typeMethods.length; i++) {
+            for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
                     var tmp = other;
@@ -1002,8 +1002,7 @@ function classType(obj) {
     var t = new GraceType(obj.className);
     var o = obj;
     while (o != null) {
-        var i;
-        for (m in o.methods)
+        for (var m in o.methods)
             t.typeMethods.push(m);
         o = o.superobj;
     }
@@ -1077,7 +1076,7 @@ GraceHashMap.prototype.methods.contains = function(argcv, k) {
 GraceHashMap.prototype.methods.asString = function() {
     var s = "[{";
     var first = true;
-    for (h in this.table) {
+    for (var h in this.table) {
         p = this.table[h];
         if (first)
             first = false;
@@ -1764,7 +1763,7 @@ function alloc_Mirror(o) {
     var m = Grace_allocObject();
     m.methods['methods'] = function(argcv) {
         var meths = [];
-        for (k in o.methods) {
+        for (var k in o.methods) {
             meths.push(new GraceMirrorMethod(o, k));
         }
         var l = new GraceList(meths);
@@ -1772,7 +1771,7 @@ function alloc_Mirror(o) {
     }
     m.methods['getMethod'] = function(argcv, gString) {
         var name = gString._value
-        for (k in o.methods) {
+        for (var k in o.methods) {
             if (name == k) {
                 return (new GraceMirrorMethod(o, k));
             }
@@ -1846,9 +1845,8 @@ function gracecode_math() {
 }
 
 function checkmethodcall(func, methname, obj, args) {
-    var i = 0;
     var pt = func.paramTypes;
-    for (i=0; i<args.length, i<pt.length; i++) {
+    for (var i=0; i<args.length, i<pt.length; i++) {
         var p = pt[i];
         if (!p || p.length == 0)
             continue;
@@ -1960,12 +1958,11 @@ function callmethod(obj, methname, argcv) {
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
     setLineNumber(0);
-    var i = 0;
     try {
         callmethod(obj, "apply")
     } catch (e) {
         if (e.exctype == 'graceexception') {
-            for (i = 0; i<cases.length; i++) {
+            for (var i = 0; i<cases.length; i++) {
                 var ret = callmethod(cases[i], "match", [1],
                         e);
                 if (Grace_isTrue(ret))
@@ -1985,8 +1982,7 @@ function catchCase(obj, cases, finallyblock) {
 function matchCase(obj, cases, elsecase) {
     setModuleName("match()case()...else()");
     setLineNumber(0);
-    var i = 0;
-    for (i = 0; i<cases.length; i++) {
+    for (var i = 0; i<cases.length; i++) {
         var ret = callmethod(cases[i], "match", [1], obj);
         if (Grace_isTrue(ret))
             return callmethod(ret, "result", [0]);
@@ -2140,7 +2136,7 @@ function do_import(modname, func) {
             new GraceString("Could not find module '" + modname + "'"));
     var origSuperDepth = superDepth;
     superDepth = Grace_allocModule(modname);
-    var f = func.call(superDepth);
+    var f = Function.prototype.call.call(func, superDepth);
     superDepth = origSuperDepth;
     importedModules[modname] = f;
     return f;
@@ -2149,11 +2145,10 @@ function do_import(modname, func) {
 function dbgp(o, d) {
     if (d == undefined)
         d = 0;
-    var i;
     var ind = "";
-    for (i=0; i<d; i++)
+    for (var i=0; i<d; i++)
         ind += "  ";
-    if (typeof(o) == 'undefined') {
+    if (typeof(o) == "undefined") {
         return "undefined";
     }
     if (typeof(o) == "function") {
@@ -2273,11 +2268,11 @@ Grace_prelude.methods["for()do"] = function(argcv, c, b) {
 }
 Grace_prelude.methods["_methods"] = function() {
     var meths = [];
-    for (m in this.methods)
+    for (var m in this.methods)
         meths.push(new GraceString(m));
     var s = this.superobj;
     while (s) {
-        for (m in s.methods)
+        for (var m in s.methods)
             meths.push(new GraceString(m));
         s = s.superobj;
     }
@@ -2327,3 +2322,73 @@ function Grace_allocModule(modname) {
     mod.className = "Module<" + modname + ">";
     return mod;
 }
+
+
+// for node:
+if (typeof global !== "undefined") {
+    global.callmethod = callmethod,
+    global.callmethodsuper = callmethodsuper,
+    global.callStack = callStack,
+    global.catchCase = catchCase,
+    global.checkmethodcall = checkmethodcall,
+    global.classType = classType,
+    global.dbg = dbg,
+    global.dbgp = dbgp,
+    global.do_import = do_import,
+    global.EnvironmentExceptionObject = EnvironmentExceptionObject,
+    global.ErrorObject = ErrorObject,
+    global.ExceptionObject = ExceptionObject,
+    global.Grace_allocModule = Grace_allocModule,
+    global.Grace_allocObject = Grace_allocObject,
+    global.Grace_errorPrint = Grace_errorPrint,
+    global.Grace_length = Grace_length,
+    global.Grace_prelude = Grace_prelude,
+    global.Grace_print = Grace_print,
+    global.GraceBindingClass = GraceBindingClass,
+    global.GraceBlock_match = GraceBlock_match,
+    global.GraceBoolean = GraceBoolean,
+    global.gracecode_imports = gracecode_imports,
+    global.gracecode_interactive = gracecode_interactive,
+    global.gracecode_io = gracecode_io,
+    global.gracecode_math = gracecode_math,
+    global.gracecode_mirrors = gracecode_mirrors,
+    global.gracecode_sys = gracecode_sys,
+    global.gracecode_unicode = gracecode_unicode,
+    global.gracecode_util = gracecode_util,
+    global.GraceDone = GraceDone,
+    global.GraceException = GraceException,
+    global.GraceExceptionPacket = GraceExceptionPacket,
+    global.GraceFailedMatch = GraceFailedMatch,
+    global.GraceFalse = GraceFalse,
+    global.GraceHashMap = GraceHashMap,
+    global.GraceIterator = GraceIterator,
+    global.GraceListIterator = GraceListIterator,
+    global.GraceMatchResult = GraceMatchResult,
+    global.GraceMirrorMethod = GraceMirrorMethod,
+    global.GraceNum = GraceNum,
+    global.GraceObject = GraceObject,
+    global.GracePoint2DClass = GracePoint2DClass,
+    global.GraceString = GraceString,
+    global.GraceStringIterator = GraceStringIterator,
+    global.GraceSuccessfulMatch = GraceSuccessfulMatch,
+    global.GraceTrue = GraceTrue,
+    global.GraceType = GraceType,
+    global.GraceUnicodePattern = GraceUnicodePattern,
+    global.ImportErrorObject = ImportErrorObject,
+    global.invocationCount = invocationCount,
+    global.matchCase = matchCase,
+    global.NoSuchMethodErrorObject = NoSuchMethodErrorObject,
+    global.ProgrammingErrorObject = ProgrammingErrorObject,
+    global.ResourceExceptionObject = ResourceExceptionObject,
+    global.ReturnException = ReturnException,
+    global.RuntimeErrorObject = RuntimeErrorObject,
+    global.setLineNumber = setLineNumber,
+    global.setModuleName = setModuleName,
+    global.sourceObject = sourceObject,     // unused?
+    global.StackFrame = StackFrame,
+    global.superDepth = superDepth,
+    global.TypeErrorObject = TypeErrorObject,
+    global.var___95__prelude = var___95__prelude,
+    global.var_done = var_Done,
+    global.var_Unknown = var_Unknown
+};

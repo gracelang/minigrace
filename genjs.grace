@@ -350,7 +350,7 @@ method compileobject(o, outerRef, inheritingObject) {
         out "{selfr}.data = inheritingObject.data;"
     }
     compileobjouter(selfr, outerRef)
-    out("function obj_init_{myc}() \{")
+    out("var obj_init_{myc} = function () \{")
     increaseindent
     out("var origSuperDepth = superDepth;")
     out("superDepth = {selfr};")
@@ -1190,7 +1190,7 @@ method compileimport(o) {
     var nm := escapestring(o.value)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
-    out "  throw new GraceExceptionPacket(EnvironmentErrorObject, "
+    out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     if (o.dtype != false) then {
@@ -1436,6 +1436,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             topLevelTypes.put(typeid, true)
         }
     }
+    out "\"use strict\";"
     if (isPrelude.not) then {
         out "this.outer = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
     }
@@ -1488,7 +1489,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out("return this;")
     decreaseindent
     out("\}")
-    out "{formatModname(modname)}.imports = ["
+    
+    def generatedModuleName = formatModname(modname)
+    out "{generatedModuleName}.imports = ["
     for (imported) do {imp->
         out "'{imp}',"
     }
@@ -1497,15 +1500,21 @@ method compile(vl, of, mn, rm, bt, glpath) {
         fromValues(values)modules(staticmodules)
     def gct = xmodule.parseGCT(modname, modname ++ ".gct")
     def gctText = xmodule.gctAsString(gct)
-    out "if (gctCache)"
+    out "if (typeof gctCache !== \"undefined\")"
     out "  gctCache['{escapestring(modname)}'] = \"{escapestring(gctText)}\";"
-    out "if (originalSourceLines) \{"
+    out "if (typeof originalSourceLines !== \"undefined\") \{"
     out "  originalSourceLines[\"{modname}\"] = ["
     for (util.cLines) do {l->
         out "    \"{l}\","
     }
     out "  ];"
     out "\};"
+    out "if (typeof global !== \"undefined\")"
+    out "  global.{generatedModuleName} = {generatedModuleName};"
+    out "if (typeof window !== \"undefined\")"
+    out "  window.{generatedModuleName} = {generatedModuleName};"
+
+
     for (output) do { o ->
         outprint(o)
     }

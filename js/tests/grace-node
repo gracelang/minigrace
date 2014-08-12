@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+//
+"use strict";
+
+var path = require("path");
+
+//function include(file) {
+//    // load file, and make al of its module-level exports
+//    // available as globals
+//    var incModule = require(file);
+////    for (var name in incModule) {
+////        eval("global." + name + " = incModule." + name);
+////    }
+//}
+
+global.minigrace = {}
+
+require("../gracelib")
+require("../collectionsPrelude")
+require("../StandardPrelude")
+
+minigrace.stdout_write = function(value) {
+    process.stdout.write(value, "utf-8");
+};
+
+minigrace.stderr_write = function(value) {
+    process.stderr.write(value, "utf-8");
+};
+
+minigrace.stdin_read = function() {
+    return "";
+}
+
+function formatModName(fileName) {
+    var prefix = "gracecode_";
+    var base = path.basename(fileName, ".js");
+    return prefix + base;
+};
+
+function runGraceFile(fileName) {
+    require(fileName);
+    var modFunc = global[formatModName(fileName)];
+    do_import(fileName, modFunc);
+}
+
+process.argv.slice(2).forEach(runGraceFile);
+
+global.runGraceFile = runGraceFile;

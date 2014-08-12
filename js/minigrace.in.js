@@ -148,10 +148,8 @@ MiniGrace.prototype.run = function() {
     var code = minigrace.generated_output;
     lineNumber = 1;
     moduleName = this.modname;
-    eval(code);
-    var theModule;
-    eval("theModule = gracecode_" + this.modname + ";");
-    window['gracecode_' + this.modname] = theModule;
+    eval(code);     // defines a global gracecode_‹moduleName›
+    var theModule = window['gracecode_' + this.modname];
     testpass = false;
     var modname = this.modname;
     if (Grace_prelude.methods["while()do"])

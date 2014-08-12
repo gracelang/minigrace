@@ -2,7 +2,7 @@ include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=64d4ca54b995b99e4a27f4ba294d09a317511fb8
-all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct)
+all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
@@ -38,6 +38,9 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
 
 %.gct: %.grace gracelib.o
+	./minigrace --make --noexec $<
+
+%.gcn: %.grace gracelib.o
 	./minigrace --make --noexec $<
 
 %.o: %.c
@@ -94,6 +97,12 @@ js/minigrace.js: js/minigrace.in.js minigrace
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
 
+
+test.js:
+	@echo "compiling tests to JavaScript"
+	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
+
+
 js/index.html: js/index.in.html js/ace.in.html js/minigrace.js
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
@@ -145,7 +154,7 @@ gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 regrtest: minigrace
 	./tests/harness "../../minigrace" tests/regression ""
-test: minigrace
+test: minigrace gUnit.gct
 	./tests/harness "../minigrace" tests ""
 fulltest: gencheck clean selftest test
 togracetest: minigrace

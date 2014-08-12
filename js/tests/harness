@@ -4,10 +4,11 @@ set -e
 
 if [ $# -lt 3 ]
 then
-    echo "Error: harness requires three arguments" >&2
-    echo "- Grace command" >&2
-    echo "- Directory of tests to run" >&2
-    echo "- Command to execute compiled code (empty for native)" >&2
+    echo "Error: harness requires three or more arguments" >&2
+    echo "- compilation command" >&2
+    echo "- directory containing tests" >&2
+    echo "- command to execute compiled code (empty for javascript)" >&2
+    echo '- <test file name prefix>*  ; if omitted, all tests in directory'
 fi
 GRACE="$1"
 TESTDIR="$2"
@@ -34,7 +35,7 @@ then
         EXECUTOR="$EXECUTOR "
     fi
 else
-    EXECUTOR="./"
+    EXECUTOR="./grace-node "
 fi
 
 if [ $# -gt 0 ]
@@ -93,7 +94,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE -XDefaultVisibility=public --make --native $tcase"
+            COMMAND="$GRACE -XDefaultVisibility=public --make --target js $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -101,8 +102,9 @@ do
             then
                 cat $tcase | $GRACE --interactive > test-$$.out
             else
+                set echo
                 execname="${tcase%%.*}"
-                $EXECUTOR"$execname" > test-$$.out
+                $EXECUTOR"./$execname" > test-$$.out
             fi
             if diff test-$$.out ${tcase%_test.grace}.out
             then
