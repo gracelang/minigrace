@@ -1,48 +1,268 @@
 #!/usr/bin/env node
-//
 "use strict";
 
 var path = require("path");
+var fs = require("fs");
+var util = require('util');
 
-//function include(file) {
-//    // load file, and make al of its module-level exports
-//    // available as globals
-//    var incModule = require(file);
-////    for (var name in incModule) {
-////        eval("global." + name + " = incModule." + name);
-////    }
-//}
+global.minigrace = {};
+global.sourceObject = null;
+global.superDepth = {methods:{}, data: {}, className: process.argv[1]};
+global.invocationCount = 0;
+global.onOuter = false;
+global.onSelf = false;
+global.callStack = [];
+global.gctCache = {};
+global.originalSourceLines = {};
+global.stackFrames = [];
 
-global.minigrace = {}
-
-require("../gracelib")
-require("../collectionsPrelude")
-require("../StandardPrelude")
-
-minigrace.stdout_write = function(value) {
-    process.stdout.write(value, "utf-8");
-};
-
-minigrace.stderr_write = function(value) {
-    process.stderr.write(value, "utf-8");
-};
-
-minigrace.stdin_read = function() {
-    return "";
+function MiniGrace() {
+    this.compileError = false;
+    this.vis = "standard";
+    this.mode = "js";
+    this.modname = "main";
+    this.verbose = true;
+    this.lastSourceCode = "";
+    this.lastMode = "";
+    this.lastModname = "";
+    this.breakLoops = false;
+    this.debugMode = false;
+    this.lastDebugMode = false;
+    this.printStackFrames = true;
+    
+    this.generated_output = "";
+    
+    this.stdout_write = function(value) {
+        
+    }
+    
+    this.stderr_write = function(value) {
+        console.log(value);
+    };
+    
+    this.stdin_read = function() {
+        return "";
+    }
 }
 
-function formatModName(fileName) {
+MiniGrace.prototype.compile = function(grace_code) {
+    callStack = [];
+    
+    // Change stdin to read from code.
+    var old_stdin_read = this.stdin_read;
+    this.stdin_read = function() {
+        return grace_code;
+    }
+    
+    // Change stdout to store generated output.
+    var old_stdout_write = this.stdout_write;
+    this.stdout_write = function(value) {
+        this.generated_output += value;
+    }
+    this.generated_output = "";
+    
+    this.compileError = false;
+    extensionsMap = callmethod(var_HashMap, "new", [0])
+    if (this.vis == "standard") {
+        // Do nothing
+    } else {
+        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
+    }
+    if (this.debugMode) {
+        callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
+    }
+    try {
+        gracecode_compiler.call(Grace_allocModule(":user:"));
+    } catch (e) {
+        if (e == "ErrorExit") {
+            this.compileError = true;
+        } else if (e == "SystemExit") {
+            // pass
+        } else if (e.exctype == 'graceexception') {
+            this.compileError = true;
+            this.stderr_write("Internal compiler error at line " + e.lineNumber
+                + " of " + e.moduleName
+                + ": " + e.exception.name + ": "
+                + e.message._value + "\n");
+            for (i=e.callStack.length-1; i>=0; i--) {
+                this.stderr_write("  called from " + e.callStack[i] + "\n");
+            }
+        } else {
+            throw e;
+        }
+    } finally {
+        // Change the stdin and stdout back.
+        this.stdin_read = old_stdin_read;
+        this.stdout_write = old_stdout_write;
+    }
+}
+
+MiniGrace.prototype.trapErrors = function(func) {
+    this.exception = null;
+    if (Grace_prelude.methods["while()do"])
+        Grace_prelude.methods["while()do"].safe = this.breakLoops;
+    try {
+        func();
+    } catch (e) {
+        if (e.exctype == 'graceexception') {
+            this.exception = e;
+            this.stderr_write("" + e.exception.name + " at line "
+                + e.lineNumber + " of " + e.moduleName + ": "
+                + e.message._value + "\n");
+            for (i=e.callStack.length-1; i>=0; i--) {
+                this.stderr_write("  called from " + e.callStack[i] + "\n");
+            }
+            if (originalSourceLines[e.moduleName]) {
+                var lines = originalSourceLines[e.moduleName];
+                for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
+                    if (lines[i-1] != undefined) {
+                        for (var j=0; j<4-i.toString().length; j++)
+                            this.stderr_write(" ");
+                        this.stderr_write("" + i + ": " + lines[i-1] + "\n");
+                    }
+            }
+            if (e.stackFrames.length > 0 && this.printStackFrames) {
+                this.stderr_write("Stack frames:\n");
+                for (var i=0; i<e.stackFrames.length; i++) {
+                    this.stderr_write("  " + e.stackFrames[i].methodName + "\n");
+                    var stderr_write = this.stderr_write;
+                    e.stackFrames[i].forEach(function(name, value) {
+                        stderr_write("    " + name);
+                        var debugString = "unknown";
+                        try {
+                            if (typeof value == "undefined") {
+                                debugString = "‹undefined›";
+                            } else {
+                                var debugString = callmethod(value,
+                                    "asDebugString", [0])._value;
+                            }
+                        } catch(e) {
+                            debugger
+                            debugString = "<[Error calling asDebugString"
+                                + ": " + e.message._value + "]>";
+                        }
+                        debugString = debugString.replace("\\", "\\\\");
+                        debugString = debugString.replace("\n", "\\n");
+                        if (debugString.length > 60)
+                            debugString = debugString.substring(0,57) + "...";
+                        stderr_write(" = " + debugString + "\n");
+                    });
+                }
+            }
+        } else if (e != "SystemExit") {
+            this.stderr_write("Internal error around line "
+                + getLineNumber() + " of " + getModuleName() + ": " + e + "\n");
+            throw e;
+        }
+    } finally {
+        if (Grace_prelude.methods["while()do"])
+            Grace_prelude.methods["while()do"].safe = false;
+    }
+}
+
+MiniGrace.prototype.run = function(fileName) {
+    callStack = [];
+    stackFrames = [];
+    var code = minigrace.generated_output;
+    minigrace.stdout_write = function(value) {
+        process.stdout.write(value, "utf-8");
+    }
+    minigrace.stderr_write = function(value) {
+        process.stderr.write(value, "utf-8");
+    }
+    minigrace.stdin_read = function() {
+        return "";
+    }
+    this.loadModule(fileName);   // defines a global gracecode_‹moduleName›
+    var theModule = global[graceModuleName(fileName)];
+    this.trapErrors(function() {
+        do_import(fileName, theModule);
+    }              )
+}
+
+//  This method has been added to the ECMAScript 6 specification, but is not yet in node:
+
+if ( ! String.prototype.endsWith) {
+    String.prototype.endsWith = function (suffix, position) {
+        if (position === undefined || position > this.length) {
+            position = this.length;
+        }
+        position = position - suffix.length;
+        var lastIndex = this.lastIndexOf(suffix, position);
+        return lastIndex !== -1 && lastIndex === position;
+    }
+}
+
+function graceModuleName(fileName) {
     var prefix = "gracecode_";
     var base = path.basename(fileName, ".js");
     return prefix + base;
 };
 
-function runGraceFile(fileName) {
-    require(fileName);
-    var modFunc = global[formatModName(fileName)];
-    do_import(fileName, modFunc);
+function findOnPath(fn, pathArray) {
+    for (var ix = 0; ix < pathArray.length ; ix++) {
+        var candidate = path.resolve(pathArray[ix], fn);  
+            // path.resolve joins, normalizes, & makes absolute
+        if (fs.existsSync(candidate)) { return candidate };
+    }
+    return -1
 }
 
-process.argv.slice(2).forEach(runGraceFile);
+var graceModulePath = process.env.GRACE_MODULE_PATH;
+var fallbackPath = "/usr/lib/grace/modules/"
+if (! graceModulePath) {
+    try {
+        if (fs.statSync(fallbackPath).isDirectory) {
+            graceModulePath = fallbackPath;
+        }
+    } catch (e) {
+            graceModulePath = "./";
+    }
+    console.log("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
+}
+var pathdirs = graceModulePath.split(path.delimiter);
+if ( pathdirs.indexOf("./") === -1 ) {
+    pathdirs.push("./");
+}
 
-global.runGraceFile = runGraceFile;
+MiniGrace.prototype.loadModule = function(moduleName) {
+    var graceModule = graceModuleName(moduleName);
+    if (typeof global[graceModule] === 'function') return;
+    var extn = ".js";
+    var fileName = moduleName;
+    if ( moduleName.endsWith(extn)) {
+        moduleName = moduleName.substring(0, moduleName.length - extn.length);
+    } else {
+        fileName = fileName.concat(extn);
+    }
+    var found = findOnPath(fileName, pathdirs);
+    if (found === -1) {
+        throw new Error('module "' + moduleName + '" not found.');
+    }
+    require(found);
+    if (typeof global[graceModule] !== 'function') {
+        throw new Error('loadModule(' + moduleName + ') failed!');
+    }
+    var recursiveImports = global[graceModule].imports
+    for (var ix = 0; ix < recursiveImports.length; ix++) {
+        MiniGrace.prototype.loadModule(recursiveImports[ix]);
+    }
+}
+
+require("../gracelib")
+minigrace = new MiniGrace();
+minigrace.loadModule("../StandardPrelude")
+
+// implicitly do_import (i.e., execute) the standard prelude.  It's important
+// that this add methods to the global object Grace_prelude (defined in gracelib.js),
+// rather than replacing it with a new object.
+var stdPrelude = do_import('StandardPrelude', gracecode_StandardPrelude);
+for (var methName in stdPrelude.methods) {
+    Grace_prelude.methods[methName] = stdPrelude.methods[methName];
+}
+
+process.argv.slice(2).forEach(function (fn) {
+    minigrace.run(fn)
+});
+
+

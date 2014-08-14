@@ -1,3 +1,16 @@
+// declare global variables used to monitor execution:
+window.minigrace = {};
+window.sourceObject = null;
+window.superDepth = null;
+window.invocationCount = 0;
+window.onOuter = false;
+window.onSelf = false;
+window.callStack = [];
+window.gctCache = {};
+window.originalSourceLines = {};
+window.stackFrames = [];
+window.Grace_prelude = {};
+
 function MiniGrace() {
     this.compileError = false;
     this.vis = "standard";
@@ -150,7 +163,7 @@ MiniGrace.prototype.run = function() {
     moduleName = this.modname;
     eval(code);     // defines a global gracecode_‹moduleName›
     var theModule = window['gracecode_' + this.modname];
-    testpass = false;
+    testpass = false;    // not used anywhere else ?
     var modname = this.modname;
     if (Grace_prelude.methods["while()do"])
         Grace_prelude.methods["while()do"].safe = this.breakLoops;

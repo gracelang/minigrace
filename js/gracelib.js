@@ -2,14 +2,18 @@
 
 var lineNumber = 0;
 var moduleName = "null";
-var superDepth = null;
-var invocationCount = 0;
+
 function setLineNumber(n) {
     lineNumber = n;
 }
-
+function getLineNumber() {
+    return lineNUmber;
+}
 function setModuleName(m) {
     moduleName = m;
+}
+function getModuleName() {
+    return moduleName;
 }
 
 function GraceString(s) {
@@ -1165,10 +1169,6 @@ stderr.methods.write = function(junk, s) {
 }
 stderr.methods.close = function() {};
 
-var gctCache = {};
-var originalSourceLines = {};
-var stackFrames = [];
-
 function StackFrame(methodName) {
     this.methodName = methodName;
     this.variables = {};
@@ -1860,11 +1860,7 @@ function checkmethodcall(func, methname, obj, args) {
     }
 }
 
-var callStack = [];
 var overrideReceiver = null;
-var onSelf = false;
-var onOuter = false;
-var sourceObject;
 
 function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
@@ -2192,9 +2188,9 @@ var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionOb
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
 
-var Grace_native_prelude = Grace_allocObject();
-var Grace_prelude = Grace_native_prelude;
-var var___95__prelude = Grace_native_prelude;
+var Grace_prelude = Grace_allocObject();    // added to by the compiled prelude
+                                            // module when it is loaded
+var var___95__prelude = Grace_prelude;
 Grace_prelude.methods["Exception"] = function(argcv) {
     return ExceptionObject;
 }
@@ -2301,14 +2297,14 @@ Grace_prelude.methods["primitiveArray"] = function() { return PrimitiveArrayClas
 
 var _point2DClass = 'undefined';
 function GracePoint2DClass() {
-    if (_point2DClass == 'undefined')
+    if (_point2DClass === 'undefined')
         _point2DClass = callmethod(Grace_prelude, "point2D", [0]);
     return _point2DClass
 }
 
 var _bindingClass = 'undefined';
 function GraceBindingClass() {
-    if (_bindingClass == 'undefined')
+    if (_bindingClass === 'undefined')
         _bindingClass = callmethod(Grace_prelude, "binding", [0]);
     return _bindingClass
 }
@@ -2326,69 +2322,78 @@ function Grace_allocModule(modname) {
 
 // for node:
 if (typeof global !== "undefined") {
-    global.callmethod = callmethod,
-    global.callmethodsuper = callmethodsuper,
-    global.callStack = callStack,
-    global.catchCase = catchCase,
-    global.checkmethodcall = checkmethodcall,
-    global.classType = classType,
-    global.dbg = dbg,
-    global.dbgp = dbgp,
-    global.do_import = do_import,
-    global.EnvironmentExceptionObject = EnvironmentExceptionObject,
-    global.ErrorObject = ErrorObject,
-    global.ExceptionObject = ExceptionObject,
-    global.Grace_allocModule = Grace_allocModule,
-    global.Grace_allocObject = Grace_allocObject,
-    global.Grace_errorPrint = Grace_errorPrint,
-    global.Grace_length = Grace_length,
-    global.Grace_prelude = Grace_prelude,
-    global.Grace_print = Grace_print,
-    global.GraceBindingClass = GraceBindingClass,
-    global.GraceBlock_match = GraceBlock_match,
-    global.GraceBoolean = GraceBoolean,
-    global.gracecode_imports = gracecode_imports,
-    global.gracecode_interactive = gracecode_interactive,
-    global.gracecode_io = gracecode_io,
-    global.gracecode_math = gracecode_math,
-    global.gracecode_mirrors = gracecode_mirrors,
-    global.gracecode_sys = gracecode_sys,
-    global.gracecode_unicode = gracecode_unicode,
-    global.gracecode_util = gracecode_util,
-    global.GraceDone = GraceDone,
-    global.GraceException = GraceException,
-    global.GraceExceptionPacket = GraceExceptionPacket,
-    global.GraceFailedMatch = GraceFailedMatch,
-    global.GraceFalse = GraceFalse,
-    global.GraceHashMap = GraceHashMap,
-    global.GraceIterator = GraceIterator,
-    global.GraceListIterator = GraceListIterator,
-    global.GraceMatchResult = GraceMatchResult,
-    global.GraceMirrorMethod = GraceMirrorMethod,
-    global.GraceNum = GraceNum,
-    global.GraceObject = GraceObject,
-    global.GracePoint2DClass = GracePoint2DClass,
-    global.GraceString = GraceString,
-    global.GraceStringIterator = GraceStringIterator,
-    global.GraceSuccessfulMatch = GraceSuccessfulMatch,
-    global.GraceTrue = GraceTrue,
-    global.GraceType = GraceType,
-    global.GraceUnicodePattern = GraceUnicodePattern,
-    global.ImportErrorObject = ImportErrorObject,
-    global.invocationCount = invocationCount,
-    global.matchCase = matchCase,
-    global.NoSuchMethodErrorObject = NoSuchMethodErrorObject,
-    global.ProgrammingErrorObject = ProgrammingErrorObject,
-    global.ResourceExceptionObject = ResourceExceptionObject,
-    global.ReturnException = ReturnException,
-    global.RuntimeErrorObject = RuntimeErrorObject,
-    global.setLineNumber = setLineNumber,
-    global.setModuleName = setModuleName,
-    global.sourceObject = sourceObject,     // unused?
-    global.StackFrame = StackFrame,
-    global.superDepth = superDepth,
-    global.TypeErrorObject = TypeErrorObject,
-    global.var___95__prelude = var___95__prelude,
-    global.var_done = var_Done,
-    global.var_Unknown = var_Unknown
+    global.callmethod = callmethod;
+    global.callmethodsuper = callmethodsuper;
+    global.callStack = callStack;
+    global.catchCase = catchCase;
+    global.checkmethodcall = checkmethodcall;
+    global.classType = classType;
+    global.dbg = dbg;
+    global.dbgp = dbgp;
+    global.do_import = do_import;
+    global.EnvironmentExceptionObject = EnvironmentExceptionObject;
+    global.ErrorObject = ErrorObject;
+    global.ExceptionObject = ExceptionObject;
+    global.getLineNumber = getLineNumber;
+    global.getModuleName = getModuleName;
+    global.Grace_allocModule = Grace_allocModule;
+    global.Grace_allocObject = Grace_allocObject;
+    global.Grace_errorPrint = Grace_errorPrint;
+    global.Grace_length = Grace_length;
+    global.Grace_prelude = Grace_prelude;
+    global.Grace_print = Grace_print;
+    global.GraceBindingClass = GraceBindingClass;
+    global.GraceBlock_match = GraceBlock_match;
+    global.GraceBoolean = GraceBoolean;
+    global.gracecode_imports = gracecode_imports;
+    global.gracecode_interactive = gracecode_interactive;
+    global.gracecode_io = gracecode_io;
+    global.gracecode_math = gracecode_math;
+    global.gracecode_mirrors = gracecode_mirrors;
+    global.gracecode_sys = gracecode_sys;
+    global.gracecode_unicode = gracecode_unicode;
+    global.gracecode_util = gracecode_util;
+    global.GraceDone = GraceDone;
+    global.GraceException = GraceException;
+    global.GraceExceptionPacket = GraceExceptionPacket;
+    global.GraceFailedMatch = GraceFailedMatch;
+    global.GraceFalse = GraceFalse;
+    global.GraceHashMap = GraceHashMap;
+    global.Grace_isTrue = Grace_isTrue;
+    global.GraceIterator = GraceIterator;
+    global.GraceList = GraceList;
+    global.GraceListIterator = GraceListIterator;
+    global.GraceMatchResult = GraceMatchResult;
+    global.GraceMirrorMethod = GraceMirrorMethod;
+    global.GraceNum = GraceNum;
+    global.GraceObject = GraceObject;
+    global.GracePoint2DClass = GracePoint2DClass;
+    global.GraceString = GraceString;
+    global.GraceStringIterator = GraceStringIterator;
+    global.GraceSuccessfulMatch = GraceSuccessfulMatch;
+    global.GraceTrue = GraceTrue;
+    global.GraceType = GraceType;
+    global.GraceUnicodePattern = GraceUnicodePattern;
+    global.ImportErrorObject = ImportErrorObject;
+    global.matchCase = matchCase;
+    global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.ProgrammingErrorObject = ProgrammingErrorObject;
+    global.ResourceExceptionObject = ResourceExceptionObject;
+    global.ReturnException = ReturnException;
+    global.RuntimeErrorObject = RuntimeErrorObject;
+    global.setLineNumber = setLineNumber;
+    global.setModuleName = setModuleName;
+    global.StackFrame = StackFrame;
+    global.type_Boolean = type_Boolean;
+    global.type_Number = type_Number
+    global.type_String = type_String;
+    global.type_Unknown = type_Unknown;
+    global.TypeErrorObject = TypeErrorObject;
+    global.var___95__prelude = var___95__prelude;
+    global.var_done = var_Done;
+    global.var_Block = var_Block;
+    global.var_Boolean = var_Boolean;
+    global.var_Number = var_Number;
+    global.var_String = var_String,
+    global.var_Unknown = var_Unknown;
 };

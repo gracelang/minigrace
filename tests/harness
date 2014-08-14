@@ -4,10 +4,11 @@ set -e
 
 if [ $# -lt 3 ]
 then
-    echo "Error: harness requires three arguments" >&2
-    echo "- Grace command" >&2
-    echo "- Directory of tests to run" >&2
-    echo "- Command to execute compiled code (empty for native)" >&2
+    echo "Error: harness requires three or more arguments" >&2
+    echo "- compilation command" >&2
+    echo "- directory containing tests" >&2
+    echo "- command to execute compiled code (empty for native)" >&2
+    echo '- <test file name prefix>*  ; if omitted, all tests in directory'
 fi
 GRACE="$1"
 TESTDIR="$2"

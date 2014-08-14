@@ -11,7 +11,7 @@ GRACE_MODULES = gUnit.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
-js/collectionsPrelude.js js/StandardPrelude.js js/compiler.js js/lexer.js \
+js/collectionsPrelude.js js/StandardPrelude.js js/importStandardPrelude.js js/compiler.js js/lexer.js \
 js/ast.js js/parser.js js/genc.js js/genjs.js js/buildinfo.js \
 js/identifierresolution.js js/genjson.js js/collections.js js/mgcollections.js \
 js/xmodule.js js/unicodedata.js js/errormessages.js js/gUnit.js js/ace \
@@ -82,7 +82,6 @@ js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
-	echo "Grace_prelude = do_import('StandardPrelude', gracecode_StandardPrelude);" >> js/StandardPrelude.js
 
 js/collectionsPrelude.js: collectionsPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/collectionsPrelude.js collectionsPrelude.grace
@@ -90,25 +89,27 @@ js/collectionsPrelude.js: collectionsPrelude.grace minigrace
 
 js/minigrace.js: js/minigrace.in.js minigrace
 	@echo Generating minigrace.js from minigrace.in.js...
-	cat js/minigrace.in.js > js/minigrace.js
-	echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
-	echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
+	@cat js/minigrace.in.js > js/minigrace.js
+	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
+	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
 
 
-test.js:
+test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
+test.js:
+	(cd js/tests; time ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace.in.html js/minigrace.js
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
 
 js/ace/ace.js:
-	(cd js/ace; wget --no-check-certificate https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js)
+	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 # c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
 #	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude collectionsPrelude.grace && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
@@ -218,15 +219,15 @@ tarWeb: js samples
 #	subdirectory that tar creates readable and executable by your web daemon.
 
 blackWeb: js samples ace-code
-	rsync -a -l -z $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
-	rsync -a -l -z sample black@cs.pdx.edu:public_html/minigrace
+	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
+	rsync -a -l -z --delete sample black@cs.pdx.edu:public_html/minigrace
 
 graceWeb: js samples ace-code
-	rsync -a -l -z $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
-	rsync -a -l -z sample grace@cs.pdx.edu:public_html/minigrace
+	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
+	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
 
 bruceWeb: js samples ace-code
-	rsync -a -l -z $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
-	rsync -a -l -z sample kim@project.cs.pomona.edu:www/minigrace
+	rsync -a -l -z --delete $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
+	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
 
 .PHONY: all clean selfhost-stats test js c selftest install samples sample-%
