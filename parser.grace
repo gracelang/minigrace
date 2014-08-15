@@ -715,13 +715,18 @@ method doif {
             while {accept("identifier") && (sym.value == "elseif")} do {
                 // Currently, the parser just accepts arbitrarily many
                 // "elseifs", turning them into ifs inside the else.
+                // TODO: allow blocks after elseif to contain a sequence of expressions.
                 statementToken := sym
                 next
-                if(sym.kind != "lparen") then {
+                def opener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"}) 
+                                then { sym.value } else { "-missing-" }
+                def closer = if (opener == "(") then { ")" }
+                                else { if (opener == "\{") then { "\}" } else { "-nothing-" } }
+                if (opener == "-missing-") then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rparen or then.
                     def nextTok = findNextToken({ t -> (t.line == statementToken.line)
-                        && ((t.kind == "rparen") || (t.kind == "lbrace")
+                        && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
                         || ((t.kind == "identifier") && (t.value == "then"))) })
                     if(nextTok == false) then {
                         suggestion.insert(" («expression») then \{")afterToken(statementToken)
@@ -746,14 +751,15 @@ method doif {
                             suggestion.insert(")")afterToken(nextTok.prev)andTrailingSpace(true)
                         }
                     }
-                    errormessages.syntaxError("An elseif statement must have an expression in parentheses after the 'elseif'.")atPosition(
+                    errormessages.syntaxError("1: An elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
                         sym.line, sym.linePos)withSuggestion(suggestion)
                 }
                 next
                 if(didConsume({expression}).not) then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rparen or then.
-                    var nextTok := findNextToken({ t -> (t.line == lastToken.line) && (t.kind == "rparen") })
+                    var nextTok := findNextToken({ t -> (t.line == lastToken.line) && 
+                        ((t.kind == "rparen") || (t.kind == "rbrace"))})
                     if(nextTok == false) then {
                         nextTok := findNextValidToken("rparen")
                         if(nextTok == sym) then {
@@ -761,26 +767,26 @@ method doif {
                         } else {
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression») then \{")
                         }
-                        errormessages.syntaxError("An elseif statement must have an expression in parentheses after the 'elseif'.")atPosition(
+                        errormessages.syntaxError("2: An elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
                             sym.line, sym.linePos)withSuggestion(suggestion)
                     } else {
                         if(nextTok == sym) then {
                             suggestion.insert("«expression»")afterToken(lastToken)
-                            errormessages.syntaxError("An elseif statement must have an expression in parentheses after the 'elseif'.")atPosition(
+                            errormessages.syntaxError("3: An elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
                                 sym.line, sym.linePos)withSuggestion(suggestion)
                         } else {
                             //checkInvalidExpression
                             suggestion.replaceTokenRange(sym, nextTok.prev)leading(false)trailing(true)with("«expression»")
-                            errormessages.syntaxError("An elseif statement must have an expression in parentheses after the 'elseif'.")atRange(
+                            errormessages.syntaxError("4: An elseif statement must have an expression in parentheses or braces after the 'elseif'.")atRange(
                                 sym.line, sym.linePos, nextTok.linePos - 1)withSuggestion(suggestion)
                         }
                     }
                 }
-                if(sym.kind != "rparen") then {
+                if(sym.value != closer) then {
                     checkBadOperators
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(")")afterToken(lastToken)
-                    errormessages.syntaxError("An expression beginning with a '(' must end with a ')'.")atPosition(
+                    errormessages.syntaxError("An expression beginning with a '{opener}' must end with a '{closer}'.")atPosition(
                         lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
                 }
                 next
@@ -3164,6 +3170,7 @@ method domethodtype {
 }
 
 method doanontype {
+    // parses a type expression between braces, with the leading type keyword.
     if (accept("keyword").andAlso { sym.value == "type" }) then {
         next
         if (!accept("lbrace")) then {
