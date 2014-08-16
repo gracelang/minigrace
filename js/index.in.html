@@ -142,7 +142,7 @@
     <br />
     <input type="button" value="Load test case:" onclick="loadtest(document.getElementById('testcases').value)" />
     <select id="testcases">
-<!--[!SH[ls tests | grep "_test.grace" | sed 's/^t//g' | sed 's/_test.grace//g' | awk '{print "        <option value=\"t"$1"\">"$1"</option>"}']!]-->
+<!--[!SH[(cd js; ls tests | grep "_test.grace" | sed 's/^t//g' | sed 's/_test.grace//g' | awk '{print "        <option value=\"t"$1"\">"$1"</option>"}')]!]-->
     </select>
     <input type="button" value="Load sample:" onclick="loadsample(document.getElementById('sample').value)" />
     <select id="sample"><option></option><!--Will be populated dynamically//--></select>
