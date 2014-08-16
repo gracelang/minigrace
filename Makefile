@@ -104,7 +104,7 @@ test.js.compile:
 test.js:
 	(cd js/tests; time ./harness ../../minigrace . "")
 
-js/index.html: js/index.in.html js/ace.in.html js/minigrace.js
+js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
 
