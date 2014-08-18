@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-# Script to generate unicodedata.h from UnicodeData.txt
-# By Michael Homer
+# Script to generate js/unicodedata.js from UnicodeData.txt and NameAliases.txt
+# which can be found at http://www.unicode.org/Public/UCD/latest/ucd/
+# By Michael Homer, modified by Andrew Black
 
 import os
 
@@ -62,7 +63,7 @@ with open("NameAliases.txt") as fp:
             cp[1] = row[1]
 
 
-fp = open("unicodedata.js", "w")
+fp = open("js/unicodedata.js", "w")
 fp.write("""
 unicodedata = {};
 """)
@@ -120,6 +121,7 @@ for c in categories:
             start = -1
     fp.write("];\n")
 
+print("Writing postlude ...")
 fp.write("""
 unicode = {};
 unicode.name = function(s) {
@@ -143,5 +145,11 @@ unicode.isCategory = function(s, c) {
         }
     }
     return false;
+};
+
+
+// for node:
+if (typeof global !== "undefined") {
+    global.unicode = unicode;
 };
 """)

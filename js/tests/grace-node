@@ -250,6 +250,7 @@ MiniGrace.prototype.loadModule = function(moduleName) {
 }
 
 require("../gracelib")
+require("../unicodedata")
 minigrace = new MiniGrace();
 minigrace.loadModule("../StandardPrelude")
 
