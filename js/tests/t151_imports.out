@@ -12,6 +12,18 @@ math's methods are:
     π
     sqrt
     abs
+    lg
+    ln
+    exp
+    log10
+    ==
+    !=
+    asString
+    asDebugString
+    debugValue
+    debugIterator
+    ::
+    basicAsString
 asString = the "math" module
 asDebugString = the "math" module
 sin(90°) = 1
@@ -24,3 +36,7 @@ pi = 3.141593
 π = 3.141593
 sqrt(16) = 4
 abs(-21.34) = 21.34
+lg(128) = 7
+ln(exp(2)) = 2
+exp(ln(15)) = 15
+log10(1000) = 3

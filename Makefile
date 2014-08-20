@@ -156,7 +156,7 @@ gencheck:
 regrtest: minigrace
 	./tests/harness "../../minigrace" tests/regression ""
 test: minigrace gUnit.gct
-	./tests/harness "../minigrace" tests ""
+	time ./tests/harness "../minigrace" tests ""
 fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce

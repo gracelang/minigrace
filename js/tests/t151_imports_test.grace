@@ -19,3 +19,8 @@ print "pi = {math.pi}"
 print "π = {math.π}"
 print "sqrt(16) = {math.sqrt(16)}"
 print "abs(-21.34) = {math.abs(-21.34)}"
+print "lg(128) = {math.lg(128)}"
+print "ln(exp(2)) = {math.ln(math.exp(2))}"
+print "exp(ln(15)) = {math.exp(math.ln(15))}"
+print "log10(1000) = {math.log10(1000)}"
+

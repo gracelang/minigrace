@@ -1,5 +1,0 @@
-NoSuchMethod at line 1 of t157_NoSuchMethodRaise_test: just a test
-  called from Exception.raise at line 1 of t157_NoSuchMethodRaise_test
-  called from execution environment
-   1: NoSuchMethod.raise "just a test"
-   2: 

@@ -1438,7 +1438,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
             topLevelTypes.put(typeid, true)
         }
     }
-    out "\"use strict\";"
+    
+    if (util.extensions.contains("noStrict")) then {
+        util.log_verbose("noStrict")
+    } else {
+        out "\"use strict\";"
+    }
     if (isPrelude.not) then {
         out "this.outer = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
     }
