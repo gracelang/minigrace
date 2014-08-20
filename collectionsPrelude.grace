@@ -3,11 +3,8 @@
 
 var isStandardPrelude := true
 
-def ProgrammingError = _prelude.RuntimeError.refine "fake programming error"
-    // this can be replaced by _prelude.ProgrammingError once the built-in
-    // ProgrammingError has propagated to the known-good compiler.
-
-def BoundsError = ProgrammingError.refine "index out of bounds"
+def ProgrammingError = _prelude.ProgrammingError
+def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
 def SubobjectResponsibility = ProgrammingError.refine "a subobject should have overridden this method"
 def NoSuchObject = ProgrammingError.refine "no such object"
@@ -38,6 +35,7 @@ type Collection<T> = {
 
 type Sequence<T> = {
     size -> Number
+    isEmpty -> Boolean
     at(n: Number) -> T
     [](n: Number) -> T
     indices -> Collection<T>   // range type?
@@ -58,6 +56,7 @@ type Sequence<T> = {
 
 type List<T> = {  
     size -> Number
+    isEmpty -> Boolean
     at(n: Number) -> T
     [](n: Number) -> T
     at(n: Number)put(x: T) -> List<T>
@@ -97,6 +96,7 @@ type List<T> = {
 
 type Set<T> = {
     size -> Number
+    isEmpty -> Boolean
     add(*elements:T) -> Set<T>
     remove(*elements: T) -> Set<T>
     remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
@@ -115,6 +115,7 @@ type Set<T> = {
 
 type Dictionary<K,T> = {
     size -> Number
+    isEmpty -> Boolean
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
     at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
@@ -168,18 +169,18 @@ class collectionFactory.trait {
 }
 
 class iterable.trait {
-    // requires next, havemore
-    //    method havemore { SubobjectResponsibility.raise "havemore" }
+    // requires next, hasNext
+    //    method hasNext { SubobjectResponsibility.raise "hasNext" }
     //    method next is abstract { SubobjectResponsibility.raise "next" }
     method iterator { self }
     method iter { self }
     method onto(factory) {
         def resultCollection = factory.empty
-        while {self.havemore} do { resultCollection.add(self.next) }
+        while {self.hasNext} do { resultCollection.add(self.next) }
         return resultCollection
     }
     method into(existingCollection) {
-        while {self.havemore} do { existingCollection.add(self.next) }
+        while {self.hasNext} do { existingCollection.add(self.next) }
         return existingCollection
     }
     method asSet {
@@ -192,7 +193,7 @@ class iterable.trait {
         return self.onto(list).asSequence
     }
     method do(block1) {
-        while {self.havemore} do { block1.apply(self.next) }
+        while {self.hasNext} do { block1.apply(self.next) }
         return self
     }
     method map(block1) {
@@ -205,7 +206,7 @@ class iterable.trait {
     }
     method fold(block2)startingWith(initial) {
         var res := initial
-        while { self.havemore } do { res := block2.apply(res, self.next) }
+        while { self.hasNext } do { res := block2.apply(res, self.next) }
         return res
     }
     method filter(selectionCondition) {
@@ -260,9 +261,11 @@ class iterable.trait {
 }
 
 class enumerable.trait {
-    // requires do, iterator
+    // requires do, iterator, size
     method iterator { SubobjectResponsibility.raise "iterator" }
     method do { SubobjectResponsibility.raise "do" }
+    method size { SubobjectResponsibility.raise "size" }
+    method isEmpty { size == 0 }
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
@@ -316,11 +319,15 @@ class indexable.trait {
     method fifth { at(5) }
     method last { at(size) }
     method [](ix) { at(ix) }
+    method indices {
+        range.from(1)to(size)
+    }
     method asDictionary {
         def result = dictionary.empty
         self.keysAndValuesDo { k, v -> 
             result.at(k) put(v)
         }
+        return result
     }
 }
 
@@ -358,9 +365,6 @@ def sequence is readable = object {
             method [](n) {
                 boundsCheck(n)
                 inner.at(n-1)
-            }
-            method indices {
-                range.from(1)to(size)
             }
             method keys {
                 range.from(1)to(size).iterator
@@ -561,15 +565,9 @@ def list is readable = object {
                 action.apply
             }
             method pop { removeLast }
-            method indices {
-                range.from(1)to(size)
-            }
             method ++(o) {
                 def l = list.withAll(self)
-                for (o) do {it->
-                    l.push(it)
-                }
-                l
+                l.addAll(o)
             }
             method asString {
                 var s := "list<"
@@ -1192,6 +1190,10 @@ def dictionary is readable = object {
                 }
                 newCopy
             }
+            
+            method asDictionary {
+                self
+            }
         }
     }
 }
@@ -1199,7 +1201,7 @@ def dictionary is readable = object {
 def range is readable = object {
     method from(lower)to(upper) {
         object {
-            inherits enumerable.trait
+            inherits indexable.trait
             match (lower)
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
@@ -1262,8 +1264,20 @@ def range is readable = object {
                     val := val + 1
                 }
             }
+            method keysAndValuesDo(block2) {
+                var key := 1
+                var val := start
+                while {val <= stop} do {
+                    block2.apply(key, val)
+                    key := key + 1
+                    val := val + 1
+                }
+            }
             method reversed {
                 from(upper)downTo(lower)
+            }
+            method ++(other) {
+                sequence.withAll(self, other)
             }
             method ==(other) {
                 match (other)
@@ -1271,7 +1285,7 @@ def range is readable = object {
                         if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.havemore} do {
+                        while {selfIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }
@@ -1300,7 +1314,7 @@ def range is readable = object {
     }
     method from(upper)downTo(lower) {
         object {
-            inherits enumerable.trait
+            inherits indexable.trait
             match (upper)
                 case {_:Number -> }
                 case {_ -> RequestError.raise "upper bound {upper}" ++
@@ -1360,8 +1374,20 @@ def range is readable = object {
                     val := val - 1
                 }
             }
+            method keysAndValuesDo(block2) {
+                var key := 1
+                var val := start
+                while {val >= stop} do {
+                    block2.apply(key, val)
+                    key := key + 1
+                    val := val - 1
+                }
+            }
             method reversed {
                 from(lower)to(upper)
+            }
+            method ++(other) {
+                sequence.withAll(self, other)
             }
             method ==(other) {
                 match (other)
@@ -1369,7 +1395,7 @@ def range is readable = object {
                         if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.havemore} do {
+                        while {selfIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }

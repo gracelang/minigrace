@@ -145,10 +145,30 @@ def rangeTest = object {
         (rangeUp).do {each -> elements.add(each)}
         assert (elements) shouldBe (list.with(3, 4, 5, 6))
     }
+    method testRangeKeysAndValues {
+        var s := ""
+        rangeUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+        assert (s) shouldBe "1::3 2::4 3::5 4::6 "
+    }
+    method testRangeKeysAndValuesEmpty {
+        var s := ""
+        emptyUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+        assert (s) shouldBe ""
+    }
     method testRangeElementsDoDown {
         def elements = list.empty 
         (rangeDown).do {each -> elements.add(each)}
         assert (elements) shouldBe (list.with(10, 9, 8, 7))
+    } 
+    method testRangeKeysAndValuesDown {
+        var s := ""
+        rangeDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+        assert (s) shouldBe "1::10 2::9 3::8 4::7 "
+    }
+    method testRangeKeysAndValuesEmpty {
+        var s := ""
+        emptyDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+        assert (s) shouldBe ""
     }
     method testRangeUpReverse {
         assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
@@ -174,11 +194,19 @@ def rangeTest = object {
         assert(rangeDown != [3,4,5])description("List with a different size")
         assert(rangeDown != [10,9,8,5])description("List with the same size, but different contents")
     }
-    method testRangeListConversion {
+    method testRangeUpListConversion {
+        assert(rangeUp.asList == list.with(3,4,5,6))
+        assert(rangeUp.asList) hasType (List)
+    }
+    method testRangeUpSequenceConversion {
+        assert(rangeUp.asSequence == sequence.with(3,4,5,6))
+        assert(rangeUp.asSequence) hasType (Sequence)
+    }
+    method testRangeDownListConversion {
         assert(rangeDown.asList == list.with(10,9,8,7))
         assert(rangeDown.asList) hasType (List)
     }
-    method testRangeSequenceConversion {
+    method testRangeDownSequenceConversion {
         assert(rangeDown.asSequence == sequence.with(10,9,8,7))
         assert(rangeDown.asSequence) hasType (Sequence)
     }
@@ -197,6 +225,14 @@ def rangeTest = object {
         assert(rangeUp.at(4)) shouldBe 6
         assert{rangeUp.at(5)} shouldRaise (BoundsError)
         assert{rangeUp.at(0)} shouldRaise (BoundsError)
+    }
+    method testRangeUpAsDictionary {
+        assert(rangeUp.asDictionary) shouldBe 
+            (dictionary.with(1::3, 2::4, 3::5, 4::6))
+    }
+    method testRangeDownAsDictionary {
+        assert(rangeDown.asDictionary) shouldBe
+            (dictionary.with(1::10, 2::9, 3::8, 4::7))
     }
   }
 }
@@ -375,13 +411,13 @@ def sequenceTest = object {
         }
         
         method testSequenceToList1to5 {
-            assert (oneToFive.asSequence) shouldBe (list.with(1, 2, 3, 4, 5))
-            assert (oneToFive.asSequence) hasType (List)
+            assert (oneToFive.asList) shouldBe (list.with(1, 2, 3, 4, 5))
+            assert (oneToFive.asList) hasType (List)
         }
         
         method testSequenceToListEmpty {
-            assert (empty.asSequence) shouldBe (list.empty)
-            assert (empty.asSequence) hasType (List)
+            assert (empty.asList) shouldBe (list.empty)
+            assert (empty.asList) hasType (List)
         }
 
         method testSequenceToSet1to5 {
@@ -427,6 +463,10 @@ def sequenceTest = object {
             assert (output) shouldBe (sequence.with(11, 7, 5, 3, 2))
             assert (output.asString.startsWith "sequence") description
                 ".copySorted does not produce a sequence"
+        }
+        method testSequenceAsDictionary {
+            assert(evens.asDictionary) shouldBe
+                (dictionary.with(1::2, 2::4, 3::6, 4::8))
         }
 
     }
@@ -786,6 +826,10 @@ def listTest = object {
             def output = list.with(7, 6, 4, 1)
             assert (input.copySortedBy{a, b -> b-a}) shouldBe (output)
             assert (input) shouldBe (list.with(6, 7, 4, 1))
+        }
+        method testListAsDictionary {
+            assert(evens.asDictionary) shouldBe
+                (dictionary.with(1::2, 2::4, 3::6, 4::8))
         }
     }
 }
@@ -1204,6 +1248,10 @@ def dictionaryTest = object {
             evens.removeValue(4)
             assert (evens.size) shouldBe 2
             assert (evensCopy) shouldBe (dictionary.with("two"::2, "four"::4, "six"::6, "eight"::8))
+        }
+        
+        method testDictionaryAsDictionary {
+            assert(evens.asDictionary) shouldBe (evens)
         }
     }
 }
