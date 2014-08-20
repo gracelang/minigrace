@@ -364,14 +364,14 @@ method resolveIdentifier(node) {
     }
     if (haveBinding(nm).not) then {
         if (node.wildcard) then {
-            errormessages.syntaxError("'_' can only be used as a parameter name")atRange(node.line, node.linePos, node.linePos)
+            errormessages.syntaxError("'_' can be used only as a parameter")atRange(node.line, node.linePos, node.linePos)
         } else {
             def suggestions = []
             var suggestion
             for(scope.elements) do { v ->
-                var thresh := 1
+                var thresh := 2
                 if (nm.size > 5) then {
-                    thresh := ((nm.size - 2) / 4 + 1).truncate
+                    thresh := ((nm.size / 3) + 1).truncate
                 }
                 if(errormessages.dameraulevenshtein(v, nm) <= thresh) then {
                     suggestion := errormessages.suggestion.new
@@ -387,7 +387,9 @@ method resolveIdentifier(node) {
                     suggestions.push(suggestion)
                 }
             }
-            var offerString := !node.inBind && !node.inRequest
+//            var offerString := !node.inBind && !node.inRequest
+// This is so rarely useful it's probably betetr never to suggest it.
+            var offerString := false
             var highlightLength := node.value.size
             if (node.value.replace "()" with "XX" != node.value) then {
                 offerString := false
