@@ -319,8 +319,8 @@ method dameraulevenshtein(s, t) {
             def addcost = thisrow[y - 1] + 1
             def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
             thisrow[y] := min(delcost, addcost, subcost)
-            if ((x > 1) && (y > 1) && (s[x] == t[y - 1])
-                && (s[x - 1] == t[y]) && (s[x] != t[y])) then {
+            if (((x > 1) && (y > 1)).andAlso{(s[x] == t[y - 1])
+                && (s[x - 1] == t[y]) && (s[x] != t[y])}) then {
                 thisrow[y] := min(thisrow[y], twoago[y - 2] + 1)
             }
         }
