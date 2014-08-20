@@ -19,11 +19,13 @@ method parseGCT(path, filepath) {
         var key := ""
         while {!tfp.eof} do {
             def line = tfp.getline
-            if (line.at(1) != " ") then {
-                key := line.substringFrom(1)to(line.size-1)
-                data.put(key, collections.list.new)
-            } else {
-                data.get(key).push(line.substringFrom(2)to(line.size))
+            if (line.size > 0) then {
+                if (line.at(1) != " ") then {
+                    key := line.substringFrom(1)to(line.size-1)
+                    data.put(key, collections.list.new)
+                } else {
+                    data.get(key).push(line.substringFrom(2)to(line.size))
+                }
             }
         }
         tfp.close

@@ -9,7 +9,7 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 
 var tmp
-var indent:String := ""
+var indent := ""
 var verbosity := 30
 var pad1 := 1
 var auto_count := 0
@@ -472,7 +472,7 @@ method compilefor(o) {
     var blko := compilenode(blk)
     out("var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
         ++ over ++ ", [0]);")
-    out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"havemore\"].call("
+    out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"hasNext\"].call("
         ++ "it" ++ myc ++ ", [0]))) \{")
     out("  var fv" ++ myc ++ " = it" ++ myc ++ ".methods[\"next\"].call("
         ++ "it" ++ myc ++ ", [0]);")
@@ -869,9 +869,11 @@ method compilebind(o) {
         out "{varf(nm)} = {val};"
         o.register := val
     } elseif (dest.kind == "member") then {
-        if (dest.value.substringFrom(dest.value.size - 1)to(dest.value.size)
-            != ":=") then {
-            dest.value := dest.value ++ ":="
+        var nm := dest.value
+        // we could use endsWith(), but it's not yet in the C string library 
+        if ((nm.size < 2).orElse{nm.substringFrom(nm.size - 1)to(nm.size)
+            != ":="}) then {
+            dest.value := nm ++ ":="
         }
         c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
