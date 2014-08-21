@@ -1,7 +1,7 @@
 include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
-STABLE=64d4ca54b995b99e4a27f4ba294d09a317511fb8
+STABLE=90f7b6b09a615e8dcda829cbe082fd644f9c0961
 all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn)
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
@@ -102,7 +102,7 @@ test.js.compile:
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js:
-	(cd js/tests; time ./harness ../../minigrace . "")
+	(cd js/tests; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -156,7 +156,7 @@ gencheck:
 regrtest: minigrace
 	./tests/harness "../../minigrace" tests/regression ""
 test: minigrace gUnit.gct
-	time ./tests/harness "../minigrace" tests ""
+	./tests/harness "../minigrace" tests ""
 fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
