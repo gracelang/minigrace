@@ -22,15 +22,32 @@ type Block2<S,T,R> = type {
     apply(a:S, b:T) -> R
 }
 
-type IndexableCollection<T> = {
-    size -> Number
-    at -> T
+type Collection<T> = type {
+    isEmpty -> Boolean
+    do(block1: Block1<T,Done>) -> Done
+    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
+    map(blk:Block1<T,Object>) -> Iterator<Object>
+    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+    iterator -> Iterator<T>
+    asString -> String
+    ++(o: Collection<T>) -> Collection<T>
+    contains(element) -> Boolean
 }
 
-type Collection<T> = {
+type ReifiedCollection<T> = Collection<T> & type {
     size -> Number
-    contains(e:Object) -> Boolean
-    iterator -> Iterator<T>
+}
+
+type IndexableCollection<T> = ReifiedCollection<T> & type {
+    at -> T
+    indices -> ReifiedCollection<T>
+    first -> T 
+    second -> T
+    third -> T
+    fourth -> T 
+    fifth -> T
+    last -> T
 }
 
 type Sequence<T> = {
@@ -143,11 +160,11 @@ type Dictionary<K,T> = {
 type Iterator<T> = {
     iterator -> Iterator
     iter -> Iterator
-    onto(factory:EmptyCollectionFactory) -> Collection<T>
+    onto(resultFactory:EmptyCollectionFactory) -> Collection<T>
     into(accumulator:Collection<Unknown>) -> Collection<Unknown>
     do(action:Block) -> Done
     do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-    fold(blk:Block1<T,Object>) startingWith(initial:T) -> Object
+    fold(blk:Block1<Object,T>) startingWith(initial:Object) -> Object
     map(blk:Block1<T,Object>) -> Iterator<Object>
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
 }
@@ -174,8 +191,8 @@ class iterable.trait {
     //    method next is abstract { SubobjectResponsibility.raise "next" }
     method iterator { self }
     method iter { self }
-    method onto(factory) {
-        def resultCollection = factory.empty
+    method onto(resultFactory) {
+        def resultCollection = resultFactory.empty
         while {self.hasNext} do { resultCollection.add(self.next) }
         return resultCollection
     }
