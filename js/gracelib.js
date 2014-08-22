@@ -184,10 +184,24 @@ GraceString.prototype = {
             if (result === -1) { return callmethod(block0, "apply", [0]) };
             return new GraceNum(result + 1);
         },
+        "indexOf()startingAt()ifAbsent": function string_indexOf_ifAbsent (argcv, needle, startPos, block0) {
+            var self = this._value;
+            var start = startPos._value - 1;
+            var result = self.indexOf(needle._value, start);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
+            return new GraceNum(result + 1);
+        },
         "lastIndexOf()": function string_lastIndexOf_ifAbsent (argcv, needle, block0) {
             var self = this._value;
             var result = self.lastIndexOf(needle._value);
             if (result === -1) { return 0 };
+            return new GraceNum(result + 1);
+        },
+        "lastIndexOf()startingAt()ifAbsent": function string_lastIndexOf (argcv, needle, startPos, block0) {
+            var self = this._value;
+            var start = startPos._value - 1;
+            var result = self.lastIndexOf(needle._value, start);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
             return new GraceNum(result + 1);
         },
         "lastIndexOf()ifAbsent": function string_lastIndexOf (argcv, needle, block0) {
