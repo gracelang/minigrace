@@ -63,6 +63,22 @@ class stringTest.forMethod(m) {
             shouldRaise (NoSuchObject)
         assert (vowels2.indexOf("w") ifAbsent {"absent"}) shouldBe("absent")
     }
+    method testIndexOfStartingAt {
+        def vowels4 = vowels * 4
+        assert (vowels4.indexOf "iou" startingAt 0 ifAbsent { 0 }) shouldBe 3
+        assert (vowels4.indexOf "iou" startingAt 4 ifAbsent { 0 }) shouldBe 9
+        assert (vowels4.indexOf "iou" startingAt 10 ifAbsent { 0 }) shouldBe 15
+        assert (vowels4.indexOf "iou" startingAt 16 ifAbsent { 0 }) shouldBe 21
+        assert (vowels4.indexOf "iou" startingAt 22 ifAbsent { 0 }) shouldBe 0
+    }
+    method testLastIndexOfStartingAt {
+        def vowels4 = vowels * 4
+        assert (vowels4.lastIndexOf "iou" startingAt 8 ifAbsent { 0 }) shouldBe 3
+        assert (vowels4.lastIndexOf "iou" startingAt 14 ifAbsent { 0 }) shouldBe 9
+        assert (vowels4.lastIndexOf "iou" startingAt 20 ifAbsent { 0 }) shouldBe 15
+        assert (vowels4.lastIndexOf "iou" startingAt 24 ifAbsent { 0 }) shouldBe 21
+        assert (vowels4.lastIndexOf "iou" startingAt 99 ifAbsent { 0 }) shouldBe 21
+    }
     method testIndexOfEmpty {
         assert (vowels.indexOf(empty)) shouldBe 1
         assert (empty.indexOf(empty) ifAbsent {"absent"}) shouldBe 1
@@ -147,6 +163,48 @@ class stringTest.forMethod(m) {
     }
     method testCapitalize {
         assert ("a pig in a PoKemoN".capitalized) shouldBe "A Pig In A PoKemoN"
+    }
+    method testFirst {
+        assert (vowels.first) shouldBe "a"
+    }
+    method testSecond {
+        assert (vowels.second) shouldBe "e"
+    }
+    method testThird {
+        assert (vowels.third) shouldBe "i"
+    }
+    method testFourth {
+        assert (vowels.fourth) shouldBe "o"
+    }
+    method testFifth {
+        assert (vowels.fifth) shouldBe "u"
+    }
+    method testLast {
+        assert (vowels.last) shouldBe "y"
+    }
+    method testFirstofEmpty {
+        assert {empty.first} shouldRaise (BoundsError)
+    }
+    method testContainsPositive {
+        assert (vowels.contains "a")
+    }
+    method testContainsNegative {
+        deny (vowels.contains "w")
+    }
+    method testContainsEmpty {
+        deny (empty.contains "a")
+    }
+    method testDo {
+        var s := ""
+        vowels.do { ch -> s := s ++ ch }
+        assert (s) shouldBe (vowels)
+    }
+    method testKeysAndValuesDo {
+        var s := ""
+        var n := 0
+        vowels.keysAndValuesDo { ix, ch -> s := s ++ ch ; n := n + ix }
+        assert (s) shouldBe (vowels)
+        assert (n) shouldBe (vowels.size * (vowels.size + 1) / 2)
     }
     method testSubstringFromNormal {
         assert (consonants.substringFrom 2 to 7) shouldBe "cçćčdf"

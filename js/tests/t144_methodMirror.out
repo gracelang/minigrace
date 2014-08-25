@@ -9,12 +9,12 @@ a1 = 1, a2 = 2, b1 = ho
 method variableArity requested with 4 arguments
 method variableArity requested with 1 arguments
 method variableArity requested with 0 arguments
-method var()and()and requested with [4, 1, 6] arguments
-a1 = 1, a2 = 2, as = [1:3, 2:4], b = "ho", c = [1:1, 2:2, 3:3, 4:4, 5:5, 6:6]
+method variable()and()and requested with [4, 1, 6] arguments
+a1 = 1, a2 = 2, as = sequence<3,4>, b = "ho", c = sequence<1,2,3,4,5,6>
 starting reflective request sequence
 method variableArity requested with 4 arguments
 method variableArity requested with 1 arguments
 method variableArity requested with 0 arguments
-method var()and()and requested with [4, 1, 6] arguments
-a1 = 1, a2 = 2, as = [1:3, 2:4], b = "ho", c = [1:1, 2:2, 3:3, 4:4, 5:5, 6:6]
+method variable()and()and requested with [4, 1, 6] arguments
+a1 = 1, a2 = 2, as = sequence<3,4>, b = "ho", c = sequence<1,2,3,4,5,6>
 done

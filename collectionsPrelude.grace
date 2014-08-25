@@ -296,6 +296,9 @@ class enumerable.trait {
         }
         return self
     }
+    method asDebugString {
+        self.asString
+    }
     method reduce(initial, blk) {   // backwawrd compatibility
         fold(blk)startingWith(initial)
     }
@@ -354,22 +357,28 @@ method max(a,b) is confidential {
 
 def sequence is readable = object {
     inherits collectionFactory.trait
-
+    
     method withAll(*a:Collection) {
+        var totalSize := 0
+        for (a) do { arg ->
+            totalSize := totalSize + arg.size
+        }
+        def inner = _prelude.PrimitiveArray.new(totalSize)
+        var ix := 0
+        for (a) do { arg ->
+            for (arg) do { elt ->
+                inner.at(ix)put(elt)
+                ix := ix + 1
+            }
+        }
+        self.fromPrimitiveArray(inner, totalSize)
+    }
+    method fromPrimitiveArray(pArray, sz) is confidential {
         object {
             inherits indexable.trait
-            var size is readable := 0
-            for (a) do { arg ->
-                size := size + arg.size
-            }
-            def inner = _prelude.PrimitiveArray.new(size)
-            var ix := 0
-            for (a) do { arg ->
-                for (arg) do { elt ->
-                    inner.at(ix)put(elt)
-                    ix := ix + 1
-                }
-            }
+            def size is readable = sz
+            def inner = pArray
+
             method boundsCheck(n) is confidential {
                 if ((n < 1) || (n > size)) then {
                     BoundsError.raise "index {n} out of bounds 1..{size}" 
@@ -406,6 +415,9 @@ def sequence is readable = object {
                     if (i < (size-1)) then { s := s ++ "," }
                 }
                 s ++ ">"
+            }
+            method asDebugString {
+                asString
             }
             method contains(element) {
                 do { each -> if (each == element) then { return true } }

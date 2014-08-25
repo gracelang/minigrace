@@ -257,8 +257,8 @@ def sequenceTest = object {
         }
         
         method testSequenceEqualityEmpty {
-            assert(empty == sequence.empty)
-            assert(empty == "")
+            assert(empty == sequence.empty) description "empty sequence ≠ itself!"
+            assert(empty == list.empty) description "empty sequence ≠ empty list"
         }
         
         method testSequenceInequalityEmpty {
@@ -492,8 +492,8 @@ def listTest = object {
         }
         
         method testListEqualityEmpty {
-            assert(empty == list.empty)
-            assert(empty == "")
+            assert(empty == list.empty) description "empty list ≠ itself!"
+            assert(empty == sequence.empty) description "empty list ≠ empty sequence"
         }
         
         method testListInequalityEmpty {

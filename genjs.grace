@@ -145,7 +145,7 @@ method compilearray(o) {
         r := compilenode(a)
         vals.push(r)
     }
-    out("  var array" ++ myc ++ " = new GraceList([")
+    out("var array" ++ myc ++ " = new GraceList([")
     increaseindent
     for (vals) do {v->
         out(v ++ ",")
@@ -482,6 +482,7 @@ method compilefor(o) {
     o.register := over
 }
 method compilemethod(o, selfobj) {
+    var isSequenceDefined := false
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
     def paramCounts = mgcollections.list.new
@@ -536,14 +537,21 @@ method compilemethod(o, selfobj) {
             }
         }
         if (part.vararg != false) then {
-            out("var {varf(part.vararg.value)} = new GraceList("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out("curarg += argcv[{partnr - 1}] - {part.params.size};")
+            if (! isSequenceDefined) then {
+                out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                isSequenceDefined := true
+            }
+            def pName = varf(part.vararg.value)
+            out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+            out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+            out "for (var ix = 0; ix < {pName}_len; ix++)"
+            out "  {pName}_array._value[ix] = arguments[curarg++];"
             if (debugMode) then {
                 out "myframe.addVar(\"{escapestring(part.vararg.value)}\","
-                out "  function() \{return {varf(part.vararg.value)};});"
+                out "  function() \{return {pName}_array;});"
             }
+            out "onSelf = true"
+            out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
         } else {
             out "if (argcv[{partnr - 1}] != {part.params.size})"
             def msgSuffix = if (o.signature.size < 2) then { 
@@ -593,10 +601,17 @@ method compilemethod(o, selfobj) {
                 out("curarg2++;")
             }
             if (part.vararg != false) then {
-                out("var {varf(part.vararg.value)} = new GraceList("
-                    ++ "Array.prototype.slice.call(arguments, curarg2, "
-                    ++ "curarg2 + argcv[{partnr - 1}] - {part.params.size}));")
-                out("curarg2 += argcv[{partnr - 1}] - {part.params.size};")
+                if (! isSequenceDefined) then {
+                    out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                    isSequenceDefined := true
+                }
+                def pName = varf(part.vararg.value)
+                out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+                out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+                out "for (var ix = 0; ix < {pName}_len; ix++)"
+                out "  {pName}_array._value[ix] = arguments[curarg2++];"
+                out "onSelf = true"
+                out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
             }
         }
         out "// End checking generics"
@@ -673,6 +688,23 @@ method compilemethod(o, selfobj) {
     }
 }
 method compilefreshmethod(o, selfobj) {
+    var isSequenceDefined := false
+    def paramCounts = mgcollections.list.new
+    def variableArities = mgcollections.list.new
+    for (o.signature) do { part ->
+        paramCounts.push(part.params.size)
+        variableArities.push(part.vararg != false)
+    }
+    var textualSignature := ""
+    for (o.signature) do { part ->
+        def size = part.params.size
+        def isVar = part.vararg != false
+        def varChar = if (isVar) then {"+"} else {""}
+        textualSignature := textualSignature ++ part.name
+        if ((size > 0) || (isVar)) then {
+            textualSignature := textualSignature ++ "({size}{varChar})"
+        }
+    }
     var myc := auto_count
     auto_count := auto_count + 1
     var name := escapestring(o.value.value)
@@ -689,7 +721,7 @@ method compilefreshmethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{")
+    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     increaseindent
     out("var curarg = 1;")
     for (o.signature.indices) do { partnr ->
@@ -699,10 +731,17 @@ method compilefreshmethod(o, selfobj) {
             out("curarg++;")
         }
         if (part.vararg != false) then {
-            out("var {varf(part.vararg.value)} = new GraceList("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out("curarg += argcv[{partnr - 1}] - {part.params.size};")
+            if (! isSequenceDefined) then {
+                out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                isSequenceDefined := true
+            }
+            def pName = varf(part.vararg.value)
+            out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+            out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+            out "for (var ix = 0; ix < {pName}_len; ix++)"
+            out "  {pName}_array._value[ix] = arguments[curarg++];"
+            out "onSelf = true"
+            out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
         }
     }
     out "var inheritingObject = arguments[curarg++];"
@@ -722,6 +761,41 @@ method compilefreshmethod(o, selfobj) {
         }
         out("\}")
         out("// End generics")
+        out "var curarg2 = 1;"
+        for (o.signature.indices) do { partnr ->
+            var part := o.signature[partnr]
+            for (part.params) do { p ->
+                if (p.dtype != false) then {
+                    for (o.generics) do {g->
+                        if (p.dtype.value == g.value) then {
+                            linenum := o.line
+                            noteLineNumber(o.line)comment("generic check in compilemethod")
+                            out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
+                            out "  [1], arguments[curarg2])))"
+                            out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                            out "          new GraceString(\"expected \""
+                            out "           + \"parameter '{p.value}' \""
+                            out "           + \"to be of type {p.dtype.value}\"));"
+                        }
+                    }
+                }
+                out("curarg2++;")
+            }
+            if (part.vararg != false) then {
+                if (! isSequenceDefined) then {
+                    out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                    isSequenceDefined := true
+                }
+                def pName = varf(part.vararg.value)
+                out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+                out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+                out "for (var ix = 0; ix < {pName}_len; ix++)"
+                out "  {pName}_array._value[ix] = arguments[curarg2++];"
+                out "onSelf = true"
+                out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
+            }
+        }
+        out "// End checking generics"
     }
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
