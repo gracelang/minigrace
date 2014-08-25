@@ -211,7 +211,7 @@ def LexerClass = object {
                             || (accum == "import") || (accum == "class")
                             || (accum == "return") || (accum == "def")
                             || (accum == "inherits") || (accum == "is")
-                            || (accum == "dialect")) then {
+                            || (accum == "dialect") || (accum == "factory")) then {
                             tok := KeywordToken.new(accum)
                         }
                         tokens.push(tok)
@@ -309,7 +309,7 @@ def LexerClass = object {
                                 if(tokens.last.kind == "string") then {
                                     def suggestion = errormessages.suggestion.new
                                     suggestion.replaceChar(dot.linePos)with("++")onLine(dot.line)
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'. "
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'. "
                                         ++ "To join a number to a string, use '++'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestion(suggestion)
                                 } elseif((tokens.last.kind == "op") || (tokens.last.kind == "bind")) then {
@@ -327,10 +327,10 @@ def LexerClass = object {
                                     def suggestion = errormessages.suggestion.new
                                     suggestion.replaceRange(dot.linePos, linePosition - 1)with("({accum})")onLine(tokens.last.line)
                                     suggestions.push(suggestion)
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestions(suggestions)
                                 } else {
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)
                                 }
                             }
@@ -578,6 +578,9 @@ def LexerClass = object {
                         object {
                             var n := first
                             method havemore {
+                                n != false
+                            }
+                            method hasNext {
                                 n != false
                             }
                             method next {
