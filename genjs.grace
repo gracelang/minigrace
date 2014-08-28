@@ -400,27 +400,11 @@ method compileblock(o) {
     var myc := auto_count
     def nParams = o.params.size
     auto_count := auto_count + 1
-    out("var block" ++ myc ++ " = Grace_allocObject();")
-    out("block" ++ myc ++ ".methods[\"apply\"] = function() \{")
-    out("  var args = Array.prototype.slice.call(arguments, 1);")
-    out("  if (args.length != {nParams})")
-    out("    callmethod(ProgrammingErrorObject, \"raise\", [1], new "
-                    ++ "GraceString(\"wrong number of arguments for apply({nParams})\"));")
-    out("  return this.real.apply(this.receiver, args);")
-    out("\}")
-    out("block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(argcv, a) \{")
-    out("  return this.real.apply(this.receiver, JSList(a));")
-    out("\}")
-    out("block" ++ myc ++ ".methods[\"outer\"] = function() \{")
-    out("  return callmethod(this.receiver, 'outer', [0]);")
-    out("\}")
+    out "var block{myc} = new GraceBlock(this, {o.line}, {nParams});"
     if (false != o.matchingPattern) then {
         def pat = compilenode(o.matchingPattern)
         out "block{myc}.pattern = {pat};"
     }
-    out("block{myc}.methods[\"match\"] = GraceBlock_match;")
-    out("block" ++ myc ++ ".receiver = this;")
-    out("block{myc}.className = 'block<{modname}:{o.line}>';")
     var paramList := ""
     var first := true
     for (o.params) do { each ->

@@ -910,12 +910,11 @@ GraceFailedMatch.prototype = GraceMatchResult.prototype;
 
 function GraceType(name) {
     this.name = name;
-    this.className = name;
     this.typeMethods = [];
 }
 GraceType.prototype = {
     methods: {
-        "match": function(argcv, other) {
+        "match": function type_match (argcv, other) {
             for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
@@ -935,19 +934,16 @@ GraceType.prototype = {
             return new GraceSuccessfulMatch(other,
                     new GraceList([]));
         },
-        "|": function(argcv, other) {
+        "|": function type_or(argcv, other) {
             return new GraceOrPattern(this, other);
         },
-        "&": function(argcv, other) {
+        "&": function type_and(argcv, other) {
             return new GraceAndPattern(this, other);
         },
-        "asString": function(argcv) {
-            return new GraceString("Type<" + this.name + ">");
+        "asString": function type_asString (argcv) {
+            return new GraceString("type " + this.name);
         },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
-        },
-        "methodNames": function type_methods (argcv) {
+        "methodNames": function type_methodNames (argcv) {
             var result = callmethod(GraceSetClass(), "empty", [0]);
             for (var i=0; i<this.typeMethods.length; i++) {
                 var methName = this.typeMethods[i];
@@ -956,12 +952,44 @@ GraceType.prototype = {
             return result;
         }
     },
-    typeMethods: [],
-    className: "Type",
+    className: "type",
     definitionModule: "unknown",
     definitionLine: 0,
     superobj: new GraceObject()
 };
+
+function GraceBlock(recvr, lineNum, numParams) {
+    this.definitionModule = recvr.definitionModule;
+    this.definitionLine = lineNum;
+    this.numParams = numParams;
+    this.receiver = recvr;
+}
+
+GraceBlock.prototype = {
+    methods : {
+        "apply": function block_apply (argcv) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (args.length != this.numParams)
+                callmethod(ProgrammingErrorObject, "raise", [1],
+                       new GraceString("block applied to " + args.length +
+                                       " arguments where " + this.numParams + " expected."));
+            return this.real.apply(this.receiver, args);
+        },
+        "applyIndirectly": function block_applyIndirectly (argcv, a) {
+            return this.real.apply(this.receiver, JSList(a));
+        },
+        "outer": function block_outer () {
+            return callmethod(this.receiver, 'outer', [0]);
+        },
+        "match": GraceBlock_match,
+        "asString": function block_asString (argcv) {
+            return new GraceString("block<" + this.definitionModule +
+                                   ":" + this.definitionLine + ">");
+        }
+    },
+    className: "block",
+    superobj: new GraceObject()
+}
 
 function GraceBlock_match(argcv, o) {
     if (!this.pattern) {
@@ -1932,7 +1960,7 @@ function callmethodsuper(obj, methname, argcv) {
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("Requested method on uninitialised value."));
+                new GraceString("Requested method '" + methname + "' on uninitialised value."));
     if (!obj || obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
@@ -2471,6 +2499,7 @@ if (typeof global !== "undefined") {
     global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;
     global.gracecode_util = gracecode_util;
+    global.GraceBlock = GraceBlock;
     global.GraceDone = GraceDone;
     global.GraceException = GraceException;
     global.GraceExceptionPacket = GraceExceptionPacket;
