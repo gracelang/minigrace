@@ -434,7 +434,7 @@ method compileblock(o) {
     out("block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
     increaseindent
     out("sourceObject = this;")
-    var ret := "undefined"
+    var ret := "GraceDone"
     for (o.body) do {l->
         ret := compilenode(l)
     }
@@ -635,7 +635,7 @@ method compilemethod(o, selfobj) {
     if (debugMode) then {
         out "stackFrames.pop();"
     }
-    out("return " ++ ret)
+    out("return " ++ ret ++ ";")
     decreaseindent
     out("\} catch(e) \{")
     if (debugMode) then {
@@ -813,7 +813,7 @@ method compilefreshmethod(o, selfobj) {
         compileobject(tailObject, "this", true)
         ret := tailObject.register
     }
-    out("return " ++ ret)
+    out("return " ++ ret ++ ";")
     decreaseindent
     out("\} catch(e) \{")
     out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
