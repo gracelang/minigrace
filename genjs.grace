@@ -409,7 +409,7 @@ method compileblock(o) {
     out("  return this.real.apply(this.receiver, args);")
     out("\}")
     out("block" ++ myc ++ ".methods[\"applyIndirectly\"] = function(argcv, a) \{")
-    out("  return this.real.apply(this.receiver, a._value);")
+    out("  return this.real.apply(this.receiver, JSList(a));")
     out("\}")
     out("block" ++ myc ++ ".methods[\"outer\"] = function() \{")
     out("  return callmethod(this.receiver, 'outer', [0]);")
