@@ -33,13 +33,26 @@ type Collection<T> = type {
     asString -> String
     ++(o: Collection<T>) -> Collection<T>
     contains(element) -> Boolean
+    size -> Number          // pro tem!
 }
 
 type ReifiedCollection<T> = Collection<T> & type {
     size -> Number
 }
 
-type IndexableCollection<T> = ReifiedCollection<T> & type {
+type IndexableCollection<T> = // ReifiedCollection<T> & 
+  type {
+    isEmpty -> Boolean
+    do(block1: Block1<T,Done>) -> Done
+    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
+    map(blk:Block1<T,Object>) -> Iterator<Object>
+    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+    iterator -> Iterator<T>
+    asString -> String
+    ++(o: Collection<T>) -> Collection<T>
+    contains(element) -> Boolean
+    size -> Number          // pro tem!
     at -> T
     indices -> ReifiedCollection<T>
     first -> T 
@@ -273,8 +286,7 @@ class iterable.trait {
             }
         }
     }
-    method asString { "an Iterator" }
-    method asDebugString { self.asString }
+    method asString { "a filter iterator" }
 }
 
 class enumerable.trait {
@@ -295,9 +307,6 @@ class enumerable.trait {
             block1.apply(each)
         }
         return self
-    }
-    method asDebugString {
-        self.asString
     }
     method reduce(initial, blk) {   // backwawrd compatibility
         fold(blk)startingWith(initial)
@@ -355,7 +364,7 @@ method max(a,b) is confidential {
     if (a > b) then { a } else { b }
 }
 
-def sequence is readable = object {
+def sequence is public = object {
     inherits collectionFactory.trait
     
     method withAll(*a:Collection) {
@@ -376,7 +385,7 @@ def sequence is readable = object {
     method fromPrimitiveArray(pArray, sz) is confidential {
         object {
             inherits indexable.trait
-            def size is readable = sz
+            def size is public = sz
             def inner = pArray
 
             method boundsCheck(n) is confidential {
@@ -409,15 +418,12 @@ def sequence is readable = object {
                 sequence.withAll(self, other)
             }
             method asString {
-                var s := "sequence<"
+                var s := "⟨"
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ "," }
                 }
-                s ++ ">"
-            }
-            method asDebugString {
-                asString
+                s ++ "⟩"
             }
             method contains(element) {
                 do { each -> if (each == element) then { return true } }
@@ -449,7 +455,7 @@ def sequence is readable = object {
                 object {
                     inherits iterable.trait
                     var idx := 1
-                    method asDebugString { "aSequenceIterator<{idx}>" }
+                    method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aSequenceIterator" }
                     method havemore { idx <= size }
                     method hasNext { idx <= size }
@@ -475,14 +481,14 @@ def sequence is readable = object {
     }
 }
 
-def list is readable = object {
+def list is public = object {
     inherits collectionFactory.trait
 
     method withAll(a) {
         object {
             inherits indexable.trait
             var inner := _prelude.PrimitiveArray.new(a.size * 2 + 1)
-            var size is readable := 0
+            var size is public := 0
             for (a) do {x->
                 inner.at(size)put(x)
                 size := size + 1
@@ -599,12 +605,12 @@ def list is readable = object {
                 l.addAll(o)
             }
             method asString {
-                var s := "list<"
+                var s := "["
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ "," }
                 }
-                s ++ ">"
+                s ++ "]"
             }
             method extend(l) { addAll(l); done }    // compatibility
             method contains(element) {
@@ -637,7 +643,7 @@ def list is readable = object {
                 object {
                     inherits iterable.trait
                     var idx := 1
-                    method asDebugString { "aListIterator<{idx}>" }
+                    method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aListIterator" }
                     method havemore { idx <= size }
                     method hasNext { idx <= size }
@@ -693,7 +699,7 @@ def list is readable = object {
     }
 }
 
-def set is readable = object {
+def set is public = object {
     inherits collectionFactory.trait
 
     method withAll(a:Collection) {
@@ -708,9 +714,8 @@ def set is readable = object {
             def removed = object { 
                 var removed := true 
                 method asString { "removed" }
-                method asDebugString { "removed" }
             }
-            var size is readable := 0
+            var size is public := 0
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -916,6 +921,18 @@ def set is readable = object {
             method copy {
                 outer.withAll(self)
             }
+            method ++ (other) {
+            // set union
+                copy.addAll(other)
+            }
+            method -- (other) {
+            // set difference
+                copy.removeAll(other) ifAbsent { done }
+            }
+            method ** (other) {
+            // set intersection
+                (filter {each -> other.contains(each)}).asSet
+            }
         }
     }
 }
@@ -923,7 +940,7 @@ def set is readable = object {
 type Binding = {
     key -> Object
     value -> Object
-    hashcode -> Number
+    hash -> Number
     == -> Boolean
 }
 
@@ -931,8 +948,8 @@ class binding.key(k)value(v) {
     method key {k}
     method value {v}
     method asString { "{k}::{v}" }
-    method asDebugString { asString }
     method hashcode { (k.hashcode * 1021) + v.hashcode }
+    method hash { (k.hash * 1021) + v.hash }
     method == (other) {
         match (other)
             case {o:Binding -> (k == o.key) && (v == o.value) }
@@ -940,7 +957,7 @@ class binding.key(k)value(v) {
     }
 }
 
-def dictionary is readable = object {
+def dictionary is public = object {
     inherits collectionFactory.trait
     method at(k)put(v) {
             self.empty.at(k)put(v)
@@ -948,21 +965,19 @@ def dictionary is readable = object {
     method withAll(initialBindings) {
         object {
             inherits enumerable.trait
-            var size is readable := 0
+            var size is public := 0
             var inner := _prelude.PrimitiveArray.new(8)
             def unused = object { 
                 var unused := true
-                def key is readable = self
-                def value is readable = self
+                def key is public = self
+                def value is public = self
                 method asString { "unused" }
-                method asDebugString { "unused" }
             }
             def removed = object { 
                 var removed := true
-                def key is readable = self
-                def value is readable = self
+                def key is public = self
+                def value is public = self
                 method asString { "removed" }
-                method asDebugString { "removed" }
             }
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
@@ -1076,7 +1091,7 @@ def dictionary is readable = object {
                 return t
             }
             method asString {
-                var s := "dict["
+                var s := "dict⟬"
                 var numberRemaining := size
                 for (0..(inner.size-1)) do {i->
                     def a = inner.at(i)
@@ -1090,10 +1105,10 @@ def dictionary is readable = object {
                 }
 //                self.do { a -> s := s ++ "{a.key}::{a.value}" }
 //                    separatedBy { s := s ++ ", " }
-                return (s ++ "]")
+                return (s ++ "⟭")
             }
             method asDebugString {
-                var s := "dict["
+                var s := "dict⟬"
                 for (0..(inner.size-1)) do {i->
                     if (i > 0) then { s := s ++ ", " }
                     def a = inner.at(i)
@@ -1103,7 +1118,7 @@ def dictionary is readable = object {
                         s := s ++ "{i}:{a.asDebugString}"
                     }
                 }
-                s ++ "]"
+                s ++ "⟭"
             }
             method keys {
                 object {
@@ -1223,11 +1238,19 @@ def dictionary is readable = object {
             method asDictionary {
                 self
             }
+
+            method ++(other) {
+                def newDict = self.copy
+                other.keysAndValuesDo {k, v -> 
+                    newDict.at(k) put(v)
+                }
+                return newDict
+            }
         }
     }
 }
 
-def range is readable = object {
+def range is public = object {
     method from(lower)to(upper) {
         object {
             inherits indexable.trait
@@ -1250,8 +1273,11 @@ def range is readable = object {
                     " in range.from()to() is not an integer"
             }
 
-            def size is readable = 
+            def size is public =
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
+
+            def hash is public = { ((start.hash * 1021) + stop.hash) * 3 }
+
             method iterator -> Iterator {
                 object {
                     inherits iterable.trait
@@ -1362,7 +1388,7 @@ def range is readable = object {
                 RequestError.raise "lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer"
             }
-            def size is readable = 
+            def size is public = 
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
             method iterator {
                 object {
@@ -1375,7 +1401,7 @@ def range is readable = object {
                         val := val - 1
                         return (val + 1)
                     }
-                    method asString { "{super.asString} from {upper} downTo {lower}" }
+                    method asString { "anIterator over {super.asString}" }
                 }
             }
             method at(ix:Number) {

@@ -183,8 +183,8 @@ def rangeTest = object {
         assert (rangeDown.reversed) shouldBe (range.from(7)to(10))
     }
     method testRangeEqualityWithList {
-        assert(rangeDown == [10,9,8,7])
-        assert(emptyUp == [])description("The empty range was not equal to the empty list") 
+        assert(rangeDown == list.with(10,9,8,7)) description "range.from 10 downTo 7 ≠ list.with(10, 9, 8 ,7)"
+        assert(emptyUp == list.empty) description "The empty range was not equal to the empty list"
     }
     method testRangeInequalityWithNumber {
         deny(rangeDown == 7) description ("rangeDown == 7")
@@ -372,11 +372,11 @@ def sequenceTest = object {
         }
 
         method testSequenceAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("sequence<2,4,6,8>")
+            assert (evens.asString) shouldBe ("⟨2,4,6,8⟩")
         }
              
         method testSequenceAsStringEmpty {
-            assert (empty.asString) shouldBe ("sequence<>")
+            assert (empty.asString) shouldBe ("⟨⟩")
         }
         
         method testSequenceMapEmpty {
@@ -449,8 +449,9 @@ def sequenceTest = object {
             def input = sequence.with(5, 3, 11, 7, 2)
             def output = input.copySorted
             assert (output) shouldBe (sequence.with(2, 3, 5, 7, 11))
-            assert (output.asString.startsWith "sequence") description
-                ".copySorted does not produce a sequence"
+            assert (output.asString.startsWith (sequence.empty.asString.first)) description
+                ".copySorted does not look like a sequence"
+            assert (output) hasType (Sequence)
         }
         method testSequenceCopySortedBy {
             def input = sequence.with(5, 3, 11, 7, 2)
@@ -461,8 +462,9 @@ def sequenceTest = object {
                 }
             assert (input) shouldBe (sequence.with(5, 3, 11, 7, 2))
             assert (output) shouldBe (sequence.with(11, 7, 5, 3, 2))
-            assert (output.asString.startsWith "sequence") description
-                ".copySorted does not produce a sequence"
+            assert (output.asString.startsWith (sequence.empty.asString.first)) description
+                ".copySorted does not look like a sequence"
+            assert (output) hasType (Sequence)
         }
         method testSequenceAsDictionary {
             assert(evens.asDictionary) shouldBe
@@ -721,11 +723,11 @@ def listTest = object {
         }
          
         method testListAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("list<2,4,6,8>")
+            assert (evens.asString) shouldBe ("[2,4,6,8]")
         }
              
         method testListAsStringEmpty {
-            assert (empty.asString) shouldBe ("list<>")
+            assert (empty.asString) shouldBe ("[]")
         }
         
         method testListMapEmpty {
@@ -1017,6 +1019,15 @@ def setTest = object {
             assert (evens.size) shouldBe 2
             assert (evensCopy) shouldBe (set.with(2, 4, 6, 8))
         }
+        method testSetUnion {
+            assert (oneToFive ++ evens) shouldBe (set.with(1, 2, 3, 4, 5, 6, 8))
+        }
+        method testSetDifference {
+            assert (oneToFive -- evens) shouldBe (set.with(1, 3, 5))
+        }
+        method testSetIntersection {
+            assert (oneToFive ** evens) shouldBe (set.with(2, 4))
+        }
     }
 }
 
@@ -1055,12 +1066,12 @@ def dictionaryTest = object {
         method testAsString {
             def dict2 = dictionary.with("one"::1, "two"::2)
             def dStr = dict2.asString
-            assert((dStr == "dict[one::1, two::2]").orElse{dStr == "dict[two::2, one::1]"})
-                description "\"{dStr}\" should be \"dict[one::1, two::2]\""
+            assert((dStr == "dict⟬one::1, two::2⟭").orElse{dStr == "dict⟬two::2, one::1⟭"})
+                description "\"{dStr}\" should be \"dict⟬one::1, two::2⟭\""
         }
         
         method testAsStringEmpty {
-            assert(empty.asString) shouldBe "dict[]"
+            assert(empty.asString) shouldBe "dict⟬⟭"
         }
 
         method testDictionaryEmptyDo {
@@ -1190,13 +1201,13 @@ def dictionaryTest = object {
 
         method testDictionaryAsStringNonEmpty {
             evens.removeValue(6, 8)
-            assert ((evens.asString == "dict[two::2, four::4]") || 
-                        (evens.asString == "dict[four::4, two::2]")) 
+            assert ((evens.asString == "dict⟬two::2, four::4⟭") ||
+                        (evens.asString == "dict⟬four::4, two::2⟭"))
                         description "evens.asString = {evens.asString}"
         }
 
         method testDictionaryAsStringEmpty {
-            assert (empty.asString) shouldBe ("dict[]")
+            assert (empty.asString) shouldBe ("dict⟬⟭")
         }
 
         method testDictionaryMapEmpty {

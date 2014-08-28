@@ -3,8 +3,8 @@ import "math" as math
 import "mirrors" as mi
 def mm = mi.reflect(math)
 print "math's methods are: "
-for (mm.methods) do { each ->
-    print "    {each.name}"
+for (mm.methodNames.asList.sort) do { each ->
+    print "    {each}"
 }
 
 print "asString = {math.asString}"

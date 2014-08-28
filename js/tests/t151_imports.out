@@ -1,29 +1,27 @@
 math's methods are: 
-    asString
-    asDebugString
-    sin
-    cos
-    tan
-    asin
-    acos
-    atan
-    random
-    pi
-    π
-    sqrt
+    !=
+    ::
+    ==
     abs
+    acos
+    asDebugString
+    asString
+    asin
+    atan
+    basicAsString
+    cos
+    debugIterator
+    debugValue
+    exp
     lg
     ln
-    exp
     log10
-    ==
-    !=
-    asString
-    asDebugString
-    debugValue
-    debugIterator
-    ::
-    basicAsString
+    pi
+    random
+    sin
+    sqrt
+    tan
+    π
 asString = the "math" module
 asDebugString = the "math" module
 sin(90°) = 1

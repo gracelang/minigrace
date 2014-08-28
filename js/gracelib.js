@@ -34,7 +34,7 @@ GraceObject.prototype = {
             var b = callmethod(this, "==", [1], o);
             return callmethod(b, "not", [0]);
         },
-        "asString": function object_asString (argcv) {
+        "basicAsString": function object_asString (argcv) {
             var s = "object {";
             var firstTime = true;
             for (var i in this.data) {
@@ -42,23 +42,16 @@ GraceObject.prototype = {
                 try {
                     s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
                 } catch (e) {
-                    s += "var " + i + ";"
+                    s += "" + i + " = ?";
                 }
             }
             return new GraceString(s + "}");
         },
+        "asString": function object_asString (argcv) {
+            return new GraceString("anObject");
+        },
         "asDebugString": function object_asDebugString (argcv) {
-            var s = "object {";
-            var firstTime = true;
-            for (var i in this.data) {
-                if (firstTime) firstTime = false; else s += ", ";
-                try {
-                    s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value;
-                } catch (e) {
-                    s += "var " + i + ";"
-                }
-            }
-            return new GraceString(s + "}");
+            return callmethod(this, "asString", [0]);
         },
         "debugValue": function object_debugValue (argcv) {
             return new GraceString("object");
@@ -73,9 +66,6 @@ GraceObject.prototype = {
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
 };
-// make asString available under another name, in case asString is overridden.
-GraceObject.prototype.methods.basicAsString = GraceObject.prototype.methods.asString;
-// TODO: make this a named method parameterized by the name to recurse on, and share it.
 
 function Grace_allocObject(superConstructor, classname) {
     // The difference between this function and "new GraceObject" is that the
@@ -373,6 +363,15 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
+        "hash": function string_hash(argcv) {
+            var hc = 0;
+            for (var i=0; i<this._value.length; i++) {
+                hc *= 23;
+                hc += this._value.charCodeAt(i);
+                hc %= 0x100000000;
+            }
+            return new GraceNum(hc);
+        },
         "match()matchesBinding()else": function string_match (argcv, pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", [3],
                     this, b, e);
@@ -527,7 +526,10 @@ GraceNum.prototype = {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
-        "hashcode": function(argcv) {
+        "hash": function num_hash (argcv) {
+            return new GraceNum(parseInt("" + (this._value * 10)));
+        },
+        "hashcode": function num_hashcode (argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
         "match()matchesBinding()else": function(argcv, pat, b, e) {
@@ -675,9 +677,9 @@ var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
 
 function RealGraceList(jsList) {
-    var newList = callmethod(GraceListClass, "empty", [0]);
+    var newList = callmethod(GraceListClass(), "empty", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
-        callmethod(newList, "addLast", [1], jsList[ix]);
+        callmethod(newList, "push", [1], jsList[ix]);
     }
     return newList;
 }
@@ -1019,9 +1021,16 @@ function Grace_print(obj) {
 }
 
 function Grace_errorPrint(obj) {
-    var s = callmethod(obj, "asString", [0]);
-    minigrace.stderr_write(s._value + "\n");
-    return GraceDone;
+    try {
+        try {
+            var s = callmethod(obj, "asString", [0]);
+            minigrace.stderr_write(s._value + "\n");
+        } catch (e) {
+            minigrace.stderr_write("can't stringify object " + obj + "\n");
+        }
+    } finally {
+        return GraceDone;
+    }
 }
 
 function Grace_length(obj) {
@@ -1874,6 +1883,7 @@ function gracecode_interactive() {
 function GraceMirrorMethod(o, k) {
     this.name = k;
     this.obj = o;
+    this.superobj = new GraceObject;
 }
 GraceMirrorMethod.prototype = Grace_allocObject();
 GraceMirrorMethod.prototype.methods['asString'] = function(argcv) {
@@ -1939,13 +1949,18 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     return callmethod.apply(null, allArgs);
 }
 
-GraceMirrorMethod.prototype.methods['::'] = function(argcv, other) {
-    return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
+function methodMirror_hash (argcv, argList) {
+    return callmethod(new GraceString(this.name), "hash", [0]);
 }
 
-function GraceMirror(sub) {       // constructor function
+GraceMirrorMethod.prototype.methods['hashcode'] = methodMirror_hash;
+GraceMirrorMethod.prototype.methods['hash'] = methodMirror_hash;
+
+
+
+function GraceMirror(subj) {       // constructor function
     this.superobj = new GraceObject();
-    this.subject = sub;
+    this.subject = subj;
     this.mutable = false;
     this.className = "mirror";
     this.definitionModule = "mirrors";
@@ -1964,6 +1979,16 @@ GraceMirror.prototype = {
             }
             var l = new GraceList(meths);
             return l;
+        },
+        methodNames: function(argcv) {
+            var meths = callmethod(GraceSetClass(), "empty", [0])
+            var current = this.subject;
+            while (current != null) {
+                for (var k in current.methods)
+                    callmethod(meths, "add", [1], new GraceString(k));
+                current = current.superobj;
+            }
+            return meths;
         },
         getMethod: function(argcv, gString) {
             var name = gString._value;
@@ -2375,7 +2400,7 @@ function dbgp(o, d) {
     for (var t in o) {
         s += ind + "  " + t + ": " + dbgp(o[t], d + 1) + "\n";
     }
-    return s + ind + "}";
+    return s + "}";
 }
 
 function dbg(o) {
@@ -2383,9 +2408,13 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var GraceDone = new GraceObject();
-GraceDone.methods.asString = function done_asString() {return new GraceString("done");};
-GraceDone.className = "singleton done";
+var GraceDone = Grace_allocObject(null, "singleton done");
+GraceDone.methods.asString = function done_asString() {
+    return new GraceString("done");
+};
+GraceDone.methods.asDebugString = function done_asDebugString() {
+    return new callemethod(this, "asString", [0]);
+};
 
 var ellipsis = new GraceObject();
 ellipsis.methods.asString = function ellipsis_asString() {return new GraceString("ellipsis");}
@@ -2403,7 +2432,7 @@ var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErro
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 
 //
-// Define Grace_prelude": a Grace object to which some methods are added here,
+// Define "Grace_prelude": a Grace object to which some methods are added here,
 // and to which more methods will be added by the compiled Grace prelude module
 // when it is loaded.
 //
@@ -2560,6 +2589,12 @@ function GraceSequenceClass() {
     return _sequenceClass
 }
 
+var _listClass;
+function GraceListClass() {
+    if (!_listClass)
+        _listClass = callmethod(Grace_prelude, "list", [0]);
+    return _listClass
+}
 
 function Grace_allocModule(modname) {
     // This method should not be used any more;

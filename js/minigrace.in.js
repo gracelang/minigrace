@@ -67,7 +67,6 @@ MiniGrace.prototype.compile = function(grace_code) {
     if (this.debugMode) {
         callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
     }
-    callmethod(extensionsMap, "put", [2], new GraceString("noStrict"));
     try {
         gracecode_compiler.call(new GraceModule(":user:"));
     } catch (e) {
