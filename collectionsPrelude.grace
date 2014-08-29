@@ -68,7 +68,9 @@ type Sequence<T> = {
     isEmpty -> Boolean
     at(n: Number) -> T
     [](n: Number) -> T
-    indices -> Collection<T>   // range type?
+    indexOf(v:T)
+    indexOf<U>(v:T) ifAbsent(action:Block0<U>)
+    indices -> Collection<T>
     first -> T 
     second -> T
     third -> T
@@ -351,6 +353,15 @@ class indexable.trait {
     method indices {
         range.from(1)to(size)
     }
+    method indexOf(sought:T)  {
+        indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }
+    }
+    method indexOf(sought:T) ifAbsent(action:Block0)  {
+        self.keysAndValuesDo { ix, v ->
+            if (v == sought) then { return ix }
+        }
+        action.apply
+    }
     method asDictionary {
         def result = dictionary.empty
         self.keysAndValuesDo { k, v -> 
@@ -589,15 +600,6 @@ def list is public = object {
                     removeAt(ix)
                 }
                 self
-            }
-            method indexOf(sought:T)  {
-                indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }
-            }
-            method indexOf(sought:T) ifAbsent(action:Block0)  {
-                keysAndValuesDo { ix, v ->
-                    if (v == sought) then { return ix }
-                }
-                action.apply
             }
             method pop { removeLast }
             method ++(o) {
