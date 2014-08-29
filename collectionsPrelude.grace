@@ -726,7 +726,7 @@ def set is public = object {
             method addAll(elements) {
                 for (elements) do { x ->
                     if (! contains(x)) then {
-                        var t := findPositionForAdd(x)
+                        def t = findPositionForAdd(x)
                         inner.at(t)put(x)
                         size := size + 1
                         if (size > (inner.size / 2)) then {
