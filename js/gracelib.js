@@ -1957,6 +1957,16 @@ function callmethodsuper(obj, methname, argcv) {
     return callmethod.apply(null, args);
 }
 
+function safeJsString (obj) {
+    var objString
+    try {
+        objString = callmethod(obj, "asString", [0])._value;
+    } catch (e) {
+        objString = "(without string representation)"
+    }
+    return objString;
+}
+
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(ProgrammingErrorObject,
@@ -1996,12 +2006,12 @@ function callmethod(obj, methname, argcv) {
                 + " at " + moduleName
                 + ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method " + methname + " in " +
-                    obj.className + "."));
+                new GraceString("no method '" + methname + "' in " +
+                    obj.className + " " + safeJsString(obj) + "."));
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " from outside."));
+                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
@@ -2021,8 +2031,11 @@ function callmethod(obj, methname, argcv) {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
             if (typeof args[i] == 'undefined')
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                       new GraceString("Uninitialised value used as argument to " + methname + "."));
+                throw new GraceExceptionPacket(
+                           ProgrammingErrorObject,
+                           new GraceString("Uninitialised value used as argument to "
+                                           + methname + "' in " + obj.className + " "
+                                           + safeJsString(obj) + "."));
         if (meth.paramTypes)
             checkmethodcall(meth, methname, obj, args);
         args.unshift(argcv);
