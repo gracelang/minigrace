@@ -25,15 +25,18 @@ function GraceObject() {       // constructor function
     this.definitionLine = 0;
 }
 
+function object_notEquals (argcv, o) {
+    var b = callmethod(this, "==", [1], o);
+    return callmethod(b, "not", [0]);
+}
+
 GraceObject.prototype = {
     methods: {
         "==": function object_equals (argcv, o) {
             return callmethod(Grace_prelude, "is()identicalTo", [1, 1], this, o);
         },
-        "!=": function object_notEquals (argcv, o) {
-            var b = callmethod(this, "==", [1], o);
-            return callmethod(b, "not", [0]);
-        },
+        "!=": object_notEquals,
+        "≠": object_notEquals,
         "basicAsString": function object_asString (argcv) {
             var s = "object {";
             var firstTime = true;
@@ -48,7 +51,11 @@ GraceObject.prototype = {
             return new GraceString(s + "}");
         },
         "asString": function object_asString (argcv) {
-            return new GraceString("anObject");
+            if (!this.className || this.className.length == 0)
+                return new GraceString("an object");
+            var firstChar = this.className[0];
+            var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
+            return new GraceString(article + this.className);
         },
         "asDebugString": function object_asDebugString (argcv) {
             return callmethod(this, "asString", [0]);
@@ -107,10 +114,6 @@ function string_lessThanOrEqual (argcv, that) {
     var other = that._value;
     if (self <= other) return GraceTrue;
     return GraceFalse;
-}
-function string_notEqual(argcv, other) {
-    var t = callmethod(this, "==", [1], other);
-    return callmethod(t, "not", [0]);
 }
 function string_at(argcv, other) {
     var o = callmethod(other, 'asString', [0]);
@@ -329,9 +332,6 @@ GraceString.prototype = {
                 return GraceTrue;
             return GraceFalse;
         },
-        "!=": string_notEqual,
-        "/=": string_notEqual,
-        "≠": string_notEqual,
         "iterator": function string_iterator(argcv) {
             return new GraceStringIterator(this);
         },
@@ -648,14 +648,6 @@ GraceBoolean.prototype = {
                     && this._value == other._value)
                 return GraceTrue;
             return GraceFalse;
-        },
-        "!=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "/=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
         },
         "match()matchesBinding()else": function(argcv, pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", [3],
@@ -2274,7 +2266,7 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var GraceDone = Grace_allocObject(null, "singleton done");
+var GraceDone = Grace_allocObject(null, "done");
 GraceDone.methods.asString = function done_asString() {
     return new GraceString("done");
 };
@@ -2282,9 +2274,8 @@ GraceDone.methods.asDebugString = function done_asDebugString() {
     return new callemethod(this, "asString", [0]);
 };
 
-var ellipsis = new GraceObject();
-ellipsis.methods.asString = function ellipsis_asString() {return new GraceString("ellipsis");}
-ellipsis.className = "singleton ellipsis"
+var ellipsis = Grace_allocObject(GraceObject, "ellipsis");
+ellipsis.methods.asString = function ellipsis_asString() {return new GraceString("...");}
 
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
