@@ -151,8 +151,7 @@ method findDeepScope'(node, scope') {
                 }
                 s := s.parent
             }
-        }
-        if (node.value == "prelude") then {
+        } elseif (node.value == "prelude") then {
             return preludeObj
         }
         scope'.do {s->
@@ -461,8 +460,7 @@ method resolveIdentifiersActual(node) {
             tmp.line := node.line
             tmp.generics := node.generics
             return tmp
-        }
-        if (node.value.kind == "identifier") then {
+        } elseif (node.value.kind == "identifier") then {
             def ck = getNameKind(node.value.value)
             if (!node.isPattern) then {
                 if ((ck == "def") || (ck == "var")) then {
@@ -481,8 +479,7 @@ method resolveIdentifiersActual(node) {
             def tmp = ast.bindNode.new(node.dest.value, node.value)
             tmp.line := node.line
             return tmp
-        }
-        if (node.dest.kind == "identifier") then {
+        } elseif (node.dest.kind == "identifier") then {
             if (getNameKind(node.dest.value) == "def") then {
                 def name = node.dest.value
                 def scp = getNameScope(name)
@@ -651,8 +648,7 @@ method resolveIdentifiers(topNode) {
                     }
                 }
             }
-        }
-        if (node.kind == "object") then {
+        } elseif {node.kind == "object"} then {
             pushScope
             scope.variety := "object"
             for (node.value) do {n->
@@ -674,11 +670,9 @@ method resolveIdentifiers(topNode) {
                     }
                 }
             }
-        }
-        if (node.kind == "if") then {
+        } elseif (node.kind == "if") then {
             pushScope
-        }
-        if (node.kind == "block") then {
+        } elseif (node.kind == "block") then {
             pushScope
             var tmp := node
             if (node.params.size == 1) then {
@@ -688,16 +682,24 @@ method resolveIdentifiers(topNode) {
                 checkRedefinition(p)
                 scope.add(p.value)as "def"
             }
-        }
-        if (node.kind == "type") then {
+        } elseif (node.kind == "type") then {
             scope.add(node.value) as "def"
             pushScope
             scope.variety := "type"
             for (node.generics) do {n->
                 scope.add(n.value) as "def"
             }
-        }
-        if (node.kind == "methodtype") then {
+        } elseif (node.kind == "typedec") then {
+            if ((scope.variety != "object") && (scope.variety != "class")) then {
+                checkRedefinition(node.name)
+            }
+            scope.add(node.name) as "def"
+            pushScope
+            scope.variety := "type"
+            for (node.generics) do {n->
+                scope.add(n.value) as "def"
+            }
+        } elseif (node.kind == "methodtype") then {
             scope.add(node.value)
             pushScope
             for (node.generics) do {g->
@@ -711,8 +713,7 @@ method resolveIdentifiers(topNode) {
                     scope.add(s.vararg.value) as "def"
                 }
             }
-        }
-        if (node.kind == "method") then {
+        } elseif (node.kind == "method") then {
             scope.add(node.value.value)
             pushScope
             scope.variety := "method"
@@ -724,33 +725,30 @@ method resolveIdentifiers(topNode) {
             for (node.signature) do {s->
                 for (s.params) do {p->
                     checkRedefinition(p)
-                    scope.add(p.value)as "def"
+                    scope.add(p.value) as "def"
                 }
                 if (false != s.vararg) then {
                     scope.add(s.vararg.value) as "def"
                 }
             }
-        }
-        if (node.kind == "vardec") then {
+        } elseif (node.kind == "vardec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
-                scope.add(node.name.value)as "var"
+                scope.add(node.name.value) as "var"
             } else {
-                scope.add(node.name.value)
+                scope.add(node.name.value) as "var"
             }
-        }
-        if (node.kind == "defdec") then {
+        } elseif (node.kind == "defdec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
-                scope.add(node.name.value)as "def"
+                scope.add(node.name.value) as "def"
                 if (false != node.startToken) then {
                     scope.elementTokens.put(node.name.value, node.startToken)
                 }
             } else {
                 scope.add(node.name.value)
             }
-        }
-        if (node.kind == "import") then {
+        } elseif (node.kind == "import") then {
             checkRedefinition(node)
             scope.add(node.value) as "def"
         }
@@ -759,28 +757,22 @@ method resolveIdentifiers(topNode) {
             node.data := scope
             popScope
             popScope
-        }
-        if (node.kind == "object") then {
+        } elseif (node.kind == "object") then {
             if (scope.parent.variety == "method") then {
                 scope.parent.parent.elementScopes.put(scope.parent.name,
                     scope)
             }
             node.data := scope
             popScope
-        }
-        if (node.kind == "if") then {
+        } elseif (node.kind == "if") then {
             popScope
-        }
-        if (node.kind == "block") then {
+        } elseif (node.kind == "block") then {
             popScope
-        }
-        if (node.kind == "method") then {
+        } elseif (node.kind == "method") then {
             popScope
-        }
-        if (node.kind == "methodtype") then {
+        } elseif (node.kind == "methodtype") then {
             popScope
-        }
-        if (node.kind == "type") then {
+        } elseif (node.kind == "type") then {
             popScope
         }
         if (node.kind == "defdec") then {
@@ -899,17 +891,13 @@ method resolve(values) {
     for (values) do { n ->
         if (n.kind == "method") then {
             scope.add(n.value.value)
-        }
-        if ((n.kind == "class") || (n.kind == "defdec")) then {
+        } elseif ((n.kind == "class") || (n.kind == "defdec")) then {
             scope.add(n.name.value) as "def"
-        }
-        if (n.kind == "vardec") then {
+        } elseif (n.kind == "vardec") then {
             scope.add(n.name.value) as "var"
-        }
-        if (n.kind == "type") then {
+        } elseif (n.kind == "type") then {
             scope.add(n.value)
-        }
-        if (n.kind == "import") then {
+        } elseif (n.kind == "import") then {
             handleImport(n)
         }
     }

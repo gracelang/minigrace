@@ -637,7 +637,7 @@ class typeNode.new(name', methods') {
 }
 class typeLiteralNode.new(methods', types') {
     inherits baseNode.new
-    def kind = "type"
+    def kind = "typeliteral"
     def methods = methods'
     def types = types'
     var generics := []
