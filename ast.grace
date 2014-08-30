@@ -498,6 +498,7 @@ class methodTypeNode.new(name', signature', rtype') {
     }
 }
 class typeNode.new(name', methods') {
+// TODO: to be eliminated, and replace by typeLiteral and typeDec
     inherits baseNode.new
     def kind = "type"
     def value = name'
@@ -634,6 +635,156 @@ class typeNode.new(name', methods') {
         s
     }
 }
+class typeLiteralNode.new(methods', types') {
+    inherits baseNode.new
+    def kind = "type"
+    def methods = methods'
+    def types = types'
+    var generics := []
+    var nominal := false
+    var anonymous := true
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitType(self)) then {
+            for (self.methods) do { each ->
+                each.accept(visitor)
+            }
+            for (self.types) do { each ->
+                each.accept(visitor)
+            }
+        }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := typeLiteralNode.new(
+            listMap(methods, blk)before(blkBefore)after(blkAfter),
+            listMap(types, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        n.line := line
+        n.linePos := linePos
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Type literal\n"
+        if (generics.size > 0) then {
+            s := "{s}{spc}Generic parameters:\n"
+            for (generics) do {ut->
+                s := "{s}{spc}  {ut.value}\n"
+            }
+        }
+        s := s ++ spc ++ "Types:"
+        for (types) do { each ->
+            s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+        }
+        s := s ++ spc ++ "Methods:"
+        for (methods) do { each ->
+            s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
+        }
+        s := s ++ "\n"
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := "type"
+        if (self.generics.size > 0) then {
+            s := s ++ "<"
+            for (self.generics.indices) do { i ->
+                s := s ++ self.generics[i].value
+                if (i < self.generics.size) then {
+                    s := s ++ ", "
+                }
+            }
+            s := s ++ ">"
+        }
+        s := s ++ " = \{"
+        for (self.methods) do { each ->
+            s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
+        }
+        for (self.types) do { each ->
+            s := s ++ "\n" ++ spc ++ "    " ++ each.toGrace(depth + 1)
+        }
+        s ++ "\}"
+    }
+}
+
+class typeDecNode.new(name', typeValue) {
+    inherits baseNode.new
+    def kind = "typedec"
+    def name = name'
+    def value = typeValue
+    var annotations := collections.list.new
+    var generics := collections.list.new
+
+    method accept(visitor : ASTVisitor) {
+        if (visitor.visitType(self)) then {
+            value.accept(visitor)
+        }
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := typeDecNode.new(name, value.map(blk)before(blkBefore)after(blkAfter))
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n.generics := self.generics
+        n.line := line
+        n.linePos := linePos
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "TypeDec\n"
+        s := "{s}{spc}Name: {name}\n"
+        if (generics.size > 0) then {
+            s := "{s}{spc}Generic parameters:\n"
+            for (generics) do {ut->
+                s := "{s}{spc}  {ut.value}\n"
+            }
+        }
+        s := s ++ spc ++ "Value:"
+        value.pretty(depth+2)
+        s := s ++ "\n"
+        s
+    }
+    method toGrace(depth : Number) -> String {
+        var spc := ""
+        for (0..(depth - 1)) do { i ->
+            spc := spc ++ "    "
+        }
+        var s := ""
+        s := "type {self.name}"
+        if (self.generics.size > 0) then {
+            s := s ++ "<"
+            for (self.generics.indices) do { i ->
+                s := s ++ self.generics[i].value
+                if (i < self.generics.size) then {
+                    s := s ++ ", "
+                }
+            }
+            s := s ++ ">"
+        }
+        s := s ++ " = " ++ value(toGrace(depth + 2))
+        s
+    }
+}
+
 class methodNode.new(name', signature', body', dtype') {
     // [signature]
     //     object {
@@ -1454,6 +1605,7 @@ class opNode.new(op, l, r) {
     }
 }
 class indexNode.new(expr, index') {
+    // an expression in square brackets
     inherits baseNode.new
     def kind = "index"
     def value = expr
@@ -1498,6 +1650,7 @@ class indexNode.new(expr, index') {
     }
 }
 class bindNode.new(dest', val') {
+    // an assignment, or a setter method request
     inherits baseNode.new
     def kind = "bind"
     def dest = dest'
@@ -1703,6 +1856,7 @@ class importNode.new(path', name) {
     def kind = "import"
     def value = name
     def path = path'
+    def annotations = collections.list.new
     var dtype := false
     def linePos = 1
     method accept(visitor : ASTVisitor) {
@@ -1727,6 +1881,9 @@ class importNode.new(path', name) {
         s := s ++ "\n"
         s := s ++ "{spc}Path: {self.path}\n"
         s := s ++ "{spc}Identifier: {self.value}\n"
+        if (self.annotations.size > 0) then {
+            s := s ++ "{spc}Anotations: {self.annotations}\n"
+        }
         s
     }
     method toGrace(depth : Number) -> String {

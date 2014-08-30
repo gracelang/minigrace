@@ -318,7 +318,7 @@ method dotypeterm {
         don'tTakeBlock := false
     } else {
         if (accept("keyword").andAlso { sym.value == "type" }) then {
-            doanontype
+            dotypelitteral
         }
     }
 }
@@ -1584,7 +1584,7 @@ method term {
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
     } elseif (accept("keyword").andAlso { sym.value == "type" }) then {
-        doanontype
+        dotypelitteral
     } elseif (accept("lbrace")) then {
         block
     } elseif (accept("lsquare")) then {
@@ -3244,32 +3244,41 @@ method domethodtype {
     }
 }
 
-method doanontype {
-    // parses a type expression between braces, with the leading type keyword.
+method dotypelitteral {
+    // parses a type expression between braces, with optional leading 'type' keyword.
     if (accept("keyword").andAlso { sym.value == "type" }) then {
         next
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
             suggestion.replaceToken(sym) with("\{")
-            errormessages.syntaxError "Anonymous types must open with braces."
+            errormessages.syntaxError "type literals must open with a brace."
                 atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
+            return
         }
+    }
+    if (accept("lbrace")) then {
         def methods = []
+        def types = []
         def mc = auto_count
         auto_count := auto_count + 1
         next
         while {accept("rbrace").not} do {
-            domethodtype
-            methods.push(values.pop)
+            if (accept("keyword").andAlso { sym.value == "type" }) then {
+                typedec
+                types.push(values.pop)
+            } else {
+                domethodtype
+                methods.push(values.pop)
+            }
         }
         next
-        def t = ast.typeNode.new("<Anon_{mc}>", methods)
-        t.anonymous := true
+        def t = ast.typeLiteralNode.new(methods, types)
         values.push(t)
     }
 }
-// Accept a type declaration.
-method dotype {
+
+method typedec {
+    // Accept a declaration type = <type expression>
     if (accept("keyword") && (sym.value == "type")) then {
         next
         if(sym.kind != "identifier") then {
@@ -3279,6 +3288,7 @@ method dotype {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         pushidentifier
+        def typeName = values.pop
         generic
         var p := values.pop
         var gens := []
@@ -3299,43 +3309,16 @@ method dotype {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         next
-        def methods = []
-        // Special case for type declarations.
+        // Special case for type litterals without leading 'type' keyword.
         if (accept("lbrace")) then {
-            next
-            while {accept("rbrace").not} do {
-                domethodtype
-                methods.push(values.pop)
-            }
-            next
-            def t = ast.typeNode.new(p.value, methods)
-            t.generics := gens
-            if (false != anns) then {
-                t.annotations.extend(anns)
-            }
-            values.push(t)
+            dotypelitteral
         } else {
-            dotyperef
-            def ot = values.pop
-            var nt
-            if (ot.kind == "type") then {
-                nt := ast.typeNode.new(p.value, ot.methods)
-                nt.generics := nt.generics
-                for (ot.unionTypes) do {ut->
-                    nt.unionTypes.push(ut)
-                }
-                for (ot.intersectionTypes) do {ut->
-                    nt.intersectionTypes.push(ut)
-                }
-                nt.generics := gens
-            } else {
-                nt := ast.typeNode.new(p.value, [])
-            }
-            if (false != anns) then {
-                nt.annotations.extend(anns)
-            }
-            values.push(nt)
+            expression
         }
+        def nt = ast.typeDecNode.new(typeName, values.pop)
+        nt.generics := gens
+        nt.annotations := anns
+        values.push(nt)
     }
 }
 
@@ -3394,7 +3377,7 @@ method statement {
         } elseif (sym.value == "dialect") then {
             dodialect
         } elseif (sym.value == "type") then {
-            dotype
+            typedec
         } elseif (sym.value == "class") then {
             doclass
         } elseif (sym.value == "factory") then {
