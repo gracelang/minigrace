@@ -3452,8 +3452,8 @@ start:
     }
     if (error_jump_set) {
         char buf[1024];
-        sprintf(buf, "no method %s in %s.", name,
-                self->class->name);
+        sprintf(buf, "no method %s in %s %s.", name,
+                self->class->name, grcstring(callmethod(self, "asString", 0, NULL, NULL)));
         currentException = alloc_ExceptionPacket(alloc_String(buf),
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
@@ -3469,8 +3469,8 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-    gracedie("no method %s in %s.",
-            name, self->class->name);
+    gracedie("no method %s in %s %s.", name, self->class->name,
+             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
     exit(1);
 }
 Object callmethod3(Object self, const char *name,

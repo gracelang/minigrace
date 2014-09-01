@@ -419,6 +419,8 @@ class methodTypeNode.new(name', signature', rtype') {
     def signature = signature'
     def rtype = rtype'
     var generics := []
+    method asString { "methodType {value} -> {rtype}" }
+
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethodType(self)) then {
             if (self.rtype != false) then {
@@ -643,6 +645,16 @@ class typeLiteralNode.new(methods', types') {
     var generics := []
     var nominal := false
     var anonymous := true
+    var label is confidential := "‹anon›"
+    
+    method name { label }
+    method name:=(n:String) {
+        label := n
+        anonymous := false
+    }
+    method asString {
+        "typeliteral: methods = {methods}, types = {types}"
+    }
     method accept(visitor : ASTVisitor) {
         if (visitor.visitType(self)) then {
             for (self.methods) do { each ->
@@ -683,7 +695,7 @@ class typeLiteralNode.new(methods', types') {
         for (types) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
         }
-        s := s ++ spc ++ "Methods:"
+        s := s ++ "\n" ++ spc ++ "Methods:"
         for (methods) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
         }
@@ -751,7 +763,7 @@ class typeDecNode.new(name', typeValue) {
             spc := spc ++ "  "
         }
         var s := "TypeDec\n"
-        s := "{s}{spc}Name: {name}\n"
+        s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
         if (generics.size > 0) then {
             s := "{s}{spc}Generic parameters:\n"
             for (generics) do {ut->
@@ -759,7 +771,7 @@ class typeDecNode.new(name', typeValue) {
             }
         }
         s := s ++ spc ++ "Value:"
-        value.pretty(depth+2)
+        s := s ++ value.pretty(depth+2)
         s := s ++ "\n"
         s
     }
@@ -1395,7 +1407,7 @@ class genericNode.new(base, params') {
         s
     }
 }
-class identifierNode.new(name, dtype') {
+class identifierNode.new(name:String, dtype') {
     inherits baseNode.new
     def kind = "identifier"
     var value := name
@@ -1734,7 +1746,7 @@ class defDecNode.new(name', val, dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "defdec"
+        var s := "DefDec"
         s := s ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth)
         if (self.dtype != false) then {

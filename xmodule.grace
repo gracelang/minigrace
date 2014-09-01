@@ -124,6 +124,8 @@ method generateGCT(path)fromValues(values)modules(modules) {
                         if (nd.properties.contains("fresh")) then {
                             isClass := true
                             obConstructors.push(nd.value.value)
+//                            print "nd.value.value = {nd.value.value}"
+//                            print "ob.data.getScope(nd.value.value) = {ob.data.getScope(nd.value.value)}"
                             gct.put("methods-of:{val.name.value}.{nd.value.value}",
                                 ob.data.getScope(nd.value.value).elements)
                         }
@@ -150,6 +152,10 @@ method generateGCT(path)fromValues(values)modules(modules) {
     for (values) do {val->
         if (val.kind == "method") then {
             if (val.properties.contains("fresh")) then {
+                print "val = {val}"
+                print "val.properties = {val.properties}"
+                print "val.value.value = {val.value.value}"
+                print ("val.properties.get(\"fresh\") = " ++ val.properties.get("fresh"))
                 gct.put("fresh:{val.value.value}",
                     val.properties.get("fresh").elements)
             }

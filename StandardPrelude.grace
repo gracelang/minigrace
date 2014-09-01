@@ -171,13 +171,12 @@ type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
-type IndexableCollection<T> = collections.IndexableCollection
-type Collection = collections.Collection
-type Dictionary = collections.Dictionary
+type IndexableCollection<T> = collections.IndexableCollection<T>
+type Collection<T> = collections.Collection<T>
 type Binding = collections.Binding
 type Iterator<T> = collections.Iterator<T>
-type CollectionFactory = collections.CollectionFactory
-type EmptyCollectionFactory = collections.EmptyCollectionFactory
+type CollectionFactory<T> = collections.CollectionFactory<T>
+type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
 type Sequence<T> = collections.Sequence<T>
 type List<T> = collections.List<T>
 type Set<T> = collections.Set<T>

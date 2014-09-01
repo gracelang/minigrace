@@ -387,7 +387,7 @@ method resolveIdentifier(node) {
                 }
             }
 //            var offerString := !node.inBind && !node.inRequest
-// This is so rarely useful it's probably betetr never to suggest it.
+// This is so rarely useful it's probably better never to suggest it.
             var offerString := false
             var highlightLength := node.value.size
             if (node.value.replace "()" with "XX" != node.value) then {
@@ -692,12 +692,19 @@ method resolveIdentifiers(topNode) {
         } elseif (node.kind == "typedec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
-            }
-            scope.add(node.name) as "def"
-            pushScope
-            scope.variety := "type"
-            for (node.generics) do {n->
-                scope.add(n.value) as "def"
+                scope.add(node.name.value) as "def"
+                pushScope
+                scope.variety := "type"
+                for (node.generics) do {n->
+                    scope.add(n.value) as "def"
+                }
+            } else {
+                scope.add(node.name.value)
+                pushScope
+                scope.variety := "type"
+                for (node.generics) do {n->
+                    scope.add(n.value) as "def"
+                }
             }
         } elseif (node.kind == "methodtype") then {
             scope.add(node.value)
@@ -736,7 +743,7 @@ method resolveIdentifiers(topNode) {
                 checkRedefinition(node.name)
                 scope.add(node.name.value) as "var"
             } else {
-                scope.add(node.name.value) as "var"
+                scope.add(node.name.value)
             }
         } elseif (node.kind == "defdec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
@@ -891,12 +898,10 @@ method resolve(values) {
     for (values) do { n ->
         if (n.kind == "method") then {
             scope.add(n.value.value)
-        } elseif ((n.kind == "class") || (n.kind == "defdec")) then {
+        } elseif ((n.kind == "class") || (n.kind == "defdec") || (n.kind == "typedec")) then {
             scope.add(n.name.value) as "def"
         } elseif (n.kind == "vardec") then {
             scope.add(n.name.value) as "var"
-        } elseif (n.kind == "type") then {
-            scope.add(n.value)
         } elseif (n.kind == "import") then {
             handleImport(n)
         }

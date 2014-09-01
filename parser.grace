@@ -318,7 +318,7 @@ method dotypeterm {
         don'tTakeBlock := false
     } else {
         if (accept("keyword").andAlso { sym.value == "type" }) then {
-            dotypelitteral
+            dotypeLiteral
         }
     }
 }
@@ -1584,7 +1584,7 @@ method term {
     } elseif (accept("keyword") && (sym.value == "object")) then {
         doobject
     } elseif (accept("keyword").andAlso { sym.value == "type" }) then {
-        dotypelitteral
+        dotypeLiteral
     } elseif (accept("lbrace")) then {
         block
     } elseif (accept("lsquare")) then {
@@ -3177,6 +3177,10 @@ method doimport {
             dotypeterm
             o.dtype := values.pop
         }
+        def anns = doannotation
+        if (anns != false) then {
+            o.annotations.extend(anns)
+        }
         values.push(o)
     }
 }
@@ -3244,7 +3248,7 @@ method domethodtype {
     }
 }
 
-method dotypelitteral {
+method dotypeLiteral {
     // parses a type expression between braces, with optional leading 'type' keyword.
     if (accept("keyword").andAlso { sym.value == "type" }) then {
         next
@@ -3257,6 +3261,7 @@ method dotypelitteral {
         }
     }
     if (accept("lbrace")) then {
+//        print "parsing type Literal ..."
         def methods = []
         def types = []
         def mc = auto_count
@@ -3273,6 +3278,7 @@ method dotypelitteral {
         }
         next
         def t = ast.typeLiteralNode.new(methods, types)
+//        print "made new typeLiteralNode {t}"
         values.push(t)
     }
 }
@@ -3280,6 +3286,8 @@ method dotypelitteral {
 method typedec {
     // Accept a declaration type = <type expression>
     if (accept("keyword") && (sym.value == "type")) then {
+        def line = sym.line
+        def pos = sym.linePos
         next
         if(sym.kind != "identifier") then {
             def suggestion = errormessages.suggestion.new
@@ -3288,7 +3296,6 @@ method typedec {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         pushidentifier
-        def typeName = values.pop
         generic
         var p := values.pop
         var gens := []
@@ -3309,15 +3316,17 @@ method typedec {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         next
-        // Special case for type litterals without leading 'type' keyword.
+        // Special case for type Literals without leading 'type' keyword.
         if (accept("lbrace")) then {
-            dotypelitteral
+            dotypeLiteral
         } else {
             expression
         }
-        def nt = ast.typeDecNode.new(typeName, values.pop)
+        def nt = ast.typeDecNode.new(p, values.pop)
         nt.generics := gens
-        nt.annotations := anns
+        if (false != anns) then {
+            nt.annotations.extend(anns)
+        }
         values.push(nt)
     }
 }

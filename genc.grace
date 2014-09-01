@@ -77,7 +77,7 @@ method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
         if ((n.kind == "vardec") || (n.kind == "defdec")
-            || (n.kind == "class") || (n.kind == "type")) then {
+            || (n.kind == "class") || (n.kind == "typedec")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -88,8 +88,8 @@ method countbindings(l) {
 method definebindings(l, slot') {
     var slot := slot'
     for (l) do { n ->
-        if ((n.kind == "vardec") || (n.kind == "defdec")
-            || (n.kind == "class")) then {
+        if ((n.kind == "vardec") || (n.kind == "defdec") 
+            || (n.kind == "typedec") || (n.kind == "class")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
@@ -105,29 +105,14 @@ method definebindings(l, slot') {
                 out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                 slot := slot + 1
             }
-        } else {
-            if (n.kind == "if") then {
+        } elseif {n.kind == "if"} then {
                 slot := definebindings(n.thenblock, slot)
                 slot := definebindings(n.elseblock, slot)
                 n.handledIdentifiers := true
-            } else {
-                if (n.kind == "type") then {
-                    var tnm := escapeident(n.value)
-                    def snm = escapestring(n.value)
-                    if (!declaredvars.contains(tnm)) then {
-                        declaredvars.push(tnm)
-                        out("  Object *var_{tnm} = "
-                            ++ "&(stackframe->slots[{slot}]);")
-                        out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
-                        slot := slot + 1
-                    }
-                } else {
-                    if (n.kind == "import") then {
-                        var tnm := escapeident(n.value)
-                        out "Object *var_{tnm} = alloc_var();"
-                    }
-                }
-            }
+        } elseif {n.kind == "import"} then {
+                var tnm := escapeident(n.value)
+                out "Object *var_{tnm} = alloc_var();"
+                // TODO: why is this different from a def?  Handle annotations!
         }
     }
     slot
@@ -501,7 +486,7 @@ method compileobject(o, outerRef) {
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif (e.kind == "type") then {
+        } elseif (e.kind == "typedec") then {
             out("if (objclass{myc} == NULL) \{")
             compileobjtypemeth(e, selfr, pos)
             out("\}")
@@ -538,10 +523,8 @@ method compileobject(o, outerRef) {
             compileobjvardecdata(e, selfr, pos)
         } elseif (e.kind == "defdec") then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif (e.kind == "type") then {
-            e.anonymous := true
-            def tn = compilenode(e)
-            out("  adddatum2({selfr}, {tn}, {pos});")
+        } elseif (e.kind == "typedec") then {
+            compileobjdefdecdata(e, selfr, pos)
         } elseif (e.kind == "class") then {
         } elseif (e.kind == "inherits") then {
             // The return value is irrelevant with factory inheritance,
@@ -616,6 +599,37 @@ method compiletype(o) {
             [idd], false))
     }
 }
+method compiletypedec(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def idName = if (o.name.kind == "generic") then {
+                        escapeident(o.name.value.value)
+                    } else {
+                        escapeident(o.name.value)
+                    }
+    out("// Type decl {o.name.value}")
+    declaredvars.push(idName)
+    if (o.value.kind == "typeliteral") then {o.value.name := idName }
+    compilenode(o.value)
+    out("  *var_{idName} = {o.value.register};")
+    o.register := "done"
+    if (compilationDepth == 1) then {
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)],
+            [o.name], false))  // TODO: should be TypeType
+    }
+}
+method compiletypeliteral(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    out("//   Type literal ")
+    out("    Object type{myc} = alloc_Type(\"{o.name}\", {o.methods.size});")
+    for (o.methods) do {meth->
+        def mnm = escapestring2(meth.value)
+        out("    add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
+    }
+    // TODO: types in the type literal
+    o.register := "type{myc}"
+}
 method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
@@ -687,7 +701,7 @@ method compilemethod(o, selfobj, pos) {
             if (param.dtype != false) then {
                 if ((param.dtype.value != "Unknown")
                     && ((param.dtype.kind == "identifier")
-                        || (param.dtype.kind == "type"))) then {
+                        || (param.dtype.kind == "typeliteral"))) then {
                     haveTypedParams := true
                 }
             }
@@ -706,9 +720,8 @@ method compilemethod(o, selfobj, pos) {
             numslots := numslots + 1
         } else {
             if (!o.selfclosure) then {
-                // TODO currently blocks can have excess arguments
-                out "if (argcv && argcv[{partnr - 1}] > {part.params.size})"
-                out "  gracedie(\"too many arguments for {part.name}\");"
+                out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
+                out "    gracedie(\"wrong number of arguments for {part.name}\");"
             }
         }
     }
@@ -893,7 +906,7 @@ method compilemethod(o, selfobj, pos) {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
-        out("setclosureframe(closure{myc}, stackframe);")
+        out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  addtoclosure(closure{myc}, selfslot);")
@@ -1031,7 +1044,7 @@ method compilemethodtypes(litname, o) {
             // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
                 if ((p.dtype.kind == "identifier")
-                    || (p.dtype.kind == "type")) then {
+                    || (p.dtype.kind == "typeliteral")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("meth_{litname}->type->types[{pi}] "
@@ -1666,17 +1679,18 @@ method compilenode(o) {
     if (o.kind == "generic") then {
         o.register := compilenode(o.value)
     }
-    if ((o.kind == "identifier")
-        && ((o.value == "true") || (o.value == "false"))) then {
-        var val := 0
-        if (o.value == "true") then {
-            val := 1
+    if (o.kind == "identifier") then {
+        if ((o.value == "true") || (o.value == "false")) then {
+            var val := 0
+            if (o.value == "true") then {
+                val := 1
+            }
+            out("  Object bool" ++ auto_count ++ " = alloc_Boolean({val});")
+            o.register := "bool" ++ auto_count
+            auto_count := auto_count + 1
+        } else {
+            compileidentifier(o)
         }
-        out("  Object bool" ++ auto_count ++ " = alloc_Boolean({val});")
-        o.register := "bool" ++ auto_count
-        auto_count := auto_count + 1
-    } elseif (o.kind == "identifier") then {
-        compileidentifier(o)
     }
     if (o.kind == "defdec") then {
         compiledefdec(o)
@@ -1715,8 +1729,11 @@ method compilenode(o) {
     if (o.kind == "object") then {
         compileobject(o, "self")
     }
-    if (o.kind == "type") then {
-        compiletype(o)
+    if (o.kind == "typedec") then {
+        compiletypedec(o)
+    }
+    if (o.kind == "typeliteral") then {
+        compiletypeliteral(o)
     }
     if (o.kind == "member") then {
         compilemember(o)
@@ -2059,13 +2076,6 @@ method compile(vl, of, mn, rm, bt) {
     topLevelTypes.put("Boolean", true)
     topLevelTypes.put("Done", true)
     topLevelTypes.put("Block", true)
-    for (values) do {v->
-        if (v.kind == "type") then {
-            def typeid = escapeident(v.value)
-            outprint("static Object type_{typeid};")
-            topLevelTypes.put(typeid, true)
-        }
-    }
     out("Object module_{escmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
