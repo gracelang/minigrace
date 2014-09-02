@@ -152,12 +152,14 @@ method generateGCT(path)fromValues(values)modules(modules) {
     for (values) do {val->
         if (val.kind == "method") then {
             if (val.properties.contains("fresh")) then {
-                print "val = {val}"
-                print "val.properties = {val.properties}"
-                print "val.value.value = {val.value.value}"
-                print ("val.properties.get(\"fresh\") = " ++ val.properties.get("fresh"))
-                gct.put("fresh:{val.value.value}",
-                    val.properties.get("fresh").elements)
+                def freshProp = val.properties.get("fresh")
+                util.log_verbose ("xMod: {val.value.value}.properties.get(\"fresh\") = " ++ freshProp.asString.substringFrom(0)to(50))
+                if (true != freshProp) then {
+                    gct.put("fresh:{val.value.value}",
+                        val.properties.get("fresh").elements)
+                } else {
+                    gct.put("fresh:{val.value.value}", ["placeholder"])
+                }
             }
         }
     }
