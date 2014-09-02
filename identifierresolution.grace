@@ -641,7 +641,7 @@ method resolveIdentifiers(topNode) {
                                     suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
                                     primes := primes ++ "'"
                                 }
-                                errormessages.syntaxError("The parameter name '{p.value}' cannot be used because this class inherits a method named '{p.value}'.")atRange(
+                                errormessages.syntaxError("'{p.value}' cannot be used to name a parameter because this class inherits a method named '{p.value}'.")atRange(
                                     p.line, p.linePos, p.linePos + p.value.size - 1)withSuggestion(suggestion)
                             }
                         }
