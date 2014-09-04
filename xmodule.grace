@@ -124,8 +124,6 @@ method generateGCT(path)fromValues(values)modules(modules) {
                         if (nd.properties.contains("fresh")) then {
                             isClass := true
                             obConstructors.push(nd.value.value)
-//                            print "nd.value.value = {nd.value.value}"
-//                            print "ob.data.getScope(nd.value.value) = {ob.data.getScope(nd.value.value)}"
                             gct.put("methods-of:{val.name.value}.{nd.value.value}",
                                 ob.data.getScope(nd.value.value).elements)
                         }
@@ -153,7 +151,6 @@ method generateGCT(path)fromValues(values)modules(modules) {
         if (val.kind == "method") then {
             if (val.properties.contains("fresh")) then {
                 def freshProp = val.properties.get("fresh")
-                util.log_verbose ("xMod: {val.value.value}.properties.get(\"fresh\") = " ++ freshProp.asString.substringFrom(0)to(50))
                 if (true != freshProp) then {
                     gct.put("fresh:{val.value.value}",
                         val.properties.get("fresh").elements)
