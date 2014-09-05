@@ -131,13 +131,13 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
 
 js/%.js: %.grace minigrace
-	cd js; ln -sf ../$< .; ../minigrace $(VERBOSITY) --target js $<
+	cd js; ln -sf ../$< .; ../minigrace $(VERBOSITY) -XnoStrict --target js $<
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.js js/collectionsPrelude.gct: collectionsPrelude.grace
-	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
+	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) -XnoStrict --target js --make $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -167,7 +167,7 @@ js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/d
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct
-	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
+	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) -XnoStrict --target js --make $(<F)
 
 js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 	ln -f minigrace js/minigrace

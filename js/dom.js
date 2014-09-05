@@ -1,3 +1,11 @@
+function unwrapDOMObject(obj) {
+  if (obj.hasOwnProperty("_wrappedDOMObject")) {
+    return obj._wrappedDOMObject;
+  }
+
+  return obj;
+}
+
 function wrapDOMFunction(obj, fn) {
     return function(argcv) {
         var args = Array.prototype.slice.call(arguments, 1);
@@ -18,12 +26,17 @@ function wrapDOMField(o, obj, k) {
 }
 function wrapDOMObject(obj) {
     switch(typeof obj) {
+        case "boolean":
+            return new GraceBoolean(obj);
         case "string":
             return new GraceString(obj);
         case "number":
             return new GraceNum(obj);
         case "undefined":
             return var_done;
+    }
+    if (obj == null) {
+      return var_done;
     }
     if (obj._graceWrapper)
         return obj._graceWrapper;
@@ -38,6 +51,7 @@ function wrapDOMObject(obj) {
                 o.methods[k] = wrapDOMFunction(obj, k);
                 break;
             case "string":
+            case "boolean":
             case "number":
             case "object":
                 o.methods[k] = wrapDOMField(o, obj, k);
@@ -58,7 +72,7 @@ function wrapDOMObject(obj) {
 }
 
 function wrapGraceObject(o) {
-    if (o === undefined)
+    if (o === undefined || o === null)
         return var_done;
     if (o instanceof GraceString) {
         return o._value;
@@ -112,8 +126,13 @@ function gracecode_dom() {
         };
         return win;
     };
+
     this.methods.window.paramCounts = [0];
     this.methods.window.variableArities = [false];
+
+    this.methods["doesObject()haveProperty"] = function (argcv, object, name) {
+        return name._value in unwrapDOMObject(object) ? GraceTrue : GraceFalse;
+    };
 
     this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
         var ret = Grace_allocObject();
@@ -162,8 +181,8 @@ function gracecode_dom() {
     this.methods["while()waiting()do"].variableArities = [false, false, false];
     return this;
 }
+
 gracecode_dom.imports = [
 ];
 if (typeof gctCache !== "undefined")
 gctCache['dom'] = "modules:\nfresh-methods:\npath:\n dom\nclasses:\npublic:\n document\n window\n for()waiting()do\n while()waiting()do\nconfidential:\n";
-
