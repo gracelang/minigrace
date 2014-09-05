@@ -645,11 +645,12 @@ class typeLiteralNode.new(methods', types') {
     var generics := []
     var nominal := false
     var anonymous := true
-    var label is confidential := "‹anon›"
+    var value := "‹anon›"
+
     
-    method name { label }
+    method name { value }
     method name:=(n:String) {
-        label := n
+        value := n
         anonymous := false
     }
     method asString {
@@ -1828,12 +1829,12 @@ class varDecNode.new(name', val', dtype') {
         s := s ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
         if (self.dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "Type:"
-            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
+            s := s ++ "\n" ++ spc ++ "Type: "
+            s := s ++ self.dtype.pretty(depth + 2)
         }
         if (false != self.value) then {
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
+            s := s ++ "\n" ++ spc ++ "Value: "
+            s := s ++ self.value.pretty(depth + 2)
         }
         s
     }

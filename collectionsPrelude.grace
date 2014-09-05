@@ -36,8 +36,19 @@ type Collection<T> = type {
     size -> Number          // pro tem!
 }
 
-type ReifiedCollection<T> = Collection<T> & type {
-    size -> Number
+type ReifiedCollection<T> = Collection<T> & 
+  type {
+//    isEmpty -> Boolean
+//    do(block1: Block1<T,Done>) -> Done
+//    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+//    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
+//    map(blk:Block1<T,Object>) -> Iterator<Object>
+//    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+//    iterator -> Iterator<T>
+//    asString -> String
+//    ++(o: Collection<T>) -> Collection<T>
+//    contains(element) -> Boolean
+    size -> Number          // pro tem!
 }
 
 type IndexableCollection<T> = // ReifiedCollection<T> & 

@@ -258,7 +258,7 @@ method rewritematchblockterm(arg) {
         }
         return [varpat, [arg]]
     }
-    if (arg.kind == "type") then {
+    if (arg.kind == "typeliteral") then {
         return [arg, []]
     }
     Error.raise("Compiler logic error: fell through when rewriting match block"
@@ -368,8 +368,8 @@ method resolveIdentifier(node) {
             def suggestions = []
             var suggestion
             for(scope.elements) do { v ->
-                var thresh := 2
-                if (nm.size > 5) then {
+                var thresh := 1
+                if (nm.size > 2) then {
                     thresh := ((nm.size / 3) + 1).truncate
                 }
                 if(errormessages.dameraulevenshtein(v, nm) <= thresh) then {
@@ -682,26 +682,19 @@ method resolveIdentifiers(topNode) {
                 checkRedefinition(p)
                 scope.add(p.value)as "def"
             }
-        } elseif (node.kind == "type") then {
-            scope.add(node.value) as "def"
-            pushScope
-            scope.variety := "type"
-            for (node.generics) do {n->
-                scope.add(n.value) as "def"
-            }
         } elseif (node.kind == "typedec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
                 scope.add(node.name.value) as "def"
                 pushScope
-                scope.variety := "type"
+                scope.variety := "typeparams"
                 for (node.generics) do {n->
                     scope.add(n.value) as "def"
                 }
             } else {
-                scope.add(node.name.value)
+                scope.add(node.name.value) as "def"
                 pushScope
-                scope.variety := "type"
+                scope.variety := "typeparams"
                 for (node.generics) do {n->
                     scope.add(n.value) as "def"
                 }
@@ -779,10 +772,11 @@ method resolveIdentifiers(topNode) {
             popScope
         } elseif (node.kind == "methodtype") then {
             popScope
-        } elseif (node.kind == "type") then {
+        } elseif (node.kind == "typedec") then {
             popScope
-        }
-        if (node.kind == "defdec") then {
+        } elseif (node.kind == "type") then {
+            util.log_verbose "!!** node.kind == type**!!"
+        } elseif (node.kind == "defdec") then {
             if (node.value.kind == "object") then {
                 scope.elementScopes.put(node.name.value, node.value.data)
                 node.data := scope
@@ -840,7 +834,6 @@ method handleImport(e) {
 }
 
 method resolve(values) {
-    util.log_verbose "resolving identifiers."
     preludeObj.add "for()do"
     preludeObj.add "while()do"
     preludeObj.add "print"

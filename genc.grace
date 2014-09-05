@@ -394,7 +394,7 @@ method compileclass(o, includeConstant) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
-    newmeth.properties.put("fresh", true)
+    newmeth.properties.put("fresh", true)   // TODO: Undersatnd why this is OK!
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     if (includeConstant) then {
@@ -841,7 +841,7 @@ method compilemethod(o, selfobj, pos) {
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method\");")
+            out("    gracedie(\"insufficient arguments to method {name}\");")
         }
     }
     // We need to detect which parameters are used in a closure, and
@@ -977,7 +977,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method\");")
+            out("    gracedie(\"insufficient arguments to method {name}\");")
         }
     }
     out("  Object params[{paramsUsed}];")
@@ -2148,6 +2148,11 @@ method compile(vl, of, mn, rm, bt) {
             out("type_{typeid} = *var_{typeid};")
         }
     }
+    if (modname == "StandardPrelude") then {
+    // this has the same effect as "inherits _prelude" in the source
+        out("  self = setsuperobj(self, *var__prelude);")
+        out("  *selfslot = self;")
+    }
     for (values) do { o ->
         if (o.kind == "inherits") then {
             def superobj = compilenode(o.value)
@@ -2185,9 +2190,6 @@ method compile(vl, of, mn, rm, bt) {
         if (util.extensions.contains("LogCallGraph")) then {
             var lcgfile := util.extensions.get("LogCallGraph")
             out("  enable_callgraph(\"{lcgfile}\");")
-        }
-        if (!util.extensions.contains("NativePrelude")) then {
-            //out("  prelude = module_StandardPrelude_init();")
         }
         util.runOnNew {
             out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")

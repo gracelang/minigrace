@@ -1,10 +1,7 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
-inherits _prelude
-var isStandardPrelude := true
 
-import "collectionsPrelude" as coll
-def collections is readable = coll
+var isStandardPrelude := true
 
 class SuccessfulMatch.new(result', bindings') {
     inherits true
@@ -140,6 +137,48 @@ class OrPattern.new(p1, p2) {
     }
 }
 
+class TypeIntersection.new(t1, t2) {
+    inherits AndPattern.new(t1, t2)
+    method methodNames { 
+        t1.methodNames.addAll(t2.methodNames)
+    }
+    method asString { "({t1} & {t2})" }
+}
+
+class TypeVariant.new(t1, t2) {
+    inherits OrPattern.new(t1, t2)
+    method methodNames { 
+        "Type Variants cannot be characterized by a set of methods"
+    }
+    method asString { "({t1} | {t2})" }
+}
+
+class TypeUnion.new(t1, t2) {
+    inherits BasicPattern.new(t1, t2)
+    method methodNames { 
+        t1.methodNames ** t2.methodNames
+    }
+    method match(o) {
+        import "mirrors" as m
+        def oMethodNames = o.reflect.methodNames
+        for (self.methodNames) do { each ->
+            if (! oMethodNames.contains(each)) then {
+                return FailedMatch.new(o)
+            }
+        }
+        return SuccessfulMatch.new(o, [])
+    }
+    method asString { "({t1} + {t2})" }
+}
+
+class TypeSubtraction.new(t1, t2) {
+    inherits AndPattern.new(t1, t2)
+    method methodNames { 
+        t1.methodNames.removeAll(t2.methodNames)
+    }
+    method asString { "({t1} - {t2})" }
+}
+
 type Point = type { 
     x -> Number
     y -> Number
@@ -166,6 +205,12 @@ class point2D.x(x')y(y') {
             case {_ -> false}
     }
 }
+
+import "collectionsPrelude" as coll
+// collectionsPrelude defines types using &, so it can't be imported until
+// the above definition of TypeIntersection has been executed.
+
+def collections is readable = coll
 
 type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>

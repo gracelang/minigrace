@@ -370,8 +370,8 @@ method compileobject(o, outerRef, inheritingObject) {
         } elseif (e.kind == "defdec") then {
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
-        } elseif (e.kind == "type") then {
-            compileobjtype(e, selfr, pos)
+        } elseif (e.kind == "typedec") then {
+            compileobjdefdec(e, selfr, pos)
             pos := pos + 1
         } elseif (e.kind == "object") then {
             compileobject(e, selfr, false)
@@ -429,6 +429,7 @@ method compileblock(o) {
     inBlock := origInBlock
 }
 method compiletype(o) {
+    log_verbose "genJS: compiletype({o}) called!"
     def myc = auto_count
     auto_count := auto_count + 1
     def escName = escapestring(o.value)
@@ -446,6 +447,38 @@ method compiletype(o) {
         compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value)],
             [idd], false))
     }
+    o.register := "type{myc}"
+}
+method compiletypedec(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def tName = if (o.name.kind == "generic") then {
+                        o.name.value.value
+                    } else {
+                        o.name.value
+                    }
+    out("// Type decl {o.name.value}")
+    declaredvars.push(escapeident(tName))
+    if (o.value.kind == "typeliteral") then {o.value.name := tName }
+    def val = compilenode(o.value)
+    out "var {varf(tName)} = {val};"
+    o.register := "type{myc}"
+    if (compilationDepth == 1) then {
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
+            [o.name], false))  // TODO: should be TypeType
+    }
+}
+method compiletypeliteral(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def escName = escapestring(o.value)
+    out("//   Type literal ")
+    out("var type{myc} = new GraceType(\"{escName}\");")
+    for (o.methods) do {meth->
+        def mnm = escapestring(meth.value)
+        out("type{myc}.typeMethods.push(\"{mnm}\");")
+    }
+    // TODO: types in the type literal
     o.register := "type{myc}"
 }
 method compilefor(o) {
@@ -498,7 +531,7 @@ method compilemethod(o, selfobj) {
             if (p.dtype != false) then {
                 if ((p.dtype.value != "Unknown")
                     && ((p.dtype.kind == "identifier")
-                        || (p.dtype.kind == "type"))) then {
+                        || (p.dtype.kind == "typeliteral"))) then {
                     haveTypedParams := true
                 }
             }
@@ -699,7 +732,7 @@ method compilefreshmethod(o, selfobj) {
             if (p.dtype != false) then {
                 if ((p.dtype.value != "Unknown")
                     && ((p.dtype.kind == "identifier")
-                        || (p.dtype.kind == "type"))) then {
+                        || (p.dtype.kind == "typeliteral"))) then {
                     haveTypedParams := true
                 }
             }
@@ -828,7 +861,7 @@ method compilemethodtypes(func, o) {
             // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
                 if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Dynamic"}
-                    || (p.dtype.kind == "type")) then {
+                    || (p.dtype.kind == "typeliteral")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("{func}.paramTypes.push(["
@@ -1340,8 +1373,10 @@ method compilenode(o) {
         compileclass(o)
     } elseif (oKind == "object") then {
         compileobject(o, "this", false)
-    } elseif (oKind == "type") then {
-        compiletype(o)
+    } elseif (oKind == "typedec") then {
+        compiletypedec(o)
+    } elseif (o.kind == "typeliteral") then {
+        compiletypeliteral(o)
     } elseif (oKind == "member") then {
         compilemember(o)
     } elseif (oKind == "for") then {
@@ -1490,13 +1525,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     topLevelTypes.put("Boolean", true)
     topLevelTypes.put("Block", true)
     topLevelTypes.put("None", true)
-    for (values) do {v->
-        if (v.kind == "type") then {
-            def typeid = escapeident(v.value)
-            topLevelTypes.put(typeid, true)
-        }
-    }
-    
+
     if (util.extensions.contains("noStrict")) then {
         util.log_verbose("noStrict")
     } else {

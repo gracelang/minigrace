@@ -3786,15 +3786,19 @@ Object Type_match(Object self, int nparts, int *argcv,
 Object Type_asString(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct TypeObject *t = (struct TypeObject *)self;
-    char buf[strlen(t->name) + 7];
-    strcpy(buf, "Type<");
+    char buf[strlen(t->name) + 5];
+    strcpy(buf, "type ");
     strcat(buf, t->name);
-    strcat(buf, ">");
     return alloc_String(buf);
+}
+Object Type_methodNames(Object self, int nparts, int *argcv,
+                     Object *argv, int flags) {
+    struct TypeObject *t = (struct TypeObject *)self;
+    return alloc_String("Type method 'methodNames' not yet implemented");
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 7);
+        Type = alloc_class("Type", 8);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
@@ -3802,6 +3806,7 @@ Object alloc_Type(const char *name, int nummethods) {
         add_Method(Type, "match", &Type_match);
         add_Method(Type, "&", &literal_and);
         add_Method(Type, "|", &literal_or);
+        add_Method(Type, "methodNames", &Type_methodNames);
     }
     Object o = alloc_obj(sizeof(struct TypeObject)
             - sizeof(int32_t) - sizeof(ClassData), Type);
@@ -4799,11 +4804,20 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
     uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
   return ret;
 }
+Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Boolean(1);
+}
+Object prelude_false_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Boolean(0);
+}
+
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 23, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 25, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4827,6 +4841,8 @@ Object grace_prelude() {
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "clone", &prelude_clone);
+    add_Method(c, "true()object", &prelude_true_object);
+    add_Method(c, "false()object", &prelude_false_object);
     _prelude = alloc_userobj2(0, 0, c);
     struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);

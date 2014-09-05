@@ -74,7 +74,7 @@ GraceObject.prototype = {
 //    child (non-shared) object.
 };
 
-function Grace_allocObject(superConstructor, classname) {
+function Grace_allocObject(superConstructor, givenName) {
     // The difference between this function and "new GraceObject" is that the
     // object returned here has its OWN methods object,
     // whereas the one returned from new GraceObject shares its prototype's methods.
@@ -84,7 +84,7 @@ function Grace_allocObject(superConstructor, classname) {
         methods: {},
         superobj: sup,
         data: {},
-        className: classname || "object",
+        className: givenName || "object",
         mutable: false,
         definitionModule: "unknown",
         definitionLine: 0
@@ -900,6 +900,23 @@ function GraceFailedMatch(result, bindings) {
 }
 GraceFailedMatch.prototype = GraceMatchResult.prototype;
 
+function GraceTypeIntersection(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeIntersection", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeUnion(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeUnion", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeVariant(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeVariant", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeSubtraction(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeSubtraction", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+
 function GraceType(name) {
     this.name = name;
     this.typeMethods = [];
@@ -927,10 +944,16 @@ GraceType.prototype = {
                     new GraceList([]));
         },
         "|": function type_or(argcv, other) {
-            return new GraceOrPattern(this, other);
+            return new GraceTypeVariant(this, other);
         },
         "&": function type_and(argcv, other) {
-            return new GraceAndPattern(this, other);
+            return new GraceTypeIntersection(this, other);
+        },
+        "+": function type_and(argcv, other) {
+            return new GraceTypeUnion(this, other);
+        },
+        "-": function type_and(argcv, other) {
+            return new GraceTypeSubtraction(this, other);
         },
         "asString": function type_asString (argcv) {
             return new GraceString("type " + this.name);
@@ -1013,8 +1036,9 @@ function classType(obj) {
 }
 
 var var_Unknown = new GraceType("Unknown");
-var var_Dynamic = var_Unknown;
 var var_Done = new GraceType("Done");
+var_Done.typeMethods.push("asString");
+var_Done.typeMethods.push("asDebugString");
 var var_String = classType(GraceEmptyString);
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(GraceTrue);
@@ -1025,7 +1049,6 @@ var type_Number = var_Number;
 var type_Boolean = var_Boolean;
 var type_Object = var_Object;
 var type_Unknown = var_Unknown;
-var type_Dynamic = var_Dynamic;
 var var_Block = new GraceType("Block");
 var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
@@ -1035,10 +1058,13 @@ var var_None = new GraceType("None");
 var_None.typeMethods.push("==");
 var_None.typeMethods.push("!=");
 var type_None = var_None;
-var var_Void = var_None;
-var type_Void = var_None;
-var var_MatchFailed = Grace_allocObject();
-var var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
+
+var var_HashMap = { methods: { 'new':
+    function HashMap_new () { return new GraceHashMap(); } }
+};
+var var_GraceType = { methods: { 'new':
+    function GraceType_new () { return new GraceType(); } }
+};
 
 function GraceHashMap() {
     this.table = {};
@@ -1198,10 +1224,10 @@ function GraceModule(name) {
 // important that 'methods' be a property of the module object itself,
 // and not of a prototype, since 'methods' will be changed.
     var newModuleObject = Grace_allocObject();
-    newModuleObject.classname = "Module<" + name + ">";
+    newModuleObject.className = "Module<" + name + ">";
     newModuleObject.outer = Grace_prelude;
     newModuleObject.methods.asString = function module_asString(argcv) {
-        return new GraceString(this.className);
+        return new GraceString("singleton " + this.className);
     };
     newModuleObject.methods.outer = function module_outer () {
         return this.outer;
@@ -1843,7 +1869,7 @@ GraceMirror.prototype = {
             exceptionMsg = callmethod(exceptionMsg, "++", [1], objDescription);
             throw new GraceExceptionPacket(NoSuchMethod, exceptionMsg);
         },
-    classname: 'objectMirror'
+    className: 'objectMirror'
     }
 };
 
@@ -2220,7 +2246,8 @@ function do_import(modname, func) {
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("Could not find module '" + modname + "'"));
     var origSuperDepth = superDepth;
-    superDepth = new GraceModule(modname);
+    superDepth = (modname === "StandardPrelude") ? Grace_prelude : new GraceModule(modname);
+    // importing "StandardPrelude" adds to the built-in prelude.
     try {
         var f = Function.prototype.call.call(func, superDepth);
         return f;
@@ -2294,7 +2321,14 @@ var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject
 // when it is loaded.
 //
 
-var Grace_prelude = Grace_allocObject();
+var Grace_prelude = new GraceModule("StandardPrelude");
+
+Grace_prelude.methods["true()object"] = function prelude_true_object (argcv) {
+    return GraceTrue;
+}
+Grace_prelude.methods["false()object"] = function prelude_false_object (argcv) {
+    return GraceFalse;
+}
 Grace_prelude.methods["Exception"] = function(argcv) {
     return ExceptionObject;
 }
@@ -2453,20 +2487,9 @@ function GraceListClass() {
     return _listClass
 }
 
-function Grace_allocModule(modname) {
-    // This method should not be used any more;
-    // superced by new GraceModule
-    alert('Grace_allocModule called')
-    var mod = Grace_allocObject();
-    mod.methods.outer = function() {
-        return this.outer;
-    }
-    mod.outer = Grace_prelude;
-    mod.className = "Module<" + modname + ">";
-    return mod;
-}
 
-// for browsers: old names for backward compatibility
+// these names are used in the generated code.
+// __95__ is the escape for _
 var var___95__prelude = Grace_prelude;
 var var_Done = GraceDone;
 var var_done = GraceDone;
@@ -2548,6 +2571,7 @@ if (typeof global !== "undefined") {
     global.var_done = GraceDone;
     global.var_Block = var_Block;
     global.var_Boolean = var_Boolean;
+    global.var_GraceType = var_GraceType;
     global.var_Number = var_Number;
     global.var_Object = var_Object;
     global.var_String = var_String,
