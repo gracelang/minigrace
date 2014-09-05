@@ -3,7 +3,7 @@ method foo(x : type { bar -> String }) {
 }
 
 def y = object {
-    def bar = "OK"
+    def bar is public = "OK"
 }
 
 foo(y)

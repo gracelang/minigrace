@@ -97,7 +97,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE -XDefaultVisibility=public --make --target js $tcase"
+            COMMAND="$GRACE --make --target js $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -105,7 +105,6 @@ do
             then
                 cat $tcase | $GRACE --interactive > test-$$.out
             else
-                set echo
                 execname="${tcase%%.*}"
                 $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
                 if [ ! -s test-$$.err ]
@@ -118,16 +117,19 @@ do
             if diff test-$$.out ${tcase%_test.grace}.out
             then
                 NUM_PASS=$((NUM_PASS + 1))
-                echo "${NUM_TESTS} PASS: $tcase"
-                pass $tcase
+#                echo "${NUM_TESTS} PASS: $tcase"
+                printf %s .
+                pass ${tcase}
                 rm -f test-$$.out
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
+                echo ""
                 echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
                 fail "${tcase}: wrong output"
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
+            echo ""
             echo "${NUM_TESTS} ERROR: $tcase failed to compile"
             fail "${tcase}: compile error"
         fi
@@ -145,8 +147,9 @@ do
             fail "${tcase} compiled"
         else
             NUM_PASS=$((NUM_PASS + 1))
-            echo "${NUM_TESTS} PASS: $tcase"
-            pass "${tcase}"
+#            echo "${NUM_TESTS} PASS: $tcase"
+            printf %s .
+            pass ${tcase}
         fi
     fi
     if [ "$FAILED" = "true" ]
@@ -172,13 +175,22 @@ do
     fi
 done
 
-echo Ran $NUM_TESTS tests.
-echo $NUM_PASS/$NUM_TESTS passed.
-echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have."
-echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output."
-echo "$NUM_COMPILE_ERROR tests did not compile but should have."
+echo
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
+if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
+then
+echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
+fi
+if [ $NUM_WRONG_OUTPUT -ne "0" ]
+then
+echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+fi
+if [ $NUM_COMPILE_ERROR -ne "0" ]
+then
+echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
+fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
 then
-    exit 1
+exit 1
 fi

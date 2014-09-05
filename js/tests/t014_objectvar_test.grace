@@ -1,4 +1,4 @@
 var x := object {
-    var v := 1
+    var v is readable := 1
 }
 print(x.v)

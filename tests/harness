@@ -90,6 +90,7 @@ do
     echo ================================================== >> test-$$.log
     echo Beginning case "$tcase"... >>test-$$.log
     NUM_TESTS=$((NUM_TESTS + 1))
+    FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
         if [ "$TYPE" = "repl" ]
@@ -118,7 +119,7 @@ do
                 NUM_PASS=$((NUM_PASS + 1))
 #                echo "${NUM_TESTS} PASS: $tcase"
                 printf %s .
-                pass
+                pass ${tcase}
                 rm -f test-$$.out
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
@@ -148,7 +149,7 @@ do
             NUM_PASS=$((NUM_PASS + 1))
 #            echo "${NUM_TESTS} PASS: $tcase"
             printf %s .
-            pass "${tcase}"
+            pass ${tcase}
         fi
     fi
     if [ "$FAILED" = "true" ]
@@ -174,11 +175,20 @@ do
     fi
 done
 
-echo Ran $NUM_TESTS tests.
-echo $NUM_PASS/$NUM_TESTS passed.
-echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have."
-echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output."
-echo "$NUM_COMPILE_ERROR tests did not compile but should have."
+echo
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
+if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
+then
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
+fi
+if [ $NUM_WRONG_OUTPUT -ne "0" ]
+then
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+fi
+if [ $NUM_COMPILE_ERROR -ne "0" ]
+then
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
+fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
 then

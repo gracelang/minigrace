@@ -4,7 +4,7 @@ def ClassWithPrivate = object {
         object {// Private parts
            var secret := 0
            method incSecret { secret := secret + 1 }
-           def inner = object {
+           def inner is public = object {
               method getSecret { secret }
               method tick { incSecret }
               def NAME = "inner"

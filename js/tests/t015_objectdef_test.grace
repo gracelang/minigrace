@@ -1,4 +1,4 @@
 var x := object {
-    def c = "Hello"
+    def c is public = "Hello"
 }
 print(x.c)

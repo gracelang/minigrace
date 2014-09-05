@@ -1,5 +1,5 @@
 var x := object {
-    var val := 1
+    var val is public := 1
 }
 print(x.val)
 x.val := 2
