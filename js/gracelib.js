@@ -2251,9 +2251,6 @@ function do_import(modname, func) {
     try {
         var f = Function.prototype.call.call(func, superDepth);
         return f;
-    } catch (e) {
-        Grace_errorPrint("Failed to import module " + modname + ".\n");
-        throw e
     } finally {
         superDepth = origSuperDepth;
         importedModules[modname] = f;
