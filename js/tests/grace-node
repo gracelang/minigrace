@@ -254,13 +254,10 @@ require("../unicodedata")
 minigrace = new MiniGrace();
 minigrace.loadModule("../StandardPrelude")
 
-// implicitly do_import (i.e., execute) the standard prelude.  It's important
-// that this add methods to the global object Grace_prelude (defined in gracelib.js),
-// rather than replacing it with a new object.
-var stdPrelude = do_import('StandardPrelude', gracecode_StandardPrelude);
-for (var methName in stdPrelude.methods) {
-    Grace_prelude.methods[methName] = stdPrelude.methods[methName];
-}
+// as as special case, do_import("StandardPrelude") adds to Grace)prelude, rather
+// than creating a new module object.
+
+do_import('StandardPrelude', gracecode_StandardPrelude);
 
 process.argv.slice(2).forEach(function (fn) {
     minigrace.run(fn)

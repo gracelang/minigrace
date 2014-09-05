@@ -1,0 +1,5 @@
+7
+type A
+OK; obj2 is of type A
+OK; obj2 is also of type B
+OK; obj2 is of type B

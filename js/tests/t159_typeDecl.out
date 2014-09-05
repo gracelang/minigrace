@@ -1,0 +1,23 @@
+type A has methods set{a}
+type B has methods set{b}
+type A has methods set{a}
+type B has methods set{b}
+(type A & type B) has methods set{a,b}
+⟨2,3,4⟩ is a sequence
+The following list methods are not in sequence:
+    []:=
+    add
+    addAll
+    addFirst
+    addLast
+    at()put
+    copy
+    extend
+    pop
+    remove
+    remove()ifAbsent
+    removeAll
+    removeAll()ifAbsent
+    removeAt
+    removeFirst
+    removeLast

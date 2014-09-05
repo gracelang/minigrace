@@ -17,7 +17,7 @@ print(tryMatch "hello")
 print(tryMatch "world")
 print(tryMatch(
     object {
-        def left = 1
-        def right = 2
+        def left is public = 1
+        def right is public = 2
     })
 )

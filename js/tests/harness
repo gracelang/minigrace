@@ -108,7 +108,7 @@ do
                 set echo
                 execname="${tcase%%.*}"
                 $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
-                if [ -s test-$$.err ]
+                if [ ! -s test-$$.err ]
                 then
                     /bin/rm -f test-$$.err
                 else
