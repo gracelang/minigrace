@@ -1229,6 +1229,7 @@ class memberNode.new(what, in') {
         }
         s
     }
+    method asString { "Member({self.value})" }
 }
 class genericNode.new(base, params') {
     inherits baseNode.new
