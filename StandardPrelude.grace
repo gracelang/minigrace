@@ -209,8 +209,9 @@ class point2D.x(x')y(y') {
 import "collectionsPrelude" as coll
 // collectionsPrelude defines types using &, so it can't be imported until
 // the above definition of TypeIntersection has been executed.
-
-def collections is readable = coll
+// We should just be able to put "is public" on the above import, but this is 
+// not fully implemented.  So intead we create an alias:
+def collections is public = coll
 
 type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>

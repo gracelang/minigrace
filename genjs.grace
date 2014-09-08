@@ -82,6 +82,7 @@ method out(s) {
         priorLineEmitted := priorLineSeen
     }
     output.push(indent ++ s)
+    return done
 }
 
 method outUnnumbered(s) {
@@ -643,27 +644,34 @@ method compilemethod(o, selfobj) {
     if (debugMode) then {
         out "stackFrames.push(myframe);"
     }
-    out("try \{")
-    increaseindent
-    var ret := "GraceDone"
-    for (o.body) do { l ->
-        ret := compilenode(l)
+    def isSimpleAccessor = (o.body.size == 1).andAlso{o.body.at(1).kind == "identifier"}
+    if (isSimpleAccessor) then {
+        out "// {textualSignature} is a simple accessor - elide try ... catch"
+        def ret = compilenode(o.body.at(1))
+        out("return " ++ ret ++ ";")
+    } else {
+        out("try \{")
+        increaseindent
+        var ret := "GraceDone"
+        for (o.body) do { l ->
+            ret := compilenode(l)
+        }
+        if (debugMode) then {
+            out "stackFrames.pop();"
+        }
+        out("return " ++ ret ++ ";")
+        decreaseindent
+        out("\} catch(e) \{")
+        if (debugMode) then {
+            out "stackFrames.pop();"
+        }
+        out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
+        out("    return e.returnvalue;")
+        out("  \} else \{")
+        out("    throw e;")
+        out("  \}")
+        out("\}")
     }
-    if (debugMode) then {
-        out "stackFrames.pop();"
-    }
-    out("return " ++ ret ++ ";")
-    decreaseindent
-    out("\} catch(e) \{")
-    if (debugMode) then {
-        out "stackFrames.pop();"
-    }
-    out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
-    out("    return e.returnvalue;")
-    out("  \} else \{")
-    out("    throw e;")
-    out("  \}")
-    out("\}")
     decreaseindent
     out("\}")
     usedvars := oldusedvars
@@ -698,6 +706,7 @@ method compilemethod(o, selfobj) {
     out("{selfobj}.methods[\"{name}\"] = func{myc};")
     out "func{myc}.definitionLine = {o.line};"
     out "func{myc}.definitionModule = \"{modname}\";"
+    o.register := "func{myc}"
     if (o.properties.contains "fresh" ) then {
         increaseindent
         compilefreshmethod(o, selfobj)
@@ -1279,13 +1288,34 @@ method compiledialect(o) {
     o.register := "undefined"
 }
 method compileimport(o) {
-    out("// Import of " ++ o.path)
+    out("// Import of {o.path} as {o.value}")
     var nm := escapestring(o.value)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
+    def methodIdent = ast.identifierNode.new(o.value, o.dtype)
+    methodIdent.line := o.line
+    methodIdent.linePos := o.linePos
+    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.value)],
+        [methodIdent], o.dtype))
+    accessor.line := o.line
+    accessor.linePos := o.linePos
+    accessor.annotations.extend(o.annotations)
+    compilenode(accessor)
+    out("{accessor.register}.debug = \"import\";")
+    var isReadable := false
+    for (o.annotations) do {ann->
+        if ((ann.kind == "identifier").andAlso
+            {(ann.value == "public").orElse{ann.value == "readable"}}) then {
+            isReadable := true
+        }
+    }
+    if (!isReadable) then {
+        out "{accessor.register}.confidential = true;"
+    }
+
     if (o.dtype != false) then {
         if (o.dtype.value != "Unknown") then {
             out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
@@ -1550,11 +1580,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
         if (o.kind == "method") then {
             compilenode(o)
         }
-        if (o.kind == "type") then {
-            compilenode(o)
-            def typeid = escapeident(o.value)
-            out("var type_{typeid} = var_{typeid};")
-        }
     }
     def imported = mgcollections.list.new
     for (values) do { o ->
@@ -1564,7 +1589,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             out("this.data = {sup}.data;")
             out("this._value = {sup}._value;")
         }
-        if ((o.kind != "method") && (o.kind != "type")) then {
+        if (o.kind != "method") then {
             compilenode(o)
         }
         if (o.kind == "import") then {

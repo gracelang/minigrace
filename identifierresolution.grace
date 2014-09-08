@@ -774,8 +774,6 @@ method resolveIdentifiers(topNode) {
             popScope
         } elseif (node.kind == "typedec") then {
             popScope
-        } elseif (node.kind == "type") then {
-            util.log_verbose "!!** node.kind == type**!!"
         } elseif (node.kind == "defdec") then {
             if (node.value.kind == "object") then {
                 scope.elementScopes.put(node.name.value, node.value.data)
@@ -839,7 +837,6 @@ method resolve(values) {
     preludeObj.add "print"
     builtinObj.add "Object" as "def"
     builtinObj.add "Unknown" as "def"
-    builtinObj.add "Dynamic" as "def"
     builtinObj.add "String" as "def"
     builtinObj.add "Number" as "def"
     builtinObj.add "Boolean" as "def"
@@ -861,6 +858,16 @@ method resolve(values) {
     builtinObj.add "prelude" as "def"
     builtinObj.add "_prelude" as "def"
     builtinObj.add "..." as "def"
+    builtinObj.add "GraceType" as "def"
+    builtinObj.add "Exception" as "def"
+    builtinObj.add "PrimitiveArray" as "def"
+    builtinObj.add "NoSuchMethod" as "def"
+    builtinObj.add "ProgrammingError" as "def"
+    builtinObj.add "ResourceException" as "def"
+    builtinObj.add "RuntimeError" as "def"
+    builtinObj.add "BoundsError" as "def"
+    builtinObj.add "EnvironmentException" as "def"
+
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
         var hadDialect := false
@@ -885,6 +892,26 @@ method resolve(values) {
             for (prelude._methods) do {mn->
                 preludeObj.add(mn)
             }
+    // The above is wrong: it makes visible the methods that were in the prelude 
+    // when the compiler was compiled, not those in the prelude when the subject
+    // program is compiled.  The commented-out code below seems like it should
+    // do the right thing — but it doesn't quite work.
+//            def data = xmodule.parseGCT("StandardPrelude", "./StandardPrelude.gct")
+//            print "got StandardPrelude.gct"
+//            print "data = {data}"
+//            if (data.contains("public")) then {
+//                for (data.get("public")) do {mn->
+//                    preludeObj.add(mn)
+//                    print "adding {mn} to prelude"
+//                }
+//            }
+//            if (data.contains("confidential")) then {
+//                for (data.get("confidential")) do {mn->
+//                    preludeObj.add(mn)
+//                    print "adding {mn} to prelude"
+//                }
+//            }
+//            processGCT(data, preludeObj)
         }
     }
     def vals = collections.list.new

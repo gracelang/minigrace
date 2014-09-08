@@ -29,7 +29,6 @@ var linenum := 1
 var modules := collections.set.new
 var staticmodules := collections.set.new
 var dynamicmodules := collections.set.new
-def importnames = collections.map.new
 var values := []
 var outfile
 var modname := "main"
@@ -1543,7 +1542,6 @@ method compiledialect(o) {
     var modg := "module_" ++ escapeident(o.value)
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
-    importnames.put(nm, modg)
     out("  if ({modg} == NULL)")
     if (staticmodules.contains(o.value)) then {
         out("    {modg} = {modg}_init();")
@@ -1583,8 +1581,8 @@ method compileimport(o) {
     var modgn := "module_" ++ nm
     var modgs := "module_" ++ snm
     modules.add(nm)
+    declaredvars.push(nm)
     globals.push("Object {modg};")
-    importnames.put(nm, modg)
     if (false != importHook) then {
         def res = importHook.processImport(nm)
         if (false != res) then {
@@ -1605,6 +1603,22 @@ method compileimport(o) {
         out("    {modg} = dlmodule(\"{fn}\");")
     }
     out("  *var_{nm} = {modg};")
+    if (compilationDepth == 1) then {
+        def methodIdent = ast.identifierNode.new(o.value, o.dtype)
+        methodIdent.line := o.line
+        methodIdent.linePos := o.linePos
+        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.value)],
+                        [methodIdent], o.dtype))
+        accessor.line := o.line
+        accessor.linePos := o.linePos
+        if ( !(ast.findAnnotation(o, "public").orElse{
+                ast.findAnnotation(o, "readable")})) then {
+            accessor.annotations.push(ast.identifierNode.new("confidential", false))
+        }
+        //  compilenode(accessor)
+        //  Adding this accessor causes the compiler to segfault on load.  
+        //  Obviously something is wrong ...
+    }
     globals.push("Object {modg}_init();")
 }
 method compilereturn(o) {

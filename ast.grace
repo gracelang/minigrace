@@ -419,6 +419,7 @@ class methodTypeNode.new(name', signature', rtype') {
     def signature = signature'
     def rtype = rtype'
     var generics := []
+    def nameString:String is public = value
     method asString { "methodType {value} -> {rtype}" }
 
     method accept(visitor : ASTVisitor) {
@@ -499,144 +500,6 @@ class methodTypeNode.new(name', signature', rtype') {
         s
     }
 }
-class typeNode.new(name', methods') {
-// TODO: to be eliminated, and replace by typeLiteral and typeDec
-    inherits baseNode.new
-    def kind = "type"
-    def value = name'
-    def methods = methods'
-    def unionTypes = []
-    def intersectionTypes = []
-    def annotations = collections.list.new
-    var generics := []
-    var nominal := false
-    var anonymous := false
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitType(self)) then {
-            if (self.unionTypes.size > 0) then {
-                for (self.unionTypes) do { ut ->
-                    ut.accept(visitor)
-                }
-            }
-            if (self.intersectionTypes.size > 0) then {
-                for (self.intersectionTypes) do { it ->
-                    it.accept(visitor)
-                }
-            }
-            for (self.methods) do { mx ->
-                mx.accept(visitor)
-            }
-        }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := typeNode.new(value, listMap(methods, blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.anonymous := self.anonymous
-        n.line := line
-        for (listMap(unionTypes, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.unionTypes.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        for (listMap(intersectionTypes, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.intersectionTypes.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.generics.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        blkAfter.apply(n)
-        n
-    }
-    method map(blk) {
-        map(blk)before {} after {}
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "Type\n"
-        s := "{s}{spc}Name: {value}\n"
-        if (generics.size > 0) then {
-            s := "{s}{spc}Generic parameters:\n"
-            for (generics) do {ut->
-                s := "{s}{spc}  {ut.value}\n"
-            }
-        }
-        if (unionTypes.size > 0) then {
-            s := "{s}{spc}Union of:\n"
-            for (unionTypes) do {ut->
-                s := "{s}{spc}  {ut.value}\n"
-            }
-        }
-        if (intersectionTypes.size > 0) then {
-            s := "{s}{spc}Intersection of:\n"
-            for (intersectionTypes) do {it->
-                s := "{s}{spc}  {it.value}\n"
-            }
-        }
-        s := s ++ spc ++ "Methods:"
-        for (methods) do { mx ->
-            s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-        }
-        s := s ++ "\n"
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := ""
-        def isanon = self.value.substringFrom(2)to(6) == "Anon_"
-        def isadhoc = (self.value.substringFrom(1)to(6) == "Union<") ||
-                      (self.value.substringFrom(1)to(13) == "Intersection<")
-        if (!isanon && !isadhoc) then {
-            s := "type {self.value}"
-            if (self.generics.size > 0) then {
-                s := s ++ "<"
-                for (self.generics.indices) do { i ->
-                    s := s ++ self.generics[i].value
-                    if (i < self.generics.size) then {
-                        s := s ++ ", "
-                    }
-                }
-                s := s ++ ">"
-            }
-            s := s ++ " = "
-        }
-        if (!isadhoc && (self.unionTypes.size == 0) &&
-            (self.intersectionTypes.size == 0)) then {
-            s := s ++ "\{"
-        }
-        // TODO: what about e.g. "(A & B) | C"?
-        if (self.unionTypes.size > 0) then {
-            for (self.unionTypes.indices) do { i ->
-                s := s ++ self.unionTypes[i].toGrace(0)
-                if (i < self.unionTypes.size) then {
-                    s := s ++ " | "
-                }
-            }
-        } elseif (self.intersectionTypes.size > 0) then {
-            for (self.intersectionTypes.indices) do { i ->
-                s := s ++ self.intersectionTypes[i].toGrace(0)
-                if (i < self.intersectionTypes.size) then {
-                    s := s ++ " & "
-                }
-            }
-        }
-        for (self.methods) do { mx ->
-            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
-        }
-        if (!isadhoc && (self.unionTypes.size == 0) &&
-            (self.intersectionTypes.size == 0)) then {
-            s := s ++ "\n" ++ spc ++ "\}"
-        }
-        s
-    }
-}
 class typeLiteralNode.new(methods', types') {
     inherits baseNode.new
     def kind = "typeliteral"
@@ -657,7 +520,7 @@ class typeLiteralNode.new(methods', types') {
         "typeliteral: methods = {methods}, types = {types}"
     }
     method accept(visitor : ASTVisitor) {
-        if (visitor.visitType(self)) then {
+        if (visitor.visitTypeLiteral(self)) then {
             for (self.methods) do { each ->
                 each.accept(visitor)
             }
@@ -735,11 +598,12 @@ class typeDecNode.new(name', typeValue) {
     def kind = "typedec"
     def name = name'
     def value = typeValue
+    def nameString:String is public = name.value
     var annotations := collections.list.new
     var generics := collections.list.new
 
     method accept(visitor : ASTVisitor) {
-        if (visitor.visitType(self)) then {
+        if (visitor.visitTypeDec(self)) then {
             value.accept(visitor)
         }
     }
@@ -823,6 +687,7 @@ class methodNode.new(name', signature', body', dtype') {
     var varargs := false
     var generics := []
     var selfclosure := false
+    def nameString:String is public = value.value
     def annotations = collections.list.new
     var properties := collections.map.new
     method accept(visitor : ASTVisitor) {
@@ -1088,6 +953,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     var generics := false
     def superclass = superclass'
     def annotations = collections.list.new
+    def nameString:String = name.value
     var instanceMethods := collections.list.new
     var data := false
     method accept(visitor : ASTVisitor) {
@@ -1408,7 +1274,7 @@ class genericNode.new(base, params') {
         s
     }
 }
-class identifierNode.new(name:String, dtype') {
+class identifierNode.new(name, dtype') {
     inherits baseNode.new
     def kind = "identifier"
     var value := name
@@ -1416,6 +1282,7 @@ class identifierNode.new(name:String, dtype') {
     var dtype := dtype'
     var inBind := false
     var inRequest := false
+    def nameString:String is public = name
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1713,6 +1580,7 @@ class defDecNode.new(name', val, dtype') {
     def name = name'
     def value = val
     var dtype := dtype'
+    def nameString:String is public = name.value
     def annotations = collections.list.new
     var data := false
     var startToken := false
@@ -1792,6 +1660,7 @@ class varDecNode.new(name', val', dtype') {
     def name = name'
     def value = val'
     var dtype := dtype'
+    def nameString:String is public = name.value
     def annotations = collections.list.new
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
@@ -1872,6 +1741,7 @@ class importNode.new(path', name) {
     def annotations = collections.list.new
     var dtype := false
     def linePos = 1
+    def nameString:String = value
     method accept(visitor : ASTVisitor) {
         visitor.visitImport(self)
     }
@@ -2087,7 +1957,8 @@ type ASTVisitor = {
      visitMatchCase(o) -> Boolean
      visitCatchCase(o) -> Boolean
      visitMethodType(o) -> Boolean
-     visitType(o) -> Boolean
+     visitTypeLiteral(o) -> Boolean
+     visitTypeDec(o) -> Boolean
      visitMethod(o) -> Boolean
      visitCall(o) -> Boolean
      visitClass(o) -> Boolean
@@ -2132,7 +2003,10 @@ method baseVisitor -> ASTVisitor {
         method visitMethodType(o) -> Boolean {
             true
         }
-        method visitType(o) -> Boolean {
+        method visitTypeDec(o) -> Boolean {
+            true
+        }
+        method visitTypeLiteral(o) -> Boolean {
             true
         }
         method visitMethod(o) -> Boolean {
