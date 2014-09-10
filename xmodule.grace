@@ -5,12 +5,13 @@ import "sys" as sys
 import "mgcollections" as collections
 import "util" as util
 import "ast" as ast
+//import "errormessages" as errormessage
 
 def gctCache = collections.map.new
 
-method parseGCT(path, filepath) {
-    if (gctCache.contains(path)) then {
-        return gctCache.get(path)
+method parseGCT(moduleName, filepath) {
+    if (gctCache.contains(moduleName)) then {
+        return gctCache.get(moduleName)
     }
     def data = collections.map.new
     util.runOnNew {} else { return data }
@@ -29,8 +30,14 @@ method parseGCT(path, filepath) {
             }
         }
         tfp.close
+    } else {
+        if (filepath == "/nosuchpath") then {
+            util.log_verbose "No cached gct for module {moduleName}"
+        } else {
+            util.log_verbose("Can't find file {filepath} for module {moduleName}")
+        }
     }
-    gctCache.put(path, data)
+    gctCache.put(moduleName, data)
     return data
 }
 
@@ -66,20 +73,20 @@ method generateGCT(path)fromValues(values)modules(modules) {
     var theDialect := false
     for (values) do { v->
         if (v.kind == "vardec") then {
-            if (ast.isPublic(v)) then {
+            if (v.isReadable) then {
                 methods.push(v.name.value)
-                if (ast.isWritable(v)) then {
-                    methods.push(v.name.value ++ ":=")
-                }
+            }
+            if (v.isWritable) then {
+                methods.push(v.name.value ++ ":=")
             }
         } elseif (v.kind == "method") then {
-            if (ast.isPublic(v)) then {
+            if (v.isPublic) then {
                 methods.push(v.value.value)
             } else {
                 confidentials.push(v.value.value)
             }
         } elseif (v.kind == "defdec") then {
-            if (ast.isPublic(v)) then {
+            if (v.isPublic) then {
                 methods.push(v.name.value)
             }
             if (ast.findAnnotation(v, "parent")) then {
@@ -92,7 +99,9 @@ method generateGCT(path)fromValues(values)modules(modules) {
         } elseif (v.kind == "class") then {
             methods.push(v.name.value)
         } elseif (v.kind == "type") then {
-            methods.push(v.value)
+            if (v.isPublic) then {
+                methods.push(v.value)
+            }
         } elseif (v.kind == "dialect") then {
             theDialect := v.value
         }
@@ -155,10 +164,60 @@ method generateGCT(path)fromValues(values)modules(modules) {
                     gct.put("fresh:{val.value.value}",
                         val.properties.get("fresh").elements)
                 } else {
-                    gct.put("fresh:{val.value.value}", ["placeholder"])
+                    def freshObjBody = val.body.last.value
+                    def vObj = publicNames(values)
+                    for (freshObjBody) do { mbr -> mbr.accept(vObj.visitor) }
+                    gct.put("fresh:{val.value.value}", vObj.collected)
                 }
             }
         }
     }
     return gct
 }
+
+method publicNames(values) {
+    object {
+        def collected is public = list.empty
+        def visitor = object {
+            inherits ast.baseVisitor
+            method visitVarDec(node) {
+                if (node.isWritable) then {
+                    collected.add(node.nameString ++ ":=")
+                }
+                if (node.isReadable) then {
+                    collected.add(node.nameString)
+                }
+                false
+            }
+            method visitDefDec(node) {
+                if (node.isPublic) then {
+                    collected.add(node.nameString)
+                }
+                false
+            }
+            method visitTypeDec(node) {
+                if (node.isPublic) then {
+                    collected.add(node.nameString)
+                }
+                false
+            }
+            method visitClass(node) {
+                if (node.isPublic) then {
+                    collected.add(node.nameString)
+                }
+                false
+            }
+            method visitMethod(node) {
+                if (node.isPublic) then {
+                    collected.add(node.nameString)
+                }
+                false
+            }
+            method visitInherits(node) {
+                collected.addAll(node.providedNames)
+                false
+            }
+        }
+    }
+}
+

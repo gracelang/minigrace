@@ -39,6 +39,12 @@ class baseNode.new {
     var line := util.linenum
     var linePos := util.linepos
     var lineLength := 0
+    
+    method asString { "astNode {self.kind}" }
+    method isWritable { true }
+    method isReadable { true }
+    method isPublic { true }
+    method isConfidential { isPublic.not }
 }
 
 class forNode.new(over, body') {
@@ -601,6 +607,14 @@ class typeDecNode.new(name', typeValue) {
     def nameString:String is public = name.value
     var annotations := collections.list.new
     var generics := collections.list.new
+    
+    method isPublic {
+        if (annotations.size == 0) then { return false }
+        findAnnotation(self, "public")
+    }
+    method isWritable { return false }
+    method isReadable { isPublic }
+
 
     method accept(visitor : ASTVisitor) {
         if (visitor.visitTypeDec(self)) then {
@@ -690,6 +704,15 @@ class methodNode.new(name', signature', body', dtype') {
     def nameString:String is public = value.value
     def annotations = collections.list.new
     var properties := collections.map.new
+    
+    method isConfidential {
+        if (annotations.size == 0) then { return false }
+        findAnnotation(self, "confidential")
+    }
+    method isPublic { isConfidential.not }
+    method isWritable { false }
+    method isReadable { isPublic }
+
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethod(self)) then {
             self.value.accept(visitor)
@@ -825,6 +848,7 @@ class methodNode.new(name', signature', body', dtype') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
+    method asString { "methodNode({nameString})" }
 }
 class callNode.new(what, with') {
     // [with]
@@ -842,8 +866,8 @@ class callNode.new(what, with') {
     //     }
     inherits baseNode.new
     def kind = "call"
-    def value = what
-    def with = with'
+    def value = what        // method being requested
+    def with = with'        // arguments
     var generics := false
     var isPattern := false
     method accept(visitor : ASTVisitor) {
@@ -956,6 +980,15 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def nameString:String = name.value
     var instanceMethods := collections.list.new
     var data := false
+    
+    method isPublic {
+        // assume that classes are public by default
+        if (annotations.size == 0) then { return true }
+        findAnnotation(self, "confidential").not
+    }
+    method isWritable { false }
+    method isReadable { isPublic }
+
     method accept(visitor : ASTVisitor) {
         if (visitor.visitClass(self)) then {
             self.name.accept(visitor)
@@ -1194,6 +1227,7 @@ class memberNode.new(what, in') {
     def kind = "member"
     var value := what
     def in = in'
+
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMember(self)) then {
             self.in.accept(visitor)
@@ -1585,6 +1619,15 @@ class defDecNode.new(name', val, dtype') {
     def annotations = collections.list.new
     var data := false
     var startToken := false
+    method isPublic {
+        // defs are confidential by default
+        if (annotations.size == 0) then { return false }
+        if (findAnnotation(self, "public")) then { return true }
+        findAnnotation(self, "readable")
+    }
+    method isWritable { false }
+    method isReadable { isPublic }
+
     method accept(visitor : ASTVisitor) {
         if (visitor.visitDefDec(self)) then {
             self.name.accept(visitor)
@@ -1663,6 +1706,25 @@ class varDecNode.new(name', val', dtype') {
     var dtype := dtype'
     def nameString:String is public = name.value
     def annotations = collections.list.new
+
+    method isPublic {
+        // vars are confidential by default
+        if (annotations.size == 0) then { return false }
+        if (findAnnotation(self, "public")) then { return true }
+        findAnnotation(self, "readable")
+    }
+    method isWritable {
+        if (annotations.size == 0) then { return false }
+        if (findAnnotation(self, "public")) then { return true }
+        if (findAnnotation(self, "writable")) then { return true }
+        false
+    }
+    method isReadable {
+        if (annotations.size == 0) then { return false }
+        if (findAnnotation(self, "public")) then { return true }
+        if (findAnnotation(self, "readable")) then { return true }
+        false
+    }
     method accept(visitor : ASTVisitor) {
         if (visitor.visitVarDec(self)) then {
             self.name.accept(visitor)
@@ -1743,6 +1805,16 @@ class importNode.new(path', name) {
     var dtype := false
     def linePos = 1
     def nameString:String = value
+    
+    method isPublic {
+        // imports are confidential by default
+        if (annotations.size == 0) then { return false }
+        if (findAnnotation(self, "public")) then { return true }
+        findAnnotation(self, "readable")
+    }
+    method isWritable { false }
+    method isReadable { isPublic }
+
     method accept(visitor : ASTVisitor) {
         visitor.visitImport(self)
     }
@@ -1843,6 +1915,7 @@ class inheritsNode.new(expr) {
     inherits baseNode.new
     def kind = "inherits"
     def value = expr
+    def providedNames is public = list.empty
     method accept(visitor : ASTVisitor) {
         if (visitor.visitInherits(self)) then {
             self.value.accept(visitor)
@@ -1851,6 +1924,7 @@ class inheritsNode.new(expr) {
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         var n := inheritsNode.new(value.map(blk)before(blkBefore)after(blkAfter))
+        n.providedNames.addAll(providedNames)
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
@@ -1867,11 +1941,16 @@ class inheritsNode.new(expr) {
         var s := "Inherits"
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
+        if (providedNames.isEmpty.not) then {
+            s := s ++ "\n Provided names: "
+            s := s ++ spc ++ providedNames.asString
+        }
         s
     }
     method toGrace(depth : Number) -> String {
         "inherits {self.value.toGrace(0)}"
     }
+    method nameString { value.toGrace(0) }
 }
 class blankNode.new {
     inherits baseNode.new
@@ -2090,22 +2169,6 @@ method findAnnotation(node, annName) {
                 def value is public = ann
             }
         }
-    }
-    false
-}
-
-method isPublic(node) {
-    if ((node.annotations.size == 0).orElse {
-        findAnnotation(node, "public")}) then {
-        return true
-    }
-    false
-}
-
-method isWritable(node) {
-    if ((node.annotations.size == 0).orElse {
-        findAnnotation(node, "writable")}) then {
-        return true
     }
     false
 }

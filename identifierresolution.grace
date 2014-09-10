@@ -64,6 +64,13 @@ class Scope.new(parent') {
         }
         return result ++ "\n"
     }
+    method alreadyDefines(node) {
+        def name = node.nameString
+        if (! elements.contains(name)) then { return false }
+        if (getKind(name) == "inherited") then { return false }
+        if (elementLines(name) == node.line) then { return false }
+        return true
+    }
 }
 
 def builtinObj = Scope.new(object { })
@@ -98,7 +105,12 @@ method haveBinding(nm) {
 method getNameKind(nm) {
     scope.do {s->
         if (s.contains(nm)) then {
-            return s.getKind(nm)
+            def kind = s.getKind(nm)
+            if (kind == "inherited") then {
+                return "method"
+            } else {
+                return kind
+            }
         }
     }
     return "undefined"
@@ -522,27 +534,45 @@ method resolveIdentifiersActual(node) {
                 node.value.value.in
             )
             def newcall = ast.callNode.new(newmem, node.value.with)
-            return ast.inheritsNode.new(newcall)
-        } else {
-            if (node.value.kind == "member") then {
-                def newmem = ast.memberNode.new(node.value.value
-                                                ++ "()object",
-                    node.value.in
+            def newInhNode = ast.inheritsNode.new(newcall)
+            newInhNode.providedNames.addAll(node.providedNames)
+            return newInhNode
+        } elseif {node.value.kind == "member"} then {
+            def newmem = ast.memberNode.new(node.value.value
+                                            ++ "()object",
+                node.value.in
+            )
+            def newcall = ast.callNode.new(newmem, collections.list.new(
+                ast.callWithPart.new(node.value.value, []),
+                ast.callWithPart.new("object",
+                    [ast.identifierNode.new("self", false)])
                 )
-                def newcall = ast.callNode.new(newmem, collections.list.new(
-                    ast.callWithPart.new(node.value.value, []),
-                    ast.callWithPart.new("object",
-                        [ast.identifierNode.new("self", false)])
-                    )
-                )
-                if (node.value.in.value == "StandardPrelude") then {
-                    return node
-                }
-                return ast.inheritsNode.new(newcall)
+            )
+            if (node.value.in.value == "StandardPrelude") then {
+                return node
             }
+            def newInhNode = ast.inheritsNode.new(newcall)
+            newInhNode.providedNames.addAll(node.providedNames)
+            return newInhNode
         }
     }
     node
+}
+
+method checkDuplicateDefinition(declNode) {
+    def name = declNode.nameString
+    if (scope.alreadyDefines(declNode)) then {
+        var more := " in this scope"
+        if (scope.elementLines.contains(name)) then {
+            more := " as a {scope.getKind(name)}"
+                ++ " on line {scope.elementLines.get(name)}"
+        }
+        errormessages.syntaxError("'{name}' cannot be"
+            ++ " redeclared because it is already declared"
+            ++ more ++ ".")
+            atRange(declNode.line, declNode.linePos,
+                    declNode.linePos + name.size - 1)
+    }
 }
 method checkRedefinition(ident) {
     def nk = getNameKind(ident.value)
@@ -553,7 +583,7 @@ method checkRedefinition(ident) {
             def scp = getNameScope(ident.value)
             var more := ""
             if (scp.elementLines.contains(ident.value)) then {
-                more := " as a {scp.elements.get(ident.value)}"
+                more := " as a {scp.getKind(ident.value)}"
                     ++ " on line {scp.elementLines.get(ident.value)}"
             }
             if(nk == "def") then {
@@ -590,7 +620,7 @@ method resolveIdentifiers(topNode) {
         return topNode
     }
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
-        util.setline(node.line)
+        util.setPosition(node.line, node.linePos)
         if (node.kind == "class") then {
             checkRedefinition(node.name)
             scope.add(node.name.value) as "def"
@@ -616,20 +646,24 @@ method resolveIdentifiers(topNode) {
             classScope.elementScopes.put(node.constructor.value, scope)
             for (node.value) do {n->
                 if (n.kind == "method") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.value.value)
                 }
                 if (n.kind == "vardec") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
                 }
                 if (n.kind == "defdec") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.name.value)
                 }
                 if (n.kind == "inherits") then {
                     def parent = resolveIdentifiers(n.value)
                     def parentScope = findDeepScope(parent)
                     for (parentScope.elements) do {e->
-                        scope.add(e)
+                        scope.add(e) as "inherited"
+                        n.providedNames.add(e)
                     }
                     for (node.signature) do {s->
                         for (s.params) do {p->
@@ -653,20 +687,24 @@ method resolveIdentifiers(topNode) {
             scope.variety := "object"
             for (node.value) do {n->
                 if (n.kind == "method") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.value.value)
                 }
                 if (n.kind == "vardec") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
                 }
                 if (n.kind == "defdec") then {
+                    checkDuplicateDefinition(n)
                     scope.add(n.name.value)
                 }
                 if (n.kind == "inherits") then {
                     def parent = resolveIdentifiers(n.value)
                     def parentScope = findDeepScope(parent)
                     for (parentScope.elements) do {e->
-                        scope.add(e)
+                        scope.add(e) as "inherited"
+                        n.providedNames.add(e)
                     }
                 }
             }
@@ -689,6 +727,7 @@ method resolveIdentifiers(topNode) {
                 pushScope
                 scope.variety := "typeparams"
                 for (node.generics) do {n->
+                    checkDuplicateDefinition(n)
                     scope.add(n.value) as "def"
                 }
             } else {
@@ -699,7 +738,17 @@ method resolveIdentifiers(topNode) {
                     scope.add(n.value) as "def"
                 }
             }
+        } elseif (node.kind == "typeliteral") then {
+            pushScope
+            scope.variety := "typeliteral"
+            for (node.methods) do { each ->
+                checkDuplicateDefinition(each)
+            }
+            for (node.types) do { each ->
+                checkDuplicateDefinition(each)
+            }
         } elseif (node.kind == "methodtype") then {
+            checkDuplicateDefinition(node)
             scope.add(node.value)
             pushScope
             for (node.generics) do {g->
@@ -714,10 +763,15 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif (node.kind == "method") then {
-            scope.add(node.value.value)
+            if ((scope.variety != "object").andAlso{ 
+                scope.variety != "class" }.andAlso{
+                scope.variety != "module" }) then {
+                checkDuplicateDefinition(node)
+            }
+            scope.add(node.nameString)
             pushScope
             scope.variety := "method"
-            scope.name := node.value.value
+            scope.name := node.nameString
             for (node.generics) do {g->
                 checkRedefinition(g)
                 scope.add(g.value) as "def"
@@ -916,13 +970,18 @@ method resolve(values) {
     }
     def vals = collections.list.new
     for (values) do { n ->
+        util.setPosition(n.line, n.linePos)
         if (n.kind == "method") then {
-            scope.add(n.value.value)
+            checkDuplicateDefinition(n)
+            scope.add(n.nameString) as "method"
         } elseif ((n.kind == "class") || (n.kind == "defdec") || (n.kind == "typedec")) then {
-            scope.add(n.name.value) as "def"
+            checkDuplicateDefinition(n)
+            scope.add(n.nameString) as "def"
         } elseif (n.kind == "vardec") then {
-            scope.add(n.name.value) as "var"
+            checkDuplicateDefinition(n)
+            scope.add(n.nameString) as "var"
         } elseif (n.kind == "import") then {
+            checkDuplicateDefinition(n)
             handleImport(n)
         }
     }

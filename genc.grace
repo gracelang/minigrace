@@ -758,23 +758,31 @@ method compilemethod(o, selfobj, pos) {
     var ret := "done"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)
-    var tailObj := false
+    var tailObject := false
     var tco := false
     if ((o.body.size > 0) && {o.body.last.kind == "call"}
         && {util.extensions.contains("TailCall")}) then {
         tco := o.body.pop
     }
     if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
-        tailObj := o.body.pop
+        tailObject := o.body.pop       // remove tail object
+        if (tailObject.classname == "object") then {
+            var selfName := selfobj
+            if (selfName.startsWith "var_") then {
+                selfName := selfName.substringFrom 5 to(selfName.size)
+            }
+            tailObject.classname := selfobj ++ o.nameString
+        }
     }
     for (o.body) do { l ->
         ret := compilenode(l)
     }
-    if (false != tailObj) then {
+    if (false != tailObject) then {
+        o.body.push(tailObject)        // put tail object back
         out "  isTailObject = 1;"
         out "  inheritingObject = methodInheritingObject;"
-        compileobject(tailObj, "self")
-        ret := tailObj.register
+        compileobject(tailObject, "self")
+        ret := tailObject.register
     }
     if (false != tco) then {
         compilecall(tco, true)
@@ -944,7 +952,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
     def name = escapestring2(o.value.value ++ "()object")
-    output := topOutput
+    outswitchup
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
             out("Object {litname}(Object realself, int nparts, int *argcv, "
@@ -1611,8 +1619,7 @@ method compileimport(o) {
                         [methodIdent], o.dtype))
         accessor.line := o.line
         accessor.linePos := o.linePos
-        if ( !(ast.findAnnotation(o, "public").orElse{
-                ast.findAnnotation(o, "readable")})) then {
+        if ( o.isConfidential ) then {
             accessor.annotations.push(ast.identifierNode.new("confidential", false))
         }
         //  compilenode(accessor)

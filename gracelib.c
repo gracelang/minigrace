@@ -1631,6 +1631,19 @@ Object ConcatString_at(Object self, int nparts, int *argcv,
     ConcatString__Flatten(self);
     return String_at(self, nparts, argcv, args, flags);
 }
+Object ConcatString_first(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    int ms = *(int*)(self->data + sizeof(int));
+    if (ms == 1)
+        return self;
+    ConcatString__Flatten(self);
+    gc_pause();
+    Object newargs[] = { alloc_Float64(1) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
 Object ConcatString_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -1700,7 +1713,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 25,
+        ConcatString = alloc_class3("ConcatString", 26,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1712,6 +1725,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
         add_Method(ConcatString, "!=", &Object_NotEquals);
+        add_Method(ConcatString, "first", &ConcatString_first);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);

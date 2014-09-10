@@ -26,6 +26,7 @@ endif
 
 echo:
 	@echo MINIGRACE_BUILD_SUBPROCESSES = $(MINIGRACE_BUILD_SUBPROCESSES)
+	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo WEBFILES = $(WEBFILES)
 
 buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
@@ -101,7 +102,7 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js:
+test.js: js/StandardPrelude.js js/collectionsPrelude.js
 	(cd js/tests; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
@@ -144,6 +145,9 @@ selftest: minigrace
 minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
 	[ -e .git/hooks/commit-msg ] || ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
+    
+just-minigrace:
+	./l2/minigrace -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)

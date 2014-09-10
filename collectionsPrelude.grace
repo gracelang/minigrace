@@ -107,7 +107,6 @@ type List<T> = {
     add(x: T) -> List<T>
     addFirst(x: T) -> List<T>
     addLast(x: T) -> List<T>    // same as add
-    addFirst(x: T) -> List<T> 
     removeFirst -> T 
     removeAt(n: Number) -> T
     removeLast -> T
@@ -152,7 +151,6 @@ type Set<T> = {
     do(block1: Block1<T,Done>) -> Done
     iterator -> Iterator<T>
     ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
     copy -> Set<T>
 }
 
@@ -166,8 +164,6 @@ type Dictionary<K,T> = {
     []:=(k:K, v:T) -> Done
     at(k:K) -> T
     [](k:K) -> T
-    containsKey(k:K) -> Boolean
-    containsValue(v:T) -> Boolean
     removeAllKeys(keys:Collection<K>) -> Dictionary<K,T>
     removeKey(*keys:K) -> Dictionary<K,T>
     removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
@@ -353,7 +349,6 @@ class indexable.trait {
     inherits enumerable.trait
     // requires do, iterator, at(ix:Number), size, keysAndValuesDo
     method at { SubobjectResponsibility.raise "at" }
-    method size { SubobjectResponsibility.raise "size" }
     method first { at(1) }
     method second { at(2) }
     method third { at(3) }

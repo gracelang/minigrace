@@ -150,7 +150,7 @@ def rangeTest = object {
         rangeUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
         assert (s) shouldBe "1::3 2::4 3::5 4::6 "
     }
-    method testRangeKeysAndValuesEmpty {
+    method testRangeUpKeysAndValuesEmpty {
         var s := ""
         emptyUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
         assert (s) shouldBe ""
@@ -165,7 +165,7 @@ def rangeTest = object {
         rangeDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
         assert (s) shouldBe "1::10 2::9 3::8 4::7 "
     }
-    method testRangeKeysAndValuesEmpty {
+    method testRangeDownKeysAndValuesEmpty {
         var s := ""
         emptyDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
         assert (s) shouldBe ""
@@ -1248,7 +1248,7 @@ def dictionaryTest = object {
             assert(oneToFive.keys.onto(set)) shouldBe (
                 set.with("one", "two", "three", "four", "five") )
         }
-        method testDictionaryKeys {
+        method testDictionaryValues {
             assert(oneToFive.values.onto(set)) shouldBe (
                 set.with(1, 2, 3, 4, 5) )
         }
