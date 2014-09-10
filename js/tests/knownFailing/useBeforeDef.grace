@@ -35,3 +35,8 @@ class complex.real(r:Number)imaginary(i:Number) -> Complex {
     }
 }
 
+//def c1 = complex.real 4 imaginary 5
+//def c2 = complex.real 2 imaginary 3
+//print "c1 + c2 = {c1 + c2}"
+//print "c1 * c2 = {c1 * c2}"
+
