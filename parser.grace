@@ -53,6 +53,9 @@ method next {
         }
         linenum := sym.line
         util.setPosition(sym.line, sym.linePos)
+    } elseif { sym.kind == "eof" } then {
+        errormessages.syntaxError("Unexpetedly found the end of the input. This is often caused by a missing '\}'")
+            atRange(sym.line, sym.linePos, sym.linePos)
     } else {
         sym := object {
             var kind := "eof"
@@ -2607,7 +2610,7 @@ method doclass {
             minIndentLevel := statementToken.indent + 1
         }
         def body = []
-        while {(accept("rbrace")).not} do {
+        while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
             ifConsume {methoddec} then {
                 body.push(values.pop)
             }
@@ -3527,6 +3530,13 @@ method parse(toks) {
     }
     tokens := toks
     sym := tokens.first
+    if (sym.indent > 0) then {
+        def sugg = errormessages.suggestion.new
+        sugg.deleteRange(1, sym.indent) onLine(sym.line)
+        errormessages.syntaxError("The first line must not be indented.")
+            atRange(sym.line, 1, sym.indent)
+            withSuggestion(sugg)
+    }
     sym.prev := lastToken
 // TODO: Do this in lexer.
     tokens.push(object {
