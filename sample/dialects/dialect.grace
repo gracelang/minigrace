@@ -8,7 +8,7 @@ inherits prelude.methods
 
 // Checker error
 
-def CheckerFailure = Error.refine("CheckerFailure")
+def CheckerFailure is public = Error.refine("CheckerFailure")
 
 
 // Helper Map
@@ -193,7 +193,7 @@ class aStack.ofKind(kind : String) is confidential {
 
 }
 
-def scope = object {
+def scope is public = object {
     def variables is public = aStack.ofKind("variable")
     def methods is public = aStack.ofKind("method")
     def types is public = aStack.ofKind("type")
