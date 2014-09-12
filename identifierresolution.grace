@@ -983,6 +983,13 @@ method resolve(values) {
         } elseif (n.kind == "import") then {
             checkDuplicateDefinition(n)
             handleImport(n)
+        } elseif {n.kind == "inherits"} then {
+            def parent = resolveIdentifiers(n.value)
+            def parentScope = findDeepScope(parent)
+            for (parentScope.elements) do {e->
+                scope.add(e) as "inherited"
+                n.providedNames.add(e)
+            }
         }
     }
     def vis = object {
