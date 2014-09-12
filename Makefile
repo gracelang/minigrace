@@ -98,10 +98,10 @@ js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
     
 js/tests/printc.js: js/tests/printc.grace
-	./minigrace --target js js/tests/printc.grace
+	(cd js/tests; ../../minigrace --target js printc.grace)
     
 js/tests/printc.gct: js/tests/printc.grace
-	./minigrace --target js js/tests/printc.grace
+	(cd js/tests; ../../minigrace --target js printc.grace)
 
 test.js.compile:
 	@echo "compiling tests to JavaScript"
