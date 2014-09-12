@@ -218,7 +218,7 @@ if (! graceModulePath) {
     } catch (e) {
             graceModulePath = "./:../";
     }
-    console.log("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
+    console.warn("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
 }
 var pathdirs = graceModulePath.split(path.delimiter);
 if ( pathdirs.indexOf("./") === -1 ) {
