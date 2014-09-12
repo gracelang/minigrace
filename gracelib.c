@@ -448,6 +448,13 @@ int integerfromAny(Object p) {
     return i;
 }
 
+Object _rangeClass = NULL;
+Object grace_rangeClass() {
+    if (_rangeClass == NULL)
+        _rangeClass = callmethod(prelude, "range", 0, NULL, NULL);
+    return _rangeClass;
+}
+
 Object _bindingClass = NULL;
 Object grace_bindingClass() {
     if (_bindingClass == NULL)
@@ -1150,17 +1157,15 @@ Object BuiltinList_asString(Object self, int nparts, int *argcv,
 Object BuiltinList_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
-    Object o = alloc_BuiltinList();
-    int slot = gc_frame_newslot(o);
-    int i;
-    Object f;
-    int partcv[] = {1};
-    for (i=1; i<=sself->size; i++) {
-        f = alloc_Float64(i);
-        BuiltinList_push(o, 1, partcv, &f, 0);
-    }
-    gc_frame_setslot(slot, undefined);
-    return o;
+    gc_pause();
+    Object upperBound = alloc_Float64(sself->size);
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = alloc_Float64(1);
+    params[1] = upperBound;
+    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    gc_unpause();
+    return res;
 }
 Object BuiltinList_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1561,17 +1566,15 @@ void ConcatString__FillBuffer(Object self, char *buf, int len) {
 Object String_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject *sself = (struct StringObject*)self;
-    Object o = alloc_BuiltinList();
-    int i;
-    Object f;
     gc_pause();
-    int partcv[] = {1};
-    for (i=1; i<=sself->size; i++) {
-        f = alloc_Float64(i);
-        BuiltinList_push(o, 1, partcv, &f, 0);
-    }
+    Object upperBound = alloc_Float64(sself->size);
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = alloc_Float64(1);
+    params[1] = upperBound;
+    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
     gc_unpause();
-    return o;
+    return res;
 }
 Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1834,6 +1837,7 @@ Object String_substringFrom_to(Object self,
     struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
     int en = (argcv[1] > 0 ? integerfromAny(args[1]) : sself->size + 1);
+    if (st < 1) st = 1;
     st--;
     en--;
     int mysize = sself->size;
@@ -2155,19 +2159,11 @@ Object alloc_Octets(const char *data, int len) {
 Object Float64_Range(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    int i = a;
-    int j = b;
-    gc_pause();
-    Object arr = alloc_BuiltinList();
-    int partcv[] = {1};
-    for (; i<=b; i++) {
-        Object v = alloc_Float64(i);
-        BuiltinList_push(arr, 1, partcv, &v, 0);
-    }
-    gc_unpause();
-    return (Object)arr;
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = self;
+    params[1] = other;
+    return callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
 }
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
