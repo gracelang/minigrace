@@ -2693,7 +2693,7 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 16);
+        File = alloc_class("File", 18);
         add_Method(File, "read", &File_read);
         add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
@@ -2701,6 +2701,8 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "seek", &File_seek);
         add_Method(File, "seekForward", &File_seekForward);
         add_Method(File, "seekBackward", &File_seekBackward);
+        add_Method(File, "iterator", &File_iter);
+        add_Method(File, "hasNext", &File_havemore);
         add_Method(File, "iter", &File_iter);
         add_Method(File, "havemore", &File_havemore);
         add_Method(File, "next", &File_next);
