@@ -1580,6 +1580,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out "'{imp}',"
     }
     out "];"
+    log_verbose "writing gct for {modname}"
     xmodule.writeGCT(modname, modname ++ ".gct")
         fromValues(values)modules(staticmodules)
     def gct = xmodule.parseGCT(modname, modname ++ ".gct")
@@ -1602,7 +1603,5 @@ method compile(vl, of, mn, rm, bt, glpath) {
     for (output) do { o ->
         outprint(o)
     }
-    xmodule.writeGCT(modname, modname ++ ".gct")
-        fromValues(values)modules(staticmodules)
     log_verbose("done.")
 }

@@ -94,13 +94,6 @@ if (util.target == "json") then {
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
-values := identifierresolution.resolve(values)
-if (util.target == "processed-ast") then {
-    for (values) do { v ->
-        print(v.pretty(0))
-    }
-    sys.exit(0)
-}
 if (util.target == "imports") then {
     def imps = mgcollections.set.new
     def vis = object {
@@ -114,6 +107,13 @@ if (util.target == "imports") then {
     }
     for (imps) do {im->
         print(im)
+    }
+    sys.exit(0)
+}
+values := identifierresolution.resolve(values)
+if (util.target == "processed-ast") then {
+    for (values) do { v ->
+        print(v.pretty(0))
     }
     sys.exit(0)
 }

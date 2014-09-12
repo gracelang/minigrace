@@ -96,13 +96,18 @@ js/minigrace.js: js/minigrace.in.js minigrace
 
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
-
+    
+js/tests/printc.js: js/tests/printc.grace
+	./minigrace --target js js/tests/printc.grace
+    
+js/tests/printc.gct: js/tests/printc.grace
+	./minigrace --target js js/tests/printc.grace
 
 test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js/StandardPrelude.js js/collectionsPrelude.js
+test.js: js/StandardPrelude.js js/collectionsPrelude.js js/tests/printc.js js/tests/printc.gct js/collections.js js/gUnit.js
 	(cd js/tests; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
@@ -159,8 +164,10 @@ gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 regrtest: minigrace
 	./tests/harness "../../minigrace" tests/regression ""
-test: minigrace gUnit.gct
+test: minigrace gUnit.gct tests/printc.gct
 	./tests/harness "../minigrace" tests ""
+tests/printc.gct: tests/printc.grace
+	./minigrace --make tests/printc.grace
 fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce

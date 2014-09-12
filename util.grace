@@ -26,6 +26,7 @@ var importDynamic := false
 var jobs := 2
 var cLines := []
 var lines := []
+var filename
 
 var errno := 0
 
@@ -149,7 +150,7 @@ method parseargs {
                 if (skip) then {
                     skip := false
                 } else {
-                    var filename := arg
+                    filename := arg
                     infilev := io.open(filename, "r")
                     if (modnamev == "stdin_minigrace") then {
                         var accum := ""
@@ -361,6 +362,21 @@ method engine {
 }
 method extensions {
     extensionsv
+}
+method sourceDir {
+//    filename.substringFrom 0 to (filename.lastIndexOf("/")ifAbsent{ return "./" })
+//    However, lastIndexOf is not available in gracelib.c
+    var indexOfLastSlash := 0
+    var ix := filename.length
+    while {(ix > 0) && (indexOfLastSlash == 0)} do {
+        if (filename.at(ix) == "/") then { indexOfLastSlash := ix }
+        ix := ix - 1
+    }
+    if (indexOfLastSlash == 0) then {
+        "./"
+    } else {
+        filename.substringFrom 1 to (indexOfLastSlash)
+    }
 }
 method processExtension(ext) {
     var extn := ""

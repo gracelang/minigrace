@@ -1856,7 +1856,9 @@ method checkimport(nm, line, isDialect) {
         }
     }
     var locationList := collections.list.new
-    locationList.push("")
+    locationList.push("./")
+    def sourceDir = util.sourceDir
+    if (sourceDir != "./") then {locationList.push(util.sourceDir)}
     locationList.push("{sys.execPath}/")
     if(buildinfo.modulepath != "") then {
         locationList.push("{buildinfo.modulepath}/")
