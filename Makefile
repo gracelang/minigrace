@@ -223,20 +223,20 @@ install: minigrace
 Makefile.conf: configure
 	./configure
 
-tarWeb: js samples
+tarWeb: js samples js/tests/printc.js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
 
-blackWeb: js samples ace-code
+blackWeb: js samples js/tests/printc.js ace-code
 	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample black@cs.pdx.edu:public_html/minigrace
 
-graceWeb: js samples ace-code
+graceWeb: js samples js/tests/printc.js ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
 
-bruceWeb: js samples ace-code
+bruceWeb: js samples js/tests/printc.js ace-code
 	rsync -a -l -z --delete $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
 	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
 
