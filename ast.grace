@@ -608,11 +608,12 @@ class typeDecNode.new(name', typeValue) {
     var annotations := collections.list.new
     var generics := collections.list.new
     
-    method isPublic {
+    method isConfidential {
         if (annotations.size == 0) then { return false }
-        findAnnotation(self, "public")
+        findAnnotation(self, "confidential")
     }
-    method isWritable { return false }
+    method isPublic { isConfidential.not }
+    method isWritable { false }
     method isReadable { isPublic }
 
 

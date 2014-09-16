@@ -79,11 +79,11 @@ method generateGCT(path)fromValues(values)modules(modules) {
             if (v.isWritable) then {
                 methods.push(v.name.value ++ ":=")
             }
-        } elseif (v.kind == "method") then {
+        } elseif {(v.kind == "method").orElse {v.kind == "typedec"}} then {
             if (v.isPublic) then {
-                methods.push(v.value.value)
+                methods.push(v.nameString)
             } else {
-                confidentials.push(v.value.value)
+                confidentials.push(v.nameString)
             }
         } elseif (v.kind == "defdec") then {
             if (v.isPublic) then {
@@ -98,10 +98,6 @@ method generateGCT(path)fromValues(values)modules(modules) {
             }
         } elseif (v.kind == "class") then {
             methods.push(v.name.value)
-        } elseif (v.kind == "type") then {
-            if (v.isPublic) then {
-                methods.push(v.value)
-            }
         } elseif (v.kind == "dialect") then {
             theDialect := v.value
         }
