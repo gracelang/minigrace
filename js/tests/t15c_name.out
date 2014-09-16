@@ -1,0 +1,8 @@
+Hello, world!
+Built-in: EnvironmentException = EnvironmentException
+StdPrel: BasicPattern = an object
+Built-in module: unicode = the unicode module
+Built-in module: mirrors = the mirrors module
+Collections (object) list = an object
+Collections (type): List = type List
+point2D = an object
