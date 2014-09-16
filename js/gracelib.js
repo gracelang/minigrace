@@ -1227,7 +1227,7 @@ function GraceModule(name) {
     newModuleObject.className = "Module<" + name + ">";
     newModuleObject.outer = Grace_prelude;
     newModuleObject.methods.asString = function module_asString(argcv) {
-        return new GraceString("singleton " + this.className);
+        return new GraceString("the " + this.definitionModule + " " + this.className);
     };
     newModuleObject.methods.outer = function module_outer () {
         return this.outer;
@@ -1433,7 +1433,7 @@ function gracecode_unicode() {
             return new GraceUnicodePattern(args, args2);
         },
     };
-    this.className = "module;"
+    this.className = "module";
     this.definitionModule = "unicode";
     this.definitionLine = 0;
     this.superobj = new GraceModule("unicode");
