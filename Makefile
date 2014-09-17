@@ -7,7 +7,7 @@ all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.gr
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
-GRACE_MODULES = gUnit.grace collections.grace
+GRACE_MODULES = gUnit.grace collections.grace objectdraw.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
