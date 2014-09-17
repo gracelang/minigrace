@@ -36,6 +36,7 @@ var debugMode := false
 var priorLineSeen := 0
 var priorLineComment := ""
 var priorLineEmitted := 0
+var emitTypeChecks := true
 
 method increaseindent() {
     indent := indent ++ "  "
@@ -224,14 +225,18 @@ method compileobjdefdec(o, selfr, pos) {
     if (ast.findAnnotation(o, "parent")) then {
         out "  {selfr}.superobj = {val};"
     }
-    if (o.dtype.value != "Unknown") then {
-        linenum := o.line
-        noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
-        out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-        out "  [1], {val})))"
-        out "    throw new GraceExceptionPacket(TypeErrorObject,"
-        out "          new GraceString(\"expected \""
-        out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.value}\"))";
+    if (emitTypeChecks) then {
+        if (o.dtype != false) then {
+            if (o.dtype.value != "Unknown") then {
+                linenum := o.line
+                noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+                out "  [1], {val})))"
+                out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                out "          new GraceString(\"expected \""
+                out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.value}\"))";
+            }
+        }
     }
 }
 method compileobjvardec(o, selfr, pos) {
@@ -262,18 +267,20 @@ method compileobjvardec(o, selfr, pos) {
     if (o.isWritable.not) then {
         out("writer_{emod}_{nmi}{myc}.confidential = true;")
     }
-    if (o.dtype != false) then {
-        if (o.dtype.value != "Unknown") then {
-            if (val == "undefined") then {
-                return true
+    if (emitTypeChecks) then {
+        if (o.dtype != false) then {
+            if (o.dtype.value != "Unknown") then {
+                if (val == "undefined") then {
+                    return true
+                }
+                linenum := o.line
+                noteLineNumber(o.line)comment("typecheck in compileobjvardec")
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+                out "  [1], {val})))"
+                out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                out "          new GraceString(\"expected \""
+                out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
             }
-            linenum := o.line
-            noteLineNumber(o.line)comment("typecheck in compileobjvardec")
-            out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-            out "  [1], {val})))"
-            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-            out "          new GraceString(\"expected \""
-            out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
         }
     }
 }
@@ -608,8 +615,6 @@ method compilemethod(o, selfobj) {
         }
         out "// End checking generics"
     }
-    out("var returnTarget = invocationCount;")
-    out("invocationCount++;")
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
@@ -624,6 +629,8 @@ method compilemethod(o, selfobj) {
         def ret = compilenode(o.body.at(1))
         out("return " ++ ret ++ ";")
     } else {
+        out("var returnTarget = invocationCount;")
+        out("invocationCount++;")
         out("try \{")
         increaseindent
         var ret := "GraceDone"
@@ -842,7 +849,7 @@ method compilemethodtypes(func, o) {
             // We store information for static top-level types only:
             // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
-                if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Dynamic"}
+                if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Unknown"}
                     || (p.dtype.kind == "typeliteral")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
@@ -981,15 +988,17 @@ method compiledefdec(o) {
         }
         out("this.methods[\"{nm}\"].debug = \"def\";")
     }
-    if (o.dtype != false) then {
-        if (o.dtype.value != "Unknown") then {
-            linenum := o.line
-            noteLineNumber(o.line)comment("compiledefdec")
-            out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-            out "  [1], {varf(nm)})))"
-            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-            out "          new GraceString(\"expected \""
-            out "          + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))"
+    if (emitTypeChecks) then {
+        if (o.dtype != false) then {
+            if (o.dtype.value != "Unknown") then {
+                linenum := o.line
+                noteLineNumber(o.line)comment("compiledefdec")
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+                out "  [1], {varf(nm)})))"
+                out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                out "          new GraceString(\"expected \""
+                out "          + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))"
+            }
         }
     }
     o.register := val
@@ -1018,15 +1027,19 @@ method compilevardec(o) {
             [ast.bindNode.new(o.name, tmpID)], false))
         out("this.methods[\"{nm}\"].debug = \"var\";")
     }
-    if (o.dtype.value != "Unknown") then {
-        if (val != "false") then {
-            linenum := o.line
-            noteLineNumber(o.line)comment("compilevardec")
-            out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-            out "  [1], {varf(nm)})))"
-            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-            out "          new GraceString(\"expected \""
-            out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
+    if (emitTypeChecks) then {
+        if (o.dtype != false) then {
+            if (o.dtype.value != "Unknown") then {
+                if (val != "false") then {
+                    linenum := o.line
+                    noteLineNumber(o.line)comment("compilevardec")
+                    out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+                    out "  [1], {varf(nm)})))"
+                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                    out "          new GraceString(\"expected \""
+                    out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
+                }
+            }
         }
     }
     o.register := val
@@ -1281,13 +1294,15 @@ method compileimport(o) {
     if (o.isReadable.not) then {
         out "{accessor.register}.confidential = true;"
     }
-    if (o.dtype != false) then {
-        if (o.dtype.value != "Unknown") then {
-            out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-            out "  [1], {varf(nm)})))"
-            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-            out "          new GraceString(\"expected \""
-            out "          + \"module {o.value} to be of type {o.dtype.value}\"))";
+    if (emitTypeChecks) then {
+        if (o.dtype != false) then {
+            if (o.dtype.value != "Unknown") then {
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
+                out "  [1], {varf(nm)})))"
+                out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                out "          new GraceString(\"expected \""
+                out "          + \"module {o.value} to be of type {o.dtype.value}\"))";
+            }
         }
     }
     out "setModuleName(\"{modname}\");"
@@ -1505,6 +1520,9 @@ method compile(vl, of, mn, rm, bt, glpath) {
     var argv := sys.argv
     var cmd
     def isPrelude = util.extensions.contains("NativePrelude")
+    if (util.extensions.contains "noTypeChecks") then {
+        emitTypeChecks := false
+    }
     values := vl
     outfile := of
     modname := mn

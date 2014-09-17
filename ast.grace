@@ -1,4 +1,5 @@
 #pragma DefaultVisibility=public
+#pragma noTypeChecks
 import "util" as util
 import "mgcollections" as collections
 
