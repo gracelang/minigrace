@@ -668,7 +668,7 @@ GraceBoolean.prototype = {
 var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
 
-function GraceList(jsList) {
+function RealGraceList(jsList) {
     var newList = callmethod(GraceListClass(), "empty", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
         callmethod(newList, "push", [1], jsList[ix]);
@@ -676,14 +676,150 @@ function GraceList(jsList) {
     return newList;
 }
 
-function JSList(graceList) {
-    // depends on the internals of the list class in collectionsPrelude
-    onSelf = true;
-    var pArray = callmethod(graceList, "inner", [0]);   // get primitive array
-    var len = callmethod(graceList, "size")._value;     // get length in use
-    var jsList = pArray._value.slice(0, len);           // discard unused elements
-    return jsList;
+function GraceList(l) {
+    this._value = l;
 }
+GraceList.prototype = {
+    methods: {
+        "push": function(argcv, val) {
+            this._value.push(val);
+            return GraceDone;
+        },
+        "size": function(argcv) {
+            //dbg("called size: " + this._value.length);
+            return new GraceNum(this._value.length);
+        },
+        "pop": function(argcv) {
+            return this._value.pop();
+        },
+        "at": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
+            var idx = parseInt(o._value);
+            return this._value[idx-1];
+        },
+        "[]": function(argcv, other) {
+            var o = callmethod(other, "asString", [0]);
+            var idx = parseInt(o._value);
+            return this._value[idx-1];
+        },
+        "at()put": function(argcv, idx, val) {
+            this._value[idx._value-1] = val;
+            return GraceDone;
+        },
+        "[]:=": function(argcv, idx, val) {
+            this._value[idx._value-1] = val;
+            return GraceDone;
+        },
+        "asString": function(argcv) {
+            var s = "[";
+            var isFirst = true;
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
+                if (v.methods["asString"])
+                    s += callmethod(v, "asString", [0])._value;
+                else {
+                    var q = dbgp(v, 2);
+                    s += "((" + q + "))"
+                }
+            }
+            s += "]";
+            return new GraceString(s);
+        },
+        "asDebugString": function(argcv) {
+            var s = "[";
+            var isFirst = true;
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
+                if (v.methods["asDebugString"])
+                    s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
+                else {
+                    var q = dbgp(v, 2);
+                    s += "((" + q + "))"
+                }
+            }
+            s += "]";
+            return new GraceString(s);
+        },
+        "debugValue": function(argcv) {
+            return new GraceString("List");
+        },
+        "debugIterator": function(argcv) {
+            return new GraceListIterator(this._value);
+        },
+        "contains": function(argcv, other) {
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                if (Grace_isTrue(callmethod(v, "==", [1], other)))
+                    return GraceTrue;
+            }
+            return GraceFalse;
+        },
+        "==": function(argcv, other) {
+            if (this == other)
+                return GraceTrue;
+            return GraceFalse;
+        },
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "match()matchesBinding()else": function(argcv, pat, b, e) {
+            return callmethod(pat, "matchObject()matchesBinding()else", [3],
+                    this, b, e);
+        },
+        "prepended": function(argcv, item) {
+            var l = [item];
+            for (var i=0; i<this._value.length; i++)
+                l.push(this._value[i]);
+            return new GraceList(l);
+        },
+        "iterator": function(argcv) {
+            return new GraceListIterator(this._value);
+        },
+        "indices": function(argcv) {
+            var l = [];
+            for (var i=1; i<=this._value.length; i++)
+                l.push(new GraceNum(i));
+            return new GraceList(l);
+        },
+        "first": function(argcv) {
+            return this._value[0];
+        },
+        "last": function(argcv) {
+            return this._value[this._value.length-1];
+        },
+        "reduce": function(argcv, initial, block) {
+            var res = initial;
+            for (var i=0; i<this._value.length; i++) {
+                var v = this._value[i];
+                res = callmethod(block, "apply", [2], res, v)
+            }
+            return res;
+        },
+        "++": function(argcv, other) {
+            var l = this._value.concat(other._value);
+            return new GraceList(l);
+        }
+    },
+    className: "list",
+    definitionModule: "unknown",
+    definitionLine: 0,
+    superobj: new GraceObject()
+};
 
 function GracePrimitiveArray(len) {
     this._value = new Array(len);
@@ -848,6 +984,10 @@ function Grace_errorPrint(obj) {
     }
 }
 
+function Grace_length(obj) {
+    return new GraceNum(obj._value.length);
+}
+
 function GraceMatchResult(result, bindings) {
     this.data["result"] = result;
     if (bindings == undefined)
@@ -991,7 +1131,7 @@ GraceBlock.prototype = {
             return this.real.apply(this.receiver, args);
         },
         "applyIndirectly": function block_applyIndirectly (argcv, a) {
-            return this.real.apply(this.receiver, JSList(a));
+            return this.real.apply(this.receiver, a._value);
         },
         "outer": function block_outer () {
             return callmethod(this.receiver, 'outer', [0]);
@@ -2547,7 +2687,6 @@ if (typeof global !== "undefined") {
     global.GraceType = GraceType;
     global.GraceUnicodePattern = GraceUnicodePattern;
     global.ImportErrorObject = ImportErrorObject;
-    global.JSList = JSList;
     global.matchCase = matchCase;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
