@@ -139,8 +139,6 @@ void gracedie(char *msg, ...);
 void graceRaise(Object, char *msg, ...);
 
 void grace_register_shutdown_function(void(*)());
-void grace_iterate(Object iterable, void(*callback)(Object, void *),
-        void *userdata);
 Object alloc_SuccessfulMatch(Object result, Object bindings);
 Object alloc_FailedMatch(Object result, Object bindings);
 

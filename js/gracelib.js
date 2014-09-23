@@ -33,7 +33,7 @@ function object_notEquals (argcv, o) {
 GraceObject.prototype = {
     methods: {
         "==": function object_equals (argcv, o) {
-            return callmethod(Grace_prelude, "is()identicalTo", [1, 1], this, o);
+            return callmethod(Grace_prelude, "identical", [2], this, o);
         },
         "!=": object_notEquals,
         "≠": object_notEquals,
@@ -2540,10 +2540,10 @@ Grace_prelude.methods["for()do"] = function(argcv, c, b) {
     }
     return GraceDone;
 }
-Grace_prelude.methods["is()identicalTo"] = function is_IdenticalTo (argcv, a, b) {
+Grace_prelude.methods["identical"] = function prelude_identical (argcv, a, b) {
     if (a === b) return GraceTrue; else return GraceFalse;
 }
-Grace_prelude.methods["is()differentFrom"] = function is_DifferentFrom (argcv, a, b) {
+Grace_prelude.methods["different"] = function prelude_different (argcv, a, b) {
     if (a !== b) return GraceTrue; else return GraceFalse;
 }
 Grace_prelude.methods["_methods"] = function() {

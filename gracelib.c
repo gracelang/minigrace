@@ -1024,7 +1024,7 @@ void BuiltinListIter_mark(Object o) {
 Object alloc_BuiltinListIter(Object array) {
     if (BuiltinListIter == NULL) {
         BuiltinListIter = alloc_class2("BuiltinListIter", 2, (void*)&BuiltinListIter_mark);
-        add_Method(BuiltinListIter, "havemore", &BuiltinListIter_havemore);
+        add_Method(BuiltinListIter, "hasNext", &BuiltinListIter_havemore);
         add_Method(BuiltinListIter, "next", &BuiltinListIter_next);
     }
     Object o = alloc_obj(sizeof(int) + sizeof(Object), BuiltinListIter);
@@ -1202,9 +1202,9 @@ Object BuiltinList_concat(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     for (i=0; i<sself->size; i++)
         BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
-    Object iter = callmethod(args[0], "iter", 0, NULL, NULL);
+    Object iter = callmethod(args[0], "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
         BuiltinList_push(nl, 1, partcv, &val, 0);
     }
@@ -1503,7 +1503,7 @@ void StringIter__mark(Object o) {
 Object alloc_StringIter(Object string) {
     if (StringIter == NULL) {
         StringIter = alloc_class2("StringIter", 4, (void *)&StringIter__mark);
-        add_Method(StringIter, "havemore", &StringIter_havemore);
+        add_Method(StringIter, "hasNext", &StringIter_havemore);
         add_Method(StringIter, "next", &StringIter_next);
     }
     Object o = alloc_obj(sizeof(int) + sizeof(Object), StringIter);
@@ -1656,7 +1656,7 @@ Object ConcatString_iter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = ConcatString__Flatten(self);
     Object o = alloc_String(c);
-    return callmethod(o, "iter", 0, NULL, NULL);
+    return callmethod(o, "iterator", 0, NULL, NULL);
 }
 Object ConcatString_substringFrom_to(Object self,
         int nparts, int *argcv, Object *args, int flags) {
@@ -1931,6 +1931,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "length", &String_length);
         add_Method(String, "size", &String_size);
         add_Method(String, "iter", &String_iter);
+        add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
@@ -2699,7 +2700,7 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "seekBackward", &File_seekBackward);
         add_Method(File, "iterator", &File_iter);
         add_Method(File, "hasNext", &File_havemore);
-        add_Method(File, "iter", &File_iter);
+        add_Method(File, "iterator", &File_iter);
         add_Method(File, "havemore", &File_havemore);
         add_Method(File, "next", &File_next);
         add_Method(File, "readBinary", &File_readBinary);
@@ -4644,29 +4645,17 @@ Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         gracedie("for-do requires exactly two arguments");
-    Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
+    Object iter = callmethod(argv[0], "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
     // Stack slot for argument object
     int slot = gc_frame_newslot(NULL);
     int partcv[] = {1};
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
         gc_frame_setslot(slot, val);
         callmethod(argv[1], "apply", 1, partcv, &val);
     }
     return done;
-}
-void grace_iterate(Object iterable, void(*callback)(Object, void *),
-        void *userdata) {
-    Object iter = callmethod(iterable, "iter", 0, NULL, NULL);
-    gc_frame_newslot(iter);
-    // Stack slot for argument object
-    int slot = gc_frame_newslot(NULL);
-    int partcv[] = {1};
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
-        Object val = callmethod(iter, "next", 0, NULL, NULL);
-        callback(val, userdata);
-    }
 }
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
 Object grace_octets(Object self, int npart, int *argcv,
