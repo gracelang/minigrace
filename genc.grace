@@ -690,7 +690,7 @@ method compilemethod(o, selfobj, pos) {
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         for (part.params) do { param ->
-            var pn := escapeident(param.value)
+            var pn := escapeident(param.nameString)
             out("  Object *var_{pn} = &(stackframe->slots[{slot}]);")
             out("  *var_{pn} = args[curarg];")
             out("  curarg++;")

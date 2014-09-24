@@ -433,7 +433,7 @@ class methodTypeNode.new(name', signature', rtype') {
     def rtype = rtype'
     var generics := []
     def nameString:String is public = value
-    method asString { "methodType {value} -> {rtype}" }
+    method asString { "MethodType {value} -> {rtype}" }
 
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMethodType(self)) then {
@@ -530,7 +530,7 @@ class typeLiteralNode.new(methods', types') {
         anonymous := false
     }
     method asString {
-        "typeliteral: methods = {methods}, types = {types}"
+        "TypeLiteral: methods = {methods}, types = {types}"
     }
     method accept(visitor : ASTVisitor) {
         if (visitor.visitTypeLiteral(self)) then {
@@ -859,7 +859,7 @@ class methodNode.new(name', signature', body', dtype') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
-    method asString { "methodNode({nameString})" }
+    method asString { "Method {nameString}" }
 }
 class callNode.new(what, with') {
     // [with]
@@ -881,6 +881,7 @@ class callNode.new(what, with') {
     def with = with'        // arguments
     var generics := false
     var isPattern := false
+    def nameString:String is public = what
     method accept(visitor : ASTVisitor) {
         if (visitor.visitCall(self)) then {
             self.value.accept(visitor)
@@ -970,6 +971,7 @@ class callNode.new(what, with') {
         }
         s
     }
+    method asString { "Call {what}" }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
     // [signature]
@@ -1050,13 +1052,14 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Class(" ++ self.name.pretty(0) ++ ")"
+        var s := "Class\n"
+        s := "{s}{spc}Name: {self.name.pretty(0)}"
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
         }
         s := s ++ "\n"
-        s := "{s}{spc}Constructor: {constructor.value}\n"
+        s := "{s}{spc}Factory method: {constructor.pretty(0)}\n"
         if(false != dtype) then {
             s := "{s}{spc}Returns:\n  {spc}{dtype.pretty(depth + 2)}\n"
         }
@@ -1238,7 +1241,7 @@ class memberNode.new(what, in') {
     inherits baseNode.new
     def kind = "member"
     var value := what
-    def nameString:String = value
+    def nameString:String is public = value
     def in = in'
     var generics := false
 
@@ -1279,7 +1282,7 @@ class memberNode.new(what, in') {
     method toGrace(depth : Number) -> String {
         var s := ""
         if (self.value.substringFrom(1)to(6) == "prefix") then {
-            s := self.value.substringFrom(7)to(self.value.size)
+            s := self.value.substringFrom(7)to(value.size)
             s := s ++ " " ++ self.in.toGrace(0)
         } else {
             s := self.in.toGrace(depth) ++ "." ++ self.value
@@ -1293,7 +1296,7 @@ class memberNode.new(what, in') {
         }
         s
     }
-    method asString { "Member‹{self.value}›" }
+    method asString { "Member‹{value}›" }
 }
 class genericNode.new(base, params') {
     inherits baseNode.new
@@ -1340,7 +1343,8 @@ class identifierNode.new(name, dtype') {
     var value := name
     var wildcard := false
     var dtype := dtype'
-    var inBind := false
+    var isBindingOccurence := false
+    var isAssigned := false
     var inRequest := false
     def nameString:String is public = name
     var generics := false
@@ -1357,14 +1361,16 @@ class identifierNode.new(name, dtype') {
         var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
         blkAfter))
         n.wildcard := wildcard
-        n.inBind := inBind
+        n.isBindingOccurence := isBindingOccurence
+        n.isAssigned := isAssigned
         n.inRequest := inRequest
         n := blk.apply(n)
         n.line := line
         if (n.kind == "identifier") then {
             n.linePos := linePos
             n.wildcard := wildcard
-            n.inBind := inBind
+            n.isBindingOccurence := isBindingOccurence
+            n.isAssigned := isAssigned
             n.inRequest := inRequest
         }
         blkAfter.apply(n)
@@ -1381,6 +1387,8 @@ class identifierNode.new(name, dtype') {
         var s
         if(self.wildcard) then {
             s := "WildcardIdentifier"
+        } elseif {isBindingOccurence} then {
+            s := "IdentifierBinding({value})"
         } else {
             s := self.asString
         }
@@ -1415,8 +1423,11 @@ class identifierNode.new(name, dtype') {
         }
         s
     }
-    method asString {
-        "Identifier‹{value}›"
+
+    method asString { 
+        if (isBindingOccurence) then { "IdentifierBinding‹{value}›" }
+                    else { "Identifier‹{value}›"
+        }
     }
 }
 
@@ -1476,6 +1487,9 @@ class stringNode.new(v) {
         s := s ++ "\""
         s
     }
+    method isBindingOccurence:=(aBool) -> Done {
+        util.log_verbose "attempting to bind {pretty(0)} at line {line}"
+    }
 }
 class numNode.new(val) {
     inherits baseNode.new
@@ -1500,6 +1514,7 @@ class numNode.new(val) {
     method toGrace(depth : Number) -> String {
         self.value.asString
     }
+    method asString { "Number {value}" }
 }
 class opNode.new(op, l, r) {
     inherits baseNode.new
@@ -1826,7 +1841,8 @@ class importNode.new(path', name) {
     def path = path'
     def annotations = collections.list.new
     var dtype := false
-    def nameString:String = value
+    def linePos = 1
+    def nameString:String is public = value
     
     method isPublic {
         // imports are confidential by default
@@ -1973,6 +1989,7 @@ class inheritsNode.new(expr) {
         "inherits {self.value.toGrace(0)}"
     }
     method nameString { value.toGrace(0) }
+    method asString { "Inherits {nameString}" }
 }
 class blankNode.new {
     inherits baseNode.new

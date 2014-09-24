@@ -382,7 +382,7 @@ method block {
         }
         ifConsume {expression(blocksOK)} then {
             if (accept("comma") || accept("arrow") || accept("colon")) then {
-                // This block has parameters
+                // This block has parameters or patterns
                 ident1 := values.pop
                 if (accept("colon")) then {
                     // We allow an expression here for the case of v : T
@@ -409,7 +409,9 @@ method block {
                     ident1.dtype := values.pop
                 }
                 params.push(ident1)
-                if (ident1.kind != "identifier") then {
+                if (ident1.kind == "identifier") then {
+                    ident1.isBindingOccurence := true
+                } else {
                     isMatchingBlock := true
                 }
                 if (isMatchingBlock && {accept("comma")}) then {
@@ -432,6 +434,7 @@ method block {
                     next
                     pushidentifier
                     ident1 := values.pop
+                    ident1.isBindingOccurence := true
                     if (accept("colon")) then {
                         next
                         typeexpression
@@ -2231,6 +2234,7 @@ method defdec {
         var val := false
         var dtype := ast.unknownType
         var name := values.pop
+        name.isBindingOccurence := true
         if (accept("colon")) then {
             next
             typeexpression
@@ -2324,6 +2328,7 @@ method vardec {
         var val := false
         var dtype := ast.unknownType
         var name := values.pop
+        name.isBindingOccurence := true
         if (accept("colon")) then {
             next
             typeexpression
@@ -2501,7 +2506,7 @@ method doobject {
             } else {
                 suggestion.insert(" \{")afterToken(lastToken)
             }
-            errormessages.syntaxError("An object must have a '\{' after 'object'.")atPosition(
+            errormessages.syntaxError("An object literal must have a '\{' after the 'object'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         values.push(object {
@@ -2526,13 +2531,13 @@ method doobject {
                 if(sym.kind != "rbrace") then {
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert("}")afterToken(lastToken)
-                    errormessages.syntaxError("An object must end with a '}'.")atPosition(
+                    errormessages.syntaxError("An object literal must end with a '}'.")atPosition(
                         lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
                 }
             } elseif ((values.size == sz) && (lastToken.kind != "semicolon")) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.deleteToken(sym)
-                errormessages.syntaxError("An object can contain only value and type definitions,  variable declarations, methods, and statements.")atRange(
+                errormessages.syntaxError("An object literal can contain only definitions, variable and method declarations, and statements.")atRange(
                     sym.line, sym.linePos, sym.linePos + sym.size - 1)withSuggestion(suggestion)
             }
             sz := values.size
@@ -2589,6 +2594,7 @@ method doclass {
         def cname = if (tokens.first.kind == "dot") then {
             pushidentifier // A class currently cannot be anonymous
             def cname' = values.pop
+            cname'.isBindingOccurence := true
             if (!accept("dot")) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.replaceToken(sym) with(".")
@@ -2604,6 +2610,7 @@ method doclass {
         var s := methodsignature(false)
         var csig := s.sig
         var methodName := s.m
+        methodName.isBindingOccurence := true
         var dtype := s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
@@ -2681,6 +2688,7 @@ method dofactoryMethod {
         var s := methodsignature(false)
         var csig := s.sig
         var methodName := s.m
+        methodName.isBindingOccurence := true
         var dtype := s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
@@ -2835,7 +2843,7 @@ method parsempmndecrest(tm, sameline) {
         if ((accept("lparen")).not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("()")afterToken(lastToken)
-            errormessages.syntaxError("A multi-part method must have parentheses around each part of the method.")atPosition(
+            errormessages.syntaxError("A multi-part method must have parentheses around each parameter list.")atPosition(
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         next
@@ -2859,7 +2867,7 @@ method parsempmndecrest(tm, sameline) {
                         suggestion.deleteTokenRange(comma, lastToken)
                         suggestions.push(suggestion)
                     }
-                    errormessages.syntaxError("A variable length parameter (a parameter beginning with a '*') must have a name after the '*'.")atPosition(
+                    errormessages.syntaxError("A variable length parameter (a parameter beginning with '*') must have a name after the '*'.")atPosition(
                         lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
                 }
             }
@@ -2910,6 +2918,7 @@ method methodsignature(sameline) {
     }
     pushidentifier
     var meth := values.pop
+    meth.isBindingOccurence := true
     var signature := []
     var part := ast.signaturePart.new(meth.value)
     var genericIdents := []
@@ -2945,7 +2954,9 @@ method methodsignature(sameline) {
         genericIdents := part.generics
         while {accept("identifier")} do {
             identifier
-            genericIdents.push(values.pop)
+            def id = values.pop
+            id.isBindingOccurence := true
+            genericIdents.push(id)
             if (accept("comma")) then {
                 next
             }
@@ -3004,6 +3015,7 @@ method methodsignature(sameline) {
             }
             pushidentifier
             id := values.pop
+            id.isBindingOccurence := true
             dtype := false
             if (accept("colon")) then {
                 next
