@@ -204,7 +204,7 @@ method testCaseNamed(name') -> TestCase {
 }
 
 
-class testResult {
+factory method testResult {
     var failSet := set.empty
     var errorSet := set.empty
     var runCount := 0
@@ -272,7 +272,7 @@ class testResult {
     }
 }
 
-class testRecordFor(testName)message(testMsg) {
+factory method testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
