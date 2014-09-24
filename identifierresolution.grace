@@ -356,17 +356,15 @@ method rewritematchblock(blk) {
 }
 
 method resolveIdentifier(node) {
-    if (node.kind != "identifier") then {
-        return node
-    }
     var nm := node.value
+    def nmGets = nm ++ ":="
     util.setPosition(node.line, node.linePos)
-    if (node.inBind) then {
+    if (node.isAssigned) then {
         if (!haveBinding(nm)) then {
-            if (haveBinding(nm ++ ":=")) then {
-                if (getNameKind(nm ++ ":=") == "method") then {
+            if (haveBinding(nmGets)) then {
+                if (getNameKind(nmGets) == "method") then {
                     // Bare method call with no arguments
-                    def meth = findDeepMethod(nm ++ ":=")
+                    def meth = findDeepMethod(nmGets)
                     def meth2 = ast.memberNode.new(nm, meth.in)
                     return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)])
                 }
@@ -398,7 +396,7 @@ method resolveIdentifier(node) {
                     suggestions.push(suggestion)
                 }
             }
-//            var offerString := !node.inBind && !node.inRequest
+//            var offerString := !node.isAssigned && !node.inRequest
 // This is so rarely useful it's probably better never to suggest it.
             var offerString := false
             var highlightLength := node.value.size
@@ -460,7 +458,7 @@ method resolveIdentifiersActual(node) {
     if (node == false) then {
         return node
     }
-    if (node.kind == "identifier") then {
+    if ((node.kind == "identifier").andAlso{node.isBindingOccurence.not}) then {
         return resolveIdentifier(node)
     }
     if (node.kind == "import") then {
@@ -574,44 +572,51 @@ method checkDuplicateDefinition(declNode) {
                     declNode.linePos + name.size - 1)
     }
 }
-method checkRedefinition(ident) {
-    def nk = getNameKind(ident.value)
-    if ((nk == "def").orElse {nk == "var"}) then {
-        if (getNameScope(ident.value)
-            .elementDeclarations.contains(ident.value)
-        ) then {
-            def scp = getNameScope(ident.value)
+
+method checkRedefinition(ident)as(kind) {
+    def name = ident.value
+    def priorScope = getNameScope(name)
+    if (priorScope == "undefined") then { 
+        return
+    }
+    if (priorScope.elementDeclarations.contains(name)) then {
+        def priorKind = priorScope.getKind(name)
+        // The spec says: "It is an error to declare a constant or variable
+        // that shadows a lexically-enclosing constant or variable"
+        if (((kind == "def").orElse{kind == "var"})
+            .andAlso{(priorKind == "def").orElse{priorKind == "var"}}) then {
             var more := ""
-            if (scp.elementLines.contains(ident.value)) then {
-                more := " as a {scp.getKind(ident.value)}"
-                    ++ " on line {scp.elementLines.get(ident.value)}"
+            if (priorScope.elementLines.contains(name)) then {
+                more := " as a {priorKind}"
+                    ++ " on line {priorScope.elementLines.get(name)}"
             }
-            if(nk == "def") then {
-                errormessages.syntaxError("'{ident.value}' cannot be "
+            if (kind == "def") then {
+                errormessages.syntaxError("'{name}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
                     atRange(ident.line, ident.linePos,
-                        ident.linePos + ident.value.size - 1)
+                        ident.linePos + name.size - 1)
             } else {
                 def suggs = collections.list.new
                 def sugg = errormessages.suggestion.new
-                if (sugg.replaceUntil("=")with("{ident.value} :=")
+                if (sugg.replaceUntil("=")with("{name} :=")
                         onLine(ident.line)
                     ) then {
                     suggs.push(sugg)
                 }
-                errormessages.syntaxError("'{ident.value}' cannot be "
+                errormessages.syntaxError("'{name}' cannot be "
                         ++ "redeclared because it is already declared in "
                         ++ "scope{more}. To assign to the existing variable, "
-                        ++ "remove 'var' or 'def'.")
+                        ++ "remove 'var'.")
                     atRange(ident.line, ident.linePos,
-                        ident.linePos + ident.value.size - 1)
+                        ident.linePos + name.size - 1)
                     withSuggestions(suggs)
             }
         }
+
     }
     util.setline(ident.line)
-    scope.elementDeclarations.put(ident.value, true)
+    scope.elementDeclarations.put(name, true)
 }
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
@@ -622,7 +627,7 @@ method resolveIdentifiers(topNode) {
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
         util.setPosition(node.line, node.linePos)
         if (node.kind == "class") then {
-            checkRedefinition(node.name)
+            checkRedefinition(node.name) as "def"
             scope.add(node.name.value) as "def"
             def classScope = Scope.new(scope)
             classScope.add(node.constructor.value)
@@ -647,15 +652,18 @@ method resolveIdentifiers(topNode) {
             for (node.value) do {n->
                 if (n.kind == "method") then {
                     checkDuplicateDefinition(n)
+                    checkRedefinition(n.value) as "method"
                     scope.add(n.value.value)
                 }
                 if (n.kind == "vardec") then {
                     checkDuplicateDefinition(n)
+                    checkRedefinition(n.name) as "method"
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
                 }
                 if (n.kind == "defdec") then {
                     checkDuplicateDefinition(n)
+                    checkRedefinition(n.name) as "method"
                     scope.add(n.name.value)
                 }
                 if (n.kind == "inherits") then {
@@ -717,12 +725,12 @@ method resolveIdentifiers(topNode) {
                 tmp := rewritematchblock(tmp)
             }
             for (tmp.params) do {p->
-                checkRedefinition(p)
+                checkRedefinition(p) as "def"
                 scope.add(p.value)as "def"
             }
         } elseif (node.kind == "typedec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
-                checkRedefinition(node.name)
+                checkRedefinition(node.name) as "def"
                 scope.add(node.name.value) as "def"
                 pushScope
                 scope.variety := "typeparams"
@@ -766,6 +774,7 @@ method resolveIdentifiers(topNode) {
             if ((scope.variety != "object").andAlso{ 
                 scope.variety != "class" }.andAlso{
                 scope.variety != "module" }) then {
+                // this seems to be executed for top-level methods (only?)
                 checkDuplicateDefinition(node)
             }
             scope.add(node.nameString)
@@ -773,12 +782,12 @@ method resolveIdentifiers(topNode) {
             scope.variety := "method"
             scope.name := node.nameString
             for (node.generics) do {g->
-                checkRedefinition(g)
+                checkRedefinition(g) as "def"
                 scope.add(g.value) as "def"
             }
             for (node.signature) do {s->
                 for (s.params) do {p->
-                    checkRedefinition(p)
+                    checkRedefinition(p) as "def"
                     scope.add(p.value) as "def"
                 }
                 if (false != s.vararg) then {
@@ -787,14 +796,14 @@ method resolveIdentifiers(topNode) {
             }
         } elseif (node.kind == "vardec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
-                checkRedefinition(node.name)
+                checkRedefinition(node.name) as "var"
                 scope.add(node.name.value) as "var"
             } else {
                 scope.add(node.name.value)
             }
         } elseif (node.kind == "defdec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
-                checkRedefinition(node.name)
+                checkRedefinition(node.name) as "def"
                 scope.add(node.name.value) as "def"
                 if (false != node.startToken) then {
                     scope.elementTokens.put(node.name.value, node.startToken)
@@ -803,7 +812,7 @@ method resolveIdentifiers(topNode) {
                 scope.add(node.name.value)
             }
         } elseif (node.kind == "import") then {
-            checkRedefinition(node)
+            checkRedefinition(node) as "def"
             scope.add(node.value) as "def"
         }
     } after { node ->
@@ -997,7 +1006,7 @@ method resolve(values) {
         method visitBind(o) {
             def d = o.dest
             if (d.kind == "identifier") then {
-                d.inBind := true
+                d.isAssigned := true
             }
             return true
         }
