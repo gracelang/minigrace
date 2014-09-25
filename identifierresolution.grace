@@ -596,14 +596,11 @@ method checkRedefinition(ident)as(kind) {
     }
     if (priorScope.elementDeclarations.contains(name)) then {
         def priorKind = priorScope.getKind(name)
-        // The spec says: "It is an error to declare a constant or variable
-        // that shadows a lexically-enclosing constant or variable"
-        if (((kind == "def").orElse{kind == "var"})
-            .andAlso{(priorKind == "def").orElse{priorKind == "var"}}) then {
+        // methods can shadow methods, but other shadowing is illegal
+        if ((kind != "method") || (priorKind != "method")) then {
             var more := ""
             if (priorScope.elementLines.contains(name)) then {
-                more := " as a {priorKind}"
-                    ++ " on line {priorScope.elementLines.get(name)}"
+                more := " on line {priorScope.elementLines.get(name)}"
             }
             if (kind == "def").orElse {kind == "typedef"} then {
                 errormessages.syntaxError("'{name}' cannot be "
@@ -640,9 +637,12 @@ method resolveIdentifiers(topNode) {
     }
     topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
         util.setPosition(node.line, node.linePos)
+        def definingObject = (scope.variety == "object")
+                            .orElse{scope.variety == "class"}
+                                .orElse{scope.variety == "module"}
         if (node.kind == "class") then {
-            checkRedefinition(node.name) as "def"
-            scope.add(node.name.value) as "def"
+            checkRedefinition(node.name) as "method"
+            scope.add(node.name.value) as "method"
             def classScope = Scope.new(scope)
             classScope.add(node.constructor.value)
             classScope.bindAs(node.name.value)
@@ -668,19 +668,16 @@ method resolveIdentifiers(topNode) {
                     checkDuplicateDefinition(n)
                     checkRedefinition(n.value) as "method"
                     scope.add(n.value.value)
-                }
-                if (n.kind == "vardec") then {
+                } elseif {n.kind == "vardec"} then {
                     checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
                     scope.add(n.name.value)
                     scope.add(n.name.value ++ ":=")
-                }
-                if (n.kind == "defdec") then {
+                } elseif {(n.kind == "defdec").orElse{n.kind == "typedec"}} then {
                     checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
                     scope.add(n.name.value)
-                }
-                if (n.kind == "inherits") then {
+                } elseif {n.kind == "inherits"} then {
                     def parent = resolveIdentifiers(n.value)
                     def parentScope = findDeepScope(parent)
                     for (parentScope.elements) do {e->
@@ -710,16 +707,19 @@ method resolveIdentifiers(topNode) {
             for (node.value) do {n->
                 if (n.kind == "method") then {
                     checkDuplicateDefinition(n)
-                    scope.add(n.value.value)
+                    checkRedefinition(n.value) as "method"
+                    scope.add(n.value.value) as "method"
                 }
                 if (n.kind == "vardec") then {
                     checkDuplicateDefinition(n)
-                    scope.add(n.name.value)
+                    checkRedefinition(n.value) as "method"
+                    scope.add(n.name.value) as "method"
                     scope.add(n.name.value ++ ":=")
                 }
                 if (n.kind == "defdec") then {
                     checkDuplicateDefinition(n)
-                    scope.add(n.name.value)
+                    checkRedefinition(n.value) as "method"
+                    scope.add(n.name.value) as "method"
                 }
                 if (n.kind == "inherits") then {
                     def parent = resolveIdentifiers(n.value)
@@ -757,6 +757,7 @@ method resolveIdentifiers(topNode) {
                 pushScope
                 scope.variety := "typeparams"
                 for (node.generics) do {n->
+                checkDuplicateDefinition(n) as "typedef"
                     scope.add(n.value) as "def"
                 }
             }
@@ -785,12 +786,6 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif (node.kind == "method") then {
-            if ((scope.variety != "object").andAlso{ 
-                scope.variety != "class" }.andAlso{
-                scope.variety != "module" }) then {
-                // this seems to be executed for top-level methods (only?)
-                checkDuplicateDefinition(node)
-            }
             scope.add(node.nameString)
             pushScope
             scope.variety := "method"
@@ -809,25 +804,25 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif (node.kind == "vardec") then {
-            if ((scope.variety != "object") && (scope.variety != "class")) then {
-                checkRedefinition(node.name) as "var"
-                scope.add(node.name.value) as "var"
-            } else {
-                scope.add(node.name.value)
-            }
+            def kind = if (definingObject)
+                then { "method" }
+                else { "var" }
+            checkDuplicateDefinition(node)
+            checkRedefinition(node.name) as (kind)
+            scope.add(node.name.value) as (kind)
         } elseif (node.kind == "defdec") then {
-            if ((scope.variety != "object") && (scope.variety != "class")) then {
-                checkRedefinition(node.name) as "def"
-                scope.add(node.name.value) as "def"
-                if (false != node.startToken) then {
-                    scope.elementTokens.put(node.name.value, node.startToken)
-                }
-            } else {
-                scope.add(node.name.value)
+            def kind = if (definingObject)
+                then { "method" }
+                else { "def" }
+            checkDuplicateDefinition(node)
+            checkRedefinition(node.name) as (kind)
+            scope.add(node.name.value) as (kind)
+            if (false != node.startToken) then {
+                scope.elementTokens.put(node.name.value, node.startToken)
             }
         } elseif (node.kind == "import") then {
-            checkRedefinition(node) as "def"
-            scope.add(node.value) as "def"
+            checkRedefinition(node) as "method"
+            scope.add(node.value) as "method"
         }
     } after { node ->
         if (node.kind == "class") then {
@@ -904,7 +899,7 @@ method handleImport(e) {
     def gct = xmodule.parseGCT(e.path, "/nosuchpath")
     def otherModule = Scope.new(builtinObj)
     processGCT(gct, otherModule)
-    scope.add(e.value) as "def"
+    scope.add(e.value) as "method"
     scope.elementScopes.put(e.value, otherModule)
 }
 
@@ -993,16 +988,17 @@ method resolve(values) {
     }
     def vals = collections.list.new
     for (values) do { n ->
+        // these are top-level defs, so are methods.
         util.setPosition(n.line, n.linePos)
         if (n.kind == "method") then {
             checkDuplicateDefinition(n)
             scope.add(n.nameString) as "method"
         } elseif ((n.kind == "class") || (n.kind == "defdec") || (n.kind == "typedec")) then {
             checkDuplicateDefinition(n)
-            scope.add(n.nameString) as "def"
+            scope.add(n.nameString) as "method"
         } elseif (n.kind == "vardec") then {
             checkDuplicateDefinition(n)
-            scope.add(n.nameString) as "var"
+            scope.add(n.nameString) as "method"
         } elseif (n.kind == "import") then {
             checkDuplicateDefinition(n)
             handleImport(n)

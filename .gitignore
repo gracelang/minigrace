@@ -40,6 +40,7 @@ js/lexer.js
 js/mgcollections.js
 js/minigrace.js
 js/parser.js
+js/objectdraw.js
 js/xmodule.js
 .git-generation-cache
 c/*.c
