@@ -63,3 +63,4 @@ minigrace.xcodeproj/*
 minigrace.xcworkspace
 minigrace.xcworkspace/*
 .gitignore~
+objectdraw.grace
