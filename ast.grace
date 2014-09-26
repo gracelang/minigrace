@@ -953,7 +953,7 @@ class callNode.new(what, with') {
         }
         s
     }
-    method asString { "Call {what}" }
+    method asString { "Call {what.pretty(0)}" }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
     // [signature]
@@ -1230,7 +1230,7 @@ class arrayNode.new(values) {
 class memberNode.new(what, in') {
     inherits baseNode.new
     def kind = "member"
-    var value := what
+    var value := what  // NB: value is a String, not an Identifier
     def nameString:String is public = value
     def in = in'
 
@@ -1255,8 +1255,9 @@ class memberNode.new(what, in') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Member(" ++ self.value ++ ")\n"
-        s := s ++ spc ++ self.in.pretty(depth+1)
+        var s := "Member\n" 
+        s := s ++ "{spc}value: {self.value} (String)\n"
+        s := s ++ "{spc}in:    {self.in.pretty(depth+1)}\n"
         s
     }
     method toGrace(depth : Number) -> String {

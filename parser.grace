@@ -2460,7 +2460,7 @@ method inheritsdec {
     if (accept("keyword") && (sym.value == "inherits")) then {
         checkIndent
         next
-        if(didConsume({expression(blocksOK)}).not) then {
+        if(didConsume({expression(noBlocks)}).not) then {
             def suggestions = []
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextValidToken("rsquare")
@@ -2473,7 +2473,7 @@ method inheritsdec {
             suggestion := errormessages.suggestion.new
             suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
             suggestions.push(suggestion)
-            errormessages.syntaxError("An inheritance statement must have the object being inherited from after the 'inherits'.")atPosition(
+            errormessages.syntaxError("The inherits keyword must be followed by an expression that denotes the object being inherited.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
         var tmp := values.pop
