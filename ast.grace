@@ -971,7 +971,7 @@ class callNode.new(what, with') {
         }
         s
     }
-    method asString { "Call {what}" }
+    method asString { "Call {what.pretty(0)}" }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
     // [signature]
@@ -1240,7 +1240,7 @@ class arrayNode.new(values) {
 class memberNode.new(what, in') {
     inherits baseNode.new
     def kind = "member"
-    var value := what
+    var value := what  // NB: value is a String, not an Identifier
     def nameString:String is public = value
     def in = in'
     var generics := false

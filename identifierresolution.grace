@@ -8,7 +8,7 @@ import "mgcollections" as collections
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
-class Scope.new(parent') {
+class Scope.new(parent', variety') {
     def elements = collections.map.new
     def elementScopes = collections.map.new
     def elementDeclarations = collections.map.new
@@ -16,7 +16,7 @@ class Scope.new(parent') {
     def elementTokens = collections.map.new
     def parent = parent'
     var hasParent := true
-    var variety := "block"
+    var variety := variety'
     var name := ""
     method isEmpty { elements.size == 0 }
     method add(n) {
@@ -46,13 +46,13 @@ class Scope.new(parent') {
         if (elementScopes.contains(n)) then {
             return elementScopes.get(n)
         }
-        return Scope.new(self)
+        return Scope.new(self, "from getScope")
     }
-    method new {
-        Scope.new(self)
+    method new(v) {
+        Scope.new(self, v)
     }
     method asString {
-        var result := "\nTop:\n    "
+        var result := "\nCurrent: {self.parent.variety}\n"
         var s := self
         while {s.hasParent} do {
             for (s.elements) do { each ->
@@ -77,17 +77,14 @@ class Scope.new(parent') {
     }
 }
 
-def builtinObj = Scope.new(object { })
-builtinObj.variety := "top"
+def builtinObj = Scope.new(object { }, "top")
 builtinObj.hasParent := false
-def preludeObj = Scope.new(builtinObj)
-preludeObj.variety := "dialect"
-def moduleObj = Scope.new(preludeObj)
-moduleObj.variety := "module"
+def preludeObj = Scope.new(builtinObj, "dialect")
+def moduleObj = Scope.new(preludeObj, "module")
 var scope := moduleObj
 
-method pushScope {
-    scope := scope.new
+method pushScope(v) {
+    scope := scope.new(v)
 }
 method popScope {
     scope := scope.parent
@@ -175,10 +172,12 @@ method findDeepScope'(node, scope') {
                 return s.getScope(node.value)
             }
         }
-        return scope'.getScope(node.value)
+        ProgrammingError.throw "{node.value} is undeclared (1)."
     }
     if (node.kind == "member") then {
         def tmp = findDeepScope'(node.in, scope')
+        print "fDS': found scope for {node.in}:"
+        print(tmp)
         if (node.value == "outer") then {
             return tmp.parent
         }
@@ -187,7 +186,7 @@ method findDeepScope'(node, scope') {
     if (node.kind == "call") then {
         return findDeepScope'(node.value, scope')
     }
-    return Scope.new(scope')
+    ProgrammingError.throw "{node.value} is undeclared (2)."
 }
 
 method findDeepScope(node) {
@@ -652,10 +651,10 @@ method resolveIdentifiers(topNode) {
         if (node.kind == "class") then {
             checkRedefinition(node.name) as "method"
             scope.add(node.name.value) as "method"
-            def classScope = Scope.new(scope)
+            def classScope = Scope.new(scope, "class")
             classScope.add(node.constructor.value)
             classScope.bindAs(node.name.value)
-            pushScope
+            pushScope("method")
             if (false != node.generics) then {
                 for (node.generics) do {g->
                     scope.add(g.value) as "def"
@@ -669,8 +668,7 @@ method resolveIdentifiers(topNode) {
                     scope.add(s.vararg.value) as "def"
                 }
             }
-            pushScope
-            scope.variety := "class"
+            pushScope("class")
             classScope.elementScopes.put(node.constructor.value, scope)
             for (node.value) do {n->
                 util.setPosition(node.line, node.linePos)
@@ -690,9 +688,6 @@ method resolveIdentifiers(topNode) {
                 } elseif {n.kind == "inherits"} then {
                     def parent = resolveIdentifiers(n.value)
                     def parentScope = findDeepScope(parent)
-                    if (parentScope.isEmpty) then {
-                        print "didn't find scope for {parent} ({n.value})"
-                    }
                     for (parentScope.elements) do {e->
                         scope.add(e) as "inherited"
                         n.providedNames.add(e)
@@ -715,8 +710,7 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif {node.kind == "object"} then {
-            pushScope
-            scope.variety := "object"
+            pushScope("object")
             for (node.value) do {n->
                 util.setPosition(n.line, n.linePos)
                 if (n.kind == "method") then {
@@ -738,8 +732,9 @@ method resolveIdentifiers(topNode) {
                 if (n.kind == "inherits") then {
                     def parent = resolveIdentifiers(n.value)
                     def parentScope = findDeepScope(parent)
-                    if (parentScope.isEmpty) then {
-                        print "didn't find scope for {parent} ({n.value})"
+                    if (n.value.kind == "member") then {
+                        print "object inherits: found scope for ({n.pretty(0)})"
+                        print(parentScope)
                     }
                     for (parentScope.elements) do {e->
                         scope.add(e) as "inherited"
@@ -748,9 +743,9 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif (node.kind == "if") then {
-            pushScope
+            pushScope("block")
         } elseif (node.kind == "block") then {
-            pushScope
+            pushScope("block")
             var tmp := node
             if (node.params.size == 1) then {
                 tmp := rewritematchblock(tmp)
@@ -781,8 +776,7 @@ method resolveIdentifiers(topNode) {
                 }
             }
         } elseif (node.kind == "typeliteral") then {
-            pushScope
-            scope.variety := "typeliteral"
+            pushScope("typeliteral")
             for (node.methods) do { each ->
                 checkDuplicateDefinition(each)
             }
@@ -792,7 +786,7 @@ method resolveIdentifiers(topNode) {
         } elseif (node.kind == "methodtype") then {
             checkDuplicateDefinition(node)
             scope.add(node.value)
-            pushScope
+            pushScope("methodtype")
             for (node.generics) do {g->
                 util.setPosition(g.line, g.linePos)
                 scope.add(g.value) as "def"
@@ -808,8 +802,7 @@ method resolveIdentifiers(topNode) {
             }
         } elseif (node.kind == "method") then {
             scope.add(node.nameString)
-            pushScope
-            scope.variety := "method"
+            pushScope("method")
             scope.name := node.nameString
             for (node.generics) do {g->
                 util.setPosition(g.line, g.linePos)
@@ -895,9 +888,9 @@ method processGCT(gct, otherModule) {
         for (gct.get("classes")) do {c->
             def cmeths = []
             def constrs = gct.get("constructors-of:{c}")
-            def classScope = Scope.new(otherModule)
+            def classScope = Scope.new(otherModule, "class")
             for (constrs) do {constr->
-                def ns = Scope.new(otherModule)
+                def ns = Scope.new(otherModule, "object")
                 classScope.add(constr)
                 classScope.elementScopes.put(constr, ns)
                 for (gct.get("methods-of:{c}.{constr}")) do {mn->
@@ -908,10 +901,9 @@ method processGCT(gct, otherModule) {
             otherModule.elementScopes.put(c, classScope)
         }
     }
-    def freshmeths = collections.map.new
     if (gct.contains("fresh-methods")) then {
         for (gct.get("fresh-methods")) do {c->
-            def mScope = Scope.new(otherModule)
+            def mScope = Scope.new(otherModule, "module")
             for (gct.get("fresh:{c}")) do {mn->
                 mScope.add(mn)
             }
@@ -922,7 +914,7 @@ method processGCT(gct, otherModule) {
 }
 method handleImport(e) {
     def gct = xmodule.parseGCT(e.path, "/nosuchpath")
-    def otherModule = Scope.new(builtinObj)
+    def otherModule = Scope.new(builtinObj, "module")
     processGCT(gct, otherModule)
     scope.add(e.value) as "method"
     scope.elementScopes.put(e.value, otherModule)
@@ -1031,7 +1023,7 @@ method resolve(values) {
             def parent = resolveIdentifiers(n.value)
             def parentScope = findDeepScope(parent)
             if (parentScope.isEmpty) then {
-                print "didn't find scope for {parent} ({n.value})"
+                print "top level: didn't find scope for {parent} ({n.pretty(0)})"
             }
             for (parentScope.elements) do {e->
                 scope.add(e) as "inherited"
