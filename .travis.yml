@@ -3,6 +3,8 @@ language:
   - node_js
 node_js:
   - "0.10"
+before_script:
+  - git fetch --unshallow
 script:
   - ./tools/tarball-bootstrap -a && make && make test
   - make js && make test.js
