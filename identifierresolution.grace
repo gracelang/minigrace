@@ -19,13 +19,33 @@ class Scope.new(parent', variety') {
     var variety := variety'
     var name := ""
     method isEmpty { elements.size == 0 }
-    method add(n) {
+    method addName(n) {
         elements.put(n, "method")
         elementLines.put(n, util.linenum)
     }
-    method add(n)as(k) {
+    method addName(n)as(k) {
         elements.put(n, k)
         elementLines.put(n, util.linenum)
+    }
+    method addNode(nd) as(kind) {
+        def name = nd.nameString
+        def oldKind = elements.get(name) ifAbsent { "inherited" }
+        if (oldKind == "inherited")  then {
+            elements.put(name, kind)
+            elementLines.put(name, nd.line)
+        } else {
+            var more := " in this scope"
+            if (elementLines.contains(name)) then {
+                more := " as a {oldKind}"
+                    ++ " on line {elementLines.get(name)}"
+            }
+//            errormessages.syntaxError("'{name}' cannot be"
+            ProgrammingError.raise("'{name}' cannot be"
+                ++ " redeclared because it is already declared"
+                ++ more ++ " as well as here at line {nd.line}.")
+//                atRange(nd.line, nd.linePos, nd.linePos + name.size - 1)
+        }
+
     }
     method contains(n) {
         elements.contains(n)
@@ -42,17 +62,20 @@ class Scope.new(parent', variety') {
     method bindAs(n) {
         parent.elementScopes.put(n, self)
     }
+    method putScope(n, scp) {
+        elementScopes.put(n, scp)
+    }
     method getScope(n) {
         if (elementScopes.contains(n)) then {
             return elementScopes.get(n)
         }
-        return Scope.new(self, "from getScope")
+        return universalScope
     }
     method new(v) {
         Scope.new(self, v)
     }
     method asString {
-        var result := "\nCurrent: {self.parent.variety}\n"
+        var result := "\nCurrent: {self.variety}\n"
         var s := self
         while {s.hasParent} do {
             for (s.elements) do { each ->
@@ -75,13 +98,80 @@ class Scope.new(parent', variety') {
         }
         return true
     }
+    method scopeReferencedBy(node) {
+        // Finds the scope referenced by node.
+        // If node references an object, then the scope returned
+        // scope will have bindings for the method of that object.
+        // Otherwise, it will be the empty scope.
+        if (node.kind == "identifier") then {
+            def sought = node.nameString
+            if (sought == "self") then {
+                var s := self
+                while {s.hasParent} do {
+                    if (s.variety == "object") then { return s }
+                    if (s.variety == "class") then { return s }
+                    if (s.variety == "module") then { return s }
+                    s := s.parent
+                }
+            } elseif (sought == "prelude") then {
+                return preludeObj
+            } else {
+                self.do {s->
+                    if (s.contains(sought)) then {
+                        return s.getScope(sought)
+                    }
+                }
+                ProgrammingError.raise "Identifier {sought} is undeclared."
+            }
+        } elseif (node.kind == "member") then {
+            def targetScope = self.scopeReferencedBy(node.in)
+            print "sRB: found scope for Member {node.value} of {node.in}:"
+            print(targetScope)
+            if (node.value == "outer") then {
+                return targetScope.parent
+            }
+            return targetScope.scopeReferencedBy(node.identifier)
+        } elseif (node.kind == "call") then {
+            return scopeReferencedBy(node.value)
+        }
+        ProgrammingError.raise("{node.value} is not a Call, Member or Identifier\n"
+            ++ node.pretty(0))
+    }
+    method enclosingObject {
+        // Answer the closest scope that describes an object,
+        // class or module scope
+        do { s ->
+            if (s.variety == "object") then { return s }
+            if (s.variety == "class") then { return s }
+            if (s.variety == "module") then { return s }
+        }
+        ProgrammingError "no object scope found!"
+        // the outermost scope should always be a module scope.
+    }
 }
 
-def builtinObj = Scope.new(object { }, "top")
-builtinObj.hasParent := false
-def preludeObj = Scope.new(builtinObj, "dialect")
+
+def emptyScope = Scope.new(object { }, "empty")
+emptyScope.hasParent := false
+def preludeObj = Scope.new(emptyScope, "dialect")
 def moduleObj = Scope.new(preludeObj, "module")
 var scope := moduleObj
+
+def universalScope = object {
+    // The scope that defines every identifier,
+    // used when we have no information about an object
+    inherits Scope.new(emptyScope, "universal")
+    method hasParent { false }
+    method parent { ProgrammingError.raise "universal scope has no parent" }
+    method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
+    method addName(n)as(k) { ProgrammingError.raise "can't add to the universal scope" }
+    method addNode(n)as(k) { ProgrammingError.raise "can't add to the universal scope" }
+    method contains(n) { true }
+    method do(b) { b.apply(self) }
+    method getKind(n) { "unknown" }
+    method putScope(n, scp) { }
+    method getScope(n) { self }
+}
 
 method pushScope(v) {
     scope := scope.new(v)
@@ -146,51 +236,6 @@ method findDeepMethod(name) {
     }
     // Not found - leave it alone
     return ast.identifierNode.new(name, false)
-}
-
-method findDeepScope'(node, scope') {
-    if (node.kind == "identifier") then {
-        if (node.value == "self") then {
-            var s := scope'
-            while {s.hasParent} do {
-                if (s.variety == "object") then {
-                    return s
-                }
-                if (s.variety == "class") then {
-                    return s
-                }
-                if (s.variety == "module") then {
-                    return s
-                }
-                s := s.parent
-            }
-        } elseif (node.value == "prelude") then {
-            return preludeObj
-        }
-        scope'.do {s->
-            if (s.contains(node.value)) then {
-                return s.getScope(node.value)
-            }
-        }
-        ProgrammingError.throw "{node.value} is undeclared (1)."
-    }
-    if (node.kind == "member") then {
-        def tmp = findDeepScope'(node.in, scope')
-        print "fDS': found scope for {node.in}:"
-        print(tmp)
-        if (node.value == "outer") then {
-            return tmp.parent
-        }
-        return tmp.getScope(node.value)
-    }
-    if (node.kind == "call") then {
-        return findDeepScope'(node.value, scope')
-    }
-    ProgrammingError.throw "{node.value} is undeclared (2)."
-}
-
-method findDeepScope(node) {
-    findDeepScope'(node, scope)
 }
 
 method rewritematchblockterm(arg) {
@@ -466,7 +511,7 @@ method resolveIdentifiersActual(node) {
         return resolveIdentifier(node)
     }
     if (node.kind == "import") then {
-        scope.add(node.value) as "def"
+        scope.addNode(node) as "def"
     }
     if (node.kind == "call") then {
         if (node.value.kind == "call") then {
@@ -578,7 +623,7 @@ method checkDuplicateDefinition(declNode) {
         var more := " in this scope"
         var which
         if (scope.elementLines.contains(name)) then {
-            which := if (scope == builtinObj) then { " in builtinObj"
+            which := if (scope == emptyScope) then { " in emptyScope"
                      } elseif {scope == preludeObj} then { " in preludeObj"
                      } elseif (scope == moduleObj) then { " in moduleObj" 
                      } else { "" }
@@ -650,46 +695,43 @@ method resolveIdentifiers(topNode) {
                                 .orElse{scope.variety == "module"}
         if (node.kind == "class") then {
             checkRedefinition(node.name) as "method"
-            scope.add(node.name.value) as "method"
+            scope.addNode(node) as "method"
             def classScope = Scope.new(scope, "class")
             classScope.add(node.constructor.value)
             classScope.bindAs(node.name.value)
             pushScope("method")
             if (false != node.generics) then {
                 for (node.generics) do {g->
-                    scope.add(g.value) as "def"
+                    scope.addNode(g) as "def"
                 }
             }
             for (node.signature) do {s->
                 for (s.params) do {p->
-                    scope.add(p.value)as "def"
+                    scope.addName(p.value)as "def"
                 }
                 if (false != s.vararg) then {
-                    scope.add(s.vararg.value) as "def"
+                    scope.addName(s.vararg.value) as "def"
                 }
             }
             pushScope("class")
-            classScope.elementScopes.put(node.constructor.value, scope)
+            classScope.putScope(node.constructor.value, scope)
             for (node.value) do {n->
-                util.setPosition(node.line, node.linePos)
+                util.setPosition(n.line, n.linePos)
                 if (n.kind == "method") then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.value) as "method"
-                    scope.add(n.value.value)
+                    scope.addNode(n) as "method"
                 } elseif {n.kind == "vardec"} then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
-                    scope.add(n.name.value)
-                    scope.add(n.name.value ++ ":=")
+                    scope.addNode(n) as "method"
+                    scope.addName(n.name.value ++ ":=") as "method"
                 } elseif {(n.kind == "defdec").orElse{n.kind == "typedec"}} then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
-                    scope.add(n.name.value)
+                    scope.addNode(n)
                 } elseif {n.kind == "inherits"} then {
                     def parent = resolveIdentifiers(n.value)
-                    def parentScope = findDeepScope(parent)
+                    def parentScope = scope.scopeReferencedBy(parent)
                     for (parentScope.elements) do {e->
-                        scope.add(e) as "inherited"
+                        scope.addName(e) as "inherited"
                         n.providedNames.add(e)
                     }
                     for (node.signature) do {s->
@@ -714,30 +756,27 @@ method resolveIdentifiers(topNode) {
             for (node.value) do {n->
                 util.setPosition(n.line, n.linePos)
                 if (n.kind == "method") then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.value) as "method"
-                    scope.add(n.value.value) as "method"
+                    scope.addNode(n) as "method"
                 }
                 if (n.kind == "vardec") then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
-                    scope.add(n.nameString) as "method"
-                    scope.add(n.nameString ++ ":=")
+                    scope.addNode(n) as "method"
+                    scope.addName(n.nameString ++ ":=")
                 }
                 if (n.kind == "defdec") then {
-                    checkDuplicateDefinition(n)
                     checkRedefinition(n.name) as "method"
-                    scope.add(n.name.value) as "method"
+                    scope.addNode(n) as "method"
                 }
                 if (n.kind == "inherits") then {
                     def parent = resolveIdentifiers(n.value)
-                    def parentScope = findDeepScope(parent)
+                    def parentScope = scope.scopeReferencedBy(parent)
                     if (n.value.kind == "member") then {
                         print "object inherits: found scope for ({n.pretty(0)})"
                         print(parentScope)
                     }
                     for (parentScope.elements) do {e->
-                        scope.add(e) as "inherited"
+                        scope.addName(e) as "inherited"
                         n.providedNames.add(e)
                     }
                 }
@@ -753,7 +792,7 @@ method resolveIdentifiers(topNode) {
             for (tmp.params) do {p->
                 util.setPosition(p.line, p.linePos)
                 checkRedefinition(p) as "def"
-                scope.add(p.value)as "def"
+                scope.addNode(p)as "def"
             }
         } elseif (node.kind == "typedec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
@@ -784,61 +823,58 @@ method resolveIdentifiers(topNode) {
                 checkDuplicateDefinition(each)
             }
         } elseif (node.kind == "methodtype") then {
-            checkDuplicateDefinition(node)
-            scope.add(node.value)
+            scope.addNode(node) as "method"
             pushScope("methodtype")
             for (node.generics) do {g->
                 util.setPosition(g.line, g.linePos)
-                scope.add(g.value) as "def"
+                scope.addNode(g) as "def"
             }
             for (node.signature) do {s->
                 util.setPosition(s.line, s.linePos)
                 for (s.params) do {p->
-                    scope.add(p.value)as "def"
+                    scope.addName(p.value)as "def"
                 }
                 if (false != s.vararg) then {
-                    scope.add(s.vararg.value) as "def"
+                    scope.addName(s.vararg.value) as "def"
                 }
             }
         } elseif (node.kind == "method") then {
-            scope.add(node.nameString)
+            scope.addNode(node) as "method"
             pushScope("method")
             scope.name := node.nameString
             for (node.generics) do {g->
                 util.setPosition(g.line, g.linePos)
                 checkRedefinition(g) as "def"
-                scope.add(g.value) as "def"
+                scope.addNode(g) as "def"
             }
             for (node.signature) do {s->
                 util.setPosition(s.line, s.linePos)
                 for (s.params) do {p->
                     checkRedefinition(p) as "def"
-                    scope.add(p.value) as "def"
+                    scope.addName(p.value) as "def"
                 }
                 if (false != s.vararg) then {
-                    scope.add(s.vararg.value) as "def"
+                    scope.addName(s.vararg.value) as "def"
                 }
             }
         } elseif (node.kind == "vardec") then {
             def kind = if (definingObject)
                 then { "method" }
                 else { "var" }
-            checkDuplicateDefinition(node)
             checkRedefinition(node.name) as (kind)
-            scope.add(node.name.value) as (kind)
+            scope.addNode(node) as (kind)
         } elseif (node.kind == "defdec") then {
             def kind = if (definingObject)
                 then { "method" }
                 else { "def" }
-            checkDuplicateDefinition(node)
             checkRedefinition(node.name) as (kind)
-            scope.add(node.name.value) as (kind)
+            scope.addNode(node) as (kind)
             if (false != node.startToken) then {
                 scope.elementTokens.put(node.name.value, node.startToken)
             }
         } elseif (node.kind == "import") then {
             checkRedefinition(node) as "method"
-            scope.add(node.value) as "method"
+            scope.addNode(node) as "method"
         }
     } after { node ->
         if (node.kind == "class") then {
@@ -847,7 +883,7 @@ method resolveIdentifiers(topNode) {
             popScope
         } elseif (node.kind == "object") then {
             if (scope.parent.variety == "method") then {
-                scope.parent.parent.elementScopes.put(scope.parent.name,
+                scope.parent.parent.putScope(scope.parent.name,
                     scope)
             }
             node.data := scope
@@ -857,6 +893,22 @@ method resolveIdentifiers(topNode) {
         } elseif (node.kind == "block") then {
             popScope
         } elseif (node.kind == "method") then {
+            def enclosingObject = scope.enclosingObject
+            def methName = node.nameString
+            if (enclosingObject.elementScopes.contains(methName)) then {
+                    node.properties.put("fresh", enclosingObject.getScope(methName))
+                }
+            if (node.body.size > 0) then {
+                def lastStatement = node.body.last
+                if (lastStatement.kind == "call") then {
+                    if (lastStatement.value.kind == "member") then {
+                        def mem = lastStatement.value
+                        if (mem.value == "clone") then {
+                            node.properties.put("fresh", enclosingObject)
+                        }
+                    }
+                }
+            }
             popScope
         } elseif (node.kind == "methodtype") then {
             popScope
@@ -866,16 +918,17 @@ method resolveIdentifiers(topNode) {
             popScope
         } elseif (node.kind == "defdec") then {
             if (node.value.kind == "object") then {
-                scope.elementScopes.put(node.name.value, node.value.data)
+                scope.putScope(node.name.value, node.value.data)
                 node.data := scope
             } else {
-                def sc = findDeepScope(node.value)
-                scope.elementScopes.put(node.name.value, sc)
+                def sc = scope.scopeReferencedBy(node.value)
+                scope.putScope(node.nameString, sc)
             }
             if (ast.findAnnotation(node, "parent")) then {
-                def sc = findDeepScope(node.value)
+                def sc = scope.scopeReferencedBy(node.value)
+                util.setPosition(node.line, node.linePos)
                 for (sc.elements) do {m->
-                    scope.add(m)
+                    scope.addName(m)
                 }
             }
         }
@@ -892,13 +945,13 @@ method processGCT(gct, otherModule) {
             for (constrs) do {constr->
                 def ns = Scope.new(otherModule, "object")
                 classScope.add(constr)
-                classScope.elementScopes.put(constr, ns)
+                classScope.putScope(constr, ns)
                 for (gct.get("methods-of:{c}.{constr}")) do {mn->
                     ns.add(mn)
                 }
             }
             otherModule.add(c)
-            otherModule.elementScopes.put(c, classScope)
+            otherModule.putScope(c, classScope)
         }
     }
     if (gct.contains("fresh-methods")) then {
@@ -908,54 +961,56 @@ method processGCT(gct, otherModule) {
                 mScope.add(mn)
             }
             otherModule.add(c)
-            otherModule.elementScopes.put(c, mScope)
+            otherModule.putScope(c, mScope)
         }
     }
 }
 method handleImport(e) {
     def gct = xmodule.parseGCT(e.path, "/nosuchpath")
-    def otherModule = Scope.new(builtinObj, "module")
+    def otherModule = Scope.new(preludeObj, "module")
     processGCT(gct, otherModule)
-    scope.add(e.value) as "method"
-    scope.elementScopes.put(e.value, otherModule)
+    scope.addNode(e) as "method"
+    scope.putScope(e.value, otherModule)
 }
 
 method resolve(values) {
-    preludeObj.add "for()do"
-    preludeObj.add "while()do"
-    preludeObj.add "print"
-    builtinObj.add "Type" as "def"
-    builtinObj.add "Object" as "def"
-    builtinObj.add "Unknown" as "def"
-    builtinObj.add "String" as "def"
-    builtinObj.add "Number" as "def"
-    builtinObj.add "Boolean" as "def"
-    builtinObj.add "Block" as "def"
-    builtinObj.add "Done" as "def"
-    builtinObj.add "done" as "def"
-    builtinObj.add "true" as "def"
-    builtinObj.add "false" as "def"
-    builtinObj.add "self" as "def"
-    builtinObj.add "super" as "def"
-    builtinObj.add "outer" as "def"
-    builtinObj.add "readable" as "def"
-    builtinObj.add "writable" as "def"
-    builtinObj.add "public" as "def"
-    builtinObj.add "confidential" as "def"
-    builtinObj.add "override" as "def"
-    builtinObj.add "parent" as "method"
-    builtinObj.add "prelude" as "def"
-    builtinObj.add "_prelude" as "def"
-    builtinObj.add "..." as "def"
-    builtinObj.add "GraceType" as "def"
-    builtinObj.add "Exception" as "def"
-    builtinObj.add "PrimitiveArray" as "def"
-    builtinObj.add "NoSuchMethod" as "def"
-    builtinObj.add "ProgrammingError" as "def"
-    builtinObj.add "ResourceException" as "def"
-    builtinObj.add "RuntimeError" as "def"
-    builtinObj.add "BoundsError" as "def"
-    builtinObj.add "EnvironmentException" as "def"
+    preludeObj.addName "for()do"
+    preludeObj.addName "while()do"
+    preludeObj.addName "print"
+    builtinObj.addName "Type" as "typedef"
+    preludeObj.addName "Object" as "typedef"
+    preludeObj.addName "Unknown" as "typedef"
+    preludeObj.addName "String" as "typedef"
+    preludeObj.addName "Number" as "typedef"
+    preludeObj.addName "Boolean" as "typedef"
+    preludeObj.addName "Block" as "typedef"
+    preludeObj.addName "Done" as "typedef"
+    preludeObj.addName "done" as "def"
+    preludeObj.addName "true" as "def"
+    preludeObj.addName "false" as "def"
+    preludeObj.addName "self" as "def"
+    preludeObj.addName "super" as "def"
+    preludeObj.addName "outer" as "def"
+    preludeObj.addName "readable"
+    preludeObj.addName "writable"
+    preludeObj.addName "public"
+    preludeObj.addName "confidential"
+    preludeObj.addName "override"
+    preludeObj.addName "parent"
+    preludeObj.addName "prelude" as "def"
+    preludeObj.putScope("prelude", preludeObj)
+    preludeObj.addName "_prelude" as "def"
+    preludeObj.putScope("_prelude", preludeObj)
+    preludeObj.addName "..." as "def"
+    preludeObj.addName "GraceType" as "typedef"
+    preludeObj.addName "Exception" as "def"
+    preludeObj.addName "PrimitiveArray" as "def"
+    preludeObj.addName "NoSuchMethod" as "def"
+    preludeObj.addName "ProgrammingError" as "def"
+    preludeObj.addName "ResourceException" as "def"
+    preludeObj.addName "RuntimeError" as "def"
+    preludeObj.addName "BoundsError" as "def"
+    preludeObj.addName "EnvironmentException" as "def"
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -979,7 +1034,7 @@ method resolve(values) {
         }
         if (!hadDialect) then {
             for (prelude._methods) do {mn->
-                preludeObj.add(mn)
+                preludeObj.addName(mn)
             }
     // The above is wrong: it makes visible the methods that were in the prelude 
     // when the compiler was compiled, not those in the prelude when the subject
@@ -1003,34 +1058,8 @@ method resolve(values) {
 //            processGCT(data, preludeObj)
         }
     }
-    def vals = collections.list.new
-    for (values) do { n ->
-        // these are top-level defs, so are methods.
-        util.setPosition(n.line, n.linePos)
-        if (n.kind == "method") then {
-            checkDuplicateDefinition(n)
-            scope.add(n.nameString) as "method"
-        } elseif ((n.kind == "class") || (n.kind == "defdec") || (n.kind == "typedec")) then {
-            checkDuplicateDefinition(n)
-            scope.add(n.nameString) as "method"
-        } elseif (n.kind == "vardec") then {
-            checkDuplicateDefinition(n)
-            scope.add(n.nameString) as "method"
-        } elseif (n.kind == "import") then {
-            checkDuplicateDefinition(n)
-            handleImport(n)
-        } elseif {n.kind == "inherits"} then {
-            def parent = resolveIdentifiers(n.value)
-            def parentScope = findDeepScope(parent)
-            if (parentScope.isEmpty) then {
-                print "top level: didn't find scope for {parent} ({n.pretty(0)})"
-            }
-            for (parentScope.elements) do {e->
-                scope.add(e) as "inherited"
-                n.providedNames.add(e)
-            }
-        }
-    }
+    util.setPosition(0, 0)
+    var superObject := ast.identifierNode.new("graceObject", false)
     def vis = object {
         inherits ast.baseVisitor
         method visitBind(o) {
@@ -1047,27 +1076,14 @@ method resolve(values) {
             }
             return true
         }
+        method visitInherits(o) {
+            superObject := o.value
+        }
     }
     for (values) do { v ->
         v.accept(vis)
-        def v' = resolveIdentifiers(v)
-        vals.push(v')
-        if (v'.kind == "method") then {
-            if (moduleObj.elementScopes.contains(v'.value.value)) then {
-                v'.properties.put("fresh", moduleObj.getScope(v'.value.value))
-            }
-            if (v'.body.size > 0) then {
-                def lastStatement = v'.body.last
-                if (lastStatement.kind == "call") then {
-                    if (lastStatement.value.kind == "member") then {
-                        def mem = lastStatement.value
-                        if (mem.value == "clone") then {
-                            v'.properties.put("fresh", moduleObj)
-                        }
-                    }
-                }
-            }
-        }
     }
-    vals
+    def wholeModule = ast.objectNode.new(values, superObject)
+    def newModule = resolveIdentifiers(wholeModule)
+    newModule.body
 }
