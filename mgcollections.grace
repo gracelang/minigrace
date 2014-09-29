@@ -280,7 +280,15 @@ class map.new {
     method get(key') {
         var t := findPosition(key')
         var c := inner.at(t)
+        if (c == unused) then { NoSuchObject.raise "no value for key {key'}" }
         return c.value
+    }
+    method get(key') ifAbsent (absentBlock) {
+        var t := findPosition(key')
+        var c := inner.at(t)
+        if (c == unused) 
+            then { return absentBlock.apply }
+            else { return c.value }
     }
     method contains(key') {
         var t := findPosition(key')

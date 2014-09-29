@@ -1271,6 +1271,14 @@ class memberNode.new(what, in') {
         s
     }
     method asString { "Member {value}" }
+    method identifier {
+        // make an identifiderNode with the same properties as me
+        def resultNode = identifierNode.new(value, false)
+        resultNode.inRequest := true
+        resultNode.line := line
+        resultNode.linePos := linePos
+        return resultNode
+    }
 }
 class genericNode.new(base, params') {
     inherits baseNode.new
