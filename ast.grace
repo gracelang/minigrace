@@ -40,7 +40,8 @@ class baseNode.new {
     var line := util.linenum
     var linePos := util.linepos
     var lineLength := 0
-    
+    var parent := nullNode
+
     method asString { "astNode {self.kind}" }
     method isWritable { true }
     method isReadable { true }
@@ -52,6 +53,12 @@ class baseNode.new {
         }
         return self.dtype
     }
+    method accept(visitor) { self.accept(visitor) from(nullNode) }
+}
+
+def nullNode = object {
+    inherits baseNode.new
+    def kind = "null"
 }
 
 class forNode.new(over, body') {
@@ -59,10 +66,10 @@ class forNode.new(over, body') {
     def kind = "for"
     def value = over
     def body = body'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitFor(self)) then {
-            self.value.accept(visitor)
-            self.body.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitFor(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
+            self.body.accept(visitor) from(self)
         }
     }
     method pretty(depth) {
@@ -92,9 +99,9 @@ class whileNode.new(cond, body') {
     def kind = "while"
     def value = cond
     def body = body'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitWhile(self)) then {
-            self.value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode){
+        if (visitor.visitWhile(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
             for (self.body) do { x ->
                 x.accept(visitor)
             }
@@ -134,14 +141,14 @@ class ifNode.new(cond, thenblock', elseblock') {
     def thenblock = thenblock'
     def elseblock = elseblock'
     var handledIdentifiers := false
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitIf(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitIf(self) up(pNode)) then {
             self.value.accept(visitor)
             for (self.thenblock) do { ix ->
-                ix.accept(visitor)
+                ix.accept(visitor) from(self)
             }
             for (self.elseblock) do { ix ->
-                ix.accept(visitor)
+                ix.accept(visitor) from(self)
             }
         }
     }
@@ -211,16 +218,16 @@ class blockNode.new(params', body') {
     for (params') do {p->
         p.accept(patternMarkVisitor)
     }
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitBlock(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitBlock(self) up(pNode)) then {
             for (self.params) do { mx ->
-                mx.accept(visitor)
+                mx.accept(visitor) from(self)
             }
             for (self.body) do { mx ->
-                mx.accept(visitor)
+                mx.accept(visitor) from(self)
             }
             if (self.matchingPattern != false) then {
-                self.matchingPattern.accept(visitor)
+                self.matchingPattern.accept(visitor) from(self)
             }
         }
     }
@@ -298,14 +305,14 @@ class catchCaseNode.new(block, cases', finally') {
     def value = block
     def cases = cases'
     def finally = finally'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitCatchCase(self)) then {
-            self.value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitCatchCase(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
             for (self.cases) do { mx ->
-                mx.accept(visitor)
+                mx.accept(visitor) from(self)
             }
             if (self.finally != false) then {
-                self.finally.accept(visitor)
+                self.finally.accept(visitor) from(self)
             }
         }
     }
@@ -356,14 +363,14 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     def value = matchee
     def cases = cases'
     def elsecase = elsecase'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitMatchCase(self)) then {
-            self.value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitMatchCase(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
             for (self.cases) do { mx ->
-                mx.accept(visitor)
+                mx.accept(visitor) from(self)
             }
             if (self.elsecase != false) then {
-                self.elsecase.accept(visitor)
+                self.elsecase.accept(visitor) from(self)
             }
         }
     }
@@ -435,17 +442,17 @@ class methodTypeNode.new(name', signature', rtype') {
     def nameString:String is public = value
     method asString { "MethodType {value} -> {rtype}" }
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitMethodType(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitMethodType(self) up(pNode)) then {
             if (self.rtype != false) then {
-                self.rtype.accept(visitor)
+                self.rtype.accept(visitor) from(self)
             }
             for (self.signature) do { part ->
                 for (part.params) do { p ->
-                    p.accept(visitor)
+                    p.accept(visitor) from(self)
                 }
                 if (part.vararg != false) then {
-                    part.vararg.accept(visitor)
+                    part.vararg.accept(visitor) from(self)
                 }
             }
         }
@@ -532,13 +539,13 @@ class typeLiteralNode.new(methods', types') {
     method asString {
         "TypeLiteral: methods = {methods}, types = {types}"
     }
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitTypeLiteral(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitTypeLiteral(self) up(pNode)) then {
             for (self.methods) do { each ->
-                each.accept(visitor)
+                each.accept(visitor) from(self)
             }
             for (self.types) do { each ->
-                each.accept(visitor)
+                each.accept(visitor) from(self)
             }
         }
     }
@@ -624,16 +631,16 @@ class typeDecNode.new(name', typeValue) {
     method isReadable { isPublic }
 
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitTypeDec(self)) then {
-            value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitTypeDec(self) up(pNode)) then {
+            value.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         var n := typeDecNode.new(name, value.map(blk)before(blkBefore)after(blkAfter))
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+            n.annotations.push(a)
         }
         n.generics := self.generics
         n.line := line
@@ -721,22 +728,22 @@ class methodNode.new(name', signature', body', dtype') {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitMethod(self)) then {
-            self.value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitMethod(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
             if (self.dtype != false) then {
-                self.dtype.accept(visitor)
+                self.dtype.accept(visitor) from(self)
             }
             for (self.signature) do { part ->
                 for (part.params) do { p ->
-                    p.accept(visitor)
+                    p.accept(visitor) from(self)
                 }
                 if (part.vararg != false) then {
-                    part.vararg.accept(visitor)
+                    part.vararg.accept(visitor) from(self)
                 }
             }
             for (self.body) do { mx ->
-                mx.accept(visitor)
+                mx.accept(visitor) from(self)
             }
         }
     }
@@ -748,10 +755,10 @@ class methodNode.new(name', signature', body', dtype') {
         }
         var n := methodNode.new(name', signature, listMap(body, blk)before(blkBefore)after(blkAfter), dt)
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+            n.annotations.push(a)
         }
         for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.generics.push(a.map(blk)before(blkBefore)after(blkAfter))
+            n.generics.push(a)
         }
         n := blk.apply(n)
         n.line := line
@@ -882,8 +889,8 @@ class callNode.new(what, with') {
     var generics := false
     var isPattern := false
     def nameString:String is public = what
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitCall(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitCall(self) up(pNode)) then {
             self.value.accept(visitor)
             for (self.with) do { part ->
                 for (part.args) do { arg ->
@@ -1011,8 +1018,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitClass(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitClass(self) up(pNode)) then {
             self.name.accept(visitor)
             self.constructor.accept(visitor)
             if (self.superclass != false) then {
@@ -1138,8 +1145,8 @@ class objectNode.new(body, superclass') {
     var otype := false
     var classname := "object"
     var data := false
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitObject(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitObject(self) up(pNode)) then {
             if (self.superclass != false) then {
                 self.superclass.accept(visitor)
             }
@@ -1150,12 +1157,12 @@ class objectNode.new(body, superclass') {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        var n := objectNode.new(listMap(value,
-        blk)before(blkBefore)after(blkAfter), maybeMap(superclass, blk,
-        blkBefore, blkAfter))
+        for (value) do { node -> blkBefore.apply(node) }
+        var n := objectNode.new(listMap(value, blk)before(blkBefore)after(blkAfter),
+                    maybeMap(superclass, blk, blkBefore, blkAfter))
         n := blk.apply(n)
         n.line := line
-        blkAfter.apply(n)
+        for (value) do { node -> blkAfter.apply(node) }
         n
     }
     method map(blk) {
@@ -1196,10 +1203,10 @@ class arrayNode.new(values) {
     inherits baseNode.new
     def kind = "array"
     def value = values
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitArray(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitArray(self) up(pNode)) then {
             for (self.value) do { ax ->
-                ax.accept(visitor)
+                ax.accept(visitor) from(self)
             }
         }
     }
@@ -1245,9 +1252,9 @@ class memberNode.new(what, in') {
     def in = in'
     var generics := false
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitMember(self)) then {
-            self.in.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitMember(self) up(pNode)) then {
+            self.in.accept(visitor) from(pNode)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1311,11 +1318,11 @@ class genericNode.new(base, params') {
     def kind = "generic"
     def value = base
     def params = params'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitGeneric(self)) then {
-            self.value.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitGeneric(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
             for (self.params) do { p ->
-                p.accept(visitor)
+                p.accept(visitor) from(self)
             }
         }
     }
@@ -1356,10 +1363,10 @@ class identifierNode.new(name, dtype') {
     var inRequest := false
     def nameString:String is public = name
     var generics := false
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitIdentifier(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitIdentifier(self) up(pNode)) then {
             if (self.dtype != false) then {
-                self.dtype.accept(visitor)
+                self.dtype.accept(visitor) from(self)
             }
         }
     }
@@ -1446,8 +1453,8 @@ class octetsNode.new(n) {
     inherits baseNode.new
     def kind = "octets"
     def value = n
-    method accept(visitor : ASTVisitor) {
-        visitor.visitOctets(self)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        visitor.visitOctets(self) up(pNode)
     }
     method pretty(depth) {
         "Octets(" ++ self.value ++ ")"
@@ -1460,8 +1467,8 @@ class stringNode.new(v) {
     inherits baseNode.new
     def kind = "string"
     var value := v
-    method accept(visitor : ASTVisitor) {
-        visitor.visitString(self)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        visitor.visitString(self) up(pNode)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -1503,8 +1510,8 @@ class numNode.new(val) {
     inherits baseNode.new
     def kind = "num"
     def value = val
-    method accept(visitor : ASTVisitor) {
-        visitor.visitNum(self)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        visitor.visitNum(self) up(pNode)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -1530,10 +1537,10 @@ class opNode.new(op, l, r) {
     def value = op
     def left = l
     def right = r
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitOp(self)) then {
-            self.left.accept(visitor)
-            self.right.accept(visitor)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitOp(self) up(pNode)) then {
+            self.left.accept(visitor) from(self)
+            self.right.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1585,8 +1592,8 @@ class indexNode.new(expr, index') {
     def kind = "index"
     def value = expr
     def index = index'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitIndex(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitIndex(self) up(pNode)) then {
             self.value.accept(visitor)
             self.index.accept(visitor)
         }
@@ -1630,8 +1637,8 @@ class bindNode.new(dest', val') {
     def kind = "bind"
     def dest = dest'
     def value = val'
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitBind(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitBind(self) up(pNode)) then {
             self.dest.accept(visitor)
             self.value.accept(visitor)
         }
@@ -1688,8 +1695,8 @@ class defDecNode.new(name', val, dtype') {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitDefDec(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitDefDec(self) up(pNode)) then {
             self.name.accept(visitor)
             if (self.dtype != false) then {
                 self.dtype.accept(visitor)
@@ -1777,8 +1784,8 @@ class varDecNode.new(name', val', dtype') {
         if (findAnnotation(self, "readable")) then { return true }
         false
     }
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitVarDec(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitVarDec(self) up(pNode)) then {
             self.name.accept(visitor)
             if (self.dtype != false) then {
                 self.dtype.accept(visitor)
@@ -1861,8 +1868,8 @@ class importNode.new(path', name) {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) {
-        visitor.visitImport(self)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        visitor.visitImport(self) up(pNode)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -1896,8 +1903,8 @@ class dialectNode.new(path') {
     inherits baseNode.new
     def kind = "dialect"
     def value = path'
-    method accept(visitor : ASTVisitor) {
-        visitor.visitDialect(self)
+    method accept(visitor : ASTVisitor) from(pNode) {
+        visitor.visitDialect(self) up(pNode)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -1927,8 +1934,8 @@ class returnNode.new(expr) {
     inherits baseNode.new
     def kind = "return"
     def value = expr
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitReturn(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitReturn(self) up(pNode)) then {
             self.value.accept(visitor)
         }
     }
@@ -1962,8 +1969,8 @@ class inheritsNode.new(expr) {
     def kind = "inherits"
     def value = expr
     def providedNames is public = list.empty
-    method accept(visitor : ASTVisitor) {
-        if (visitor.visitInherits(self)) then {
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitInherits(self) up(pNode)) then {
             self.value.accept(visitor)
         }
     }
@@ -2003,7 +2010,7 @@ class blankNode.new {
     inherits baseNode.new
     def kind = "blank"
     def value = "blank"
-    method accept(visitor : ASTVisitor) {
+    method accept(visitor : ASTVisitor) from(pNode) {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         self
@@ -2077,125 +2084,96 @@ method callWithPart {
 }
 
 type ASTVisitor = {
-     visitFor(o) -> Boolean
-     visitWhile(o) -> Boolean
-     visitIf(o) -> Boolean
-     visitBlock(o) -> Boolean
-     visitMatchCase(o) -> Boolean
-     visitCatchCase(o) -> Boolean
-     visitMethodType(o) -> Boolean
-     visitTypeLiteral(o) -> Boolean
-     visitTypeDec(o) -> Boolean
-     visitMethod(o) -> Boolean
-     visitCall(o) -> Boolean
-     visitClass(o) -> Boolean
-     visitObject(o) -> Boolean
-     visitArray(o) -> Boolean
-     visitMember(o) -> Boolean
-     visitGeneric(o) -> Boolean
-     visitIdentifier(o) -> Boolean
-     visitOctets(o) -> Boolean
-     visitString(o) -> Boolean
-     visitNum(o) -> Boolean
-     visitOp(o) -> Boolean
-     visitIndex(o) -> Boolean
-     visitBind(o) -> Boolean
-     visitDefDec(o) -> Boolean
-     visitVarDec(o) -> Boolean
-     visitImport(o) -> Boolean
-     visitReturn(o) -> Boolean
-     visitInherits(o) -> Boolean
-     visitDialect(o) -> Boolean
+     visitFor(o) up(pNode) -> Boolean
+     visitWhile(o) up(pNode) -> Boolean
+     visitIf(o) up(pNode) -> Boolean
+     visitBlock(o) up(pNode) -> Boolean
+     visitMatchCase(o) up(pNode) -> Boolean
+     visitCatchCase(o) up(pNode) -> Boolean
+     visitMethodType(o) up(pNode) -> Boolean
+     visitTypeLiteral(o) up(pNode) -> Boolean
+     visitTypeDec(o) up(pNode) -> Boolean
+     visitMethod(o) up(pNode) -> Boolean
+     visitCall(o) up(pNode) -> Boolean
+     visitClass(o) up(pNode) -> Boolean
+     visitObject(o) up(pNode) -> Boolean
+     visitArray(o) up(pNode) -> Boolean
+     visitMember(o) up(pNode) -> Boolean
+     visitGeneric(o) up(pNode) -> Boolean
+     visitIdentifier(o) up(pNode) -> Boolean
+     visitOctets(o) up(pNode) -> Boolean
+     visitString(o) up(pNode) -> Boolean
+     visitNum(o) up(pNode) -> Boolean
+     visitOp(o) up(pNode) -> Boolean
+     visitIndex(o) up(pNode) -> Boolean 
+     visitBind(o) up(pNode) -> Boolean
+     visitDefDec(o) up(pNode) -> Boolean
+     visitVarDec(o) up(pNode) -> Boolean
+     visitImport(o) up(pNode) -> Boolean
+     visitReturn(o) up(pNode) -> Boolean
+     visitInherits(o) up(pNode) -> Boolean
+     visitDialect(o) up(pNode) -> Boolean
 }
 method baseVisitor -> ASTVisitor {
     object {
-        method visitFor(o) -> Boolean {
-            true
-        }
-        method visitWhile(o) -> Boolean {
-            true
-        }
-        method visitIf(o) -> Boolean {
-            true
-        }
-        method visitBlock(o) -> Boolean {
-            true
-        }
-        method visitMatchCase(o) -> Boolean {
-            true
-        }
-        method visitCatchCase(o) -> Boolean {
-            true
-        }
-        method visitMethodType(o) -> Boolean {
-            true
-        }
-        method visitTypeDec(o) -> Boolean {
-            true
-        }
-        method visitTypeLiteral(o) -> Boolean {
-            true
-        }
-        method visitMethod(o) -> Boolean {
-            true
-        }
-        method visitCall(o) -> Boolean {
-            true
-        }
-        method visitClass(o) -> Boolean {
-            true
-        }
-        method visitObject(o) -> Boolean {
-            true
-        }
-        method visitArray(o) -> Boolean {
-            true
-        }
-        method visitMember(o) -> Boolean {
-            true
-        }
-        method visitGeneric(o) -> Boolean {
-            true
-        }
-        method visitIdentifier(o) -> Boolean {
-            true
-        }
-        method visitOctets(o) -> Boolean {
-            true
-        }
-        method visitString(o) -> Boolean {
-            true
-        }
-        method visitNum(o) -> Boolean {
-            true
-        }
-        method visitOp(o) -> Boolean {
-            true
-        }
-        method visitIndex(o) -> Boolean {
-            true
-        }
-        method visitBind(o) -> Boolean {
-            true
-        }
-        method visitDefDec(o) -> Boolean {
-            true
-        }
-        method visitVarDec(o) -> Boolean {
-            true
-        }
-        method visitImport(o) -> Boolean {
-            true
-        }
-        method visitReturn(o) -> Boolean {
-            true
-        }
-        method visitInherits(o) -> Boolean {
-            true
-        }
-        method visitDialect(o) -> Boolean {
-            true
-        }
+        method visitFor(o) up(pNode) { visitFor(o) }
+        method visitWhile(o) up(pNode) { visitWhile(o) }
+        method visitIf(o) up(pNode) { visitIf(o) }
+        method visitBlock(o) up(pNode) { visitBlock(o) }
+        method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
+        method visitCatchCase(o) up(pNode) { visitCatchCase(o) }
+        method visitMethodType(o) up(pNode) { visitMethodType(o) }
+        method visitTypeDec(o) up(pNode) { visitTypeDec(o) }
+        method visitTypeLiteral(o) up(pNode) { visitTypeLiteral(o) }
+        method visitMethod(o) up(pNode) { visitMethod(o) }
+        method visitCall(o) up(pNode) { visitCall(o) }
+        method visitClass(o) up(pNode) { visitClass(o) }
+        method visitObject(o) up(pNode) { visitObject(o) }
+        method visitArray(o) up(pNode) { visitArray(o) }
+        method visitMember(o) up(pNode) { visitMember(o) }
+        method visitGeneric(o) up(pNode) { visitGeneric(o) }
+        method visitIdentifier(o) up(pNode) { visitIdentifier(o) }
+        method visitOctets(o) up(pNode) { visitOctets(o) }
+        method visitString(o) up(pNode) { visitString(o) }
+        method visitNum(o) up(pNode) { visitNum(o) }
+        method visitOp(o) up(pNode) { visitOp(o) }
+        method visitIndex(o) up(pNode) { visitIndex(o) }
+        method visitBind(o) up(pNode) { visitBind(o) }
+        method visitDefDec(o) up(pNode) { visitDefDec(o) }
+        method visitVarDec(o) up(pNode) { visitVarDec(o) }
+        method visitImport(o) up(pNode) { visitImport(o) }
+        method visitReturn(o) up(pNode) { visitReturn(o) }
+        method visitInherits(o) up(pNode) { visitInherits(o) }
+        method visitDialect(o) up(pNode) { visitDialect(o) }
+        method visitFor(o) -> Boolean { true }
+        method visitWhile(o) -> Boolean { true }
+        method visitIf(o) -> Boolean { true }
+        method visitBlock(o) -> Boolean { true }
+        method visitMatchCase(o) -> Boolean { true }
+        method visitCatchCase(o) -> Boolean { true }
+        method visitMethodType(o) -> Boolean { true }
+        method visitTypeDec(o) -> Boolean { true }
+        method visitTypeLiteral(o) -> Boolean { true }
+        method visitMethod(o) -> Boolean { true }
+        method visitCall(o) -> Boolean { true }
+        method visitClass(o) -> Boolean { true }
+        method visitObject(o) -> Boolean { true }
+        method visitArray(o) -> Boolean { true }
+        method visitMember(o) -> Boolean { true }
+        method visitGeneric(o) -> Boolean { true }
+        method visitIdentifier(o) -> Boolean { true }
+        method visitOctets(o) -> Boolean { true }
+        method visitString(o) -> Boolean { true }
+        method visitNum(o) -> Boolean { true }
+        method visitOp(o) -> Boolean { true }
+        method visitIndex(o) -> Boolean { true }
+        method visitBind(o) -> Boolean { true }
+        method visitDefDec(o) -> Boolean { true }
+        method visitVarDec(o) -> Boolean { true }
+        method visitImport(o) -> Boolean { true }
+        method visitReturn(o) -> Boolean { true }
+        method visitInherits(o) -> Boolean { true }
+        method visitDialect(o) -> Boolean { true }
     }
 }
 def ast = self
