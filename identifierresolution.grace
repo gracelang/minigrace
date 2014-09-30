@@ -8,6 +8,13 @@ import "mgcollections" as collections
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
+method printBacktrace(caption) {
+    try { Exception.raise "here I am"
+    } catch { ex ->
+        print(caption)
+        ex.printBacktrace
+    }
+}
 class Scope.new(parent', variety') {
     def elements = collections.map.new
     def elementScopes = collections.map.new
@@ -20,6 +27,9 @@ class Scope.new(parent', variety') {
     var name := ""
     method isEmpty { elements.size == 0 }
     method addName(n) {
+        if (n == "isStandardPrelude") then {
+            printBacktrace "adding name isStandardPrelude to scope {scope}"
+        }
         elements.put(n, "method")
         elementLines.put(n, util.linenum)
     }
@@ -29,6 +39,9 @@ class Scope.new(parent', variety') {
     }
     method addNode(nd) as(kind) {
         def name = nd.nameString
+        if (name == "isStandardPrelude") then {
+            printBacktrace "adding node isStandardPrelude to scope {scope}"
+        }
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
             elements.put(name, kind)
@@ -39,11 +52,10 @@ class Scope.new(parent', variety') {
                 more := " as a {oldKind}"
                     ++ " on line {elementLines.get(name)}"
             }
-//            errormessages.syntaxError("'{name}' cannot be"
-            ProgrammingError.raise("'{name}' cannot be"
+            errormessages.syntaxError("'{name}' cannot be"
                 ++ " redeclared because it is already declared"
                 ++ more ++ " as well as here at line {nd.line}.")
-//                atRange(nd.line, nd.linePos, nd.linePos + name.size - 1)
+                atRange(nd.line, nd.linePos, nd.linePos + name.size - 1)
         }
 
     }
@@ -123,8 +135,8 @@ class Scope.new(parent', variety') {
             }
         } elseif (node.kind == "member") then {
             def targetScope = self.scopeReferencedBy(node.in)
-            print "sRB: found scope for Member {node.value} of {node.in}:"
-            print(targetScope)
+//            print "sRB: found scope for Member {node.value} of {node.in}:"
+//            print(targetScope)
             if (node.value == "outer") then {
                 return targetScope.parent
             }
@@ -171,11 +183,21 @@ def universalScope = object {
     method getScope(n) { self }
 }
 
+var scopeDepth := 3
+
 method pushScope(v) {
     scope := scope.new(v)
+//    scopeDepth := scopeDepth + 1
+//    var indent := " "
+//    for (1..scopeDepth) do { indent := indent ++ " " }
+//    print "{indent} pshScope {scope.variety}"
 }
 method popScope {
     scope := scope.parent
+//    var indent := " "
+//    for (1..scopeDepth) do { indent := indent ++ " " }
+//    print "{indent} popScope {scope.variety}"
+//    scopeDepth := scopeDepth - 1
 }
 method haveBinding(nm) {
     var cur := scope
@@ -418,7 +440,7 @@ method resolveIdentifier(node) {
         }
     }
     if (haveBinding(nm).not) then {
-        print(scope)
+//        print(scope)
         if (node.wildcard) then {
             errormessages.syntaxError("'_' can be used only as a parameter")atRange(node.line, node.linePos, node.linePos)
         } else {
@@ -482,6 +504,7 @@ method resolveIdentifier(node) {
                         highlightLength - 1)
                     withSuggestions(suggestions)
             }
+            printBacktrace "Unknown variable {nm}"
             errormessages.syntaxError("Unknown variable or method '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
@@ -507,9 +530,6 @@ method resolveIdentifiersActual(node) {
     }
     if ((node.kind == "identifier").andAlso{node.isBindingOccurence.not}) then {
         return resolveIdentifier(node)
-    }
-    if (node.kind == "import") then {
-        scope.addNode(node) as "def"
     }
     if (node.kind == "call") then {
         if (node.value.kind == "call") then {
@@ -617,7 +637,6 @@ method checkDuplicateDefinition(declNode) {
             more := " as a {scope.getKind(name)}"
                 ++ " on line {scope.elementLines.get(name)} as well as here at line {declNode.line}"
         }
-        print(scope)
         errormessages.syntaxError("'{name}' cannot be"
             ++ " redeclared{which} because it is already declared"
             ++ more ++ ".")
@@ -677,7 +696,12 @@ method resolveIdentifiers(topNode) {
     if (topNode == false) then {
         return topNode
     }
-    topNode.map { n -> resolveIdentifiersActual(n) } before { node ->
+    topNode.map { each -> resolveIdentifiersActual(each) }
+        before { node -> preResolve(node) }
+        after { node -> postResolve(node) }
+}
+    
+method preResolve(node) {
         util.setPosition(node.line, node.linePos)
         def definingObject = (scope.variety == "object")
                             .orElse{scope.variety == "class"}
@@ -686,8 +710,8 @@ method resolveIdentifiers(topNode) {
             checkRedefinition(node.name) as "method"
             scope.addNode(node) as "method"
             def classScope = Scope.new(scope, "class")
-            classScope.add(node.constructor.value)
-            classScope.bindAs(node.name.value)
+            classScope.addNode(node.constructor) as "method"
+            classScope.bindAs(node.nameString)
             pushScope("method")
             if (false != node.generics) then {
                 for (node.generics) do {g->
@@ -704,72 +728,72 @@ method resolveIdentifiers(topNode) {
             }
             pushScope("class")
             classScope.putScope(node.constructor.value, scope)
-            for (node.value) do {n->
-                util.setPosition(n.line, n.linePos)
-                if (n.kind == "method") then {
-                    checkRedefinition(n.value) as "method"
-                    scope.addNode(n) as "method"
-                } elseif {n.kind == "vardec"} then {
-                    checkRedefinition(n.name) as "method"
-                    scope.addNode(n) as "method"
-                    scope.addName(n.name.value ++ ":=") as "method"
-                } elseif {(n.kind == "defdec").orElse{n.kind == "typedec"}} then {
-                    checkRedefinition(n.name) as "method"
-                    scope.addNode(n)
-                } elseif {n.kind == "inherits"} then {
-                    def parent = resolveIdentifiers(n.value)
-                    def parentScope = scope.scopeReferencedBy(parent)
-                    for (parentScope.elements) do {e->
-                        scope.addName(e) as "inherited"
-                        n.providedNames.add(e)
-                    }
-                    for (node.signature) do {s->
-                        for (s.params) do {p->
-                            if (parentScope.elements.contains(p.value)) then {
-                                def suggestion = errormessages.suggestion.new
-                                suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
-                                var primes := "'"
-                                while { scope.elements.contains(p.value ++ primes) || parentScope.elements.contains(p.value ++ primes) } do {
-                                    suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
-                                    primes := primes ++ "'"
-                                }
-                                errormessages.syntaxError("'{p.value}' cannot be used to name a parameter because this class inherits a method named '{p.value}'.")atRange(
-                                    p.line, p.linePos, p.linePos + p.value.size - 1)withSuggestion(suggestion)
-                            }
-                        }
-                    }
-                }
-            }
+//            for (node.value) do {n->
+//                util.setPosition(n.line, n.linePos)
+//                if (n.kind == "method") then {
+//                    checkRedefinition(n.value) as "method"
+//                    scope.addNode(n) as "method"
+//                } elseif {n.kind == "vardec"} then {
+//                    checkRedefinition(n.name) as "method"
+//                    scope.addNode(n) as "method"
+//                    scope.addName(n.name.value ++ ":=") as "method"
+//                } elseif {(n.kind == "defdec").orElse{n.kind == "typedec"}} then {
+//                    checkRedefinition(n.name) as "method"
+//                    scope.addNode(n)
+//                } elseif {n.kind == "inherits"} then {
+//                    def parent = resolveIdentifiers(n.value)
+//                    def parentScope = scope.scopeReferencedBy(parent)
+//                    for (parentScope.elements) do {e->
+//                        scope.addName(e) as "inherited"
+//                        n.providedNames.add(e)
+//                    }
+//                    for (node.signature) do {s->
+//                        for (s.params) do {p->
+//                            if (parentScope.elements.contains(p.value)) then {
+//                                def suggestion = errormessages.suggestion.new
+//                                suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
+//                                var primes := "'"
+//                                while { scope.elements.contains(p.value ++ primes) || parentScope.elements.contains(p.value ++ primes) } do {
+//                                    suggestion.insert("'")atPosition(p.linePos + p.value.size)onLine(p.line)
+//                                    primes := primes ++ "'"
+//                                }
+//                                errormessages.syntaxError("'{p.value}' cannot be used to name a parameter because this class inherits a method named '{p.value}'.")atRange(
+//                                    p.line, p.linePos, p.linePos + p.value.size - 1)withSuggestion(suggestion)
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         } elseif {node.kind == "object"} then {
             pushScope("object")
-            for (node.value) do {n->
-                util.setPosition(n.line, n.linePos)
-                if (n.kind == "method") then {
-                    checkRedefinition(n.value) as "method"
-                    scope.addNode(n) as "method"
-                }
-                if (n.kind == "vardec") then {
-                    checkRedefinition(n.name) as "method"
-                    scope.addNode(n) as "method"
-                    scope.addName(n.nameString ++ ":=")
-                }
-                if (n.kind == "defdec") then {
-                    checkRedefinition(n.name) as "method"
-                    scope.addNode(n) as "method"
-                }
-                if (n.kind == "inherits") then {
-                    def parent = resolveIdentifiers(n.value)
-                    def parentScope = scope.scopeReferencedBy(parent)
-                    if (n.value.kind == "member") then {
-                        print "object inherits: found scope for ({n.pretty(0)})"
-                        print(parentScope)
-                    }
-                    for (parentScope.elements) do {e->
-                        scope.addName(e) as "inherited"
-                        n.providedNames.add(e)
-                    }
-                }
-            }
+//            for (node.value) do {n->
+//                util.setPosition(n.line, n.linePos)
+//                if (n.kind == "method") then {
+//                    checkRedefinition(n.value) as "method"
+//                    scope.addNode(n) as "method"
+//                }
+//                if (n.kind == "vardec") then {
+//                    checkRedefinition(n.name) as "method"
+//                    scope.addNode(n) as "method"
+//                    scope.addName(n.nameString ++ ":=")
+//                }
+//                if (n.kind == "defdec") then {
+//                    checkRedefinition(n.name) as "method"
+//                    scope.addNode(n) as "method"
+//                }
+//                if (n.kind == "inherits") then {
+//                    def parent = resolveIdentifiers(n.value)
+//                    def parentScope = scope.scopeReferencedBy(parent)
+//                    if (n.value.kind == "member") then {
+//                        print "object inherits: found scope for ({n.pretty(0)})"
+//                        print(parentScope)
+//                    }
+//                    for (parentScope.elements) do {e->
+//                        scope.addName(e) as "inherited"
+//                        n.providedNames.add(e)
+//                    }
+//                }
+//            }
         } elseif (node.kind == "if") then {
             pushScope("block")
         } elseif (node.kind == "block") then {
@@ -785,34 +809,31 @@ method resolveIdentifiers(topNode) {
             }
         } elseif (node.kind == "typedec") then {
             checkRedefinition(node.name) as "method"
-            scope.addName(node.name.value) as "def"
+            scope.addNode(node) as "def"
             pushScope("typeparams")
             for (node.generics) do {n->
-                util.setPosition(n.line, n.linePos)
-                scope.addNode(n) as "method"
+                scope.addNode(n) as "def"
             }
         } elseif (node.kind == "typeliteral") then {
             pushScope("typeliteral")
             for (node.methods) do { each ->
-                checkDuplicateDefinition(each)
+                scope.addNode(each) as "method"
             }
             for (node.types) do { each ->
-                checkDuplicateDefinition(each)
+                scope.addNode(each) as "def"
             }
         } elseif (node.kind == "methodtype") then {
             scope.addNode(node) as "method"
             pushScope("methodtype")
             for (node.generics) do {g->
-                util.setPosition(g.line, g.linePos)
                 scope.addNode(g) as "def"
             }
             for (node.signature) do {s->
-                util.setPosition(s.line, s.linePos)
                 for (s.params) do {p->
-                    scope.addName(p.value)as "def"
+                    scope.addNode(p)as "def"
                 }
                 if (false != s.vararg) then {
-                    scope.addName(s.vararg.value) as "def"
+                    scope.addNode(s.vararg) as "def"
                 }
             }
         } elseif (node.kind == "method") then {
@@ -853,7 +874,9 @@ method resolveIdentifiers(topNode) {
             checkRedefinition(node) as "method"
             scope.addNode(node) as "method"
         }
-    } after { node ->
+}
+
+method postResolve(node) {
         if (node.kind == "class") then {
             node.data := scope
             popScope
@@ -888,10 +911,13 @@ method resolveIdentifiers(topNode) {
             }
             popScope
         } elseif (node.kind == "methodtype") then {
+            if (scope.variety != "methodtype") then {ProgrammingError.raise "scope not methodtype"}
             popScope
         } elseif (node.kind == "typedec") then {
+            if (scope.variety != "typeparams") then {ProgrammingError.raise "scope not typedec"}
             popScope
         } elseif (node.kind == "typeliteral") then {
+            if (scope.variety != "typeliteral") then {ProgrammingError.raise "scope not typeLiteral"}
             popScope
         } elseif (node.kind == "defdec") then {
             if (node.value.kind == "object") then {
@@ -909,7 +935,6 @@ method resolveIdentifiers(topNode) {
                 }
             }
         }
-    }
 }
 
 method processGCT(gct, otherModule) {
