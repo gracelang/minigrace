@@ -12,7 +12,7 @@ method printBacktrace(caption) {
     try { Exception.raise "here I am"
     } catch { ex ->
         print(caption)
-        ex.printBacktrace
+        ex.backtrace.do{ line -> print(line) }
     }
 }
 class Scope.new(parent', variety') {
@@ -27,9 +27,6 @@ class Scope.new(parent', variety') {
     var name := ""
     method isEmpty { elements.size == 0 }
     method addName(n) {
-        if (n == "isStandardPrelude") then {
-            printBacktrace "adding name isStandardPrelude to scope {self}"
-        }
         elements.put(n, "method")
         elementLines.put(n, util.linenum)
     }
@@ -39,9 +36,6 @@ class Scope.new(parent', variety') {
     }
     method addNode(nd) as(kind) {
         def name = nd.nameString
-        if (name == "isStandardPrelude") then {
-            printBacktrace "adding node isStandardPrelude to scope {self}"
-        }
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
             elements.put(name, kind)
@@ -663,6 +657,7 @@ method checkRedefinition(ident)as(kind) {
                 more := " on line {priorScope.elementLines.get(name)}"
             }
             if (kind == "def") then {
+                print(scope)
                 errormessages.syntaxError("'{name}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
