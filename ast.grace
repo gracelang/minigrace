@@ -40,94 +40,112 @@ class baseNode.new {
     var line := util.linenum
     var linePos := util.linepos
     var lineLength := 0
-    var parent := nullNode
+    var parent is public := nullNode
+    var symbols := object { method isEmpty { true } }
 
+    method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
     method isWritable { true }
     method isReadable { true }
     method isPublic { true }
     method isConfidential { isPublic.not }
     method accept(visitor) { self.accept(visitor) from(nullNode) }
+    method breadthFirstTraversal(action) {
+        def visited = set.empty
+        def queue = list.empty
+        queue.addLast(self)
+        visited.add(self)
+        while (queue.isEmpty.not) do {
+            def n = queue.removeFirst
+            action.apply(n)
+            n.childrenDo { each ->
+                queue.addLast(each)
+                visited.add(each)
+            }
+        }
+    }
 }
 
 def nullNode = object {
     inherits baseNode.new
     def kind = "null"
+    def symbols = object {method isEmpty {false}}
+    method childrenDo(block1) { }
 }
 
-class forNode.new(over, body') {
-    inherits baseNode.new
-    def kind = "for"
-    def value = over
-    def body = body'
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitFor(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            self.body.accept(visitor) from(self)
-        }
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "For\n"
-        s := s ++ spc ++ self.value.pretty(depth+1)
-        s := s ++ "\n"
-        s := s ++ spc ++ "Do:"
-        s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := "for ({self.value.toGrace(0)}) do "
-        s := s ++ self.body.toGrace(depth)
-        s
-    }
-}
-class whileNode.new(cond, body') {
-    inherits baseNode.new
-    def kind = "while"
-    def value = cond
-    def body = body'
-    method accept(visitor : ASTVisitor) from(pNode){
-        if (visitor.visitWhile(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            for (self.body) do { x ->
-                x.accept(visitor)
-            }
-        }
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "While\n"
-        s := s ++ spc ++ self.value.pretty(depth+1)
-        s := s ++ "\n"
-        s := s ++ spc ++ "Do:"
-        for (self.body) do { x ->
-            s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := "while \{{self.value.toGrace(depth + 1)}\} do \{"
-        for (self.body) do { x ->
-            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
-        }
-        s := s ++ "\n" ++ spc ++ "\}"
-        s
-    }
-}
+//class forNode.new(over, body') {
+//    inherits baseNode.new
+//    def kind = "for"
+//    def value = over
+//    def body = body'
+//    method accept(visitor : ASTVisitor) from(pNode) {
+//        if (visitor.visitFor(self) up(pNode)) then {
+//            self.value.accept(visitor) from(self)
+//            self.body.accept(visitor) from(self)
+//        }
+//    }
+//    method pretty(depth) {
+//        var spc := ""
+//        for (0..depth) do { i ->
+//            spc := spc ++ "  "
+//        }
+//        var s := "For\n"
+//        s := s ++ spc ++ self.value.pretty(depth+1)
+//        s := s ++ "\n"
+//        s := s ++ spc ++ "Do:"
+//        s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
+//        s
+//    }
+//    method toGrace(depth : Number) -> String {
+//        var spc := ""
+//        for (0..(depth - 1)) do { i ->
+//            spc := spc ++ "    "
+//        }
+//        var s := "for ({self.value.toGrace(0)}) do "
+//        s := s ++ self.body.toGrace(depth)
+//        s
+//    }
+//}
+//class whileNode.new(cond, body') {
+//    inherits baseNode.new
+//    def kind = "while"
+//    def value = cond
+//    def body = body'
+//    method accept(visitor : ASTVisitor) from(pNode){
+//        if (visitor.visitWhile(self) up(pNode)) then {
+//            self.value.accept(visitor) from(self)
+//            for (self.body) do { x ->
+//                x.accept(visitor)
+//            }
+//        }
+//    }
+//    method pretty(depth) {
+//        var spc := ""
+//        for (0..depth) do { i ->
+//            spc := spc ++ "  "
+//        }
+//        var s := "While\n"
+//        s := s ++ spc ++ self.value.pretty(depth+1)
+//        s := s ++ "\n"
+//        s := s ++ spc ++ "Do:"
+//        for (self.body) do { x ->
+//            s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
+//        }
+//        s
+//    }
+//    method toGrace(depth : Number) -> String {
+//        var spc := ""
+//        for (0..(depth - 1)) do { i ->
+//            spc := spc ++ "    "
+//        }
+//        var s := "while \{{self.value.toGrace(depth + 1)}\} do \{"
+//        for (self.body) do { x ->
+//            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
+//        }
+//        s := s ++ "\n" ++ spc ++ "\}"
+//        s
+//    }
+//}
 class ifNode.new(cond, thenblock', elseblock') {
     inherits baseNode.new
     def kind = "if"
@@ -145,6 +163,11 @@ class ifNode.new(cond, thenblock', elseblock') {
                 ix.accept(visitor) from(self)
             }
         }
+    }
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(thenblock)
+        b.apply(elseblock)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -211,6 +234,11 @@ class blockNode.new(params', body') {
     var extraRuntimeData := false
     for (params') do {p->
         p.accept(patternMarkVisitor)
+    }
+    method childrenDo(b) {
+        params.do(b)
+        body.do(b)
+        if (false =! matchingPattern) then { b.apply(matchingPattern) }
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBlock(self) up(pNode)) then {
@@ -299,6 +327,11 @@ class catchCaseNode.new(block, cases', finally') {
     def value = block
     def cases = cases'
     def finally = finally'
+    method childrenDo(b) {
+        b.apply(value)
+        cases.do(b)
+        if (false =! finally) then { b.apply(finally) }
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitCatchCase(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -357,6 +390,11 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     def value = matchee
     def cases = cases'
     def elsecase = elsecase'
+    method childrenDo(b) {
+        b.apply(value)
+        cases.do(b)
+        if (false =! elsecase) then { b.apply(elsecase) }
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMatchCase(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -435,19 +473,26 @@ class methodTypeNode.new(name', signature', rtype') {
     var generics := []
     def nameString:String is public = value
     method asString { "MethodType {value} -> {rtype}" }
-
+    method childrenDo(b) {
+        if (self.rtype != false) then { b.apply(rtype) }
+        signature.do{ part -> b.apply(part) }
+        generics.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMethodType(self) up(pNode)) then {
-            if (self.rtype != false) then {
-                self.rtype.accept(visitor) from(self)
+            if (rtype != false) then {
+                rtype.accept(visitor) from(self)
             }
-            for (self.signature) do { part ->
+            for (signature) do { part ->
                 for (part.params) do { p ->
                     p.accept(visitor) from(self)
                 }
                 if (part.vararg != false) then {
                     part.vararg.accept(visitor) from(self)
                 }
+            }
+            for (generics) do { each ->
+                each.accept(visitor) from(self)
             }
         }
     }
@@ -532,6 +577,10 @@ class typeLiteralNode.new(methods', types') {
     }
     method asString {
         "TypeLiteral: methods = {methods}, types = {types}"
+    }
+    method childrenDo(b) {
+        types.do(b)
+        methods.do(b)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitTypeLiteral(self) up(pNode)) then {
@@ -624,10 +673,17 @@ class typeDecNode.new(name', typeValue) {
     method isWritable { false }
     method isReadable { isPublic }
 
-
+    method childrenDo(b) {
+        b.apply(name)
+        generics.do(b)
+        annotations.do(b)
+        b.apply(value)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitTypeDec(self) up(pNode)) then {
             value.accept(visitor) from(self)
+            generics.do { each -> each.accept(visitor) from(self) }
+            annotations.do { each -> each.accept(visitor) from(self) }
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -722,6 +778,13 @@ class methodNode.new(name', signature', body', dtype') {
     method isWritable { false }
     method isReadable { isPublic }
 
+    method childrenDo(b) {
+        b.apply(value)
+        signature.do { part -> b.apply(part) }
+        generics.do(b)
+        annotations.do(b)
+        b.apply(value)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMethod(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -880,6 +943,12 @@ class callNode.new(what, with') {
     var generics := false
     var isPattern := false
     def nameString:String is public = what
+    
+    method childrenDo(b) {
+        b.apply(value)
+        with.do { part -> b.apply(part) }
+        if (generics != false) then { generics.do(b) }
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitCall(self) up(pNode)) then {
             self.value.accept(visitor)
@@ -985,11 +1054,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def constructor = constructor'
     def signature = signature'
     var dtype := dtype'
-    var generics := false
+    var generics := []
     def superclass = superclass'
     def annotations = collections.list.new
     def nameString:String = name.value
-    var instanceMethods := collections.list.new
     var data := false
     
     method isPublic {
@@ -999,7 +1067,16 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method isWritable { false }
     method isReadable { isPublic }
-
+    method childrenDo(b) {
+        b.apply(name)
+        b.apply(constructor)
+        signature.do(b)
+        b.apply(dtype)
+        generics.do(b)
+        b.apply(superclass)
+        annotations.do(b)
+        value.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitClass(self) up(pNode)) then {
             self.name.accept(visitor)
@@ -1135,6 +1212,11 @@ class objectNode.new(body, superclass') {
     var otype := false
     var classname := "object"
     var data := false
+    method childrenDo(b) {
+        if (otype != false) then { b.apply(otype) }
+        b.apply(superclass)
+        value.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitObject(self) up(pNode)) then {
             if (self.superclass != false) then {
@@ -1200,6 +1282,9 @@ class arrayNode.new(values) {
             }
         }
     }
+    method childrenDo(b) {
+        value.do(b)
+    }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         var n := arrayNode.new(listMap(value, blk)before(blkBefore)after(blkAfter))
@@ -1240,7 +1325,9 @@ class memberNode.new(what, in') {
     var value := what  // NB: value is a String, not an Identifier
     def nameString:String is public = value
     def in = in'
-
+    method childrenDo(b) {
+        b.apply(in)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMember(self) up(pNode)) then {
             self.in.accept(visitor) from(pNode)
@@ -1290,8 +1377,11 @@ class memberNode.new(what, in') {
 class genericNode.new(base, params') {
     inherits baseNode.new
     def kind = "generic"
-    def value = base
+    def value = base        // APB: I think that this is a parent reference
     def params = params'
+    method childrenDo(b) {
+        params.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitGeneric(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -1341,6 +1431,9 @@ class identifierNode.new(name, dtype') {
     var isAssigned := false
     var inRequest := false
     def nameString:String is public = name
+    method childrenDo(b) {
+        if (dtype != false) then { b.apply(dtype) }
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIdentifier(self) up(pNode)) then {
             if (self.dtype != false) then {
@@ -1418,6 +1511,7 @@ class octetsNode.new(n) {
     inherits baseNode.new
     def kind = "octets"
     def value = n
+    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitOctets(self) up(pNode)
     }
@@ -1432,6 +1526,7 @@ class stringNode.new(v) {
     inherits baseNode.new
     def kind = "string"
     var value := v
+    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitString(self) up(pNode)
     }
@@ -1475,6 +1570,7 @@ class numNode.new(val) {
     inherits baseNode.new
     def kind = "num"
     def value = val
+    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitNum(self) up(pNode)
     }
@@ -1502,6 +1598,10 @@ class opNode.new(op, l, r) {
     def value = op
     def left = l
     def right = r
+    method childrenDo(b) {
+        b.apply(left)
+        b.apply(right)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitOp(self) up(pNode)) then {
             self.left.accept(visitor) from(self)
@@ -1557,6 +1657,11 @@ class indexNode.new(expr, index') {
     def kind = "index"
     def value = expr
     def index = index'
+    
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(index)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIndex(self) up(pNode)) then {
             self.value.accept(visitor)
@@ -1602,6 +1707,11 @@ class bindNode.new(dest', val') {
     def kind = "bind"
     def dest = dest'
     def value = val'
+    
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(dest)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBind(self) up(pNode)) then {
             self.dest.accept(visitor)
@@ -1659,7 +1769,13 @@ class defDecNode.new(name', val, dtype') {
     }
     method isWritable { false }
     method isReadable { isPublic }
-
+    
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(name)
+        b.apply(dtype)
+        annotations.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitDefDec(self) up(pNode)) then {
             self.name.accept(visitor)
@@ -1738,7 +1854,13 @@ class varDecNode.new(name', val', dtype') {
     var dtype := dtype'
     def nameString:String is public = name.value
     def annotations = collections.list.new
-
+    
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(name)
+        b.apply(dtype)
+        annotations.do(b)
+    }
     method isPublic {
         // vars are confidential by default
         if (annotations.size == 0) then { return false }
@@ -1846,7 +1968,11 @@ class importNode.new(path', name) {
     }
     method isWritable { false }
     method isReadable { isPublic }
-
+    
+    method childrenDo(b) {
+        if (dtype != false) then { b.apply(dtype) }
+        annotations.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitImport(self) up(pNode)
     }
@@ -1882,6 +2008,8 @@ class dialectNode.new(path') {
     inherits baseNode.new
     def kind = "dialect"
     def value = path'
+    
+    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitDialect(self) up(pNode)
     }
@@ -1913,6 +2041,10 @@ class returnNode.new(expr) {
     inherits baseNode.new
     def kind = "return"
     def value = expr
+    
+    method childrenDo(b) {
+        b.apply(value)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitReturn(self) up(pNode)) then {
             self.value.accept(visitor)
@@ -1948,6 +2080,11 @@ class inheritsNode.new(expr) {
     def kind = "inherits"
     def value = expr
     def providedNames is public = list.empty
+    
+    
+    method childrenDo(b) {
+        b.apply(value)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitInherits(self) up(pNode)) then {
             self.value.accept(visitor)
@@ -1974,8 +2111,7 @@ class inheritsNode.new(expr) {
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         if (providedNames.isEmpty.not) then {
-            s := s ++ "\n Provided names: "
-            s := s ++ spc ++ providedNames.asString
+            s := s ++ "\n{spc}Provided names: {providedNames}"
         }
         s
     }
@@ -1989,6 +2125,8 @@ class blankNode.new {
     inherits baseNode.new
     def kind = "blank"
     def value = "blank"
+    
+    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -2021,6 +2159,13 @@ class signaturePart.new(*values) {
     if (values.size > 2) then {
         vararg := values[3]
     }
+    method childrenDo(b) {
+        b.apply(name)
+        params.do(b)
+        if (vararg != false) then {
+            b.apply(vararg)
+        }
+    }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         var n := signaturePart.new(name, listMap(params, blk)before(blkBefore)after(blkAfter), vararg)
@@ -2033,32 +2178,30 @@ class signaturePart.new(*values) {
     }
 }
 
-method callWithPart {
-    object {
-        method new(*values) {
-            object {
-                inherits baseNode.new
-                def kind = "callwithpart"
-                var name := ""
-                var args := []
-                if (values.size > 0) then {
-                    name := values[1]
-                }
-                if (values.size > 1) then {
-                    args := values[2]
-                }
-                method map(blk)before(blkBefore)after(blkAfter) {
-                    blkBefore.apply(self)
-                    var n := callWithPart.new(name, listMap(args, blk)before(blkBefore)after(blkAfter))
-                    n := blk.apply(n)
-                    blkAfter.apply(n)
-                    n
-                }
-                method map(blk) {
-                    map(blk)before {} after {}
-                }
-            }
-        }
+class callWithPart.new(*values) {
+    inherits baseNode.new
+    def kind = "callwithpart"
+    var name := ""
+    var args := []
+    if (values.size > 0) then {
+        name := values[1]
+    }
+    if (values.size > 1) then {
+        args := values[2]
+    }
+    
+    method childrenDo(b) {
+        args.do(b)
+    }
+    method map(blk)before(blkBefore)after(blkAfter) {
+        blkBefore.apply(self)
+        var n := callWithPart.new(name, listMap(args, blk)before(blkBefore)after(blkAfter))
+        n := blk.apply(n)
+        blkAfter.apply(n)
+        n
+    }
+    method map(blk) {
+        map(blk)before {} after {}
     }
 }
 

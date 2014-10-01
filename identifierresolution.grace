@@ -28,7 +28,7 @@ class Scope.new(parent', variety') {
     method isEmpty { elements.size == 0 }
     method addName(n) {
         if (n == "isStandardPrelude") then {
-            printBacktrace "adding name isStandardPrelude to scope {scope}"
+            printBacktrace "adding name isStandardPrelude to scope {self}"
         }
         elements.put(n, "method")
         elementLines.put(n, util.linenum)
@@ -40,7 +40,7 @@ class Scope.new(parent', variety') {
     method addNode(nd) as(kind) {
         def name = nd.nameString
         if (name == "isStandardPrelude") then {
-            printBacktrace "adding node isStandardPrelude to scope {scope}"
+            printBacktrace "adding node isStandardPrelude to scope {self}"
         }
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
@@ -946,13 +946,13 @@ method processGCT(gct, otherModule) {
             def classScope = Scope.new(otherModule, "class")
             for (constrs) do {constr->
                 def ns = Scope.new(otherModule, "object")
-                classScope.add(constr)
+                classScope.addName(constr)
                 classScope.putScope(constr, ns)
                 for (gct.get("methods-of:{c}.{constr}")) do {mn->
-                    ns.add(mn)
+                    ns.addName(mn)
                 }
             }
-            otherModule.add(c)
+            otherModule.addName(c)
             otherModule.putScope(c, classScope)
         }
     }
@@ -960,9 +960,9 @@ method processGCT(gct, otherModule) {
         for (gct.get("fresh-methods")) do {c->
             def mScope = Scope.new(otherModule, "module")
             for (gct.get("fresh:{c}")) do {mn->
-                mScope.add(mn)
+                mScope.addName(mn)
             }
-            otherModule.add(c)
+            otherModule.addName(c)
             otherModule.putScope(c, mScope)
         }
     }
@@ -1023,12 +1023,12 @@ method resolve(values) {
                 def data = xmodule.parseGCT(val.value, "/nosuchfile")
                 if (data.contains("public")) then {
                     for (data.get("public")) do {mn->
-                        preludeObj.add(mn)
+                        preludeObj.addName(mn)
                     }
                 }
                 if (data.contains("confidential")) then {
                     for (data.get("confidential")) do {mn->
-                        preludeObj.add(mn)
+                        preludeObj.addName(mn)
                     }
                 }
                 processGCT(data, preludeObj)
@@ -1047,13 +1047,13 @@ method resolve(values) {
 //            print "data = {data}"
 //            if (data.contains("public")) then {
 //                for (data.get("public")) do {mn->
-//                    preludeObj.add(mn)
+//                    preludeObj.addName(mn)
 //                    print "adding {mn} to prelude"
 //                }
 //            }
 //            if (data.contains("confidential")) then {
 //                for (data.get("confidential")) do {mn->
-//                    preludeObj.add(mn)
+//                    preludeObj.addName(mn)
 //                    print "adding {mn} to prelude"
 //                }
 //            }

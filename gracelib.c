@@ -1109,6 +1109,19 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     }
     return accum;
 }
+Object BuiltinList_do(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object functionBlock = args[0];
+    Object each;
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {1};
+        callmethod(functionBlock, "apply", 1, partcv, &each);
+    }
+    return done;
+}
 Object BuiltinList_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1222,7 +1235,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 21, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 22, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "::", &Object_bind);
@@ -1245,6 +1258,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
+        add_Method(BuiltinList, "do", &BuiltinList_do);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
