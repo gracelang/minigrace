@@ -42,6 +42,7 @@ class baseNode.new {
     var lineLength := 0
     var parent is public := nullNode
     var symbols := object { method isEmpty { true } }
+    var hasSymbolTable := false
 
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
@@ -64,6 +65,12 @@ class baseNode.new {
             }
         }
     }
+    method scope {
+        var node := self
+        while (node.hasSymbolTable.not) do { node := node.parent }
+        node.symbolTable
+        // TODO add cache of this value, look at symboltable modeul
+    }
 }
 
 def nullNode = object {
@@ -72,80 +79,6 @@ def nullNode = object {
     def symbols = object {method isEmpty {false}}
     method childrenDo(block1) { }
 }
-
-//class forNode.new(over, body') {
-//    inherits baseNode.new
-//    def kind = "for"
-//    def value = over
-//    def body = body'
-//    method accept(visitor : ASTVisitor) from(pNode) {
-//        if (visitor.visitFor(self) up(pNode)) then {
-//            self.value.accept(visitor) from(self)
-//            self.body.accept(visitor) from(self)
-//        }
-//    }
-//    method pretty(depth) {
-//        var spc := ""
-//        for (0..depth) do { i ->
-//            spc := spc ++ "  "
-//        }
-//        var s := "For\n"
-//        s := s ++ spc ++ self.value.pretty(depth+1)
-//        s := s ++ "\n"
-//        s := s ++ spc ++ "Do:"
-//        s := s ++ "\n" ++ spc ++ "  " ++ self.body.pretty(depth + 1)
-//        s
-//    }
-//    method toGrace(depth : Number) -> String {
-//        var spc := ""
-//        for (0..(depth - 1)) do { i ->
-//            spc := spc ++ "    "
-//        }
-//        var s := "for ({self.value.toGrace(0)}) do "
-//        s := s ++ self.body.toGrace(depth)
-//        s
-//    }
-//}
-//class whileNode.new(cond, body') {
-//    inherits baseNode.new
-//    def kind = "while"
-//    def value = cond
-//    def body = body'
-//    method accept(visitor : ASTVisitor) from(pNode){
-//        if (visitor.visitWhile(self) up(pNode)) then {
-//            self.value.accept(visitor) from(self)
-//            for (self.body) do { x ->
-//                x.accept(visitor)
-//            }
-//        }
-//    }
-//    method pretty(depth) {
-//        var spc := ""
-//        for (0..depth) do { i ->
-//            spc := spc ++ "  "
-//        }
-//        var s := "While\n"
-//        s := s ++ spc ++ self.value.pretty(depth+1)
-//        s := s ++ "\n"
-//        s := s ++ spc ++ "Do:"
-//        for (self.body) do { x ->
-//            s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-//        }
-//        s
-//    }
-//    method toGrace(depth : Number) -> String {
-//        var spc := ""
-//        for (0..(depth - 1)) do { i ->
-//            spc := spc ++ "    "
-//        }
-//        var s := "while \{{self.value.toGrace(depth + 1)}\} do \{"
-//        for (self.body) do { x ->
-//            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
-//        }
-//        s := s ++ "\n" ++ spc ++ "\}"
-//        s
-//    }
-//}
 class ifNode.new(cond, thenblock', elseblock') {
     inherits baseNode.new
     def kind = "if"
@@ -153,6 +86,11 @@ class ifNode.new(cond, thenblock', elseblock') {
     def thenblock = thenblock'
     def elseblock = elseblock'
     var handledIdentifiers := false
+    method childrenDo(b) {
+        b.apply(value)
+        b.apply(thenblock)
+        b.apply(elseblock)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIf(self) up(pNode)) then {
             self.value.accept(visitor)
@@ -163,11 +101,6 @@ class ifNode.new(cond, thenblock', elseblock') {
                 ix.accept(visitor) from(self)
             }
         }
-    }
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(thenblock)
-        b.apply(elseblock)
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
@@ -232,6 +165,7 @@ class blockNode.new(params', body') {
     def selfclosure = true
     var matchingPattern := false
     var extraRuntimeData := false
+    var symbolTable
     for (params') do {p->
         p.accept(patternMarkVisitor)
     }
@@ -769,6 +703,7 @@ class methodNode.new(name', signature', body', dtype') {
     def nameString:String is public = value.value
     def annotations = collections.list.new
     var properties := collections.map.new
+    var symbolTable
     
     method isConfidential {
         if (annotations.size == 0) then { return false }
@@ -1059,6 +994,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def annotations = collections.list.new
     def nameString:String = name.value
     var data := false
+    var symbolTable
     
     method isPublic {
         // assume that classes are public by default
@@ -1212,6 +1148,7 @@ class objectNode.new(body, superclass') {
     var otype := false
     var classname := "object"
     var data := false
+    var symbolTable
     method childrenDo(b) {
         if (otype != false) then { b.apply(otype) }
         b.apply(superclass)
@@ -1229,12 +1166,10 @@ class objectNode.new(body, superclass') {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        for (value) do { node -> blkBefore.apply(node) }
         var n := objectNode.new(listMap(value, blk)before(blkBefore)after(blkAfter),
                     maybeMap(superclass, blk, blkBefore, blkAfter))
         n := blk.apply(n)
         n.line := line
-        for (value) do { node -> blkAfter.apply(node) }
         n
     }
     method map(blk) {
@@ -2206,8 +2141,6 @@ class callWithPart.new(*values) {
 }
 
 type ASTVisitor = {
-     visitFor(o) up(pNode) -> Boolean
-     visitWhile(o) up(pNode) -> Boolean
      visitIf(o) up(pNode) -> Boolean
      visitBlock(o) up(pNode) -> Boolean
      visitMatchCase(o) up(pNode) -> Boolean
@@ -2238,8 +2171,6 @@ type ASTVisitor = {
 }
 method baseVisitor -> ASTVisitor {
     object {
-        method visitFor(o) up(pNode) { visitFor(o) }
-        method visitWhile(o) up(pNode) { visitWhile(o) }
         method visitIf(o) up(pNode) { visitIf(o) }
         method visitBlock(o) up(pNode) { visitBlock(o) }
         method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
@@ -2267,8 +2198,7 @@ method baseVisitor -> ASTVisitor {
         method visitReturn(o) up(pNode) { visitReturn(o) }
         method visitInherits(o) up(pNode) { visitInherits(o) }
         method visitDialect(o) up(pNode) { visitDialect(o) }
-        method visitFor(o) -> Boolean { true }
-        method visitWhile(o) -> Boolean { true }
+
         method visitIf(o) -> Boolean { true }
         method visitBlock(o) -> Boolean { true }
         method visitMatchCase(o) -> Boolean { true }

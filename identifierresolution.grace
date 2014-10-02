@@ -970,7 +970,7 @@ method handleImport(e) {
     scope.putScope(e.value, otherModule)
 }
 
-method resolve(values) {
+method setupContext {
     preludeObj.addName "for()do"
     preludeObj.addName "while()do"
     preludeObj.addName "print"
@@ -1055,6 +1055,10 @@ method resolve(values) {
 //            processGCT(data, preludeObj)
         }
     }
+}
+
+method method resolve(values) {
+    setupContext
     util.setPosition(0, 0)
     var superObject := ast.identifierNode.new("graceObject", false)
     def vis = object {
@@ -1073,14 +1077,73 @@ method resolve(values) {
             }
             return true
         }
-        method visitInherits(o) {
+    }
+    values.do {
+        if (v.kind == "inherits") then {
             superObject := o.value
         }
     }
-    for (values) do { v ->
-        v.accept(vis)
-    }
     def wholeModule = ast.objectNode.new(values, superObject)
+    def preludeContext = ast.objectNode.new([wholeModule], superObject)
+    buildSymbolTables(wholeModule)
     def newModule = resolveIdentifiers(wholeModule)
     newModule.body
 }
+
+method buildSymbolTable(topNode) {
+    def vis = object {
+        method visitIdentifier(o) up(pNode) { 
+            o.parent := pNode
+            if (o.isBindingOccurence) then {
+                o.scope.addNode(o) as (o.parent.kind)
+                // TODO: make kind depend on object context
+            }
+            true
+        }
+        method visitMethod(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := Scope.new(o.scope, "method")
+            o.hasSymbolTable := true
+            true
+        }
+        method visitBlock(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := Scope.new(o.scope, "method")
+            o.hasSymbolTable := true
+            true
+        }
+        method visitClass(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := Scope.new(o.scope, "method")
+            o.hasSymbolTable := true
+            true
+        }
+        method visitObject(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := Scope.new(o.scope, "method")
+            o.hasSymbolTable := true
+            true
+        }
+        method visitIf(o) up(pNode) { o.parent := pNode; true }
+        method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
+        method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
+        method visitMethodType(o) up(pNode) { o.parent := pNode; true }
+        method visitTypeDec(o) up(pNode) { o.parent := pNode; true }
+        method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
+        method visitCall(o) up(pNode) { o.parent := pNode; true }
+        method visitArray(o) up(pNode) { o.parent := pNode; true }
+        method visitMember(o) up(pNode) { o.parent := pNode; true }
+        method visitGeneric(o) up(pNode) { o.parent := pNode; true }
+        method visitOctets(o) up(pNode) { o.parent := pNode; true }
+        method visitString(o) up(pNode) { o.parent := pNode; true }
+        method visitNum(o) up(pNode) { o.parent := pNode; true }
+        method visitOp(o) up(pNode) { o.parent := pNode; true }
+        method visitIndex(o) up(pNode) { o.parent := pNode; true }
+        method visitBind(o) up(pNode) { o.parent := pNode; true }
+        method visitDefDec(o) up(pNode) { o.parent := pNode; true }
+        method visitVarDec(o) up(pNode) { o.parent := pNode; true }
+        method visitImport(o) up(pNode) { o.parent := pNode; true }
+        method visitReturn(o) up(pNode) { o.parent := pNode; true }
+        method visitInherits(o) up(pNode) { o.parent := pNode; true }
+        method visitDialect(o) up(pNode) { o.parent := pNode; true }
+
