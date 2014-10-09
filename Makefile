@@ -2,12 +2,12 @@ include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=90f7b6b09a615e8dcda829cbe082fd644f9c0961
-all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn)
+all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) samples-dialects
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
-GRACE_MODULES = gUnit.grace collections.grace objectdraw.grace
+GRACE_MODULES = gUnit.grace collections.grace objectdraw.grace rtobjectdraw.grace sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace ast.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
@@ -81,12 +81,17 @@ l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.
 
 js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
+js/sample/dialects/requireTypes.js: samples-dialects
+	$(MAKE) -C sample/dialects requireTypes.js
+
+js/sample/dialects/staticTypes.js: samples-dialects
+	$(MAKE) -C sample/dialects staticTypes.js
+
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
 
 js/collectionsPrelude.js: collectionsPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/collectionsPrelude.js collectionsPrelude.grace
-
 
 js/minigrace.js: js/minigrace.in.js minigrace
 	@echo Generating minigrace.js from minigrace.in.js...
@@ -119,6 +124,9 @@ js/ace/ace.js:
     
 objectdraw.grace:
 	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/objectdraw.grace > objectdraw.grace
+
+rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
+	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
 
 # c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
 #	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make --noexec -XNoMain -XNativePrelude collectionsPrelude.grace && ../minigrace --make --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make --verbose --module minigrace --noexec compiler.grace && sed -i 's!#include "../gracelib.h"!#include "gracelib.h"!' *.c && rm -f *.gcn $(UNICODE_MODULE)
