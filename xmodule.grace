@@ -5,7 +5,6 @@ import "sys" as sys
 import "mgcollections" as collections
 import "util" as util
 import "ast" as ast
-//import "errormessages" as errormessage
 
 def gctCache = collections.map.new
 
@@ -30,18 +29,19 @@ method parseGCT(moduleName, filepath) {
             }
         }
         tfp.close
-    } else {
-        if (filepath == "/nosuchpath") then {
-            util.log_verbose "No cached gct for module {moduleName}"
-        } else {
-            util.log_verbose("Can't find file {filepath} for module {moduleName}")
-        }
+//    } else {
+//        if (filepath == "/nosuchpath") then {
+//            util.log_verbose "No cached gct for module {moduleName}"
+//        } else {
+//            util.log_verbose("Can't find file {filepath} for module {moduleName}")
+//        }
     }
     gctCache.put(moduleName, data)
     return data
 }
 
 method writeGCT(path, filepath, data) {
+//    log_verbose "writing gct for {path}"
     def fp = io.open(filepath, "w")
     for (data) do {key->
         fp.write "{key}:\n"
