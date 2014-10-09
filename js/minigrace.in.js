@@ -76,12 +76,24 @@ MiniGrace.prototype.compile = function(grace_code) {
             // pass
         } else if (e.exctype == 'graceexception') {
             this.compileError = true;
-            this.stderr_write("Internal compiler error at line " + e.lineNumber
-                + " of " + e.moduleName
-                + ": " + e.exception.name + ": "
-                + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from " + e.callStack[i] + "\n");
+            if (e.exception.name == 'ImportError') {
+                this.stderr_write("Import error: " + e.message._value);
+            } else if (e.exception.name == 'CheckerFailure') {
+                this.stderr_write("Dialect detects an error: " + e.message._value);
+            } else {
+                var message;
+                if (e.exception.name == 'DialectError') {
+                    message = "Dialect " + e.message._value;
+                } else {
+                    message = "Internal compiler error at line " + e.lineNumber
+                    + " of " + e.moduleName
+                    + ". " + e.exception.name + ": "
+                    + e.message._value + "\n";
+                }
+                this.stderr_write(message);
+                for (i=e.callStack.length-1; i>=0; i--) {
+                    this.stderr_write("  called from " + e.callStack[i] + "\n");
+                }
             }
         } else {
             throw e;

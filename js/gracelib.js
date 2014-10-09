@@ -2016,7 +2016,19 @@ GraceMirror.prototype = {
 function gracecode_mirrors() {
     this.methods = {
         'loadDynamicModule': function(argcv, v) {
-            return do_import(v._value, eval("gracecode_" + v._value));
+            var moduleFunc
+            try {
+                moduleFunc = eval("gracecode_" + v._value)
+            } catch (e) {
+                throw new GraceExceptionPacket(ImportErrorObject,
+                           new GraceString("Can't find module " + v._value))
+            }
+            try {
+                return do_import(v._value, moduleFunc);
+            } catch (e) {
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                           new GraceString("Error importing module " + v._value))
+            }
         },
         'reflect': function(argcv, o) {
             return new GraceMirror(o);
@@ -2309,6 +2321,9 @@ GraceExceptionPacket.prototype = {
             while (callmethod(bt, "size", [0])._value > 0) {
                 Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt, "pop", [0])));
             }
+        },
+        "reraise": function exception_reraise(argcv) {
+            throw this;
         }
     },
     exctype: 'graceexception'
@@ -2453,8 +2468,8 @@ var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErro
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 
 //
-// Define "Grace_prelude": a Grace object to which some methods are added here,
-// and to which more methods will be added by the compiled Grace prelude module
+// Define "Grace_prelude" as a Grace object to which some methods are added here,
+// and to which more methods will be added by the compiled StandardPrelude module
 // when it is loaded.
 //
 

@@ -618,7 +618,6 @@ method compilemethod(o, selfobj) {
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
-    forceLineNumber(linenum)comment("compilemethod")
     out("setModuleName(\"{modname}\");")
     if (debugMode) then {
         out "stackFrames.push(myframe);"
@@ -1480,6 +1479,8 @@ method processDialect(values') {
             checkimport(nm)
             log_verbose("loading dialect for checkers.")
             def CheckerFailure = Exception.refine "CheckerFailure"
+            def ImportError = EnvironmentException.refine "ImportError"
+            def DialectError = ProgrammingError.refine "DialectError"
             try {
                 def dobj = mirrors.loadDynamicModule(nm)
                 def mths = mirrors.reflect(dobj).methods
@@ -1512,6 +1513,9 @@ method processDialect(values') {
                     }
                     case { _ -> }
                 errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+            } catch { e : ImportError -> e.exception.raise(e.message)
+            } catch { e : Exception ->      // some unknwown Grace exception
+                DialectError.raise "Error at line {e.lineNumber} of checker for dialect {nm}.\n {e.exception}: {e.message}"
             }
         }
     }
@@ -1598,7 +1602,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out "'{imp}',"
     }
     out "];"
-    log_verbose "writing gct for {modname}"
     xmodule.writeGCT(modname, modname ++ ".gct")
         fromValues(values)modules(staticmodules)
     def gct = xmodule.parseGCT(modname, modname ++ ".gct")
