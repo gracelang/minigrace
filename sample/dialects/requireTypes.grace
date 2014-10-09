@@ -20,7 +20,7 @@ def staticVisitor = object {
     method visitMethod(v) is public {
         for (v.signature) do {s->
             for (s.params) do {p->
-                if (p.decType.value=="Unknown") then {
+                if ((p.kind == "identifier").andAlso{p.wildcard.not}.andAlso{p.decType.value=="Unknown"}) then {
                     CheckerFailure.raiseWith("no type given to declaration"
                         ++ " of parameter '{p.value}'", p)
                 }
@@ -33,7 +33,7 @@ def staticVisitor = object {
     }
     method visitBlock(v) is public {
         for (v.params) do {p->
-            if (p.decType.value=="Unknown") then {
+            if ((p.kind == "identifier").andAlso{p.wildcard.not}.andAlso{p.decType.value=="Unknown"}) then {
                 CheckerFailure.raiseWith("no type given to declaration"
                     ++ " of parameter '{p.value}'", p)
             }
