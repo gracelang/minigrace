@@ -2356,6 +2356,11 @@ Object Float64_truncate(Object self, int nparts, int *argcv,
         return self;
     return alloc_Float64(r);
 }
+Object Float64_round(Object self, int nparts, int *argcv,
+                        Object *args, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(rint(*d));
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -2382,7 +2387,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 28, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 31, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2393,6 +2398,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
         add_Method(Number, "hashcode", &Float64_hashcode);
+        add_Method(Number, "hash", &Float64_hashcode);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
@@ -2405,7 +2411,9 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
+        add_Method(Number, "truncated", &Float64_truncate);
         add_Method(Number, "truncate", &Float64_truncate);
+        add_Method(Number, "rounded", &Float64_round);
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);
         add_Method(Number, "&", &literal_and);

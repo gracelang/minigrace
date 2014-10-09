@@ -1266,7 +1266,7 @@ def range is public = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
-            def start = lower.truncate
+            def start = lower.truncated
             if (start != lower) then {
                 RequestError.raise "lower bound {lower}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
@@ -1275,7 +1275,7 @@ def range is public = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "upper bound {upper}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
-            def stop = upper.truncate
+            def stop = upper.truncated
             if (stop != upper) then {
                 RequestError.raise "upper bound {upper}" ++
                     " in range.from()to() is not an integer"
@@ -1313,7 +1313,7 @@ def range is public = object {
             }
             method contains(elem) -> Boolean {
                 try {
-                    def intElem = elem.truncate
+                    def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
@@ -1382,7 +1382,7 @@ def range is public = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer" }
-            def start = upper.truncate
+            def start = upper.truncated
             if (start != upper) then {
                 RequestError.raise "upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer"
@@ -1391,7 +1391,7 @@ def range is public = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer" }
-            def stop = lower.truncate
+            def stop = lower.truncated
             if (stop != lower) then {
                 RequestError.raise "lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer"
@@ -1423,7 +1423,7 @@ def range is public = object {
             }
             method contains(elem) -> Boolean {
                 try {
-                    def intElem = elem.truncate
+                    def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}

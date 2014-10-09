@@ -15,6 +15,8 @@ global.callStack = [];
 global.gctCache = {};
 global.originalSourceLines = {};
 global.stackFrames = [];
+global.performance = {now : require("performance-now")} 
+// shim for the browser function performance.now
 
 function MiniGrace() {
     this.compileError = false;

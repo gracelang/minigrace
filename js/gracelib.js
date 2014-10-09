@@ -532,18 +532,6 @@ GraceNum.prototype = {
         "hashcode": function num_hashcode (argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
-        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
-            var bl = callmethod(this, "==", [1], obj);
-            if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", [1], obj);
-            } else {
-                return callmethod(e, "apply", [1], obj);
-            }
-        },
         "inBase": function(argcv, other) {
             var mine = this._value;
             var base = other._value;
@@ -567,6 +555,14 @@ GraceNum.prototype = {
             if (this._value < 0)
                 return new GraceNum(Math.ceil(this._value));
             return new GraceNum(Math.floor(this._value));
+        },
+        "truncated": function(argcv) {
+            if (this._value < 0)
+                return new GraceNum(Math.ceil(this._value));
+            return new GraceNum(Math.floor(this._value));
+        },
+        "rounded": function(argcv) {
+            return new GraceNum(Math.round(this._value));
         },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
@@ -648,10 +644,6 @@ GraceBoolean.prototype = {
                     && this._value == other._value)
                 return GraceTrue;
             return GraceFalse;
-        },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
         },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
@@ -776,10 +768,6 @@ GraceList.prototype = {
         "/=": function(argcv, other) {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
-        },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
         },
         "prepended": function(argcv, item) {
             var l = [item];
@@ -1637,6 +1625,10 @@ GraceUnicodePattern.prototype = {
 };
 
 var util_module = false;
+var loadDate = Date.now();
+var loadCPU = performance.now();
+var previousElapsed = loadDate;
+var previousCPU = loadCPU;
 
 function gracecode_util() {
     if (util_module != false)
@@ -1686,8 +1678,19 @@ function gracecode_util() {
             return new GraceNum(30);
         },
         log_verbose: function(argcv, s) {
-            if (minigrace.verbose)
-            minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
+            if (minigrace.verbose) {
+                var cpu = Math.round((performance.now() - loadCPU)/10);  // 10 ms
+                var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
+                cpu = (cpu / 100);               // seconds, with 2 decimals
+                elapsed = (elapsed / 100);       // seconds, with 2 decimals
+                minigrace.stderr_write("minigrace: " + minigrace.modname + ': '
+                                + cpu + "/" + elapsed
+                                + " (+" + (cpu - previousCPU).toFixed(2) + "/"
+                                + (elapsed - previousElapsed).toFixed(2) + "): "
+                                + s._value + "\n");
+                previousElapsed = elapsed;
+                previousCPU = cpu;
+            }
             return GraceDone;
         },
         outprint: function(argcv, s) {

@@ -195,14 +195,21 @@ method parseargs {
     }
 }
 
+var previousElapsed := 0
+var previousCPU := 0
+
 method log_verbose(s) {
     if (verbosityv >= 40) then {
         var vtagw := ""
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
         }
-        io.error.write("minigrace{vtagw}: {modnamev}: {sys.cputime}/"
-            ++ "{sys.elapsed}: {s}\n")
+        def cpu = (sys.cputime * 100).truncate / 100
+        def elapsed = (sys.elapsed * 100).truncate / 100
+        io.error.write("minigrace{vtagw}: {modnamev}: {cpu}/"
+            ++ "{elapsed} (+{cpu-previousCPU}/{elapsed-previousElapsed}): {s}\n")
+        previousElapsed := elapsed
+        previousCPU := cpu
     }
 }
 
