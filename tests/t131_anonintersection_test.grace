@@ -11,6 +11,6 @@ method btaker(b : B) {
 }
 
 btaker(object {
-    def bar = "YE"
-    def quux = 5
+    def bar is public = "YE"
+    def quux is public = 5
 })

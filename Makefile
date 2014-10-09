@@ -222,14 +222,14 @@ known-good/%:
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
-install: minigrace
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
-	install -m 644 $(GRACE_MODULES) $(MODULE_PATH)
+	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(MODULE_PATH)
 
 Makefile.conf: configure
 	./configure

@@ -1,4 +1,4 @@
-import "gUnit" as gUnit is public
+import "gUnit" as gUnit
 class tryInheritance.constru {
     inherits gUnit.testRecordFor "foobar" message "nonesense"
     method myname {
