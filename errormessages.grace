@@ -267,8 +267,8 @@ class suggestion.new() {
                 io.error.write("    {s}...\n")
             }
             // Handle insertion of new lines.
-            if(lineNumbers[i].truncate != lineNumbers[i]) then {
-                io.error.write(" *{lineNumbers[i].truncate}: {lines[i]}\n")
+            if(lineNumbers[i].truncated != lineNumbers[i]) then {
+                io.error.write(" *{lineNumbers[i].truncated}: {lines[i]}\n")
             } else {
                 io.error.write("  {lineNumbers[i]}: {lines[i]}\n")
             }

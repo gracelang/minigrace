@@ -357,7 +357,7 @@ method background(col) {
     backgroundColour := col
 }
 method random(n) {
-    (n * mathModule.random).truncate
+    (n * mathModule.random).truncated
 }
 method randomPoint {
     point.x(canvasWidth / 10 + random(canvasWidth * 0.8))

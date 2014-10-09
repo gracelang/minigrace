@@ -164,18 +164,18 @@ function testall() {
             setTimeout(testthis, 0);
         } else {
             var overallEndTime = (new Date).getTime();
-            stderr_txt.value = "Ran all tests. Passed: " +
-            passes + "/" + tests;
+            stderr_txt.value = "Ran all tests. Passed: "
+                + passes + "/" + tests;
             if (failures.length > 0) {
                 stderr_txt.value += "\nFailures: ";
                 for (var i=0; i<failures.length; i++)
                     stderr_txt.value += "\n  " + failures[i];
             }
-            stderr_txt.value += "\nTook " + (
-                                             overallEndTime - overallStartTime) +
-            "ms real time, " + fetchTime + "ms fetching, "
-            + compileTime + "ms compiling, "
-            + runTime + "ms running.";
+            stderr_txt.value += "\nTook "
+                + (overallEndTime - overallStartTime)/1000
+                + "s elapsed time (" + fetchTime/1000 + "s fetching, "
+                + compileTime/1000 + "s compiling, "
+                + runTime/1000 + "s running).";
         }
     }
     testnext();

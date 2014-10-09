@@ -382,7 +382,7 @@ method resolveIdentifier(node) {
             for(scope.elements) do { v ->
                 var thresh := 1
                 if (nm.size > 2) then {
-                    thresh := ((nm.size / 3) + 1).truncate
+                    thresh := ((nm.size / 3) + 1).truncated
                 }
                 if(errormessages.dameraulevenshtein(v, nm) <= thresh) then {
                     suggestion := errormessages.suggestion.new
