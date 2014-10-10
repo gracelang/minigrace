@@ -264,10 +264,6 @@ MODULE_PATH = $MODULE_PATH
 OBJECT_PATH = $OBJECT_PATH
 EOT
 
-if ! npm install performance-now
-then
-    fail "npm install"
-fi
 
 if [ "$ADVISE_END" ]
 then
