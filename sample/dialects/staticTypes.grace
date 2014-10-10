@@ -528,6 +528,7 @@ def anObjectType = object {
     addTo(number) name("^") params(number) returns(number)
     addTo(number) name("%") params(number) returns(number)
     addTo(number) name("hashcode") returns(string)
+    addTo(number) name("hash") returns(string)
     addTo(number) name("++") params(base) returns(string)
     addTo(number) name("<") params(number) returns(boolean)
     addTo(number) name(">") params(number) returns(boolean)
@@ -537,7 +538,8 @@ def anObjectType = object {
     addTo(number) name("asInteger32") returns(number)
     addTo(number) name("prefix-") returns(number)
     addTo(number) name("inBase") params(number) returns(number)
-    addTo(number) name("truncate") returns(number)
+    addTo(number) name("truncated") returns(number)
+    addTo(number) name("rounded") returns(number)
     addTo(number) name("prefix<") returns(pattern)
     addTo(number) name("prefix>") returns(pattern)
 
@@ -555,6 +557,7 @@ def anObjectType = object {
     addTo(string) name("substringFrom()to") params(number, number) returns(string)
     addTo(string) name("replace()with") params(string, string) returns(string)
     addTo(string) name("hashcode") returns(string)
+    addTo(string) name("hash") returns(string)
     addTo(string) name("indices") returns(list)
     addTo(string) name("asNumber") returns(number)
 
