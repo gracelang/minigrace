@@ -67,8 +67,10 @@ class Scope.new(parent') {
     method alreadyDefines(node) {
         def name = node.nameString
         if (! elements.contains(name)) then { return false }
-        if (getKind(name) == "inherited") then { return false }
         if (elementLines(name) == node.line) then { return false }
+        if ((getKind(name) == "inherited").andAlso{node.kind == "method"}) then {
+            return false 
+        }
         return true
     }
 }
@@ -562,13 +564,16 @@ method resolveIdentifiersActual(node) {
 method checkDuplicateDefinition(declNode) {
     def name = declNode.nameString
     if (scope.alreadyDefines(declNode)) then {
-        var more := " in this scope"
+        var more := "already declared in this scope"
         if (scope.elementLines.contains(name)) then {
-            more := " as a {scope.getKind(name)}"
+            more := "already declared as a {scope.getKind(name)}"
                 ++ " on line {scope.elementLines.get(name)}"
         }
+        if (scope.getKind(name) == "inherited") then {
+            more := "inherited. To override the inherited definition, declare a method"
+        }
         errormessages.syntaxError("'{name}' cannot be"
-            ++ " redeclared because it is already declared"
+            ++ " redeclared because it is "
             ++ more ++ ".")
             atRange(declNode.line, declNode.linePos,
                     declNode.linePos + name.size - 1)

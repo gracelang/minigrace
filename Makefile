@@ -229,7 +229,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
-	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(MODULE_PATH)
+	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
 
 Makefile.conf: configure
 	./configure

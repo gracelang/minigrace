@@ -1805,7 +1805,6 @@ class importNode.new(path', name) {
     def path = path'
     def annotations = collections.list.new
     var dtype := false
-    def linePos = 1
     def nameString:String = value
     
     method isPublic {

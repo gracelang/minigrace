@@ -300,10 +300,7 @@ class iterable.trait {
 
 class enumerable.trait {
     // requires do, iterator, size
-    method iterator { SubobjectResponsibility.raise "iterator" }
-    method do { SubobjectResponsibility.raise "do" }
-    method size { SubobjectResponsibility.raise "size" }
-    method isEmpty { size == 0 }
+    method isEmpty { self.size == 0 }
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
@@ -321,17 +318,17 @@ class enumerable.trait {
         fold(blk)startingWith(initial)
     }
     method map(block1) {
-        iterator.map(block1)
+        self.iterator.map(block1)
     }
     method fold(blk)startingWith(initial) {
         var res := initial
-        for (self) do {it->
+        self.do {it->
             res := blk.apply(res, it)
         }
         return res
     }
     method filter(condition) {
-        iterator.filter(condition)
+        self.iterator.filter(condition)
     }
     method iter { return self.iterator }
     method asSequence {
@@ -354,10 +351,10 @@ class indexable.trait {
     method third { at(3) }
     method fourth { at(4) }
     method fifth { at(5) }
-    method last { at(size) }
+    method last { at(self.size) }
     method [](ix) { at(ix) }
     method indices {
-        range.from(1)to(size)
+        range.from(1)to(self.size)
     }
     method indexOf(sought:T)  {
         indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }

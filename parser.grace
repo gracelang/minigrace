@@ -227,7 +227,7 @@ method pushstring {
 // Push the current token onto the output stack as an identifier.
 // false means that this identifier has not been assigned a dtype (yet).
 method pushidentifier {
-    util.setline(sym.line)
+    util.setPosition(sym.line, sym.linePos)
     var o := ast.identifierNode.new(sym.value, false)
     if (o.value == "_") then {
         o.value := "__" ++ auto_count
