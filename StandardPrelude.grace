@@ -137,6 +137,17 @@ class OrPattern.new(p1, p2) {
     }
 }
 
+class Singleton.new {
+    inherits BasicPattern.new
+    method match(other) {
+        if (self == other) then {
+            SuccessfulMatch.new(other, [])
+        } else {
+            FailedMatch.new(other);
+        }
+    }
+}
+
 class TypeIntersection.new(t1, t2) {
     inherits AndPattern.new(t1, t2)
     method methodNames { 
