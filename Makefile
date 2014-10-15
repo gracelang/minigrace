@@ -101,18 +101,12 @@ js/minigrace.js: js/minigrace.in.js minigrace
 
 js/%.js: %.grace minigrace
 	./minigrace --verbose --target js -o $@ $<
-    
-js/tests/printc.js: js/tests/printc.grace
-	(cd js/tests; ../../minigrace --target js printc.grace)
-    
-js/tests/printc.gct: js/tests/printc.grace
-	(cd js/tests; ../../minigrace --target js printc.grace)
 
 test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js/StandardPrelude.js js/collectionsPrelude.js js/tests/printc.js js/tests/printc.gct js/collections.js js/gUnit.js
+test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js
 	(cd js/tests; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
@@ -175,10 +169,8 @@ gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
 regrtest: minigrace
 	./tests/harness "../../minigrace" tests/regression ""
-test: minigrace gUnit.gct tests/printc.gct
+test: minigrace gUnit.gct
 	./tests/harness "../minigrace" tests ""
-tests/printc.gct: tests/printc.grace
-	./minigrace --make tests/printc.grace
 fulltest: gencheck clean selftest test
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
@@ -234,20 +226,20 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js)
 Makefile.conf: configure
 	./configure
 
-tarWeb: js samples js/tests/printc.js
+tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
 
-blackWeb: js samples js/tests/printc.js ace-code
+blackWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample black@cs.pdx.edu:public_html/minigrace
 
-graceWeb: js samples js/tests/printc.js ace-code
+graceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
 
-bruceWeb: js samples js/tests/printc.js ace-code
+bruceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
 	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
 
