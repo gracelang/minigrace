@@ -118,7 +118,6 @@ ClassData Exception;
 
 Object Dynamic;
 Object Unknown;
-Object List;
 Object prelude = NULL;
 
 struct StringObject {
@@ -4451,22 +4450,6 @@ void gracelib_argv(char **argv) {
     Unknown = alloc_Type("Unknown", 0);
     gc_root(Unknown);
     Dynamic = Unknown;
-    List = alloc_Type("List", 15);
-    gc_root(List);
-    add_Method((ClassData)List, "==", NULL);
-    add_Method((ClassData)List, "!=", NULL);
-    add_Method((ClassData)List, "push", NULL);
-    add_Method((ClassData)List, "pop", NULL);
-    add_Method((ClassData)List, "at", NULL);
-    add_Method((ClassData)List, "at()put", NULL);
-    add_Method((ClassData)List, "[]", NULL);
-    add_Method((ClassData)List, "[]:=", NULL);
-    add_Method((ClassData)List, "size", NULL);
-    add_Method((ClassData)List, "iterator", NULL);
-    add_Method((ClassData)List, "++", NULL);
-    add_Method((ClassData)List, "asString", NULL);
-    add_Method((ClassData)List, "asDebugString", NULL);
-    add_Method((ClassData)List, "::", NULL);
     ExceptionObject = alloc_Exception("Exception", NULL);
     gc_root(ExceptionObject);
     ErrorObject = alloc_Exception("Error", ExceptionObject);

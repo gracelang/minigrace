@@ -1,31 +1,26 @@
-import "mgcollections" as collections
 import "StandardPrelude" as StandardPrelude
 inherits StandardPrelude.methods
 
 method Relationship<From, To> {
     object {
-        def map = collections.map.new
+        def map = dictionary.empty
         method add(f : From, t : To) is public {
-            if (!map.contains(f)) then {
-                map.put(f, collections.set.new)
+            if (!map.containsKey(f)) then {
+                map.at(f) put(set.empty)
             }
-            map.get(f).add(t)
+            map.at(f).add(t)
         }
         method to(t) is public {
-            def res = collections.list.new
-            for (map) do {k->
-                if (map.get(k).contains(t)) then {
-                    res.push(k)
+            def res = list.empty
+            map.keysDo {k->
+                if (map.at(k).contains(t)) then {
+                    res.add(k)
                 }
             }
             res
         }
         method from(f) is public {
-            def res = collections.list.new
-            for (map.get(f)) do {v->
-                res.push(v)
-            }
-            res
+            map.at(f).asList
         }
     }
 }
