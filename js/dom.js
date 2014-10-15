@@ -155,6 +155,7 @@ function gracecode_dom() {
         func();
         return ret;
     };
+
     this.methods["for()waiting()do"].paramCounts = [1, 1, 1];
     this.methods["for()waiting()do"].variableArities = [false, false, false];
 
@@ -177,8 +178,98 @@ function gracecode_dom() {
         func();
         return ret;
     };
+
     this.methods["while()waiting()do"].paramCounts = [1, 1, 1];
     this.methods["while()waiting()do"].variableArities = [false, false, false];
+
+    function color(g) {
+      var c = g.theColor.data;
+      return "rgb(" + c.red._value + ", " + c.green._value + ", " + c.blue._value + ")";
+    }
+
+    function arc(ctx, g) {
+      var p = g.location.data;
+      var w = g.theWidth._value;
+      var h = g.theHeight._value;
+      ctx.translate(p.x._value + w, p.y._value + h);
+      ctx.scale(w / 2, h / 2);
+      ctx.arc(0, 0, 1, 0, 2 * Math.PI);
+    }
+
+    function run(ctx, name, g) {
+      var p = g.location.data;
+      ctx[name](p.x._value, p.y._value, g.theWidth._value, g.theHeight._value);
+    }
+
+    this.methods.framedRect = function (argcv, ctx, g) {
+      ctx = ctx._wrappedDOMObject;
+      g = g.data;
+      ctx.save();
+      ctx.strokeStyle = color(g);
+      run(ctx, "strokeRect", g);
+      ctx.restore();
+      return GraceDone;
+    };
+
+    this.methods.filledRect = function (argcv, ctx, g) {
+      ctx = ctx._wrappedDOMObject;
+      g = g.data;
+      ctx.save();
+      ctx.fillStyle = color(g);
+      run(ctx, "fillRect", g);
+      ctx.restore();
+      return GraceDone;
+    };
+
+    this.methods.framedOval = function (argcv, ctx, g) {
+      ctx = ctx._wrappedDOMObject;
+      g = g.data;
+      ctx.beginPath();
+      ctx.save();
+      arc(ctx, g);
+      ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = color(g);
+      ctx.stroke();
+      ctx.restore();
+      ctx.closePath();
+      return GraceDone;
+    };
+
+    this.methods.filledOval = function (argcv, ctx, g) {
+      ctx = ctx._wrappedDOMObject;
+      g = g.data;
+      ctx.beginPath();
+      ctx.save();
+      arc(ctx, g);
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = color(g);
+      ctx.fill();
+      ctx.restore();
+      ctx.closePath();
+      return GraceDone;
+    };
+
+    this.methods.image = function (argcv, ctx, g) {
+      ctx = ctx._wrappedDOMObject;
+      g = g.data;
+      ctx.drawImage(g.theImage, g.x._value, g.y._value, g.theWidth._value, g.theHeight._value);
+    };
+
+    this.methods.draw = function (argcv, ctx, graphics, width, height) {
+      ctx._wrappedDOMObject.clearRect(0, 0, width._value, height._value);
+
+      var list = graphics._value;
+
+      for (var i = 0, l = list.length; i < l; i++) {
+        var graphic = list[i];
+        if (Grace_isTrue(graphic.data.isVisible)) {
+          graphic.methods.draw.call(graphic, [1], ctx);
+        }
+      }
+    };
+
     return this;
 }
 
