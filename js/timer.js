@@ -3,40 +3,9 @@ function gracecode_timer() {
     o.methods.intervalList = [];
     o.methods.timeoutList = [];
 
-    o.methods.trapErrors = function(func) {
-        try {
-            func();
-        } catch (e) {
-            if (e.exctype == 'graceexception') {
-                document.getElementById("stderr_txt").value += (
-                    "Error around line " + e.lineNumber
-                    + ": " + e.exception.name + ": "
-                    + e.message._value + "\n");
-                for (i=e.callStack.length-1; i>=0; i--) {
-                    document.getElementById("stderr_txt").value += (
-                        "  From call to " + e.callStack[i] + "\n");
-                }
-                if (e.callStack.length > 0) {
-                    document.getElementById("stderr_txt").value += (
-                        "Error around line " + e.lineNumber
-                        + ": " + e.exception.name + ": "
-                        + e.message._value + "\n");
-                }
-            } else if (e != "SystemExit") {
-                document.getElementById("stderr_txt").value += (
-                    "Runtime error\n"); // around line " + lineNumber + "\n");
-                throw e;
-            } else {
-                document.getElementById("stderr_txt").value += (
-                    "Unknown Error\n"
-                );
-            }
-        }
-    }
-
     o.methods["every()do"] = function(argcv, millisec, code) {
         var func = function() {
-            o.methods.trapErrors(function() {
+            minigrace.trapErrors(function() {
                 callmethod(code, "apply", [0]);
             });
         }
@@ -49,7 +18,7 @@ function gracecode_timer() {
 
     o.methods["after()do"] = function(argcv, millisec, code) {
         var func = function() {
-            o.methods.trapErrors(function() {
+            minigrace.trapErrors(function() {
                 callmethod(code, "apply", [0]);
             });
         }

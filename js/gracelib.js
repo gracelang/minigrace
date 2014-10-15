@@ -678,6 +678,24 @@ GraceList.prototype = {
             this._value.push(val);
             return GraceDone;
         },
+        "unshift": function (argcv, val) {
+            this._value.unshift(val);
+            return GraceDone;
+        },
+        "remove": function (argcv, val) {
+            var list = this._value;
+            var index = list.indexOf(val);
+            if (index > -1)
+                list.splice(index, 1);
+            return new GraceNum(index + 1);
+        },
+        "indexOf": function (argcv, val) {
+            return new GraceNum(this._value.indexOf(val) + 1);
+        },
+        "reverse": function (argcv, val) {
+            this._value.reverse();
+            return this;
+        },
         "size": function(argcv) {
             //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
@@ -697,6 +715,10 @@ GraceList.prototype = {
         },
         "at()put": function(argcv, idx, val) {
             this._value[idx._value-1] = val;
+            return GraceDone;
+        },
+        "at()add": function(argcv, idx, val) {
+            this._value.splice(idx._value - 1, 0, val);
             return GraceDone;
         },
         "[]:=": function(argcv, idx, val) {
