@@ -2,7 +2,7 @@ include Makefile.conf
 
 ARCH:=$(shell uname -s)-$(shell uname -m)
 STABLE=c8c12b06a1150c004213619aa8f1b5d7748cfc84
-all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) samples-dialects
+all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects
 
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
@@ -81,10 +81,10 @@ l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.
 
 js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
-js/sample/dialects/requireTypes.js: samples-dialects
+js/sample/dialects/requireTypes.js: sample-dialects
 	$(MAKE) -C sample/dialects requireTypes.js
 
-js/sample/dialects/staticTypes.js: samples-dialects
+js/sample/dialects/staticTypes.js: sample-dialects
 	$(MAKE) -C sample/dialects staticTypes.js
 
 js/StandardPrelude.js: StandardPrelude.grace minigrace
@@ -106,8 +106,8 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js
-	(cd js/tests; ./harness ../../minigrace . "")
+test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
+	(cd js/tests; ln -s  ../sample/dialects/requireTypes.{gso,gct} .; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -180,10 +180,10 @@ backendtests: test
 
 alltests: test regrtest
 
-samples-%: minigrace
+sample-%: minigrace
 	$(MAKE) -C sample/$*
 
-samples: samples-dialects samples-graphics samples-js
+samples: sample-dialects sample-graphics sample-js
 
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
