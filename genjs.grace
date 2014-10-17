@@ -353,7 +353,7 @@ method compileobject(o, outerRef, inheritingObject) {
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
         } elseif (e.kind == "typedec") then {
-            compileobjdefdec(e, selfr, pos)
+            compiletypedec(e)
             pos := pos + 1
         } elseif (e.kind == "object") then {
             compileobject(e, selfr, false)
