@@ -899,7 +899,6 @@ method resolve(values) {
     builtinObj.add "String" as "def"
     builtinObj.add "Number" as "def"
     builtinObj.add "Boolean" as "def"
-    builtinObj.add "List" as "def"
     builtinObj.add "Block" as "def"
     builtinObj.add "Done" as "def"
     builtinObj.add "done" as "def"
