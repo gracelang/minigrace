@@ -159,7 +159,7 @@ class TypeIntersection.new(t1, t2) {
 class TypeVariant.new(t1, t2) {
     inherits OrPattern.new(t1, t2)
     method methodNames { 
-        Exception.raise "Type Variants cannot be characterized by a set of methods"
+        self.TypeVariantsCannotBeCharacterizedByASetOfMethods
     }
     method asString { "({t1} | {t2})" }
 }
