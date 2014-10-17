@@ -100,6 +100,8 @@ method generateGCT(path)fromValues(values)modules(modules) {
             methods.push(v.name.value)
         } elseif (v.kind == "dialect") then {
             theDialect := v.value
+        } elseif (v.kind == "inherits") then {
+            v.providedNames.do { each -> methods.push(each) }
         }
     }
     def gct = collections.map.new
