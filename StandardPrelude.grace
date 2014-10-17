@@ -159,7 +159,7 @@ class TypeIntersection.new(t1, t2) {
 class TypeVariant.new(t1, t2) {
     inherits OrPattern.new(t1, t2)
     method methodNames { 
-        "Type Variants cannot be characterized by a set of methods"
+        Exception.raise "Type Variants cannot be characterized by a set of methods"
     }
     method asString { "({t1} | {t2})" }
 }
@@ -183,7 +183,7 @@ class TypeUnion.new(t1, t2) {
 }
 
 class TypeSubtraction.new(t1, t2) {
-    inherits AndPattern.new(t1, t2)
+    inherits TypeUnion.new(t1, t2)
     method methodNames { 
         t1.methodNames.removeAll(t2.methodNames)
     }
