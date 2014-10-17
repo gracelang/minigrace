@@ -1,13 +1,16 @@
-import "printc" as c
-inherits c.printc
+import "gUnit" as gu
+inherits gu.assertion.trait
 
 method b { "this is b" }
 
-object {
-    inherits c.printc
-    method typIt {"this is d"}
+def o = object {
+    inherits gu.assertion.trait
+    method d { "this is d" }
 
-    thisIsC
+    assert( 1 == 1 )
 }
 
-thisIsC
+print(b)
+assert(true)
+print(o.d)
+print "done"
