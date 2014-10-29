@@ -1228,7 +1228,9 @@ class memberNode.new(what, in') {
     inherits baseNode.new
     def kind = "member"
     var value := what
+    def nameString:String = value
     def in = in'
+    var generics := false
 
     method accept(visitor : ASTVisitor) {
         if (visitor.visitMember(self)) then {
@@ -1238,6 +1240,9 @@ class memberNode.new(what, in') {
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         var n := memberNode.new(value, in.map(blk)before(blkBefore)after(blkAfter))
+        if (generics != false) then {
+            n.generics := listMap(generics, blk)before(blkBefore)after(blkAfter)
+        }
         n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
@@ -1253,6 +1258,12 @@ class memberNode.new(what, in') {
         }
         var s := "Member(" ++ self.value ++ ")\n"
         s := s ++ spc ++ self.in.pretty(depth+1)
+        if (false != generics) then {
+            s := s ++ spc ++ "  Generics:\n"
+            for (generics) do {g->
+                s := s ++ spc ++ "    " ++ g.pretty(0) ++ "\n"
+            }
+        }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -1265,7 +1276,7 @@ class memberNode.new(what, in') {
         }
         s
     }
-    method asString { "Member({self.value})" }
+    method asString { "Member‹{self.value}›" }
 }
 class genericNode.new(base, params') {
     inherits baseNode.new
@@ -1385,7 +1396,7 @@ class identifierNode.new(name, dtype') {
         s
     }
     method asString {
-        "<Identifier[{value}]>"
+        "Identifier‹{value}›"
     }
 }
 class octetsNode.new(n) {

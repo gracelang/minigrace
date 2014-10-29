@@ -497,7 +497,6 @@ method block {
         if (accept("arrow")) then {
             next
         }
-        var ln := values.size
         if (sym.line == lastToken.line) then {
             minIndentLevel := sym.linePos - 1
         } else {
@@ -1844,22 +1843,17 @@ method callrest(acceptBlocks) {
         return 0
     }
     var meth := values.pop
-    var lnum := linenum
-    var lpos := 1
     if (meth.kind != "identifier") then {
         if (meth.kind != "member") then {
             values.push(meth)
             return 0
         }
     }
-    if (meth.kind == "identifier") then {
-        lnum := meth.line
-        lpos := meth.linePos
-    }
+    def lnum = meth.line
+    def lpos = meth.linePos
     var methn
     def btok = sym
     var tmp
-    var ln := false
     var signature := []
     var part := ast.callWithPart.new
     signature.push(part)
@@ -1868,28 +1862,7 @@ method callrest(acceptBlocks) {
     var startInd := minIndentLevel
     var genericIdents := false
     if (acceptSameLine "lgeneric") then {
-        // Generic!
-        def startToken = sym
-        next
-        genericIdents := collections.list.new
-        while {accept("identifier")} do {
-            identifier
-            genericIdents.push(values.pop)
-            if (accept("comma")) then {
-                next
-            }
-        }
-        if(sym.kind != "rgeneric") then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(">")afterToken(lastToken)
-            def suggestion2 = errormessages.suggestion.new
-            suggestion2.insert(" ")beforeToken(startToken)
-            def suggestions = [suggestion, suggestion2]
-            errormessages.syntaxError("A method request containing a '<' must have a matching '>'. If '<' is intended as an operator, precede it by a space.")atPosition(
-                    lastToken.line, lastToken.linePos + lastToken.size)
-                withSuggestions(suggestions)
-        }
-        next
+        genericIdents := typeArgs
     }
     if (acceptSameLine("lparen")) then {
         part.line := sym.line
@@ -2006,7 +1979,6 @@ method callrest(acceptBlocks) {
         if (sym.line == part.line) then {
             part.lineLength := sym.linePos - part.linePos
         }
-        ln := linenum
         next
     } elseif (acceptBlocks.not && {accept("lbrace")onLineOf(tok)}) then {
         values.push(meth)
@@ -2018,7 +1990,6 @@ method callrest(acceptBlocks) {
         hadcall := true
         methn := meth.value
         part.name := methn
-        ln := linenum
         term
         var ar := values.pop
         part.args.push(ar)
@@ -2034,9 +2005,11 @@ method callrest(acceptBlocks) {
         if (root.kind == "identifier") then {
             values.push(meth)
         } else {
+            meth.generics := genericIdents
             values.push(meth)
         }
     } else {
+        print "in else, meth.kind = {meth.kind}"
         values.push(meth)
     }
     if (hadcall) then {
@@ -2064,13 +2037,53 @@ method callrest(acceptBlocks) {
     dotrest(acceptBlocks)
 }
 
+method typeArgs {
+    // Parse one or more type arguments, if present, and answer them as a list.
+    def startToken = sym
+    def args = list.empty
+    if (sym.kind != "lgeneric") then { return args }
+    next
+    while {didConsume{typeArg}} do {
+        args.add(values.pop)
+        if (sym.kind == "comma") then { next }
+    }
+    if(sym.kind != "rgeneric") then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.insert(">")afterToken(lastToken)
+        def suggestion2 = errormessages.suggestion.new
+        suggestion2.insert(" ")beforeToken(startToken)
+        def suggestions = [suggestion, suggestion2]
+        errormessages.syntaxError("A method request containing a '<' must have a matching '>'. "
+            ++ "If '<' is intended as an operator, precede it by a space.")
+            atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+            withSuggestions(suggestions)
+    }
+    next
+    return args
+}
+
+method typeArg {
+    // Parse a single type argument, and leave it on the values stack.
+    // TODO: 'identifier' could be a dotted identifier, 
+    //       or perhaps a type expression?
+    if (accept "identifier") then {
+        identifier
+        if (sym.kind == "lgeneric") then {
+            values.push(ast.genericNode.new(values.pop, typeArgs))
+        } else {
+            // values.push(values.pop)
+        }
+    } elseif {didConsume{dotypeLiteral}} then {
+        // values.push(values.pop)
+    }
+}
+
 // Process the rest of a multi-part method name. Returns an identifier
 // to replace the one passed in, in which each word is joined by "",
 // and updates params in place.
 method callmprest(meth, signature, tok) {
     var methname := meth.value
     var nxt
-    var ln := linenum
     var lp := meth.linePos
     var part
     while {accept("identifier")onLineOf(tok)
@@ -2130,7 +2143,6 @@ method callmprest(meth, signature, tok) {
             isEmpty := true
         }
         if (isTerm) then {
-            ln := lastline
             term
         } else {
             if(sym.kind != "rparen") then {
@@ -2187,7 +2199,6 @@ method callmprest(meth, signature, tok) {
             }
         }
         if (accept("rparen") && isTerm.not) then {
-            ln := lastline
             next
         }
     }
