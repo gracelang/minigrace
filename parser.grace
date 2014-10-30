@@ -1851,9 +1851,8 @@ method callrest(acceptBlocks) {
     }
     def lnum = meth.line
     def lpos = meth.linePos
-    var methn
+    var methn := meth.value
     def btok = sym
-    var tmp
     var signature := []
     var part := ast.callWithPart.new
     signature.push(part)
@@ -1867,119 +1866,10 @@ method callrest(acceptBlocks) {
     if (acceptSameLine("lparen")) then {
         part.line := sym.line
         part.linePos := sym.linePos
+        part.name := methn
         tok := sym
         hadcall := true
-        methn := meth.value
-        part.name := methn
-        next
-        ifConsume {expression(blocksOK)} then {
-            // For matching blocks - same as below
-            if (accept("colon")) then {
-                tmp := values.pop
-                if (tmp.kind != "identifier") then {
-                    def suggestion = errormessages.suggestion.new
-                    if(sym.next.kind == "identifier") then {
-                        suggestion.deleteTokenRange(sym, sym.next)leading(true)trailing(false)
-                        errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
-                            sym.line, sym.linePos, sym.next.linePos + sym.next.size - 1)withSuggestion(suggestion)
-                    } else {
-                        suggestion.deleteToken(sym)leading(true)trailing(false)
-                        errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
-                            sym.line, sym.linePos, sym.linePos)withSuggestion(suggestion)
-                    }
-                }
-                next
-                if(didConsume({expression(blocksOK)}).not) then {
-                    checkBadTypeLiteral
-                    def suggestions = []
-                    var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rparen")
-                    if(nextTok == sym) then {
-                        suggestion.insert(" «type name»")afterToken(lastToken)
-                    } else {
-                        suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «type name»")
-                    }
-                    suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
-                        sym.line, sym.linePos)withSuggestions(suggestions)
-                }
-                tmp.dtype := values.pop
-                values.push(tmp)
-            }
-            while {accept("comma")} do {
-                tmp := values.pop
-                part.args.push(tmp)
-                next
-                if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = []
-                    var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rparen")
-                    if(nextTok == sym) then {
-                        suggestion.insert(" «expression»")afterToken(lastToken)
-                    } else {
-                        suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
-                    }
-                    suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("A method request must have an expression after a ','.")atPosition(
-                        sym.line, sym.linePos)withSuggestions(suggestions)
-                }
-                // For matching blocks - same as above
-                if (accept("colon")) then {
-                    tmp := values.pop
-                    if (tmp.kind != "identifier") then {
-                        def suggestion = errormessages.suggestion.new
-                        if(sym.next.kind == "identifier") then {
-                            suggestion.deleteTokenRange(sym, sym.next)leading(true)trailing(false)
-                            errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
-                                sym.line, sym.linePos, sym.next.linePos + sym.next.size - 1)withSuggestion(suggestion)
-                        } else {
-                            suggestion.deleteToken(sym)
-                            errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
-                                sym.line, sym.linePos, sym.linePos)withSuggestion(suggestion)
-                        }
-                    }
-                    next
-                    if(didConsume({expression(blocksOK)}).not) then {
-                        checkBadTypeLiteral
-                        def suggestions = []
-                        var suggestion := errormessages.suggestion.new
-                        def nextTok = findNextValidToken("rparen")
-                        if(nextTok == sym) then {
-                            suggestion.insert(" «type name»")afterToken(lastToken)
-                        } else {
-                            suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «type name»")
-                        }
-                        suggestions.push(suggestion)
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
-                        suggestions.push(suggestion)
-                        errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
-                            sym.line, sym.linePos)withSuggestions(suggestions)
-                    }
-                    tmp.dtype := values.pop
-                    values.push(tmp)
-                }
-            }
-            tmp := values.pop
-            part.args.push(tmp)
-        }
-        if(sym.kind != "rparen") then {
-            checkBadOperators
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError("A method request beginning with a '(' must end with a ')'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-        }
-        if (sym.line == part.line) then {
-            part.lineLength := sym.linePos - part.linePos
-        }
-        next
+        parenthesizedArg(part)
     } elseif (acceptBlocks.not && {accept("lbrace")onLineOf(tok)}) then {
         values.push(meth)
     } elseif (accept("string")onLineOf(tok) || accept("num")onLineOf(tok)
@@ -1988,7 +1878,6 @@ method callrest(acceptBlocks) {
                                    || (sym.value == "false")))) then {
         tok := sym
         hadcall := true
-        methn := meth.value
         part.name := methn
         term
         var ar := values.pop
@@ -2029,12 +1918,122 @@ method callrest(acceptBlocks) {
             }
         }
         util.setline(lnum)
-        tmp := ast.callNode.new(meth, signature)
-        tmp.generics := genericIdents
-        values.push(tmp)
+        def call = ast.callNode.new(meth, signature)
+        call.generics := genericIdents
+        values.push(call)
     }
     minIndentLevel := startInd
     dotrest(acceptBlocks)
+}
+
+method parenthesizedArg(part) {
+    next
+    ifConsume {expression(blocksOK)} then {
+        // For matching blocks - same as below
+        if (accept("colon")) then {
+            def expr = values.pop
+            if (expr.kind != "identifier") then {
+                def suggestion = errormessages.suggestion.new
+                if(sym.next.kind == "identifier") then {
+                    suggestion.deleteTokenRange(sym, sym.next)leading(true)trailing(false)
+                    errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
+                        sym.line, sym.linePos, sym.next.linePos + sym.next.size - 1)withSuggestion(suggestion)
+                } else {
+                    suggestion.deleteToken(sym)leading(true)trailing(false)
+                    errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
+                        sym.line, sym.linePos, sym.linePos)withSuggestion(suggestion)
+                }
+            }
+            next
+            if(didConsume({expression(blocksOK)}).not) then {
+                checkBadTypeLiteral
+                def suggestions = []
+                var suggestion := errormessages.suggestion.new
+                def nextTok = findNextValidToken("rparen")
+                if(nextTok == sym) then {
+                    suggestion.insert(" «type name»")afterToken(lastToken)
+                } else {
+                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «type name»")
+                }
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
+                suggestions.push(suggestion)
+                errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
+                    sym.line, sym.linePos)withSuggestions(suggestions)
+            }
+            expr.dtype := values.pop
+            values.push(expr)
+        }
+        while {accept("comma")} do {
+            part.args.push(values.pop)
+            next
+            if(didConsume({expression(blocksOK)}).not) then {
+                def suggestions = []
+                var suggestion := errormessages.suggestion.new
+                def nextTok = findNextValidToken("rparen")
+                if(nextTok == sym) then {
+                    suggestion.insert(" «expression»")afterToken(lastToken)
+                } else {
+                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
+                }
+                suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
+                suggestions.push(suggestion)
+                errormessages.syntaxError("A method request must have an expression after a ','.")atPosition(
+                    sym.line, sym.linePos)withSuggestions(suggestions)
+            }
+            // For matching blocks - same as above
+            if (accept("colon")) then {
+                def arg = values.pop
+                if (arg.kind != "identifier") then {
+                    def suggestion = errormessages.suggestion.new
+                    if(sym.next.kind == "identifier") then {
+                        suggestion.deleteTokenRange(sym, sym.next)leading(true)trailing(false)
+                        errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
+                            sym.line, sym.linePos, sym.next.linePos + sym.next.size - 1)withSuggestion(suggestion)
+                    } else {
+                        suggestion.deleteToken(sym)
+                        errormessages.syntaxError("Only variables and constants may be followed by a ':' and a type.")atRange(
+                            sym.line, sym.linePos, sym.linePos)withSuggestion(suggestion)
+                    }
+                }
+                next
+                if(didConsume({expression(blocksOK)}).not) then {
+                    checkBadTypeLiteral
+                    def suggestions = []
+                    var suggestion := errormessages.suggestion.new
+                    def nextTok = findNextValidToken("rparen")
+                    if(nextTok == sym) then {
+                        suggestion.insert(" «type name»")afterToken(lastToken)
+                    } else {
+                        suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «type name»")
+                    }
+                    suggestions.push(suggestion)
+                    suggestion := errormessages.suggestion.new
+                    suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
+                    suggestions.push(suggestion)
+                    errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
+                        sym.line, sym.linePos)withSuggestions(suggestions)
+                }
+                arg.dtype := values.pop
+                values.push(arg)
+            }
+        }
+        part.args.push(values.pop)
+    }
+    if(sym.kind != "rparen") then {
+        checkBadOperators
+        def suggestion = errormessages.suggestion.new
+        suggestion.insert(")")afterToken(lastToken)
+        errormessages.syntaxError("A method request beginning with a '(' must end with a ')'.")atPosition(
+            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+    }
+    if (sym.line == part.line) then {
+        part.lineLength := sym.linePos - part.linePos
+    }
+    next
 }
 
 method typeArgs {
