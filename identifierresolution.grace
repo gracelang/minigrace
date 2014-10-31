@@ -478,7 +478,7 @@ method resolveIdentifiersActual(node) {
             def ck = getNameKind(node.value.value)
             if (!node.isPattern) then {
                 if ((ck == "def") || (ck == "var")) then {
-                    util.semantic_error ""
+                    util.semantic_error "{node.value.value} is a {ck}; it can't be requested with arguments."
                 }
             }
         }
@@ -494,7 +494,8 @@ method resolveIdentifiersActual(node) {
             tmp.line := node.line
             return tmp
         } elseif (node.dest.kind == "identifier") then {
-            if (getNameKind(node.dest.value) == "def") then {
+            def declKind = getNameKind(node.dest.value)
+            if (declKind == "def") then {
                 def name = node.dest.value
                 def scp = getNameScope(name)
                 var more := ""
@@ -513,9 +514,19 @@ method resolveIdentifiersActual(node) {
                     sugg.replaceToken(tok)with("var")
                     suggestions.push(sugg)
                 }
-                errormessages.syntaxError("The value of '{node.dest.value}' cannot be changed because it is a constant. To make it a variable use 'var' instead of 'def' in the declaration{more}.")
+                errormessages.syntaxError("The value of '{node.dest.value}' cannot be changed. To make it a variable, use 'var' instead of 'def' in the declaration{more}.")
                     atLine(node.line)
                     withSuggestions(suggestions)
+            } elseif {declKind == "typedef"} then {
+                def name = node.dest.value
+                def scp = getNameScope(name)
+                var more := ""
+                if (scp.elementLines.contains(name)) then {
+                    more := " on line {scp.elementLines.get(name)}"
+                }
+                errormessages.syntaxError("'{node.dest.value}' cannot be re-bound " 
+                    ++ "because it is declared as a type{more}.")
+                    atLine(node.line)
             }
         }
     }
@@ -581,7 +592,7 @@ method checkDuplicateDefinition(declNode) {
 }
 method checkRedefinition(ident) {
     def nk = getNameKind(ident.value)
-    if ((nk == "def").orElse {nk == "var"}) then {
+    if ((nk == "def").orElse {nk == "var"}.orElse {nk == "typedef"}) then {
         if (getNameScope(ident.value)
             .elementDeclarations.contains(ident.value)
         ) then {
@@ -591,7 +602,7 @@ method checkRedefinition(ident) {
                 more := " as a {scp.getKind(ident.value)}"
                     ++ " on line {scp.elementLines.get(ident.value)}"
             }
-            if(nk == "def") then {
+            if ((nk == "def").orElse {nk == "typedef"}) then {
                 errormessages.syntaxError("'{ident.value}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
@@ -728,7 +739,7 @@ method resolveIdentifiers(topNode) {
         } elseif (node.kind == "typedec") then {
             if ((scope.variety != "object") && (scope.variety != "class")) then {
                 checkRedefinition(node.name)
-                scope.add(node.name.value) as "def"
+                scope.add(node.name.value) as "typedef"
                 pushScope
                 scope.variety := "typeparams"
                 for (node.generics) do {n->
@@ -736,7 +747,7 @@ method resolveIdentifiers(topNode) {
                     scope.add(n.value) as "def"
                 }
             } else {
-                scope.add(node.name.value) as "def"
+                scope.add(node.name.value) as "typedef"
                 pushScope
                 scope.variety := "typeparams"
                 for (node.generics) do {n->
@@ -894,6 +905,7 @@ method resolve(values) {
     preludeObj.add "for()do"
     preludeObj.add "while()do"
     preludeObj.add "print"
+    builtinObj.add "Type" as "def"
     builtinObj.add "Object" as "def"
     builtinObj.add "Unknown" as "def"
     builtinObj.add "String" as "def"

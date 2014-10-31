@@ -981,7 +981,7 @@ method prefixop {
 method generic {
     if (accept("lgeneric")) then {
         def id = values.pop
-        def gens = []
+        def gens = list.empty
         def startToken = sym
         next
         while {accept("identifier")} do {
@@ -1897,9 +1897,6 @@ method callrest(acceptBlocks) {
             meth.generics := genericIdents
             values.push(meth)
         }
-    } else {
-        print "in else, meth.kind = {meth.kind}"
-        values.push(meth)
     }
     if (hadcall) then {
         if (accept("identifier")onLineOfLastOr(tok)) then {
@@ -1921,6 +1918,8 @@ method callrest(acceptBlocks) {
         def call = ast.callNode.new(meth, signature)
         call.generics := genericIdents
         values.push(call)
+    } elseif {genericIdents != false} then {
+        meth.generics := genericIdents
     }
     minIndentLevel := startInd
     dotrest(acceptBlocks)
@@ -2225,12 +2224,12 @@ method defdec {
             } else {
                 suggestion.replaceTokenRange(sym, nextToken.prev)leading(false)trailing(true)with("«name» ")
             }
-            errormessages.syntaxError("A constant declaration must have a name, a '=', and a value after the 'def'.")atPosition(
+            errormessages.syntaxError("A definition must have a name, '=', and a value after the 'def'.")atPosition(
                 sym.line, sym.linePos)withSuggestion(suggestion)
         }
         pushidentifier
         var val := false
-        var dtype := ast.identifierNode.new("Unknown", false)
+        var dtype := ast.unknownType
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -2248,7 +2247,7 @@ method defdec {
                 } else {
                     suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
                 }
-                errormessages.syntaxError("A constant declaration must have a value after the '='.")atPosition(
+                errormessages.syntaxError("A definition must have a value after the '='.")atPosition(
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
             }
             val := values.pop
@@ -2260,7 +2259,7 @@ method defdec {
             suggestion := errormessages.suggestion.new
             suggestion.replaceToken(defTok)with("var")
             suggestions.push(suggestion)
-            errormessages.syntaxError("A constant declaration must use '=' instead of ':='. A variable declaration uses 'var' and ':='.")atRange(
+            errormessages.syntaxError("A definition must use '=' instead of ':='. A variable declaration uses 'var' and ':='.")atRange(
                 sym.line, sym.linePos, sym.linePos + 1)withSuggestions(suggestions)
         } else {
             def suggestions = []
@@ -2270,7 +2269,7 @@ method defdec {
             suggestion := errormessages.suggestion.new
             suggestion.replaceToken(defTok)with("var")
             suggestions.push(suggestion)
-            errormessages.syntaxError("A constant declaration must have a '=' and a value after the name. "
+            errormessages.syntaxError("A definition must have '=' and a value after the name. "
                 ++ "A variable declaration does not require a value and uses 'var' instead of 'def'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
@@ -2323,7 +2322,7 @@ method vardec {
         }
         pushidentifier
         var val := false
-        var dtype := ast.identifierNode.new("Unknown", false)
+        var dtype := ast.unknownType
         var name := values.pop
         if (accept("colon")) then {
             next
@@ -2360,7 +2359,7 @@ method vardec {
                 suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(varTok)with("def")
                 suggestions.push(suggestion)
-                errormessages.syntaxError("A variable declaration must use ':=' instead of '='. A constant declaration uses 'def' and '='.")
+                errormessages.syntaxError("A variable declaration must use ':=' instead of '='. A definition uses 'def' and '='.")
                     atRange(sym.line, sym.linePos, sym.linePos)
                     withSuggestions(suggestions)
             }
@@ -2502,7 +2501,7 @@ method doobject {
             } else {
                 suggestion.insert(" \{")afterToken(lastToken)
             }
-            errormessages.syntaxError("An object must have a '\{' afer the 'object'.")atPosition(
+            errormessages.syntaxError("An object must have a '\{' after 'object'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         values.push(object {
@@ -2533,7 +2532,7 @@ method doobject {
             } elseif ((values.size == sz) && (lastToken.kind != "semicolon")) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.deleteToken(sym)
-                errormessages.syntaxError("An object can only contain variable, constant, and method declarations; and statements.")atRange(
+                errormessages.syntaxError("An object can contain only value and type definitions,  variable declarations, methods, and statements.")atRange(
                     sym.line, sym.linePos, sym.linePos + sym.size - 1)withSuggestion(suggestion)
             }
             sz := values.size

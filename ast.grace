@@ -46,6 +46,12 @@ class baseNode.new {
     method isReadable { true }
     method isPublic { true }
     method isConfidential { isPublic.not }
+    method decType {
+        if (self.dtype == false) then {
+            return unknownType
+        }
+        return self.dtype
+    }
 }
 
 class forNode.new(over, body') {
@@ -806,20 +812,23 @@ class methodNode.new(name', signature', body', dtype') {
         }
         s
     }
-    method decType {
-        if (dtype == false) then {
-            return identifierNode.new("Unknown", false)
-        }
-        return dtype
-    }
     method toGrace(depth : Number) -> String {
         var spc := ""
         for (0..(depth - 1)) do { i ->
             spc := spc ++ "    "
         }
         var s := "method "
+        var firstPart := true
         for (self.signature) do { part ->
             s := s ++ part.name
+            if (firstPart.andAlso{generics != false}) then {
+                s := s ++ "<"
+                for (1..(generics.size - 1)) do {ix ->
+                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                }
+                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            }
+            firstPart := false
             if ((part.params.size > 0) || (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
@@ -904,19 +913,19 @@ class callNode.new(what, with') {
             spc := spc ++ "  "
         }
         var s := "Call\n"
-        s := s ++ spc ++ "Method: {self.value.pretty(depth + 1)}"
+        s := s ++ spc ++ "Method Name: {self.value.pretty(depth + 1)}"
         s := s ++ "\n"
         if (false != generics) then {
             s := s ++ spc ++ "  Generics:\n"
             for (generics) do {g->
-                s := s ++ spc ++ "    " ++ g.pretty(0) ++ "\n"
+                s := s ++ spc ++ "    " ++ g.pretty(depth + 2) ++ "\n"
             }
         }
         s := s ++ spc ++ "Arguments:"
         for (self.with) do { part ->
             s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name
             for (part.args) do { arg ->
-                s := s ++ "\n    " ++ spc ++ arg.pretty(depth + 3)
+                s := s ++ "\n      " ++ spc ++ arg.pretty(depth + 2)
             }
         }
         s
@@ -936,8 +945,17 @@ class callNode.new(what, with') {
             }
             s := member.in.toGrace(0) ++ "."
         }
+        var firstPart := true
         for (self.with) do { part ->
             s := s ++ part.name
+            if (firstPart.andAlso{generics != false}) then {
+                s := s ++ "<"
+                for (1..(generics.size - 1)) do {ix ->
+                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                }
+                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            }
+            firstPart := false
             if (part.args.size > 0) then {
                 s := s ++ "("
                 for (part.args.indices) do { anr ->
@@ -1071,14 +1089,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         }
         s
     }
-
-    method decType {
-        if (dtype == false) then {
-            return identifierNode.new("Unknown", false)
-        }
-        return dtype
-    }
-
     method toGrace(depth : Number) -> String {
         var spc := ""
         for (0..(depth - 1)) do { i ->
@@ -1256,12 +1266,12 @@ class memberNode.new(what, in') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Member(" ++ self.value ++ ")\n"
-        s := s ++ spc ++ self.in.pretty(depth+1)
+        var s := "Member‹" ++ self.value ++ "›\n"
+        s := s ++ spc ++ in.pretty(depth)
         if (false != generics) then {
-            s := s ++ spc ++ "  Generics:\n"
+            s := s ++ "\n" ++ spc ++ "  Generics:"
             for (generics) do {g->
-                s := s ++ spc ++ "    " ++ g.pretty(0) ++ "\n"
+                s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
             }
         }
         s
@@ -1273,6 +1283,13 @@ class memberNode.new(what, in') {
             s := s ++ " " ++ self.in.toGrace(0)
         } else {
             s := self.in.toGrace(depth) ++ "." ++ self.value
+        }
+        if (false != generics) then {
+            s := s ++ "<"
+            for (1..(generics.size - 1)) do {ix ->
+                s := s ++ generics.at(ix).toGrace(depth + 1)
+            }
+            s := s ++ generics.last.toGrace(depth + 1) ++ ">"
         }
         s
     }
@@ -1303,12 +1320,7 @@ class genericNode.new(base, params') {
         map(blk)before {} after {}
     }
     method pretty(depth) {
-        var s := "Generic(" ++ self.value.value ++ "<"
-        for (params) do {p->
-            s := s ++ p.pretty(0)
-            s := s ++ ","
-        }
-        s ++ ">)"
+        self.toGrace(depth)
     }
     method toGrace(depth : Number) -> String {
         var s := self.value.value ++ "<"
@@ -1331,6 +1343,7 @@ class identifierNode.new(name, dtype') {
     var inBind := false
     var inRequest := false
     def nameString:String is public = name
+    var generics := false
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1369,19 +1382,19 @@ class identifierNode.new(name, dtype') {
         if(self.wildcard) then {
             s := "WildcardIdentifier"
         } else {
-            s := "Identifier(" ++ self.value ++ ")"
+            s := self.asString
         }
         if (self.dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "Type:"
-            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
+            s := s ++ "\n" ++ spc ++ "Type: "
+            s := s ++ self.dtype.pretty(depth + 2)
+        }
+        if (false != generics) then {
+            s := s ++ "\n" ++ spc ++ "Generics:"
+            for (generics) do {g->
+                s := s ++ spc ++ "  " ++ g.pretty(depth + 2)
+            }
         }
         s
-    }
-    method decType {
-        if (dtype == false) then {
-            return identifierNode.new("Unknown", false)
-        }
-        return dtype
     }
     method toGrace(depth : Number) -> String {
         var s
@@ -1393,12 +1406,23 @@ class identifierNode.new(name, dtype') {
         if (self.dtype != false) then {
             s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
         }
+        if (false != generics) then {
+            s := s ++ "<"
+            for (1..(generics.size - 1)) do {ix ->
+                s := s ++ generics.at(ix).toGrace(depth + 1)
+            }
+            s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+        }
         s
     }
     method asString {
         "Identifier‹{value}›"
     }
 }
+
+def typeType is public = identifierNode.new("Type", false)
+def unknownType is public = identifierNode.new("Unknown", typeType)
+
 class octetsNode.new(n) {
     inherits baseNode.new
     def kind = "octets"
@@ -1675,21 +1699,13 @@ class defDecNode.new(name', val, dtype') {
         var s := "DefDec"
         s := s ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth)
-        if (self.dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "Type:"
-            s := s ++ "\n" ++ spc ++ "  " ++ self.dtype.pretty(depth + 2)
+        if (dtype != false) then {
+            s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
         }
-        if (false != self.value) then {
-            s := s ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
+        if (false != value) then {
+            s := s ++ "\n" ++ spc ++ "Value: " ++ value.pretty(depth + 2)
         }
         s
-    }
-    method decType {
-        if (dtype == false) then {
-            return identifierNode.new("Unknown", false)
-        }
-        return dtype
     }
     method toGrace(depth : Number) -> String {
         var spc := ""
@@ -1782,12 +1798,6 @@ class varDecNode.new(name', val', dtype') {
             s := s ++ self.value.pretty(depth + 2)
         }
         s
-    }
-    method decType {
-        if (dtype == false) then {
-            return identifierNode.new("Unknown", false)
-        }
-        return dtype
     }
     method toGrace(depth : Number) -> String {
         var spc := ""
