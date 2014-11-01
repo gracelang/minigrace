@@ -136,7 +136,7 @@ class Scope.new(parent', variety') {
             if (node.value == "outer") then {
                 return targetScope.parent
             }
-            return targetScope.scopeReferencedBy(node.identifier)
+            return targetScope.scopeReferencedBy(node.asIdentifier)
         } elseif (node.kind == "call") then {
             return scopeReferencedBy(node.value)
         }
@@ -668,7 +668,7 @@ method checkRedefinition(ident)as(kind) {
             if (priorScope.elementLines.contains(name)) then {
                 more := " on line {priorScope.elementLines.get(name)}"
             }
-            if (kind == "def").orElse {kind == "typedef"} then {
+            if ((kind == "def").orElse {kind == "typedef"}) then {
                 errormessages.syntaxError("'{name}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
@@ -701,7 +701,7 @@ method resolveIdentifiers(topNode) {
     if (topNode == false) then {
         return topNode
     }
-    topNode.map { each -> resolveIdentifiersActual(each) }
+    topNode.map { node -> resolveIdentifiersActual(node) }
         before { node -> preResolve(node) }
         after { node -> postResolve(node) }
 }
@@ -828,7 +828,7 @@ method preResolve(node) {
                 scope.variety := "typeparams"
                 for (node.generics) do {n->
                     util.setPosition(n.line, n.linePos)
-                    checkDuplicateDefinition(n) as "typedef"
+                    checkDuplicateDefinition(n)
                     scope.add(n.value) as "def"
                 }
             }
@@ -1080,7 +1080,7 @@ method setupContext {
     }
 }
 
-method method resolve(values) {
+method resolve(values) {
     setupContext
     util.setPosition(0, 0)
     var superObject := ast.identifierNode.new("graceObject", false)
@@ -1110,7 +1110,7 @@ method method resolve(values) {
     def preludeContext = ast.objectNode.new([wholeModule], superObject)
     buildSymbolTables(wholeModule)
     def newModule = resolveIdentifiers(wholeModule)
-    newModule.body
+    return newModule.body
 }
 
 method buildSymbolTable(topNode) {
@@ -1127,18 +1127,29 @@ method buildSymbolTable(topNode) {
             o.parent := pNode
             o.symbolTable := Scope.new(o.scope, "method")
             o.hasSymbolTable := true
+            def registerDeclaration = { each ->
+                o.addNode(each) as "def"
+            }
+            o.parametersDo(registerDeclaration)
+            o.typeParametersDo(registerDeclaration)
             true
         }
         method visitBlock(o) up(pNode) { 
             o.parent := pNode
             o.symbolTable := Scope.new(o.scope, "method")
             o.hasSymbolTable := true
+            o.parammetersDo { each -> o.addNode(each) as "def" }
             true
         }
         method visitClass(o) up(pNode) { 
             o.parent := pNode
             o.symbolTable := Scope.new(o.scope, "method")
             o.hasSymbolTable := true
+            def registerDeclaration = { each ->
+                o.addNode(each) as "def"
+            }
+            o.parametersDo(registerDeclaration)
+            o.typeParametersDo(registerDeclaration)
             true
         }
         method visitObject(o) up(pNode) { 
@@ -1151,7 +1162,16 @@ method buildSymbolTable(topNode) {
         method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
         method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
         method visitMethodType(o) up(pNode) { o.parent := pNode; true }
-        method visitTypeDec(o) up(pNode) { o.parent := pNode; true }
+        method visitTypeDec(o) up(pNode) { 
+            o.parent := pNode
+            if (o.generics.isEmpty) then { return true }
+            o.symbolTable := Scope.new(o.scope, "typeparams")
+            o.hasSymbolTable := true
+            o.generics.do { each ->
+                o.addNode(each) as "def"
+            }
+            true
+        }
         method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
         method visitCall(o) up(pNode) { o.parent := pNode; true }
         method visitArray(o) up(pNode) { o.parent := pNode; true }
@@ -1169,4 +1189,9 @@ method buildSymbolTable(topNode) {
         method visitReturn(o) up(pNode) { o.parent := pNode; true }
         method visitInherits(o) up(pNode) { o.parent := pNode; true }
         method visitDialect(o) up(pNode) { o.parent := pNode; true }
+    }
+    topNode.accept(vis)
+}
+
+
 

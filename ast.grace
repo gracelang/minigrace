@@ -180,6 +180,9 @@ class blockNode.new(params', body') {
         body.do(b)
         if (false =! matchingPattern) then { b.apply(matchingPattern) }
     }
+    method parametersDo(b) {
+        params.do(b)
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBlock(self) up(pNode)) then {
             for (self.params) do { mx ->
@@ -504,7 +507,6 @@ class typeLiteralNode.new(methods', types') {
     def kind = "typeliteral"
     def methods = methods'
     def types = types'
-    var generics := []
     var nominal := false
     var anonymous := true
     var value := "‹anon›"
@@ -718,7 +720,17 @@ class methodNode.new(name', signature', body', dtype') {
     method isPublic { isConfidential.not }
     method isWritable { false }
     method isReadable { isPublic }
-
+    
+    method parametersDo(b) {
+        signature.do { part -> 
+            part.params.do { each -> b.apply(each) }
+        }
+    }
+    method typeParametersDo(b) {
+        if (false != generics) then {
+            generics.do { each -> b.apply(each) }
+        }
+    }
     method childrenDo(b) {
         b.apply(value)
         signature.do { part -> b.apply(part) }
@@ -1021,6 +1033,17 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method isWritable { false }
     method isReadable { isPublic }
+        
+    method parametersDo(b) {
+        signature.do { part -> 
+            part.params.do { each -> b.apply(each) }
+        }
+    }
+    method typeParametersDo(b) {
+        if (false != generics) then {
+            generics.do { each -> b.apply(each) }
+        }
+    }
     method childrenDo(b) {
         b.apply(name)
         b.apply(constructor)
