@@ -1,9 +1,6 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
 
-var isStandardPrelude := true
-
-def ProgrammingError = _prelude.ProgrammingError
 def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
 def SubobjectResponsibility = ProgrammingError.refine "a subobject should have overridden this method"
