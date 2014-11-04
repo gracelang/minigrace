@@ -3544,7 +3544,7 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        gracedie("method call on undefined value");
+        gracedie("method %s requested on undefined value", name);
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
