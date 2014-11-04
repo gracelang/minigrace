@@ -2064,7 +2064,7 @@ method typeArgs {
 }
 
 method typeArg {
-    // Parse a single type argument, and leave it on the values stack.
+    // Parses a single type argument, and leave it on the values stack.
     // TODO: 'identifier' could be a dotted identifier, 
     //       or perhaps a type expression?
     if (accept "identifier") then {
@@ -2079,10 +2079,11 @@ method typeArg {
     }
 }
 
-// Process the rest of a multi-part method name. Returns an identifier
-// to replace the one passed in, in which each word is joined by "",
-// and updates params in place.
 method callmprest(meth, signature, tok) {
+    // Parses the rest of a multi-part method name.
+    // meth is an identifierNode representing the first part of the name.
+    // Returns a new identifierNode, representing the full method name,
+    // and updates signature.params with the parsed arguments.
     var methname := meth.value
     var nxt
     var lp := meth.linePos
@@ -2919,15 +2920,15 @@ method methodsignature(sameline) {
     pushidentifier
     var meth := values.pop
     meth.isBindingOccurence := true
-    var signature := []
+    var signature := list.empty
     var part := ast.signaturePart.new(meth.value)
-    var genericIdents := []
+    var genericIdents := list.empty
     signature.push(part)
     if (meth.value == "[") then {
         if(sym.kind != "rsquare") then {
             if((sym.kind == "identifier") && ((tokens.size == 0).orElse
                 {tokens.first.kind == "rsquare"})) then {
-                def suggestions = []
+                def suggestions = list.empty
                 def suggestion = errormessages.suggestion.new
                 if(tokens.size == 0) then {
                     suggestion.replaceToken(sym)with("]({sym.value})")
@@ -3289,11 +3290,12 @@ method typedec {
         pushidentifier
         generic
         var p := values.pop
-        var gens := []
+        var gens := sequence.empty
         if (p.kind == "generic") then {
             gens := p.params
             p := p.value
         }
+        gens.do { each -> each.isBindingOccurence := true }
         def anns = doannotation
         if((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
