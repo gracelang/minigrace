@@ -128,7 +128,7 @@ method generateGCT(path)fromValues(values)modules(modules) {
                 def obConstructors = collections.list.new
                 for (ob.value) do {nd->
                     if (nd.kind == "method") then {
-                        if (nd.properties.contains("fresh")) then {
+                        if (nd.isFresh) then {
                             isClass := true
                             obConstructors.push(nd.value.value)
                             gct.put("methods-of:{val.name.value}.{nd.value.value}",
@@ -148,25 +148,19 @@ method generateGCT(path)fromValues(values)modules(modules) {
     def freshmeths = collections.list.new
     for (values) do {val->
         if (val.kind == "method") then {
-            if (val.properties.contains("fresh")) then {
-                freshmeths.push(val.value.value)
+            if (val.isFresh) then {
+                freshmeths.push(val.nameString)
             }
         }
     }
     gct.put("fresh-methods", freshmeths)
     for (values) do {val->
         if (val.kind == "method") then {
-            if (val.properties.contains("fresh")) then {
-                def freshProp = val.properties.get("fresh")
-                if (true != freshProp) then {
-                    gct.put("fresh:{val.value.value}",
-                        val.properties.get("fresh").elements)
-                } else {
-                    def freshObjBody = val.body.last.value
-                    def vObj = publicNames(values)
-                    for (freshObjBody) do { mbr -> mbr.accept(vObj.visitor) }
-                    gct.put("fresh:{val.value.value}", vObj.collected)
-                }
+            if (val.isFresh) then {
+                def freshObjBody = val.body.last.value
+                def vObj = publicNames(values)
+                for (freshObjBody) do { mbr -> mbr.accept(vObj.visitor) }
+                gct.put("fresh:{val.value.value}", vObj.collected)
             }
         }
     }

@@ -293,7 +293,7 @@ method compileclass(o) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
-    newmeth.properties.put("fresh", true)
+    newmeth.isFresh := true
     def dbBody = [ast.stringNode.new("class {o.name.value}")]
     def dbMeth = ast.methodNode.new(
         ast.identifierNode.new("asDebugString", false), [], dbBody, false)
@@ -684,7 +684,7 @@ method compilemethod(o, selfobj) {
     out "func{myc}.definitionLine = {o.line};"
     out "func{myc}.definitionModule = \"{modname}\";"
     o.register := "func{myc}"
-    if (o.properties.contains "fresh" ) then {
+    if (o.isFresh) then {
         increaseindent
         compilefreshmethod(o, selfobj)
         decreaseindent

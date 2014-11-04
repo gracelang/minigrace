@@ -430,7 +430,7 @@ method compileobject(o, outerRef) {
             numMethods := numMethods + 1
         }
         if (e.kind == "method") then {
-            if (e.properties.contains "fresh") then {
+            if (e.isFresh) then {
                 numMethods := numMethods + 1
                 numFields := numFields + 1
             }
@@ -935,7 +935,7 @@ method compilemethod(o, selfobj, pos) {
     }
     out("  meth_{litname}->definitionModule = modulename;")
     out("  meth_{litname}->definitionLine = {o.line};")
-    if (o.properties.contains("fresh")) then {
+    if (o.isFresh) then {
         compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
             oldout)
     }
@@ -2046,7 +2046,7 @@ method compile(vl, of, mn, rm, bt) {
             nummethods := nummethods + 1
         } elseif (v.kind == "method") then {
             nummethods := nummethods + 1
-            if (v.properties.contains("fresh")) then {
+            if (v.isFresh) then {
                 nummethods := nummethods + 1
             }
         }
