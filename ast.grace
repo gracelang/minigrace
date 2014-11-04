@@ -1,7 +1,6 @@
 #pragma DefaultVisibility=public
 #pragma noTypeChecks
 import "util" as util
-import "mgcollections" as collections
 
 // This module contains pseudo-classes for all the AST nodes used
 // in the parser. The module predates the existence of classes in the
@@ -21,7 +20,7 @@ import "mgcollections" as collections
 // are particularly notable in any way.
 
 method listMap(l, b)before(blkBefore)after(blkAfter) {
-    def r = collections.list.new
+    def r = list.empty
     for (l) do {v->
         def replacement = v.map(b)before(blkBefore)after(blkAfter)
         r.push(replacement)
@@ -30,9 +29,20 @@ method listMap(l, b)before(blkBefore)after(blkAfter) {
 }
 method maybeMap(n, b, before, after) {
     if (n != false) then {
-        return n.map(b)before(before)after(after)
+        n.map(b)before(before)after(after)
+    } else {
+        n
     }
-    n
+}
+method listMap(l, b) parent(p) {
+    l.map{nd -> nd.map(b) parent(p)}.onto(list)
+}
+method maybeMap(n, b) parent(p) {
+    if (n != false) then {
+        n.map(b) parent(p)
+    } else {
+        n
+    }
 }
 
 class baseNode.new {
@@ -41,9 +51,11 @@ class baseNode.new {
     var linePos := util.linepos
     var lineLength := 0
     var parent is public := nullNode
-    var symbols := object { method isEmpty { true } }
     var hasSymbolTable := false
 
+    method isAppliedOccurenceOfIdentifier { false }
+    method isMatchingBlock { false }
+    method isFieldDec { false }
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
     method isWritable { true }
@@ -56,41 +68,44 @@ class baseNode.new {
         }
         return self.dtype
     }
-    method accept(visitor) { self.accept(visitor) from(nullNode) }
-    method breadthFirstTraversal(action) {
-        def visited = set.empty
-        def queue = list.empty
-        queue.addLast(self)
-        visited.add(self)
-        while (queue.isEmpty.not) do {
-            def n = queue.removeFirst
-            action.apply(n)
-            n.childrenDo { each ->
-                queue.addLast(each)
-                visited.add(each)
-            }
-        }
-    }
+    method declarationKind { self.kind }     // the kind of identifiers defined within me
     method scope {
         var node := self
-        while (node.hasSymbolTable.not) do { node := node.parent }
+        while { node.hasSymbolTable.not } do { node := node.parent }
         node.symbolTable
-        // TODO add cache of this value, look at symboltable modeul
+        // TODO: add cache of this value, look at symboltable module
+    }
+    method cloneWithParent(p) {
+        def new = clone(self)
+        new.parent := p
+        new
+    }
+}
+class symbolTableNode.new {
+    inherits baseNode.new
+    // the common superclass of all nodes that open a new scope,
+    // and thus have a symbolTable.
+
+    var symbolTable'
+    method symbolTable { symbolTable' }
+    method symbolTable:=(s) {
+        symbolTable' := s
+        hasSymbolTable := true
     }
 }
 
 def nullNode = object {
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "null"
-    def symbols = object {method isEmpty {false}}
     method childrenDo(block1) { }
 }
+
 class ifNode.new(cond, thenblock', elseblock') {
     inherits baseNode.new
     def kind = "if"
-    def value = cond
-    def thenblock = thenblock'
-    def elseblock = elseblock'
+    var value := cond
+    var thenblock := thenblock'
+    var elseblock := elseblock'
     var handledIdentifiers := false
     method childrenDo(b) {
         b.apply(value)
@@ -99,7 +114,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIf(self) up(pNode)) then {
-            self.value.accept(visitor)
+            self.value.accept(visitor) from(self)
             for (self.thenblock) do { ix ->
                 ix.accept(visitor) from(self)
             }
@@ -121,8 +136,13 @@ class ifNode.new(cond, thenblock', elseblock') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk)
+        n.thenblock := listMap(thenblock, blk) parent(n)
+        n.elseblock := listMap(self.elseblock, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -163,7 +183,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
 }
 class blockNode.new(params', body') {
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "block"
     def value = "block"
     def params = params'
@@ -171,10 +191,11 @@ class blockNode.new(params', body') {
     def selfclosure = true
     var matchingPattern := false
     var extraRuntimeData := false
-    var symbolTable
     for (params') do {p->
-        p.accept(patternMarkVisitor)
+        p.accept(patternMarkVisitor) from(self)
     }
+
+    method isMatchingBlock { params.size == 1 }
     method childrenDo(b) {
         params.do(b)
         body.do(b)
@@ -210,8 +231,13 @@ class blockNode.new(params', body') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.params := listMap(params, blk) parent(n)
+        n.body := listMap(body, blk) parent(n)
+        n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -270,6 +296,9 @@ class catchCaseNode.new(block, cases', finally') {
     def value = block
     def cases = cases'
     def finally = finally'
+    
+    method replace(oldNode) by (newNode) { }   // no immediate children are identifiers
+
     method childrenDo(b) {
         b.apply(value)
         cases.do(b)
@@ -294,8 +323,12 @@ class catchCaseNode.new(block, cases', finally') {
         n.line := line
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n.cases := listMap(cases, blk) parent(n)
+        n.finally := maybeMap(finally, blk) parent(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -330,9 +363,9 @@ class catchCaseNode.new(block, cases', finally') {
 class matchCaseNode.new(matchee, cases', elsecase') {
     inherits baseNode.new
     def kind = "matchcase"
-    def value = matchee
-    def cases = cases'
-    def elsecase = elsecase'
+    var value := matchee
+    var cases := cases'
+    var elsecase := elsecase'
     method childrenDo(b) {
         b.apply(value)
         cases.do(b)
@@ -359,8 +392,13 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n.cases := listMap(cases, blk) parent(n)
+        n.elsecase := maybeMap(elsecase, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -393,29 +431,40 @@ class matchCaseNode.new(matchee, cases', elsecase') {
     }
 }
 class methodTypeNode.new(name', signature', rtype') {
+    // Represents the signature of a method in a type literal
     // [signature]
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     ...
     //     object {
     //         ...
     //     }
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "methodtype"
-    def value = name'
-    def signature = signature'
-    def rtype = rtype'
-    var generics := []
+    var value := name'
+    var signature := signature'
+    var rtype := rtype'
+    var generics := sequence.empty
     def nameString:String is public = value
-    method asString { "MethodType {value} -> {rtype}" }
+    method asString { "MethodType {value} -> {rtype}" }    
+    method parametersDo(b) {
+        signature.do { part -> 
+            part.params.do { each -> b.apply(each) }
+        }
+    }
+    method typeParametersDo(b) {
+        if (false != generics) then {
+            generics.do { each -> b.apply(each) }
+        }
+    }
     method childrenDo(b) {
         if (self.rtype != false) then { b.apply(rtype) }
         signature.do{ part -> b.apply(part) }
@@ -451,8 +500,13 @@ class methodTypeNode.new(name', signature', rtype') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.rtype := maybeMap(rtype, blk) parent(n)
+        n.signature := listMap(signature, blk) parent(n)
+        n.generics := listMap(generics, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -505,8 +559,8 @@ class methodTypeNode.new(name', signature', rtype') {
 class typeLiteralNode.new(methods', types') {
     inherits baseNode.new
     def kind = "typeliteral"
-    def methods = methods'
-    def types = types'
+    var methods := methods'
+    var types := types'
     var nominal := false
     var anonymous := true
     var value := "‹anon›"
@@ -545,8 +599,12 @@ class typeLiteralNode.new(methods', types') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.methods := listMap(methods, blk) parent (n)
+        n.types := listMap(types, blk) parent (n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -554,12 +612,6 @@ class typeLiteralNode.new(methods', types') {
             spc := spc ++ "  "
         }
         var s := "Type literal\n"
-        if (generics.size > 0) then {
-            s := "{s}{spc}Generic parameters:\n"
-            for (generics) do {ut->
-                s := "{s}{spc}  {ut.value}\n"
-            }
-        }
         s := s ++ spc ++ "Types:"
         for (types) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
@@ -599,14 +651,17 @@ class typeLiteralNode.new(methods', types') {
 }
 
 class typeDecNode.new(name', typeValue) {
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "typedec"
-    def name = name'
-    def value = typeValue
+    var name := name'
+    var value := typeValue
     def nameString:String is public = name.value
-    var annotations := collections.list.new
-    var generics := collections.list.new
-    
+    var annotations := list.empty
+    var generics := list.empty
+
+    method declarationKind {
+        "typeparam"
+    }
     method isConfidential {
         if (annotations.size == 0) then { return false }
         findAnnotation(self, "confidential")
@@ -634,14 +689,22 @@ class typeDecNode.new(name', typeValue) {
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
             n.annotations.push(a)
         }
-        n.generics := self.generics
+        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {g->
+            n.generics.push(g)
+        }
         n.line := line
         n.linePos := linePos
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.name := name.map(blk) parent(n)
+        n.value := value.map(blk) parent(n)
+        n.annotatons := annotations.map(blk) parent(n)
+        n.generics := generics.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -653,7 +716,7 @@ class typeDecNode.new(name', typeValue) {
         if (generics.size > 0) then {
             s := "{s}{spc}Generic parameters:\n"
             for (generics) do {ut->
-                s := "{s}{spc}  {ut.value}\n"
+                s := "{s}{spc}  {ut}\n"
             }
         }
         s := s ++ spc ++ "Value:"
@@ -681,38 +744,39 @@ class typeDecNode.new(name', typeValue) {
         s := s ++ " = " ++ value(toGrace(depth + 2))
         s
     }
+    method asString { "TypeDec {nameString}" }
 }
 
 class methodNode.new(name', signature', body', dtype') {
+    // Represents a method declaration
     // [signature]
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     ...
     //     object {
     //         ...
     //     }
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "method"
-    def value = name'
-    def signature = signature'
-    def body = body'
+    var value := name'
+    var signature := signature'
+    var body := body'
     var dtype := dtype'
     var varargs := false
-    var generics := []
+    var generics := sequence.empty
     var selfclosure := false
     def nameString:String is public = value.value
-    def annotations = collections.list.new
-    var properties := collections.map.new
-    var symbolTable
-    
+    var annotations := list.empty
+    var isFresh := false      // a method is 'fresh' if it answers a new object
+
     method isConfidential {
         if (annotations.size == 0) then { return false }
         findAnnotation(self, "confidential")
@@ -775,8 +839,14 @@ class methodNode.new(name', signature', body', dtype') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p){
+        var n := cloneWithParent(p)
+        n.body := listMap(body, blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n.generics := listMap(generics, blk) parent(n)
+        n.dtype := maybeMap(dtype, blk)
+        n := blk.apply(n)
+        n
     }
     method eachParameter(blk) {
         for (signature) do {s->
@@ -882,11 +952,11 @@ class callNode.new(what, with') {
     // [with]
     //     object {
     //         name := ""
-    //         args := []
+    //         args := sequence.empty
     //     }
     //     object {
     //         name := ""
-    //         args := []
+    //         args := sequence.empty
     //     }
     //     ...
     //     object {
@@ -894,8 +964,8 @@ class callNode.new(what, with') {
     //     }
     inherits baseNode.new
     def kind = "call"
-    def value = what        // method being requested
-    def with = with'        // arguments
+    var value := what        // method being requested
+    var with := with'        // arguments
     var generics := false
     var isPattern := false
     def nameString:String is public = what
@@ -907,10 +977,10 @@ class callNode.new(what, with') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitCall(self) up(pNode)) then {
-            self.value.accept(visitor)
+            self.value.accept(visitor) from(self)
             for (self.with) do { part ->
                 for (part.args) do { arg ->
-                    arg.accept(visitor)
+                    arg.accept(visitor) from(self)
                 }
             }
         }
@@ -928,8 +998,13 @@ class callNode.new(what, with') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n.with := listMap(with, blk) parent(n)
+        n.generics := listMap(generics, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1000,31 +1075,30 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     // [signature]
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     object {
     //         name := ""
-    //         params := []
+    //         params := sequence.empty
     //         vararg := false/identifier
     //     }
     //     ...
     //     object {
     //         ...
     //     }
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "class"
-    def value = body'
-    def name = name'
-    def constructor = constructor'
-    def signature = signature'
+    var value := body'
+    var name := name'
+    var constructor := constructor'
+    var signature := signature'
     var dtype := dtype'
-    var generics := []
-    def superclass = superclass'
-    def annotations = collections.list.new
+    var generics := sequence.empty
+    var superclass := superclass'
+    var annotations := list.empty
     def nameString:String = name.value
     var data := false
-    var symbolTable
     
     method isPublic {
         // assume that classes are public by default
@@ -1056,21 +1130,21 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitClass(self) up(pNode)) then {
-            self.name.accept(visitor)
-            self.constructor.accept(visitor)
+            self.name.accept(visitor) from(self)
+            self.constructor.accept(visitor) from(self)
             if (self.superclass != false) then {
-                self.superclass.accept(visitor)
+                self.superclass.accept(visitor) from(self)
             }
             for (self.signature) do { part ->
                 for (part.params) do { p ->
-                    p.accept(visitor)
+                    p.accept(visitor) from(self)
                 }
                 if (part.vararg != false) then {
-                    part.vararg.accept(visitor)
+                    part.vararg.accept(visitor) from(self)
                 }
             }
             for (self.value) do { x ->
-                x.accept(visitor)
+                x.accept(visitor) from(self)
             }
         }
     }
@@ -1087,8 +1161,17 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := listMap(value, blk) parent(n)
+        n.name := name.map(blk) parent(n)
+        n.signature := listMap(signature, blk) parent(n)
+        n.generics := listMap(generics, blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n.superclass := maybeMap(superclass, blk) parent(n)
+        n.dtype := dtype.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1174,26 +1257,23 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
 }
 class objectNode.new(body, superclass') {
-    inherits baseNode.new
+    inherits symbolTableNode.new
     def kind = "object"
-    def value = body
-    def superclass = superclass'
-    var otype := false
+    var value := body
+    var superclass := superclass'
     var classname := "object"
     var data := false
-    var symbolTable
     method childrenDo(b) {
-        if (otype != false) then { b.apply(otype) }
         b.apply(superclass)
         value.do(b)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitObject(self) up(pNode)) then {
             if (self.superclass != false) then {
-                self.superclass.accept(visitor)
+                self.superclass.accept(visitor) from(self)
             }
             for (self.value) do { x ->
-                x.accept(visitor)
+                x.accept(visitor) from(self)
             }
         }
     }
@@ -1205,8 +1285,12 @@ class objectNode.new(body, superclass') {
         n.line := line
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := listMap(value, blk) parent(n)
+        n.superclass := maybeMap(superclass, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth') {
         var depth := depth'
@@ -1242,7 +1326,7 @@ class objectNode.new(body, superclass') {
 class arrayNode.new(values) {
     inherits baseNode.new
     def kind = "array"
-    def value = values
+    var value := values
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitArray(self) up(pNode)) then {
             for (self.value) do { ax ->
@@ -1261,8 +1345,11 @@ class arrayNode.new(values) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := listMap(value, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1292,14 +1379,14 @@ class memberNode.new(what, in') {
     def kind = "member"
     var value := what  // NB: value is a String, not an Identifier
     def nameString:String is public = value
-    def in = in'
+    var in := in'
     var generics := false
     method childrenDo(b) {
         b.apply(in)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMember(self) up(pNode)) then {
-            self.in.accept(visitor) from(pNode)
+            self.in.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1313,8 +1400,12 @@ class memberNode.new(what, in') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.in := listMap(in, blk) parent(n)
+        n.generics := maybeMap(generics, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1361,8 +1452,14 @@ class memberNode.new(what, in') {
 class genericNode.new(base, params') {
     inherits baseNode.new
     def kind = "generic"
-    def value = base        // APB: I think that this is a parent reference
-    def params = params'
+    var value := base        // APB: in a generic call, value is the called node
+                            // e.g. in List<Number>, value is Identifier‹List›
+    var params := params'
+    method asString { 
+        var s := "{base}<"
+        params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
+        s ++ ">"
+    }
     method childrenDo(b) {
         params.do(b)
     }
@@ -1382,8 +1479,12 @@ class genericNode.new(base, params') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n.params := listMap(params, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         self.toGrace(depth)
@@ -1411,7 +1512,13 @@ class identifierNode.new(name, dtype') {
     var inRequest := false
     def nameString:String is public = name
     var generics := false
-
+    
+    method isAppliedOccurenceOfIdentifier {
+        isBindingOccurence.not
+    }
+    method declarationKind {
+        parent.declarationKind
+    }
     method childrenDo(b) {
         if (dtype != false) then { b.apply(dtype) }
     }
@@ -1443,8 +1550,11 @@ class identifierNode.new(name, dtype') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.dtype := maybeMap(dtype, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1504,7 +1614,7 @@ def unknownType is public = identifierNode.new("Unknown", typeType)
 class octetsNode.new(n) {
     inherits baseNode.new
     def kind = "octets"
-    def value = n
+    var value := n
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitOctets(self) up(pNode)
@@ -1514,6 +1624,11 @@ class octetsNode.new(n) {
     }
     method toGrace(depth : Number) -> String {
         self.value
+    }
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n := blk.apply(n)
+        n
     }
 }
 class stringNode.new(v) {
@@ -1531,8 +1646,10 @@ class stringNode.new(v) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         "String(" ++ self.value ++ ")"
@@ -1563,7 +1680,7 @@ class stringNode.new(v) {
 class numNode.new(val) {
     inherits baseNode.new
     def kind = "num"
-    def value = val
+    var value := val
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitNum(self) up(pNode)
@@ -1575,8 +1692,10 @@ class numNode.new(val) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         "Num(" ++ self.value ++ ")"
@@ -1589,9 +1708,9 @@ class numNode.new(val) {
 class opNode.new(op, l, r) {
     inherits baseNode.new
     def kind = "op"
-    def value = op
-    def left = l
-    def right = r
+    var value := op
+    var left := l
+    var right := r
     method childrenDo(b) {
         b.apply(left)
         b.apply(right)
@@ -1610,8 +1729,12 @@ class opNode.new(op, l, r) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.left := left.map(blk) parent(n)
+        n.right := right.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1649,8 +1772,8 @@ class indexNode.new(expr, index') {
     // an expression in square brackets
     inherits baseNode.new
     def kind = "index"
-    def value = expr
-    def index = index'
+    var value := expr
+    var index := index'
     
     method childrenDo(b) {
         b.apply(value)
@@ -1658,8 +1781,8 @@ class indexNode.new(expr, index') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIndex(self) up(pNode)) then {
-            self.value.accept(visitor)
-            self.index.accept(visitor)
+            self.value.accept(visitor) from(self)
+            self.index.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1670,8 +1793,12 @@ class indexNode.new(expr, index') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n.index := index.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1696,11 +1823,11 @@ class indexNode.new(expr, index') {
     }
 }
 class bindNode.new(dest', val') {
-    // an assignment, or a setter method request
+    // an assignment, or a request of a setter-method
     inherits baseNode.new
     def kind = "bind"
-    def dest = dest'
-    def value = val'
+    var dest := dest'
+    var value := val'
     
     method childrenDo(b) {
         b.apply(value)
@@ -1708,8 +1835,8 @@ class bindNode.new(dest', val') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBind(self) up(pNode)) then {
-            self.dest.accept(visitor)
-            self.value.accept(visitor)
+            self.dest.accept(visitor) from(self)
+            self.value.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -1720,8 +1847,12 @@ class bindNode.new(dest', val') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.dest := dest.map(blk) parent(n)
+        n.value := value.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1748,11 +1879,11 @@ class bindNode.new(dest', val') {
 class defDecNode.new(name', val, dtype') {
     inherits baseNode.new
     def kind = "defdec"
-    def name = name'
-    def value = val
+    var name := name'
+    var value := val
     var dtype := dtype'
     def nameString:String is public = name.value
-    def annotations = collections.list.new
+    var annotations := list.empty
     var data := false
     var startToken := false
     method isPublic {
@@ -1763,7 +1894,14 @@ class defDecNode.new(name', val, dtype') {
     }
     method isWritable { false }
     method isReadable { isPublic }
-    
+    method isFieldDec { 
+        if (parent.kind == "object") then { true }
+            elseif {parent.kind == "class"} then { true }
+            else { false }
+    }
+    method declarationKind { 
+        if (isFieldDec) then { "method" } else { "def" }
+    }
     method childrenDo(b) {
         b.apply(value)
         b.apply(name)
@@ -1772,12 +1910,12 @@ class defDecNode.new(name', val, dtype') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitDefDec(self) up(pNode)) then {
-            self.name.accept(visitor)
+            self.name.accept(visitor) from(self)
             if (self.dtype != false) then {
-                self.dtype.accept(visitor)
+                self.dtype.accept(visitor) from(self)
             }
             if (self.value != false) then {
-                self.value.accept(visitor)
+                self.value.accept(visitor) from(self)
             }
         }
     }
@@ -1793,8 +1931,14 @@ class defDecNode.new(name', val, dtype') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.name := name.map(blk) parent(n)
+        n.value := value.map(blk) parent(n)
+        n.dtype := maybeMap(dtype, blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1835,11 +1979,11 @@ class defDecNode.new(name', val, dtype') {
 class varDecNode.new(name', val', dtype') {
     inherits baseNode.new
     def kind = "vardec"
-    def name = name'
-    def value = val'
+    var name := name'
+    var value := val'
     var dtype := dtype'
     def nameString:String is public = name.value
-    def annotations = collections.list.new
+    var annotations := list.empty
     
     method childrenDo(b) {
         b.apply(value)
@@ -1865,14 +2009,22 @@ class varDecNode.new(name', val', dtype') {
         if (findAnnotation(self, "readable")) then { return true }
         false
     }
+    method isFieldDec { 
+        if (parent.kind == "object") then { true }
+            elseif {parent.kind == "class"} then { true }
+            else { false }
+    }
+    method declarationKind { 
+        if (isFieldDec) then { "method" } else { "var" }
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitVarDec(self) up(pNode)) then {
-            self.name.accept(visitor)
+            self.name.accept(visitor) from(self)
             if (self.dtype != false) then {
-                self.dtype.accept(visitor)
+                self.dtype.accept(visitor) from(self)
             }
             if (self.value != false) then {
-                self.value.accept(visitor)
+                self.value.accept(visitor) from(self)
             }
         }
     }
@@ -1889,8 +2041,14 @@ class varDecNode.new(name', val', dtype') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.name := name.map(blk) parent(n)
+        n.value := value.map(blk) parent(n)
+        n.dtype := maybeMap(dtype, blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1933,9 +2091,9 @@ class varDecNode.new(name', val', dtype') {
 class importNode.new(path', name) {
     inherits baseNode.new
     def kind = "import"
-    def value = name
-    def path = path'
-    def annotations = collections.list.new
+    var value := name
+    var path := path'
+    var annotations := list.empty
     var dtype := false
     def linePos = 1
     def nameString:String is public = value
@@ -1963,8 +2121,14 @@ class importNode.new(path', name) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+//        n.value := value.map(blk) parent(n)
+//  TODO: make this name an identifier (defining occurence)
+        n.dtype := maybeMap(dtype, blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -1987,7 +2151,7 @@ class importNode.new(path', name) {
 class dialectNode.new(path') {
     inherits baseNode.new
     def kind = "dialect"
-    def value = path'
+    var value := path'
     
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
@@ -2000,8 +2164,10 @@ class dialectNode.new(path') {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -2020,14 +2186,14 @@ class dialectNode.new(path') {
 class returnNode.new(expr) {
     inherits baseNode.new
     def kind = "return"
-    def value = expr
+    var value := expr
     
     method childrenDo(b) {
         b.apply(value)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitReturn(self) up(pNode)) then {
-            self.value.accept(visitor)
+            self.value.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -2038,8 +2204,11 @@ class returnNode.new(expr) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -2058,7 +2227,7 @@ class returnNode.new(expr) {
 class inheritsNode.new(expr) {
     inherits baseNode.new
     def kind = "inherits"
-    def value = expr
+    var value := expr
     def providedNames is public = list.empty
     
     
@@ -2067,7 +2236,7 @@ class inheritsNode.new(expr) {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitInherits(self) up(pNode)) then {
-            self.value.accept(visitor)
+            self.value.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
@@ -2079,8 +2248,11 @@ class inheritsNode.new(expr) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.value := value.map(blk) parent(n)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         var spc := ""
@@ -2112,8 +2284,10 @@ class blankNode.new {
     method map(blk)before(blkBefore)after(blkAfter) {
         self
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n := blk.apply(n)
+        n
     }
     method pretty(depth) {
         "Blank"
@@ -2127,9 +2301,9 @@ class signaturePart.new(*values) {
     inherits baseNode.new
     def kind = "signaturepart"
     var name := ""
-    var params := []
+    var params := list.empty
     var vararg := false
-    var generics := []
+    var generics := list.empty
     if (values.size > 0) then {
         name := values[1]
     }
@@ -2139,6 +2313,7 @@ class signaturePart.new(*values) {
     if (values.size > 2) then {
         vararg := values[3]
     }
+    method declarationKind { parent.declarationKind }
     method childrenDo(b) {
         b.apply(name)
         params.do(b)
@@ -2153,8 +2328,11 @@ class signaturePart.new(*values) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.params := listMap(params, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
 }
 
@@ -2162,7 +2340,7 @@ class callWithPart.new(*values) {
     inherits baseNode.new
     def kind = "callwithpart"
     var name := ""
-    var args := []
+    var args := list.empty
     if (values.size > 0) then {
         name := values[1]
     }
@@ -2180,8 +2358,11 @@ class callWithPart.new(*values) {
         blkAfter.apply(n)
         n
     }
-    method map(blk) {
-        map(blk)before {} after {}
+    method map(blk) parent(p) {
+        var n := cloneWithParent(p)
+        n.params := listMap(args, blk) parent(n)
+        n := blk.apply(n)
+        n
     }
 }
 
@@ -2273,10 +2454,10 @@ method baseVisitor -> ASTVisitor {
         method visitDialect(o) -> Boolean { true }
     }
 }
-def ast = self
+
 def patternMarkVisitor = object {
-    inherits ast.baseVisitor
-    method visitCall(c) {
+    inherits baseVisitor
+    method visitCall(c) up(pNode) {
         c.isPattern := true
         true
     }
