@@ -2587,8 +2587,24 @@ Grace_prelude.methods["_methods"] = function() {
     var l = new GraceList(meths);
     return l;
 }
-Grace_prelude.methods["clone"] = function(argcv, obj) {
-    return obj;
+
+Grace_prelude.methods["clone"] = function prelude_clone (argcv, obj) {
+    return clone(obj);
+}
+
+function clone (obj) {
+//    TODO: add a cache to deal with sahred and cyclic structures.
+    var copy = new GraceObject();
+    copy.superobj = clone(obj.superobj);
+    copy.className = obj.className;
+    copy.mutable = obj.mutable;
+    copy.definitionModule = obj.definitionModule;
+    copy.definitionLine = obj.definitionLine;
+    for (var attr in obj.data) {
+        if (obj.data.hasOwnProperty(attr))
+            copy.data[attr] = clone(obj.data[attr]);
+    }
+    return copy;
 }
 Grace_prelude.methods["become"] = function(argcv, a, b) {
     for(var k in a) {
