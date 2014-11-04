@@ -770,30 +770,40 @@ GraceList.prototype = {
             return callmethod(t, "not", [0]);
         },
         "prepended": function(argcv, item) {
+            var self = this._value;
             var l = [item];
-            for (var i=0; i<this._value.length; i++)
-                l.push(this._value[i]);
+            for (var i=0; i<self.length; i++)
+                l.push(self[i]);
             return new GraceList(l);
         },
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);
         },
-        "indices": function(argcv) {
-            var l = [];
-            for (var i=1; i<=this._value.length; i++)
-                l.push(new GraceNum(i));
-            return new GraceList(l);
+        "do": function list_do(argcv, action1) {
+            var self = this._value;
+            var size = self.length;
+            for (var ix = 0; ix < size; ix ++) {
+                callmethod(action1, "apply", [1], self[ix]);
+            };
+            return GraceDone;
+        },
+        "indices": function list_indices(argcv) {
+            var size = this._value.length;
+            return callmethod(GraceRangeClass(), "from()to", [1, 1],
+                              new GraceNum(1), new GraceNum(size));
         },
         "first": function(argcv) {
             return this._value[0];
         },
         "last": function(argcv) {
-            return this._value[this._value.length-1];
+            var self = this._value;
+            return self[self.length-1];
         },
         "reduce": function(argcv, initial, block) {
+            var self = this._value;
             var res = initial;
-            for (var i=0; i<this._value.length; i++) {
-                var v = this._value[i];
+            for (var i=0; i<self.length; i++) {
+                var v = self[i];
                 res = callmethod(block, "apply", [2], res, v)
             }
             return res;
