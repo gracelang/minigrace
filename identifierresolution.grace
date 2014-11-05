@@ -82,10 +82,9 @@ factory method newScopeIn(parent')kind(variety') {
     }
     method do(b) {
         var cur := self
-        while {cur.hasParent} do {
-            b.apply(cur)
+        while {b.apply(cur); cur.hasParent} do {
+            cur := cur.parent
         }
-        b.apply(cur)
     }
     method kind(n) {
         elements.get(n)
@@ -149,14 +148,14 @@ factory method newScopeIn(parent')kind(variety') {
         return "undefined"
     }
     method thatDefines(name) ifNone(action) {
-        do { s->
+        self.do { s->
             if (s.contains(name)) then { return s }
         }
         action.apply
     }
     method findDeepMethod(name) {
         var mem := ast.identifierNode.new("self", false)
-        do { s->
+        self.do { s->
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
@@ -226,7 +225,7 @@ factory method newScopeIn(parent')kind(variety') {
     method enclosingObject {
         // Answer the closest scope that describes an object,
         // class or module scope
-        do { s ->
+        self.do { s ->
             if (s.variety == "object") then { return s }
             if (s.variety == "class") then { return s }
             if (s.variety == "module") then { return s }
@@ -435,6 +434,7 @@ method resolveIdentifier(node) {
     // - id is in an outer: find binding occurence of id and store in node
     // - id is a self-method: replace node by a method request
     // - id is none of the above: generate an error message
+    util.log_verbose "resolving {node} (line {node.line})"
     var nm := node.value
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
@@ -451,7 +451,9 @@ method resolveIdentifier(node) {
             }
         }
     }
+    util.log_verbose "checking for definition of {nm} …"
     if (nodeScope.hasDefinitionInNest(nm).not) then {
+        util.log_verbose "no definition found for {nm}"
         if (node.wildcard) then {
             errormessages.syntaxError("'_' can be used only as a parameter")
                 atRange(node.line, node.linePos, node.linePos)
@@ -514,8 +516,13 @@ method resolveIdentifier(node) {
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
     }
+    util.log_verbose "checking for outer …"
     if (nm == "outer") then {
-        return ast.memberNode.new("outer", ast.identifierNode.new("self", false))
+        def selfId = ast.identifierNode.new("self", false)
+        def memb = ast.memberNode.new("outer", selfId)
+        selfId.parent := memb
+        memb.parent := node.parent
+        return memb
     }
     if (nm == "self") then {
         return node
@@ -523,7 +530,11 @@ method resolveIdentifier(node) {
     if (nodeScope.kindInNest(nm) == "method") then {
         // Bare method request without arguments
         def meth = nodeScope.findDeepMethod(nm)
-        return ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
+        util.log_verbose "meth = {meth}"
+        def call = ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
+        meth.parent := call
+        call.parent := node.parent
+        return call
     }
     node
 }
@@ -591,26 +602,6 @@ method checkRedefinition(ident)as(kind) {
     util.setline(ident.line)
     ident.scope.elementDeclarations.put(name, true)
 }
-
-//method resolveIdentifiers(topNode) in(contextNode) {
-//    // Recursively replace bare identifiers with their fully-qualified
-//    // equivalents.
-//    // This mutates the AST.
-//    if (topNode == false) then {
-//        print "topNode == false!!"
-//        return topNode
-//    }
-//    def vis = object {
-//        inherits ast.baseVisitor
-//        method visitIdentifier(idNode) up (parent) {
-//            if (idNode.isBindingOccurence.not) then {
-//                def newNode = resolveIdentifier(idNode)
-//                parent.replace(idNode)by(newNode)
-//            }
-//            true
-//        }
-//    }
-//}
 
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
@@ -696,11 +687,6 @@ method setupContext(values) {
     preludeScope.addName "Exception" as "def"
     preludeScope.addName "PrimitiveArray" as "def"
     preludeScope.addName "ProgrammingError" as "def"
-//    preludeScope.addName "NoSuchMethod" as "def"
-//    preludeScope.addName "ResourceException" as "def"
-//    preludeScope.addName "RuntimeError" as "def"
-//    preludeScope.addName "BoundsError" as "def"
-//    preludeScope.addName "EnvironmentException" as "def"
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -787,7 +773,7 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
     def vis = object {
         method visitIdentifier(o) up(pNode) {
             o.parent := pNode
-            if (o.isBindingOccurence) then {
+            if (o.isBindingOccurrence) then {
                 pNode.scope.addNode(o) as (o.declarationKind)
             }
             true

@@ -35,7 +35,9 @@ method maybeMap(n, b, before, after) {
     }
 }
 method listMap(l, b) parent(p) {
-    l.map{nd -> nd.map(b) parent(p)}.onto(list)
+    def newList = list.empty
+    for (l) do { nd -> newList.addLast(nd.map(b) parent(p)) }
+    newList
 }
 method maybeMap(n, b) parent(p) {
     if (n != false) then {
@@ -699,10 +701,14 @@ class typeDecNode.new(name', typeValue) {
     }
     method map(blk) parent(p) {
         var n := cloneWithParent(p)
+        if (name.kind != "identifier") then { 
+            print "typeDecNode {nameString} does not contain an identifier" 
+        }
         n.name := name.map(blk) parent(n)
+        print "n.name = {n.name}"
         n.value := value.map(blk) parent(n)
-        n.annotatons := annotations.map(blk) parent(n)
-        n.generics := generics.map(blk) parent(n)
+        n.annotations := listMap(annotations, blk) parent(n)
+        n.generics := listMap(generics, blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -1002,7 +1008,7 @@ class callNode.new(what, with') {
         var n := cloneWithParent(p)
         n.value := value.map(blk) parent(n)
         n.with := listMap(with, blk) parent(n)
-        n.generics := listMap(generics, blk) parent(n)
+        n.generics := maybeMap(generics, blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -1402,7 +1408,7 @@ class memberNode.new(what, in') {
     }
     method map(blk) parent(p) {
         var n := cloneWithParent(p)
-        n.in := listMap(in, blk) parent(n)
+        n.in := in.map(blk) parent(n)
         n.generics := maybeMap(generics, blk) parent(n)
         n := blk.apply(n)
         n
@@ -1507,14 +1513,14 @@ class identifierNode.new(name, dtype') {
     var value := name
     var wildcard := false
     var dtype := dtype'
-    var isBindingOccurence := false
+    var isBindingOccurrence := false
     var isAssigned := false
     var inRequest := false
     def nameString:String is public = name
     var generics := false
     
     method isAppliedOccurenceOfIdentifier {
-        isBindingOccurence.not
+        isBindingOccurrence.not
     }
     method declarationKind {
         parent.declarationKind
@@ -1535,7 +1541,7 @@ class identifierNode.new(name, dtype') {
         var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
         blkAfter))
         n.wildcard := wildcard
-        n.isBindingOccurence := isBindingOccurence
+        n.isBindingOccurrence := isBindingOccurrence
         n.isAssigned := isAssigned
         n.inRequest := inRequest
         n := blk.apply(n)
@@ -1543,7 +1549,7 @@ class identifierNode.new(name, dtype') {
         if (n.kind == "identifier") then {
             n.linePos := linePos
             n.wildcard := wildcard
-            n.isBindingOccurence := isBindingOccurence
+            n.isBindingOccurrence := isBindingOccurrence
             n.isAssigned := isAssigned
             n.inRequest := inRequest
         }
@@ -1564,7 +1570,7 @@ class identifierNode.new(name, dtype') {
         var s
         if(self.wildcard) then {
             s := "WildcardIdentifier"
-        } elseif {isBindingOccurence} then {
+        } elseif {isBindingOccurrence} then {
             s := "IdentifierBinding({value})"
         } else {
             s := self.asString
@@ -1602,8 +1608,10 @@ class identifierNode.new(name, dtype') {
     }
 
     method asString { 
-        if (isBindingOccurence) then { "IdentifierBinding‹{value}›" }
-                    else { "Identifier‹{value}›"
+        if (isBindingOccurrence) then { 
+            "IdentifierBinding‹{value}›" 
+        } else { 
+            "Identifier‹{value}›"
         }
     }
 }
@@ -1673,7 +1681,7 @@ class stringNode.new(v) {
         s := s ++ "\""
         s
     }
-    method isBindingOccurence:=(aBool) -> Done {
+    method isBindingOccurrence:=(aBool) -> Done {
         util.log_verbose "attempting to bind {pretty(0)} at line {line}"
     }
 }
@@ -2334,6 +2342,20 @@ class signaturePart.new(*values) {
         n := blk.apply(n)
         n
     }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Part: {name}"
+        s := "{s}\n    {spc}Parameters:"
+        for (params) do { p ->
+            s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+        }
+        if (vararg != false) then {
+            s := "{s}\n    {spc}Vararg: {vararg.pretty(depth + 3)}"
+        }
+    }
 }
 
 class callWithPart.new(*values) {
@@ -2360,7 +2382,7 @@ class callWithPart.new(*values) {
     }
     method map(blk) parent(p) {
         var n := cloneWithParent(p)
-        n.params := listMap(args, blk) parent(n)
+        n.args := listMap(args, blk) parent(n)
         n := blk.apply(n)
         n
     }

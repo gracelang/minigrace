@@ -410,7 +410,7 @@ method block {
                 }
                 params.push(ident1)
                 if (ident1.kind == "identifier") then {
-                    ident1.isBindingOccurence := true
+                    ident1.isBindingOccurrence := true
                 } else {
                     isMatchingBlock := true
                 }
@@ -434,7 +434,7 @@ method block {
                     next
                     pushidentifier
                     ident1 := values.pop
-                    ident1.isBindingOccurence := true
+                    ident1.isBindingOccurrence := true
                     if (accept("colon")) then {
                         next
                         typeexpression
@@ -2235,7 +2235,7 @@ method defdec {
         var val := false
         var dtype := ast.unknownType
         var name := values.pop
-        name.isBindingOccurence := true
+        name.isBindingOccurrence := true
         if (accept("colon")) then {
             next
             typeexpression
@@ -2329,7 +2329,7 @@ method vardec {
         var val := false
         var dtype := ast.unknownType
         var name := values.pop
-        name.isBindingOccurence := true
+        name.isBindingOccurrence := true
         if (accept("colon")) then {
             next
             typeexpression
@@ -2595,7 +2595,7 @@ method doclass {
         def cname = if (tokens.first.kind == "dot") then {
             pushidentifier // A class currently cannot be anonymous
             def cname' = values.pop
-            cname'.isBindingOccurence := true
+            cname'.isBindingOccurrence := true
             if (!accept("dot")) then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.replaceToken(sym) with(".")
@@ -2611,7 +2611,7 @@ method doclass {
         var s := methodsignature(false)
         var csig := s.sig
         var methodName := s.m
-        methodName.isBindingOccurence := true
+        methodName.isBindingOccurrence := true
         var dtype := s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
@@ -2689,7 +2689,7 @@ method dofactoryMethod {
         var s := methodsignature(false)
         var csig := s.sig
         var methodName := s.m
-        methodName.isBindingOccurence := true
+        methodName.isBindingOccurrence := true
         var dtype := s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
@@ -2826,8 +2826,9 @@ method methoddec {
 
 // Process the declaration of a multi-part method name. These follow
 // mostly the same rules as calls, but aren't strictly enforced to be on
-// a single line (because they are ended by "{" or "->"). This method
-// returns a replacement method name identifier and modifies params in
+// a single line (because they are ended by "{" or "->"). 
+// tm is a methodNode.  This method
+// returns a replacement method name identifier and modifies tm.params in
 // place.
 method parsempmndecrest(tm, sameline) {
     var methname := tm.value.value
@@ -2874,6 +2875,7 @@ method parsempmndecrest(tm, sameline) {
             }
             pushidentifier
             nxt := values.pop
+            nxt.isBindingOccurrence := true
             if (accept("colon")) then {
                 next
                 typeexpression
@@ -2906,7 +2908,9 @@ method parsempmndecrest(tm, sameline) {
         next
         signature.push(part)
     }
-    ast.identifierNode.new(methname, false)
+    def newName = ast.identifierNode.new(methname, false)
+    newName.isBindingOccurrence := true
+    newName
 }
 
 // Accept a method signature
@@ -2919,7 +2923,7 @@ method methodsignature(sameline) {
     }
     pushidentifier
     var meth := values.pop
-    meth.isBindingOccurence := true
+    meth.isBindingOccurrence := true
     var signature := list.empty
     var part := ast.signaturePart.new(meth.value)
     var genericIdents := list.empty
@@ -2956,7 +2960,7 @@ method methodsignature(sameline) {
         while {accept("identifier")} do {
             identifier
             def id = values.pop
-            id.isBindingOccurence := true
+            id.isBindingOccurrence := true
             genericIdents.push(id)
             if (accept("comma")) then {
                 next
@@ -3016,7 +3020,7 @@ method methodsignature(sameline) {
             }
             pushidentifier
             id := values.pop
-            id.isBindingOccurence := true
+            id.isBindingOccurrence := true
             dtype := false
             if (accept("colon")) then {
                 next
@@ -3235,7 +3239,7 @@ method domethodtype {
                 def newLine = util.lines[sym.line].substringFrom(1)to(lastToken.linePos - 1) ++ sym.value
                 suggestion.addLine(sym.line + 0.1, newLine)
                 suggestion.deleteToken(sym)leading(true)trailing(true)
-                errormessages.syntaxError("Methods in a type must be on separate lines, or separated by semicolons.")atPosition(
+                errormessages.syntaxError("Methods in a type literal must be on separate lines, or separated by semicolons.")atPosition(
                     sym.line, sym.linePos)withSuggestion(suggestion)
             }
         }
@@ -3295,7 +3299,7 @@ method typedec {
             gens := p.params
             p := p.value
         }
-        gens.do { each -> each.isBindingOccurence := true }
+        gens.do { each -> each.isBindingOccurrence := true }
         def anns = doannotation
         if((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
