@@ -188,8 +188,8 @@ class blockNode.new(params', body') {
     inherits symbolTableNode.new
     def kind = "block"
     def value = "block"
-    def params = params'
-    def body = body'
+    var params = params'
+    var body = body'
     def selfclosure = true
     var matchingPattern := false
     var extraRuntimeData := false
@@ -503,9 +503,15 @@ class methodTypeNode.new(name', signature', rtype') {
         n
     }
     method map(blk) parent(p) {
+        print "{value}.map: about to clone {self} ..."
         var n := cloneWithParent(p)
+        print "cloning done"
         n.rtype := maybeMap(rtype, blk) parent(n)
-        n.signature := listMap(signature, blk) parent(n)
+        if (signature.size != 0) then {
+            util.log_verbose "methodType {value}.map: about to listMap {signature} ({n.line}:{n.linePos})"
+            n.signature := listMap(signature, blk) parent(n)
+            util.log_verbose "methodType {value}.map: done with listMap {signature} ({n.line}:{n.linePos})"
+        }
         n.generics := listMap(generics, blk) parent(n)
         n := blk.apply(n)
         n
@@ -705,7 +711,7 @@ class typeDecNode.new(name', typeValue) {
             print "typeDecNode {nameString} does not contain an identifier" 
         }
         n.name := name.map(blk) parent(n)
-        print "n.name = {n.name}"
+        print "TypeDec {n.name} (line {n.line})"
         n.value := value.map(blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
@@ -850,7 +856,7 @@ class methodNode.new(name', signature', body', dtype') {
         n.body := listMap(body, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
-        n.dtype := maybeMap(dtype, blk)
+        n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -1130,7 +1136,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         signature.do(b)
         b.apply(dtype)
         generics.do(b)
-        b.apply(superclass)
+        if (false != superclass) then { b.apply(superclass) }
         annotations.do(b)
         value.do(b)
     }
@@ -1558,6 +1564,9 @@ class identifierNode.new(name, dtype') {
     }
     method map(blk) parent(p) {
         var n := cloneWithParent(p)
+        if (p.kind == "methodtype") then {
+            util.log_verbose "cloned identifier {nameString}"
+        }
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
         n
@@ -2338,7 +2347,11 @@ class signaturePart.new(*values) {
     }
     method map(blk) parent(p) {
         var n := cloneWithParent(p)
-        n.params := listMap(params, blk) parent(n)
+        if (params.size != 0) then {
+            util.log_verbose "signaturePart.map: about to listMap {params} ({n.line}:{n.linePos})"
+            n.params := listMap(params, blk) parent(n)
+            util.log_verbose "signaturePart.map: done with listMap {params} ({n.line}:{n.linePos})"
+        }
         n := blk.apply(n)
         n
     }

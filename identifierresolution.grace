@@ -154,6 +154,11 @@ factory method newScopeIn(parent')kind(variety') {
         action.apply
     }
     method findDeepMethod(name) {
+        // APB: I moved this method from the top-level (where it operated
+        // on the now-defunct 'scope' module variable) to this class.
+        // It makes no sense, however: the match statment and assignments to mem
+        // are effectively dead code.  
+        // TODO: figure out what the purpose of this method is, and make it work!
         var mem := ast.identifierNode.new("self", false)
         self.do { s->
             if (s.contains(name)) then {
@@ -175,6 +180,7 @@ factory method newScopeIn(parent')kind(variety') {
         return ast.identifierNode.new(name, false)
     }
     method shadows(node) {
+        // determines if the identifier node shadows an enclosing identifier.
         def name = node.nameString
         if (! elements.contains(name)) then { return false }
         if (elementLines(name) == node.line) then { return false }
@@ -210,8 +216,6 @@ factory method newScopeIn(parent')kind(variety') {
             }
         } elseif (node.kind == "member") then {
             def targetScope = self.scopeReferencedBy(node.in)
-//            print "sRB: found scope for Member {node.value} of {node.in}:"
-//            print(targetScope)
             if (node.value == "outer") then {
                 return targetScope.parent
             }
@@ -434,7 +438,6 @@ method resolveIdentifier(node) {
     // - id is in an outer: find binding occurence of id and store in node
     // - id is a self-method: replace node by a method request
     // - id is none of the above: generate an error message
-    util.log_verbose "resolving {node} (line {node.line})"
     var nm := node.value
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
@@ -451,9 +454,10 @@ method resolveIdentifier(node) {
             }
         }
     }
-    util.log_verbose "checking for definition of {nm} …"
+    if ((node.parent.kind == "identifier").andAlso{node.parent.nameString == "[]:="}) then {
+        util.log_verbose "checking for definition of {nm} …"
+    }
     if (nodeScope.hasDefinitionInNest(nm).not) then {
-        util.log_verbose "no definition found for {nm}"
         if (node.wildcard) then {
             errormessages.syntaxError("'_' can be used only as a parameter")
                 atRange(node.line, node.linePos, node.linePos)
@@ -516,7 +520,6 @@ method resolveIdentifier(node) {
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
     }
-    util.log_verbose "checking for outer …"
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false)
         def memb = ast.memberNode.new("outer", selfId)
@@ -530,7 +533,7 @@ method resolveIdentifier(node) {
     if (nodeScope.kindInNest(nm) == "method") then {
         // Bare method request without arguments
         def meth = nodeScope.findDeepMethod(nm)
-        util.log_verbose "meth = {meth}"
+        util.log_verbose "meth = {meth} (line {node.line})"
         def call = ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
         meth.parent := call
         call.parent := node.parent
@@ -678,15 +681,27 @@ method setupContext(values) {
     preludeScope.addName "confidential"
     preludeScope.addName "override"
     preludeScope.addName "parent"
-    preludeScope.addName "prelude" as "def"
-    preludeScope.putScope("prelude", preludeScope)
-    preludeScope.addName "_prelude" as "def"
-    preludeScope.putScope("_prelude", preludeScope)
     preludeScope.addName "..." as "def"
     preludeScope.addName "GraceType" as "typedef"
     preludeScope.addName "Exception" as "def"
     preludeScope.addName "PrimitiveArray" as "def"
     preludeScope.addName "ProgrammingError" as "def"
+
+    def graceObjectScope = newScopeIn(emptyScope) kind("object")
+    graceObjectScope.addName "=="
+    graceObjectScope.addName "!="
+    graceObjectScope.addName "≠"
+    graceObjectScope.addName "basicAsString"
+    graceObjectScope.addName "asString"
+    graceObjectScope.addName "asDebugString"
+    graceObjectScope.addName "::"
+    
+    preludeScope.addName "graceObject"
+    preludeScope.putScope("graceObject", graceObjectScope)
+    preludeScope.addName "prelude" as "def"
+    preludeScope.putScope("prelude", preludeScope)
+    preludeScope.addName "_prelude" as "def"
+    preludeScope.putScope("_prelude", preludeScope)
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -739,7 +754,7 @@ method setupContext(values) {
 method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
-    var superObject := ast.identifierNode.new("graceObject", false)
+    var superObject := false
     def vis = object {
         inherits ast.baseVisitor
         method visitBind(o) {
@@ -759,8 +774,16 @@ method resolve(values) {
     }
     for (values) do { nd ->
         if (nd.kind == "inherits") then {
-            superObject := nd.value
+            if (false == superObject) then {
+                superObject := nd.value
+            } else {
+                errormessages.syntaxError "There can be no more than one inherits statement in a module; there was a prior inherits statement on line {superObject.line}"
+                    atRange(nd.line, nd.linePos, nd.linePos + 7)
+            }
         }
+    }
+    if (false == superObject) then { 
+        superObject := ast.identifierNode.new("graceObject", false)
     }
     def moduleNode = ast.objectNode.new(values, superObject)
     moduleNode.symbolTable := moduleScope
