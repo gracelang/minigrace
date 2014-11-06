@@ -46,7 +46,7 @@ class stringTest.forMethod(m) {
     method testAtTooSmall {
         assert {vowels.at 0} shouldRaise (BoundsError)
     }
-    method testIndexOf {
+    method testIndexOfIfAbsent {
         assert (vowels.indexOf("iou") ifAbsent{"absent"}) shouldBe 3
         assert (vowels.indexOf("y") ifAbsent{"absent"}) shouldBe (vowels.size)
         assert (morevowels.indexOf("ÿ") ifAbsent{"absent"}) shouldBe (morevowels.size)
@@ -54,6 +54,14 @@ class stringTest.forMethod(m) {
         assert {vowels.indexOf("w") ifAbsent {NoSuchObject.raise "not found"} }
             shouldRaise (NoSuchObject)
         assert (vowels.indexOf("w") ifAbsent {"absent"}) shouldBe("absent")
+    }
+    method testIndexOf {
+        assert (vowels.indexOf "iou") shouldBe 3
+        assert (vowels.indexOf "y") shouldBe (vowels.size)
+        assert (morevowels.indexOf "ÿ") shouldBe (morevowels.size)
+        assert (consonants.indexOf "w") shouldBe (consonants.size - 2)
+        assert (vowels.indexOf "w") shouldBe 0
+        assert (vowels.indexOf "aeixaeixaeix") shouldBe 0
     }
     method testIndexOfMultiple {
         def vowels2 = vowels * 2
