@@ -187,7 +187,7 @@ GraceString.prototype = {
         "indexOf": function string_indexOf (argcv, needle, block0) {
             var self = this._value;
             var result = self.indexOf(needle._value);
-            if (result === -1) { return 0 };
+            if (result === -1) { return new GraceNum(0) };
             return new GraceNum(result + 1);
         },
         "indexOf()ifAbsent": function string_indexOf_ifAbsent (argcv, needle, block0) {
@@ -206,7 +206,7 @@ GraceString.prototype = {
         "lastIndexOf()": function string_lastIndexOf_ifAbsent (argcv, needle, block0) {
             var self = this._value;
             var result = self.lastIndexOf(needle._value);
-            if (result === -1) { return 0 };
+            if (result === -1) { return new GraceNum(0) };
             return new GraceNum(result + 1);
         },
         "lastIndexOf()startingAt()ifAbsent": function string_lastIndexOf (argcv, needle, startPos, block0) {
