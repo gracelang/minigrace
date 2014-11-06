@@ -1,5 +1,4 @@
-#pragma DefaultVisibility=public
-#pragma noTypeChecks
+// #pragma noTypeChecks
 import "util" as util
 
 // This module contains pseudo-classes for all the AST nodes used
@@ -47,13 +46,15 @@ method maybeMap(n, b) parent(p) {
     }
 }
 
+def dummy = sequence.empty
+
 class baseNode.new {
-    var register := ""
-    var line := util.linenum
-    var linePos := util.linepos
-    var lineLength := 0
+    // the superclass of all AST nodes
+    var register is public := ""
+    var line is public := util.linenum
+    var linePos is public := util.linepos
     var parent is public := nullNode
-    var hasSymbolTable := false
+    var hasSymbolTable is public := false
 
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
@@ -77,38 +78,60 @@ class baseNode.new {
         node.symbolTable
         // TODO: add cache of this value, look at symboltable module
     }
-    method cloneWithParent(p) {
-        def new = clone(self)
-        new.parent := p
-        new
+    method shallowCopyFieldsFrom(other) parent(p){
+        register := other.register
+        line := other.line
+        linePos := other.linePos
+        parent := p
+        hasSymbolTable := other.hasSymbolTable
+        self
     }
 }
+
 class symbolTableNode.new {
-    inherits baseNode.new
-    // the common superclass of all nodes that open a new scope,
+    // The superclass of all AST nodes that open a new scope,
     // and thus have a symbolTable.
+    inherits baseNode.new
 
     var symbolTable'
-    method symbolTable { symbolTable' }
+    method symbolTable { 
+        if (hasSymbolTable) then { symbolTable' } else {
+            ProgrammingError.raise "Trying to get a non-existant symbolTable "
+        }
+    }
     method symbolTable:=(s) {
         symbolTable' := s
         hasSymbolTable := true
+    }
+    method shallowCopyFieldsFrom(other) parent(p){
+        super.shallowCopyFieldsFrom(other) parent(p)
+        if (other.hasSymbolTable) then {
+            symbolTable' := other.symbolTable
+        }
+        self
     }
 }
 
 def nullNode = object {
     inherits symbolTableNode.new
-    def kind = "null"
+    def kind is public = "null"
     method childrenDo(block1) { }
+    method pretty(depth) { 
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        spc ++ "nullNode"
+    }
 }
 
 class ifNode.new(cond, thenblock', elseblock') {
     inherits baseNode.new
-    def kind = "if"
-    var value := cond
-    var thenblock := thenblock'
-    var elseblock := elseblock'
-    var handledIdentifiers := false
+    def kind is public = "if"
+    var value is public := cond
+    var thenblock is public := thenblock'
+    var elseblock is public := elseblock'
+    var handledIdentifiers is public := false
     method childrenDo(b) {
         b.apply(value)
         b.apply(thenblock)
@@ -139,8 +162,8 @@ class ifNode.new(cond, thenblock', elseblock') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
-        n.value := value.map(blk)
+        var n := shallowCopyWithParent(p)
+        n.value := value.map(blk) parent(n)
         n.thenblock := listMap(thenblock, blk) parent(n)
         n.elseblock := listMap(self.elseblock, blk) parent(n)
         n := blk.apply(n)
@@ -183,16 +206,24 @@ class ifNode.new(cond, thenblock', elseblock') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
+    method shallowCopyWithParent(p) {
+        ifNode.new(nullNode, nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        handledIdentifiers := other.handledIdentifiers
+        self
+    }
 }
 class blockNode.new(params', body') {
     inherits symbolTableNode.new
-    def kind = "block"
-    def value = "block"
-    var params = params'
-    var body = body'
-    def selfclosure = true
-    var matchingPattern := false
-    var extraRuntimeData := false
+    def kind is public = "block"
+    def value is public = "block"
+    var params is public := params'
+    var body is public := body'
+    def selfclosure is public = true
+    var matchingPattern is public := false
+    var extraRuntimeData is public := false
     for (params') do {p->
         p.accept(patternMarkVisitor) from(self)
     }
@@ -234,7 +265,7 @@ class blockNode.new(params', body') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.params := listMap(params, blk) parent(n)
         n.body := listMap(body, blk) parent(n)
         n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
@@ -291,15 +322,22 @@ class blockNode.new(params', body') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
+    method shallowCopyWithParent(p) {
+        blockNode.new(params, body).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        matchingPattern := other.matchingPattern
+        extraRuntimeData := other.extraRuntimeData
+        self
+    }
 }
 class catchCaseNode.new(block, cases', finally') {
     inherits baseNode.new
-    def kind = "catchcase"
-    def value = block
-    def cases = cases'
-    def finally = finally'
-    
-    method replace(oldNode) by (newNode) { }   // no immediate children are identifiers
+    def kind is public = "catchcase"
+    var value is public := block
+    var cases is public := cases'
+    var finally is public := finally'
 
     method childrenDo(b) {
         b.apply(value)
@@ -326,7 +364,7 @@ class catchCaseNode.new(block, cases', finally') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n.cases := listMap(cases, blk) parent(n)
         n.finally := maybeMap(finally, blk) parent(n)
@@ -361,13 +399,16 @@ class catchCaseNode.new(block, cases', finally') {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        catchCaseNode.new(nullNode, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class matchCaseNode.new(matchee, cases', elsecase') {
     inherits baseNode.new
-    def kind = "matchcase"
-    var value := matchee
-    var cases := cases'
-    var elsecase := elsecase'
+    def kind is public = "matchcase"
+    var value is public := matchee
+    var cases is public := cases'
+    var elsecase is public := elsecase'
     method childrenDo(b) {
         b.apply(value)
         cases.do(b)
@@ -395,7 +436,7 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n.cases := listMap(cases, blk) parent(n)
         n.elsecase := maybeMap(elsecase, blk) parent(n)
@@ -431,6 +472,9 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        matchCaseNode.new(nullNode, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class methodTypeNode.new(name', signature', rtype') {
     // Represents the signature of a method in a type literal
@@ -450,11 +494,11 @@ class methodTypeNode.new(name', signature', rtype') {
     //         ...
     //     }
     inherits symbolTableNode.new
-    def kind = "methodtype"
-    var value := name'
-    var signature := signature'
-    var rtype := rtype'
-    var generics := sequence.empty
+    def kind is public = "methodtype"
+    var value is public := name'
+    var signature is public := signature'
+    var rtype is public := rtype'
+    var generics is public := sequence.empty
     def nameString:String is public = value
     method asString { "MethodType {value} -> {rtype}" }    
     method parametersDo(b) {
@@ -503,15 +547,9 @@ class methodTypeNode.new(name', signature', rtype') {
         n
     }
     method map(blk) parent(p) {
-        print "{value}.map: about to clone {self} ..."
-        var n := cloneWithParent(p)
-        print "cloning done"
+        var n := shallowCopyWithParent(p)
         n.rtype := maybeMap(rtype, blk) parent(n)
-        if (signature.size != 0) then {
-            util.log_verbose "methodType {value}.map: about to listMap {signature} ({n.line}:{n.linePos})"
-            n.signature := listMap(signature, blk) parent(n)
-            util.log_verbose "methodType {value}.map: done with listMap {signature} ({n.line}:{n.linePos})"
-        }
+        n.signature := listMap(signature, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
         n := blk.apply(n)
         n
@@ -563,15 +601,18 @@ class methodTypeNode.new(name', signature', rtype') {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        methodTypeNode.new(value, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class typeLiteralNode.new(methods', types') {
     inherits baseNode.new
-    def kind = "typeliteral"
-    var methods := methods'
-    var types := types'
-    var nominal := false
-    var anonymous := true
-    var value := "‹anon›"
+    def kind is public = "typeliteral"
+    var methods is public := methods'
+    var types is public := types'
+    var nominal is public := false
+    var anonymous is public := true
+    var value is public := "‹anon›"
 
     
     method name { value }
@@ -608,7 +649,7 @@ class typeLiteralNode.new(methods', types') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.methods := listMap(methods, blk) parent (n)
         n.types := listMap(types, blk) parent (n)
         n := blk.apply(n)
@@ -656,16 +697,26 @@ class typeLiteralNode.new(methods', types') {
         }
         s ++ "\}"
     }
+    method shallowCopyWithParent(p) {
+        typeLiteralNode.new(dummy, dummy).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        nominal := other.nominal
+        anonymous := other.anonymous
+        value := other.value
+        self
+    }
 }
 
 class typeDecNode.new(name', typeValue) {
     inherits symbolTableNode.new
-    def kind = "typedec"
-    var name := name'
-    var value := typeValue
+    def kind is public = "typedec"
+    var name is public := name'
+    var value is public := typeValue
     def nameString:String is public = name.value
-    var annotations := list.empty
-    var generics := list.empty
+    var annotations is public := list.empty
+    var generics is public := list.empty
 
     method declarationKind {
         "typeparam"
@@ -706,12 +757,11 @@ class typeDecNode.new(name', typeValue) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         if (name.kind != "identifier") then { 
             print "typeDecNode {nameString} does not contain an identifier" 
         }
         n.name := name.map(blk) parent(n)
-        print "TypeDec {n.name} (line {n.line})"
         n.value := value.map(blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
@@ -757,6 +807,9 @@ class typeDecNode.new(name', typeValue) {
         s
     }
     method asString { "TypeDec {nameString}" }
+    method shallowCopyWithParent(p) {
+        typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 
 class methodNode.new(name', signature', body', dtype') {
@@ -777,17 +830,17 @@ class methodNode.new(name', signature', body', dtype') {
     //         ...
     //     }
     inherits symbolTableNode.new
-    def kind = "method"
-    var value := name'
-    var signature := signature'
-    var body := body'
-    var dtype := dtype'
-    var varargs := false
-    var generics := sequence.empty
-    var selfclosure := false
+    def kind is public = "method"
+    var value is public := name'
+    var signature is public := signature'
+    var body is public := body'
+    var dtype is public := dtype'
+    var varargs is public := false
+    var generics is public := sequence.empty
+    def selfclosure is public = false
     def nameString:String is public = value.value
-    var annotations := list.empty
-    var isFresh := false      // a method is 'fresh' if it answers a new object
+    var annotations is public := list.empty
+    var isFresh is public := false      // a method is 'fresh' if it answers a new object
 
     method isConfidential {
         if (annotations.size == 0) then { return false }
@@ -852,8 +905,10 @@ class methodNode.new(name', signature', body', dtype') {
         n
     }
     method map(blk) parent(p){
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
+        util.log_verbose "Mapping {self}"
         n.body := listMap(body, blk) parent(n)
+        n.signature := listMap(signature, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
@@ -959,6 +1014,14 @@ class methodNode.new(name', signature', body', dtype') {
         s
     }
     method asString { "Method {nameString}" }
+    method shallowCopyWithParent(p) {
+        methodNode.new(value, dummy, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        isFresh := other.isFresh
+        self
+    }
 }
 class callNode.new(what, with') {
     // [with]
@@ -975,11 +1038,11 @@ class callNode.new(what, with') {
     //         ...
     //     }
     inherits baseNode.new
-    def kind = "call"
-    var value := what        // method being requested
-    var with := with'        // arguments
-    var generics := false
-    var isPattern := false
+    def kind is public = "call"
+    var value is public := what        // method being requested
+    var with is public := with'        // arguments
+    var generics is public := false
+    var isPattern is public := false
     def nameString:String is public = what
     
     method childrenDo(b) {
@@ -1011,8 +1074,7 @@ class callNode.new(what, with') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
-        n.value := value.map(blk) parent(n)
+        var n := shallowCopyWithParent(p)
         n.with := listMap(with, blk) parent(n)
         n.generics := maybeMap(generics, blk) parent(n)
         n := blk.apply(n)
@@ -1082,6 +1144,14 @@ class callNode.new(what, with') {
         s
     }
     method asString { "Call {what.pretty(0)}" }
+    method shallowCopyWithParent(p) {
+        callNode.new(value, dummy).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        isPattern := other.isPattern
+        self
+    }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
     // [signature]
@@ -1100,17 +1170,17 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     //         ...
     //     }
     inherits symbolTableNode.new
-    def kind = "class"
-    var value := body'
-    var name := name'
-    var constructor := constructor'
-    var signature := signature'
-    var dtype := dtype'
-    var generics := sequence.empty
-    var superclass := superclass'
-    var annotations := list.empty
-    def nameString:String = name.value
-    var data := false
+    def kind is public = "class"
+    var value is public := body'
+    var name is public := name'
+    var constructor is public := constructor'
+    var signature is public := signature'
+    var dtype is public := dtype'
+    var generics is public := sequence.empty
+    var superclass is public := superclass'
+    var annotations is public := list.empty
+    def nameString:String is public = name.value
+    var data is public := false
     
     method isPublic {
         // assume that classes are public by default
@@ -1174,14 +1244,15 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := listMap(value, blk) parent(n)
         n.name := name.map(blk) parent(n)
         n.signature := listMap(signature, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n.superclass := maybeMap(superclass, blk) parent(n)
-        n.dtype := dtype.map(blk) parent(n)
+        n.constructor := constructor.map(blk) parent(n)
+        n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -1267,14 +1338,18 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
+    method shallowCopyWithParent(p) {
+        classNode.new(name, nullNode, nullNode, nullNode, nullNode, false)
+            .shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class objectNode.new(body, superclass') {
     inherits symbolTableNode.new
-    def kind = "object"
-    var value := body
-    var superclass := superclass'
-    var classname := "object"
-    var data := false
+    def kind is public = "object"
+    var value is public := body
+    var superclass is public := superclass'
+    var classname is public := "object"
+    var data is public := false
     method childrenDo(b) {
         b.apply(superclass)
         value.do(b)
@@ -1298,7 +1373,7 @@ class objectNode.new(body, superclass') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := listMap(value, blk) parent(n)
         n.superclass := maybeMap(superclass, blk) parent(n)
         n := blk.apply(n)
@@ -1334,11 +1409,20 @@ class objectNode.new(body, superclass') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
+    method shallowCopyWithParent(p) {
+        objectNode.new(dummy, false).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        data := other.data
+        classname := other.classname
+        self
+    }
 }
 class arrayNode.new(values) {
     inherits baseNode.new
-    def kind = "array"
-    var value := values
+    def kind is public = "array"
+    var value is public := values
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitArray(self) up(pNode)) then {
             for (self.value) do { ax ->
@@ -1358,7 +1442,7 @@ class arrayNode.new(values) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := listMap(value, blk) parent(n)
         n := blk.apply(n)
         n
@@ -1385,14 +1469,17 @@ class arrayNode.new(values) {
         s := s ++ "]"
         s
     }
+    method shallowCopyWithParent(p) {
+        arrayNode.new(dummy).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class memberNode.new(what, in') {
     inherits baseNode.new
-    def kind = "member"
-    var value := what  // NB: value is a String, not an Identifier
+    def kind is public = "member"
+    var value is public := what  // NB: value is a String, not an Identifier
     def nameString:String is public = value
-    var in := in'
-    var generics := false
+    var in is public := in'
+    var generics is public := false
     method childrenDo(b) {
         b.apply(in)
     }
@@ -1413,7 +1500,7 @@ class memberNode.new(what, in') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.in := in.map(blk) parent(n)
         n.generics := maybeMap(generics, blk) parent(n)
         n := blk.apply(n)
@@ -1460,13 +1547,16 @@ class memberNode.new(what, in') {
         resultNode.linePos := linePos
         return resultNode
     }
+    method shallowCopyWithParent(p) {
+        memberNode.new(value, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class genericNode.new(base, params') {
     inherits baseNode.new
-    def kind = "generic"
-    var value := base        // APB: in a generic call, value is the called node
+    def kind is public = "generic"
+    var value is public := base        // APB: in a generic call, value is the called node
                             // e.g. in List<Number>, value is Identifier‹List›
-    var params := params'
+    var params is public := params'
     method asString { 
         var s := "{base}<"
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
@@ -1492,7 +1582,7 @@ class genericNode.new(base, params') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n.params := listMap(params, blk) parent(n)
         n := blk.apply(n)
@@ -1512,18 +1602,22 @@ class genericNode.new(base, params') {
         s := s ++ ">"
         s
     }
+    method shallowCopyWithParent(p) {
+        genericNode.new(nullNode, dummy).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class identifierNode.new(name, dtype') {
     inherits baseNode.new
-    def kind = "identifier"
-    var value := name
-    var wildcard := false
-    var dtype := dtype'
-    var isBindingOccurrence := false
-    var isAssigned := false
-    var inRequest := false
+    def kind is public = "identifier"
+    var value is public := name
+    var wildcard is public := false
+    var dtype is public := dtype'
+    var isBindingOccurrence is public := false
+    var isAssigned is public := false
+    var inRequest is public := false
     def nameString:String is public = name
-    var generics := false
+    var generics is public := false
+    var isMethodName is public := false
     
     method isAppliedOccurenceOfIdentifier {
         isBindingOccurrence.not
@@ -1563,10 +1657,7 @@ class identifierNode.new(name, dtype') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
-        if (p.kind == "methodtype") then {
-            util.log_verbose "cloned identifier {nameString}"
-        }
+        var n := shallowCopyWithParent(p)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
         n
@@ -1623,6 +1714,18 @@ class identifierNode.new(name, dtype') {
             "Identifier‹{value}›"
         }
     }
+    method shallowCopyWithParent(p) {
+        identifierNode.new(value, false).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        wildcard := other.wildcard
+        isBindingOccurrence := other.isBindingOccurrence
+        isMethodName := other.isMethodName
+        isAssigned := other.isAssigned
+        inRequest := other.inRequest
+        self
+    }
 }
 
 def typeType is public = identifierNode.new("Type", false)
@@ -1630,8 +1733,8 @@ def unknownType is public = identifierNode.new("Unknown", typeType)
 
 class octetsNode.new(n) {
     inherits baseNode.new
-    def kind = "octets"
-    var value := n
+    def kind is public = "octets"
+    var value is public := n
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitOctets(self) up(pNode)
@@ -1643,15 +1746,18 @@ class octetsNode.new(n) {
         self.value
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
+    }
+    method shallowCopyWithParent(p) {
+        octetsNode.new(n).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class stringNode.new(v) {
     inherits baseNode.new
-    def kind = "string"
-    var value := v
+    def kind is public = "string"
+    var value is public := v
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitString(self) up(pNode)
@@ -1664,7 +1770,7 @@ class stringNode.new(v) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
     }
@@ -1690,14 +1796,14 @@ class stringNode.new(v) {
         s := s ++ "\""
         s
     }
-    method isBindingOccurrence:=(aBool) -> Done {
-        util.log_verbose "attempting to bind {pretty(0)} at line {line}"
+    method shallowCopyWithParent(p) {
+        stringNode.new(value).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class numNode.new(val) {
     inherits baseNode.new
-    def kind = "num"
-    var value := val
+    def kind is public = "num"
+    var value is public := val
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitNum(self) up(pNode)
@@ -1710,7 +1816,7 @@ class numNode.new(val) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
     }
@@ -1721,13 +1827,16 @@ class numNode.new(val) {
         self.value.asString
     }
     method asString { "Number {value}" }
+    method shallowCopyWithParent(p) {
+        numNode.new(value).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class opNode.new(op, l, r) {
     inherits baseNode.new
-    def kind = "op"
-    var value := op
-    var left := l
-    var right := r
+    def kind is public = "op"
+    def value is public = op     // a String
+    var left is public := l
+    var right is public := r
     method childrenDo(b) {
         b.apply(left)
         b.apply(right)
@@ -1747,7 +1856,7 @@ class opNode.new(op, l, r) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.left := left.map(blk) parent(n)
         n.right := right.map(blk) parent(n)
         n := blk.apply(n)
@@ -1784,13 +1893,16 @@ class opNode.new(op, l, r) {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class indexNode.new(expr, index') {
     // an expression in square brackets
     inherits baseNode.new
-    def kind = "index"
-    var value := expr
-    var index := index'
+    def kind is public = "index"
+    var value is public := expr
+    var index is public := index'
     
     method childrenDo(b) {
         b.apply(value)
@@ -1811,7 +1923,7 @@ class indexNode.new(expr, index') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n.index := index.map(blk) parent(n)
         n := blk.apply(n)
@@ -1838,18 +1950,22 @@ class indexNode.new(expr, index') {
         s := s ++ "[" ++ self.index.toGrace(depth + 1) ++ "]"
         s
     }
+    method shallowCopyWithParent(p) {
+        indexNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class bindNode.new(dest', val') {
     // an assignment, or a request of a setter-method
     inherits baseNode.new
-    def kind = "bind"
-    var dest := dest'
-    var value := val'
+    def kind is public = "bind"
+    var dest is public := dest'
+    var value is public := val'
     
     method childrenDo(b) {
         b.apply(value)
         b.apply(dest)
     }
+    method asString { "Bind {value}" }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBind(self) up(pNode)) then {
             self.dest.accept(visitor) from(self)
@@ -1865,10 +1981,12 @@ class bindNode.new(dest', val') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        util.log_verbose "mapping {self}"
+        var n := shallowCopyWithParent(p)
         n.dest := dest.map(blk) parent(n)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
+        util.log_verbose "mapped node is {n.pretty(0)} and parent is {n.parent}"
         n
     }
     method pretty(depth) {
@@ -1892,17 +2010,20 @@ class bindNode.new(dest', val') {
         s := s ++ " := " ++ self.value.toGrace(depth + 1)
         s
     }
+    method shallowCopyWithParent(p) {
+        bindNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class defDecNode.new(name', val, dtype') {
     inherits baseNode.new
-    def kind = "defdec"
-    var name := name'
-    var value := val
-    var dtype := dtype'
+    def kind is public = "defdec"
+    var name is public := name'
+    var value is public := val
+    var dtype is public := dtype'
     def nameString:String is public = name.value
-    var annotations := list.empty
-    var data := false
-    var startToken := false
+    var annotations is public := list.empty
+    var data is public := false
+    var startToken is public := false
     method isPublic {
         // defs are confidential by default
         if (annotations.size == 0) then { return false }
@@ -1949,7 +2070,7 @@ class defDecNode.new(name', val, dtype') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.name := name.map(blk) parent(n)
         n.value := value.map(blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
@@ -1992,15 +2113,24 @@ class defDecNode.new(name', val, dtype') {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        defDecNode.new(name, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        data := other.data
+        startToken := other.startToken
+        self
+    }
 }
 class varDecNode.new(name', val', dtype') {
     inherits baseNode.new
-    def kind = "vardec"
-    var name := name'
-    var value := val'
-    var dtype := dtype'
+    def kind is public = "vardec"
+    var name is public := name'
+    var value is public := val'
+    var dtype is public := dtype'
     def nameString:String is public = name.value
-    var annotations := list.empty
+    var annotations is public := list.empty
     
     method childrenDo(b) {
         b.apply(value)
@@ -2059,9 +2189,9 @@ class varDecNode.new(name', val', dtype') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.name := name.map(blk) parent(n)
-        n.value := value.map(blk) parent(n)
+        n.value := maybeMap(value, blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n := blk.apply(n)
@@ -2104,15 +2234,17 @@ class varDecNode.new(name', val', dtype') {
         }
         s
     }
+    method shallowCopyWithParent(p) {
+        varDecNode.new(name, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
-class importNode.new(path', name) {
+class importNode.new(path', name, dtype') {
     inherits baseNode.new
-    def kind = "import"
-    var value := name
-    var path := path'
-    var annotations := list.empty
-    var dtype := false
-    def linePos = 1
+    def kind is public = "import"
+    var value is public := name
+    var path is public := path'
+    var annotations is public := list.empty
+    var dtype is public := dtype'
     def nameString:String is public = value
     
     method isPublic {
@@ -2139,7 +2271,7 @@ class importNode.new(path', name) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
 //        n.value := value.map(blk) parent(n)
 //  TODO: make this name an identifier (defining occurence)
         n.dtype := maybeMap(dtype, blk) parent(n)
@@ -2164,11 +2296,14 @@ class importNode.new(path', name) {
     method toGrace(depth : Number) -> String {
         "import \"{self.path}\" as {self.value}"
     }
+    method shallowCopyWithParent(p) {
+        importNode.new(path, value, false).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class dialectNode.new(path') {
     inherits baseNode.new
-    def kind = "dialect"
-    var value := path'
+    def kind is public = "dialect"
+    var value is public := path'
     
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
@@ -2182,7 +2317,7 @@ class dialectNode.new(path') {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
     }
@@ -2199,11 +2334,14 @@ class dialectNode.new(path') {
     method toGrace(depth : Number) -> String {
         "dialect \"{self.value}\""
     }
+    method shallowCopyWithParent(p) {
+        dialectNode.new(value).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class returnNode.new(expr) {
     inherits baseNode.new
-    def kind = "return"
-    var value := expr
+    def kind is public = "return"
+    var value is public := expr
     
     method childrenDo(b) {
         b.apply(value)
@@ -2222,7 +2360,7 @@ class returnNode.new(expr) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
         n
@@ -2240,12 +2378,15 @@ class returnNode.new(expr) {
     method toGrace(depth : Number) -> String {
         "return " ++ self.value.toGrace(depth)
     }
+    method shallowCopyWithParent(p) {
+        returnNode.new(nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 class inheritsNode.new(expr) {
     inherits baseNode.new
-    def kind = "inherits"
-    var value := expr
-    def providedNames is public = list.empty
+    def kind is public = "inherits"
+    var value is public := expr
+    var providedNames is public := list.empty
     
     
     method childrenDo(b) {
@@ -2266,7 +2407,7 @@ class inheritsNode.new(expr) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
         n
@@ -2289,11 +2430,19 @@ class inheritsNode.new(expr) {
     }
     method nameString { value.toGrace(0) }
     method asString { "Inherits {nameString}" }
+    method shallowCopyWithParent(p) {
+        inheritsNode.new(nullNode).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        providedNames := other.providedNames
+        self
+    }
 }
 class blankNode.new {
     inherits baseNode.new
-    def kind = "blank"
-    def value = "blank"
+    def kind is public = "blank"
+    def value is public = "blank"
     
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
@@ -2302,7 +2451,7 @@ class blankNode.new {
         self
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
     }
@@ -2312,15 +2461,19 @@ class blankNode.new {
     method toGrace(depth : Number) -> String {
         ""
     }
+    method shallowCopyWithParent(p) {
+        blankNode.new.shallowCopyFieldsFrom(self) parent(p)
+    }
 }
 
 class signaturePart.new(*values) {
     inherits baseNode.new
-    def kind = "signaturepart"
-    var name := ""
-    var params := list.empty
-    var vararg := false
-    var generics := list.empty
+    def kind is public = "signaturepart"
+    var name is public := ""
+    var params is public := list.empty
+    var vararg is public := false
+    var generics is public := list.empty
+    var lineLength is public := 0
     if (values.size > 0) then {
         name := values[1]
     }
@@ -2346,12 +2499,9 @@ class signaturePart.new(*values) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
-        if (params.size != 0) then {
-            util.log_verbose "signaturePart.map: about to listMap {params} ({n.line}:{n.linePos})"
-            n.params := listMap(params, blk) parent(n)
-            util.log_verbose "signaturePart.map: done with listMap {params} ({n.line}:{n.linePos})"
-        }
+        var n := shallowCopyWithParent(p)
+        n.params := listMap(params, blk) parent(n)
+        n.vararg := maybeMap(vararg, blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -2369,13 +2519,22 @@ class signaturePart.new(*values) {
             s := "{s}\n    {spc}Vararg: {vararg.pretty(depth + 3)}"
         }
     }
+    method shallowCopyWithParent(p) {
+        signaturePart.new(name).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        lineLength := other.lineLength
+        self
+    }
 }
 
 class callWithPart.new(*values) {
     inherits baseNode.new
-    def kind = "callwithpart"
-    var name := ""
-    var args := list.empty
+    def kind is public = "callwithpart"
+    var name is public := ""
+    var args is public := list.empty
+    var lineLength is public := 0
     if (values.size > 0) then {
         name := values[1]
     }
@@ -2394,10 +2553,18 @@ class callWithPart.new(*values) {
         n
     }
     method map(blk) parent(p) {
-        var n := cloneWithParent(p)
+        var n := shallowCopyWithParent(p)
         n.args := listMap(args, blk) parent(n)
         n := blk.apply(n)
         n
+    }
+    method shallowCopyWithParent(p) {
+        callWithPart.new(name).shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        lineLength := other.lineLength
+        self
     }
 }
 

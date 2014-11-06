@@ -16,11 +16,11 @@ method printBacktrace(caption) {
     }
 }
 method printAstHierarchy(node) {
-    print (node.pretty(1))
+    print "AST chain starting with {node}"
     var n := node.parent
     while {n != ast.nullNode} do {
-        print(n.pretty(1))
-        n := node.parent
+        print(n)
+        n := n.parent
     }
 }
 factory method newScopeIn(parent')kind(variety') {
@@ -448,14 +448,14 @@ method resolveIdentifier(node) {
                 if (nodeScope.kindInNest(nmGets) == "method") then {
                     // method request without arguments
                     def meth = nodeScope.findDeepMethod(nmGets)
-                    def meth2 = ast.memberNode.new(nm, meth.in)
-                    return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)])
+                    def member = ast.memberNode.new(nm, ast.nullNode)
+                    member.in := meth.in.shallowCopyWithParent(member)
+                    def call = ast.callNode.new(member, [ast.callWithPart.new(member.value)])
+                    member.parent := call
+                    call
                 }
             }
         }
-    }
-    if ((node.parent.kind == "identifier").andAlso{node.parent.nameString == "[]:="}) then {
-        util.log_verbose "checking for definition of {nm} …"
     }
     if (nodeScope.hasDefinitionInNest(nm).not) then {
         if (node.wildcard) then {
@@ -533,7 +533,6 @@ method resolveIdentifier(node) {
     if (nodeScope.kindInNest(nm) == "method") then {
         // Bare method request without arguments
         def meth = nodeScope.findDeepMethod(nm)
-        util.log_verbose "meth = {meth} (line {node.line})"
         def call = ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
         meth.parent := call
         call.parent := node.parent
@@ -797,12 +796,16 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         method visitIdentifier(o) up(pNode) {
             o.parent := pNode
             if (o.isBindingOccurrence) then {
-                pNode.scope.addNode(o) as (o.declarationKind)
+                if (o.isMethodName.not) then {
+                    pNode.scope.addNode(o) as (o.declarationKind)
+                }
             }
             true
         }
         method visitMethod(o) up(pNode) { 
             o.parent := pNode
+            pNode.scope.addNode(o.value) as "method"
+            o.value.isMethodName := true
             o.symbolTable := newScopeIn(pNode.scope) kind("method")
             true
         }
