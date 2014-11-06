@@ -67,6 +67,7 @@ factory method newScopeIn(parent')kind(variety') {
         } else {
             print(self)
             var more := " in this scope"
+            print(nd.scope.asStringWithParents)
             if (elementLines.contains(name)) then {
                 more := " as a {oldKind}"
                     ++ " on line {elementLines.get(name)}"
