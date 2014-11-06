@@ -2468,6 +2468,7 @@ method dodialect {
 // Accept "inherits X.new"
 method inheritsdec {
     if (accept("keyword") && (sym.value == "inherits")) then {
+        def btok = sym
         checkIndent
         next
         if(didConsume({expression(noBlocks)}).not) then {
@@ -2483,11 +2484,11 @@ method inheritsdec {
             suggestion := errormessages.suggestion.new
             suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
             suggestions.push(suggestion)
-            errormessages.syntaxError("The inherits keyword must be followed by an expression that denotes the object being inherited.")atPosition(
+            errormessages.syntaxError("The inherits keyword must be followed by an expression that creates the object being inherited.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
-        var tmp := values.pop
-        values.push(ast.inheritsNode.new(tmp))
+        util.setPosition(btok.line, btok.linePos)
+        values.push(ast.inheritsNode.new(values.pop))
     }
 }
 
