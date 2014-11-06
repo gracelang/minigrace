@@ -368,6 +368,10 @@ void *glmalloc(size_t s) {
     if (heapcurrent >= heapmax)
         heapmax = heapcurrent;
     void *v = calloc(1, s + sizeof(size_t));
+    if (v == NULL) {
+        fprintf(stderr, "Out of memory (line %i of %s)", linenumber, modulename);
+        graceRaise(EnvironmentExceptionObject, "Out of memory");
+    }
     size_t *i = v;
     *i = s;
     return v + sizeof(size_t);
@@ -4796,19 +4800,23 @@ Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
 }
 Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-  if (!(argv[0]->flags & OFLAG_USEROBJ))
-    return argv[0];
-  Object obj = argv[0];
-  struct UserObject *uo = (struct UserObject *)obj;
-  void *sz = ((char *)obj) - sizeof(size_t);
-  size_t *size = sz;
-  int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
-  Object ret = alloc_userobj2(0, nfields, obj->class);
-  struct UserObject *uret = (struct UserObject *)ret;
-  memcpy(ret, obj, *size);
-  if (uo->super)
-    uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
-  return ret;
+    if (!(argv[0]->flags & OFLAG_USEROBJ))
+        return argv[0];
+    Object obj = argv[0];
+    fprintf(stderr, "cloning ...");
+    fflush(stderr);
+    struct UserObject *uo = (struct UserObject *)obj;
+    void *sz = ((char *)obj) - sizeof(size_t);
+    size_t *size = sz;
+    int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
+    Object ret = alloc_userobj2(0, nfields, obj->class);
+    struct UserObject *uret = (struct UserObject *)ret;
+    memcpy(ret, obj, *size);
+    if (uo->super)
+        uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
+    fprintf(stderr, "done \n");
+    fflush(stderr);
+    return ret;
 }
 Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
                      int flags) {
