@@ -7,7 +7,7 @@ all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.gr
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
-GRACE_MODULES = gUnit.grace collections.grace objectdraw.grace rtobjectdraw.grace sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace ast.grace mgcollections.grace
+GRACE_MODULES = gUnit.grace collections.grace collectionsPrelude.grace objectdraw.grace rtobjectdraw.grace sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace ast.grace mgcollections.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
@@ -107,7 +107,7 @@ test.js.compile:
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
-	(cd js/tests; ln -s  ../sample/dialects/requireTypes.{gso,gct} .; ./harness ../../minigrace . "")
+	(cd js/tests; rm requireTypes.{gso,gct} && ln -s  ../sample/dialects/requireTypes.{gso,gct} .; ./harness ../../minigrace . "")
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
