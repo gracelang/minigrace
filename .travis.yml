@@ -1,4 +1,4 @@
-language: 
+language:
   - c
   - node_js
 node_js:
@@ -9,5 +9,4 @@ before_script:
   - git fetch --unshallow
 script:
   - ./tools/tarball-bootstrap -a && make && make test
-  - sudo make install
   - make js && make test.js

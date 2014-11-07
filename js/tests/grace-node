@@ -225,8 +225,13 @@ if (! graceModulePath) {
     }
 }
 var pathdirs = graceModulePath.split(path.delimiter);
+
 if ( pathdirs.indexOf("./") === -1 ) {
     pathdirs.push("./");
+}
+
+if ( pathdirs.indexOf("../") === -1 ) {
+    pathdirs.push("../");
 }
 
 MiniGrace.prototype.loadModule = function(moduleName) {

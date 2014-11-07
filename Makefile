@@ -106,8 +106,10 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
-	(cd js/tests; rm requireTypes.{gso,gct} && ln -s  ../sample/dialects/requireTypes.{gso,gct} .; ./harness ../../minigrace . "")
+test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js js/sample/dialects/requireTypes.js
+	ln -fs ../sample/dialects/requireTypes.gso ../sample/dialects/requireTypes.js js/tests
+	npm install performance-now
+	js/tests/harness ../../minigrace js/tests ""
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
