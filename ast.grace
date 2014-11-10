@@ -654,7 +654,7 @@ class typeDecNode.new(name', typeValue) {
         if (generics.size > 0) then {
             s := "{s}{spc}Generic parameters:\n"
             for (generics) do {ut->
-                s := "{s}{spc}  {ut.value}\n"
+                s := "{s}{spc}  {ut}\n"
             }
         }
         s := s ++ spc ++ "Value:"
@@ -1050,13 +1050,14 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Class(" ++ self.name.pretty(0) ++ ")"
+        var s := "Class\n"
+        s := "{s}{spc}Name: {self.name.pretty(0)}"
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
         }
         s := s ++ "\n"
-        s := "{s}{spc}Constructor: {constructor.value}\n"
+        s := "{s}{spc}Factory method: {constructor.pretty(0)}\n"
         if(false != dtype) then {
             s := "{s}{spc}Returns:\n  {spc}{dtype.pretty(depth + 2)}\n"
         }
@@ -1080,7 +1081,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         if (annotations.size > 0) then {
             s := s ++ "\n" ++ spc ++ "Annotations:"
             for (annotations) do {a->
-                s := s ++ "\n  {spc}{a.pretty(depth + 2)}"
+                s := s ++ " {a.pretty(depth + 2)}"
             }
         }
         s := s ++ "\n" ++ spc ++ "Body:"
@@ -1342,8 +1343,9 @@ class identifierNode.new(name, dtype') {
     var dtype := dtype'
     var inBind := false
     var inRequest := false
-    def nameString:String is public = name
     var generics := false
+    method nameString { value }     // this is a method rather than a def
+        // because the name of a method is changed after this node is created
     method accept(visitor : ASTVisitor) {
         if (visitor.visitIdentifier(self)) then {
             if (self.dtype != false) then {
@@ -1842,7 +1844,11 @@ class importNode.new(path', name) {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        var n := blk.apply(self)
+        var n := importNode.new(path, name)
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
         n
