@@ -51,7 +51,7 @@ factory method newScopeIn(parent')kind(variety') {
 //        }
     }
     method addNode(nd) as(kind) {
-        def name = nd.nameString
+        def name = nd.value
 //        if (name =="blk") then {
 //            try {
 //                ProgrammingError.raise "{name} declared"
@@ -62,6 +62,7 @@ factory method newScopeIn(parent')kind(variety') {
 //        }
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
+//            print "putting {name} = {nd.pretty(0)}"
             elements.put(name, kind)
             elementLines.put(name, nd.line)
         } else {
@@ -617,7 +618,8 @@ method resolveIdentifiers(topNode) {
         if (node.isAppliedOccurenceOfIdentifier) then {
             resolveIdentifier(node)
         } elseif { node.isMatchingBlock } then {
-            rewritematchblock(node)
+//            rewritematchblock(node)
+            node
         } else {
             node
         } 
@@ -789,16 +791,20 @@ method resolve(values) {
     moduleNode.symbolTable := moduleScope
     buildSymbolTableFor(values) in(moduleNode)
     def newModule = resolveIdentifiers(moduleNode)
-    return newModule.body
+    return newModule.value
 }
 
 method buildSymbolTableFor(topLevelNodes) in(parent) {
     def vis = object {
+        inherits ast.addParentVisitor
         method visitIdentifier(o) up(pNode) {
             o.parent := pNode
             if (o.isBindingOccurrence) then {
                 if (o.isMethodName.not) then {
                     pNode.scope.addNode(o) as (o.declarationKind)
+                    if (o.declarationKind == "parameter") then {
+                        print(pNode.scope.asStringWithParents)
+                    }
                 }
             }
             true
@@ -817,47 +823,33 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         }
         method visitClass(o) up(pNode) { 
             o.parent := pNode
-            pNode.scope.addNode(o) as "method"
-            o.symbolTable := newScopeIn(pNode.scope) kind("object")
+            pNode.scope.addNode(o.name) as "method"
+            o.name.isMethodName := true
+            def objectScope = newScopeIn(pNode.scope) kind("object")
+            objectScope.addNode(o.constructor) as "method"
+            o.generics.do { each -> objectScope.addNode(each) as "typeparam" }
+            o.constructor.isMethodName := true
+            o.symbolTable := newScopeIn(objectScope) kind("object")
             true
         }
         method visitObject(o) up(pNode) { 
             o.parent := pNode
             o.symbolTable := newScopeIn(pNode.scope) kind("object")
+            util.log_verbose "new object scope {o.symbolTable.asStringWithParents}"
             true
         }
-        method visitIf(o) up(pNode) { o.parent := pNode; true }
-        method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
-        method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
-        method visitMethodType(o) up(pNode) {             
+        method visitMethodType(o) up(pNode) {
             o.parent := pNode
             o.symbolTable := newScopeIn(pNode.scope) kind("methodtype")
             true
         }
         method visitTypeDec(o) up(pNode) { 
             o.parent := pNode
-            pNode.scope.addNode(o) as "typedef"
+            pNode.scope.addNode(o.name) as "typedef"
             if (o.generics.isEmpty) then { return true }
             o.symbolTable := newScopeIn(pNode.scope) kind("typeparam")
             true
         }
-        method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
-        method visitCall(o) up(pNode) { o.parent := pNode; true }
-        method visitArray(o) up(pNode) { o.parent := pNode; true }
-        method visitMember(o) up(pNode) { o.parent := pNode; true }
-        method visitGeneric(o) up(pNode) { o.parent := pNode; true }
-        method visitOctets(o) up(pNode) { o.parent := pNode; true }
-        method visitString(o) up(pNode) { o.parent := pNode; true }
-        method visitNum(o) up(pNode) { o.parent := pNode; true }
-        method visitOp(o) up(pNode) { o.parent := pNode; true }
-        method visitIndex(o) up(pNode) { o.parent := pNode; true }
-        method visitBind(o) up(pNode) { o.parent := pNode; true }
-        method visitDefDec(o) up(pNode) { o.parent := pNode; true }
-        method visitVarDec(o) up(pNode) { o.parent := pNode; true }
-        method visitImport(o) up(pNode) { o.parent := pNode; true }
-        method visitReturn(o) up(pNode) { o.parent := pNode; true }
-        method visitInherits(o) up(pNode) { o.parent := pNode; true }
-        method visitDialect(o) up(pNode) { o.parent := pNode; true }
     }
     for (topLevelNodes) do { each -> each.accept(vis) from(parent) }
 }

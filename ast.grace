@@ -36,6 +36,11 @@ method maybeMap(n, b, before, after) {
 method listMap(l, b) parent(p) {
     def newList = list.empty
     for (l) do { nd -> newList.addLast(nd.map(b) parent(p)) }
+    if (newList.contains(done)) then {
+        print "node list contains done!"
+        print "    original list = {l}"
+        print "    mapped list = {newList}"
+    }
     newList
 }
 method maybeMap(n, b) parent(p) {
@@ -122,6 +127,9 @@ def nullNode = object {
             spc := spc ++ "  "
         }
         spc ++ "nullNode"
+    }
+    method toGrace(depth) {
+        "// null"
     }
 }
 
@@ -377,8 +385,10 @@ class catchCaseNode.new(block, cases', finally') {
         }
         var s := "Catch\n"
         s := s ++ spc ++ value.pretty(depth + 2)
+        print "catchCaseNode.cases = {self.cases}"
         for (self.cases) do { mx ->
-            s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
+//            s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
+            s := s ++ "\n{spc}Case:\n{spc}  {mx}"
         }
         if (false != self.finally) then {
             s := s ++ "\n{spc}Finally:\n{spc}  {self.finally.pretty(depth+2)}"
@@ -521,6 +531,9 @@ class methodTypeNode.new(name', signature', rtype') {
             if (rtype != false) then {
                 rtype.accept(visitor) from(self)
             }
+            for (generics) do { each ->
+                each.accept(visitor) from(self)
+            }
             for (signature) do { part ->
                 for (part.params) do { p ->
                     p.accept(visitor) from(self)
@@ -528,9 +541,6 @@ class methodTypeNode.new(name', signature', rtype') {
                 if (part.vararg != false) then {
                     part.vararg.accept(visitor) from(self)
                 }
-            }
-            for (generics) do { each ->
-                each.accept(visitor) from(self)
             }
         }
     }
@@ -719,7 +729,7 @@ class typeDecNode.new(name', typeValue) {
     var generics is public := list.empty
 
     method declarationKind {
-        "typeparam"
+        "parameter"
     }
     method isConfidential {
         if (annotations.size == 0) then { return false }
@@ -837,11 +847,15 @@ class methodNode.new(name', signature', body', dtype') {
     var dtype is public := dtype'
     var varargs is public := false
     var generics is public := sequence.empty
-    def selfclosure is public = false
+    var selfclosure is public := false
     def nameString:String is public = value.value
     var annotations is public := list.empty
     var isFresh is public := false      // a method is 'fresh' if it answers a new object
-
+    
+    
+    method declarationKind {
+        "parameter"
+    }
     method isConfidential {
         if (annotations.size == 0) then { return false }
         findAnnotation(self, "confidential")
@@ -872,6 +886,9 @@ class methodNode.new(name', signature', body', dtype') {
             self.value.accept(visitor) from(self)
             if (self.dtype != false) then {
                 self.dtype.accept(visitor) from(self)
+            }
+            for (generics) do { each ->
+                each.accept(visitor) from(self)
             }
             for (self.signature) do { part ->
                 for (part.params) do { p ->
@@ -1020,6 +1037,7 @@ class methodNode.new(name', signature', body', dtype') {
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
         isFresh := other.isFresh
+        selfclosure := other.selfclosure
         self
     }
 }
@@ -1182,6 +1200,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def nameString:String is public = name.value
     var data is public := false
     
+    
+    method declarationKind {
+        "method"
+    }    
     method isPublic {
         // assume that classes are public by default
         if (annotations.size == 0) then { return true }
@@ -1502,7 +1524,9 @@ class memberNode.new(what, in') {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.in := in.map(blk) parent(n)
-        n.generics := maybeMap(generics, blk) parent(n)
+        if (generics != false) then {
+            n.generics := listMap(generics, blk) parent(n)
+        }
         n := blk.apply(n)
         n
     }
@@ -1513,7 +1537,7 @@ class memberNode.new(what, in') {
         }
         var s := "Member‹" ++ self.value ++ "›\n"
         s := s ++ spc ++ in.pretty(depth)
-        if (false != generics) then {
+        if (generics != false) then {
             s := s ++ "\n" ++ spc ++ "  Generics:"
             for (generics) do {g->
                 s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
@@ -1529,7 +1553,7 @@ class memberNode.new(what, in') {
         } else {
             s := self.in.toGrace(depth) ++ "." ++ self.value
         }
-        if (false != generics) then {
+        if (generics != false) then {
             s := s ++ "<"
             for (1..(generics.size - 1)) do {ix ->
                 s := s ++ generics.at(ix).toGrace(depth + 1)
@@ -2483,7 +2507,7 @@ class signaturePart.new(*values) {
     if (values.size > 2) then {
         vararg := values[3]
     }
-    method declarationKind { parent.declarationKind }
+    method declarationKind { "parameter" }
     method childrenDo(b) {
         b.apply(name)
         params.do(b)
@@ -2597,64 +2621,92 @@ type ASTVisitor = {
      visitInherits(o) up(pNode) -> Boolean
      visitDialect(o) up(pNode) -> Boolean
 }
-method baseVisitor -> ASTVisitor {
-    object {
-        method visitIf(o) up(pNode) { visitIf(o) }
-        method visitBlock(o) up(pNode) { visitBlock(o) }
-        method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
-        method visitCatchCase(o) up(pNode) { visitCatchCase(o) }
-        method visitMethodType(o) up(pNode) { visitMethodType(o) }
-        method visitTypeDec(o) up(pNode) { visitTypeDec(o) }
-        method visitTypeLiteral(o) up(pNode) { visitTypeLiteral(o) }
-        method visitMethod(o) up(pNode) { visitMethod(o) }
-        method visitCall(o) up(pNode) { visitCall(o) }
-        method visitClass(o) up(pNode) { visitClass(o) }
-        method visitObject(o) up(pNode) { visitObject(o) }
-        method visitArray(o) up(pNode) { visitArray(o) }
-        method visitMember(o) up(pNode) { visitMember(o) }
-        method visitGeneric(o) up(pNode) { visitGeneric(o) }
-        method visitIdentifier(o) up(pNode) { visitIdentifier(o) }
-        method visitOctets(o) up(pNode) { visitOctets(o) }
-        method visitString(o) up(pNode) { visitString(o) }
-        method visitNum(o) up(pNode) { visitNum(o) }
-        method visitOp(o) up(pNode) { visitOp(o) }
-        method visitIndex(o) up(pNode) { visitIndex(o) }
-        method visitBind(o) up(pNode) { visitBind(o) }
-        method visitDefDec(o) up(pNode) { visitDefDec(o) }
-        method visitVarDec(o) up(pNode) { visitVarDec(o) }
-        method visitImport(o) up(pNode) { visitImport(o) }
-        method visitReturn(o) up(pNode) { visitReturn(o) }
-        method visitInherits(o) up(pNode) { visitInherits(o) }
-        method visitDialect(o) up(pNode) { visitDialect(o) }
+factory method baseVisitor -> ASTVisitor {
+    method visitIf(o) up(pNode) { visitIf(o) }
+    method visitBlock(o) up(pNode) { visitBlock(o) }
+    method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
+    method visitCatchCase(o) up(pNode) { visitCatchCase(o) }
+    method visitMethodType(o) up(pNode) { visitMethodType(o) }
+    method visitTypeDec(o) up(pNode) { visitTypeDec(o) }
+    method visitTypeLiteral(o) up(pNode) { visitTypeLiteral(o) }
+    method visitMethod(o) up(pNode) { visitMethod(o) }
+    method visitCall(o) up(pNode) { visitCall(o) }
+    method visitClass(o) up(pNode) { visitClass(o) }
+    method visitObject(o) up(pNode) { visitObject(o) }
+    method visitArray(o) up(pNode) { visitArray(o) }
+    method visitMember(o) up(pNode) { visitMember(o) }
+    method visitGeneric(o) up(pNode) { visitGeneric(o) }
+    method visitIdentifier(o) up(pNode) { visitIdentifier(o) }
+    method visitOctets(o) up(pNode) { visitOctets(o) }
+    method visitString(o) up(pNode) { visitString(o) }
+    method visitNum(o) up(pNode) { visitNum(o) }
+    method visitOp(o) up(pNode) { visitOp(o) }
+    method visitIndex(o) up(pNode) { visitIndex(o) }
+    method visitBind(o) up(pNode) { visitBind(o) }
+    method visitDefDec(o) up(pNode) { visitDefDec(o) }
+    method visitVarDec(o) up(pNode) { visitVarDec(o) }
+    method visitImport(o) up(pNode) { visitImport(o) }
+    method visitReturn(o) up(pNode) { visitReturn(o) }
+    method visitInherits(o) up(pNode) { visitInherits(o) }
+    method visitDialect(o) up(pNode) { visitDialect(o) }
 
-        method visitIf(o) -> Boolean { true }
-        method visitBlock(o) -> Boolean { true }
-        method visitMatchCase(o) -> Boolean { true }
-        method visitCatchCase(o) -> Boolean { true }
-        method visitMethodType(o) -> Boolean { true }
-        method visitTypeDec(o) -> Boolean { true }
-        method visitTypeLiteral(o) -> Boolean { true }
-        method visitMethod(o) -> Boolean { true }
-        method visitCall(o) -> Boolean { true }
-        method visitClass(o) -> Boolean { true }
-        method visitObject(o) -> Boolean { true }
-        method visitArray(o) -> Boolean { true }
-        method visitMember(o) -> Boolean { true }
-        method visitGeneric(o) -> Boolean { true }
-        method visitIdentifier(o) -> Boolean { true }
-        method visitOctets(o) -> Boolean { true }
-        method visitString(o) -> Boolean { true }
-        method visitNum(o) -> Boolean { true }
-        method visitOp(o) -> Boolean { true }
-        method visitIndex(o) -> Boolean { true }
-        method visitBind(o) -> Boolean { true }
-        method visitDefDec(o) -> Boolean { true }
-        method visitVarDec(o) -> Boolean { true }
-        method visitImport(o) -> Boolean { true }
-        method visitReturn(o) -> Boolean { true }
-        method visitInherits(o) -> Boolean { true }
-        method visitDialect(o) -> Boolean { true }
-    }
+    method visitIf(o) -> Boolean { true }
+    method visitBlock(o) -> Boolean { true }
+    method visitMatchCase(o) -> Boolean { true }
+    method visitCatchCase(o) -> Boolean { true }
+    method visitMethodType(o) -> Boolean { true }
+    method visitTypeDec(o) -> Boolean { true }
+    method visitTypeLiteral(o) -> Boolean { true }
+    method visitMethod(o) -> Boolean { true }
+    method visitCall(o) -> Boolean { true }
+    method visitClass(o) -> Boolean { true }
+    method visitObject(o) -> Boolean { true }
+    method visitArray(o) -> Boolean { true }
+    method visitMember(o) -> Boolean { true }
+    method visitGeneric(o) -> Boolean { true }
+    method visitIdentifier(o) -> Boolean { true }
+    method visitOctets(o) -> Boolean { true }
+    method visitString(o) -> Boolean { true }
+    method visitNum(o) -> Boolean { true }
+    method visitOp(o) -> Boolean { true }
+    method visitIndex(o) -> Boolean { true }
+    method visitBind(o) -> Boolean { true }
+    method visitDefDec(o) -> Boolean { true }
+    method visitVarDec(o) -> Boolean { true }
+    method visitImport(o) -> Boolean { true }
+    method visitReturn(o) -> Boolean { true }
+    method visitInherits(o) -> Boolean { true }
+    method visitDialect(o) -> Boolean { true }
+}
+
+factory method addParentVisitor -> ASTVisitor {
+    method visitIdentifier(o) up(pNode) { o.parent := pNode; true }
+    method visitMethod(o) up(pNode) { o.parent := pNode; true }
+    method visitBlock(o) up(pNode) { o.parent := pNode; true }
+    method visitClass(o) up(pNode) { o.parent := pNode; true }
+    method visitObject(o) up(pNode) { o.parent := pNode; true }
+    method visitIf(o) up(pNode) { o.parent := pNode; true }
+    method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
+    method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
+    method visitMethodType(o) up(pNode) { o.parent := pNode; true }
+    method visitTypeDec(o) up(pNode) { o.parent := pNode; true }
+    method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
+    method visitCall(o) up(pNode) { o.parent := pNode; true }
+    method visitArray(o) up(pNode) { o.parent := pNode; true }
+    method visitMember(o) up(pNode) { o.parent := pNode; true }
+    method visitGeneric(o) up(pNode) { o.parent := pNode; true }
+    method visitOctets(o) up(pNode) { o.parent := pNode; true }
+    method visitString(o) up(pNode) { o.parent := pNode; true }
+    method visitNum(o) up(pNode) { o.parent := pNode; true }
+    method visitOp(o) up(pNode) { o.parent := pNode; true }
+    method visitIndex(o) up(pNode) { o.parent := pNode; true }
+    method visitBind(o) up(pNode) { o.parent := pNode; true }
+    method visitDefDec(o) up(pNode) { o.parent := pNode; true }
+    method visitVarDec(o) up(pNode) { o.parent := pNode; true }
+    method visitImport(o) up(pNode) { o.parent := pNode; true }
+    method visitReturn(o) up(pNode) { o.parent := pNode; true }
+    method visitInherits(o) up(pNode) { o.parent := pNode; true }
+    method visitDialect(o) up(pNode) { o.parent := pNode; true }
 }
 
 def patternMarkVisitor = object {
