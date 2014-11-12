@@ -53,6 +53,18 @@ method maybeMap(n, b) parent(p) {
 
 def dummy = sequence.empty
 
+type AstNode = type {
+    register -> String
+    line -> Number
+    line:=(ln:Number)
+    linePos -> Number
+    linePos:=(lp:Number)
+    hasSymbolTable -> Boolean
+    hasSymbolTable:=(st:Boolean)
+    parent -> AstNode
+    parent:=(p:AstNode)
+}
+
 class baseNode.new {
     // the superclass of all AST nodes
     var register is public := ""
@@ -76,6 +88,13 @@ class baseNode.new {
         }
         return self.dtype
     }
+    method accept(visitor) {
+        self.accept(visitor) from (nullNode)
+    }
+    method withParentRefs {
+        self.accept(addParentVisitor)
+        self
+    }
     method declarationKind { self.kind }     // the kind of identifiers defined within me
     method scope {
         var node := self
@@ -83,13 +102,16 @@ class baseNode.new {
         node.symbolTable
         // TODO: add cache of this value, look at symboltable module
     }
-    method shallowCopyFieldsFrom(other) parent(p){
+    method shallowCopyFieldsFrom(other) parent(p:AstNode){
         register := other.register
         line := other.line
         linePos := other.linePos
         parent := p
         hasSymbolTable := other.hasSymbolTable
         self
+    }
+    method pretty(depth) { 
+        self.kind ++ "Node"
     }
 }
 
@@ -115,19 +137,23 @@ class symbolTableNode.new {
         }
         self
     }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        if (hasSymbolTable) then {
+            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'.keysAsList}"
+        } else {
+            super.pretty(depth)
+        }
+    }
 }
 
 def nullNode = object {
     inherits symbolTableNode.new
     def kind is public = "null"
     method childrenDo(block1) { }
-    method pretty(depth) { 
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        spc ++ "nullNode"
-    }
     method toGrace(depth) {
         "// null"
     }
@@ -182,7 +208,7 @@ class ifNode.new(cond, thenblock', elseblock') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "If\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
         s := s ++ spc ++ "Then:"
@@ -278,6 +304,7 @@ class blockNode.new(params', body') {
         n.body := listMap(body, blk) parent(n)
         n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
         n := blk.apply(n)
+//        util.log_verbose "mapped blockNode is {n.pretty(0)}, p = {p}, and parent is {n.parent.pretty(0)}"
         n
     }
     method pretty(depth) {
@@ -285,7 +312,7 @@ class blockNode.new(params', body') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Block\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ "Parameters:"
         for (self.params) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
@@ -383,12 +410,10 @@ class catchCaseNode.new(block, cases', finally') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Catch\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ value.pretty(depth + 2)
-        print "catchCaseNode.cases = {self.cases}"
         for (self.cases) do { mx ->
-//            s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
-            s := s ++ "\n{spc}Case:\n{spc}  {mx}"
+            s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
         }
         if (false != self.finally) then {
             s := s ++ "\n{spc}Finally:\n{spc}  {self.finally.pretty(depth+2)}"
@@ -413,12 +438,13 @@ class catchCaseNode.new(block, cases', finally') {
         catchCaseNode.new(nullNode, dummy, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
-class matchCaseNode.new(matchee, cases', elsecase') {
+class matchCaseNode.new(matchee', cases', elsecase') {
     inherits baseNode.new
     def kind is public = "matchcase"
-    var value is public := matchee
+    var value is public := matchee'
     var cases is public := cases'
     var elsecase is public := elsecase'
+    method matchee { value }
     method childrenDo(b) {
         b.apply(value)
         cases.do(b)
@@ -458,7 +484,7 @@ class matchCaseNode.new(matchee, cases', elsecase') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Match\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ matchee.pretty(depth + 2)
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
@@ -569,7 +595,7 @@ class methodTypeNode.new(name', signature', rtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "MethodType\n"
+        var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
         if (rtype != false) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}\n"
@@ -783,7 +809,7 @@ class typeDecNode.new(name', typeValue) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "TypeDec\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
         if (generics.size > 0) then {
             s := "{s}{spc}Generic parameters:\n"
@@ -923,7 +949,6 @@ class methodNode.new(name', signature', body', dtype') {
     }
     method map(blk) parent(p){
         var n := shallowCopyWithParent(p)
-        util.log_verbose "Mapping {self}"
         n.body := listMap(body, blk) parent(n)
         n.signature := listMap(signature, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
@@ -944,7 +969,7 @@ class methodNode.new(name', signature', body', dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Method\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
         s := s ++ "\n"
         if (false != self.dtype) then {
@@ -1042,6 +1067,9 @@ class methodNode.new(name', signature', body', dtype') {
     }
 }
 class callNode.new(what, with') {
+    // Represents a method request with arguments.
+    // The ‹target›.‹methodName› part is in `value`
+    // The argument list is in `with`, as a sequence of `callWithPart`s.
     // [with]
     //     object {
     //         name := ""
@@ -1093,6 +1121,7 @@ class callNode.new(what, with') {
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
+        n.value := value.map(blk) parent(n)
         n.with := listMap(with, blk) parent(n)
         n.generics := maybeMap(generics, blk) parent(n)
         n := blk.apply(n)
@@ -1103,7 +1132,7 @@ class callNode.new(what, with') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Call\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ "Method Name: {self.value.pretty(depth + 1)}"
         s := s ++ "\n"
         if (false != generics) then {
@@ -1163,7 +1192,7 @@ class callNode.new(what, with') {
     }
     method asString { "Call {what.pretty(0)}" }
     method shallowCopyWithParent(p) {
-        callNode.new(value, dummy).shallowCopyFieldsFrom(self) parent(p)
+        callNode.new(nullNode, dummy).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1283,7 +1312,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Class\n"
+        var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {self.name.pretty(0)}"
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
@@ -1392,6 +1421,7 @@ class objectNode.new(body, superclass') {
                     maybeMap(superclass, blk, blkBefore, blkAfter))
         n := blk.apply(n)
         n.line := line
+        blkAfter.apply(n)
         n
     }
     method map(blk) parent(p) {
@@ -1407,7 +1437,7 @@ class objectNode.new(body, superclass') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Object"
+        var s := super.pretty(depth) ++ "\n"
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
@@ -1474,7 +1504,7 @@ class arrayNode.new(values) {
         for (0..depth) do { ai ->
             spc := spc ++ "  "
         }
-        var s := "Array"
+        var s := super.pretty(depth)
         for (self.value) do { ax ->
             s := s ++ "\n"++ spc ++ ax.pretty(depth+1)
         }
@@ -1496,6 +1526,7 @@ class arrayNode.new(values) {
     }
 }
 class memberNode.new(what, in') {
+    // Represents a dotted request ‹in›.‹value›
     inherits baseNode.new
     def kind is public = "member"
     var value is public := what  // NB: value is a String, not an Identifier
@@ -1694,8 +1725,6 @@ class identifierNode.new(name, dtype') {
         var s
         if(self.wildcard) then {
             s := "WildcardIdentifier"
-        } elseif {isBindingOccurrence} then {
-            s := "IdentifierBinding({value})"
         } else {
             s := self.asString
         }
@@ -1764,7 +1793,7 @@ class octetsNode.new(n) {
         visitor.visitOctets(self) up(pNode)
     }
     method pretty(depth) {
-        "Octets(" ++ self.value ++ ")"
+        "{super.pretty(depth)}({self.value})"
     }
     method toGrace(depth : Number) -> String {
         self.value
@@ -1799,7 +1828,7 @@ class stringNode.new(v) {
         n
     }
     method pretty(depth) {
-        "String(" ++ self.value ++ ")"
+        "{super.pretty(depth)}({self.value})"
     }
     method toGrace(depth : Number) -> String {
         var s := "\""
@@ -1845,7 +1874,7 @@ class numNode.new(val) {
         n
     }
     method pretty(depth) {
-        "Num(" ++ self.value ++ ")"
+        "{super.pretty(depth)}({self.value})"
     }
     method toGrace(depth : Number) -> String {
         self.value.asString
@@ -1958,8 +1987,7 @@ class indexNode.new(expr, index') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Index"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s := s ++ "\n"
         s := s ++ spc ++ self.index.pretty(depth + 1)
@@ -2005,12 +2033,10 @@ class bindNode.new(dest', val') {
         n
     }
     method map(blk) parent(p) {
-        util.log_verbose "mapping {self}"
         var n := shallowCopyWithParent(p)
         n.dest := dest.map(blk) parent(n)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
-        util.log_verbose "mapped node is {n.pretty(0)} and parent is {n.parent}"
         n
     }
     method pretty(depth) {
@@ -2018,8 +2044,7 @@ class bindNode.new(dest', val') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Bind"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.dest.pretty(depth + 1)
         s := s ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
@@ -2107,8 +2132,7 @@ class defDecNode.new(name', val, dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "DefDec"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth)
         if (dtype != false) then {
             s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
@@ -2226,8 +2250,7 @@ class varDecNode.new(name', val', dtype') {
         for ((0..depth)) do { i ->
             spc := spc ++ "  "
         }
-        var s := "VarDec"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
         if (self.dtype != false) then {
             s := s ++ "\n" ++ spc ++ "Type: "
@@ -2308,8 +2331,7 @@ class importNode.new(path', name, dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Import"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {self.path}\n"
         s := s ++ "{spc}Identifier: {self.value}\n"
         if (self.annotations.size > 0) then {
@@ -2350,8 +2372,7 @@ class dialectNode.new(path') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Dialect"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ "{spc}Path: {self.value}\n"
         s
     }
@@ -2394,8 +2415,7 @@ class returnNode.new(expr) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Return"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         s
     }
@@ -2441,8 +2461,7 @@ class inheritsNode.new(expr) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Inherits"
-        s := s ++ "\n"
+        var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth + 1)
         if (providedNames.isEmpty.not) then {
             s := s ++ "\n{spc}Provided names: {providedNames}"
@@ -2478,9 +2497,6 @@ class blankNode.new {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
         n
-    }
-    method pretty(depth) {
-        "Blank"
     }
     method toGrace(depth : Number) -> String {
         ""
@@ -2542,6 +2558,7 @@ class signaturePart.new(*values) {
         if (vararg != false) then {
             s := "{s}\n    {spc}Vararg: {vararg.pretty(depth + 3)}"
         }
+        s
     }
     method shallowCopyWithParent(p) {
         signaturePart.new(name).shallowCopyFieldsFrom(self) parent(p)
@@ -2581,6 +2598,18 @@ class callWithPart.new(*values) {
         n.args := listMap(args, blk) parent(n)
         n := blk.apply(n)
         n
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "CallPart: {name}"
+        s := "{s}\n    {spc}Args:"
+        for (args) do { a ->
+            s := "{s}\n    {spc}{a.pretty(depth + 4)}"
+        }
+        s
     }
     method shallowCopyWithParent(p) {
         callWithPart.new(name).shallowCopyFieldsFrom(self) parent(p)
