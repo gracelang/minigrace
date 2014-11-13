@@ -188,23 +188,23 @@ type Iterator<T> = {
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
 }
 
-type CollectionFactory = {
+type CollectionFactory<T> = {
     withAll<T> (elts:Collection<T>) -> Collection<T>
     with<T> (*elts:Object) -> Collection<T>
     empty<T> -> Collection<T>
 }
 
-type EmptyCollectionFactory = {
+type EmptyCollectionFactory<T> = {
     empty<T> -> Collection<T>
 }
 
-class collectionFactory.trait {
+class collectionFactory.trait<T> {
     // requires withAll(elts:Collection<T>) -> Collection<T>
-    method with(*a) { self.withAll(a) }
-    method empty { self.with() }
+    method with(*a:T) -> Unknown { self.withAll(a) }
+    method empty -> Unknown { self.with() }
 }
 
-class iterable.trait {
+class iterable.trait<T> {
     // requires next, hasNext
     //    method hasNext { SubobjectResponsibility.raise "hasNext" }
     //    method next is abstract { SubobjectResponsibility.raise "next" }
@@ -295,7 +295,7 @@ class iterable.trait {
     method asString { "a filter iterator" }
 }
 
-class enumerable.trait {
+class enumerable.trait<T> {
     // requires do, iterator, size
     method isEmpty { self.size == 0 }
     method do(block1) separatedBy(block0) {
@@ -339,8 +339,8 @@ class enumerable.trait {
     }
 }
 
-class indexable.trait {
-    inherits enumerable.trait
+class indexable.trait<T> {
+    inherits enumerable.trait<T>
     // requires do, iterator, at(ix:Number), size, keysAndValuesDo
     method at { SubobjectResponsibility.raise "at" }
     method first { at(1) }
@@ -375,8 +375,8 @@ method max(a,b) is confidential {
     if (a > b) then { a } else { b }
 }
 
-def sequence is public = object {
-    inherits collectionFactory.trait
+factory method sequence<T> {
+    inherits collectionFactory.trait<T>
     
     method withAll(*a:Collection) {
         var totalSize := 0
@@ -492,12 +492,12 @@ def sequence is public = object {
     }
 }
 
-def list is public = object {
-    inherits collectionFactory.trait
+factory method list<T> {
+    inherits collectionFactory.trait<T>
 
-    method withAll(a) {
+    method withAll<T>(a:Collection<T>) -> List<T> {
         object {
-            inherits indexable.trait
+            inherits indexable.trait<T>
             var inner := _prelude.PrimitiveArray.new(a.size * 2 + 1)
             var size is public := 0
             for (a) do {x->
@@ -701,10 +701,10 @@ def list is public = object {
     }
 }
 
-def set is public = object {
-    inherits collectionFactory.trait
+factory method set<T> {
+    inherits collectionFactory.trait<T>
 
-    method withAll(a:Collection) {
+    method withAll<T>(a:Collection<T>) -> Set<T> {
         object {
             inherits enumerable.trait
             var inner := _prelude.PrimitiveArray.new(if (a.size > 1)
@@ -959,12 +959,12 @@ class binding.key(k)value(v) {
     }
 }
 
-def dictionary is public = object {
-    inherits collectionFactory.trait
-    method at(k)put(v) {
+factory method dictionary<K, T> {
+    inherits collectionFactory<T>.trait
+    method at(k:K)put(v:T) {
             self.empty.at(k)put(v)
     }
-    method withAll(initialBindings) {
+    method withAll(initialBindings) -> Dictionary<K, T> {
         object {
             inherits enumerable.trait
             var size is public := 0
@@ -1252,10 +1252,10 @@ def dictionary is public = object {
     }
 }
 
-def range is public = object {
-    method from(lower)to(upper) {
+factory method range {
+    method from(lower:Number)to(upper:Number) -> Sequence<Number> {
         object {
-            inherits indexable.trait
+            inherits indexable.trait<Number>
             match (lower)
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
@@ -1369,7 +1369,7 @@ def range is public = object {
             }
         }
     }
-    method from(upper)downTo(lower) {
+    method from(upper:Number)downTo(lower:Number) -> Sequence<Number> {
         object {
             inherits indexable.trait
             match (upper)

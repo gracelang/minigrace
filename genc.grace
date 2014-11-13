@@ -393,7 +393,7 @@ method compileclass(o, includeConstant) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
-    newmeth.properties.put("fresh", true)   // TODO: Undersatnd why this is OK!
+    newmeth.isFresh := true
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     if (includeConstant) then {

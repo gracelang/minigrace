@@ -41,25 +41,9 @@ factory method newScopeIn(parent')kind(variety') {
     method addName(n)as(k) {
         elements.put(n, k)
         elementLines.put(n, util.linenum)
-//        if (n == "blk") then {
-//            try {
-//                ProgrammingError.raise "{n} declared"
-//            } catch { ex:ProgrammingError -> 
-//                print "while adding name {n} as {k}"
-//                ex.printBacktrace
-//            }
-//        }
     }
     method addNode(nd) as(kind) {
-        def name = nd.nameString
-//        if (name =="blk") then {
-//            try {
-//                ProgrammingError.raise "{name} declared"
-//            } catch { ex:ProgrammingError -> 
-//                print "while adding node {nd} as {kind}"
-//                ex.printBacktrace
-//            }
-//        }
+        def name = nd.value
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
             elements.put(name, kind)
@@ -67,7 +51,6 @@ factory method newScopeIn(parent')kind(variety') {
         } else {
             print(self)
             var more := " in this scope"
-            print(nd.scope.asStringWithParents)
             if (elementLines.contains(name)) then {
                 more := " as a {oldKind}"
                     ++ " on line {elementLines.get(name)}"
@@ -86,6 +69,11 @@ factory method newScopeIn(parent')kind(variety') {
         while {b.apply(cur); cur.hasParent} do {
             cur := cur.parent
         }
+    }
+    method keysAsList {
+        def result = list.empty
+        for (elements) do { each -> result.addLast(each) }
+        result
     }
     method kind(n) {
         elements.get(n)
@@ -109,8 +97,10 @@ factory method newScopeIn(parent')kind(variety') {
         var result := "\nCurrent: {self.variety}\n"
         var s := self
         while {s.hasParent} do {
-            for (s.elements) do { each ->
-                result := result ++ each.asString ++ "({s.kind(each)}) "
+            if (s.variety == "dialect") then {
+                for (s.elements) do { each ->
+                    result := result ++ each.asString ++ "({s.kind(each)}) "
+                }
             }
             result := result ++ "\nParent: {s.parent.variety}\n    "
             s := s.parent
@@ -157,8 +147,7 @@ factory method newScopeIn(parent')kind(variety') {
     method findDeepMethod(name) {
         // APB: I moved this method from the top-level (where it operated
         // on the now-defunct 'scope' module variable) to this class.
-        // It makes no sense, however: the match statment and assignments to mem
-        // are effectively dead code.  
+        //
         // TODO: figure out what the purpose of this method is, and make it work!
         var mem := ast.identifierNode.new("self", false)
         self.do { s->
@@ -228,7 +217,7 @@ factory method newScopeIn(parent')kind(variety') {
             ++ node.pretty(0))
     }
     method enclosingObject {
-        // Answer the closest scope that describes an object,
+        // Answer the closest enclosing scope that describes an object,
         // class or module scope
         self.do { s ->
             if (s.variety == "object") then { return s }
@@ -404,11 +393,12 @@ method rewritematchblock(blk) {
                         newparams.push(p)
                     }
                 }
-            pattern := resolveIdentifiers(pattern)
+//            pattern := resolveIdentifiers(pattern)
         } else {
             if (false != blk.matchingPattern) then {
                 if (blk.matchingPattern.value == arg.value) then {
-                    pattern := resolveIdentifiers(arg)
+//                    pattern := resolveIdentifiers(arg)
+                    pattern := arg
                     newparams := []
                 }
             }
@@ -416,7 +406,8 @@ method rewritematchblock(blk) {
     } else {
         if (false != blk.matchingPattern) then {
             if (blk.matchingPattern.value == arg.value) then {
-                pattern := resolveIdentifiers(arg)
+//                pattern := resolveIdentifiers(arg)
+                pattern := arg
                 newparams := []
             }
         }
@@ -424,11 +415,13 @@ method rewritematchblock(blk) {
     def newblk = ast.blockNode.new(newparams, blk.body)
     newblk.matchingPattern := pattern
     newblk.line := blk.line
-    return newblk
+    return newblk.withParentRefs
 }
 
+
+
 method resolveIdentifier(node) {
-    // node is an applied occurence of an identifer.   That means that 
+    // node is an applied occurence of an identifer id.   That means that
     // it a leaf node in the ast.
     // This method does the following:
     // - id is self => do nothing
@@ -436,10 +429,12 @@ method resolveIdentifier(node) {
     // - id is in an assignment position and a method ‹id›:= is in scope:
     //          replace node by a method request
     // - id is in the lexical scope: store binding occurence of id in node
-    // - id is in an outer: find binding occurence of id and store in node
+    // - id is a method in an outer scope: make into member nodes.
+    //  TODO: make references to fields direct
     // - id is a self-method: replace node by a method request
     // - id is none of the above: generate an error message
     var nm := node.value
+    if (nm == "ProgrammingError") then { print "resolving {nm}" }
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
     util.setPosition(node.line, node.linePos)
@@ -449,11 +444,12 @@ method resolveIdentifier(node) {
                 if (nodeScope.kindInNest(nmGets) == "method") then {
                     // method request without arguments
                     def meth = nodeScope.findDeepMethod(nmGets)
-                    def member = ast.memberNode.new(nm, ast.nullNode)
-                    member.in := meth.in.shallowCopyWithParent(member)
-                    def call = ast.callNode.new(member, [ast.callWithPart.new(member.value)])
-                    member.parent := call
-                    call
+                    if (nm == "ProgrammingError") then {
+                        print "found deep method {nm}, meth = {meth.pretty(0)}"
+                    }
+                    def meth2 = ast.memberNode.new(nm, meth.in)
+                    return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)]).
+                        withParentRefs
                 }
             }
         }
@@ -516,7 +512,15 @@ method resolveIdentifier(node) {
             }
             print "Unknown name {nm}."
             print(nodeScope.asStringWithParents)
-            printAstHierarchy(node)
+//            printAstHierarchy(node)
+            print "AST one level up from {node}"
+            print(node.parent.pretty(0))
+            print "AST two levels up from {node}"
+            print(node.parent.parent.pretty(0))
+            print "AST three levels up from {node}"
+            print(node.parent.parent.parent.pretty(0))
+            print "AST five-levels up from {node}"
+            print(node.parent.parent.parent.parent.parent.pretty(0))
             errormessages.syntaxError("Unknown variable or method '{nm}'. This may be due to a spelling mistake or trying to access a variable within another scope.")atRange(
                 node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
         }
@@ -532,12 +536,11 @@ method resolveIdentifier(node) {
         return node
     }
     if (nodeScope.kindInNest(nm) == "method") then {
-        // Bare method request without arguments
         def meth = nodeScope.findDeepMethod(nm)
-        def call = ast.callNode.new(meth, [ast.callWithPart.new(meth.value)])
-        meth.parent := call
-        call.parent := node.parent
-        return call
+        if ((nm == "at") || (nm == "ProgrammingError")) then {
+            print "found deep method for ‹{nm}›; meth = {meth.pretty(0)}"
+        }
+        return meth
     }
     node
 }
@@ -616,8 +619,8 @@ method resolveIdentifiers(topNode) {
     topNode.map { node ->
         if (node.isAppliedOccurenceOfIdentifier) then {
             resolveIdentifier(node)
-        } elseif { node.isMatchingBlock } then {
-            rewritematchblock(node)
+//        } elseif { node.isMatchingBlock } then {
+//            rewritematchblock(node)
         } else {
             node
         } 
@@ -750,6 +753,74 @@ method setupContext(values) {
         }
     }
 }
+method buildSymbolTableFor(topLevelNodes) in(parent) {
+    def vis = object {
+        inherits ast.addParentVisitor
+        method visitIdentifier(o) up(pNode) {
+            o.parent := pNode
+            if (o.isBindingOccurrence) then {
+                if (o.isMethodName.not) then {
+                    pNode.scope.addNode(o) as (o.declarationKind)
+//                    if (o.declarationKind == "parameter") then {
+//                        print(pNode.scope.asStringWithParents)
+//                    }
+                }
+            }
+            true
+        }
+        method visitMethod(o) up(pNode) { 
+            o.parent := pNode
+            pNode.scope.addNode(o.value) as "method"
+            o.value.isMethodName := true
+            o.symbolTable := newScopeIn(pNode.scope) kind("method")
+            true
+        }
+        method visitBlock(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := newScopeIn(pNode.scope) kind("method")
+            true
+        }
+        method visitClass(o) up(pNode) { 
+            o.parent := pNode
+            pNode.scope.addNode(o.name) as "method"
+            o.name.isMethodName := true
+            def objectScope = newScopeIn(pNode.scope) kind("object")
+            objectScope.addNode(o.constructor) as "method"
+            o.generics.do { each -> objectScope.addNode(each) as "typeparam" }
+            o.constructor.isMethodName := true
+            o.symbolTable := newScopeIn(objectScope) kind("object")
+            true
+        }
+        method visitObject(o) up(pNode) { 
+            o.parent := pNode
+            o.symbolTable := newScopeIn(pNode.scope) kind("object")
+            true
+        }
+        method visitMethodType(o) up(pNode) {
+            o.parent := pNode
+            o.symbolTable := newScopeIn(pNode.scope) kind("methodtype")
+            true
+        }
+        method visitTypeDec(o) up(pNode) { 
+            o.parent := pNode
+            pNode.scope.addNode(o.name) as "typedef"
+            if (o.generics.isEmpty) then { return true }
+            o.symbolTable := newScopeIn(pNode.scope) kind("typeparam")
+            true
+        }
+    }
+    for (topLevelNodes) do { each -> each.accept(vis) from(parent) }
+}
+
+method rewriteMatches(topNode) {
+    topNode.map { node ->
+        if (node.isMatchingBlock) then {
+            rewritematchblock(node)
+        } else {
+            node
+        }
+    } parent (ast.nullNode)
+}
 
 method resolve(values) {
     setupContext(values)
@@ -785,81 +856,35 @@ method resolve(values) {
     if (false == superObject) then { 
         superObject := ast.identifierNode.new("graceObject", false)
     }
-    def moduleNode = ast.objectNode.new(values, superObject)
-    moduleNode.symbolTable := moduleScope
-    buildSymbolTableFor(values) in(moduleNode)
-    def newModule = resolveIdentifiers(moduleNode)
-    return newModule.body
-}
+    def module = ast.objectNode.new(values, superObject)
+    module.symbolTable := moduleScope
+    print "====================================="
+    print "module starting identifierresolution"
+    print "====================================="
+    print(module.pretty(0))
 
-method buildSymbolTableFor(topLevelNodes) in(parent) {
-    def vis = object {
-        method visitIdentifier(o) up(pNode) {
-            o.parent := pNode
-            if (o.isBindingOccurrence) then {
-                if (o.isMethodName.not) then {
-                    pNode.scope.addNode(o) as (o.declarationKind)
-                }
-            }
-            true
-        }
-        method visitMethod(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o.value) as "method"
-            o.value.isMethodName := true
-            o.symbolTable := newScopeIn(pNode.scope) kind("method")
-            true
-        }
-        method visitBlock(o) up(pNode) { 
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind("method")
-            true
-        }
-        method visitClass(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o) as "method"
-            o.symbolTable := newScopeIn(pNode.scope) kind("object")
-            true
-        }
-        method visitObject(o) up(pNode) { 
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind("object")
-            true
-        }
-        method visitIf(o) up(pNode) { o.parent := pNode; true }
-        method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
-        method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
-        method visitMethodType(o) up(pNode) {             
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind("methodtype")
-            true
-        }
-        method visitTypeDec(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o) as "typedef"
-            if (o.generics.isEmpty) then { return true }
-            o.symbolTable := newScopeIn(pNode.scope) kind("typeparam")
-            true
-        }
-        method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
-        method visitCall(o) up(pNode) { o.parent := pNode; true }
-        method visitArray(o) up(pNode) { o.parent := pNode; true }
-        method visitMember(o) up(pNode) { o.parent := pNode; true }
-        method visitGeneric(o) up(pNode) { o.parent := pNode; true }
-        method visitOctets(o) up(pNode) { o.parent := pNode; true }
-        method visitString(o) up(pNode) { o.parent := pNode; true }
-        method visitNum(o) up(pNode) { o.parent := pNode; true }
-        method visitOp(o) up(pNode) { o.parent := pNode; true }
-        method visitIndex(o) up(pNode) { o.parent := pNode; true }
-        method visitBind(o) up(pNode) { o.parent := pNode; true }
-        method visitDefDec(o) up(pNode) { o.parent := pNode; true }
-        method visitVarDec(o) up(pNode) { o.parent := pNode; true }
-        method visitImport(o) up(pNode) { o.parent := pNode; true }
-        method visitReturn(o) up(pNode) { o.parent := pNode; true }
-        method visitInherits(o) up(pNode) { o.parent := pNode; true }
-        method visitDialect(o) up(pNode) { o.parent := pNode; true }
-    }
-    for (topLevelNodes) do { each -> each.accept(vis) from(parent) }
+    def patternMatchModule = rewriteMatches(module)
+
+    print "====================================="
+    print "module after pattern match re-writing"
+    print "====================================="
+    print(patternMatchModule.pretty(0))
+    buildSymbolTableFor(patternMatchModule.value) in(module)
+    
+    print "====================================="
+    print "module with symbol tables"
+    print "====================================="
+    print "top-level"
+    print (patternMatchModule.symbolTable.asStringWithParents)
+    print "====================================="
+    print(patternMatchModule.pretty(0))
+    def resolvedModule = resolveIdentifiers(patternMatchModule)
+
+    print "====================================="
+    print "module with resolved identifiers"
+    print "====================================="
+    print(resolvedModule.pretty(0))
+    return resolvedModule.value
 }
 
 
