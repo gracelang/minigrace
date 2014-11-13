@@ -76,6 +76,9 @@ class baseNode.new {
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
+    method isInherits { false }
+    method isMember { false }
+    method isCall { false }
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
     method isWritable { true }
@@ -1091,6 +1094,7 @@ class callNode.new(what, with') {
     var isPattern is public := false
     def nameString:String is public = what
     
+    method isCall { true }
     method childrenDo(b) {
         b.apply(value)
         with.do { part -> b.apply(part) }
@@ -1533,6 +1537,7 @@ class memberNode.new(what, in') {
     def nameString:String is public = value
     var in is public := in'
     var generics is public := false
+    method isMember { true }
     method childrenDo(b) {
         b.apply(in)
     }
@@ -2432,7 +2437,9 @@ class inheritsNode.new(expr) {
     var value is public := expr
     var providedNames is public := list.empty
     
-    
+    method isInherits { true }
+    method inheritsFromMember { value.isMember }
+    method inheritsFromCall { value.isCall }
     method childrenDo(b) {
         b.apply(value)
     }
