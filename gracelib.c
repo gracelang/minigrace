@@ -3496,7 +3496,8 @@ start:
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Available methods are:\n");
+    fprintf(stderr, "No method %s in %s; ", name, self->class->name);
+    fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
         len += 2 + strlen(c->methods[i].name);
@@ -3507,8 +3508,9 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-    gracedie("no method %s in %s %s.", name, self->class->name,
-             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
+//    gracedie("No method %s in %s %s.", name, self->class->name,
+//             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
+    gracedie("No method %s in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,

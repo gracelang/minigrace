@@ -51,7 +51,7 @@ method maybeMap(n, b) parent(p) {
     }
 }
 
-def dummy = sequence.empty
+def emptySeq = sequence.empty
 
 type AstNode = type {
     register -> String
@@ -79,6 +79,9 @@ class baseNode.new {
     method isInherits { false }
     method isMember { false }
     method isCall { false }
+    method isObject { false }
+    method definesObject { false }
+    method definesScope { false }
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
     method isWritable { true }
@@ -114,13 +117,13 @@ class baseNode.new {
         self
     }
     method pretty(depth) { 
-        self.kind ++ "Node"
+        self.kind
     }
 }
 
 class symbolTableNode.new {
     // The superclass of all AST nodes that open a new scope,
-    // and thus have a symbolTable.
+    // and thus may have a symbolTable.
     inherits baseNode.new
 
     var symbolTable'
@@ -131,6 +134,7 @@ class symbolTableNode.new {
     }
     method symbolTable:=(s) {
         symbolTable' := s
+        s.node := self
         hasSymbolTable := true
     }
     method shallowCopyFieldsFrom(other) parent(p){
@@ -146,14 +150,14 @@ class symbolTableNode.new {
             spc := spc ++ "  "
         }
         if (hasSymbolTable) then {
-            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'.keysAsList}"
+            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'.keysAndValuesAsList}"
         } else {
             super.pretty(depth)
         }
     }
 }
 
-def nullNode = object {
+def nullNode is public = object {
     inherits symbolTableNode.new
     def kind is public = "null"
     method childrenDo(block1) { }
@@ -176,22 +180,18 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIf(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            for (self.thenblock) do { ix ->
-                ix.accept(visitor) from(self)
-            }
-            for (self.elseblock) do { ix ->
-                ix.accept(visitor) from(self)
-            }
+            value.accept(visitor) from(self)
+            thenblock.accept(visitor) from(self)
+            elseblock.accept(visitor) from(self)
         }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
         def v = self.value.map(blk)before(blkBefore)after(blkAfter)
-        def tb = listMap(self.thenblock, blk)before(blkBefore)after(blkAfter)
+        def tb = thenblock.map(blk)before(blkBefore)after(blkAfter)
         blkAfter.apply(self)
         blkBefore.apply(self)
-        def eb = listMap(self.elseblock, blk)before(blkBefore)after(blkAfter)
+        def eb = elseblock.map(blk)before(blkBefore)after(blkAfter)
         var n := ifNode.new(v, tb, eb)
         n := blk.apply(n)
         n.line := line
@@ -201,8 +201,8 @@ class ifNode.new(cond, thenblock', elseblock') {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
-        n.thenblock := listMap(thenblock, blk) parent(n)
-        n.elseblock := listMap(self.elseblock, blk) parent(n)
+        n.thenblock := thenblock.map(blk) parent(n)
+        n.elseblock := elseblock.map(blk) parent(n)
         n := blk.apply(n)
         n
     }
@@ -214,15 +214,8 @@ class ifNode.new(cond, thenblock', elseblock') {
         var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
-        s := s ++ spc ++ "Then:"
-        for (self.thenblock) do { ix ->
-            s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
-        }
-        s := s ++ "\n"
-        s := s ++ spc ++ "Else:"
-        for (self.elseblock) do { ix ->
-            s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
-        }
+        s := s ++ spc ++ "Then: {thenblock.pretty(depth+2)}\n"
+        s := s ++ spc ++ "Else: {elseblock.pretty(depth+2)}"
         s
     }
     method toGrace(depth : Number) -> String {
@@ -231,12 +224,12 @@ class ifNode.new(cond, thenblock', elseblock') {
             spc := spc ++ "    "
         }
         var s := "if ({self.value.toGrace(0)}) then \{"
-        for (self.thenblock) do { ix ->
+        for (self.thenblock.body) do { ix ->
             s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
         }
         if (self.elseblock.size > 0) then {
             s := s ++ "\n" ++ spc ++ "\} else \{"
-            for (self.elseblock) do { ix ->
+            for (self.elseblock.body) do { ix ->
                 s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
             }
         }
@@ -264,8 +257,13 @@ class blockNode.new(params', body') {
     for (params') do {p->
         p.accept(patternMarkVisitor) from(self)
     }
-
+    method declarationKind {
+        "parameter"
+    }
     method isMatchingBlock { params.size == 1 }
+    method definesObject {
+        body.isEmpty.not.andAlso { body.last.definesObject }
+    }
     method childrenDo(b) {
         params.do(b)
         body.do(b)
@@ -438,7 +436,7 @@ class catchCaseNode.new(block, cases', finally') {
         s
     }
     method shallowCopyWithParent(p) {
-        catchCaseNode.new(nullNode, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+        catchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class matchCaseNode.new(matchee', cases', elsecase') {
@@ -512,7 +510,7 @@ class matchCaseNode.new(matchee', cases', elsecase') {
         s
     }
     method shallowCopyWithParent(p) {
-        matchCaseNode.new(nullNode, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+        matchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class methodTypeNode.new(name', signature', rtype') {
@@ -641,7 +639,7 @@ class methodTypeNode.new(name', signature', rtype') {
         s
     }
     method shallowCopyWithParent(p) {
-        methodTypeNode.new(value, dummy, false).shallowCopyFieldsFrom(self) parent(p)
+        methodTypeNode.new(value, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class typeLiteralNode.new(methods', types') {
@@ -737,7 +735,7 @@ class typeLiteralNode.new(methods', types') {
         s ++ "\}"
     }
     method shallowCopyWithParent(p) {
-        typeLiteralNode.new(dummy, dummy).shallowCopyFieldsFrom(self) parent(p)
+        typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -893,6 +891,9 @@ class methodNode.new(name', signature', body', dtype') {
     method isWritable { false }
     method isReadable { isPublic }
     
+    method definesScope { 
+        body.isEmpty.not.andAlso {body.last.definesObject}
+    }
     method parametersDo(b) {
         signature.do { part -> 
             part.params.do { each -> b.apply(each) }
@@ -1060,7 +1061,7 @@ class methodNode.new(name', signature', body', dtype') {
     }
     method asString { "Method {nameString}" }
     method shallowCopyWithParent(p) {
-        methodNode.new(value, dummy, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+        methodNode.new(value, emptySeq, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1196,7 +1197,7 @@ class callNode.new(what, with') {
     }
     method asString { "Call {what.pretty(0)}" }
     method shallowCopyWithParent(p) {
-        callNode.new(nullNode, dummy).shallowCopyFieldsFrom(self) parent(p)
+        callNode.new(nullNode, emptySeq).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1205,6 +1206,7 @@ class callNode.new(what, with') {
     }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
+    // TODO  remove superclass as a parameter
     // [signature]
     //     object {
     //         name := ""
@@ -1236,7 +1238,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     
     method declarationKind {
         "method"
-    }    
+    }
+    method definesObject { true }
     method isPublic {
         // assume that classes are public by default
         if (annotations.size == 0) then { return true }
@@ -1272,16 +1275,11 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             if (self.superclass != false) then {
                 self.superclass.accept(visitor) from(self)
             }
-            for (self.signature) do { part ->
-                for (part.params) do { p ->
-                    p.accept(visitor) from(self)
-                }
-                if (part.vararg != false) then {
-                    part.vararg.accept(visitor) from(self)
-                }
+            for (self.signature) do { partNode ->
+                partNode.accept(visitor) from(self)
             }
-            for (self.value) do { x ->
-                x.accept(visitor) from(self)
+            for (self.value) do { each ->
+                each.accept(visitor) from(self)
             }
         }
     }
@@ -1338,7 +1336,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
             }
         }
-        if (false != generics) then {
+        if (generics.isEmpty.not) then {
             s := s ++ "\n" ++ spc ++ "Generics:"
             for (generics) do {g->
                 s := s ++ "\n  {spc}{g.pretty(0)}"
@@ -1347,7 +1345,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         if (annotations.size > 0) then {
             s := s ++ "\n" ++ spc ++ "Annotations:"
             for (annotations) do {a->
-                s := s ++ "\n  {spc}{a.pretty(depth + 2)}"
+                s := s ++ " {a.pretty(depth + 2)}"
             }
         }
         s := s ++ "\n" ++ spc ++ "Body:"
@@ -1394,17 +1392,26 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         s
     }
     method shallowCopyWithParent(p) {
-        classNode.new(name, nullNode, nullNode, nullNode, nullNode, false)
+        classNode.new(name, emptySeq, emptySeq, false, nullNode, false)
             .shallowCopyFieldsFrom(self) parent(p)
+    }
+    method shallowCopyFieldsFrom(other) parent(p) {
+        super.shallowCopyFieldsFrom(other) parent(p)
+        data := other.data
+        self
     }
 }
 class objectNode.new(body, superclass') {
+    // TODO  remove superclass as a parameter
     inherits symbolTableNode.new
     def kind is public = "object"
     var value is public := body
     var superclass is public := superclass'
     var classname is public := "object"
     var data is public := false
+    
+    method definesObject { true }
+    method isObject { true }
     method childrenDo(b) {
         b.apply(superclass)
         value.do(b)
@@ -1466,7 +1473,7 @@ class objectNode.new(body, superclass') {
         s
     }
     method shallowCopyWithParent(p) {
-        objectNode.new(dummy, false).shallowCopyFieldsFrom(self) parent(p)
+        objectNode.new(emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1526,7 +1533,7 @@ class arrayNode.new(values) {
         s
     }
     method shallowCopyWithParent(p) {
-        arrayNode.new(dummy).shallowCopyFieldsFrom(self) parent(p)
+        arrayNode.new(emptySeq).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class memberNode.new(what, in') {
@@ -1663,7 +1670,7 @@ class genericNode.new(base, params') {
         s
     }
     method shallowCopyWithParent(p) {
-        genericNode.new(nullNode, dummy).shallowCopyFieldsFrom(self) parent(p)
+        genericNode.new(nullNode, emptySeq).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class identifierNode.new(name, dtype') {
@@ -1675,10 +1682,11 @@ class identifierNode.new(name, dtype') {
     var isBindingOccurrence is public := false
     var isAssigned is public := false
     var inRequest is public := false
-    def nameString:String is public = name
     var generics is public := false
-    var isMethodName is public := false
-    
+    var isDeclaredByParent is public := false
+
+    method nameString { value }     //  value changes when parsing "[]"
+
     method isAppliedOccurenceOfIdentifier {
         isBindingOccurrence.not
     }
@@ -1766,11 +1774,11 @@ class identifierNode.new(name, dtype') {
     }
 
     method asString { 
-        if (isBindingOccurrence) then { 
-            "IdentifierBinding‹{value}›" 
-        } else { 
+//        if (isBindingOccurrence) then { 
+//            "IdentifierBinding‹{value}›" 
+//        } else { 
             "Identifier‹{value}›"
-        }
+//        }
     }
     method shallowCopyWithParent(p) {
         identifierNode.new(value, false).shallowCopyFieldsFrom(self) parent(p)
@@ -1779,7 +1787,7 @@ class identifierNode.new(name, dtype') {
         super.shallowCopyFieldsFrom(other) parent(p)
         wildcard := other.wildcard
         isBindingOccurrence := other.isBindingOccurrence
-        isMethodName := other.isMethodName
+        isDeclaredByParent := other.isDeclaredByParent
         isAssigned := other.isAssigned
         inRequest := other.inRequest
         self
@@ -2082,7 +2090,11 @@ class defDecNode.new(name', val, dtype') {
         // defs are confidential by default
         if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
-        findAnnotation(self, "readable")
+        def res = findAnnotation(self, "readable")
+        if (nameString == "bindings") then {
+            print "bindings is public"
+        }
+        res
     }
     method isWritable { false }
     method isReadable { isPublic }
@@ -2090,6 +2102,9 @@ class defDecNode.new(name', val, dtype') {
         if (parent.kind == "object") then { true }
             elseif {parent.kind == "class"} then { true }
             else { false }
+    }
+    method definesScope {
+        value.definesObject
     }
     method declarationKind { 
         if (isFieldDec) then { "method" } else { "def" }
@@ -2144,6 +2159,12 @@ class defDecNode.new(name', val, dtype') {
         }
         if (false != value) then {
             s := s ++ "\n" ++ spc ++ "Value: " ++ value.pretty(depth + 2)
+        }
+        if (annotations.isEmpty.not) then {
+            s := s ++ "\n{spc}Annotations:"
+            annotations.do { ann ->
+                s := "{s} {ann.pretty(depth + 2)}"
+            }
         }
         s
     }
@@ -2290,15 +2311,15 @@ class varDecNode.new(name', val', dtype') {
         varDecNode.new(name, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
-class importNode.new(path', name, dtype') {
+class importNode.new(path', name', dtype') {
     inherits baseNode.new
     def kind is public = "import"
-    var value is public := name
+    var value is public := name'
     var path is public := path'
     var annotations is public := list.empty
     var dtype is public := dtype'
-    def nameString:String is public = value
-    
+    method name { value }
+    method nameString { value.nameString }
     method isPublic {
         // imports are confidential by default
         if (annotations.size == 0) then { return false }
@@ -2313,19 +2334,28 @@ class importNode.new(path', name, dtype') {
         annotations.do(b)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
-        visitor.visitImport(self) up(pNode)
+        if (visitor.visitImport(self) up(pNode)) then {
+            self.value.accept(visitor) from(self)
+            if (self.dtype != false) then {
+                self.dtype.accept(visitor) from(self)
+            }
+        }
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        var n := blk.apply(self)
+        def name' = value.map(blk)before(blkBefore)after(blkAfter)
+        var n := importNode.new(path, name')
+        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
+            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
+        }
+        n := blk.apply(n)
         n.line := line
         blkAfter.apply(n)
         n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
-//        n.value := value.map(blk) parent(n)
-//  TODO: make this name an identifier (defining occurence)
+        n.value := value.map(blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n := blk.apply(n)
@@ -2337,18 +2367,18 @@ class importNode.new(path', name, dtype') {
             spc := spc ++ "  "
         }
         var s := super.pretty(depth) ++ "\n"
-        s := s ++ "{spc}Path: {self.path}\n"
-        s := s ++ "{spc}Identifier: {self.value}\n"
-        if (self.annotations.size > 0) then {
-            s := s ++ "{spc}Anotations: {self.annotations}\n"
+        s := s ++ "{spc}Path: {path}\n"
+        s := s ++ "{spc}Identifier: {value}\n"
+        if (annotations.size > 0) then {
+            s := s ++ "{spc}Anotations: {annotations}\n"
         }
         s
     }
     method toGrace(depth : Number) -> String {
-        "import \"{self.path}\" as {self.value}"
+        "import \"{self.path}\" as {nameString}"
     }
     method shallowCopyWithParent(p) {
-        importNode.new(path, value, false).shallowCopyFieldsFrom(self) parent(p)
+        importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class dialectNode.new(path') {
@@ -2530,6 +2560,13 @@ class signaturePart.new(*values) {
     if (values.size > 2) then {
         vararg := values[3]
     }
+    method accept(visitor : ASTVisitor) from(pNode) {
+        if (visitor.visitSignaturePart(self) up(pNode)) then {
+            params.do { p -> p.accept(visitor) from(self) }
+            if (false != vararg) then { vararg.accept(visitor) from(self) }
+            generics.do { g -> g.accept(visitor) from(self) }
+        }
+    }
     method declarationKind { "parameter" }
     method childrenDo(b) {
         b.apply(name)
@@ -2634,6 +2671,7 @@ type ASTVisitor = {
      visitMatchCase(o) up(pNode) -> Boolean
      visitCatchCase(o) up(pNode) -> Boolean
      visitMethodType(o) up(pNode) -> Boolean
+     visitSignaturePart(o) up(pNode) -> Boolean
      visitTypeLiteral(o) up(pNode) -> Boolean
      visitTypeDec(o) up(pNode) -> Boolean
      visitMethod(o) up(pNode) -> Boolean
@@ -2663,6 +2701,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
     method visitCatchCase(o) up(pNode) { visitCatchCase(o) }
     method visitMethodType(o) up(pNode) { visitMethodType(o) }
+    method visitSignaturePart(o) up(pNode) { visitSignaturePart(o) }
     method visitTypeDec(o) up(pNode) { visitTypeDec(o) }
     method visitTypeLiteral(o) up(pNode) { visitTypeLiteral(o) }
     method visitMethod(o) up(pNode) { visitMethod(o) }
@@ -2691,6 +2730,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitMatchCase(o) -> Boolean { true }
     method visitCatchCase(o) -> Boolean { true }
     method visitMethodType(o) -> Boolean { true }
+    method visitSignaturePart(o) -> Boolean { true }
     method visitTypeDec(o) -> Boolean { true }
     method visitTypeLiteral(o) -> Boolean { true }
     method visitMethod(o) -> Boolean { true }
@@ -2725,6 +2765,7 @@ factory method addParentVisitor -> ASTVisitor {
     method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
     method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
     method visitMethodType(o) up(pNode) { o.parent := pNode; true }
+    method visitSignaturePart(o) up(pNode) { o.parent := pNode; true }
     method visitTypeDec(o) up(pNode) { o.parent := pNode; true }
     method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
     method visitCall(o) up(pNode) { o.parent := pNode; true }

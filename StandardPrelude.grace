@@ -206,9 +206,9 @@ class point2D.x(x')y(y') {
     def y is readable = y'
     method asString { "({x}@{y})" }
     method asDebugString { self.asString }
-    method distanceTo(other:XandY) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
-    method -(other:XandY) { point2D.x (x - other.x) y (y - other.y) }
-    method +(other:XandY) { point2D.x (x + other.x) y (y + other.y) }
+    method distanceTo(other:Point) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
+    method -(other:Point) { point2D.x (x - other.x) y (y - other.y) }
+    method +(other:Point) { point2D.x (x + other.x) y (y + other.y) }
     method length {((x^2) + (y^2))^0.5}
     method ==(other) {
         match (other)

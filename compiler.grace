@@ -17,7 +17,7 @@ import "mirrors" as mirrors
 
 util.parseargs
 
-def targets = ["lex", "parse", "grace", "processed-ast",
+def targets = ["lex", "parse", "grace", "processed-ast", "patterns", "symbols",
     "imports", "c", "js"]
 
 if (util.target == "help") then {
@@ -112,6 +112,10 @@ if (util.target == "imports") then {
 }
 values := identifierresolution.resolve(values)
 if (util.target == "processed-ast") then {
+    print "====================================="
+    print "module-level symbol table"
+    print (values.first.parent.symbolTable.asStringWithParents)
+    print "====================================="
     for (values) do { v ->
         print(v.pretty(0))
     }

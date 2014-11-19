@@ -892,15 +892,17 @@ method compileif(o) {
     var tret := "undefined"
     var fret := "undefined"
     increaseindent
-    for (o.thenblock) do { l->
+    def thenList = o.thenblock.body
+    for (thenList) do { l->
         tret := compilenode(l)
     }
     out("if" ++ myc ++ " = " ++ tret ++ ";")
     decreaseindent
-    if (o.elseblock.size > 0) then {
+    def elseList = o.elseblock.body
+    if (elseList.size > 0) then {
         out("\} else \{")
         increaseindent
-        for (o.elseblock) do { l->
+        for (elseList) do { l->
             fret := compilenode(l)
         }
         out("if" ++ myc ++ " = " ++ fret ++ ";")
@@ -1273,17 +1275,15 @@ method compiledialect(o) {
     o.register := "undefined"
 }
 method compileimport(o) {
-    out("// Import of {o.path} as {o.value}")
-    var nm := escapestring(o.value)
+    out("// Import of {o.path} as {o.nameString}")
+    var nm := escapestring(o.nameString)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
-    def methodIdent = ast.identifierNode.new(o.value, o.dtype)
-    methodIdent.line := o.line
-    methodIdent.linePos := o.linePos
-    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.value)],
+    def methodIdent = o.value
+    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.nameString)],
         [methodIdent], o.dtype))
     accessor.line := o.line
     accessor.linePos := o.linePos
@@ -1300,7 +1300,7 @@ method compileimport(o) {
                 out "  [1], {varf(nm)})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
                 out "          new GraceString(\"expected \""
-                out "          + \"module {o.value} to be of type {o.dtype.value}\"))";
+                out "          + \"module {o.nameString} to be of type {o.dtype.value}\"))";
             }
         }
     }

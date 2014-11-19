@@ -25,7 +25,7 @@ var output := []
 var usedvars := []
 var declaredvars := []
 var bblock := "entry"
-var linenum := 1
+var linenum := 0
 var modules := collections.set.new
 var staticmodules := collections.set.new
 var dynamicmodules := collections.set.new
@@ -67,7 +67,7 @@ method log_verbose(s) {
 }
 method countnodebindings(n) {
     if (n.kind == "if") then {
-        countbindings(n.thenblock) + countbindings(n.elseblock)
+        countbindings(n.thenblock.body) + countbindings(n.elseblock.body)
     } else {
         0
     }
@@ -75,8 +75,9 @@ method countnodebindings(n) {
 method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
-        if ((n.kind == "vardec") || (n.kind == "defdec")
-            || (n.kind == "class") || (n.kind == "typedec")) then {
+        def k = n.kind
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
+             || (k == "class") || (k == "import")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -87,14 +88,15 @@ method countbindings(l) {
 method definebindings(l, slot') {
     var slot := slot'
     for (l) do { n ->
-        if ((n.kind == "vardec") || (n.kind == "defdec") 
-            || (n.kind == "typedec") || (n.kind == "class")) then {
+        def k = n.kind
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
+             || (k == "class") || (k == "import")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
                 tnm := escapeident(n.name.value.value)
                 snm := escapestring(n.name.value.value)
-            } else {
+            } else {  // identifier
                 tnm := escapeident(n.name.value)
                 snm := escapestring(n.name.value)
             }
@@ -104,14 +106,10 @@ method definebindings(l, slot') {
                 out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                 slot := slot + 1
             }
-        } elseif {n.kind == "if"} then {
-                slot := definebindings(n.thenblock, slot)
-                slot := definebindings(n.elseblock, slot)
-                n.handledIdentifiers := true
-        } elseif {n.kind == "import"} then {
-                var tnm := escapeident(n.value)
-                out "Object *var_{tnm} = alloc_var();"
-                // TODO: why is this different from a def?  Handle annotations!
+        } elseif {k == "if"} then {
+            slot := definebindings(n.thenblock.body, slot)
+            slot := definebindings(n.elseblock.body, slot)
+            n.handledIdentifiers := true
         }
     }
     slot
@@ -386,6 +384,7 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o, includeConstant) {
     var signature := o.signature
+    util.setPosition(o.line, o.linePos)
     def obj = ast.objectNode.new(o.value, o.superclass)
     obj.classname := o.name.value
     var mbody := [obj]
@@ -690,7 +689,7 @@ method compilemethod(o, selfobj, pos) {
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         for (part.params) do { param ->
-            var pn := escapeident(param.nameString)
+            var pn := escapeident(param.value)
             out("  Object *var_{pn} = &(stackframe->slots[{slot}]);")
             out("  *var_{pn} = args[curarg];")
             out("  curarg++;")
@@ -1096,26 +1095,28 @@ method compileifexpr(o) {
     out("  Object if{myc} = done;")
     out("struct StackFrameObject *iftmpstackframe{myc} = stackframe;")
     out("  if (istrue({cond})) \{")
-    var numslots := countbindings(o.thenblock)
+    var numslots := countbindings(o.thenblock.body)
     out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
     out("gc_frame_newslot((Object)stackframe);")
     var tret := "done"
     var fret := "done"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    definebindings(o.thenblock, 0)
-    for (o.thenblock) do { l->
+    def thenList = o.thenblock.body
+    definebindings(thenList, 0)
+    for (thenList) do { l->
         tret := compilenode(l)
     }
     out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
     out("  \} else \{")
-    if (o.elseblock.size > 0) then {
-        numslots := countbindings(o.elseblock)
+    def elseList = o.elseblock.body
+    if (elseList.size > 0) then {
+        numslots := countbindings(elseList)
         out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
         out("gc_frame_newslot((Object)stackframe);")
-        definebindings(o.elseblock, 0)
-        for (o.elseblock) do { l->
+        definebindings(elseList, 0)
+        for (elseList) do { l->
             fret := compilenode(l)
         }
         out("    gc_frame_newslot({fret});")
@@ -1138,14 +1139,16 @@ method compileif(o) {
     var fret := "done"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    for (o.thenblock) do { l->
+    def thenList = o.thenblock.body
+    for (thenList) do { l->
         tret := compilenode(l)
     }
     out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
     out("  \} else \{")
-    if (o.elseblock.size > 0) then {
-        for (o.elseblock) do { l->
+    def elseList = o.elseblock.body
+    if (elseList.size > 0) then {
+        for (elseList) do { l->
             fret := compilenode(l)
         }
         out("    gc_frame_newslot({fret});")
@@ -1572,7 +1575,7 @@ method compiledialect(o) {
     o.register := "done"
 }
 method compileimport(o) {
-    out("// Import of {o.path} as {o.value}")
+    out("// Import of {o.path} as {o.nameString}")
     var con
     var snm := ""
     for (o.path) do {c->
@@ -1583,7 +1586,7 @@ method compileimport(o) {
         }
     }
     o.register := "done"
-    var nm := escapeident(o.value)
+    var nm := escapeident(o.nameString)
     var fn := escapestring2(o.path)
     var modg := "module_" ++ escapeident(o.path)
     var modgn := "module_" ++ nm
@@ -1612,19 +1615,17 @@ method compileimport(o) {
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
-        def methodIdent = ast.identifierNode.new(o.value, o.dtype)
+        def methodIdent = o.value
         methodIdent.line := o.line
         methodIdent.linePos := o.linePos
-        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.value)],
+        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.name)],
                         [methodIdent], o.dtype))
         accessor.line := o.line
         accessor.linePos := o.linePos
         if ( o.isConfidential ) then {
             accessor.annotations.push(ast.identifierNode.new("confidential", false))
         }
-        //  compilenode(accessor)
-        //  Adding this accessor causes the compiler to segfault on load.  
-        //  Obviously something is wrong ...
+        compilenode(accessor)
     }
     globals.push("Object {modg}_init();")
 }
@@ -1785,8 +1786,8 @@ method compilenode(o) {
     if (o.kind == "op") then {
         compileop(o)
     }
+    out "// compiled {o.kind} node returning {o.register} (depth = {compilationDepth})"
     compilationDepth := compilationDepth - 1
-    out("// compilenode returning " ++ o.register)
     o.register
 }
 method spawnSubprocess(id, cmd, data) {
@@ -1869,7 +1870,8 @@ method checkimport(nm, line, isDialect) {
     
     if(nm == "StandardPrelude") then {
         staticmodules.add(nm)
-//        addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
+        // transitive imports were taken care of when gracelib.o was built
+        // addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
         return
     }
     for(locationList) do { location ->
@@ -1885,9 +1887,9 @@ method checkimport(nm, line, isDialect) {
             if((!util.importDynamic && 
                         {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")})
                         || (!io.exists("{location}{nm}.grace"))) then{
-                //Find static modules where the .gcn is either newer
-                //or the same age as the corresponding .grace file
-                //i.e. whether we need to recompile again or not
+                // Find static modules where the .gcn is either newer
+                // or the same age as the corresponding .grace file
+                // i.e. the modules that we don't need to recompile
                 exists := true
                 linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)

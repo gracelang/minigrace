@@ -237,6 +237,24 @@ method pushidentifier {
     values.push(o)
     next
 }
+
+method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
+    // If a compiler directive has set a special default visibility, then
+    // translate this into an annotation.  The normal defaults are dealt with
+    // by methods on the ast nodes.
+    if (sd == nd) then { return done }
+    for (node.annotations) do {a->
+        if (a.kind == "identifier") then
+        {   if (a.value == "public") then { return done }
+            if (a.value == "readable") then { return done }
+            if (a.value == "confidential") then { return done }
+            if (a.value == "writable") then { return done }
+        }
+    }
+    def newAnn = ast.identifierNode.new(sd, false)
+    newAnn.parent := node
+    node.annotations.push(newAnn)
+}
 method checkAnnotation(ann) {
     if (ann.kind == "call") then {
         for (ann.with) do {p->
@@ -358,6 +376,12 @@ method typeexpression {
     }
     // TODO: check that the expression doesn't contain requests or var references.
     // This has to happen in the identifier resolution phase.
+}
+
+method newIf(cond, thenList, elseList) {
+    def thenBlock = ast.blockNode.new([], thenList)
+    def elseBlock = ast.blockNode.new([], elseList)
+    ast.ifNode.new(cond, thenBlock, elseBlock)
 }
 
 // Accept a block
@@ -820,7 +844,7 @@ method doif {
                 }
                 next
                 newelse := []
-                eif := ast.ifNode.new(econd, ebody, newelse)
+                eif := newIf(econd, ebody, newelse)
                 // Construct the inner "if" AST node, and then push it
                 // inside the current "else" block.
                 curelse.push(eif)
@@ -874,7 +898,7 @@ method doif {
                 }
                 next
             }
-            var o := ast.ifNode.new(cond, body, elseblock)
+            var o := newIf(cond, body, elseblock)
             values.push(o)
         } else {
             // Raise an error here, or it will spin nastily forever.
@@ -912,8 +936,8 @@ method doif {
     }
 }
 
-// Accept an identifier. Handle "if", "while", and "for" specially by
-// passing them on to the appropriate method above.
+// Accept an identifier. Handle "if" specially by
+// passing it to the method above.
 method identifier {
     if (accept("identifier")) then {
         if (sym.value == "if") then {
@@ -2279,28 +2303,8 @@ method defdec {
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
         var o := ast.defDecNode.new(name, val, dtype)
-        var hasVisibility := false
-        var hasAccessibility := false
-        if (anns != false) then {
-            for (anns) do {a->
-                if ((a.kind == "identifier").andAlso {
-                    (a.value == "public")
-                     || (a.value == "confidential")}) then {
-                    hasVisibility := true
-                }
-                if ((a.kind == "identifier").andAlso {
-                    (a.value == "readable")
-                     || (a.value == "writable")}) then {
-                    hasAccessibility := true
-                }
-            }
-            o.annotations.extend(anns)
-        }
-        if ((!hasVisibility) && (!hasAccessibility)) then {
-            if (defaultDefVisibility == "public") then {
-                o.annotations.push(ast.identifierNode.new("public", false))
-            }
-        }
+        if (anns != false) then { o.annotations.extend(anns) }
+        adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         o.startToken := defTok
         values.push(o)
     }
@@ -2371,31 +2375,8 @@ method vardec {
             }
         }
         var o := ast.varDecNode.new(name, val, dtype)
-        var hasVisibility := false
-        var hasAccessibility := false
-        if (anns != false) then {
-            for (anns) do {a->
-                if ((a.kind == "identifier").andAlso {
-                    (a.value == "public")
-                     || (a.value == "confidential")}) then {
-                    hasVisibility := true
-                }
-                if ((a.kind == "identifier").andAlso {
-                    (a.value == "readable")
-                     || (a.value == "writable")}) then {
-                    hasAccessibility := true
-                }
-            }
-            o.annotations.extend(anns)
-        }
-        if ((!hasVisibility) && (!hasAccessibility)) then {
-            if (defaultVarVisibility == "public") then {
-                o.annotations.push(ast.identifierNode.new("readable",
-                    false))
-                o.annotations.push(ast.identifierNode.new("writable",
-                    false))
-            }
-        }
+        if (anns != false) then { o.annotations.extend(anns) }
+        adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
         values.push(o)
     }
 }
@@ -2499,7 +2480,6 @@ method doobject {
         def btok = sym
         def localMinIndentLevel = minIndentLevel
         next
-        var superclass := false
         if(sym.kind != "lbrace") then {
             def suggestion = errormessages.suggestion.new
             def nextTok = findNextToken({ t -> t.kind == "rbrace" })
@@ -2558,7 +2538,7 @@ method doobject {
             body.push(p)
         }
         util.setline(btok.line)
-        var o := ast.objectNode.new(body, superclass)
+        var o := ast.objectNode.new(body, false)
         values.push(o)
         minIndentLevel := localMinIndentLevel
     }
@@ -2594,7 +2574,7 @@ method doclass {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
         def cname = if (tokens.first.kind == "dot") then {
-            pushidentifier // A class currently cannot be anonymous
+            pushidentifier // A class must have a name
             def cname' = values.pop
             cname'.isBindingOccurrence := true
             if (!accept("dot")) then {
@@ -2813,14 +2793,8 @@ method methoddec {
             o.varargs := true
         }
         o.generics := generics
-        if (false != anns) then {
-            o.annotations.extend(anns)
-        } else {
-            if (defaultMethodVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
+        if (anns != false) then { o.annotations.extend(anns) }
+        adjustVisibilityOf(o) withSpecialDefault(defaultMethodVisibility) overriding("public")
         values.push(o)
     }
 }
@@ -3119,6 +3093,7 @@ method doimport {
     //      import ‹string› as ‹identifier›:‹type expression› is ‹annotation›
     if (accept("keyword") && (sym.value == "import")) then {
         def importline = sym.line
+        var dtype := ast.unknownType
         next
         if(sym.kind != "string") then {
             var suggestion := errormessages.suggestion.new
@@ -3161,24 +3136,17 @@ method doimport {
         }
         pushidentifier
         def name = values.pop
-        util.setline(importline)
-        def o = ast.importNode.new(p.value, name.value)
+        name.isBindingOccurrence := true
         if (accept("colon")) then {
             next
             typeexpression
-            o.dtype := values.pop
+            dtype := values.pop
         }
+        util.setline(importline)
+        def o = ast.importNode.new(p.value, name, dtype)
         def anns = doannotation
-        if (anns == false) then {
-            if (defaultVarVisibility == "public") then {
-                o.annotations.push(ast.identifierNode.new("readable",
-                    false))
-                o.annotations.push(ast.identifierNode.new("writable",
-                    false))
-            }
-        } else {
-            o.annotations.extend(anns)
-        }
+        if (anns != false) then { o.annotations.extend(anns) }
+        adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         values.push(o)
     }
 }
@@ -3189,7 +3157,7 @@ method doreturn {
     if (accept("keyword") && (sym.value == "return")) then {
         next
         var retval
-        if (tokenOnSameLine) then {
+        if ((tokenOnSameLine).andAlso{accept("rbrace").not}) then {
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestions = []
                 var suggestion := errormessages.suggestion.new
@@ -3300,6 +3268,7 @@ method typedec {
             gens := p.params
             p := p.value
         }
+        p.isBindingOccurrence := true
         gens.do { each -> each.isBindingOccurrence := true }
         def anns = doannotation
         if((sym.kind != "op") || (sym.value != "=")) then {

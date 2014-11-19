@@ -20,17 +20,17 @@ type Block2<S,T,R> = type {
 }
 
 type Collection<T> = type {
-    isEmpty -> Boolean
-    do(block1: Block1<T,Done>) -> Done
-    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
-    map(blk:Block1<T,Object>) -> Iterator<Object>
-    filter(condition:Block1<T,Boolean>) -> Iterator<T>
-    iterator -> Iterator<T>
-    asString -> String
-    ++(o: Collection<T>) -> Collection<T>
-    contains(element) -> Boolean
-    size -> Number          // pro tem!
+//    isEmpty -> Boolean
+//    do(block1: Block1<T,Done>) -> Done
+//    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+//    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
+//    map(blk:Block1<T,Object>) -> Iterator<Object>
+//    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+//    iterator -> Iterator<T>
+//    asString -> String
+//    ++(o: Collection<T>) -> Collection<T>
+//    contains(element) -> Boolean
+//    size -> Number          // pro tem!
 }
 
 type ReifiedCollection<T> = Collection<T> & 
@@ -495,7 +495,7 @@ factory method sequence<T> {
 factory method list<T> {
     inherits collectionFactory.trait<T>
 
-    method withAll<T>(a:Collection<T>) -> List<T> {
+    method withAll(a:Collection<T>) -> List<T> {
         object {
             inherits indexable.trait<T>
             var inner := _prelude.PrimitiveArray.new(a.size * 2 + 1)
@@ -704,7 +704,7 @@ factory method list<T> {
 factory method set<T> {
     inherits collectionFactory.trait<T>
 
-    method withAll<T>(a:Collection<T>) -> Set<T> {
+    method withAll(a:Collection<T>) -> Set<T> {
         object {
             inherits enumerable.trait
             var inner := _prelude.PrimitiveArray.new(if (a.size > 1)
@@ -939,9 +939,9 @@ factory method set<T> {
     }
 }
 
-type Binding = {
-    key -> Object
-    value -> Object
+type Binding<K,T> = {
+    key -> K
+    value -> T
     hash -> Number
     == -> Boolean
 }
@@ -959,12 +959,12 @@ class binding.key(k)value(v) {
     }
 }
 
-factory method dictionary<K, T> {
-    inherits collectionFactory<T>.trait
+factory method dictionary<K,T> {
+    inherits collectionFactory.trait<T>
     method at(k:K)put(v:T) {
             self.empty.at(k)put(v)
     }
-    method withAll(initialBindings) -> Dictionary<K, T> {
+    method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits enumerable.trait
             var size is public := 0
