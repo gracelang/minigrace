@@ -368,6 +368,10 @@ void *glmalloc(size_t s) {
     if (heapcurrent >= heapmax)
         heapmax = heapcurrent;
     void *v = calloc(1, s + sizeof(size_t));
+    if (v == NULL) {
+        fprintf(stderr, "Out of memory (line %i of %s)", linenumber, modulename);
+        graceRaise(EnvironmentExceptionObject, "Out of memory");
+    }
     size_t *i = v;
     *i = s;
     return v + sizeof(size_t);
@@ -1108,6 +1112,19 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     }
     return accum;
 }
+Object BuiltinList_do(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object functionBlock = args[0];
+    Object each;
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {1};
+        callmethod(functionBlock, "apply", 1, partcv, &each);
+    }
+    return done;
+}
 Object BuiltinList_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1221,7 +1238,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 21, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 22, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "::", &Object_bind);
@@ -1244,6 +1261,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
+        add_Method(BuiltinList, "do", &BuiltinList_do);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
@@ -3390,7 +3408,7 @@ start:
     if (originalself->class->definitionLine
             && !unknownmodule)
         sprintf(objDesc, " in object at %s:%i",
-            originalself->class->definitionModule,
+                originalself->class->definitionModule,
                 originalself->class->definitionLine);
     else if (!unknownmodule)
         sprintf(objDesc, " in %s module",
@@ -3478,6 +3496,7 @@ start:
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
+    fprintf(stderr, "No method %s in %s; ", name, self->class->name);
     fprintf(stderr, "Available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
@@ -3485,12 +3504,13 @@ start:
         if (len > 80) {
             fprintf(stderr, "\n");
             len = strlen(c->methods[i].name);
-    }
+        }
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-    gracedie("no method %s in %s %s.", name, self->class->name,
-             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
+//    gracedie("No method %s in %s %s.", name, self->class->name,
+//             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
+    gracedie("No method %s in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
@@ -3530,7 +3550,7 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        gracedie("method call on undefined value");
+        gracedie("method %s requested on undefined value", name);
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
@@ -4782,19 +4802,20 @@ Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
 }
 Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-  if (!(argv[0]->flags & OFLAG_USEROBJ))
-    return argv[0];
-  Object obj = argv[0];
-  struct UserObject *uo = (struct UserObject *)obj;
-  void *sz = ((char *)obj) - sizeof(size_t);
-  size_t *size = sz;
-  int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
-  Object ret = alloc_userobj2(0, nfields, obj->class);
-  struct UserObject *uret = (struct UserObject *)ret;
-  memcpy(ret, obj, *size);
-  if (uo->super)
-    uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
-  return ret;
+    if (!(argv[0]->flags & OFLAG_USEROBJ))
+        return argv[0];
+    Object obj = argv[0];
+    struct UserObject *uo = (struct UserObject *)obj;
+    void *sz = ((char *)obj) - sizeof(size_t);
+    size_t *size = sz;
+    int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
+    Object ret = alloc_userobj2(0, nfields, obj->class);
+    gc_frame_newslot(ret);
+    struct UserObject *uret = (struct UserObject *)ret;
+    memcpy(ret, obj, *size);
+    if (uo->super)
+        uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
+    return ret;
 }
 Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
                      int flags) {
