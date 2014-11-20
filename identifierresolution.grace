@@ -209,7 +209,7 @@ factory method newScopeIn(parent') kind(variety') {
         // determines if the identifier node shadows an enclosing identifier.
         def name = node.nameString
         if (! elements.contains(name)) then { return false }
-        if (elementLines(name) == node.line) then { return false }
+        if (elementLines.get(name) == node.line) then { return false }
         if ((kind(name) == "inherited").andAlso{node.kind == "method"}) then {
             return false 
         }
@@ -492,21 +492,22 @@ method rewriteIdentifier(node) {
             }
         }
     }
-    if (nodeScope.hasDefinitionInNest(nm).not) then {
-        reportUndeclaredIdentifier(node)
-    }
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false)
         def memb = ast.memberNode.new("outer", selfId)
         selfId.parent := memb
         return memb
+        // TODO: represent outer statically
     }
     if (nm == "self") then {
         return node
     }
-    def definingScope = nodeScope.thatDefines(nm)
+    def definingScope = nodeScope.thatDefines(nm) ifNone {
+        reportUndeclaredIdentifier(node)
+    }
     def v = definingScope.variety
     def declKind = definingScope.kind(nm)
+    checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
     if (declKind == "parameter") then { return node }
     if (declKind == "typeparam") then { return node }
     if (definingScope == nodeScope) then {
@@ -514,6 +515,7 @@ method rewriteIdentifier(node) {
         if (declKind == "vardec") then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
+        //TODO maybe add: .andAlso{declKind == "inherited"}  ?
         return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false)).withParentRefs
     }
@@ -524,10 +526,29 @@ method rewriteIdentifier(node) {
         return ast.memberNode.new(nm,
             ast.identifierNode.new("prelude", false)).withParentRefs
     }
-    if (declKind == "method") then {
-        return nodeScope.findDeepMethod(nm)
-    }
+//    if (declKind == "method") then {
+//        return nodeScope.findDeepMethod(nm)
+//    }
     node
+}
+method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
+    def currentScope = node.scope
+    if (currentScope != definingScope) then { return done }
+    // TODO This isn't quite right:  currentScope might be a block (or method)
+    // node might be definedby inheritance in the object containing currentScope,
+    // and also in an enclosing scope.
+    if (declKind != "inherited") then { return done }
+    def name = node.value
+    def conflictingScope = currentScope.parent.thatDefines(name) ifNone {
+        return
+    }
+    def more = if (conflictingScope.elementLines.contains(name)) then {
+        " at line {conflictingScope.elementLines.get(name)}"
+    } else { 
+        ""
+    }
+    errormessages.syntaxError "{name} is defined both by inheritance and by an enclosing scope{more}."
+        atRange(node.line, node.linePos, node.linePos + name.size)
 }
 method reportUndeclaredIdentifier(node) {
     if (node.wildcard) then {

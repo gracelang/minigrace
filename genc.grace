@@ -864,6 +864,10 @@ method compilemethod(o, selfobj, pos) {
             }
         }
     }
+    // APB: I believe that `toremove` is the list of enclosing
+    // variables that are shadowed by parameters.  This is unnecessary, 
+    // since it is syntactially illgeal for a parameter to have the
+    // same name as a variable in an enclosing scope.
     def origclosurevars = closurevars
     closurevars := []
     for (origclosurevars) do {pn->
@@ -1032,7 +1036,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     out("  meth_{litname}->definitionLine = {o.line};")
 }
 method compilemethodtypes(litname, o) {
-    var argcv := "int argcv_{litname}[] = \{"
+    var argcv := "  int argcv_{litname}[] = \{"
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         argcv := argcv ++ part.params.size
@@ -1042,7 +1046,7 @@ method compilemethodtypes(litname, o) {
     }
     argcv := argcv ++ "\};"
     out(argcv)
-    out("meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
+    out("  meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
     var pi := 0
     for (o.signature) do { part ->
         for (part.params) do { p ->

@@ -19,6 +19,8 @@ type Block2<S,T,R> = type {
     apply(a:S, b:T) -> R
 }
 
+type SelfType = Unknown     // becuase it's not yet in the language
+
 type Collection<T> = type {
 //    isEmpty -> Boolean
 //    do(block1: Block1<T,Done>) -> Done
@@ -177,6 +179,8 @@ type Dictionary<K,T> = {
 }
 
 type Iterator<T> = {
+    hasNext -> Boolean
+    next -> T
     iterator -> Iterator
     iter -> Iterator
     onto(resultFactory:EmptyCollectionFactory) -> Collection<T>
@@ -208,6 +212,7 @@ class iterable.trait<T> {
     // requires next, hasNext
     //    method hasNext { SubobjectResponsibility.raise "hasNext" }
     //    method next is abstract { SubobjectResponsibility.raise "next" }
+    def outerIterator = self
     method iterator { self }
     method iter { self }
     method onto(resultFactory) {
@@ -228,16 +233,16 @@ class iterable.trait<T> {
     method asSequence {
         return self.onto(list).asSequence
     }
-    method do(block1) {
+    method do(block1:Block1<T,Done>) -> SelfType {
         while {self.hasNext} do { block1.apply(self.next) }
         return self
     }
-    method map(block1) {
+    method map<R>(block1:Block1<T,R>) -> Iterator<R> {
         return object {                     // this "return" is to work around a compiler bug
-            inherits iterable.trait
-            method havemore { outer.havemore }
-            method hasNext { outer.hasNext }
-            method next { block1.apply(outer.next) }
+            inherits iterable.trait<T>
+            method havemore { outerIterator.havemore }
+            method hasNext { outerIterator.hasNext }
+            method next { block1.apply(outerIterator.next) }
         }
     }
     method fold(block2)startingWith(initial) {
@@ -1128,10 +1133,10 @@ factory method dictionary<K,T> {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.key
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = bindings
-                    method havemore { outerIterator.havemore }
-                    method hasNext { outerIterator.hasNext }
-                    method next { outerIterator.next.key }
+                    def baseIterator = bindings
+                    method havemore { baseIterator.havemore }
+                    method hasNext { baseIterator.hasNext }
+                    method next { baseIterator.next.key }
                 }
             }
             method values {
@@ -1140,10 +1145,10 @@ factory method dictionary<K,T> {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.value
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = bindings
-                    method havemore { outerIterator.havemore }
-                    method hasNext { outerIterator.hasNext }
-                    method next { outerIterator.next.value }
+                    def baseIterator = bindings
+                    method havemore { baseIterator.havemore }
+                    method hasNext { baseIterator.hasNext }
+                    method next { baseIterator.next.value }
                 }
             }
             method iterator { values }
