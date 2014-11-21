@@ -668,7 +668,7 @@ method compilemethod(o, selfobj, pos) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
     output := []
-    usedvars := []
+    usedvars := []      // accumulates identifiers mentioned inside this method
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
@@ -770,7 +770,7 @@ method compilemethod(o, selfobj, pos) {
             if (selfName.startsWith "var_") then {
                 selfName := selfName.substringFrom 5 to(selfName.size)
             }
-            tailObject.classname := selfobj ++ o.nameString
+            tailObject.classname := selfobj ++ "." ++ o.nameString
         }
     }
     for (o.body) do { l ->
@@ -790,6 +790,8 @@ method compilemethod(o, selfobj, pos) {
     out("  gc_frame_end(frame);")
     out("  return {ret};")
     out("\}")
+    // Now we've finished compiling the body of the method, we need to 
+    // construct the closure that makes the variables available.
     var body := output
     outswitchup
     var closurevars := []
@@ -945,7 +947,8 @@ method compilemethod(o, selfobj, pos) {
     inBlock := origInBlock
     paramsUsed := origParamsUsed
     partsUsed := origPartsUsed
-}
+} // end of compilemethod
+
 // Compiles the "fresh" method version of a method, when applicable.
 // This method is given a different name ending in _object, with the final
 // parameter being the object into which to insert methods.
@@ -1434,6 +1437,7 @@ method compilecall(o, tailcall) {
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
+        out "// call case 1"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1447,6 +1451,7 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
             o.value.in.value == "outer"}) then {
+        out "// call case 2"
         def ot = compilenode(o.value.in)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1460,10 +1465,12 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
+        out "// call case 3"
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
+        out "// call case 4"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1475,6 +1482,7 @@ method compilecall(o, tailcall) {
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
+        out "// call case 5"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1485,6 +1493,7 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif (o.value.kind == "member") then {
+        out "// call case 6"
         obj := compilenode(o.value.in)
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1502,6 +1511,7 @@ method compilecall(o, tailcall) {
             out("    {nparts}, partcv, params);")
         }
     } else {
+        out "// call case 7"
         obj := "self"
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1671,13 +1681,11 @@ method compilenode(o) {
         out("  setmodule(modulename);")
         out("  setsource(originalSourceLines);")
     }
+    out "// starting to compile {o.kind} node (depth = {compilationDepth})"
     if (o.kind == "num") then {
         compilenum(o)
     }
-    var l := ""
     if (o.kind == "string") then {
-        l := o.value.size
-        l := l + 1
         o.value := escapestring2(o.value)
         out("  if (strlit{auto_count} == NULL) \{")
         out("    strlit{auto_count} = alloc_String(\"{o.value}\");")
