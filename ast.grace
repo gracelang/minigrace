@@ -79,6 +79,7 @@ class baseNode.new {
     method isInherits { false }
     method isMember { false }
     method isCall { false }
+    method isClass { false }
     method isObject { false }
     method definesObject { false }
     method definesScope { false }
@@ -119,6 +120,23 @@ class baseNode.new {
     method pretty(depth) { 
         self.kind
     }
+    method isUnder(lns) {
+        // lns is a list of strings representing types of AST nodes, 
+        // from the bottom up.  Is this node a subtree of such a structure?
+        if (self.nameString == "iterable") then { print "{self} isUnder {lns}?" }
+        var nd := self
+        for (lns) do { each ->
+            nd := nd.parent
+            if (self.nameString == "iterable") then { print "    parent is {nd}" }
+            if (nd == nullNode) then { return false }
+            if (nd.kind != each) then { return false }
+        }
+        if (self.nameString == "iterable") then {
+            print "    isUnder({lns}) returned true!"
+            print "    nd = {nd.pretty(0)}"
+        }
+        return true
+    }
 }
 
 class symbolTableNode.new {
@@ -149,7 +167,7 @@ class symbolTableNode.new {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        if (hasSymbolTable) then {
+        if ((hasSymbolTable).andAlso{util.target == "symbols"}) then {
             "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'.keysAndValuesAsList}"
         } else {
             super.pretty(depth)
@@ -305,7 +323,6 @@ class blockNode.new(params', body') {
         n.body := listMap(body, blk) parent(n)
         n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
         n := blk.apply(n)
-//        util.log_verbose "mapped blockNode is {n.pretty(0)}, p = {p}, and parent is {n.parent.pretty(0)}"
         n
     }
     method pretty(depth) {
@@ -1071,6 +1088,8 @@ class methodNode.new(name', signature', body', dtype') {
     }
 }
 class callNode.new(what, with') {
+    // requested as callNode.new(target:AstNode, parts:List)
+    // The first is equivalent to the second with an empty list of arguments
     // Represents a method request with arguments.
     // The ‹target›.‹methodName› part is in `value`
     // The argument list is in `with`, as a sequence of `callWithPart`s.
@@ -1240,6 +1259,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         "method"
     }
     method definesObject { true }
+    method isClass { true }
     method isPublic {
         // assume that classes are public by default
         if (annotations.size == 0) then { return true }
@@ -1319,6 +1339,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
+        } else {
+            s := s ++ "\n" ++ spc ++ "Superclass: false"
         }
         s := s ++ "\n"
         s := "{s}{spc}Factory method: {constructor.pretty(0)}\n"
@@ -1481,6 +1503,9 @@ class objectNode.new(body, superclass') {
         classname := other.classname
         self
     }
+    method asString {
+        "object \{{classname} inherits {superclass}\}"
+    }
 }
 class arrayNode.new(values) {
     inherits baseNode.new
@@ -1545,6 +1570,11 @@ class memberNode.new(what, in') {
     var in is public := in'
     var generics is public := false
     method isMember { true }
+    method wrapWithCall {
+        // TODO Compatability Kludge — remove when possible
+        // since a member node represents a method request, and is compiled as such
+        callNode.new(self, [callWithPart.new(value)]).withParentRefs
+    }
     method childrenDo(b) {
         b.apply(in)
     }
@@ -2107,7 +2137,9 @@ class defDecNode.new(name', val, dtype') {
         value.definesObject
     }
     method declarationKind { 
-        if (isFieldDec) then { "method" } else { "def" }
+//        if (isFieldDec) then { "method" } else {
+            "defdec"
+//        }
     }
     method childrenDo(b) {
         b.apply(value)
@@ -2160,12 +2192,12 @@ class defDecNode.new(name', val, dtype') {
         if (false != value) then {
             s := s ++ "\n" ++ spc ++ "Value: " ++ value.pretty(depth + 2)
         }
-        if (annotations.isEmpty.not) then {
-            s := s ++ "\n{spc}Annotations:"
-            annotations.do { ann ->
-                s := "{s} {ann.pretty(depth + 2)}"
-            }
-        }
+//        if (annotations.isEmpty.not) then {
+//            s := s ++ "\n{spc}Annotations:"
+//            annotations.do { ann ->
+//                s := "{s} {ann.pretty(depth + 2)}"
+//            }
+//        }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -2236,7 +2268,9 @@ class varDecNode.new(name', val', dtype') {
             else { false }
     }
     method declarationKind { 
-        if (isFieldDec) then { "method" } else { "var" }
+//        if (isFieldDec) then { "method" } else {
+              "vardec"
+//        }
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitVarDec(self) up(pNode)) then {
@@ -2321,13 +2355,14 @@ class importNode.new(path', name', dtype') {
     method name { value }
     method nameString { value.nameString }
     method isPublic {
-        // imports are confidential by default
+        // imports, like defs, are confidential by default
         if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
         findAnnotation(self, "readable")
     }
     method isWritable { false }
     method isReadable { isPublic }
+    method declarationKind { "defdec" }
     
     method childrenDo(b) {
         if (dtype != false) then { b.apply(dtype) }
@@ -2615,6 +2650,10 @@ class signaturePart.new(*values) {
 }
 
 class callWithPart.new(*values) {
+    // requested as
+    // - callWithPart.new(request:String), or
+    // - callWithPart.new(request:String, arguments:List)
+    // The first is equivalent to the second with an empty list of arguments
     inherits baseNode.new
     def kind is public = "callwithpart"
     var name is public := ""

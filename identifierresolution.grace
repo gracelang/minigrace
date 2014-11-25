@@ -74,7 +74,7 @@ factory method newScopeIn(parent') kind(variety') {
 //                util.log_verbose "add {name} to {self} as {kind}"
 //            }
         } else {
-            print(self)
+//            print(self)
             var more := " in this scope"
             if (elementLines.contains(name)) then {
                 more := " as a {oldKind}"
@@ -476,6 +476,12 @@ method rewriteIdentifier(node) {
     //  TODO: make references to fields direct
     // - id is a self-method: replace node by a request on self
     // - id is not declared: generate an error message
+    
+    // Some clauses are flagged "TODO Compatability Kludge — remove when possible"
+    // This means that APB put them there to produce an AST close enough to the
+    // former identifier resolution pass to keep the C code generator (genc) happy.
+    // They may represent thing that APB doesn't understand, or bugs in genc
+
     var nm := node.value
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
@@ -507,29 +513,65 @@ method rewriteIdentifier(node) {
     }
     def v = definingScope.variety
     def declKind = definingScope.kind(nm)
+//    print "name {nm} defined in a {v} scope as a {declKind}"
     checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
     if (declKind == "parameter") then { return node }
     if (declKind == "typeparam") then { return node }
+
+    if (declKind == "typedef") then { return node }
+    // TODO Compatability Kludge — remove when possible
+
     if (definingScope == nodeScope) then {
         if (declKind == "defdec") then { return node }
+        if (declKind == "typedef") then { return node }
         if (declKind == "vardec") then { return node }
     }
+//    print "{nm} not parameter or local def or var"
     if (definingScope == nodeScope.enclosingObjectScope) then {
         //TODO maybe add: .andAlso{declKind == "inherited"}  ?
         return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false)).withParentRefs
     }
+//    print "{nm} not in enclosing object"
     if (v == "built-in") then {
         return node
     }
+//    print "{nm} not built-in"
     if (v == "dialect") then {
-        return ast.memberNode.new(nm,
-            ast.identifierNode.new("prelude", false)).withParentRefs
+        def memNode = ast.memberNode.new(nm, ast.identifierNode.new("prelude", false))
+        if (node.parent.kind == "call") then {
+            return memNode.withParentRefs
+        } else {
+            def callNode = ast.callNode.new(memNode, [ast.callWithPart.new(memNode.value)])
+            return callNode.withParentRefs
+        }
     }
-//    if (declKind == "method") then {
-//        return nodeScope.findDeepMethod(nm)
-//    }
+    if (declKind == "method") then {
+        if (node.isUnder(["member", "inherits"])) then {
+            // TODO Compatability Kludge — remove when possible
+            return node
+        } else {
+            def deepMeth = nodeScope.findDeepMethod(nm)
+            if ((node.parent.kind == "callwithpart")
+                .orElse{node.parent.kind == "member"}
+                    .orElse{node.parent.kind == "if"}) then {
+                // TODO Compatability Kludge — remove when possible
+                def callNode = ast.callNode.new(deepMeth, [ast.callWithPart.new(deepMeth.value)])
+                return callNode.withParentRefs
+            } else {
+                return deepMeth.withParentRefs
+            }
+        }
+    }
     node
+}
+method string(str) endsWith(suffix) {
+    // this is a filler until the endsWith method makes it into the C version of
+    // the string object
+    def l = suffix.size
+    def start = str.size - l + 1
+    def tail = str.substringFrom(start)to(str.size)
+    tail == suffix
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
@@ -655,7 +697,7 @@ method checkRedefinition(ident)as(kind) {
             if (priorScope.elementLines.contains(name)) then {
                 more := " on line {priorScope.elementLines.get(name)}"
             }
-            if ((kind == "def").orElse {kind == "typedef"}) then {
+            if ((kind == "defdec").orElse {kind == "typedef"}) then {
                 errormessages.syntaxError("'{name}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
@@ -695,6 +737,10 @@ method resolveIdentifiers(topNode) {
             rewriteIdentifier(node)
         } elseif { node.isInherits } then {
             transformInherits(node)
+        } elseif {node.isObject.orElse{ node.isClass }} then {
+            // TODO Compatability Kludge — remove when possible
+            node.superclass := false
+            node
         } else {
             node
         } 
@@ -744,26 +790,26 @@ method setupContext(values) {
     builtInsScope.addName "Boolean" as "typedef"
     builtInsScope.addName "Block" as "typedef"
     builtInsScope.addName "Done" as "typedef"
-    builtInsScope.addName "done" as "def"
-    builtInsScope.addName "true" as "def"
-    builtInsScope.addName "false" as "def"
-    builtInsScope.addName "self" as "def"
-    builtInsScope.addName "super" as "def"
-    builtInsScope.addName "outer" as "def"
+    builtInsScope.addName "done" as "defdec"
+    builtInsScope.addName "true" as "defdec"
+    builtInsScope.addName "false" as "defdec"
+    builtInsScope.addName "self" as "defdec"
+    builtInsScope.addName "super" as "defdec"
+    builtInsScope.addName "outer" as "defdec"
     builtInsScope.addName "readable"
     builtInsScope.addName "writable"
     builtInsScope.addName "public"
     builtInsScope.addName "confidential"
     builtInsScope.addName "override"
     builtInsScope.addName "parent"
-    builtInsScope.addName "..." as "def"
+    builtInsScope.addName "..." as "defdec"
 
     preludeScope.addName "for()do"
     preludeScope.addName "while()do"
     preludeScope.addName "print"
-    preludeScope.addName "Exception" as "def"
-    preludeScope.addName "PrimitiveArray" as "def"
-    preludeScope.addName "ProgrammingError" as "def"
+    preludeScope.addName "Exception" as "defdec"
+    preludeScope.addName "PrimitiveArray" as "defdec"
+    preludeScope.addName "ProgrammingError" as "defdec"
 
     graceObjectScope.addName "=="
     graceObjectScope.addName "!="
@@ -775,9 +821,9 @@ method setupContext(values) {
     
     builtInsScope.addName "graceObject"
     builtInsScope.putScope("graceObject", graceObjectScope)
-    builtInsScope.addName "prelude" as "def"
+    builtInsScope.addName "prelude" as "defdec"
     builtInsScope.putScope("prelude", preludeScope)
-    builtInsScope.addName "_prelude" as "def"
+    builtInsScope.addName "_prelude" as "defdec"
     builtInsScope.putScope("_prelude", preludeScope)
 
     // Historical - should be removed eventually
