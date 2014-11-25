@@ -2045,7 +2045,7 @@ method processImports(values') {
             }
         }
         if (imperrors.size > 0) then {
-            errormessages.syntaxError("Failed processing import of {imperrors}.")atLine(1)
+            errormessages.syntaxError("Failed processing import of {imperrors}.")
         }
     }
 }

@@ -409,6 +409,10 @@ method error(message) atPosition(errlinenum, errpos)
     util.generalError(message, errlinenum, ":({errpos})", arr, errpos, suggestions)
 }
 
+method error(message) {
+    util.generalError(message, 0, "", "", false, [])
+}
+
 method error(message)atLine(errlinenum)withSuggestions(suggestions) {
     var arr := "----"
     for (1..errlinenum.asString.size) do { _ ->
