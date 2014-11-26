@@ -470,6 +470,9 @@ method rewritematchblock(blk) {
 
 
 method rewriteIdentifier(node) {
+    if (node.nameString == "inner") then {
+        print "****************\n{node.nameString} being re-written .."
+    }
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
     // This method may or may not transform node into another ast.
@@ -534,7 +537,9 @@ method rewriteIdentifier(node) {
     }
 
     checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
-
+    if ((nm == "inner") && (v == "object")) then {
+        print "{nm} defined in scope {definingScope}\n===="
+    }
     if (v == "built-in") then { return node }
     if (declKind == "parameter") then { return node }
     if (declKind == "typedec") then { return node }
@@ -549,13 +554,24 @@ method rewriteIdentifier(node) {
         if (declKind == "typedec") then { return node }
         if (declKind == "vardec") then { return node }
     }
+    if (nm == "inner") then {
+        print "nodeScope.enclosingObjectScope = {nodeScope.enclosingObjectScope}"
+    }
     if (definingScope == nodeScope.enclosingObjectScope) then {
-        // TODO maybe add: .andAlso{declKind == "inherited"}  ?
+        if ((nm == "inner") && (v == "object")) then {
+            print "{nm} in if"
+        }
         def memberNode = ast.memberNode.new(nm, ast.identifierNode.new("self", false))
         if (node.parent.needsMembersWrapped) then {
             // TODO Compatability Kludge — remove when possible
+            if ((nm == "inner") && (v == "object")) then {
+                print "{nm}: returning call"
+            }
             return memberNode.wrapWithCall
         } else {
+            if ((nm == "inner") && (v == "object")) then {
+                print "{nm}: returning member"
+            }
             return memberNode.withParentRefs
         }
     }
