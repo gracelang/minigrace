@@ -2916,12 +2916,12 @@ method methodsignature(sameline) {
                     suggestion.replaceTokenRange(sym, tokens.first)with("]({sym.value})")
                     suggestions.push(suggestion)
                 }
-                errormessages.syntaxError("A method name beginning with '[]' must have the parameter name in parentheses after the '[]'.")atPosition(
+                errormessages.syntaxError("A declaration of a method named '[]' must have the parameter name in parentheses after the '[]'.")atPosition(
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
             } else {
                 def suggestion = errormessages.suggestion.new
                 suggestion.insert("]")afterToken(lastToken)
-                errormessages.syntaxError("A method name must either start with an identifier or '[]'.")atPosition(
+                errormessages.syntaxError("A method name must start with either an identifier or '[]'.")atPosition(
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
             }
         }
