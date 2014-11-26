@@ -473,18 +473,17 @@ class methodTypeNode.new(name', signature', rtype') {
         var s := "MethodType\n"
         s := "{s}{spc}Name: {value}\n"
         if (rtype != false) then {
-            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}\n"
+            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
-        s := "{s}{spc}Signature:"
+        if (generics.size != 0) then {
+            s := "{s}\n{spc}TypeParams:"
+            for (generics) do { each -> 
+                s := "{s}\n{spc}  {each.pretty(depth + 2)}"
+            }
+        }
+        s := "{s}\n{spc}Signature:"
         for (signature) do { part ->
-            s := "{s}\n  {spc}Part: {part.name}"
-            s := "{s}\n    {spc}Parameters:"
-            for (part.params) do { p ->
-                s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-            }
-            if (part.vararg != false) then {
-                s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
-            }
+            s := "{s}\n  {spc}{part.pretty(depth + 2)}"
         }
         s
     }
@@ -1073,7 +1072,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             }
         }
         if (false != generics) then {
-            s := s ++ "\n" ++ spc ++ "Generics:"
+            s := s ++ "\n" ++ spc ++ "TypeParams:"
             for (generics) do {g->
                 s := s ++ "\n  {spc}{g.pretty(0)}"
             }
@@ -2025,6 +2024,21 @@ class signaturePart.new(*values) {
     }
     method map(blk) {
         map(blk)before {} after {}
+    }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        var s := "Part: {name}"
+        s := "{s}\n{spc}Parameters:"
+        for (params) do { p ->
+            s := "{s}\n  {spc}{p.pretty(depth + 2)}"
+        }
+        if (vararg != false) then {
+            s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
+        }
+        s
     }
 }
 
