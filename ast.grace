@@ -80,9 +80,12 @@ class baseNode.new {
     method isMember { false }
     method isCall { false }
     method isClass { false }
+    method isBind { false }
     method isObject { false }
+    method needsMembersWrapped { false }
     method definesObject { false }
     method definesScope { false }
+    method usesAsType(aNode) { false }
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
     method isWritable { true }
@@ -121,19 +124,13 @@ class baseNode.new {
         self.kind
     }
     method isUnder(lns) {
-        // lns is a list of strings representing types of AST nodes, 
+        // lns is a list of strings representing kinds of AST node,
         // from the bottom up.  Is this node a subtree of such a structure?
-        if (self.nameString == "iterable") then { print "{self} isUnder {lns}?" }
         var nd := self
         for (lns) do { each ->
             nd := nd.parent
-            if (self.nameString == "iterable") then { print "    parent is {nd}" }
             if (nd == nullNode) then { return false }
             if (nd.kind != each) then { return false }
-        }
-        if (self.nameString == "iterable") then {
-            print "    isUnder({lns}) returned true!"
-            print "    nd = {nd.pretty(0)}"
         }
         return true
     }
@@ -191,6 +188,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
+    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(value)
         b.apply(thenblock)
@@ -560,6 +558,7 @@ class methodTypeNode.new(name', signature', rtype') {
             part.params.do { each -> b.apply(each) }
         }
     }
+    method declarationKind { "typedec" }
     method typeParametersDo(b) {
         if (false != generics) then {
             generics.do { each -> b.apply(each) }
@@ -579,12 +578,7 @@ class methodTypeNode.new(name', signature', rtype') {
                 each.accept(visitor) from(self)
             }
             for (signature) do { part ->
-                for (part.params) do { p ->
-                    p.accept(visitor) from(self)
-                }
-                if (part.vararg != false) then {
-                    part.vararg.accept(visitor) from(self)
-                }
+                part.accept(visitor) from(self)
             }
         }
     }
@@ -616,18 +610,17 @@ class methodTypeNode.new(name', signature', rtype') {
         var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
         if (rtype != false) then {
-            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}\n"
+            s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
-        s := "{s}{spc}Signature:"
+        if (generics.isEmpty.not) then {
+            s := "{s}\n{spc}TypeParams:"
+            for (generics) do { each -> 
+                s := "{s}\n{spc}  {each.pretty(depth + 2)}"
+            }
+        }
+        s := "{s}\n{spc}Signature:"
         for (signature) do { part ->
-            s := "{s}\n  {spc}Part: {part.name}"
-            s := "{s}\n    {spc}Parameters:"
-            for (part.params) do { p ->
-                s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-            }
-            if (part.vararg != false) then {
-                s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
-            }
+            s := "{s}\n  {spc}{part.pretty(depth + 2)}"
         }
         s
     }
@@ -907,7 +900,9 @@ class methodNode.new(name', signature', body', dtype') {
     method isPublic { isConfidential.not }
     method isWritable { false }
     method isReadable { isPublic }
-    
+    method usesAsType(aNode) {
+        aNode == dtype
+    }
     method definesScope { 
         body.isEmpty.not.andAlso {body.last.definesObject}
     }
@@ -1078,7 +1073,7 @@ class methodNode.new(name', signature', body', dtype') {
     }
     method asString { "Method {nameString}" }
     method shallowCopyWithParent(p) {
-        methodNode.new(value, emptySeq, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+        methodNode.new(value, signature, body, dtype).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1267,7 +1262,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method isWritable { false }
     method isReadable { isPublic }
-        
+    method usesAsType(aNode) {
+        aNode == dtype
+    }
     method parametersDo(b) {
         signature.do { part -> 
             part.params.do { each -> b.apply(each) }
@@ -1339,8 +1336,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
-        } else {
-            s := s ++ "\n" ++ spc ++ "Superclass: false"
         }
         s := s ++ "\n"
         s := "{s}{spc}Factory method: {constructor.pretty(0)}\n"
@@ -1359,7 +1354,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             }
         }
         if (generics.isEmpty.not) then {
-            s := s ++ "\n" ++ spc ++ "Generics:"
+            s := s ++ "\n" ++ spc ++ "TypeParams:"
             for (generics) do {g->
                 s := s ++ "\n  {spc}{g.pretty(0)}"
             }
@@ -1470,7 +1465,7 @@ class objectNode.new(body, superclass') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := super.pretty(depth)
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
@@ -1575,6 +1570,7 @@ class memberNode.new(what, in') {
         // since a member node represents a method request, and is compiled as such
         callNode.new(self, [callWithPart.new(value)]).withParentRefs
     }
+    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(in)
     }
@@ -1723,6 +1719,15 @@ class identifierNode.new(name, dtype') {
     method declarationKind {
         parent.declarationKind
     }
+    method inTypePosition {
+        // am I used by my parent node as a type?
+        // This is a hack, uses as a subsitute for having information in the .gct
+        // telling us which identifiers represent types
+        parent.usesAsType(self)
+    }
+    method usesAsType(aNode) {
+        aNode == dtype
+    }
     method childrenDo(b) {
         if (dtype != false) then { b.apply(dtype) }
     }
@@ -1772,7 +1777,7 @@ class identifierNode.new(name, dtype') {
             s := self.asString
         }
         if (self.dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "Type: "
+            s := s ++ "\n" ++ spc ++ "  Type: "
             s := s ++ self.dtype.pretty(depth + 2)
         }
         if (false != generics) then {
@@ -1804,11 +1809,11 @@ class identifierNode.new(name, dtype') {
     }
 
     method asString { 
-//        if (isBindingOccurrence) then { 
-//            "IdentifierBinding‹{value}›" 
-//        } else { 
+        if (isBindingOccurrence.andAlso{util.target == "symbols"}) then {
+            "IdentifierBinding‹{value}›"
+        } else { 
             "Identifier‹{value}›"
-//        }
+        }
     }
     method shallowCopyWithParent(p) {
         identifierNode.new(value, false).shallowCopyFieldsFrom(self) parent(p)
@@ -1933,6 +1938,7 @@ class opNode.new(op, l, r) {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
+    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(left)
         b.apply(right)
@@ -2060,6 +2066,8 @@ class bindNode.new(dest', val') {
         b.apply(value)
         b.apply(dest)
     }
+    method isBind { true }
+    method needsMembersWrapped { true }
     method asString { "Bind {value}" }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBind(self) up(pNode)) then {
@@ -2103,7 +2111,7 @@ class bindNode.new(dest', val') {
         s
     }
     method shallowCopyWithParent(p) {
-        bindNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+        bindNode.new(dest, value).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class defDecNode.new(name', val, dtype') {
@@ -2116,6 +2124,8 @@ class defDecNode.new(name', val, dtype') {
     var annotations is public := list.empty
     var data is public := false
     var startToken is public := false
+
+    method needsMembersWrapped { true }
     method isPublic {
         // defs are confidential by default
         if (annotations.size == 0) then { return false }
@@ -2140,6 +2150,9 @@ class defDecNode.new(name', val, dtype') {
 //        if (isFieldDec) then { "method" } else {
             "defdec"
 //        }
+    }
+    method usesAsType(aNode) {
+        aNode == dtype
     }
     method childrenDo(b) {
         b.apply(value)
@@ -2220,7 +2233,7 @@ class defDecNode.new(name', val, dtype') {
         s
     }
     method shallowCopyWithParent(p) {
-        defDecNode.new(name, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+        defDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -2237,7 +2250,8 @@ class varDecNode.new(name', val', dtype') {
     var dtype is public := dtype'
     def nameString:String is public = name.value
     var annotations is public := list.empty
-    
+
+    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(value)
         b.apply(name)
@@ -2271,6 +2285,9 @@ class varDecNode.new(name', val', dtype') {
 //        if (isFieldDec) then { "method" } else {
               "vardec"
 //        }
+    }
+    method usesAsType(aNode) {
+        aNode == dtype
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitVarDec(self) up(pNode)) then {
@@ -2342,7 +2359,7 @@ class varDecNode.new(name', val', dtype') {
         s
     }
     method shallowCopyWithParent(p) {
-        varDecNode.new(name, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+        varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class importNode.new(path', name', dtype') {
@@ -2363,7 +2380,9 @@ class importNode.new(path', name', dtype') {
     method isWritable { false }
     method isReadable { isPublic }
     method declarationKind { "defdec" }
-    
+    method usesAsType(aNode) {
+        aNode == dtype
+    }
     method childrenDo(b) {
         if (dtype != false) then { b.apply(dtype) }
         annotations.do(b)
@@ -2457,7 +2476,8 @@ class returnNode.new(expr) {
     inherits baseNode.new
     def kind is public = "return"
     var value is public := expr
-    
+
+    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(value)
     }
@@ -2630,12 +2650,12 @@ class signaturePart.new(*values) {
             spc := spc ++ "  "
         }
         var s := "Part: {name}"
-        s := "{s}\n    {spc}Parameters:"
+        s := "{s}\n{spc}Parameters:"
         for (params) do { p ->
-            s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+            s := "{s}\n  {spc}{p.pretty(depth + 2)}"
         }
         if (vararg != false) then {
-            s := "{s}\n    {spc}Vararg: {vararg.pretty(depth + 3)}"
+            s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
         }
         s
     }
@@ -2646,6 +2666,9 @@ class signaturePart.new(*values) {
         super.shallowCopyFieldsFrom(other) parent(p)
         lineLength := other.lineLength
         self
+    }
+    method asString {
+        "Part: {name}"
     }
 }
 
@@ -2665,6 +2688,8 @@ class callWithPart.new(*values) {
     if (values.size > 1) then {
         args := values[2]
     }
+    
+    method needsMembersWrapped { true }
     
     method childrenDo(b) {
         args.do(b)

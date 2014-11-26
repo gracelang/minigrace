@@ -263,6 +263,17 @@ factory method newScopeIn(parent') kind(variety') {
         ProgrammingError "no object scope found!"
         // the outermost scope should always be a module scope.
     }
+    method enclosingMethodScope {
+        // Answer the closest enclosing scope that describes a method,
+        // but don't go out of the current object
+        self.do { s ->
+            if (s.variety == "method") then { return s }
+            if (s.variety == "object") then { return emptyScope }
+            if (s.variety == "class") then { return emptyScope }
+            if (s.variety == "module") then { return emptyScope }
+        }
+        return emptyScope
+    }
 }
 
 def emptyScope = newScopeKind("empty")
@@ -485,16 +496,29 @@ method rewriteIdentifier(node) {
     var nm := node.value
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
+    def definingScope = nodeScope.thatDefines(nm) ifNone {
+        reportUndeclaredIdentifier(node)
+    }
+    def v = definingScope.variety
+    def declKind = definingScope.kind(nm)
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
-        if (nodeScope.hasDefinitionInNest(nm)) then {
-            if (nodeScope.hasDefinitionInNest(nmGets)) then {
-                if (nodeScope.kindInNest(nmGets) == "method") then {
-                    def meth = nodeScope.findDeepMethod(nmGets)
-                    def meth2 = ast.memberNode.new(nm, meth.in)
-                    return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)]).
-                        withParentRefs
-                }
+        if (nodeScope.hasDefinitionInNest(nmGets)) then {
+            if (nodeScope.kindInNest(nmGets) == "method") then {
+                def meth = nodeScope.findDeepMethod(nmGets)
+                def meth2 = ast.memberNode.new(nm, meth.in)
+                return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)]).
+                    withParentRefs
+            }
+        } else {
+            if ((declKind == "vardec")
+                    .andAlso{definingScope == nodeScope.enclosingMethodScope}) then {
+                return node
+            } else {
+                def selfId = ast.identifierNode.new("self", false)
+                def memb = ast.memberNode.new(nm, selfId)
+                selfId.parent := memb
+                return memb
             }
         }
     }
@@ -508,35 +532,42 @@ method rewriteIdentifier(node) {
     if (nm == "self") then {
         return node
     }
-    def definingScope = nodeScope.thatDefines(nm) ifNone {
-        reportUndeclaredIdentifier(node)
-    }
-    def v = definingScope.variety
-    def declKind = definingScope.kind(nm)
-//    print "name {nm} defined in a {v} scope as a {declKind}"
-    checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
-    if (declKind == "parameter") then { return node }
-    if (declKind == "typeparam") then { return node }
 
-    if (declKind == "typedef") then { return node }
+    checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
+
+    if (v == "built-in") then { return node }
+    if (declKind == "parameter") then { return node }
+    if (declKind == "typedec") then { return node }
+
     // TODO Compatability Kludge — remove when possible
+    if (declKind == "typedec") then { return node }
+    if (node.inTypePosition) then { return node }
+    // the latter is necessary until .gct files distinguish types
 
     if (definingScope == nodeScope) then {
         if (declKind == "defdec") then { return node }
-        if (declKind == "typedef") then { return node }
+        if (declKind == "typedec") then { return node }
         if (declKind == "vardec") then { return node }
     }
-//    print "{nm} not parameter or local def or var"
     if (definingScope == nodeScope.enclosingObjectScope) then {
-        //TODO maybe add: .andAlso{declKind == "inherited"}  ?
-        return ast.memberNode.new(nm,
-            ast.identifierNode.new("self", false)).withParentRefs
+        // TODO maybe add: .andAlso{declKind == "inherited"}  ?
+        def memberNode = ast.memberNode.new(nm, ast.identifierNode.new("self", false))
+        if (node.parent.needsMembersWrapped) then {
+            // TODO Compatability Kludge — remove when possible
+            return memberNode.wrapWithCall
+        } else {
+            return memberNode.withParentRefs
+        }
     }
-//    print "{nm} not in enclosing object"
-    if (v == "built-in") then {
+    if (v == "method") then {
+        // node is defined in the closest enclosing method.
+        // there may be intervening blocks, but not objects or clases
+        // TODO Compatability Kludge — remove when possible
+        // if this identifier is in a block that is returned, then ids
+        // defined in the enclosing method scope have to go in a closure
+        // In that case, leaving the id untouched may be wrong
         return node
     }
-//    print "{nm} not built-in"
     if (v == "dialect") then {
         def memNode = ast.memberNode.new(nm, ast.identifierNode.new("prelude", false))
         if (node.parent.kind == "call") then {
@@ -546,24 +577,22 @@ method rewriteIdentifier(node) {
             return callNode.withParentRefs
         }
     }
-    if (declKind == "method") then {
-        if (node.isUnder(["member", "inherits"])) then {
+    if (node.isUnder(["member", "inherits"])) then {
+        // TODO Compatability Kludge — remove when possible
+        return node
+    } else {
+        def deepMeth = nodeScope.findDeepMethod(nm)
+        if (nm == "cache") then {
+            print "node {nm}: node.parent = {node.parent}; node.parent.needsMembersWrapped = {node.parent.needsMembersWrapped}"
+        }
+        if (node.parent.needsMembersWrapped) then {
             // TODO Compatability Kludge — remove when possible
-            return node
+            return deepMeth.wrapWithCall
         } else {
-            def deepMeth = nodeScope.findDeepMethod(nm)
-            if ((node.parent.kind == "callwithpart")
-                .orElse{node.parent.kind == "member"}
-                    .orElse{node.parent.kind == "if"}) then {
-                // TODO Compatability Kludge — remove when possible
-                def callNode = ast.callNode.new(deepMeth, [ast.callWithPart.new(deepMeth.value)])
-                return callNode.withParentRefs
-            } else {
-                return deepMeth.withParentRefs
-            }
+            return deepMeth.withParentRefs
         }
     }
-    node
+    return node
 }
 method string(str) endsWith(suffix) {
     // this is a filler until the endsWith method makes it into the C version of
@@ -697,7 +726,7 @@ method checkRedefinition(ident)as(kind) {
             if (priorScope.elementLines.contains(name)) then {
                 more := " on line {priorScope.elementLines.get(name)}"
             }
-            if ((kind == "defdec").orElse {kind == "typedef"}) then {
+            if ((kind == "defdec").orElse {kind == "typedec"}) then {
                 errormessages.syntaxError("'{name}' cannot be "
                     ++ "redeclared because it is already declared in "
                     ++ "scope{more}.")
@@ -782,14 +811,14 @@ method setupContext(values) {
     // define the built-in names
     util.setPosition(0, 0)
 
-    builtInsScope.addName "Type" as "typedef"
-    builtInsScope.addName "Object" as "typedef"
-    builtInsScope.addName "Unknown" as "typedef"
-    builtInsScope.addName "String" as "typedef"
-    builtInsScope.addName "Number" as "typedef"
-    builtInsScope.addName "Boolean" as "typedef"
-    builtInsScope.addName "Block" as "typedef"
-    builtInsScope.addName "Done" as "typedef"
+    builtInsScope.addName "Type" as "typedec"
+    builtInsScope.addName "Object" as "typedec"
+    builtInsScope.addName "Unknown" as "typedec"
+    builtInsScope.addName "String" as "typedec"
+    builtInsScope.addName "Number" as "typedec"
+    builtInsScope.addName "Boolean" as "typedec"
+    builtInsScope.addName "Block" as "typedec"
+    builtInsScope.addName "Done" as "typedec"
     builtInsScope.addName "done" as "defdec"
     builtInsScope.addName "true" as "defdec"
     builtInsScope.addName "false" as "defdec"
@@ -885,6 +914,22 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
             }
             true
         }
+        method visitBind(o) up(pNode) { 
+            o.parent := pNode
+            def lValue = o.dest
+            if (lValue.kind == "identifier") then {
+                lValue.isAssigned := true
+            }
+            return true
+        }
+        method visitCall(o) up(pNode) { 
+            o.parent := pNode
+            def callee = o.value
+            if (callee.kind == "identifier") then {
+                callee.inRequest := true
+            }
+            return true
+        }
         method visitMethod(o) up(pNode) { 
             o.parent := pNode
             pNode.scope.addNode(o.value) as "method"
@@ -906,7 +951,8 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
             def objectScope = newScopeIn(pNode.scope) kind "object"
             objectScope.bindAs(classNameNode.nameString)
             objectScope.addNode(o.constructor) as "method"
-            o.generics.do { each -> objectScope.addNode(each) as "typeparam" }
+            o.generics.do { each -> objectScope.addNode(each) as "typedec" }
+                // for now we don't distinguish between type decs and type params
             o.constructor.isDeclaredByParent := true
             o.symbolTable := newScopeIn(objectScope) kind "object"
             o.symbolTable.bindAs(o.constructor.nameString)
@@ -927,9 +973,10 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         }
         method visitTypeDec(o) up(pNode) { 
             o.parent := pNode
-            pNode.scope.addNode(o.name) as "typedef"
+            pNode.scope.addNode(o.name) as "typedec"
             if (o.generics.isEmpty) then { return true }
-            o.symbolTable := newScopeIn(pNode.scope) kind "typeparam"
+            o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
+                // for now we don't distinguish between type decs and type params
             true
         }
         method visitInherits(o) up (pNode) {
@@ -1074,23 +1121,6 @@ method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
     var superObject := false
-    def vis = object {
-        inherits ast.baseVisitor
-        method visitBind(o) {
-            def d = o.dest
-            if (d.kind == "identifier") then {
-                d.isAssigned := true
-            }
-            return true
-        }
-        method visitCall(o) {
-            def d = o.value
-            if (d.kind == "identifier") then {
-                d.inRequest := true
-            }
-            return true
-        }
-    }
     for (values) do { nd ->
         if (nd.kind == "inherits") then {
             if (false == superObject) then {
