@@ -77,7 +77,7 @@ method countbindings(l) {
     for (l) do { n ->
         def k = n.kind
         if ((k == "vardec") || (k == "defdec") || (k == "typedec")
-             || (k == "class") || (k == "import")) then {
+             || (k == "class")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -90,7 +90,7 @@ method definebindings(l, slot') {
     for (l) do { n ->
         def k = n.kind
         if ((k == "vardec") || (k == "defdec") || (k == "typedec")
-             || (k == "class") || (k == "import")) then {
+             || (k == "class")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
@@ -110,6 +110,10 @@ method definebindings(l, slot') {
             slot := definebindings(n.thenblock.body, slot)
             slot := definebindings(n.elseblock.body, slot)
             n.handledIdentifiers := true
+        } elseif {n.kind == "import"} then {
+            var tnm := escapeident(n.nameString)
+            out "Object *var_{tnm} = alloc_var();"
+            // TODO: why is this different from a def?  Handle annotations!
         }
     }
     slot
@@ -657,6 +661,7 @@ method compilemethod(o, selfobj, pos) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind var_x as usual, but
     // set to pointer from the additional closure parameter.
+    out "// method {o.nameString}"
     var origParamsUsed := paramsUsed
     paramsUsed := 1
     var origPartsUsed := partsUsed
@@ -1018,7 +1023,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
-        out("setclosureframe(closure{myc}, stackframe);")
+        out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  addtoclosure(closure{myc}, selfslot);")
@@ -1120,8 +1125,8 @@ method compileifexpr(o) {
     def elseList = o.elseblock.body
     if (elseList.size > 0) then {
         numslots := countbindings(elseList)
-        out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-        out("gc_frame_newslot((Object)stackframe);")
+        out("  stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+        out("  gc_frame_newslot((Object)stackframe);")
         definebindings(elseList, 0)
         for (elseList) do { l->
             fret := compilenode(l)
@@ -1437,7 +1442,7 @@ method compilecall(o, tailcall) {
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
-        out "// call case 1"
+        out "// call case 1: super request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1451,7 +1456,7 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
             o.value.in.value == "outer"}) then {
-        out "// call case 2"
+        out "// call case 2: outer request"
         def ot = compilenode(o.value.in)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1465,12 +1470,12 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
-        out "// call case 3"
+        out "// call case 3: self.outer request"
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
-        out "// call case 4"
+        out "// call case 4: self request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1482,7 +1487,7 @@ method compilecall(o, tailcall) {
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
-        out "// call case 5"
+        out "// call case 5: prelude request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1493,7 +1498,7 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif (o.value.kind == "member") then {
-        out "// call case 6"
+        out "// call case 6: other member request"
         obj := compilenode(o.value.in)
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1511,7 +1516,7 @@ method compilecall(o, tailcall) {
             out("    {nparts}, partcv, params);")
         }
     } else {
-        out "// call case 7"
+        out "// call case 7: all other requests"
         obj := "self"
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1639,7 +1644,7 @@ method compileimport(o) {
         if ( o.isConfidential ) then {
             accessor.annotations.push(ast.identifierNode.new("confidential", false))
         }
-        compilenode(accessor)
+//        compilenode(accessor)
     }
     globals.push("Object {modg}_init();")
 }
@@ -2045,7 +2050,7 @@ method processImports(values') {
             }
         }
         if (imperrors.size > 0) then {
-            errormessages.syntaxError("Failed processing import of {imperrors}.")
+            errormessages.error("Failed processing import of {imperrors}.")
         }
     }
 }
