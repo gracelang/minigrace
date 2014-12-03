@@ -14,10 +14,10 @@ method tryMatch(o) {
 }
 
 class aPair.new(l, r) {
-    def left = l
-    def right = r
-    def extract = [l, r]
-    def asString = "aPair.new({l}, {r})"
+    def left is public = l
+    def right is public = r
+    def extract is public = [l, r]
+    def asString is public = "aPair.new({l}, {r})"
 }
 
 tryMatch(aPair.new(1, 2))
