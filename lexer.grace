@@ -32,6 +32,7 @@ method padl(s, l, w) {
 }
 
 def LexerClass = object {
+    method asString { "LexerClass object" }
     method new {
         var lineNumber := 1
         var linePosition := 0

@@ -239,7 +239,7 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
     if ((errlinenum > 1) && (lines.size > 1)) then {
         io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
     }
-    if (lines.size >= errlinenum) then {
+    if ((lines.size >= errlinenum) && (errlinenum > 0)) then {
         var line := lines.at(errlinenum)
         if(spacePos != false) then {
             io.error.write("  {errlinenum}: {line.substringFrom(1)to(spacePos-1)} {line.substringFrom(spacePos)to(line.size)}\n")
@@ -247,9 +247,6 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
             io.error.write("  {errlinenum}: {line}\n")
         }
         io.error.write("{arr}\n")
-    }
-    if (errlinenum < lines.size) then {
-        io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
     }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->

@@ -230,8 +230,20 @@ class ifNode.new(cond, thenblock', elseblock') {
         var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.value.pretty(depth+1)
         s := s ++ "\n"
-        s := s ++ spc ++ "Then: {thenblock.pretty(depth+2)}\n"
-        s := s ++ spc ++ "Else: {elseblock.pretty(depth+2)}"
+        if (util.target == "symbols") then {
+            s := s ++ spc ++ "Then: {thenblock.pretty(depth+2)}\n"
+            s := s ++ spc ++ "Else: {elseblock.pretty(depth+2)}"
+        } else {
+            s := s ++ spc ++ "Then:"
+            for (self.thenblock.body) do { ix ->
+                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
+            }
+            s := s ++ "\n"
+            s := s ++ spc ++ "Else:"
+            for (self.elseblock.body) do { ix ->
+                s := s ++ "\n  "++ spc ++ ix.pretty(depth+2)
+            }
+        }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -426,7 +438,7 @@ class catchCaseNode.new(block, cases', finally') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := super.pretty(depth) ++ "\n"
+        var s := "Catch\n"
         s := s ++ spc ++ value.pretty(depth + 2)
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
@@ -888,8 +900,8 @@ class methodNode.new(name', signature', body', dtype') {
     def nameString:String is public = value.value
     var annotations is public := list.empty
     var isFresh is public := false      // a method is 'fresh' if it answers a new object
-    
-    
+
+    method needsMembersWrapped { true }
     method declarationKind {
         "parameter"
     }
@@ -1109,6 +1121,7 @@ class callNode.new(what, with') {
     var isPattern is public := false
     def nameString:String is public = what
     
+    method target { value }
     method isCall { true }
     method childrenDo(b) {
         b.apply(value)
@@ -1211,7 +1224,7 @@ class callNode.new(what, with') {
     }
     method asString { "Call {what.pretty(0)}" }
     method shallowCopyWithParent(p) {
-        callNode.new(nullNode, emptySeq).shallowCopyFieldsFrom(self) parent(p)
+        callNode.new(value, with).shallowCopyFieldsFrom(self) parent(p)
     }
     method shallowCopyFieldsFrom(other) parent(p) {
         super.shallowCopyFieldsFrom(other) parent(p)
@@ -1561,16 +1574,21 @@ class memberNode.new(what, in') {
     inherits baseNode.new
     def kind is public = "member"
     var value is public := what  // NB: value is a String, not an Identifier
-    def nameString:String is public = value
     var in is public := in'
     var generics is public := false
+
+    method target { in }
+    method nameString { value }
     method isMember { true }
+    method needsMembersWrapped {
+        if (value == "outer") then { return false }
+        parent.isMember && parent.parent.isMember.not
+    }
     method wrapWithCall {
         // TODO Compatability Kludge — remove when possible
         // since a member node represents a method request, and is compiled as such
         callNode.new(self, [callWithPart.new(value)]).withParentRefs
     }
-    method needsMembersWrapped { true }
     method childrenDo(b) {
         b.apply(in)
     }
@@ -1650,6 +1668,7 @@ class genericNode.new(base, params') {
     var value is public := base        // APB: in a generic call, value is the called node
                             // e.g. in List<Number>, value is Identifier‹List›
     var params is public := params'
+    method nameString { value.nameString }
     method asString { 
         var s := "{base}<"
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
@@ -1696,7 +1715,7 @@ class genericNode.new(base, params') {
         s
     }
     method shallowCopyWithParent(p) {
-        genericNode.new(nullNode, emptySeq).shallowCopyFieldsFrom(self) parent(p)
+        genericNode.new(value, emptySeq).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class identifierNode.new(name, dtype') {
@@ -2067,7 +2086,6 @@ class bindNode.new(dest', val') {
         b.apply(dest)
     }
     method isBind { true }
-    method needsMembersWrapped { true }
     method asString { "Bind {value}" }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitBind(self) up(pNode)) then {
@@ -2125,7 +2143,6 @@ class defDecNode.new(name', val, dtype') {
     var data is public := false
     var startToken is public := false
 
-    method needsMembersWrapped { true }
     method isPublic {
         // defs are confidential by default
         if (annotations.size == 0) then { return false }
@@ -2690,7 +2707,6 @@ class callWithPart.new(*values) {
     }
     
     method needsMembersWrapped { true }
-    
     method childrenDo(b) {
         args.do(b)
     }

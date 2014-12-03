@@ -70,11 +70,7 @@ factory method newScopeIn(parent') kind(variety') {
         if (oldKind == "inherited")  then {
             elements.put(name, kind)
             elementLines.put(name, nd.line)
-//            if (name == "asString") then {
-//                util.log_verbose "add {name} to {self} as {kind}"
-//            }
         } else {
-//            print(self)
             var more := " in this scope"
             if (elementLines.contains(name)) then {
                 more := " as a {oldKind}"
@@ -179,7 +175,22 @@ factory method newScopeIn(parent') kind(variety') {
         print(self.asStringWithParents)
         ProgrammingError.refine "no scope defines {name}"
     }
-
+    method isInSameObjectAs (enclosingScope) {
+        if (self == enclosingScope) then { return true }
+        if (self.parent.isObjectScope) then { return false }
+        self.parent.isInSameObjectAs(enclosingScope)
+    }
+    method isObjectScope {
+        if (variety == "object") then { return true }
+        if (variety == "module") then { return true }
+        if (variety == "dialect") then { return true }
+        if (variety == "class") then { return true }
+        false
+    }
+    method isMethodScope {
+        if (variety == "method") then { return true }
+        false
+    }
     method findDeepMethod(name) {
         // APB: I moved this method from the top-level (where it operated
         // on the now-defunct 'scope' module variable) to this class.
@@ -225,9 +236,7 @@ factory method newScopeIn(parent') kind(variety') {
             if (sought == "self") then {
                 var s := self
                 while {s.hasParent} do {
-                    if (s.variety == "object") then { return s }
-                    if (s.variety == "class") then { return s }
-                    if (s.variety == "module") then { return s }
+                    if (s.isObjectScope) then { return s }
                     s := s.parent
                 }
             } elseif (sought == "prelude") then {
@@ -256,23 +265,21 @@ factory method newScopeIn(parent') kind(variety') {
         // Answer the closest enclosing scope that describes an object,
         // class or module scope
         self.do { s ->
-            if (s.variety == "object") then { return s }
-            if (s.variety == "class") then { return s }
-            if (s.variety == "module") then { return s }
+            if (s.isObjectScope) then { return s }
         }
         ProgrammingError "no object scope found!"
         // the outermost scope should always be a module scope.
     }
-    method enclosingMethodScope {
-        // Answer the closest enclosing scope that describes a method,
-        // but don't go out of the current object
+    method inSameContextAs(encScope) {
+        // Is this scope within the same context as encScope?
+        // i.e. within the same method and object?
+        if (encScope.isObjectScope) then { return false }
         self.do { s ->
-            if (s.variety == "method") then { return s }
-            if (s.variety == "object") then { return emptyScope }
-            if (s.variety == "class") then { return emptyScope }
-            if (s.variety == "module") then { return emptyScope }
+            if (s == encScope) then { return true }
+            if (s.isObjectScope) then { return false }
+            if (s.isMethodScope) then { return false }
         }
-        return emptyScope
+        ProgrammingError.raise "self = {self}; encScope = {encScope}"
     }
 }
 
@@ -442,11 +449,9 @@ method rewritematchblock(blk) {
                         newparams.push(p)
                     }
                 }
-//            pattern := resolveIdentifiers(pattern)
         } else {
             if (false != blk.matchingPattern) then {
                 if (blk.matchingPattern.value == arg.value) then {
-//                    pattern := resolveIdentifiers(arg)
                     pattern := arg
                     newparams := []
                 }
@@ -455,7 +460,6 @@ method rewritematchblock(blk) {
     } else {
         if (false != blk.matchingPattern) then {
             if (blk.matchingPattern.value == arg.value) then {
-//                pattern := resolveIdentifiers(arg)
                 pattern := arg
                 newparams := []
             }
@@ -470,9 +474,6 @@ method rewritematchblock(blk) {
 
 
 method rewriteIdentifier(node) {
-    if (node.nameString == "inner") then {
-        print "****************\n{node.nameString} being re-written .."
-    }
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
     // This method may or may not transform node into another ast.
@@ -503,25 +504,14 @@ method rewriteIdentifier(node) {
         reportUndeclaredIdentifier(node)
     }
     def v = definingScope.variety
-    def declKind = definingScope.kind(nm)
+    def nodeKind = definingScope.kind(nm)
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == "method") then {
                 def meth = nodeScope.findDeepMethod(nmGets)
                 def meth2 = ast.memberNode.new(nm, meth.in)
-                return ast.callNode.new(meth2, [ast.callWithPart.new(meth2.value)]).
-                    withParentRefs
-            }
-        } else {
-            if ((declKind == "vardec")
-                    .andAlso{definingScope == nodeScope.enclosingMethodScope}) then {
-                return node
-            } else {
-                def selfId = ast.identifierNode.new("self", false)
-                def memb = ast.memberNode.new(nm, selfId)
-                selfId.parent := memb
-                return memb
+                return meth2.withParentRefs
             }
         }
     }
@@ -535,88 +525,56 @@ method rewriteIdentifier(node) {
     if (nm == "self") then {
         return node
     }
+    // TODO: the above can be removed, because self is built-in
+    // so this will be covered by the "built-in" case below.
 
-    checkForAmbiguityOf(node)definedIn(definingScope)as(declKind)
-    if ((nm == "inner") && (v == "object")) then {
-        print "{nm} defined in scope {definingScope}\n===="
-    }
+    checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
+
     if (v == "built-in") then { return node }
-    if (declKind == "parameter") then { return node }
-    if (declKind == "typedec") then { return node }
+    if (v == "dialect") then {
+        def p = ast.identifierNode.new("prelude", false)
+        def m = ast.memberNode.new(nm, p)
+        p.parent := m
+        return m
+    }
+    if (nodeKind == "parameter") then { return node }
+    if (nodeKind == "typedec") then { return node }
 
     // TODO Compatability Kludge — remove when possible
-    if (declKind == "typedec") then { return node }
     if (node.inTypePosition) then { return node }
     // the latter is necessary until .gct files distinguish types
 
-    if (definingScope == nodeScope) then {
-        if (declKind == "defdec") then { return node }
-        if (declKind == "typedec") then { return node }
-        if (declKind == "vardec") then { return node }
-    }
-    if (nm == "inner") then {
-        print "nodeScope.enclosingObjectScope = {nodeScope.enclosingObjectScope}"
+    if (definingScope == moduleScope) then {
+        if (nodeKind == "defdec") then { return node }
+        if (nodeKind == "typedec") then { return node }
+        if (nodeKind == "vardec") then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
-        if ((nm == "inner") && (v == "object")) then {
-            print "{nm} in if"
-        }
-        def memberNode = ast.memberNode.new(nm, ast.identifierNode.new("self", false))
-        if (node.parent.needsMembersWrapped) then {
-            // TODO Compatability Kludge — remove when possible
-            if ((nm == "inner") && (v == "object")) then {
-                print "{nm}: returning call"
-            }
-            return memberNode.wrapWithCall
-        } else {
-            if ((nm == "inner") && (v == "object")) then {
-                print "{nm}: returning member"
-            }
-            return memberNode.withParentRefs
-        }
+        return ast.memberNode.new(nm, ast.identifierNode.new("self", false))
+    }
+    if (nodeScope.isObjectScope.not
+            .andAlso{nodeScope.isInSameObjectAs(definingScope)}) then {
+        if (nodeKind == "method") then { return node }
+        if (nodeKind == "defdec") then { return node }
+        if (nodeKind == "vardec") then { return node }
     }
     if (v == "method") then {
         // node is defined in the closest enclosing method.
-        // there may be intervening blocks, but not objects or clases
+        // there may be intervening blocks, but no objects or clases
         // TODO Compatability Kludge — remove when possible
         // if this identifier is in a block that is returned, then ids
         // defined in the enclosing method scope have to go in a closure
         // In that case, leaving the id untouched may be wrong
         return node
     }
-    if (v == "dialect") then {
-        def memNode = ast.memberNode.new(nm, ast.identifierNode.new("prelude", false))
-        if (node.parent.kind == "call") then {
-            return memNode.withParentRefs
-        } else {
-            def callNode = ast.callNode.new(memNode, [ast.callWithPart.new(memNode.value)])
-            return callNode.withParentRefs
-        }
-    }
     if (node.isUnder(["member", "inherits"])) then {
         // TODO Compatability Kludge — remove when possible
         return node
     } else {
         def deepMeth = nodeScope.findDeepMethod(nm)
-        if (nm == "cache") then {
-            print "node {nm}: node.parent = {node.parent}; node.parent.needsMembersWrapped = {node.parent.needsMembersWrapped}"
-        }
-        if (node.parent.needsMembersWrapped) then {
-            // TODO Compatability Kludge — remove when possible
-            return deepMeth.wrapWithCall
-        } else {
-            return deepMeth.withParentRefs
-        }
+        return deepMeth.withParentRefs
     }
     return node
-}
-method string(str) endsWith(suffix) {
-    // this is a filler until the endsWith method makes it into the C version of
-    // the string object
-    def l = suffix.size
-    def start = str.size - l + 1
-    def tail = str.substringFrom(start)to(str.size)
-    tail == suffix
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
@@ -705,7 +663,6 @@ method reportUndeclaredIdentifier(node) {
     errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an  attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
-
 method checkDuplicateDefinition(declNode) {
     def name = declNode.nameString
     if (declNode.scope.shadows(declNode)) then {
@@ -769,20 +726,16 @@ method checkRedefinition(ident)as(kind) {
     util.setline(ident.line)
     ident.scope.elementDeclarations.put(name, true)
 }
-
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
     // equivalents.
     // This creates a new AST
-    if (topNode == false) then {
-        ProgrammingError.raise "**************** topNode == false!! *************"
-    }
-    topNode.map { node ->
+    def pass1 = topNode.map { node ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             rewriteIdentifier(node)
         } elseif { node.isInherits } then {
             transformInherits(node)
-        } elseif {node.isObject.orElse{ node.isClass }} then {
+        } elseif { node.isObject.orElse{ node.isClass }} then {
             // TODO Compatability Kludge — remove when possible
             node.superclass := false
             node
@@ -790,6 +743,19 @@ method resolveIdentifiers(topNode) {
             node
         } 
     } parent (ast.nullNode)
+    def pass2 = pass1.map { node -> 
+        if ((node.isMember).andAlso{node.in.isCall.not}) then {
+            if (node.parent.needsMembersWrapped) then {
+                // TODO Compatability Kludge — remove when possible
+                node.wrapWithCall
+            } else {
+                node
+            }
+        } else {
+            node
+        }
+    } parent (ast.nullNode)
+    pass2
 }
 
 method processGCT(gct, otherModule) {
@@ -962,7 +928,7 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         method visitClass(o) up(pNode) { 
             o.parent := pNode
             def classNameNode = o.name
-            pNode.scope.addNode(classNameNode) as "method"
+            pNode.scope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
             def objectScope = newScopeIn(pNode.scope) kind "object"
             objectScope.bindAs(classNameNode.nameString)
@@ -1087,12 +1053,17 @@ method transformInherits(inhNode) {
     def superScope = currentScope.scopeReferencedBy(superObject)
     var newInhNode
     if (inhNode.inheritsFromCall) then {
-        inhNode.value.with.push(ast.callWithPart.new("object",
+        var superCall := inhNode.value
+        if (superCall.isAppliedOccurenceOfIdentifier) then {
+            superCall := rewriteIdentifier(superCall)
+        }
+        // TODO: try removing the above — it may not be necessary
+        superCall.with.push(ast.callWithPart.new("object",
             [ast.identifierNode.new("self", false)]))
-        def newmem = ast.memberNode.new(inhNode.value.value.value ++ "()object",
-            inhNode.value.value.in
+        def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
+            superCall.value.target
         )
-        def newcall = ast.callNode.new(newmem, inhNode.value.with)
+        def newcall = ast.callNode.new(newmem, superCall.with)
         newInhNode := ast.inheritsNode.new(newcall)
         newInhNode.providedNames.addAll(superScope.elements)
             // iterating through elements returns just the keys (= names)
@@ -1109,18 +1080,19 @@ method transformInherits(inhNode) {
         if (inhNode.value.in.value == "StandardPrelude") then {
             return inhNode
         }
+        // TODO — eliminate the above; it can't ever apply!
         newInhNode := ast.inheritsNode.new(newcall)
         newInhNode.providedNames.addAll(superScope.elements)
-            // iterating through elements returns just the keys (= names)
+        // iterating through elements returns just the keys (= names)
     }
-    if (currentScope.variety != "object") then {
-        errormessages.syntaxError "inherits statements must be inside an object"
+    if (currentScope.isObjectScope.not) then {
+        errormessages.syntaxError "inherits statements must be directly inside an object"
                     atRange(inhNode.line, inhNode.linePos, inhNode.linePos + 7)
     }
     for (newInhNode.providedNames) do { each ->
         currentScope.addName(each) as "inherited"
     }
-    newInhNode
+    newInhNode.withParentRefs
 }
 
 method rewriteMatches(topNode) {
