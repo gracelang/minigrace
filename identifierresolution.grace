@@ -122,7 +122,7 @@ factory method newScopeIn(parent') kind(variety') {
         //  in the meantime:
         return universalScope
     }
-    method new(v) {
+    method newSubscope(v) {
         newScopeIn(self) kind(v)
     }
     method asStringWithParents {
@@ -513,7 +513,10 @@ method rewriteIdentifier(node) {
                 def meth2 = ast.memberNode.new(nm, meth.in)
                 return meth2.withParentRefs
             }
-        }
+        } elseif { (nodeKind == "defdec") || (nodeKind == "method")
+            || (nodeKind == "typedec") } then {
+            reportAssignmentTo(node) declaredInScope(definingScope)
+        } // vars fall through
     }
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false)
@@ -662,6 +665,41 @@ method reportUndeclaredIdentifier(node) {
     print(node.parent.parent.parent.pretty(0))
     errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an  attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
+}
+
+method reportAssignmentTo(node) declaredInScope(scp) {
+    def name = node.nameString
+    def kind = scp.kind(name)
+    var more := ""
+    def suggestions = []
+    if (scp.elementLines.contains(name)) then {
+        more := " on line {scp.elementLines.get(name)}"
+    }
+    if (kind == "defdec") then {
+        if (scp.elementTokens.contains(name)) then {
+            def tok = scp.elementTokens.get(name)
+            def sugg = errormessages.suggestion.new
+            var eq := tok
+            while {(eq.kind != "op") || (eq.value != "=")} do {
+                eq := eq.next
+            }
+            sugg.replaceToken(eq)with(":=")
+            sugg.replaceToken(tok)with("var")
+            suggestions.push(sugg)
+        }
+        errormessages.syntaxError("'{name}' cannot be changed "
+            ++ "because it was declared with 'def'{more}. "
+            ++ "To make it a variable, use 'var' in the declaration")
+            atLine(node.line) withSuggestions(suggestions)
+    } elseif { kind == "typedec" } then {
+        errormessages.syntaxError("'{name}' cannot be re-bound "
+            ++ "because it is declared as a type{more}.")
+            atLine(node.line)
+    } elseif { kind == "method" } then {
+        errormessages.syntaxError("'{name}' cannot be re-bound "
+            ++ "because it is declared as a method{more}.")
+            atLine(node.line)
+    }
 }
 method checkDuplicateDefinition(declNode) {
     def name = declNode.nameString
@@ -956,9 +994,17 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         method visitTypeDec(o) up(pNode) { 
             o.parent := pNode
             pNode.scope.addNode(o.name) as "typedec"
+            o.name.isDeclaredByParent := true
             if (o.generics.isEmpty) then { return true }
             o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
-                // for now we don't distinguish between type decs and type params
+            // for now we don't distinguish between type decs and type params
+            true
+        }
+        method visitDefDec(o) up(pNode) {
+            o.parent := pNode
+            if (false != o.startToken) then {
+                pNode.scope.elementTokens.put(o.name.nameString, o.startToken)
+            }
             true
         }
         method visitInherits(o) up (pNode) {
