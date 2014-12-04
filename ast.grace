@@ -123,6 +123,9 @@ class baseNode.new {
     method pretty(depth) { 
         self.kind
     }
+    method deepCopy {
+        self.map { each -> each } parent (nullNode)
+    }
     method isUnder(lns) {
         // lns is a list of strings representing kinds of AST node,
         // from the bottom up.  Is this node a subtree of such a structure?
@@ -1828,7 +1831,7 @@ class identifierNode.new(name, dtype') {
     }
 
     method asString { 
-        if (isBindingOccurrence.andAlso{util.target == "symbols"}) then {
+        if (isBindingOccurrence.andAlso{util.target != "processed-ast"}) then {
             "IdentifierBinding‹{value}›"
         } else { 
             "Identifier‹{value}›"

@@ -119,12 +119,12 @@ method findNextValidToken(*validFollowTokens) {
     return validToken
 }
 
-// Finds the closing brace for a given token (that is the beginning of a control
-// structure with an opening brace. Returns an object with two fields: found
+// Finds the closing brace for token (that is the beginning of a control
+// structure) -- an opening brace. Returns an object with two fields: found
 // and tok. If a closing brace is found, found is set to true, and tok is set to
 // the closing brace. Otherwise found is set to false, and tok is set to the
 // token that the closing brace should appear after.
-method findClosingBrace(tok, inserted) {
+method findClosingBrace(token, inserted) {
     var n := sym
     var numOpening := if(inserted) then {1} else {0}
     var numClosing := 0
@@ -133,13 +133,13 @@ method findClosingBrace(tok, inserted) {
         var tok
     }
     // Skip all tokens on the same line first.
-    while {(n.kind != "eof") && (n.line == tok.line)} do {
+    while {(n.kind != "eof") && (n.line == token.line)} do {
         if(n.kind == "lbrace") then { numOpening := numOpening + 1 }
         elseif(n.kind == "rbrace") then { numClosing := numClosing + 1 }
         n := n.next
     }
     // Skip all tokens that have greater indent than the target closing brace.
-    while {(n.kind != "eof") && (n.indent > tok.indent)} do {
+    while {(n.kind != "eof") && (n.indent > token.indent)} do {
         if(n.kind == "lbrace") then { numOpening := numOpening + 1 }
         elseif(n.kind == "rbrace") then { numClosing := numClosing + 1 }
         n := n.next

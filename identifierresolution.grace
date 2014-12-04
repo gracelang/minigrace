@@ -46,7 +46,6 @@ method newScopeKind(variety') {
 factory method newScopeIn(parent') kind(variety') {
     def elements = collections.map.new
     def elementScopes = collections.map.new
-    def elementDeclarations = collections.map.new
     def elementLines = collections.map.new
     def elementTokens = collections.map.new
     def parent = parent'
@@ -66,6 +65,7 @@ factory method newScopeIn(parent') kind(variety') {
     }
     method addNode(nd) as(kind) {
         def name = nd.value
+        checkRedefinition(nd) as(kind)
         def oldKind = elements.get(name) ifAbsent { "inherited" }
         if (oldKind == "inherited")  then {
             elements.put(name, kind)
@@ -121,9 +121,6 @@ factory method newScopeIn(parent') kind(variety') {
         //  TODO: add complete information for the built-in names.
         //  in the meantime:
         return universalScope
-    }
-    method newSubscope(v) {
-        newScopeIn(self) kind(v)
     }
     method asStringWithParents {
         var result := "\nCurrent: {self}"
@@ -446,7 +443,11 @@ method rewritematchblock(blk) {
                     )
                     pattern := bindingpat
                     for (tmp[2]) do {p->
-                        newparams.push(p)
+                        def extraParam = p.deepCopy
+                        // The deepCopy copies the type too.
+                        // Does this cause an unnecessary dynamic type-check?
+                        extraParam.isBindingOccurrence := true
+                        newparams.push(extraParam)
                     }
                 }
         } else {
@@ -666,7 +667,6 @@ method reportUndeclaredIdentifier(node) {
     errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an  attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
-
 method reportAssignmentTo(node) declaredInScope(scp) {
     def name = node.nameString
     def kind = scp.kind(name)
@@ -701,68 +701,46 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             atLine(node.line)
     }
 }
-method checkDuplicateDefinition(declNode) {
-    def name = declNode.nameString
-    if (declNode.scope.shadows(declNode)) then {
-        var more := " in this scope"
-        var which
-        if (declNode.scope.elementLines.contains(name)) then {
-            which := if (declNode.scope == emptyScope) then { " in emptyScope"
-                     } elseif {declNode.scope == preludeScope} then { " in preludeScope"
-                     } elseif (declNode.scope == moduleScope) then { " in moduleScope"
-                     } else { "" }
-            more := " as a {declNode.scope.kind(name)}"
-                ++ " on line {declNode.scope.elementLines.get(name)} as well as here at line {declNode.line}"
-        }
-        errormessages.syntaxError("'{name}' cannot be"
-            ++ " redeclared{which} because it is already declared"
-            ++ more ++ ".")
-            atRange(declNode.line, declNode.linePos,
-                    declNode.linePos + name.size - 1)
-    }
-}
 method checkRedefinition(ident)as(kind) {
-    if ((false == ident) || (true == ident)) then {
-         ProgrammingError.raise "ident node is Boolean {ident}"
-    }
-    def name = ident.value
+    def name = ident.nameString
     def priorScope = ident.scope.thatDefines(name) ifNone {
         return
     }
-    if (priorScope.elementDeclarations.contains(name)) then {
-        def priorKind = priorScope.kind(name)
-        // methods can shadow methods, but other shadowing is illegal
-        if ((kind != "method") || (priorKind != "method")) then {
-            var more := ""
-            if (priorScope.elementLines.contains(name)) then {
-                more := " on line {priorScope.elementLines.get(name)}"
-            }
-            if ((kind == "defdec").orElse {kind == "typedec"}) then {
-                errormessages.syntaxError("'{name}' cannot be "
-                    ++ "redeclared because it is already declared in "
-                    ++ "scope{more}.")
-                    atRange(ident.line, ident.linePos,
-                        ident.linePos + name.size - 1)
-            } else {
-                def suggs = collections.list.new
-                def sugg = errormessages.suggestion.new
-                if (sugg.replaceUntil("=")with("{name} :=")
-                        onLine(ident.line)
-                    ) then {
-                    suggs.push(sugg)
-                }
-                errormessages.syntaxError("'{name}' cannot be "
-                        ++ "redeclared because it is already declared in "
-                        ++ "scope{more}. To assign to the existing variable, "
-                        ++ "remove 'var'.")
-                    atRange(ident.line, ident.linePos,
-                        ident.linePos + name.size - 1)
-                    withSuggestions(suggs)
-            }
+    def priorKind = priorScope.kind(name)
+    if (priorScope.isObjectScope.andAlso{ident.scope.isObjectScope}) then {
+        return
+    }
+    // new object attributes can shadow old, but other shadowing is illegal
+    var more := ""
+    if (priorScope.elementLines.contains(name)) then {
+        def ln = priorScope.elementLines.get(name)
+        if (ln > 0) then {
+            more := " on line {priorScope.elementLines.get(name)}"
         }
     }
-    util.setline(ident.line)
-    ident.scope.elementDeclarations.put(name, true)
+    if (kind == "vardec") then {
+        def suggs = collections.list.new
+        def sugg = errormessages.suggestion.new
+        if (sugg.replaceUntil("=")with("{name} :=")
+                onLine(ident.line)
+            ) then {
+            suggs.push(sugg)
+        }
+        if (priorKind == "vardec") then {
+            more := more ++ ". To assign to the existing variable, remove 'var'"
+        }
+        errormessages.syntaxError("'{name}' cannot be "
+                ++ "redeclared because it is already declared in an "
+                ++ "enclosing {priorScope.variety} scope{more}.")
+            atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
+            withSuggestions(suggs)
+    } else {
+        errormessages.syntaxError("'{name}' cannot be "
+            ++ "redeclared because it is already declared in an "
+            ++ "enclosing {priorScope.variety} scope{more}.")
+            atRange(ident.line, ident.linePos,
+                ident.linePos + name.size - 1)
+    }
 }
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
@@ -1177,6 +1155,7 @@ method resolve(values) {
         print "module after pattern match re-writing"
         print "====================================="
         print(patternMatchModule.pretty(0))
+        util.log_verbose "done"
         sys.exit(0)
     }
 
@@ -1190,6 +1169,7 @@ method resolve(values) {
         print (patternMatchModule.symbolTable.asStringWithParents)
         print "====================================="
         print(patternMatchModule.pretty(0))
+        util.log_verbose "done"
         sys.exit(0)
     }
     def resolvedModule = resolveIdentifiers(patternMatchModule)
