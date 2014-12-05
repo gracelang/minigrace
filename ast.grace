@@ -1048,7 +1048,7 @@ class methodNode.new(name', signature', body', dtype') {
         var firstPart := true
         for (self.signature) do { part ->
             s := s ++ part.name
-            if (firstPart.andAlso{generics != false}) then {
+            if (firstPart.andAlso{generics.size != 0}) then {
                 s := s ++ "<"
                 for (1..(generics.size - 1)) do {ix ->
                     s := s ++ generics.at(ix).toGrace(depth + 1)
@@ -1263,9 +1263,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     var superclass is public := superclass'
     var annotations is public := list.empty
     def nameString:String is public = name.value
+
     var data is public := false
     
-    
+    method fullName { "{nameString}.{constructor.nameString}" }
     method declarationKind {
         "method"
     }
@@ -1349,6 +1350,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         }
         var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {self.name.pretty(0)}"
+        if (util.target == "symbols") then {
+            s := s ++ "\n{spc}Parent Symbols({symbolTable'.parent.variety}): {symbolTable'.parent.keysAndValuesAsList}"
+            s := s ++ "\n{spc}Parent^2 Symbols({symbolTable'.parent.parent.variety}): {symbolTable'.parent.parent.keysAndValuesAsList}"
+        }
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
             s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
@@ -1443,6 +1448,11 @@ class objectNode.new(body, superclass') {
     var classname is public := "object"
     var data is public := false
     
+    method fullName { 
+        if (classname != "object") then { return classname }
+        if (parent.kind == "defdec") then { return parent.nameString }
+        return classname
+    }
     method definesObject { true }
     method isObject { true }
     method childrenDo(b) {
@@ -1854,10 +1864,10 @@ class identifierNode.new(name, dtype') {
 def typeType is public = identifierNode.new("Type", false)
 def unknownType is public = identifierNode.new("Unknown", typeType)
 
-class octetsNode.new(n) {
+class octetsNode.new(num) {
     inherits baseNode.new
     def kind is public = "octets"
-    var value is public := n
+    var value is public := num
     method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitOctets(self) up(pNode)
@@ -1874,7 +1884,7 @@ class octetsNode.new(n) {
         n
     }
     method shallowCopyWithParent(p) {
-        octetsNode.new(n).shallowCopyFieldsFrom(self) parent(p)
+        octetsNode.new(value).shallowCopyFieldsFrom(self) parent(p)
     }
 }
 class stringNode.new(v) {

@@ -3228,7 +3228,7 @@ method dotypeLiteral {
         }
     }
     if (accept("lbrace")) then {
-        def methods = []
+        def meths = []
         def types = []
         def mc = auto_count
         auto_count := auto_count + 1
@@ -3239,11 +3239,11 @@ method dotypeLiteral {
                 types.push(values.pop)
             } else {
                 domethodtype
-                methods.push(values.pop)
+                meths.push(values.pop)
             }
         }
         next
-        def t = ast.typeLiteralNode.new(methods, types)
+        def t = ast.typeLiteralNode.new(meths, types)
         values.push(t)
     }
 }

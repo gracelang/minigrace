@@ -68,46 +68,46 @@ method gctAsString(data) {
     return ret
 }
 method generateGCT(path)fromValues(values)modules(modules) {
-    def methods = collections.list.new
+    def meths = collections.list.new
     def confidentials = collections.list.new
     var theDialect := false
     for (values) do { v->
         if (v.kind == "vardec") then {
             if (v.isReadable) then {
-                methods.push(v.name.value)
+                meths.push(v.name.value)
             }
             if (v.isWritable) then {
-                methods.push(v.name.value ++ ":=")
+                meths.push(v.name.value ++ ":=")
             }
         } elseif {(v.kind == "method").orElse {v.kind == "typedec"}} then {
             if (v.isPublic) then {
-                methods.push(v.nameString)
+                meths.push(v.nameString)
             } else {
                 confidentials.push(v.nameString)
             }
         } elseif (v.kind == "defdec") then {
             if (v.isPublic) then {
-                methods.push(v.name.value)
+                meths.push(v.name.value)
             }
             if (ast.findAnnotation(v, "parent")) then {
                 if (false != v.data) then {
                     for (v.data.elements) do {m->
-                        methods.push(m)
+                        meths.push(m)
                     }
                 }
             }
         } elseif (v.kind == "class") then {
-            methods.push(v.name.value)
+            meths.push(v.name.value)
         } elseif (v.kind == "dialect") then {
             theDialect := v.value
         } elseif (v.kind == "inherits") then {
-            v.providedNames.do { each -> methods.push(each) }
+            v.providedNames.do { each -> meths.push(each) }
         }
     }
     def gct = collections.map.new
     gct.put("modules", modules)
     gct.put("path", collections.list.new(path))
-    gct.put("public", methods)
+    gct.put("public", meths)
     gct.put("confidential", confidentials)
     if (false != theDialect) then {
         gct.put("dialect", collections.list.new(theDialect))

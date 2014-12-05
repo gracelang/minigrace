@@ -8,20 +8,15 @@ import "mgcollections" as collections
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
-method printBacktrace(caption) {
-    try { Exception.raise "here I am"
-    } catch { ex ->
-        print(caption)
-        for (ex.backtrace) do { line -> print(line) }
-    }
+// TODO: eliminate these kind strings and make them objects.
+
+method isAssignable(kindString) {
+    kindString == "vardec"
 }
-method printAstHierarchy(node) {
-    print "AST chain starting with {node}"
-    var n := node.parent
-    while {n != ast.nullNode} do {
-        print(n)
-        n := n.parent
-    }
+method isParameter(kindString) {
+    if (kindString == "parameter") then { return true }
+    if (kindString == "typeparam") then { return true }
+    return false
 }
 // constants used in detecting cyclic inheritance
 def completed = object { 
@@ -50,8 +45,7 @@ factory method newScopeIn(parent') kind(variety') {
     def elementTokens = collections.map.new
     def parent = parent'
     var hasParent := true
-    var variety := variety'
-    var name := ""
+    def variety = variety'
     var node := ast.nullNode        // the ast node that I'm in
     var inheritedNames := undiscovered
     method isEmpty { elements.size == 0 }
@@ -64,23 +58,30 @@ factory method newScopeIn(parent') kind(variety') {
         elementLines.put(n, util.linenum)
     }
     method addNode(nd) as(kind) {
-        def name = nd.value
-        checkRedefinition(nd) as(kind)
-        def oldKind = elements.get(name) ifAbsent { "inherited" }
-        if (oldKind == "inherited")  then {
-            elements.put(name, kind)
-            elementLines.put(name, nd.line)
-        } else {
-            var more := " in this scope"
-            if (elementLines.contains(name)) then {
-                more := " as a {oldKind}"
-                    ++ " on line {elementLines.get(name)}"
-            }
-            errormessages.syntaxError("'{name}' cannot be"
-                ++ " redeclared because it is already declared"
-                ++ more ++ " as well as here at line {nd.line}.")
-                atRange(nd.line, nd.linePos, nd.linePos + name.size - 1)
+        def ndName = nd.value
+        checkShadowing(nd) as(kind)
+        def oldKind = elements.get(ndName) ifAbsent {
+            elements.put(ndName, kind)
+            elementLines.put(ndName, nd.line)
+            return
         }
+        if (kind == "inherited") then { 
+            return  // don't overwrite new id with inherited id
+        }
+        if (oldKind == "inherited")  then {
+            elements.put(ndName, kind)
+            elementLines.put(ndName, nd.line)
+            return
+        } 
+        var more := " in this scope"
+        if (elementLines.contains(ndName)) then {
+            more := " as a {oldKind}"
+                ++ " on line {elementLines.get(ndName)}"
+        }
+        errormessages.syntaxError("'{ndName}' cannot be"
+            ++ " redeclared because it is already declared"
+            ++ more ++ " as well as here at line {nd.line}.")
+            atRange(nd.line, nd.linePos, nd.linePos + ndName.size - 1)
     }
     method contains(n) {
         elements.contains(n)
@@ -149,11 +150,11 @@ factory method newScopeIn(parent') kind(variety') {
     method kindInNest(nm) {
         self.do {s->
             if (s.contains(nm)) then {
-                def kind = s.kind(nm)
-                if (kind == "inherited") then {
+                def kd = s.kind(nm)
+                if (kd == "inherited") then {
                     return "method"
                 } else {
-                    return kind
+                    return kd
                 }
             }
         }
@@ -182,6 +183,7 @@ factory method newScopeIn(parent') kind(variety') {
         if (variety == "module") then { return true }
         if (variety == "dialect") then { return true }
         if (variety == "class") then { return true }
+        if (variety == "built-in") then { return true }
         false
     }
     method isMethodScope {
@@ -213,23 +215,13 @@ factory method newScopeIn(parent') kind(variety') {
         // Not found - leave it alone
         return ast.identifierNode.new(name, false)
     }
-    method shadows(node) {
-        // determines if the identifier node shadows an enclosing identifier.
-        def name = node.nameString
-        if (! elements.contains(name)) then { return false }
-        if (elementLines.get(name) == node.line) then { return false }
-        if ((kind(name) == "inherited").andAlso{node.kind == "method"}) then {
-            return false 
-        }
-        return true
-    }
-    method scopeReferencedBy(node) {
-        // Finds the scope referenced by node.
-        // If node references an object, then the returned
+    method scopeReferencedBy(nd) {
+        // Finds the scope referenced by astNode nd.
+        // If nd references an object, then the returned
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
-        if (node.kind == "identifier") then {
-            def sought = node.nameString
+        if (nd.kind == "identifier") then {
+            def sought = nd.nameString
             if (sought == "self") then {
                 var s := self
                 while {s.hasParent} do {
@@ -246,17 +238,17 @@ factory method newScopeIn(parent') kind(variety') {
                 }
                 ProgrammingError.raise "Identifier {sought} is undeclared."
             }
-        } elseif (node.kind == "member") then {
-            def targetScope = self.scopeReferencedBy(node.in)
-            if (node.value == "outer") then {
+        } elseif (nd.kind == "member") then {
+            def targetScope = self.scopeReferencedBy(nd.in)
+            if (nd.value == "outer") then {
                 return targetScope.parent
             }
-            return targetScope.scopeReferencedBy(node.asIdentifier)
-        } elseif (node.kind == "call") then {
-            return scopeReferencedBy(node.value)
+            return targetScope.scopeReferencedBy(nd.asIdentifier)
+        } elseif (nd.kind == "call") then {
+            return scopeReferencedBy(nd.value)
         }
-        ProgrammingError.raise("{node.value} is not a Call, Member or Identifier\n"
-            ++ node.pretty(0))
+        ProgrammingError.raise("{nd.value} is not a Call, Member or Identifier\n"
+            ++ nd.pretty(0))
     }
     method enclosingObjectScope {
         // Answer the closest enclosing scope that describes an object,
@@ -277,6 +269,48 @@ factory method newScopeIn(parent') kind(variety') {
             if (s.isMethodScope) then { return false }
         }
         ProgrammingError.raise "self = {self}; encScope = {encScope}"
+    }
+    method checkShadowing(ident) as(newKind) {
+        def name = ident.nameString
+        def priorScope = thatDefines(name) ifNone {
+            return
+        }
+        def priorKind = priorScope.kind(name)
+        if (priorScope.isObjectScope.andAlso{self.isObjectScope}) then {
+            return
+        }
+        // new object attributes can shadow old, but other shadowing is illegal
+        var more := ""
+        if (priorScope.elementLines.contains(name)) then {
+            def ln = priorScope.elementLines.get(name)
+            if (ln > 0) then {
+                more := " on line {priorScope.elementLines.get(name)}"
+            }
+        }
+        if (newKind == "vardec") then {
+            def suggs = collections.list.new
+            def sugg = errormessages.suggestion.new
+            if (sugg.replaceUntil("=")with("{name} :=")
+                    onLine(ident.line)
+                ) then {
+                suggs.push(sugg)
+            }
+            if (priorKind == "vardec") then {
+                more := more ++ ". To assign to the existing variable, remove 'var'"
+            }
+            errormessages.syntaxError("'{name}' cannot be "
+                ++ "redeclared because it is already declared in an "
+                ++ "enclosing {priorScope.variety} scope{more}.")
+                atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
+                withSuggestions(suggs)
+        } else {
+            errormessages.syntaxError("'{name}' cannot be "
+                ++ "redeclared because it is already declared in an "
+                ++ "enclosing {priorScope.variety} scope{more}. "
+                ++ "Use a different name.")
+                atRange(ident.line, ident.linePos,
+                    ident.linePos + name.size - 1)
+        }
     }
 }
 
@@ -514,8 +548,7 @@ method rewriteIdentifier(node) {
                 def meth2 = ast.memberNode.new(nm, meth.in)
                 return meth2.withParentRefs
             }
-        } elseif { (nodeKind == "defdec") || (nodeKind == "method")
-            || (nodeKind == "typedec") } then {
+        } elseif { isAssignable(nodeKind).not } then {
             reportAssignmentTo(node) declaredInScope(definingScope)
         } // vars fall through
     }
@@ -541,7 +574,7 @@ method rewriteIdentifier(node) {
         p.parent := m
         return m
     }
-    if (nodeKind == "parameter") then { return node }
+    if (isParameter(nodeKind)) then { return node }
     if (nodeKind == "typedec") then { return node }
 
     // TODO Compatability Kludge — remove when possible
@@ -695,51 +728,14 @@ method reportAssignmentTo(node) declaredInScope(scp) {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a type{more}.")
             atLine(node.line)
+    } elseif (isParameter(kind)) then {
+        errormessages.syntaxError("'{name}' cannot be re-bound "
+            ++ "because it is declared as a parameter{more}.")
+            atLine(node.line)
     } elseif { kind == "method" } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a method{more}.")
             atLine(node.line)
-    }
-}
-method checkRedefinition(ident)as(kind) {
-    def name = ident.nameString
-    def priorScope = ident.scope.thatDefines(name) ifNone {
-        return
-    }
-    def priorKind = priorScope.kind(name)
-    if (priorScope.isObjectScope.andAlso{ident.scope.isObjectScope}) then {
-        return
-    }
-    // new object attributes can shadow old, but other shadowing is illegal
-    var more := ""
-    if (priorScope.elementLines.contains(name)) then {
-        def ln = priorScope.elementLines.get(name)
-        if (ln > 0) then {
-            more := " on line {priorScope.elementLines.get(name)}"
-        }
-    }
-    if (kind == "vardec") then {
-        def suggs = collections.list.new
-        def sugg = errormessages.suggestion.new
-        if (sugg.replaceUntil("=")with("{name} :=")
-                onLine(ident.line)
-            ) then {
-            suggs.push(sugg)
-        }
-        if (priorKind == "vardec") then {
-            more := more ++ ". To assign to the existing variable, remove 'var'"
-        }
-        errormessages.syntaxError("'{name}' cannot be "
-                ++ "redeclared because it is already declared in an "
-                ++ "enclosing {priorScope.variety} scope{more}.")
-            atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
-            withSuggestions(suggs)
-    } else {
-        errormessages.syntaxError("'{name}' cannot be "
-            ++ "redeclared because it is already declared in an "
-            ++ "enclosing {priorScope.variety} scope{more}.")
-            atRange(ident.line, ident.linePos,
-                ident.linePos + name.size - 1)
     }
 }
 method resolveIdentifiers(topNode) {
@@ -900,14 +896,26 @@ method setupContext(values) {
         }
     }
 }
-method buildSymbolTableFor(topLevelNodes) in(parent) {
+method buildSymbolTableFor(topLevelNodes) in(parentNode) {
     def symbolTableVis = object {
         inherits ast.addParentVisitor
         method visitIdentifier(o) up(pNode) {
             o.parent := pNode
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
-                    pNode.scope.addNode(o) as (o.declarationKind)
+                    def kind = o.declarationKind
+                    var scope := pNode.scope
+                    if (isParameter(kind).andAlso {scope.variety == "object"}) then {
+                        // this is a hack for declaring the parameters of the factory 
+                        // method of a class.  The class's symbol table that of the object
+                        // fresh object; the factory method's parameters need to go in the
+                        // _enclosing_ scope.
+                        scope := scope.parent
+                        if (scope.variety != "method") then {
+                            ProgrammingError.raise "object scope not in method scope"
+                        }
+                    }
+                    scope.addNode(o) as (kind)
                 }
             }
             true
@@ -944,16 +952,21 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
         method visitClass(o) up(pNode) { 
             o.parent := pNode
             def classNameNode = o.name
+            def factoryMeth = o.constructor
             pNode.scope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
-            def objectScope = newScopeIn(pNode.scope) kind "object"
-            objectScope.bindAs(classNameNode.nameString)
-            objectScope.addNode(o.constructor) as "method"
-            o.generics.do { each -> objectScope.addNode(each) as "typedec" }
-                // for now we don't distinguish between type decs and type params
-            o.constructor.isDeclaredByParent := true
-            o.symbolTable := newScopeIn(objectScope) kind "object"
-            o.symbolTable.bindAs(o.constructor.nameString)
+            def outerObjectScope = newScopeIn(pNode.scope) kind "object"
+            outerObjectScope.bindAs(classNameNode.nameString)
+            outerObjectScope.addNode(factoryMeth) as "method"
+            factoryMeth.isDeclaredByParent := true
+            def factoryScope = newScopeIn(outerObjectScope) kind "method"
+            o.generics.do { each -> 
+                factoryScope.addNode(each) as "typeparam"
+                each.isDeclaredByParent := true
+            }
+            def innerObjectScope = newScopeIn(factoryScope) kind "object"
+            outerObjectScope.elementScopes.put(factoryMeth.nameString, innerObjectScope)
+            o.symbolTable := innerObjectScope
             true
         }
         method visitObject(o) up(pNode) { 
@@ -986,7 +999,6 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
             true
         }
         method visitInherits(o) up (pNode) {
-            // cache the inherits expression in the object or class that contains it
             o.parent := pNode
             if (pNode.definesObject.not) then {
                 errormessages.syntaxError "inherits statements must be inside an object"
@@ -998,7 +1010,8 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
                     "on line {pNode.superclass.line}")
                     atRange(o.line, o.linePos, o.linePos + 7)
             }
-            pNode.superclass := o.value    // the expression from inheritsNode o
+            pNode.superclass := o.value    // value = the expression from inheritsNode
+            // cache the inherits expression in the object or class that contains it
             true
         }
     }
@@ -1027,8 +1040,8 @@ method buildSymbolTableFor(topLevelNodes) in(parent) {
             true
         }
     }
-    for (topLevelNodes) do { each -> each.accept(symbolTableVis) from(parent) }
-    for (topLevelNodes) do { each -> each.accept(inheritanceVis) from(parent) }
+    for (topLevelNodes) do { each -> each.accept(symbolTableVis) from(parentNode) }
+    for (topLevelNodes) do { each -> each.accept(inheritanceVis) from(parentNode) }
 }
 
 method collectInheritedNames(node) {
