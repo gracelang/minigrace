@@ -921,6 +921,9 @@ class methodNode.new(name', signature', body', dtype') {
     method definesScope { 
         body.isEmpty.not.andAlso {body.last.definesObject}
     }
+    method objectScope {
+        scope.parent
+    }
     method parametersDo(b) {
         signature.do { part -> 
             part.params.do { each -> b.apply(each) }
@@ -2176,10 +2179,8 @@ class defDecNode.new(name', val, dtype') {
     method definesScope {
         value.definesObject
     }
-    method declarationKind { 
-//        if (isFieldDec) then { "method" } else {
-            "defdec"
-//        }
+    method objectScope {
+        scope
     }
     method usesAsType(aNode) {
         aNode == dtype
@@ -2310,11 +2311,6 @@ class varDecNode.new(name', val', dtype') {
         if (parent.kind == "object") then { true }
             elseif {parent.kind == "class"} then { true }
             else { false }
-    }
-    method declarationKind { 
-//        if (isFieldDec) then { "method" } else {
-              "vardec"
-//        }
     }
     method usesAsType(aNode) {
         aNode == dtype

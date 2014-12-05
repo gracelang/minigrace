@@ -105,10 +105,10 @@ factory method newScopeIn(parent') kind(variety') {
     method kind(n) {
         elements.get(n)
     }
-    method bindAs(n) {
-        parent.elementScopes.put(n, self)
-    }
-    method putScope(n, scp) {
+    method at(n) putScope(scp) {
+        if (self.contains(n).not) then {
+            ProgrammingError.raise "{n} not in {self} but asked to put scope!"
+        }
         elementScopes.put(n, scp)
     }
     method getScope(n) {
@@ -136,6 +136,10 @@ factory method newScopeIn(parent') kind(variety') {
         var result := "variety = {variety}:\n"
         for (elements) do { each ->
             result := result ++ each.asString ++ "({kind(each)}) "
+        }
+        result := result ++ "\n    elementScopes: "
+        for (elementScopes) do { each ->
+            result := result ++ each.asString ++ " "
         }
         result ++ "\n"
     }
@@ -251,8 +255,8 @@ factory method newScopeIn(parent') kind(variety') {
             ++ nd.pretty(0))
     }
     method enclosingObjectScope {
-        // Answer the closest enclosing scope that describes an object,
-        // class or module scope
+        // Answer the closest enclosing scope that describes an
+        // object, class or module.  Could answer self.
         self.do { s ->
             if (s.isObjectScope) then { return s }
         }
@@ -333,7 +337,7 @@ def universalScope = object {
     method contains(n) { true }
     method do(b) { b.apply(self) }
     method kind(n) { "unknown" }
-    method putScope(n, scp) { }
+    method at(n) putScope(scp) { }
     method getScope(n) { self }
 }
 
@@ -506,8 +510,6 @@ method rewritematchblock(blk) {
     return newblk.withParentRefs
 }
 
-
-
 method rewriteIdentifier(node) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
@@ -564,7 +566,6 @@ method rewriteIdentifier(node) {
     }
     // TODO: the above can be removed, because self is built-in
     // so this will be covered by the "built-in" case below.
-
     checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
 
     if (v == "built-in") then { return node }
@@ -780,13 +781,13 @@ method processGCT(gct, otherModule) {
             for (constrs) do {constr->
                 def ns = newScopeIn(otherModule) kind("object")
                 classScope.addName(constr)
-                classScope.putScope(constr, ns)
+                classScope.at(constr) putScope(ns)
                 for (gct.get("methods-of:{c}.{constr}")) do {mn->
                     ns.addName(mn)
                 }
             }
             otherModule.addName(c)
-            otherModule.putScope(c, classScope)
+            otherModule.at(c) putScope(classScope)
         }
     }
     if (gct.contains("fresh-methods")) then {
@@ -796,7 +797,7 @@ method processGCT(gct, otherModule) {
                 mScope.addName(mn)
             }
             otherModule.addName(c)
-            otherModule.putScope(c, mScope)
+            otherModule.at(c) putScope(mScope)
         }
     }
 }
@@ -843,11 +844,11 @@ method setupContext(values) {
     graceObjectScope.addName "::"
     
     builtInsScope.addName "graceObject"
-    builtInsScope.putScope("graceObject", graceObjectScope)
+    builtInsScope.at("graceObject") putScope(graceObjectScope)
     builtInsScope.addName "prelude" as "defdec"
-    builtInsScope.putScope("prelude", preludeScope)
+    builtInsScope.at("prelude") putScope(preludeScope)
     builtInsScope.addName "_prelude" as "defdec"
-    builtInsScope.putScope("_prelude", preludeScope)
+    builtInsScope.at("_prelude") putScope(preludeScope)
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -953,10 +954,11 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             o.parent := pNode
             def classNameNode = o.name
             def factoryMeth = o.constructor
-            pNode.scope.addNode(classNameNode) as "defdec"
+            def pScope = pNode.scope
+            pScope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
-            def outerObjectScope = newScopeIn(pNode.scope) kind "object"
-            outerObjectScope.bindAs(classNameNode.nameString)
+            def outerObjectScope = newScopeIn(pScope) kind "object"
+            pScope.at(classNameNode.nameString) putScope(outerObjectScope)
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
@@ -965,15 +967,16 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
                 each.isDeclaredByParent := true
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
-            outerObjectScope.elementScopes.put(factoryMeth.nameString, innerObjectScope)
+            outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
             o.symbolTable := innerObjectScope
             true
         }
         method visitObject(o) up(pNode) { 
             o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind "object"
+            def pScope = pNode.scope
+            o.symbolTable := newScopeIn(pScope) kind "object"
             if (o.parent.definesScope) then {
-                o.symbolTable.bindAs(o.parent.nameString)
+                o.parent.objectScope.at(o.parent.nameString) putScope(o.symbolTable)
             }
             true
         }
@@ -1082,6 +1085,10 @@ method transformInherits(inhNode) {
     // superobject initialization and inherited names
     def superObject = inhNode.value
     def currentScope = inhNode.scope
+    if (currentScope.isObjectScope.not) then {
+        errormessages.syntaxError "inherits statements must be directly inside an object"
+                    atRange(inhNode.line, inhNode.linePos, inhNode.linePos + 7)
+    }
     if (superObject.isAppliedOccurenceOfIdentifier) then {
         // this deals with "inherits true" etc.
         def definingScope = currentScope.thatDefines(superObject.nameString)
@@ -1102,8 +1109,6 @@ method transformInherits(inhNode) {
         )
         def newcall = ast.callNode.new(newmem, superCall.with)
         newInhNode := ast.inheritsNode.new(newcall)
-        newInhNode.providedNames.addAll(superScope.elements)
-            // iterating through elements returns just the keys (= names)
     } elseif {inhNode.inheritsFromMember} then {
         def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
             inhNode.value.in
@@ -1119,13 +1124,17 @@ method transformInherits(inhNode) {
         }
         // TODO — eliminate the above; it can't ever apply!
         newInhNode := ast.inheritsNode.new(newcall)
-        newInhNode.providedNames.addAll(superScope.elements)
+    } else {
+        if (util.extensions.contains "ObjectInheritance") then {
+            newInhNode := inhNode
+        } else {
+            errormessages.syntaxError "inheritance must be from a freshly-created object"
+                atRange(inhNode.line, superObject.linePos,
+                    superObject.linePos + superObject.nameString.size - 1)
+        }
+    }
+    newInhNode.providedNames.addAll(superScope.elements)
         // iterating through elements returns just the keys (= names)
-    }
-    if (currentScope.isObjectScope.not) then {
-        errormessages.syntaxError "inherits statements must be directly inside an object"
-                    atRange(inhNode.line, inhNode.linePos, inhNode.linePos + 7)
-    }
     for (newInhNode.providedNames) do { each ->
         currentScope.addName(each) as "inherited"
     }
