@@ -51,8 +51,8 @@ gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
 
 gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace collectionsPrelude.grace
-	l1/minigrace --verbose --make --noexec -XNoMain collectionsPrelude.grace
-	l1/minigrace --verbose --make --noexec -XNoMain StandardPrelude.grace
+	l1/minigrace --verbose --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
+	l1/minigrace --verbose --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 curl.gso: curl.c gracelib.h
@@ -161,9 +161,9 @@ just-minigrace:
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)
-	l1/minigrace --make --noexec --import-dynamic -XNoMain -XNativePrelude StandardPrelude.grace
+	l1/minigrace --make --noexec --import-dynamic -XNoMain -XNativePrelude --vtag l1 StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
-	l2/minigrace --make --import-dynamic --verbose --module minigrace-dynamic compiler.grace
+	l2/minigrace --make --import-dynamic --verbose --module minigrace-dynamic --vtag l2 compiler.grace
 
 gencheck:
 	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
