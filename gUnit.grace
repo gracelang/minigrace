@@ -7,10 +7,12 @@
 import "mirrors" as mirror
 
 type Object = { 
-    == (Object) -> Boolean
-//    asString  -> String
-//    asDebugString -> String
+    == (other:Object) -> Boolean
+    != (other:Object) -> Boolean
+    asString  -> String
+    asDebugString -> String
 }
+// TODO: move this to StandardPrelude, or even make it a built-in classType
 
 type Assertion = { 
     assert(bb:Boolean)description(str:String) -> Done
@@ -35,9 +37,9 @@ type Set = {
 }
 
 type TestResult =  {
-    testStarted(String) -> Done
-    testFailed(String) -> Done
-    testErrored(String) -> Done
+    testStarted(name:String) -> Done
+    testFailed(name:String) -> Done
+    testErrored(name:String) -> Done
     summary -> String
     detailedSummary -> String
     numberOfErrors -> Number

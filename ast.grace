@@ -2427,8 +2427,8 @@ class importNode.new(path', name', dtype') {
     }
     method map(blk)before(blkBefore)after(blkAfter) {
         blkBefore.apply(self)
-        def name' = value.map(blk)before(blkBefore)after(blkAfter)
-        var n := importNode.new(path, name')
+        def nameNd = value.map(blk)before(blkBefore)after(blkAfter)
+        var n := importNode.new(path, nameNd)
         for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
             n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
         }
