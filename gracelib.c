@@ -4805,8 +4805,6 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
     if (!(argv[0]->flags & OFLAG_USEROBJ))
         return argv[0];
     Object obj = argv[0];
-    fprintf(stderr, "cloning ...");
-    fflush(stderr);
     struct UserObject *uo = (struct UserObject *)obj;
     void *sz = ((char *)obj) - sizeof(size_t);
     size_t *size = sz;
@@ -4816,8 +4814,6 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
     memcpy(ret, obj, *size);
     if (uo->super)
         uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
-    fprintf(stderr, "done \n");
-    fflush(stderr);
     return ret;
 }
 Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
