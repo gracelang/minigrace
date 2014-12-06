@@ -7,7 +7,7 @@ def o = object {
     inherits gu.assertion.trait
     method d { "this is d" }
 
-    self.assert( 1 == 1 )
+    assert( 1 == 1 )
 }
 
 print(b)

@@ -106,9 +106,6 @@ factory method newScopeIn(parent') kind(variety') {
         elements.get(n)
     }
     method at(n) putScope(scp) {
-        if (self.contains(n).not) then {
-            ProgrammingError.raise "{n} not in {self} but asked to put scope!"
-        }
         elementScopes.put(n, scp)
     }
     method getScope(n) {
@@ -901,27 +898,7 @@ method setupContext(values) {
 method buildSymbolTableFor(topLevelNodes) in(parentNode) {
     def symbolTableVis = object {
         inherits ast.addParentVisitor
-        method visitIdentifier(o) up(pNode) {
-            o.parent := pNode
-            if (o.isBindingOccurrence) then {
-                if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
-                    def kind = o.declarationKind
-                    var scope := pNode.scope
-                    if (isParameter(kind).andAlso {scope.variety == "object"}) then {
-                        // this is a hack for declaring the parameters of the factory 
-                        // method of a class.  The class's symbol table that of the object
-                        // fresh object; the factory method's parameters need to go in the
-                        // _enclosing_ scope.
-                        scope := scope.parent
-                        if (scope.variety != "method") then {
-                            ProgrammingError.raise "object scope not in method scope"
-                        }
-                    }
-                    scope.addNode(o) as (kind)
-                }
-            }
-            true
-        }
+
         method visitBind(o) up(pNode) { 
             o.parent := pNode
             def lValue = o.dest
@@ -937,14 +914,6 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
                 callee.inRequest := true
             }
             return true
-        }
-        method visitMethod(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o.value) as "method"
-            o.value.isDeclaredByParent := true
-            o.symbolTable := newScopeIn(pNode.scope) kind "method"
-            if (o.definesScope) then { o.isFresh := true }
-            true
         }
         method visitBlock(o) up(pNode) { 
             o.parent := pNode
@@ -972,29 +941,6 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             o.symbolTable := innerObjectScope
             true
         }
-        method visitObject(o) up(pNode) { 
-            o.parent := pNode
-            def pScope = pNode.scope
-            o.symbolTable := newScopeIn(pScope) kind "object"
-            if (o.parent.definesScope) then {
-                o.parent.objectScope.at(o.parent.nameString) putScope(o.symbolTable)
-            }
-            true
-        }
-        method visitMethodType(o) up(pNode) {
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind "methodtype"
-            true
-        }
-        method visitTypeDec(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o.name) as "typedec"
-            o.name.isDeclaredByParent := true
-            if (o.generics.isEmpty) then { return true }
-            o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
-            // for now we don't distinguish between type decs and type params
-            true
-        }
         method visitDefDec(o) up(pNode) {
             o.parent := pNode
             if (false != o.startToken) then {
@@ -1002,7 +948,36 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             }
             true
         }
-        method visitInherits(o) up (pNode) {
+        method visitIdentifier(o) up(pNode) {
+            o.parent := pNode
+            if (o.isBindingOccurrence) then {
+                if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
+                    def kind = o.declarationKind
+                    var scope := pNode.scope
+                    if (isParameter(kind).andAlso {scope.variety == "object"}) then {
+                        // this is a hack for declaring the parameters of the factory 
+                        // method of a class.  The class's symbol table that of the object
+                        // fresh object; the factory method's parameters need to go in the
+                        // _enclosing_ scope.
+                        scope := scope.parent
+                        if (scope.variety != "method") then {
+                            ProgrammingError.raise "object scope not in method scope"
+                        }
+                    }
+                    scope.addNode(o) as (kind)
+                }
+            }
+            true
+        }
+        method visitImport(o) up(pNode) {
+            o.parent := pNode
+            def gct = xmodule.parseGCT(o.path, "/nosuchpath")
+            def otherModule = newScopeIn(pNode.scope) kind "module"
+            processGCT(gct, otherModule)
+            o.scope.at(o.nameString) putScope(otherModule)
+            true
+        }
+        method visitInherits(o) up(pNode) {
             o.parent := pNode
             if (pNode.definesObject.not) then {
                 errormessages.syntaxError "inherits statements must be inside an object"
@@ -1018,7 +993,40 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             // cache the inherits expression in the object or class that contains it
             true
         }
-    }
+        method visitMethod(o) up(pNode) { 
+            o.parent := pNode
+            pNode.scope.addNode(o.value) as "method"
+            o.value.isDeclaredByParent := true
+            o.symbolTable := newScopeIn(pNode.scope) kind "method"
+            if (o.definesScope) then { o.isFresh := true }
+            true
+        }
+        method visitMethodType(o) up(pNode) {
+            o.parent := pNode
+            o.symbolTable := newScopeIn(pNode.scope) kind "methodtype"
+            true
+        }
+        method visitObject(o) up(pNode) { 
+            o.parent := pNode
+            def pScope = pNode.scope
+            o.symbolTable := newScopeIn(pScope) kind "object"
+            if (o.parent.definesScope) then {
+                o.parent.objectScope.at(o.parent.nameString) putScope(o.symbolTable)
+            }
+            true
+        }
+        method visitTypeDec(o) up(pNode) { 
+            o.parent := pNode
+            pNode.scope.addNode(o.name) as "typedec"
+            o.name.isDeclaredByParent := true
+            if (o.generics.isEmpty) then { return true }
+            o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
+            // for now we don't distinguish between type decs and type params
+            true
+        }
+    }   // end of symbolTableVis
+    
+
     def inheritanceVis = object {
         inherits ast.baseVisitor
         method visitClass(o) up (pNode) {
@@ -1067,11 +1075,11 @@ method collectInheritedNames(node) {
         // If superScope == universalScope then we have no information
         // about the inherited attributes
         if (superScope != universalScope) then {
-            if (superScope.node == ast.nullNode) then {
-                print (superScope.asStringWithParents)
-                ProgrammingError.raise "superScope.node = nullNode"
+            if (superScope.node != ast.nullNode) then {
+                // superScope.node == nullNode when superScope describes 
+                // an imported module.
+                collectInheritedNames(superScope.node)
             }
-            collectInheritedNames(superScope.node)
         }
     }
     for (superScope.elements) do { each ->
@@ -1156,19 +1164,19 @@ method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
     var superObject := false
-    for (values) do { nd ->
-        if (nd.kind == "inherits") then {
-            if (false == superObject) then {
-                superObject := nd.value
-            } else {
-                errormessages.syntaxError "There can be no more than one inherits statement in a module; there was a prior inherits statement on line {superObject.line}"
-                    atRange(nd.line, nd.linePos, nd.linePos + 7)
-            }
-        }
-    }
-    if (false == superObject) then { 
-        superObject := ast.identifierNode.new("graceObject", false)
-    }
+//    for (values) do { nd ->
+//        if (nd.kind == "inherits") then {
+//            if (false == superObject) then {
+//                superObject := nd.value
+//            } else {
+//                errormessages.syntaxError "There can be no more than one inherits statement in a module; there was a prior inherits statement on line {superObject.line}"
+//                    atRange(nd.line, nd.linePos, nd.linePos + 7)
+//            }
+//        }
+//    }
+//    if (false == superObject) then { 
+//        superObject := ast.identifierNode.new("graceObject", false)
+//    }
     def module = ast.objectNode.new(values, superObject)
     module.symbolTable := moduleScope
 
