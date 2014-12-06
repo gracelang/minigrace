@@ -21,6 +21,7 @@ unicodegen.py
 misc
 tests/test.log
 buildinfo.grace
+rtobjectdraw.grace
 js/.DS_Store
 js/index.html
 js/StandardPrelude.js
@@ -31,6 +32,7 @@ js/collections.js
 js/collectionsPrelude.js
 js/compiler.js
 js/errormessages.js
+js/rtobjectdraw.js
 js/genc.js
 js/genjs.js
 js/genjson.js

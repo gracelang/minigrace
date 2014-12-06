@@ -391,7 +391,7 @@ method block {
         next
         var minInd := statementIndent + 1
         var startIndent := statementIndent
-        var ident1
+        var expr1
         var s := sym
         var tmp
         var params := []
@@ -404,10 +404,12 @@ method block {
         if (sym.kind == "lparen") then {
             isMatchingBlock := true
         }
+        // Parsing the expression ‹(a)› will return an identifierNode‹a› .
+        // The paren lets us distinguish parameter ‹a› from pattern ‹(a)› .
         ifConsume {expression(blocksOK)} then {
             if (accept("comma") || accept("arrow") || accept("colon")) then {
                 // This block has parameters or patterns
-                ident1 := values.pop
+                expr1 := values.pop
                 if (accept("colon")) then {
                     // We allow an expression here for the case of v : T
                     // patterns, where T may be "Pair(hd, tl)" or similar.
@@ -430,11 +432,11 @@ method block {
                             sym.line, sym.linePos)withSuggestions(suggestions)
                     }
                     braceIsType := false
-                    ident1.dtype := values.pop
+                    expr1.dtype := values.pop
                 }
-                params.push(ident1)
-                if (ident1.kind == "identifier") then {
-                    ident1.isBindingOccurrence := true
+                params.push(expr1)
+                if (isMatchingBlock.not && expr1.isIdentifier) then {
+                    expr1.isBindingOccurrence := true
                 } else {
                     isMatchingBlock := true
                 }
@@ -457,14 +459,14 @@ method block {
                     // Keep doing the above for the rest of the parameters.
                     next
                     pushidentifier
-                    ident1 := values.pop
-                    ident1.isBindingOccurrence := true
+                    expr1 := values.pop
+                    expr1.isBindingOccurrence := true
                     if (accept("colon")) then {
                         next
                         typeexpression
-                        ident1.dtype := values.pop
+                        expr1.dtype := values.pop
                     }
-                    params.push(ident1)
+                    params.push(expr1)
                 }
                 if ((accept("arrow")).not) then {
                     def suggestion = errormessages.suggestion.new

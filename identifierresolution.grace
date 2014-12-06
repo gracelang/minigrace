@@ -425,8 +425,8 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "typeliteral") then {
         return [arg, []]
     }
-    Error.raise("Internal error in compiler: fell through when rewriting match block"
-        ++ "of unexpected kind '{arg.kind}'.")
+    Error.raise("Internal error in compiler: fell through when rewriting "
+        ++ "match block of unexpected kind '{arg.kind}'.")
 }
 method rewritematchblock(blk) {
     def arg = blk.params[1]
@@ -469,6 +469,7 @@ method rewritematchblock(blk) {
                                 )
                             ),
                         [ast.callWithPart.new("new", [varpat, arg.dtype])])
+                    // TODO: the above two cases are adentical — consolidate!
                 } case { _ ->
                     def tmp = rewritematchblockterm(arg.dtype)
                     def bindingpat = ast.callNode.new(

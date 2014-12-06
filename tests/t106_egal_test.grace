@@ -29,12 +29,13 @@ method hmaker {
         method z { word }
     }
 }
-var i := object {
+factory method testHello {
     def x = "test"
     method z { g ; "hello" }
 }
+var i := testHello
 var j := object {
-    inherits i
+    inherits testHello
 }
 
 print "Should be three trues and then all false"

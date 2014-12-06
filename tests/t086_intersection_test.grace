@@ -11,7 +11,7 @@ def ab : A & B = object {
         s
     }
 
-    method bar(n  Number) -> Number {
+    method bar(n:Number) -> Number {
         n
     }
 }

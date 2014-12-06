@@ -82,6 +82,7 @@ class baseNode.new {
     method isClass { false }
     method isBind { false }
     method isObject { false }
+    method isIdentifier { false }
     method needsMembersWrapped { false }
     method definesObject { false }
     method definesScope { false }
@@ -1747,6 +1748,8 @@ class identifierNode.new(name, dtype') {
     var isDeclaredByParent is public := false
 
     method nameString { value }     //  value changes when parsing "[]"
+    
+    method isIdentifier { true }
 
     method isAppliedOccurenceOfIdentifier {
         isBindingOccurrence.not
