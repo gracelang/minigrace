@@ -31,6 +31,7 @@ def undiscovered = object {
 //    inherits Singleton.new      TODO — uncomment once this is in STABLE
     var asString is readable := "undiscovered"
 }
+var stSerial := 100
 method newScopeKind(variety') {
     // for the top of the scope chain
     // TODO: switch the dependency between this and the next method.
@@ -48,6 +49,12 @@ factory method newScopeIn(parent') kind(variety') {
     def variety = variety'
     var node := ast.nullNode        // the ast node that I'm in
     var inheritedNames := undiscovered
+    stSerial := stSerial + 1
+    def serialNumber is public = stSerial
+    if (isObjectScope) then {
+        addName "self" as "defdec"
+        at "self" putScope(self)
+    }
     method isEmpty { elements.size == 0 }
     method addName(n) {
         elements.put(n, "method")
@@ -130,15 +137,18 @@ factory method newScopeIn(parent') kind(variety') {
         result ++ "\n"
     }
     method asString {
-        var result := "variety = {variety}:\n"
+        var result := "(ST {serialNumber}) variety: {variety}:\n"
         for (elements) do { each ->
             result := result ++ each.asString ++ "({kind(each)}) "
         }
-        result := result ++ "\n    elementScopes: "
-        for (elementScopes) do { each ->
-            result := result ++ each.asString ++ " "
-        }
         result ++ "\n"
+    }
+    method elementScopesAsString {
+        var result := "\n    [elementScopes: "
+        for (elementScopes) do { each ->
+            result := result ++ each ++ " "
+        }
+        result ++ "]"
     }
     method hasDefinitionInNest(nm) {
         self.do { s ->
@@ -223,22 +233,13 @@ factory method newScopeIn(parent') kind(variety') {
         // Otherwise, it will be the empty scope.
         if (nd.kind == "identifier") then {
             def sought = nd.nameString
-            if (sought == "self") then {
-                var s := self
-                while {s.hasParent} do {
-                    if (s.isObjectScope) then { return s }
-                    s := s.parent
+            self.do {s->
+                if (s.contains(sought)) then {
+                    return s.getScope(sought)
                 }
-            } elseif (sought == "prelude") then {
-                return preludeScope
-            } else {
-                self.do {s->
-                    if (s.contains(sought)) then {
-                        return s.getScope(sought)
-                    }
-                }
-                ProgrammingError.raise "Identifier {sought} is undeclared."
             }
+            errormessages.syntaxError "No method {sought}"
+                atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif (nd.kind == "member") then {
             def targetScope = self.scopeReferencedBy(nd.in)
             if (nd.value == "outer") then {
@@ -247,6 +248,9 @@ factory method newScopeIn(parent') kind(variety') {
             return targetScope.scopeReferencedBy(nd.asIdentifier)
         } elseif (nd.kind == "call") then {
             return scopeReferencedBy(nd.value)
+        } elseif (nd.kind == "op") then {
+            def targetScope = self.scopeReferencedBy(nd.left)
+            return targetScope.scopeReferencedBy(nd.asIdentifier)
         }
         ProgrammingError.raise("{nd.value} is not a Call, Member or Identifier\n"
             ++ nd.pretty(0))
@@ -422,7 +426,7 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "typeliteral") then {
         return [arg, []]
     }
-    Error.raise("Internal error in compiler: fell through when rewriting "
+    ProgrammingError.raise("Internal error in compiler: fell through when rewriting "
         ++ "match block of unexpected kind '{arg.kind}'.")
 }
 method rewritematchblock(blk) {
@@ -562,10 +566,7 @@ method rewriteIdentifier(node) {
     if (nm == "self") then {
         return node
     }
-    // TODO: the above can be removed, because self is built-in
-    // so this will be covered by the "built-in" case below.
     checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
-
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false)
@@ -603,14 +604,14 @@ method rewriteIdentifier(node) {
         // In that case, leaving the id untouched may be wrong
         return node
     }
-    if (node.isUnder(["member", "inherits"])) then {
-        // TODO Compatability Kludge — remove when possible
-        return node
-    } else {
-        def deepMeth = nodeScope.findDeepMethod(nm)
-        return deepMeth.withParentRefs
-    }
-    return node
+//    if (node.isUnder(["member", "inherits"])) then {
+//        // TODO Compatability Kludge — remove when possible
+//        return node
+//    } else {
+    def deepMeth = nodeScope.findDeepMethod(nm)
+    return deepMeth.withParentRefs
+//    }
+//    return node
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
@@ -688,14 +689,6 @@ method reportUndeclaredIdentifier(node) {
                 highlightLength - 1)
             withSuggestions(suggestions)
     }
-    print "Unknown name {nm}."
-    print(nodeScope.asStringWithParents)
-    print "AST one level up from {node}"
-    print(node.parent.pretty(0))
-    print "AST two levels up from {node}"
-    print(node.parent.parent.pretty(0))
-    print "AST three levels up from {node}"
-    print(node.parent.parent.parent.pretty(0))
     errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an  attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
@@ -741,9 +734,10 @@ method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
     // equivalents.
     // This creates a new AST
-    def pass1 = topNode.map { node ->
+    topNode.map { node ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             rewriteIdentifier(node)
+            // TODO — opNodes don't contain identifiers!
         } elseif { node.isInherits } then {
             transformInherits(node)
         } elseif { node.isObject.orElse{ node.isClass }} then {
@@ -754,48 +748,35 @@ method resolveIdentifiers(topNode) {
             node
         } 
     } parent (ast.nullNode)
-    def pass2 = pass1.map { node -> 
-        if ((node.isMember).andAlso{node.in.isCall.not}) then {
-            if (node.parent.needsMembersWrapped) then {
-                // TODO Compatability Kludge — remove when possible
-                node.wrapWithCall
-            } else {
-                node
-            }
-        } else {
-            node
-        }
-    } parent (ast.nullNode)
-    pass2
 }
 
-method processGCT(gct, otherModule) {
+method processGCT(gct, importedModuleScope) {
     def classes = collections.map.new
     if (gct.contains("classes")) then {
         for (gct.get("classes")) do {c->
             def cmeths = []
             def constrs = gct.get("constructors-of:{c}")
-            def classScope = newScopeIn(otherModule) kind("class")
+            def classScope = newScopeIn(importedModuleScope) kind("class")
             for (constrs) do {constr->
-                def ns = newScopeIn(otherModule) kind("object")
+                def ns = newScopeIn(importedModuleScope) kind("object")
                 classScope.addName(constr)
                 classScope.at(constr) putScope(ns)
                 for (gct.get("methods-of:{c}.{constr}")) do {mn->
                     ns.addName(mn)
                 }
             }
-            otherModule.addName(c)
-            otherModule.at(c) putScope(classScope)
+            importedModuleScope.addName(c)
+            importedModuleScope.at(c) putScope(classScope)
         }
     }
     if (gct.contains("fresh-methods")) then {
         for (gct.get("fresh-methods")) do {c->
-            def mScope = newScopeIn(otherModule) kind("module")
+            def objScope = newScopeIn(importedModuleScope) kind("object")
             for (gct.get("fresh:{c}")) do {mn->
-                mScope.addName(mn)
+                objScope.addName(mn)
             }
-            otherModule.addName(c)
-            otherModule.at(c) putScope(mScope)
+            importedModuleScope.addName(c)
+            importedModuleScope.at(c) putScope(objScope)
         }
     }
 }
@@ -815,7 +796,6 @@ method setupContext(values) {
     builtInsScope.addName "done" as "defdec"
     builtInsScope.addName "true" as "defdec"
     builtInsScope.addName "false" as "defdec"
-    builtInsScope.addName "self" as "defdec"
     builtInsScope.addName "super" as "defdec"
     builtInsScope.addName "outer" as "defdec"
     builtInsScope.addName "readable"
@@ -826,12 +806,31 @@ method setupContext(values) {
     builtInsScope.addName "parent"
     builtInsScope.addName "..." as "defdec"
 
+    preludeScope.addName "asString"
+    preludeScope.addName "::"
+    preludeScope.addName "++"
+    preludeScope.addName "=="
+    preludeScope.addName "!="
     preludeScope.addName "for()do"
     preludeScope.addName "while()do"
     preludeScope.addName "print"
     preludeScope.addName "Exception" as "defdec"
-    preludeScope.addName "PrimitiveArray" as "defdec"
+    preludeScope.addName "Error" as "defdec"
+    preludeScope.addName "RuntimeError" as "defdec"
+    preludeScope.addName "NoSuchMethod" as "defdec"
     preludeScope.addName "ProgrammingError" as "defdec"
+    preludeScope.addName "TypeError" as "defdec"
+    preludeScope.addName "ResourceException" as "defdec"
+    preludeScope.addName "EnvironmentException" as "defdec"
+    preludeScope.addName "octets"
+    preludeScope.addName "minigrace"
+    preludeScope.addName "_methods"
+    preludeScope.addName "PrimitiveArray" as "defdec"
+    preludeScope.addName "primitiveArray" as "defdec"
+    preludeScope.addName "become"
+    preludeScope.addName "unbecome"
+    preludeScope.addName "clone"
+
 
     graceObjectScope.addName "=="
     graceObjectScope.addName "!="
@@ -842,11 +841,11 @@ method setupContext(values) {
     graceObjectScope.addName "::"
     
     builtInsScope.addName "graceObject"
-    builtInsScope.at("graceObject") putScope(graceObjectScope)
+    builtInsScope.at "graceObject" putScope(graceObjectScope)
     builtInsScope.addName "prelude" as "defdec"
-    builtInsScope.at("prelude") putScope(preludeScope)
+    builtInsScope.at "prelude" putScope(preludeScope)
     builtInsScope.addName "_prelude" as "defdec"
-    builtInsScope.at("_prelude") putScope(preludeScope)
+    builtInsScope.at "_prelude" putScope(preludeScope)
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -854,7 +853,7 @@ method setupContext(values) {
         for (values) do {val->
             if (val.kind == "dialect") then {
                 hadDialect := true
-                def data = xmodule.parseGCT(val.value, "/nosuchfile")
+                def data = xmodule.parseGCT(val.value, val.value)
                 if (data.contains("public")) then {
                     for (data.get("public")) do {mn->
                         preludeScope.addName(mn)
@@ -869,29 +868,18 @@ method setupContext(values) {
             }
         }
         if (!hadDialect) then {
-            for (prelude._methods) do {mn->
-                preludeScope.addName(mn)
+            def data = xmodule.parseGCT("StandardPrelude", "StandardPrelude")
+            if (data.contains("public")) then {
+                for (data.get("public")) do {mn->
+                    preludeScope.addName(mn)
+                }
             }
-    // The above is wrong: it makes visible the methods that were in the prelude 
-    // when the compiler was compiled, not those in the prelude when the subject
-    // program is compiled.  The commented-out code below seems like it should
-    // do the right thing — but it doesn't quite work.
-//            def data = xmodule.parseGCT("StandardPrelude", "./StandardPrelude.gct")
-//            print "got StandardPrelude.gct"
-//            print "data = {data}"
-//            if (data.contains("public")) then {
-//                for (data.get("public")) do {mn->
-//                    preludeScope.addName(mn)
-//                    print "adding {mn} to prelude"
-//                }
-//            }
-//            if (data.contains("confidential")) then {
-//                for (data.get("confidential")) do {mn->
-//                    preludeScope.addName(mn)
-//                    print "adding {mn} to prelude"
-//                }
-//            }
-//            processGCT(data, preludeScope)
+            if (data.contains("confidential")) then {
+                for (data.get("confidential")) do {mn->
+                    preludeScope.addName(mn)
+                }
+            }
+            processGCT(data, preludeScope)
         }
     }
 }
@@ -971,7 +959,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
         }
         method visitImport(o) up(pNode) {
             o.parent := pNode
-            def gct = xmodule.parseGCT(o.path, "/nosuchpath")
+            def gct = xmodule.parseGCT(o.path, o.path)
             def otherModule = newScopeIn(pNode.scope) kind "module"
             processGCT(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
@@ -1164,19 +1152,6 @@ method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
     var superObject := false
-//    for (values) do { nd ->
-//        if (nd.kind == "inherits") then {
-//            if (false == superObject) then {
-//                superObject := nd.value
-//            } else {
-//                errormessages.syntaxError "There can be no more than one inherits statement in a module; there was a prior inherits statement on line {superObject.line}"
-//                    atRange(nd.line, nd.linePos, nd.linePos + 7)
-//            }
-//        }
-//    }
-//    if (false == superObject) then { 
-//        superObject := ast.identifierNode.new("graceObject", false)
-//    }
     def module = ast.objectNode.new(values, superObject)
     module.symbolTable := moduleScope
 
@@ -1197,8 +1172,11 @@ method resolve(values) {
         print "module with symbol tables"
         print "====================================="
         print "top-level"
-        print (patternMatchModule.symbolTable.asStringWithParents)
-        print "====================================="
+        patternMatchModule.symbolTable.do { each ->
+            print (each)
+            print (each.elementScopesAsString)
+            print "----------------"
+        }
         print(patternMatchModule.pretty(0))
         util.log_verbose "done"
         sys.exit(0)

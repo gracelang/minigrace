@@ -6,11 +6,9 @@ import "StandardPrelude" as stdPrelude
 
 inherits stdPrelude.methods
 
-
 // Type error.
 
-def TypeError is public = CheckerFailure.refine("TypeError")
-type List = stdPrelude.List
+def TypeError is public = CheckerFailure.refine "TypeError"
 
 // Method signature information.
 
@@ -54,7 +52,6 @@ class aMixPart.withName(name' : String)
 }
 
 def aMethodType = object {
-
     method signature(signature' : List<MixPart>)
             returnType(rType : ObjectType)-> MethodType {
         object {
@@ -357,7 +354,8 @@ def anObjectType = object {
 
                 return if(lit.value != false) then {
                     object {
-                        inherits oType & fromDType(intersection.last)
+//                        inherits oType & fromDType(intersection.last)
+                        inherits TypeIntersection.new(oType, fromDType(intersection.last))
 
                         def asString : String is public, override = lit.value
                     }
@@ -376,8 +374,8 @@ def anObjectType = object {
 
                 return if(lit.value != false) then {
                     object {
-                        inherits oType | fromDType(union.last)
-
+//                        inherits oType | fromDType(union.last)
+                        inherits TypeUnion.new(oType, fromDType(union.last))
                         def asString : String is public, override = lit.value
                     }
                 } else {
@@ -385,16 +383,16 @@ def anObjectType = object {
                 }
             }
 
-            def methods = []
+            def meths = []
 
             for(lit.methods) do { mType ->
-                methods.push(aMethodType.fromNode(mType))
+                meths.push(aMethodType.fromNode(mType))
             }
 
             if((lit.value != false).andAlso { lit.value.at(1) != "<" }) then {
-                anObjectType.fromMethods(methods) withName(lit.value)
+                anObjectType.fromMethods(meths) withName(lit.value)
             } else {
-                anObjectType.fromMethods(methods)
+                anObjectType.fromMethods(meths)
             }
         } case { ident : Identifier ->
             anObjectType.fromIdentifier(ident)
@@ -451,9 +449,9 @@ def anObjectType = object {
     method blockTaking(params : List<Parameter>)
             returning(rType : ObjectType) -> ObjectType {
         def signature = [aMixPart.withName("apply") parameters(params)]
-        def methods = [aMethodType.signature(signature) returnType(rType)]
+        def meths = [aMethodType.signature(signature) returnType(rType)]
 
-        fromMethods(methods) withName("Block")
+        fromMethods(meths) withName("Block")
     }
 
     method blockReturning(rType : ObjectType) -> ObjectType {
@@ -1157,12 +1155,12 @@ method processBody(body : List) -> ObjectType is confidential {
     } else {
         // Collect the method types to add the two self types.
         def publicMethods = []
-        def methods = []
+        def allMethods = []
 
         for(body) do { stmt ->
             match(stmt) case { meth : Method ->
                 def mType = aMethodType.fromNode(meth)
-                methods.push(mType)
+                allMethods.push(mType)
                 if(isPublic(meth)) then {
                     publicMethods.push(mType)
                 }
@@ -1174,13 +1172,13 @@ method processBody(body : List) -> ObjectType is confidential {
             } case { defd : Def | Var ->
                 if(isPublic(defd)) then {
                     def mType = aMethodType.fromNode(defd)
-                    methods.push(mType)
+                    allMethods.push(mType)
                     publicMethods.push(mType)
                 }
             }
         }
 
-        scope.types.at("Self") put(anObjectType.fromMethods(methods))
+        scope.types.at("Self") put(anObjectType.fromMethods(allMethods))
         anObjectType.fromMethods(publicMethods)
     }
 
@@ -1201,7 +1199,7 @@ method processBody(body : List) -> ObjectType is confidential {
 }
 
 
-def TypeDeclarationError = TypeError.refine("TypeDeclarationError")
+def TypeDeclarationError = TypeError.refine "TypeDeclarationError"
 
 // The first pass over a body, collecting all type declarations so that they can
 // reference one another declaratively.

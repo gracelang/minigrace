@@ -367,20 +367,63 @@ method engine {
 method extensions {
     extensionsv
 }
-method sourceDir {
-//    filename.substringFrom 0 to (filename.lastIndexOf("/")ifAbsent{ return "./" })
-//    However, lastIndexOf is not available in gracelib.c
-    var indexOfLastSlash := 0
-    var ix := filename.length
-    while {(ix > 0) && (indexOfLastSlash == 0)} do {
-        if (filename.at(ix) == "/") then { indexOfLastSlash := ix }
+method str(s) lastIndexOf(ch) {
+    var ix := s.length
+    while { ix > 0 } do {
+        if (s.at(ix) == "/") then { return ix }
         ix := ix - 1
     }
-    if (indexOfLastSlash == 0) then {
-        "./"
-    } else {
-        filename.substringFrom 1 to (indexOfLastSlash)
+    return 0
+}
+var sourceDirCache := ""
+method sourceDir {
+    if (sourceDirCache == "") then {
+        sourceDirCache := filename.substringFrom 1 to (str(filename) lastIndexOf("/"))
     }
+    if (sourceDirCache == "") then { sourceDirCache := "./" }
+    sourceDirCache
+}
+var execDirCache := ""
+method execDir {
+    if (execDirCache == "") then {
+        execDirCache := sys.execPath
+    }
+    execDirCache
+}
+method file(name) onPath(pathString) otherwise(action) {
+    def locations = list.empty
+    var ix := 1
+    var ox := 1
+    def pss = pathString.size
+    while { ox <= pss } do {
+        while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
+            ox := ox + 1 
+        }
+        locations.addLast (pathString.substringFrom(ix) to(ox-1))
+        ix := ox + 1
+        ox := ix
+    }
+    if (locations.contains(sourceDir).not) then {
+        locations.addFirst(sourceDir)
+    }
+    if (locations.contains(execDir).not) then {
+        locations.addFirst(execDir)
+    }
+    if (locations.contains "./".not) then {
+        locations.addFirst "./"
+        print "locations = {locations}"
+    }
+    locations.do { each ->
+        def candidate = if (each.at(each.size) == "/") then {
+            each ++ name
+        } else {
+            each ++ "/" ++ name
+        }
+        if ( io.exists(candidate) ) then {
+            return candidate
+        }
+    }
+    action.apply
 }
 method processExtension(ext) {
     var extn := ""

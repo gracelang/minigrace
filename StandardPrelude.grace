@@ -25,6 +25,18 @@ type Extractable = {
     extract
 }
 
+type MatchResult = {
+  result -> Object
+  bindings -> List<Object>
+}
+
+type Pattern = {
+  &(and : Pattern) -> Pattern
+  |(or : Pattern) -> Pattern
+  match(value : Object) -> MatchResult
+}
+
+
 method repeat(n)times(action) {
     var ix := n
     while {ix > 0} do { 
@@ -148,8 +160,40 @@ class Singleton.new {
     }
 }
 
+class BaseType.new(name) {
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method asString {
+        if (name == "") then { "type ‹anon›" }
+                        else { "type {name}" }
+    }
+}
+
 class TypeIntersection.new(t1, t2) {
     inherits AndPattern.new(t1, t2)
+    // inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
     method methodNames { 
         t1.methodNames.addAll(t2.methodNames)
     }
@@ -158,6 +202,19 @@ class TypeIntersection.new(t1, t2) {
 
 class TypeVariant.new(t1, t2) {
     inherits OrPattern.new(t1, t2)
+    // inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
     method methodNames { 
         self.TypeVariantsCannotBeCharacterizedByASetOfMethods
     }
@@ -166,6 +223,19 @@ class TypeVariant.new(t1, t2) {
 
 class TypeUnion.new(t1, t2) {
     inherits BasicPattern.new(t1, t2)
+//    inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
     method methodNames { 
         t1.methodNames ** t2.methodNames
     }
@@ -183,7 +253,19 @@ class TypeUnion.new(t1, t2) {
 }
 
 class TypeSubtraction.new(t1, t2) {
-    inherits TypeUnion.new(t1, t2)
+    inherits BasicPattern.new(t1, t2)
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
     method methodNames { 
         t1.methodNames.removeAll(t2.methodNames)
     }
@@ -228,9 +310,9 @@ type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
-type IndexableCollection<T> = collections.IndexableCollection<T>
 type Collection<T> = collections.Collection<T>
-type Binding = collections.Binding
+type ReifiedCollection<T> = collections.ReifiedCollection<T>
+type Binding<K,T> = collections.Binding<K,T>
 type Iterator<T> = collections.Iterator<T>
 type CollectionFactory<T> = collections.CollectionFactory<T>
 type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
@@ -255,17 +337,8 @@ def dictionary is public = collections.dictionary
 def binding is public = collections.binding
 def range is public = collections.range
 
-def _standardPrelude = self
-def BasicGrace = object {
-    method new {
-        _prelude.clone(_standardPrelude)
-    }
-}
-method new {
-    _prelude.clone(self)
-}
 method methods {
-    _prelude.clone(self)
+    prelude.clone(self)
 }
 
 

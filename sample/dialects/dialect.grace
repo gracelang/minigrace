@@ -1,9 +1,9 @@
 import "ast" as ast
 import "errormessages" as errormessages
 
-//import "StandardPrelude" as prelude
+import "StandardPrelude" as stdPrelude
 
-inherits prelude.methods
+inherits stdPrelude.methods
 
 
 // Checker error
@@ -236,11 +236,10 @@ method runRules(node) {
     currentLine := node.line
 
     var result := done
-    for(rules) do { rule ->
-        def matched = rule.match(node)
+    for(rules) do { each ->
+        def matched = each.match(node)
         if(matched) then {
             def result' = matched.result
-
             if(done != result') then {
                 result := result'
                 cache.at(node) put(result)

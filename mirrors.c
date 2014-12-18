@@ -10,6 +10,7 @@
 //   reflect(obj : Any) -> Mirror
 // Mirrors support two methods:
 //   methods -> List<MirrorMethod>
+//   methodNames -> Set<String>
 //   getMethod(name : String) -> MirrorMethod
 // MirrorMethods support four methods:
 //   name -> String
@@ -160,10 +161,37 @@ Object Mirror_methods(Object self, int nparams, int *argcv, Object *args,
     return l;
 }
 
+Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
+                          int flags) {
+    struct MirrorObject *s = (struct MirrorObject*)self;
+    Object current = s->obj;
+    int i;
+    Object mn;
+    ClassData c;
+    int tmp = 1;
+    gc_pause();
+    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
+    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    while (current != NULL) {
+        c = current->class;
+        for (i=0; i < c->nummethods; i++) {
+            mn = alloc_String(c->methods[i].name);
+            callmethod(result, "add", 1, &tmp, &mn);
+        }
+        if (current->flags & OFLAG_USEROBJ) {
+            current = ((struct UserObject *) current)->super;
+        } else {
+            current = NULL;
+        }
+    }
+    return result;
+}
+
 Object alloc_mirror(Object obj) {
     if (MirrorClass == NULL) {
-        MirrorClass = alloc_class("Mirror", 2);
+        MirrorClass = alloc_class("Mirror", 3);
         add_Method(MirrorClass, "methods", &Mirror_methods);
+        add_Method(MirrorClass, "methodNames", &Mirror_methodNames);
         add_Method(MirrorClass, "getMethod", &Mirror_getMethod);
     }
     Object o = alloc_obj(sizeof(Object), MirrorClass);

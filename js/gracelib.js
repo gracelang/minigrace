@@ -1374,6 +1374,11 @@ function GraceModule(name) {
     return newModuleObject;
 }
 
+function fileExists(path) {
+    var gctpath = path.substr(0, path.length - 4);
+    return typeof(gctCache[gctpath]) === "undefined"
+}
+
 function gracecode_io() {
     this.methods.output = function() {
         return this._output;
@@ -1388,10 +1393,7 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
-        path = path._value;
-        var gctpath = path.substr(0, path.length - 4);
-        if (gctCache[gctpath])
-            return GraceTrue;
+        if (fileExists(path._value)) return GraceTrue;
         return GraceFalse;
     }
     this.methods.open = function(argcv, path, mode) {
@@ -1716,6 +1718,14 @@ function gracecode_util() {
         },
         interactive: function(argcv) {
             return GraceFalse;
+        },
+        "file()onPath()otherwise": function (argcv, fn, p, blk) {
+            var jsFn = fn._value
+            if (jsFn.substr(jsFn.length - 4) == ".gct") {
+                var gctfn = jsFn.substr(0, fn.length - 4);
+                if (fileExists(gctfn)) return fn;
+            }
+            return callmethod(blk, "apply", [0]);
         },
         type_error: function(argcv, s) {
             minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
@@ -2593,16 +2603,17 @@ Grace_prelude.methods["clone"] = function prelude_clone (argcv, obj) {
 }
 
 function clone (obj) {
-//    TODO: add a cache to deal with sahred and cyclic structures.
+//   shallow copy, except up the superchain
     var copy = new GraceObject();
-    copy.superobj = clone(obj.superobj);
+    if (obj.superobj)
+        copy.superobj = clone(obj.superobj);
     copy.className = obj.className;
     copy.mutable = obj.mutable;
     copy.definitionModule = obj.definitionModule;
     copy.definitionLine = obj.definitionLine;
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
-            copy.data[attr] = clone(obj.data[attr]);
+            copy.data[attr] = obj.data[attr];
     }
     return copy;
 }

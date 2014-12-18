@@ -13,20 +13,20 @@ fail "method must have a static return type"
     when { n : Method -> n.decType.value == "Unknown" }
 fail "method parameters must have a static type"
     when { v : Method ->
-        v.eachParameter {p->
+        v.parametersDo {p->
             if (p.decType.value=="Unknown") then {
-                fail("no type given to declaration"
-                    ++ " of parameter '{p.value}'")at(p)
+                fail("no type given in declaration"
+                    ++ " of method parameter '{p.value}'")at(p)
             }
         }
         false
     }
 fail "block parameters must have a static type"
     when {b: BlockLiteral -> 
-       for(b.params) do {p->
+       b.parametersDo {p->
             if (p.decType.value=="Unknown") then {
-                fail("no type given to declaration"
-                    ++ " of parameter '{p.value}'")at(p)
+                fail("no type given in declaration"
+                    ++ " of block parameter '{p.value}'")at(p)
             }
        }
        false

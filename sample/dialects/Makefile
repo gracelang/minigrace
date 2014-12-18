@@ -9,6 +9,9 @@ all: $(DIALECT_MODULES) $(SAMPLES) $(DIALECTS_JS)
 %.gso: %.grace
 	../../minigrace --dynamic-module $<
 
+%.c: %.grace
+	../../minigrace --target c $<
+
 staticTypes.js: dialect.grace staticTypes.grace
 	../../minigrace --target js -o $@ $<
 

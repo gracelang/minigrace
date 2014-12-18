@@ -8,40 +8,44 @@ import "ast" as ast
 
 def gctCache = collections.map.new
 
-method parseGCT(moduleName, filepath) {
+method parseGCT(moduleName, givenpath) {
     if (gctCache.contains(moduleName)) then {
         return gctCache.get(moduleName)
     }
     def data = collections.map.new
-    util.runOnNew {} else { return data }
-    if (io.exists(filepath)) then {
-        def tfp = io.open(filepath, "r")
-        var key := ""
-        while {!tfp.eof} do {
-            def line = tfp.getline
-            if (line.size > 0) then {
-                if (line.at(1) != " ") then {
-                    key := line.substringFrom(1)to(line.size-1)
-                    data.put(key, collections.list.new)
-                } else {
-                    data.get(key).push(line.substringFrom(2)to(line.size))
-                }
+    def sz = givenpath.size
+    def sought = 
+        if (givenpath.substringFrom(sz - 3) to(sz) == ".gct") then {
+        givenpath
+    } else {
+        givenpath ++ ".gct"
+    }
+    def filename = util.file(sought)
+      onPath(sys.environ.at "GRACE_MODULE_PATH") otherwise {
+        util.log_verbose "Can't find file {sought} for module {moduleName}"
+        gctCache.put(moduleName, data)
+        return data
+    }
+    def tfp = io.open(filename, "r")
+    util.log_verbose "reading {io.realpath(filename)}"
+    var key := ""
+    while {!tfp.eof} do {
+        def line = tfp.getline
+        if (line.size > 0) then {
+            if (line.at(1) != " ") then {
+                key := line.substringFrom(1)to(line.size-1)
+                data.put(key, collections.list.new)
+            } else {
+                data.get(key).push(line.substringFrom(2)to(line.size))
             }
         }
-        tfp.close
-//    } else {
-//        if (filepath == "/nosuchpath") then {
-//            util.log_verbose "No cached gct for module {moduleName}"
-//        } else {
-//            util.log_verbose("Can't find file {filepath} for module {moduleName}")
-//        }
     }
+    tfp.close
     gctCache.put(moduleName, data)
     return data
 }
 
 method writeGCT(path, filepath, data) {
-//    log_verbose "writing gct for {path}"
     def fp = io.open(filepath, "w")
     for (data) do {key->
         fp.write "{key}:\n"
@@ -145,71 +149,38 @@ method generateGCT(path)fromValues(values)modules(modules) {
         }
     }
     gct.put("classes", classes)
+
     def freshmeths = collections.list.new
-    for (values) do {val->
-        if (val.kind == "method") then {
-            if (val.isFresh) then {
-                freshmeths.push(val.nameString)
-            }
-        }
-    }
     gct.put("fresh-methods", freshmeths)
     for (values) do {val->
         if (val.kind == "method") then {
             if (val.isFresh) then {
-                def freshObjBody = val.body.last.value
-                def vObj = publicNames(values)
-                for (freshObjBody) do { mbr -> mbr.accept(vObj.visitor) }
-                gct.put("fresh:{val.value.value}", vObj.collected)
+                freshmeths.push(val.nameString)
+                def freshMethResult = val.body.last
+                if (freshMethResult.isObject) then {
+                    gct.put("fresh:{val.nameString}",
+                        freshMethResult.scope.keysAsList)
+                } elseif {freshMethResult.isCall} then {
+                    // we know that freshMethResult.value.isMember and 
+                    // freshMethResult.value.nameString == "clone"
+                    def receiver = freshMethResult.value.in
+                    if ((receiver.nameString == "prelude").andAlso{
+                      freshMethResult.with.first.args.first.nameString == "self"}) then {
+                        gct.put("fresh:{val.nameString}", meths)
+                        def key = "fresh:{val.nameString}"
+                    } elseif {(receiver.nameString == "self")} then {
+                        gct.put("fresh:{val.nameString}", meths)
+                    } else {
+                        ProgrammingError.raise 
+                            "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
+                    }
+                } else {
+                    ProgrammingError.raise
+                        "fresh method result of an unexpected kind: {freshMethResult.pretty(0)}"
+                }
             }
         }
     }
     return gct
-}
-
-method publicNames(values) {
-    object {
-        def collected is public = list.empty
-        def visitor = object {
-            inherits ast.baseVisitor
-            method visitVarDec(node) {
-                if (node.isWritable) then {
-                    collected.add(node.nameString ++ ":=")
-                }
-                if (node.isReadable) then {
-                    collected.add(node.nameString)
-                }
-                false
-            }
-            method visitDefDec(node) {
-                if (node.isPublic) then {
-                    collected.add(node.nameString)
-                }
-                false
-            }
-            method visitTypeDec(node) {
-                if (node.isPublic) then {
-                    collected.add(node.nameString)
-                }
-                false
-            }
-            method visitClass(node) {
-                if (node.isPublic) then {
-                    collected.add(node.nameString)
-                }
-                false
-            }
-            method visitMethod(node) {
-                if (node.isPublic) then {
-                    collected.add(node.nameString)
-                }
-                false
-            }
-            method visitInherits(node) {
-                collected.addAll(node.providedNames)
-                false
-            }
-        }
-    }
 }
 

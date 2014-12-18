@@ -6,14 +6,6 @@
 
 import "mirrors" as mirror
 
-type Object = { 
-    == (other:Object) -> Boolean
-    != (other:Object) -> Boolean
-    asString  -> String
-    asDebugString -> String
-}
-// TODO: move this to StandardPrelude, or even make it a built-in classType
-
 type Assertion = { 
     assert(bb:Boolean)description(str:String) -> Done
     deny(bb:Boolean)description (str:String)  -> Done        
@@ -22,6 +14,7 @@ type Assertion = {
     assert(s1:Object)shouldBe(s2:Object) -> Done
     assert(b:Block)shouldRaise(de:Exception) -> Done
     assert(b:Block)shouldntRaise(ue:Exception) -> Done
+    assert(s:Object) hasType (t:Type) -> Done
 }
    
 type TestCase = Assertion & type {
@@ -110,7 +103,23 @@ class assertion.trait {
     method assert(value) hasType (DesiredType) {
         match (value)
             case { _:DesiredType -> assert (true) }
-            case { _ -> failBecause "{value} does not have type {DesiredType}" }
+            case { _ -> 
+                def m = methodsIn(DesiredType) missingFrom (value)
+                failBecause "{value} does not have type {DesiredType}; it's missing methods {m}." }
+    }
+    
+    method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
+        def vMethods = mirror.reflect(value).methodNames
+        def tMethods = DesiredType.methodNames
+        def missing = tMethods -- vMethods
+        if (missing.size == 0) then {
+            ProgrammingError.raise "{value} seems to have all the methods of {DesiredType}"
+        } else {
+            var s := ""
+            missing.do { each -> s := s ++ each } 
+                separatedBy { s := s ++ ", " }
+            s
+        }
     }
     
     method deny(value) hasType (UndesiredType) {
@@ -278,7 +287,7 @@ factory method testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
-    method hashcode {testName.hashcode}
+    method hash {testName.hash}
 }
 
 def testSuite is readable = object {

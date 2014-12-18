@@ -577,7 +577,7 @@ method compileblock(o) {
     o.register := obj
     inBlock := origInBlock
 }
-method compiletype(o) {
+method compiletype(o) {     // dead code!
     def myc = auto_count
     auto_count := auto_count + 1
     def escName = escapestring2(o.value)
@@ -2086,6 +2086,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object undefined;")
     outprint("extern Object done;")
     outprint("extern Object _prelude;")
+    outprint("extern Object ObjectType;")
     outprint("extern Object String;")
     outprint("extern Object Number;")
     outprint("extern Object Boolean;")
@@ -2096,11 +2097,13 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object Type;")
     outprint("extern Object GraceDefaultObject;")
     outprint("extern Object sourceObject;")
+    outprint("static Object type_Object;")
     outprint("static Object type_String;")
     outprint("static Object type_Number;")
     outprint("static Object type_Boolean;")
     outprint("static Object type_Block;")
     outprint("static Object type_Done;")
+    outprint("static Object type_Type;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static Object prelude;")
@@ -2123,10 +2126,11 @@ method compile(vl, of, mn, rm, bt) {
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
     out "  self->class->definitionModule = modulename;"
-    out("  gc_root(self);")
+    out "  gc_root(self);"
     if (util.extensions.contains("NativePrelude")) then {
-        out("  prelude = grace_prelude();")
-        out("  adddatum2(self, grace_prelude(), 0);")
+        out "  prelude = grace_prelude();"
+        out "  adddatum2(self, grace_prelude(), 0);"
+        out "  Object ObjectType = alloc_ObjectType();"
     } else {
         out("  prelude = module_StandardPrelude_init();")
         out("  adddatum2(self, prelude, 0);")
@@ -2143,6 +2147,9 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_noSuchValue = done;")
     out("  Object *var_done = alloc_var();")
     out("  *var_done = done;")
+    out("  Object *var_Object = alloc_var();")
+    out("  *var_Object = ObjectType;")
+    out("  type_Object = ObjectType;")
     out("  Object *var_String = alloc_var();")
     out("  *var_String = String;")
     out("  type_String = String;")
@@ -2164,6 +2171,7 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_Unknown= Unknown;")
     out("  Object *var_Type = alloc_var();")
     out("  *var_Type = Type;")
+    out("  type_Done = Type;")
     out("  Object *var__prelude = alloc_var();")
     out("  *var__prelude = grace_prelude();")
     out("  Object *var_prelude = alloc_var();")

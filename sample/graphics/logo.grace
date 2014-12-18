@@ -4,7 +4,7 @@
 // handles the actual drawing and user interface.
 import "turtle" as turtle
 import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.new
+inherits StandardPrelude.methods
 
 def red = turtle.red
 def green = turtle.green

@@ -323,6 +323,7 @@ method blank {
     if (sym.line > (lastToken.line + 1)) then {
         if (values.size > 0) then {
             if (values.last.kind != "blank") then {
+                util.setPosition(lastToken.line + 1, 0)
                 values.push(ast.blankNode.new)
             }
         }
@@ -1031,7 +1032,10 @@ method generic {
                 }
                 identifier
                 def memberName = values.pop
-                values.push(ast.memberNode.new(memberName.value, memberIn))
+                def memberNd = ast.memberNode.new(memberName.value, memberIn)
+                memberNd.line := memberName.line
+                memberNd.linePos := memberName.linePos
+                values.push(memberNd)
             }
             generic
             gens.push(values.pop)
@@ -1546,6 +1550,7 @@ method matchcase {
 // Accept a term. Terms consist only of single syntactic units and
 // do not contain any operators or parentheses, unlike expression.
 method term {
+    util.setPosition(sym.line, sym.linePos)
     if (accept("num")) then {
         pushnum
     } elseif (accept("string")) then {
@@ -1580,9 +1585,11 @@ method term {
 // or an operator expression.
 method expression(acceptBlocks) {
     var sz := values.size
+    util.setPosition(sym.line, sym.linePos)
     if (accept("lparen")) then {
         def tmpStatementToken = statementToken
         statementToken := sym
+        util.setPosition(sym.line, sym.linePos)
         next
         if(didConsume({expression(acceptBlocks)}).not) then {
             def suggestion = errormessages.suggestion.new
@@ -1836,9 +1843,11 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
 // method calls on the result.
 method dotrest(acceptBlocks) {
     if (acceptSameLine("dot")) then {
+        util.setPosition(sym.line, sym.linePos)
         var lookuptarget := values.pop
         next
         if (accept("identifier")) then {
+            util.setPosition(sym.line, sym.linePos)
             var dro := ast.memberNode.new(sym.value, lookuptarget)
             values.push(dro)
             next
@@ -1882,6 +1891,7 @@ method callrest(acceptBlocks) {
     def lpos = meth.linePos
     var methn := meth.value
     def btok = sym
+    util.setPosition(sym.line, sym.linePos)
     var signature := []
     var part := ast.callWithPart.new
     signature.push(part)
@@ -1939,6 +1949,8 @@ method callrest(acceptBlocks) {
                 // the member lookup (for x.between(3)and(10)-type
                 // calls).
                 meth := ast.memberNode.new(methn.value, meth.in)
+                meth.line := methn.line
+                meth.linePos := methn.linePos
             } else {
                 meth := methn
             }
@@ -2092,7 +2104,7 @@ method typeArgs {
 method typeArg {
     // Parses a single type argument, and leave it on the values stack.
     // TODO: 'identifier' could be a dotted identifier, 
-    //       or perhaps a type expression?
+    //        or perhaps a type expression?
     if (accept "identifier") then {
         identifier
         if (sym.kind == "lgeneric") then {
@@ -2471,7 +2483,8 @@ method inheritsdec {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
         util.setPosition(btok.line, btok.linePos)
-        values.push(ast.inheritsNode.new(values.pop))
+        def inhNode = ast.inheritsNode.new(values.pop)
+        values.push(inhNode)
     }
 }
 

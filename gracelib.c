@@ -39,8 +39,6 @@ Object Object_NotEquals(Object, int, int*,
         Object*, int);
 Object String_concat(Object, int nparts, int *argcv,
         Object*, int flags);
-Object String_index(Object, int nparts, int *argcv,
-        Object*, int flags);
 FILE *debugfp;
 int debug_enabled = 0;
 
@@ -117,6 +115,7 @@ ClassData ExceptionPacket;
 ClassData Exception;
 
 Object Dynamic;
+Object ObjectType = NULL;
 Object Unknown;
 Object prelude = NULL;
 
@@ -1733,7 +1732,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 26,
+        ConcatString = alloc_class3("ConcatString", 27,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1755,6 +1754,7 @@ Object alloc_ConcatString(Object left, Object right) {
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
+        add_Method(ConcatString, "hash", &String_hashcode);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
@@ -1933,7 +1933,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 24);
+        String = alloc_class("String", 25);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString
                    );
@@ -1954,6 +1954,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
         add_Method(String, "startsWith", &String_startsWith);
         add_Method(String, "replace()with", &String_replace_with);
+        add_Method(String, "hash", &String_hashcode);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
@@ -2072,16 +2073,6 @@ Object String_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->blen);
-}
-Object String_index(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    int index = integerfromAny(args[0]);
-    struct StringObject* sself = (struct StringObject*)self;
-    char buf[2];
-    char *c = sself->body;
-    buf[0] = c[index];
-    buf[1] = '\0';
-    return alloc_String(buf);
 }
 Object String_concat(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -3203,6 +3194,20 @@ Object alloc_done() {
     gc_root(o);
     return o;
 }
+Object alloc_ObjectType() {
+    if (ObjectType != NULL)
+        return ObjectType;
+    ObjectType = alloc_Type("Object", 7);
+    gc_root(ObjectType);
+    add_Method((ClassData)ObjectType, "==", NULL);
+    add_Method((ClassData)ObjectType, "!=", NULL);
+    add_Method((ClassData)ObjectType, "≠", NULL);
+    add_Method((ClassData)ObjectType, "::", NULL);
+    add_Method((ClassData)ObjectType, "asString", NULL);
+    add_Method((ClassData)ObjectType, "asDebugString", NULL);
+    add_Method((ClassData)ObjectType, "basicAsString", NULL);
+    return ObjectType;
+}
 Object alloc_ellipsis() {
     if (ellipsis != NULL)
         return ellipsis;
@@ -3834,18 +3839,60 @@ Object Type_asString(Object self, int nparts, int *argcv,
 Object Type_methodNames(Object self, int nparts, int *argcv,
                      Object *argv, int flags) {
     struct TypeObject *t = (struct TypeObject *)self;
-    return alloc_String("Type method 'methodNames' not yet implemented");
+    int i;
+    int tmp = 1;
+    Object mn;
+    gc_pause();
+    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
+    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    for (i=0; i < t->nummethods; i++) {
+        mn = alloc_String(t->methods[i].name);
+        callmethod(result, "add", 1, &tmp, &mn);
+    }
+    return result;
+}
+Object Type_and(Object self, int nparts, int *argcv,
+                   Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("& requires an argument");
+    Object ti = callmethod(prelude, "TypeIntersection", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
+}
+Object Type_or(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("| requires an argument");
+    Object ti = callmethod(prelude, "TypeVariant", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
+}
+Object Type_plus(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("+ requires an argument");
+    Object ti = callmethod(prelude, "TypeUnion", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 8);
+        Type = alloc_class("Type", 10);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
+        add_Method(Type, "≠", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
         add_Method(Type, "::", &Object_bind);
         add_Method(Type, "match", &Type_match);
-        add_Method(Type, "&", &literal_and);
-        add_Method(Type, "|", &literal_or);
+        add_Method(Type, "&", &Type_and);
+        add_Method(Type, "|", &Type_or);
+        add_Method(Type, "+", &Type_plus);
         add_Method(Type, "methodNames", &Type_methodNames);
     }
     Object o = alloc_obj(sizeof(struct TypeObject)
@@ -4236,7 +4283,7 @@ void UserObj__release(struct UserObject *o) {
 Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (GraceDefaultObject == NULL) {
-        ClassData dc = alloc_class2("DefaultObject", 7,
+        ClassData dc = alloc_class2("DefaultObject", 8,
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
                 sizeof(struct Object), dc);
@@ -4249,7 +4296,9 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "++", &Object_concat);
         addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
         addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
+        addmethod2(GraceDefaultObject, "≠", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
+        addmethod2(GraceDefaultObject, "basicAsString", &Object_asString);
         addmethod2(GraceDefaultObject, "::", &Object_bind);
     }
     if (c == NULL) {
@@ -4829,12 +4878,13 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 25, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 26, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
+    add_Method(c, "≠", &Object_NotEquals);
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "Exception", &prelude_Exception);

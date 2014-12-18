@@ -18,21 +18,6 @@ import "util" as util
 // both a value (the condition) and a "body", for example. None of the nodes
 // are particularly notable in any way.
 
-method listMap(l, b)before(blkBefore)after(blkAfter) {
-    def r = list.empty
-    for (l) do {v->
-        def replacement = v.map(b)before(blkBefore)after(blkAfter)
-        r.push(replacement)
-    }
-    r
-}
-method maybeMap(n, b, before, after) {
-    if (n != false) then {
-        n.map(b)before(before)after(after)
-    } else {
-        n
-    }
-}
 method listMap(l, b) parent(p) {
     def newList = list.empty
     for (l) do { nd -> newList.addLast(nd.map(b) parent(p)) }
@@ -83,7 +68,6 @@ class baseNode.new {
     method isBind { false }
     method isObject { false }
     method isIdentifier { false }
-    method needsMembersWrapped { false }
     method definesObject { false }
     method definesScope { false }
     method usesAsType(aNode) { false }
@@ -122,7 +106,7 @@ class baseNode.new {
         self
     }
     method pretty(depth) { 
-        self.kind
+        "{line}:{linePos} {self.kind}"
     }
     method deepCopy {
         self.map { each -> each } parent (nullNode)
@@ -169,7 +153,7 @@ class symbolTableNode.new {
             spc := spc ++ "  "
         }
         if ((hasSymbolTable).andAlso{util.target == "symbols"}) then {
-            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'.keysAndValuesAsList}"
+            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'}{symbolTable'.elementScopesAsString}"
         } else {
             super.pretty(depth)
         }
@@ -179,7 +163,6 @@ class symbolTableNode.new {
 def nullNode is public = object {
     inherits symbolTableNode.new
     def kind is public = "null"
-    method childrenDo(block1) { }
     method toGrace(depth) {
         "// null"
     }
@@ -192,31 +175,12 @@ class ifNode.new(cond, thenblock', elseblock') {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
-    method needsMembersWrapped { true }
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(thenblock)
-        b.apply(elseblock)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIf(self) up(pNode)) then {
             value.accept(visitor) from(self)
             thenblock.accept(visitor) from(self)
             elseblock.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        def v = self.value.map(blk)before(blkBefore)after(blkAfter)
-        def tb = thenblock.map(blk)before(blkBefore)after(blkAfter)
-        blkAfter.apply(self)
-        blkBefore.apply(self)
-        def eb = elseblock.map(blk)before(blkBefore)after(blkAfter)
-        var n := ifNode.new(v, tb, eb)
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -296,11 +260,6 @@ class blockNode.new(params', body') {
     method definesObject {
         body.isEmpty.not.andAlso { body.last.definesObject }
     }
-    method childrenDo(b) {
-        params.do(b)
-        body.do(b)
-        if (false =! matchingPattern) then { b.apply(matchingPattern) }
-    }
     method parametersDo(b) {
         params.do(b)
     }
@@ -316,20 +275,6 @@ class blockNode.new(params', body') {
                 self.matchingPattern.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := blockNode.new(listMap(params, blk)before(blkBefore)after(blkAfter),
-            listMap(body, blk)before(blkBefore)after(blkAfter))
-        if (self.matchingPattern != false) then {
-            n.matchingPattern := self.matchingPattern.map(blk)
-                before(blkBefore)after(blkAfter)
-        }
-        n := blk.apply(n)
-        n.extraRuntimeData := extraRuntimeData
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -406,11 +351,6 @@ class catchCaseNode.new(block, cases', finally') {
     var cases is public := cases'
     var finally is public := finally'
 
-    method childrenDo(b) {
-        b.apply(value)
-        cases.do(b)
-        if (false =! finally) then { b.apply(finally) }
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitCatchCase(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -421,14 +361,6 @@ class catchCaseNode.new(block, cases', finally') {
                 self.finally.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := catchCaseNode.new(value.map(blk)before(blkBefore)after(blkAfter),
-            listMap(cases, blk)before(blkBefore)after(blkAfter),
-            maybeMap(finally, blk, blkBefore, blkAfter))
-        n.line := line
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -442,7 +374,7 @@ class catchCaseNode.new(block, cases', finally') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Catch\n"
+        var s := "{super.pretty(depth)}\n"
         s := s ++ spc ++ value.pretty(depth + 2)
         for (self.cases) do { mx ->
             s := s ++ "\n{spc}Case:\n{spc}  {mx.pretty(depth+2)}"
@@ -477,11 +409,6 @@ class matchCaseNode.new(matchee', cases', elsecase') {
     var cases is public := cases'
     var elsecase is public := elsecase'
     method matchee { value }
-    method childrenDo(b) {
-        b.apply(value)
-        cases.do(b)
-        if (false =! elsecase) then { b.apply(elsecase) }
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMatchCase(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -492,16 +419,6 @@ class matchCaseNode.new(matchee', cases', elsecase') {
                 self.elsecase.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        def newcases = listMap(cases, blk)before(blkBefore)after(blkAfter)
-        var n := matchCaseNode.new(value.map(blk)before(blkBefore)after(blkAfter),
-            newcases,
-            maybeMap(elsecase, blk, blkBefore, blkAfter))
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -568,7 +485,8 @@ class methodTypeNode.new(name', signature', rtype') {
     var rtype is public := rtype'
     var generics is public := sequence.empty
     def nameString:String is public = value
-    method asString { "MethodType {value} -> {rtype}" }    
+    method asString { "MethodType {value} -> {rtype}" }
+
     method parametersDo(b) {
         signature.do { part -> 
             part.params.do { each -> b.apply(each) }
@@ -579,11 +497,6 @@ class methodTypeNode.new(name', signature', rtype') {
         if (false != generics) then {
             generics.do { each -> b.apply(each) }
         }
-    }
-    method childrenDo(b) {
-        if (self.rtype != false) then { b.apply(rtype) }
-        signature.do{ part -> b.apply(part) }
-        generics.do(b)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMethodType(self) up(pNode)) then {
@@ -597,18 +510,6 @@ class methodTypeNode.new(name', signature', rtype') {
                 part.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var rt := false
-        if (rtype != false) then {
-            rt := rtype.map(blk)before(blkBefore)after(blkAfter)
-        }
-        var n := methodTypeNode.new(value, listMap(signature, blk)before(blkBefore)after(blkAfter),
-            rt)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -676,7 +577,6 @@ class typeLiteralNode.new(methods', types') {
     var nominal is public := false
     var anonymous is public := true
     var value is public := "‹anon›"
-
     
     method name { value }
     method name:=(n:String) {
@@ -685,10 +585,6 @@ class typeLiteralNode.new(methods', types') {
     }
     method asString {
         "TypeLiteral: methods = {methods}, types = {types}"
-    }
-    method childrenDo(b) {
-        types.do(b)
-        methods.do(b)
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitTypeLiteral(self) up(pNode)) then {
@@ -699,17 +595,6 @@ class typeLiteralNode.new(methods', types') {
                 each.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := typeLiteralNode.new(
-            listMap(methods, blk)before(blkBefore)after(blkAfter),
-            listMap(types, blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        n.linePos := linePos
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -723,7 +608,7 @@ class typeLiteralNode.new(methods', types') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Type literal\n"
+        var s := "{super.pretty(depth)}\n"
         s := s ++ spc ++ "Types:"
         for (types) do { each ->
             s := s ++ "\n  "++ spc ++ each.pretty(depth+2)
@@ -792,32 +677,12 @@ class typeDecNode.new(name', typeValue) {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method childrenDo(b) {
-        b.apply(name)
-        generics.do(b)
-        annotations.do(b)
-        b.apply(value)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitTypeDec(self) up(pNode)) then {
             value.accept(visitor) from(self)
             generics.do { each -> each.accept(visitor) from(self) }
             annotations.do { each -> each.accept(visitor) from(self) }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := typeDecNode.new(name, value.map(blk)before(blkBefore)after(blkAfter))
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a)
-        }
-        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {g->
-            n.generics.push(g)
-        }
-        n.line := line
-        n.linePos := linePos
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -905,7 +770,6 @@ class methodNode.new(name', signature', body', dtype') {
     var annotations is public := list.empty
     var isFresh is public := false      // a method is 'fresh' if it answers a new object
 
-    method needsMembersWrapped { true }
     method declarationKind {
         "parameter"
     }
@@ -935,13 +799,6 @@ class methodNode.new(name', signature', body', dtype') {
             generics.do { each -> b.apply(each) }
         }
     }
-    method childrenDo(b) {
-        b.apply(value)
-        signature.do { part -> b.apply(part) }
-        generics.do(b)
-        annotations.do(b)
-        b.apply(value)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMethod(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -964,24 +821,6 @@ class methodNode.new(name', signature', body', dtype') {
             }
         }
     }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var dt := false
-        if (dtype != false) then {
-            dt := dtype.map(blk)before(blkBefore)after(blkAfter)
-        }
-        var n := methodNode.new(name', signature, listMap(body, blk)before(blkBefore)after(blkAfter), dt)
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a)
-        }
-        for (listMap(generics, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.generics.push(a)
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
-    }
     method map(blk) parent(p){
         var n := shallowCopyWithParent(p)
         n.body := listMap(body, blk) parent(n)
@@ -991,13 +830,6 @@ class methodNode.new(name', signature', body', dtype') {
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
         n
-    }
-    method eachParameter(blk) {
-        for (signature) do {s->
-            for (s.params) do {p->
-                blk.apply(p)
-            }
-        }
     }
     method pretty(depth) {
         var spc := ""
@@ -1011,6 +843,7 @@ class methodNode.new(name', signature', body', dtype') {
             s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
             s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
         }
+        if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
         s := "{s}{spc}Signature:"
         for (signature) do { part ->
             s := "{s}\n  {spc}Part: {part.name}"
@@ -1103,7 +936,6 @@ class methodNode.new(name', signature', body', dtype') {
 }
 class callNode.new(what, with') {
     // requested as callNode.new(target:AstNode, parts:List)
-    // The first is equivalent to the second with an empty list of arguments
     // Represents a method request with arguments.
     // The ‹target›.‹methodName› part is in `value`
     // The argument list is in `with`, as a sequence of `callWithPart`s.
@@ -1126,14 +958,12 @@ class callNode.new(what, with') {
     var with is public := with'        // arguments
     var generics is public := false
     var isPattern is public := false
-    def nameString:String is public = what
+    def nameString:String is public = value.nameString
     
     method target { value }
     method isCall { true }
-    method childrenDo(b) {
-        b.apply(value)
-        with.do { part -> b.apply(part) }
-        if (generics != false) then { generics.do(b) }
+    method definesObject {
+        value.isMember.andAlso { value.nameString == "clone" }
     }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitCall(self) up(pNode)) then {
@@ -1145,24 +975,13 @@ class callNode.new(what, with') {
             }
         }
     }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := callNode.new(value.map(blk)before(blkBefore)after(blkAfter),
-            listMap(with, blk)before(blkBefore)after(blkAfter))
-        if (generics != false) then {
-            n.generics := listMap(generics, blk)before(blkBefore)after(blkAfter)
-        }
-        n.isPattern := isPattern
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
-    }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n.with := listMap(with, blk) parent(n)
-        n.generics := maybeMap(generics, blk) parent(n)
+        if (generics != false) then {
+            n.generics := listMap(generics, blk) parent(n)
+        }
         n := blk.apply(n)
         n
     }
@@ -1296,16 +1115,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             generics.do { each -> b.apply(each) }
         }
     }
-    method childrenDo(b) {
-        b.apply(name)
-        b.apply(constructor)
-        signature.do(b)
-        b.apply(dtype)
-        generics.do(b)
-        if (false != superclass) then { b.apply(superclass) }
-        annotations.do(b)
-        value.do(b)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitClass(self) up(pNode)) then {
             self.name.accept(visitor) from(self)
@@ -1320,19 +1129,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
                 each.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := classNode.new(name.map(blk)before(blkBefore)after(blkAfter),
-            listMap(signature, blk)before(blkBefore)after(blkAfter), listMap(value, blk)before(blkBefore)after(blkAfter),
-            maybeMap(superclass, blk, blkBefore, blkAfter), constructor, dtype)
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1459,10 +1255,6 @@ class objectNode.new(body, superclass') {
     }
     method definesObject { true }
     method isObject { true }
-    method childrenDo(b) {
-        b.apply(superclass)
-        value.do(b)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitObject(self) up(pNode)) then {
             if (self.superclass != false) then {
@@ -1472,15 +1264,6 @@ class objectNode.new(body, superclass') {
                 x.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := objectNode.new(listMap(value, blk)before(blkBefore)after(blkAfter),
-                    maybeMap(superclass, blk, blkBefore, blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1543,17 +1326,6 @@ class arrayNode.new(values) {
             }
         }
     }
-    method childrenDo(b) {
-        value.do(b)
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := arrayNode.new(listMap(value, blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
-    }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.value := listMap(value, blk) parent(n)
@@ -1597,33 +1369,10 @@ class memberNode.new(what, in') {
     method target { in }
     method nameString { value }
     method isMember { true }
-    method needsMembersWrapped {
-        if (value == "outer") then { return false }
-        parent.isMember && parent.parent.isMember.not
-    }
-    method wrapWithCall {
-        // TODO Compatability Kludge — remove when possible
-        // since a member node represents a method request, and is compiled as such
-        callNode.new(self, [callWithPart.new(value)]).withParentRefs
-    }
-    method childrenDo(b) {
-        b.apply(in)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitMember(self) up(pNode)) then {
             self.in.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := memberNode.new(value, in.map(blk)before(blkBefore)after(blkAfter))
-        if (generics != false) then {
-            n.generics := listMap(generics, blk)before(blkBefore)after(blkAfter)
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1639,7 +1388,7 @@ class memberNode.new(what, in') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Member‹" ++ self.value ++ "›\n"
+        var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
         s := s ++ spc ++ in.pretty(depth)
         if (generics != false) then {
             s := s ++ "\n" ++ spc ++ "  Generics:"
@@ -1673,6 +1422,7 @@ class memberNode.new(what, in') {
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
+        parent := self
         return resultNode
     }
     method shallowCopyWithParent(p) {
@@ -1691,9 +1441,6 @@ class genericNode.new(base, params') {
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
         s ++ ">"
     }
-    method childrenDo(b) {
-        params.do(b)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitGeneric(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -1701,14 +1448,6 @@ class genericNode.new(base, params') {
                 p.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := genericNode.new(value.map(blk)before(blkBefore)after(blkAfter), listMap(params, blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1718,7 +1457,16 @@ class genericNode.new(base, params') {
         n
     }
     method pretty(depth) {
-        self.toGrace(depth)
+        var s := "{super.pretty(depth)}‹self.value.value›<"
+        for (self.params.indices) do { i ->
+            s := s ++ self.params[i].pretty(depth+2)
+            if (i < self.params.size) then {
+                s := s ++ ", "
+            }
+        }
+        s := s ++ ">"
+        s
+
     }
     method toGrace(depth : Number) -> String {
         var s := self.value.value ++ "<"
@@ -1752,7 +1500,11 @@ class identifierNode.new(name, dtype') {
     method isIdentifier { true }
 
     method isAppliedOccurenceOfIdentifier {
-        isBindingOccurrence.not
+        if (wildcard) then { 
+            false 
+        } else {
+            isBindingOccurrence.not
+        }
     }
     method declarationKind {
         parent.declarationKind
@@ -1766,36 +1518,12 @@ class identifierNode.new(name, dtype') {
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method childrenDo(b) {
-        if (dtype != false) then { b.apply(dtype) }
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIdentifier(self) up(pNode)) then {
             if (self.dtype != false) then {
                 self.dtype.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        util.setPosition(line, linePos)
-        var n := identifierNode.new(value, maybeMap(dtype, blk, blkBefore,
-        blkAfter))
-        n.wildcard := wildcard
-        n.isBindingOccurrence := isBindingOccurrence
-        n.isAssigned := isAssigned
-        n.inRequest := inRequest
-        n := blk.apply(n)
-        n.line := line
-        if (n.kind == "identifier") then {
-            n.linePos := linePos
-            n.wildcard := wildcard
-            n.isBindingOccurrence := isBindingOccurrence
-            n.isAssigned := isAssigned
-            n.inRequest := inRequest
-        }
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1808,11 +1536,13 @@ class identifierNode.new(name, dtype') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s
-        if(self.wildcard) then {
-            s := "WildcardIdentifier"
+        var s := super.pretty(depth)
+        if ( wildcard ) then {
+            s := s ++ " Wildcard"
+        } elseif { isBindingOccurrence } then {
+            s := s ++ "Binding‹{value}›"
         } else {
-            s := self.asString
+            s := s ++ "‹{value}›"
         }
         if (self.dtype != false) then {
             s := s ++ "\n" ++ spc ++ "  Type: "
@@ -1847,7 +1577,7 @@ class identifierNode.new(name, dtype') {
     }
 
     method asString { 
-        if (isBindingOccurrence.andAlso{util.target != "processed-ast"}) then {
+        if (isBindingOccurrence) then {
             "IdentifierBinding‹{value}›"
         } else { 
             "Identifier‹{value}›"
@@ -1874,7 +1604,6 @@ class octetsNode.new(num) {
     inherits baseNode.new
     def kind is public = "octets"
     var value is public := num
-    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitOctets(self) up(pNode)
     }
@@ -1897,16 +1626,8 @@ class stringNode.new(v) {
     inherits baseNode.new
     def kind is public = "string"
     var value is public := v
-    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitString(self) up(pNode)
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := blk.apply(self)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1943,16 +1664,8 @@ class numNode.new(val) {
     inherits baseNode.new
     def kind is public = "num"
     var value is public := val
-    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitNum(self) up(pNode)
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := blk.apply(self)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -1976,24 +1689,12 @@ class opNode.new(op, l, r) {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
-    method needsMembersWrapped { true }
-    method childrenDo(b) {
-        b.apply(left)
-        b.apply(right)
-    }
+    method nameString { value }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitOp(self) up(pNode)) then {
             self.left.accept(visitor) from(self)
             self.right.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := opNode.new(value, left.map(blk)before(blkBefore)after(blkAfter), right.map(blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2007,7 +1708,7 @@ class opNode.new(op, l, r) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Op(" ++ self.value ++ ")"
+        var s := "{super.pretty(depth)}‹" ++ self.value ++ "›"
         s := s ++ "\n"
         s := s ++ spc ++ self.left.pretty(depth + 1)
         s := s ++ "\n"
@@ -2033,6 +1734,15 @@ class opNode.new(op, l, r) {
         }
         s
     }
+    method asIdentifier {
+        // make an identifiderNode with the same properties as me
+        def resultNode = identifierNode.new(value, false)
+        resultNode.inRequest := true
+        resultNode.line := line
+        resultNode.linePos := linePos
+        parent := self
+        return resultNode
+    }
     method shallowCopyWithParent(p) {
         opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
     }
@@ -2044,23 +1754,11 @@ class indexNode.new(expr, index') {
     var value is public := expr
     var index is public := index'
     
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(index)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitIndex(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
             self.index.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := indexNode.new(value.map(blk)before(blkBefore)after(blkAfter), index.map(blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2100,10 +1798,6 @@ class bindNode.new(dest', val') {
     var dest is public := dest'
     var value is public := val'
     
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(dest)
-    }
     method isBind { true }
     method asString { "Bind {value}" }
     method accept(visitor : ASTVisitor) from(pNode) {
@@ -2111,14 +1805,6 @@ class bindNode.new(dest', val') {
             self.dest.accept(visitor) from(self)
             self.value.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := bindNode.new(dest.map(blk)before(blkBefore)after(blkAfter), value.map(blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2188,12 +1874,6 @@ class defDecNode.new(name', val, dtype') {
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(name)
-        b.apply(dtype)
-        annotations.do(b)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitDefDec(self) up(pNode)) then {
             self.name.accept(visitor) from(self)
@@ -2204,18 +1884,6 @@ class defDecNode.new(name', val, dtype') {
                 self.value.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := defDecNode.new(name, value.map(blk)before(blkBefore)after(blkAfter),
-            maybeMap(dtype, blk, blkBefore, blkAfter))
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2285,13 +1953,6 @@ class varDecNode.new(name', val', dtype') {
     def nameString:String is public = name.value
     var annotations is public := list.empty
 
-    method needsMembersWrapped { true }
-    method childrenDo(b) {
-        b.apply(value)
-        b.apply(name)
-        b.apply(dtype)
-        annotations.do(b)
-    }
     method isPublic {
         // vars are confidential by default
         if (annotations.size == 0) then { return false }
@@ -2328,19 +1989,6 @@ class varDecNode.new(name', val', dtype') {
                 self.value.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := varDecNode.new(name, maybeMap(value, blk,
-                blkBefore, blkAfter),
-            maybeMap(dtype, blk, blkBefore, blkAfter))
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2412,10 +2060,6 @@ class importNode.new(path', name', dtype') {
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method childrenDo(b) {
-        if (dtype != false) then { b.apply(dtype) }
-        annotations.do(b)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitImport(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
@@ -2423,18 +2067,6 @@ class importNode.new(path', name', dtype') {
                 self.dtype.accept(visitor) from(self)
             }
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        def nameNd = value.map(blk)before(blkBefore)after(blkAfter)
-        var n := importNode.new(path, nameNd)
-        for (listMap(annotations, blk)before(blkBefore)after(blkAfter)) do {a->
-            n.annotations.push(a.map(blk)before(blkBefore)after(blkAfter))
-        }
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2469,16 +2101,8 @@ class dialectNode.new(path') {
     def kind is public = "dialect"
     var value is public := path'
     
-    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitDialect(self) up(pNode)
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := blk.apply(self)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2506,22 +2130,10 @@ class returnNode.new(expr) {
     def kind is public = "return"
     var value is public := expr
 
-    method needsMembersWrapped { true }
-    method childrenDo(b) {
-        b.apply(value)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitReturn(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := returnNode.new(value.map(blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2554,22 +2166,10 @@ class inheritsNode.new(expr) {
     method isInherits { true }
     method inheritsFromMember { value.isMember }
     method inheritsFromCall { value.isCall }
-    method childrenDo(b) {
-        b.apply(value)
-    }
     method accept(visitor : ASTVisitor) from(pNode) {
         if (visitor.visitInherits(self) up(pNode)) then {
             self.value.accept(visitor) from(self)
         }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := inheritsNode.new(value.map(blk)before(blkBefore)after(blkAfter))
-        n.providedNames.addAll(providedNames)
-        n := blk.apply(n)
-        n.line := line
-        blkAfter.apply(n)
-        n
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2608,11 +2208,7 @@ class blankNode.new {
     def kind is public = "blank"
     def value is public = "blank"
     
-    method childrenDo(b) { }
     method accept(visitor : ASTVisitor) from(pNode) {
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        self
     }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
@@ -2652,20 +2248,6 @@ class signaturePart.new(*values) {
         }
     }
     method declarationKind { "parameter" }
-    method childrenDo(b) {
-        b.apply(name)
-        params.do(b)
-        if (vararg != false) then {
-            b.apply(vararg)
-        }
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := signaturePart.new(name, listMap(params, blk)before(blkBefore)after(blkAfter), vararg)
-        n := blk.apply(n)
-        blkAfter.apply(n)
-        n
-    }
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.params := listMap(params, blk) parent(n)
@@ -2678,7 +2260,7 @@ class signaturePart.new(*values) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "Part: {name}"
+        var s := "{super.pretty(depth)}: {name}"
         s := "{s}\n{spc}Parameters:"
         for (params) do { p ->
             s := "{s}\n  {spc}{p.pretty(depth + 2)}"
@@ -2717,18 +2299,7 @@ class callWithPart.new(*values) {
     if (values.size > 1) then {
         args := values[2]
     }
-    
-    method needsMembersWrapped { true }
-    method childrenDo(b) {
-        args.do(b)
-    }
-    method map(blk)before(blkBefore)after(blkAfter) {
-        blkBefore.apply(self)
-        var n := callWithPart.new(name, listMap(args, blk)before(blkBefore)after(blkAfter))
-        n := blk.apply(n)
-        blkAfter.apply(n)
-        n
-    }
+
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n.args := listMap(args, blk) parent(n)
@@ -2740,7 +2311,7 @@ class callWithPart.new(*values) {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        var s := "CallPart: {name}"
+        var s := "{super.pretty(depth)}: {name}"
         s := "{s}\n    {spc}Args:"
         for (args) do { a ->
             s := "{s}\n    {spc}{a.pretty(depth + 4)}"

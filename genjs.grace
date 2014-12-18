@@ -724,7 +724,7 @@ method compilefreshmethod(o, selfobj) {
             }
         }
     }
-    out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
+    out "var func{myc} = function(argcv) \{    // method {textualSignature}()object"
     increaseindent
     out("var curarg = 1;")
     for (o.signature.indices) do { partnr ->
@@ -772,7 +772,7 @@ method compilefreshmethod(o, selfobj) {
                     for (o.generics) do {g->
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
-                            noteLineNumber(o.line)comment("generic check in compilemethod")
+                            noteLineNumber(o.line)comment("generic check in compilefreshmethod")
                             out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
                             out "  [1], arguments[curarg2])))"
                             out "    throw new GraceExceptionPacket(TypeErrorObject,"

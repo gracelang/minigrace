@@ -1,5 +1,4 @@
 #pragma NativePrelude
-#pragma DefaultVisibility=public
 
 def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
@@ -21,37 +20,7 @@ type Block2<S,T,R> = type {
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
-type Collection<T> = type {
-//    isEmpty -> Boolean
-//    do(block1: Block1<T,Done>) -> Done
-//    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-//    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
-//    map(blk:Block1<T,Object>) -> Iterator<Object>
-//    filter(condition:Block1<T,Boolean>) -> Iterator<T>
-//    iterator -> Iterator<T>
-//    asString -> String
-//    ++(o: Collection<T>) -> Collection<T>
-//    contains(element) -> Boolean
-//    size -> Number          // pro tem!
-}
-
-type ReifiedCollection<T> = Collection<T> & 
-  type {
-//    isEmpty -> Boolean
-//    do(block1: Block1<T,Done>) -> Done
-//    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-//    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
-//    map(blk:Block1<T,Object>) -> Iterator<Object>
-//    filter(condition:Block1<T,Boolean>) -> Iterator<T>
-//    iterator -> Iterator<T>
-//    asString -> String
-//    ++(o: Collection<T>) -> Collection<T>
-//    contains(element) -> Boolean
-    size -> Number          // pro tem!
-}
-
-type IndexableCollection<T> = // ReifiedCollection<T> & 
-  type {
+type Collection<T> = Object & type {
     isEmpty -> Boolean
     do(block1: Block1<T,Done>) -> Done
     do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
@@ -59,11 +28,17 @@ type IndexableCollection<T> = // ReifiedCollection<T> &
     map(blk:Block1<T,Object>) -> Iterator<Object>
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
     iterator -> Iterator<T>
-    asString -> String
     ++(o: Collection<T>) -> Collection<T>
     contains(element) -> Boolean
-    size -> Number          // pro tem!
-    at -> T
+}
+
+type ReifiedCollection<T> = Collection<T> & type {
+    size -> Number
+}
+
+type Sequence<T> = ReifiedCollection<T> & type {
+    at(n:Number) -> T
+    [](n:Number) -> T
     indices -> ReifiedCollection<T>
     first -> T 
     second -> T
@@ -71,41 +46,22 @@ type IndexableCollection<T> = // ReifiedCollection<T> &
     fourth -> T 
     fifth -> T
     last -> T
-}
-
-type Sequence<T> = {
-    size -> Number
-    isEmpty -> Boolean
-    at(n: Number) -> T
-    [](n: Number) -> T
-    indexOf(v:T)
-    indexOf<U>(v:T) ifAbsent(action:Block0<U>)
-    indices -> Collection<T>
-    first -> T 
-    second -> T
-    third -> T
-    fourth -> T 
-    fifth -> T
-    last -> T 
-    ++(o: Sequence<T>) -> Sequence<T>
-    asString -> String
-    contains(element) -> Boolean
-    do(block1: Block1<T,Done>) -> Done
+    keys -> Collection<Number>
+    values -> Collection<T>
+    copySortedBy(comparison:Block2<T,T,Number>) -> SelfType
+    asList -> List<T>
+    asSequence -> Sequence<T>
+    asDictionary -> Dictionary<Number,T>
+    asSet -> Set<T>
     keysAndValuesDo(action:Block2<Number,T,Done>) -> Done
-    ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
 }
 
-type List<T> = {  
-    size -> Number
-    isEmpty -> Boolean
-    at(n: Number) -> T
-    [](n: Number) -> T
-    at(n: Number)put(x: T) -> List<T>
-    []:=(n: Number,x: T) -> List<T> 
+type List<T> = Sequence<T> & type {
     add(x: T) -> List<T>
     addFirst(x: T) -> List<T>
     addLast(x: T) -> List<T>    // same as add
+    at(ix:Number) put(v:T) -> List<T>
+    []:= (ix:Number, v:T) -> Done
     removeFirst -> T 
     removeAt(n: Number) -> T
     removeLast -> T
@@ -116,7 +72,6 @@ type List<T> = {
     indexOf(v:T)
     indexOf<U>(v:T) ifAbsent(action:Block0<U>)
     pop -> T
-    indices -> Collection<T>
     first -> T 
     second -> T
     third -> T
@@ -124,32 +79,22 @@ type List<T> = {
     fifth -> T
     last -> T 
     ++(o: List<T>) -> List<T>
-    asString -> String
-    addAll(l: List<T>) -> List<T>
-    extend(l: List<T>) -> Done
-    contains(element) -> Boolean
-    do(block1: Block1<T,Done>) -> Done
-    keysAndValuesDo(action:Block2<Number,Done>) -> Done
-    ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
+    addAll(l: Collection<T>) -> List<T>
+    extend(l: Collection<T>) -> Done
     copy -> List<T>
+    copySorted -> SelfType
+    sort -> SelfType
 }
 
-type Set<T> = {
-    size -> Number
-    isEmpty -> Boolean
-    add(*elements:T) -> Set<T>
+type Set<T> = ReifiedCollection<T> & type {
+    add(*elements:T) -> SelfType
+    addAll(elements:Collection<T>) -> SelfType
     remove(*elements: T) -> Set<T>
     remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
-    contains(x: T) -> Boolean
     includes(booleanBlock: Block1<T,Boolean>) -> Boolean
     find(booleanBlock: Block1<T,Boolean>) ifNone(notFoundBlock: Block0<T>) -> T
-    asString -> String
     -(o: T) -> Set<T>
     extend(l: Collection<T>) -> Set<T>
-    do(block1: Block1<T,Done>) -> Done
-    iterator -> Iterator<T>
-    ==(other: Object) -> Boolean
     copy -> Set<T>
 }
 
@@ -212,7 +157,6 @@ class iterable.trait<T> {
     // requires next, hasNext
     //    method hasNext { SubobjectResponsibility.raise "hasNext" }
     //    method next is abstract { SubobjectResponsibility.raise "next" }
-    def outerIterator = self
     method iterator { self }
     method iter { self }
     method onto(resultFactory) {
@@ -240,9 +184,9 @@ class iterable.trait<T> {
     method map<R>(block1:Block1<T,R>) -> Iterator<R> {
         return object {                     // this "return" is to work around a compiler bug
             inherits iterable.trait<T>
-            method havemore { outerIterator.havemore }
-            method hasNext { outerIterator.hasNext }
-            method next { block1.apply(outerIterator.next) }
+            method havemore { outer.havemore }
+            method hasNext { outer.hasNext }
+            method next { block1.apply(outer.next) }
         }
     }
     method fold(block2)startingWith(initial) {
@@ -454,7 +398,7 @@ factory method sequence<T> {
             }
             method ==(other) {
                 match (other)
-                    case {o:IndexableCollection ->
+                    case {o:Sequence<T> ->
                         if (self.size != o.size) then {return false}
                         self.indices.do { ix ->
                             if (self.at(ix) != o.at(ix)) then {
@@ -633,7 +577,7 @@ factory method list<T> {
             }
             method ==(other) {
                 match (other)
-                    case {o:IndexableCollection ->
+                    case {o:Sequence ->
                         if (self.size != o.size) then {return false}
                         self.indices.do { ix ->
                             if (self.at(ix) != o.at(ix)) then {
@@ -793,7 +737,7 @@ factory method set<T> {
                 return notFoundBlock.apply
             }
             method findPosition(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -815,7 +759,7 @@ factory method set<T> {
                 return t
             }
             method findPositionForAdd(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -1062,7 +1006,7 @@ factory method dictionary<K,T> {
             }
             method contains(v) { containsValue(v) }
             method findPosition(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -1080,7 +1024,7 @@ factory method dictionary<K,T> {
                 return t
             }
             method findPositionForAdd(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -1258,7 +1202,7 @@ factory method dictionary<K,T> {
 }
 
 factory method range {
-    method from(lower:Number)to(upper:Number) -> Sequence<Number> {
+    method from(lower)to(upper) -> Sequence<Number> {
         object {
             inherits indexable.trait<Number>
             match (lower)
@@ -1303,10 +1247,10 @@ factory method range {
             }
             method at(ix:Number) {
                 if (ix > self.size) then {
-                    BoundsError.raise "range.at({ix}) but upper bound is {size}"
+                    BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
                 }
                 if (ix < 1) then {
-                    BoundsError.raise "range.at({ix}) but lower bound is 0"
+                    BoundsError.raise "requested range.at({ix}), but lower bound is 1"
                 }
                 return start + (ix - 1)
             }
@@ -1358,6 +1302,11 @@ factory method range {
                         return false
                     }
             }
+            method copySortedBy(c) { self.asList.sortBy(c) }
+            
+            method keys { 1..self.size }
+            
+            method values { self }
 
             method asString -> String{
                 "range.from({lower})to({upper})"
@@ -1374,7 +1323,7 @@ factory method range {
             }
         }
     }
-    method from(upper:Number)downTo(lower:Number) -> Sequence<Number> {
+    method from(upper)downTo(lower) -> Sequence<Number> {
         object {
             inherits indexable.trait
             match (upper)
@@ -1413,10 +1362,10 @@ factory method range {
             }
             method at(ix:Number) {
                 if (ix > self.size) then {
-                    BoundsError.raise "range.at({ix}) but upper bound is {size}"
+                    BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
                 }
                 if (ix < 1) then {
-                    BoundsError.raise "range.at({ix}) but lower bound is 0"
+                    BoundsError.raise "requested range.at({ix}) but lower bound is 1"
                 }
                 return start - (ix - 1)
             }
@@ -1468,6 +1417,12 @@ factory method range {
                         return false
                     }
             }
+            method copySortedBy(c) { self.asList.sortBy(c) }
+            
+            method keys { 1..self.size }
+            
+            method values { self }
+
             method asString -> String {
                 "range.from({upper})downTo({lower})"
             }

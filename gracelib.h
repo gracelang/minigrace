@@ -119,6 +119,7 @@ Object alloc_userobj(int, int);
 Object alloc_userobj2(int, int, ClassData);
 Object alloc_obj2(int, int);
 Object* alloc_var();
+Object alloc_ObjectType();
 Object alloc_HashMapClassObject();
 Object gracelib_print(Object, int, Object*);
 Object gracelib_length(Object);
