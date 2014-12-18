@@ -7,7 +7,8 @@ all: minigrace $(OTHER_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.gr
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
-GRACE_MODULES = gUnit.grace collections.grace collectionsPrelude.grace objectdraw.grace rtobjectdraw.grace sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace ast.grace mgcollections.grace
+GRACE_MODULES = gUnit.grace collections.grace collectionsPrelude.grace ast.grace mgcollections.grace objectdraw.grace rtobjectdraw.grace
+GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
@@ -29,17 +30,31 @@ echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo WEBFILES = $(WEBFILES)
 
-buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace gracelib.c
-	echo "#pragma DefaultVisibility=public" > buildinfo.grace
-	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" >> buildinfo.grace
+buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace collectionsPrelude.grace gracelib.c
+	echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo.grace
 	echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo.grace
 	echo "method prefix { \"$(PREFIX)\" }" >> buildinfo.grace
 	echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo.grace
 	echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo.grace
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
 
-%.gct: %.grace gracelib.o
+%.gct: minigrace %.grace
 	./minigrace --make --noexec $<
+    
+mirrors.gct: minigrace stubs/mirrors.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+
+sys.gct: minigrace stubs/sys.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+
+io.gct: minigrace stubs/io.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+
+unicode.gct: minigrace stubs/unicode.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+
+repl.gct: minigrace stubs/repl.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 %.gcn: %.grace gracelib.o
 	./minigrace --make --noexec $<
@@ -53,6 +68,7 @@ gracelib-basic.o: gracelib.c gracelib.h
 gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace collectionsPrelude.grace
 	l1/minigrace --verbose --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 	l1/minigrace --verbose --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
+	(cd l2; ln -sf ../collectionsPrelude.gct ../StandardPrelude.gct .)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 curl.gso: curl.c gracelib.h
@@ -81,11 +97,17 @@ l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.
 
 js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
-js/sample/dialects/requireTypes.js: sample-dialects
-	$(MAKE) -C sample/dialects requireTypes.js
+sample/dialects/requireTypes.%: sample-dialects
+	$(MAKE) -C sample/dialects $(@:sample/dialects/requireTypes.%=requireTypes.%)
 
-js/sample/dialects/staticTypes.js: sample-dialects
-	$(MAKE) -C sample/dialects staticTypes.js
+sample/dialects/staticTypes.%: sample-dialects
+	$(MAKE) -C sample/dialects $(@:sample/dialects/staticTypes.%=staticTypes.%)
+
+js/sample/dialects/requireTypes.%: sample-dialects
+	$(MAKE) -C js/sample/dialects $(@:js/sample/dialects/requireTypes.%=requireTypes.%)
+
+js/sample/dialects/staticTypes.%: sample-dialects
+	$(MAKE) -C js/sample/dialects $(@:js/sample/dialects/staticTypes.%=staticTypes.%)
 
 js/StandardPrelude.js: StandardPrelude.grace minigrace
 	./minigrace --verbose --target js -XNativePrelude -o js/StandardPrelude.js StandardPrelude.grace
@@ -213,8 +235,11 @@ known-good/%:
 	rm -rf l1 l2 # We must regenerate files so #include updated
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
+    
+sample/dialects/%.gso: sample/dialects/%.grace
+	$(MAKE) -C sample/dialects $(<:sample/dialects/%.grace=%.grace)
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 unicode.gso $(OTHER_MODULES) $(MODULE_PATH)
@@ -222,6 +247,8 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
+	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
+# what about $(GRACE_DIALECTS:%.grace=%.gso.dSYM) ?
 
 Makefile.conf: configure
 	./configure

@@ -21,6 +21,7 @@ unicodegen.py
 misc
 tests/test.log
 buildinfo.grace
+objectdraw.grace
 rtobjectdraw.grace
 js/.DS_Store
 js/index.html
@@ -53,8 +54,8 @@ c/minigrace
 c/*.h
 c/Makefile.conf
 c/bin
-Makefile.conf
 c/configure
+Makefile.conf
 java/*.grace
 .directory-environ
 stdin_minigrace
@@ -65,4 +66,4 @@ minigrace.xcodeproj/*
 minigrace.xcworkspace
 minigrace.xcworkspace/*
 .gitignore~
-objectdraw.grace
+
