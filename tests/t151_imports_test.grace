@@ -1,4 +1,3 @@
-import "mgcollections" as mgc
 import "math" as math
 import "mirrors" as mi
 def mm = mi.reflect(math)

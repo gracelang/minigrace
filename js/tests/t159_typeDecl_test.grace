@@ -21,12 +21,15 @@ showType(AB)
 
 def seq = sequence.with(2,3,4)
 match (seq)
-    case { l:collections.List -> print "{l} is a list — but shouldn't be!" }
-    case { s:collections.Sequence -> print "{s} is a sequence" }
+    case { l:List -> print "{l} is a list — but shouldn't be!" }
+    case { s:Sequence -> print "{s} is a sequence" }
     case { _ -> print "we should never get here" }
+def sm = m.reflect(seq).methodNames
+//print "The sequence {seq} understands the follwoing methods:"
+//for (sm.asList.sort) do { each -> print "    {each}" }
 
 print "The following list methods are not in sequence:"
-def missing = collections.List.methodNames -- m.reflect(seq).methodNames
+def missing = List.methodNames -- sm
 for (missing.asList.sort) do { 
     each -> print "    {each}"
 }
