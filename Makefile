@@ -39,7 +39,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace collectionsPrelude.gra
 	echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo.grace
 
 %.gct: minigrace %.grace
-	./minigrace --make --noexec $<
+	./minigrace --make --noexec $(@:%.gct=%.grace)
 
 mirrors.gct: minigrace stubs/mirrors.grace
 	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
@@ -181,7 +181,7 @@ minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
     
 just-minigrace:
-	./l2/minigrace -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
+	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace --verbose compiler.grace
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)
