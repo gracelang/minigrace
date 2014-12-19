@@ -42,19 +42,19 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace collectionsPrelude.gra
 	./minigrace --make --noexec $<
 
 mirrors.gct: minigrace stubs/mirrors.grace
-	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 sys.gct: minigrace stubs/sys.grace
-	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 io.gct: minigrace stubs/io.grace
-	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 unicode.gct: minigrace stubs/unicode.grace
-	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 repl.gct: minigrace stubs/repl.grace
-	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 %.gcn: %.grace gracelib.o
 	./minigrace --make --noexec $<
