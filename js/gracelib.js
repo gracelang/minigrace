@@ -710,7 +710,7 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ", ";
+                    s += ",";
                 }
                 if (v.methods["asString"])
                     s += callmethod(v, "asString", [0])._value;
@@ -730,7 +730,7 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ", ";
+                    s += ",";
                 }
                 if (v.methods["asDebugString"])
                     s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
