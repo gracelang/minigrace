@@ -40,7 +40,7 @@ buildinfo.grace: $(REALSOURCEFILES) StandardPrelude.grace collectionsPrelude.gra
 
 %.gct: minigrace %.grace
 	./minigrace --make --noexec $<
-    
+
 mirrors.gct: minigrace stubs/mirrors.grace
 	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
@@ -129,7 +129,9 @@ test.js.compile:
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
-	(cd js/tests; rm requireTypes.{gso,gct} && ln -sf  ../sample/dialects/requireTypes.{gso,gct} .; ./harness ../../minigrace . "")
+	(cd js/tests; rm requireTypes.{gso,gct} && ln -sf  ../sample/dialects/requireTypes.{gso,gct} .)
+	npm install performance-now
+	js/tests/harness ../../minigrace js/tests ""
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -235,7 +237,7 @@ known-good/%:
 	rm -rf l1 l2 # We must regenerate files so #include updated
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
-    
+
 sample/dialects/%.gso: sample/dialects/%.grace
 	$(MAKE) -C sample/dialects $(<:sample/dialects/%.grace=%.grace)
 
