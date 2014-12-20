@@ -12,8 +12,8 @@ def lm = mi.reflect(l)
 //print "    {lm.methodNames}"
 
 print "Object = {Object}"
-print "Object's has {Object.methodNames.size} typeMethods."
-assert (Object.methodNames) shouldBe (set.with("==","≠", "basicAsString", "!=", "asString", "::", "asDebugString"))
+print "Object has {Object.methodNames.size} typeMethods:"
+self.assert (Object.methodNames) shouldBe (set.with("==","≠", "basicAsString", "!=", "asString", "::", "asDebugString"))
 print "        \{==,≠,basicAsString,!=,asString,::,asDebugString\}"
 
 def cm = mi.reflect(Collection)
