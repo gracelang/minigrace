@@ -128,7 +128,7 @@ test.js.compile:
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
-	(cd js/tests; rm -f requireTypes.{gso,gct} ; ln -sf  ../sample/dialects/requireTypes.{gso,gct} .)
+	(cd js/tests; rm -f requireTypes.{js,gct} ; ln -sf  ../sample/dialects/requireTypes.{js,gct} .)
 	npm install performance-now
 	js/tests/harness ../../minigrace js/tests ""
 
