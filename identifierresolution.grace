@@ -526,15 +526,15 @@ method rewriteIdentifier(node) {
     // - id is in an assignment position and a method ‹id›:= is in scope:
     //          replace node by a method request
     // - id is in the lexical scope: store binding occurence of id in node
-    // - id is a method in an outer scope: make into member nodes.
+    // - id is a method in an outer object scope: transform into member nodes.
     //  TODO: make references to fields direct
-    // - id is a self-method: replace node by a request on self
+    // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
     
     // Some clauses are flagged "TODO Compatability Kludge — remove when possible"
     // This means that APB put them there to produce an AST close enough to the
     // former identifier resolution pass to keep the C code generator (genc) happy.
-    // They may represent thing that APB doesn't understand, or bugs in genc
+    // They may represent a thing that APB doesn't understand, or bugs in genc
 
     var nm := node.value
     def nodeScope = node.scope
@@ -595,23 +595,15 @@ method rewriteIdentifier(node) {
         if (nodeKind == "defdec") then { return node }
         if (nodeKind == "vardec") then { return node }
     }
-    if (v == "method") then {
+    if (v == "method") then { return node }
         // node is defined in the closest enclosing method.
-        // there may be intervening blocks, but no objects or clases
-        // TODO Compatability Kludge — remove when possible
-        // if this identifier is in a block that is returned, then ids
+        // there may be intervening blocks, but no objects or clases.
+        // If this identifier is in a block that is returned, then ids
         // defined in the enclosing method scope have to go in a closure
         // In that case, leaving the id untouched may be wrong
-        return node
-    }
-//    if (node.isUnder(["member", "inherits"])) then {
-//        // TODO Compatability Kludge — remove when possible
-//        return node
-//    } else {
+    if (v == "block") then { return node }
     def deepMeth = nodeScope.findDeepMethod(nm)
     return deepMeth.withParentRefs
-//    }
-//    return node
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
