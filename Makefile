@@ -9,6 +9,7 @@ SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace objectdraw.grace rtobjectdraw.grace
 GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace
+STUBS = mirrors.grace sys.grace io.grace unicode.grace repl.grace math.grace
 
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js \
 js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js \
@@ -55,6 +56,9 @@ unicode.gct: minigrace stubs/unicode.grace
 
 repl.gct: minigrace stubs/repl.grace
 	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+    
+math.gct: minigrace stubs/math.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
 
 %.gcn: %.grace gracelib.o
 	./minigrace --make --noexec $<
@@ -73,19 +77,19 @@ gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace colle
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
 
-mirrors.gso: mirrors.c gracelib.h
+mirrors.gso: mirrors.c gracelib.h mirrors.gct
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
 
-math.gso: math.c gracelib.h
+math.gso: math.c gracelib.h math.gct
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o math.gso -shared -fPIC math.c
 
-repl.gso: repl.c gracelib.h
+repl.gso: repl.c gracelib.h repl.gct
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
 
-unicode.gso: unicode.c unicodedata.h gracelib.h
+unicode.gso: unicode.c unicodedata.h gracelib.h unicode.gct
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
-unicode.gcn: unicode.c unicodedata.h gracelib.h
+unicode.gcn: unicode.c unicodedata.h gracelib.h unicode.gct
 	gcc -g -std=c99 -fPIC -c -o unicode.gcn unicode.c
 
 l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.c gracelib.h
@@ -127,8 +131,8 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../..//minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js/StandardPrelude.js js/collectionsPrelude.js js/collections.js js/gUnit.js sample-dialects
-	(cd js/tests; rm -f requireTypes.{js,gct} ; ln -sf  ../sample/dialects/requireTypes.{js,gct} .)
+test.js: js js/collections.js js/gUnit.js sample-dialects
+	(cd js/tests; rm -f {static,require}Types.{js,gct,gso} ; ln -sf  ../sample/dialects/{static,require}Types.{js,gct,gso} .)
 	npm install performance-now
 	js/tests/harness ../../minigrace js/tests ""
 
@@ -212,10 +216,11 @@ samples: sample-dialects sample-graphics sample-js
 
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
-	rm -f unicode.gco unicode.gso unicode.gcn
+	rm -fr unicode.gco unicode.gso unicode.gcn unicode.gso.dSYM
 	rm -f mirrors.gso math.gso
 	rm -f debugger.o
-	rm -f repl.gso
+	rm -fr repl.gso repl.gso.dSYM
+	rm -fr curl.gsco curl.gso.dSYM
 	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
@@ -223,8 +228,11 @@ clean:
 	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
 	rm -f $(SOURCEFILES:.grace=.gso) minigrace.gso
 	rm -f $(SOURCEFILES:.grace=.gct) minigrace.gct
+	rm -f $(STUBS:.grace=.gct)
+	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
+	( cd known-good; make clean )
 	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	rm -f js/minigrace.js

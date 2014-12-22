@@ -30,3 +30,6 @@ $(ARCH)/minigrace-%:
 
 $(ARCH)/%/minigrace:
 	./make-known-good $* $(ARCH)
+
+clean:
+	rm -fr tmp-* EXCLUDE

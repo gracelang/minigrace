@@ -1,6 +1,5 @@
 import "ast" as ast
-import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.methods
+inherits prelude.methods
 
 def CheckerFailure = Exception.refine "CheckerFailure"
 def staticVisitor = object {

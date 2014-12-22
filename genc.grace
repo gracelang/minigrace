@@ -1997,14 +1997,14 @@ method processImports(values') {
             if (v.kind == "dialect") then {
                 var nm := v.value
                 checkimport(nm, v.line, true)
-                log_verbose("loading dialect for checkers.")
+                log_verbose("loading dialect for checker.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
                 try {
                     def dobj = mirrors.loadDynamicModule(nm)
                     def mths = mirrors.reflect(dobj).methods
                     for (mths) do { m->
                         if (m.name == "checker") then {
-                            log_verbose("running dialect's checkers.")
+                            log_verbose("running dialect's checker.")
                             dobj.checker(values')
                         }
                         if (m.name == "atModuleEnd") then {
