@@ -8,6 +8,5 @@ install:
 before_script:
   - git fetch --unshallow
 script:
-  - ./tools/tarball-bootstrap -a && make && make test
-  - make js && make test.js
+  - ./tools/tarball-bootstrap -a && (make test ; make test.js)
   - (cd js/tests ; ls | grep -v "^t[012]" ; more test.log)

@@ -59,6 +59,24 @@ repl.gct: stubs/repl.grace
     
 math.gct: stubs/math.grace
 	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../minigrace --make --noexec $(@:%.gct=%.grace); mv $@ ../; rm -f $(@:%.gct=%{.c,.gcn,});)
+    
+l2/mirrors.gct: stubs/mirrors.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
+
+l2/sys.gct: stubs/sys.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
+
+l2/io.gct: stubs/io.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
+
+l2/unicode.gct: stubs/unicode.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
+
+l2/repl.gct: stubs/repl.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
+    
+l2/math.gct: stubs/math.grace
+	(cd stubs; rm -f $(@:%.gct=%{.c,.gcn,});  ../l1/minigrace --make --noexec $(@:l2/%.gct=%.grace); mv $(@:l2/%=%) ../l2; rm -f $(@:l2/%.gct=%{.c,.gcn,});)
 
 %.gcn: %.grace gracelib.o
 	./minigrace --make --noexec $<
@@ -95,7 +113,7 @@ unicode.gcn: unicode.c unicodedata.h gracelib.h unicode.gct
 l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.c gracelib.h
 	( mkdir -p l1 ; cd l1 ; for f in $(SOURCEFILES) gracelib.o gracelib.h ; do ln -sf ../$$f . ; done ; ln -sf ../known-good/$(ARCH)/$(STABLE)/$(UNICODE_MODULE) . ; for x in $(OTHER_MODULES) ; do ln -sf ../known-good/$(ARCH)/$(STABLE)/$$x . ; done ; ../known-good/$(ARCH)/$(STABLE)/minigrace --verbose --make --noexec -XNoMain --vtag kg collectionsPrelude.grace ;  ../known-good/$(ARCH)/$(STABLE)/minigrace --verbose --make --noexec -XNoMain --vtag kg StandardPrelude.grace ; ../known-good/$(ARCH)/$(STABLE)/minigrace --verbose --make --native --module minigrace --gracelib ../known-good/$(ARCH)/$(STABLE) --vtag kg -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 
-l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.h $(OTHER_MODULES)
+l2/minigrace: l1/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o gracelib.h $(OTHER_MODULES) $(STUBS:%.grace=l2/%.gct)
 	( mkdir -p l2 ; cd l2 ; for f in $(SOURCEFILES) gracelib.o gracelib.h $(UNICODE_MODULE) $(OTHER_MODULES) collectionsPrelude.gct StandardPrelude.gct ; do ln -sf ../$$f . ; done ; ../l1/minigrace --verbose --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 
 js: js/index.html $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
@@ -179,7 +197,7 @@ selftest: minigrace
 	( cd selftest ; ../minigrace --verbose --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 	rm -rf selftest
 
-minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o
+minigrace: l2/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.o $(STUBS:%.grace=%.gct)
 	[ -e .git/hooks/commit-msg ] || ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 	./l2/minigrace --vtag l2 --make --native --verbose --noexec -XNoMain collectionsPrelude.grace
 	./l2/minigrace --vtag l2 --make --native --verbose --noexec -XNoMain StandardPrelude.grace
