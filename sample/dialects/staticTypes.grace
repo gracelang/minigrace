@@ -2,9 +2,8 @@ dialect "dialect"
 
 import "ast" as ast
 import "util" as util
-import "StandardPrelude" as stdPrelude
 
-inherits stdPrelude.methods
+inherits prelude.methods
 
 // Type error.
 
@@ -155,7 +154,7 @@ def aMethodType = object {
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
         } case { _ ->
-            stdPrelude.Exception.raiseWith("unrecognised method node", node)
+            prelude.Exception.raiseWith("unrecognised method node", node)
         }
     }
 
@@ -165,13 +164,13 @@ def aMethodType = object {
 // Object type information.
 
 def noSuchMethod = object {
-    inherits stdPrelude.BasicPattern.new
+    inherits prelude.BasicPattern.new
 
     method match(obj : Object) {
         if(self == obj) then {
-            stdPrelude.SuccessfulMatch.new(self, [])
+            prelude.SuccessfulMatch.new(self, [])
         } else {
-            stdPrelude.FailedMatch.new(obj)
+            prelude.FailedMatch.new(obj)
         }
     }
 }
@@ -397,7 +396,7 @@ def anObjectType = object {
         } case { ident : Identifier ->
             anObjectType.fromIdentifier(ident)
         } case { _ ->
-            stdPrelude.Exception.raise("unrecognised object type node", dtype)
+            prelude.Exception.raise("unrecognised object type node", dtype)
         }
     }
 
@@ -643,7 +642,7 @@ rule { req : Request ->
         def rec = memb.in
         def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
             scope.types.find("Self") butIfMissing {
-                stdPrelude.Exception.raiseWith("type of self missing", rec)
+                prelude.Exception.raiseWith("type of self missing", rec)
             }
         } else {
             typeOf(rec)
@@ -1089,7 +1088,7 @@ rule { ident : Identifier ->
 }
 
 method outerAt(i : Number) -> ObjectType is confidential {
-    // Required to cope with not knowing the stdPrelude.
+    // Required to cope with not knowing the prelude.
     if(i <= 1) then {
         return anObjectType.dynamic
     }
@@ -1228,7 +1227,7 @@ method collectTypes(nodes : List) -> Done is confidential {
 
     for(types) and(placeholders) do { td, ph ->
         def oType = anObjectType.fromDType(td)
-        stdPrelude.become(ph, oType)
+        prelude.become(ph, oType)
     }
 }
 

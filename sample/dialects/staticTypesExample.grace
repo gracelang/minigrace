@@ -1,12 +1,12 @@
-dialect "static-types"
+dialect "staticTypes"
 
 type Foo = {
     bar(a : Number) -> String
 }
 
 def o = object {
-// remove the 'is confidential' to let this pass the type checker.
-    method bar(a:Number) -> String is confidential {
+    method bar(a:Number) -> String {
+    // remove the 'is confidential' to let this pass the type checker.
         takesFoo(self)
         return "bar"
     }

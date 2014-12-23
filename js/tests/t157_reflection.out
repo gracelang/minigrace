@@ -1,4 +1,4 @@
 Object = type Object
-Object's has 7 typeMethods.
+Object has 7 typeMethods.
         {==,≠,basicAsString,!=,asString,::,asDebugString}
 List has set{} methods not understood by [1,2,3]

@@ -1,4 +1,4 @@
-dialect "while-literal"
+dialect "whileLiteral"
 
 var x := 0
 while (x < 10) do {

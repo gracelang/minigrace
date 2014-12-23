@@ -8,26 +8,29 @@ import "ast" as ast
 
 def gctCache = collections.map.new
 
-method parseGCT(moduleName, givenpath) {
+method parseGCT(moduleName) {
+    parseGCT(moduleName) sourceDir(util.sourceDir)
+}
+
+method parseGCT(moduleName) sourceDir(dir) {
     if (gctCache.contains(moduleName)) then {
         return gctCache.get(moduleName)
     }
     def data = collections.map.new
-    def sz = givenpath.size
+    def sz = moduleName.size
     def sought = 
-        if (givenpath.substringFrom(sz - 3) to(sz) == ".gct") then {
-        givenpath
+        if (moduleName.substringFrom(sz - 3) to(sz) == ".gct") then {
+        moduleName
     } else {
-        givenpath ++ ".gct"
+        moduleName ++ ".gct"
     }
-    def filename = util.file(sought)
-      onPath(sys.environ.at "GRACE_MODULE_PATH") otherwise {
+    def filename = util.file(sought) on(dir)
+      orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise {
         util.log_verbose "Can't find file {sought} for module {moduleName}"
         gctCache.put(moduleName, data)
         return data
     }
     def tfp = io.open(filename, "r")
-    util.log_verbose "reading {io.realpath(filename)}"
     var key := ""
     while {!tfp.eof} do {
         def line = tfp.getline

@@ -24,8 +24,8 @@ var recurse := true
 var dynamicModule := false
 var importDynamic := false
 var jobs := 2
-var cLines := []
-var lines := []
+var cLines := list.empty
+var lines := list.empty
 var filename
 
 var errno := 0
@@ -387,10 +387,13 @@ var execDirCache := ""
 method execDir {
     if (execDirCache == "") then {
         execDirCache := sys.execPath
+        if (execDirCache.at(execDirCache.size) != "/") then {
+            execDirCache := execDirCache ++ "/"
+        }
     }
     execDirCache
 }
-method file(name) onPath(pathString) otherwise(action) {
+method splitPath(pathString) -> List<String> {
     def locations = list.empty
     var ix := 1
     var ox := 1
@@ -403,15 +406,19 @@ method file(name) onPath(pathString) otherwise(action) {
         ix := ox + 1
         ox := ix
     }
-    if (locations.contains(sourceDir).not) then {
-        locations.addFirst(sourceDir)
+    return locations
+}
+method file(name) on(origin) orPath(pathString) otherwise(action) {
+    def locations = splitPath(pathString)
+
+    if (locations.contains(origin).not) then {
+        locations.addFirst(origin)
     }
     if (locations.contains(execDir).not) then {
         locations.addFirst(execDir)
     }
     if (locations.contains "./".not) then {
         locations.addFirst "./"
-        print "locations = {locations}"
     }
     locations.do { each ->
         def candidate = if (each.at(each.size) == "/") then {
@@ -424,6 +431,9 @@ method file(name) onPath(pathString) otherwise(action) {
         }
     }
     action.apply
+}
+method file(name) onPath(pathString) otherwise(action) {
+    file(name) on(sourceDir) orPath(pathString) otherwise(action)
 }
 method processExtension(ext) {
     var extn := ""

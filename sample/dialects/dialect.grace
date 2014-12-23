@@ -345,6 +345,7 @@ def For is public = object {
 }
 
 def astVisitor = object {
+    inherits ast.baseVisitor
 
     method checkMatch(node) -> Boolean {
         runRules(node)

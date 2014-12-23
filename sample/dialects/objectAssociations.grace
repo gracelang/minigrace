@@ -1,5 +1,4 @@
-import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.methods
+inherits prelude.methods
 
 method Relationship<From, To> {
     object {

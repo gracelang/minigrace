@@ -86,10 +86,10 @@ if (util.target == "c") then {
     genc.processImports(values)
 }
 if (util.target == "js") then {
-    genjs.processDialect(values)
+    genjs.processImports(values)
 }
 if (util.target == "json") then {
-    genjs.processDialect(values)
+    genjs.processImports(values)
 }
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)

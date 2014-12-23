@@ -1,52 +1,40 @@
 DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
-SAMPLES = fsmExample objectAssociationsExample dialectExample.gso graplExample loopInvariantExample
+SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) dialectExample.js
 
-all: $(DIALECT_MODULES) $(SAMPLES) $(DIALECTS_JS)
+all: $(DIALECT_MODULES) $(DIALECTS_JS) $(SAMPLES)
 
-%.gso: %.grace
+%.gso %.gct: %.grace
 	../../minigrace --dynamic-module $<
 
-%.c: %.grace
-	../../minigrace --target c $<
+staticTypes.js: staticTypes.grace dialect.gso
+	../../minigrace --target js -o $@ staticTypes.grace
 
-staticTypes.js: dialect.grace staticTypes.grace
-	../../minigrace --target js -o $@ $<
+requireTypes.js: requireTypes.grace dialect.js
+	../../minigrace --target js -o $@ requireTypes.grace
 
-whileLiteral.js: dialect.grace whileLiteral.grace
-	../../minigrace --target js -o $@ $<
+whileLiteral.js: whileLiteral.grace dialect.js
+	../../minigrace --target js -o $@ whileLiteral.grace
 
 %.js: %.grace
 	../../minigrace --target js -o $@ $<
 
-dialectExample.gso: dialectExample.grace dialect.grace
+whileLiteral.gso: whileLiteral.grace dialect.gso dialect.c
 	../../minigrace --dynamic-module $<
 
-fsmExample: fsm fsmExample.grace
-	../../minigrace fsmExample.grace
+staticTypes.gso: staticTypes.grace dialect.gso
+	../../minigrace --dynamic-module $<
+    
+requireTypes.gso: requireTypes.grace dialect.gso
+	../../minigrace --dynamic-module $<
 
-objectAssociationsExample: objectAssociations objectAssociationsExample.grace
-	../../minigrace objectAssociationsExample.grace
+%Example: %Example.grace %.gso
+	../../minigrace $<
 
-graplExample: grapl graplExample.grace
-	../../minigrace graplExample.grace
-
-loopInvariantExample: loopInvariant loopInvariantExample.grace
-	../../minigrace loopInvariantExample.grace
-
-whileLiteral.gso: dialect.grace dialect.c whileLiteral.grace
-	../../minigrace --dynamic-module whileLiteral.grace
-
-staticTypes.gso: dialect.grace dialect.c staticTypes.grace
-	../../minigrace --dynamic-module staticTypes.grace
-
-whileLiteralExample: whileLiteral.grace whileLiteralExample.grace
-	../../minigrace whileLiteralTest.grace
-
-%: %.grace $(DIALECT_MODULES)
-	../../minigrace --make $<
+%Example.js: %Example.grace %.js
+	../../minigrace -target js $<
 
 clean:
 	rm -fR *.gso *.c *.gct *.gcn *.c *.js *.gso.dSYM $(SAMPLES) $(DIALECTS)

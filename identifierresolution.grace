@@ -676,12 +676,12 @@ method reportUndeclaredIdentifier(node) {
             suggestion.append " do \{ aVarName -> \}" onLine(node.line)
             suggestions.push(suggestion)
         }
-        errormessages.syntaxError "Unknown method '{nm}'. This may be due to a spelling mistake or an attempt to access a method in another scope.{extra}"
+        errormessages.syntaxError "Unknown method '{nm}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
             atRange(node.line, node.linePos, node.linePos +
                 highlightLength - 1)
             withSuggestions(suggestions)
     }
-    errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an  attempt to access a variable in another scope.")atRange(
+    errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
 method reportAssignmentTo(node) declaredInScope(scp) {
@@ -845,7 +845,7 @@ method setupContext(values) {
         for (values) do {val->
             if (val.kind == "dialect") then {
                 hadDialect := true
-                def data = xmodule.parseGCT(val.value, val.value)
+                def data = xmodule.parseGCT(val.value)
                 if (data.contains("public")) then {
                     for (data.get("public")) do {mn->
                         preludeScope.addName(mn)
@@ -860,14 +860,14 @@ method setupContext(values) {
             }
         }
         if (!hadDialect) then {
-            def data = xmodule.parseGCT("StandardPrelude", "StandardPrelude")
-            if (data.contains("public")) then {
-                for (data.get("public")) do {mn->
+            def data = xmodule.parseGCT "StandardPrelude"
+            if (data.contains "public") then {
+                for (data.get "public") do {mn->
                     preludeScope.addName(mn)
                 }
             }
-            if (data.contains("confidential")) then {
-                for (data.get("confidential")) do {mn->
+            if (data.contains "confidential") then {
+                for (data.get "confidential") do {mn->
                     preludeScope.addName(mn)
                 }
             }
@@ -951,7 +951,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
         }
         method visitImport(o) up(pNode) {
             o.parent := pNode
-            def gct = xmodule.parseGCT(o.path, o.path)
+            def gct = xmodule.parseGCT(o.path)
             def otherModule = newScopeIn(pNode.scope) kind "module"
             processGCT(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)

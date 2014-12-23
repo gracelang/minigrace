@@ -35,7 +35,6 @@ var modname := "main"
 var escmodname := "main"
 var runmode := "build"
 var buildtype := "bc"
-var gracelibPath := "gracelib.o"
 var inBlock := false
 var paramsUsed := 1
 var partsUsed := 1
@@ -49,6 +48,7 @@ var subprocesses := collections.list.new
 var linkfiles := collections.list.new
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
+var dialectHasChecker := false
 
 method out(s) {
     output.push(s)
@@ -1829,12 +1829,9 @@ method spawnSubprocess(id, cmd, data) {
     subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
     return subprocesses.at(subprocesses.size)[2]
 }
-method parseGCT(path, filepath) {
-    xmodule.parseGCT(path,
-        filepath.replace(".gcn")with(".gct").replace(".gso")with(".gct"))
-}
-method addTransitiveImports(filepath, epath, line) {
-    def data = parseGCT(epath, filepath)
+
+method addTransitiveImports(directory, moduleName, line) {
+    def data = xmodule.parseGCT(moduleName) sourceDir(directory)
     if (data.contains "dialect") then {
         checkimport(data.get("dialect").first, line, true)
     }
@@ -1842,24 +1839,27 @@ method addTransitiveImports(filepath, epath, line) {
         for (data.get("modules")) do {m->
             if (m == util.modname) then {
                 errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(line)
+                    ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atLine(line)
             }
             checkimport(m, line, false)
         }
     }
-    if (data.contains("path")) then {
-        def path = data.get("path").first
-        if (path != epath) then {
-            errormessages.syntaxError("Imported module '{epath}' compiled with"
-                ++ " different path '{path}'.")atLine(line)
-        }
-    }
+//    if (data.contains("path")) then {
+//        def path = data.get("path").first
+//        if (path != moduleName) then {
+//            errormessages.syntaxError("Imported module '{moduleName}' compiled with"
+//                ++ " different path '{path}'.")atLine(line)
+//        }
+//    }
 }
 
 method checkimport(nm, line, isDialect) {
-    var exists := false
-    var ext := false
-    var cmd
+    if ((nm == "sys") || (nm == "io") || (nm == "imports")) then {
+        staticmodules.add(nm)
+        return true
+    }
+    var binaryFound := false
+    var gctFound := false
     def argv = sys.argv
     if (staticmodules.contains(nm)) then {
         return true
@@ -1873,102 +1873,101 @@ method checkimport(nm, line, isDialect) {
             return true
         }
     }
-    var locationList := collections.list.new
-    locationList.push("./")
-    def sourceDir = util.sourceDir
-    if (sourceDir != "./") then {locationList.push(util.sourceDir)}
-    locationList.push("{sys.execPath}/")
-    if(buildinfo.modulepath != "") then {
-        locationList.push("{buildinfo.modulepath}/")
+    var locations := util.splitPath(sys.environ.at "GRACE_MODULE_PATH")
+    if (locations.contains(util.sourceDir).not) then {
+        locations.addFirst(util.sourceDir)
     }
-    var homePath := sys.environ["HOME"]
-    locationList.push("{homePath}/.local/lib/grace/modules/")
-    locationList.push("{sys.execPath}/../lib/minigrace/modules/")
-    
-    if(nm == "StandardPrelude") then {
-        staticmodules.add(nm)
-        // transitive imports were taken care of when gracelib.o was built
-        // addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
-        return
+    if (locations.contains(util.execDir).not) then {
+        locations.addFirst(util.execDir)
     }
-    for(locationList) do { location ->
-        if (exists.not && io.exists("{location}{nm}.gso").andAlso
+    if (locations.contains "./".not) then {
+        locations.addFirst "./"
+    }
+    // The above location list mirrors that used in util.file()o onPath() otherwise()
+    // TODO: These two search algorithms shoudl be merged.
+
+    for (locations) do { location ->
+        if (binaryFound.not && io.exists("{location}{nm}.gso").andAlso
                 {!util.extensions.contains("Static")}) then {
             if (io.newer("{location}{nm}.gso", "{location}{nm}.grace")) then {
-                exists := true
+                binaryFound := true
                 dynamicmodules.add(nm)
             }
             addTransitiveImports("{location}{nm}.gso", nm, line)
+            gctFound := io.exists("{location}{nm}.gct")
         } 
-        if (exists.not && io.exists("{location}{nm}.gcn")) then {
-            if((!util.importDynamic && 
-                        {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")})
+        if (binaryFound.not && io.exists("{location}{nm}.gcn")) then {
+            if ((!util.importDynamic &&
+                    {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")})
                         || (!io.exists("{location}{nm}.grace"))) then{
                 // Find static modules where the .gcn is either newer
                 // or the same age as the corresponding .grace file
                 // i.e. the modules that we don't need to recompile
-                exists := true
+                binaryFound := true
                 linkfiles.push("{location}{nm}.gcn")
                 staticmodules.add(nm)
                 addTransitiveImports("{location}{nm}.gcn", nm, line)
             }
-        } 
-        if (exists.not && io.exists("{location}{nm}.grace")) then {
-            // Check for the .grace file first so that we know that
-            // when we look for .gcn the corresponding .grace won't exist.
-            exists := true
-            var slash := false
-            for(argv.first) do {letter ->
-                if(letter == "/") then {
-                    slash := true
-                }
-            }
-
-            if(slash) then {
-                cmd := "{argv.first} --target c --make \"{nm}.grace\""
-            }else{
-                cmd := "{sys.execPath}/{argv.first} --target c --make \"{nm}.grace\""
-            }
-            cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
-            if (util.verbosity > 30) then {
-                cmd := cmd ++ " --verbose"
-            }
-            if (false != util.vtag) then {
-                cmd := cmd ++ " --vtag " ++ util.vtag
-            }
-            cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-            if (util.dynamicModule || isDialect) then {
-                cmd := cmd ++ " --dynamic-module"
-            }
-            if (util.importDynamic) then {
-                cmd := cmd ++ " --import-dynamic --dynamic-module"
-            }
-            if (util.recurse || isDialect) then {
-                if(location != "") then {
-                    cmd := "cd {location} && "++cmd
-                }
-                var process := spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
-                if(isDialect) then {
-                    // We must wait for the .gso to be built before
-                    // we try to run loadDynamic on it. Block here.
-                    process.wait
-                    dynamicmodules.add(nm)
-                }
-                //addTransitiveImports("{location}{nm}.gso", nm, line)
-            }
-            if (!util.importDynamic && !isDialect) then {
-                linkfiles.push("{location}{nm}.gcn")
-                staticmodules.add(nm)
-            }
+            gctFound := io.exists("{location}{nm}.gct")
+        }
+        if (binaryFound && gctFound) then { return true }
+    }
+    for (locations) do { location ->
+        if (io.exists "{location}{nm}.grace") then {
+            binaryFound := true
+            gctFound := true
+            compileGraceFile (nm) in (location) forDialect (isDialect) onLine (line)
+            return true
         }
     }
-    if ((nm == "sys") || (nm == "io") || (nm == "imports")) then {
-        exists := true
-        staticmodules.add(nm)
+    if (binaryFound.not) then {
+        errormessages.syntaxError("Failed to find imported module '{nm}'.\n" ++
+            "Looked in {locations}.") atLine(line)
     }
-    if (exists.not) then {
-        errormessages.syntaxError("Failed finding import of '{nm}'.")
-            atLine(line)
+}
+method compileGraceFile (nm) in (directory) forDialect (isDialect) onLine (line) {
+    var slashed := false
+    for (sys.argv.first) do {letter ->
+        if(letter == "/") then {
+            slashed := true
+        }
+    }
+    var cmd
+    if (slashed) then {
+        cmd := io.realpath(sys.argv.first)
+    } else {
+        cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
+    }
+    cmd := "{cmd} --target c --make \"{nm}.grace\" --gracelib \"{util.gracelibPath}\""
+    if (util.verbosity > 30) then {
+        cmd := cmd ++ " --verbose"
+    }
+    if (false != util.vtag) then {
+        cmd := cmd ++ " --vtag " ++ util.vtag
+    }
+    cmd := cmd ++ " --noexec --no-recurse -XNoMain"
+    if (util.dynamicModule || isDialect) then {
+        cmd := cmd ++ " --dynamic-module"
+    }
+    if (util.importDynamic) then {
+        cmd := cmd ++ " --import-dynamic --dynamic-module"
+    }
+    if (util.recurse || isDialect) then {
+        if (directory != "") then {
+            cmd := "cd {directory} && " ++ cmd
+        }
+        var process := spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
+        // TODO: should be .gso?
+        if (isDialect) then {
+            // We must wait for the .gso to be built before
+            // we try to run loadDynamic on it. Block here.
+            process.wait
+            dynamicmodules.add(nm)
+        }
+    }
+    if (!util.importDynamic && !isDialect) then {
+        linkfiles.push("{directory}{nm}.gcn")
+        staticmodules.add(nm)
     }
 }
 
@@ -1999,13 +1998,13 @@ method processImports(values') {
                 checkimport(nm, v.line, true)
                 log_verbose("loading dialect for checker.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
+                var dobj
                 try {
-                    def dobj = mirrors.loadDynamicModule(nm)
+                    dobj := mirrors.loadDynamicModule(nm)
                     def mths = mirrors.reflect(dobj).methods
                     for (mths) do { m->
                         if (m.name == "checker") then {
-                            log_verbose("running dialect's checker.")
-                            dobj.checker(values')
+                            dialectHasChecker := true
                         }
                         if (m.name == "atModuleEnd") then {
                             dialectHasAtModuleEnd := true
@@ -2016,7 +2015,11 @@ method processImports(values') {
                     }
                 } catch { e : RuntimeError ->
                     util.setPosition(v.line, 1)
+                    e.printBacktrace
                     errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
+                } 
+                try {
+                    if (dialectHasChecker) then { dobj.checker(values') }
                 } catch { e : CheckerFailure ->
                     match (e.data)
                         case { lp : LinePos ->
@@ -2031,6 +2034,10 @@ method processImports(values') {
                         }
                         case { _ -> }
                     errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+                } catch { e : Exception ->
+                    e.printBacktrace
+                    errormessages.error("Unexpected exception raised by checker for dialect '{nm}'.\n"
+                        ++ "{e.exception}: {e.message}.") atLine(v.line)
                 }
             }
         }
@@ -2295,16 +2302,16 @@ method compile(vl, of, mn, rm, bt) {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
 
-            if(io.exists("{util.gracelibPath}/gracelib.o")) then {
+            if (io.exists "{util.gracelibPath}/gracelib.o") then {
                 cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                     ++ "\"{modname}.gcn\" "
                     ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
-            } elseif(buildinfo.includepath != "") then {
+            } elseif (io.exists "{buildinfo.objectpath}/gracelib.o") then {
                 cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
                     ++ "\"{modname}.gcn\" "
                     ++ "\"{buildinfo.objectpath}/gracelib.o\" "
-            }else{
-                io.error.write("Try setting the include path before moving the executable")
+            } else {
+                io.error.write("Unable to link: can't find file gracelib.o")
 
             }
 
@@ -2312,6 +2319,7 @@ method compile(vl, of, mn, rm, bt) {
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
+            util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed linking")
                 sys.exit(1)
@@ -2336,6 +2344,7 @@ method compile(vl, of, mn, rm, bt) {
             }
             cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{modname}.c\" "
+            util.log_verbose "dynamic link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.")
                 sys.exit(1)
