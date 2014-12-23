@@ -95,19 +95,19 @@ gracelib.o: gracelib-basic.o debugger.o l1/minigrace StandardPrelude.grace colle
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
 
-mirrors.gso: mirrors.c gracelib.h mirrors.gct
+mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
 
-math.gso: math.c gracelib.h math.gct
+math.gso: math.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o math.gso -shared -fPIC math.c
 
-repl.gso: repl.c gracelib.h repl.gct
+repl.gso: repl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
 
-unicode.gso: unicode.c unicodedata.h gracelib.h unicode.gct
+unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
 
-unicode.gcn: unicode.c unicodedata.h gracelib.h unicode.gct
+unicode.gcn: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 -fPIC -c -o unicode.gcn unicode.c
 
 l1/minigrace: known-good/$(ARCH)/$(STABLE)/minigrace $(SOURCEFILES) $(UNICODE_MODULE) gracelib.c gracelib.h
