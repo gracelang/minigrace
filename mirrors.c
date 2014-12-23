@@ -215,6 +215,10 @@ Object mirrors_loadDynamicModule(Object self, int nparams, int *argcv,
     return dlmodule(s);
 }
 
+Object idString() {
+    return alloc_String("The mirrors module with 'methodNames' method");
+}
+
 // Create and return a Grace object with all the above functions as methods.
 Object module_mirrors_init() {
     if (mirrors_module != NULL)

@@ -14,7 +14,7 @@ def lm = mi.reflect(l)
 print "Object = {Object}"
 def om = Object.methodNames
 om.remove("debugIterator", "debugValue")
-print "Object's has {om.size} typeMethods."
+print "Object has {om.size} typeMethods."
 assert (om) shouldBe (set.with("==","≠", "basicAsString", "!=", "asString", "::", "asDebugString"))
 print "        \{==,≠,basicAsString,!=,asString,::,asDebugString\}"
 

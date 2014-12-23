@@ -34,9 +34,6 @@ type IO = Object & type {
     env -> Dictionary<String,String>
         // answers a Dictionary maping names of environment variables to
         // their values
-    findResource (fileName:String) -> String  
-        // answers the full path on which fileName can be found.  The places 
-        // that it looks are compiler-specific.
 }
 
 type Process = Object & type {
@@ -132,5 +129,3 @@ method spawnv (executable:String, args:Sequence<String>) -> Process { }
 method realpath (path:String) -> String { }
     // answers the canonicalized absolute pathname
 method listdir (dirPath:String) -> Sequence<String> { }
-method findResource (fileName:String) -> String { }
-    // looks for fileName in certain well-known places

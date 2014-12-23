@@ -1424,9 +1424,6 @@ function gracecode_io() {
     this.methods.realpath = function io_realpath (junk, x) {
         return x;
     };
-    this.methods.findResource = function io_findResource (junk, path) {
-        return path;
-    };
     this.definitionModule = "io";
     this.definitionLine = 0;
     this.className = "module";

@@ -2911,17 +2911,6 @@ Object io_listdir(Object self, int nparts, int *argcv,
     }
     return ret;
 }
-Object io_findResource(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    char *strval = grcstring(args[0]);
-    char buf[PATH_MAX];
-    if (find_resource(strval, buf)) {
-        return alloc_String(buf);
-    } else {
-        gracedie("Resource '%s' not found.", strval);
-        return NULL;
-    }
-}
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
     gc_mark(o->_stdout);
@@ -2930,7 +2919,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 12, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2942,7 +2931,6 @@ Object module_io_init() {
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
-    add_Method(IOModule, "findResource", &io_findResource);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
