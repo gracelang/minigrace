@@ -4404,6 +4404,7 @@ int find_gso(const char *name, char *buf) {
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
     char buf[blen];
+    char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
         gracedie("unable to find dynamic module '%s'", name);
     }
@@ -4411,28 +4412,12 @@ Object dlmodule(const char *name) {
     if (!handle)
         gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
     strcpy(buf, "module_");
-    int new_size = 0;
-    char c;
-    for (int i = 0; (c = name[i]) != '\0'; i++) {
-        new_size += c == '/' ? 4 : 1;
-    }
-    char escaped[new_size + 1];
-    for (int i = 0, j = 0; (c = name[i]) != '\0'; i++) {
-        if (c == '/') {
-            escaped[j++] = '_';
-            escaped[j++] = '4';
-            escaped[j++] = '7';
-            escaped[j++] = '_';
-        } else {
-            escaped[j++] = c;
-        }
-    }
-    escaped[new_size] = '\0';
-    strcat(buf, escaped);
+    strncpy(nameCopy, name, PATH_MAX);
+    strcat(buf, basename(nameCopy));
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
     if (!init)
-        gracedie("failed to find initialiser in dynamic module '%s'", buf);
+        gracedie("failed to find initialiser %s in dynamic module '%s'", buf, name);
     Object mod = init();
     gc_root(mod);
     return mod;

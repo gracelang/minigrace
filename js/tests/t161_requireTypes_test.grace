@@ -1,4 +1,4 @@
-dialect "requireTypes"
+dialect "../sample/dialects/requireTypes"
 
 def x:Number = 3
 def y:String = "Hello"
