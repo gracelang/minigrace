@@ -289,7 +289,7 @@ StandardPrelude.gcn StandardPrelude.gct: StandardPrelude.grace collectionsPrelud
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 # The next three rules are Static Pattern Rules.  Each is like an implicit rule 
-# for making %.gct from stubs/%.grace, applies only to the targets in $(STUBS:*)
+# for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.grace l2/minigrace l2/StandardPrelude.gct
 	cd stubs; rm -f $(@:%.gct=%{.c,.gcn,}); ../l2/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $@ ../ && rm -f $(@:%.gct=%{.c,.gcn});
@@ -302,7 +302,7 @@ $(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.grace l2/exists l1/minigrace l1/Sta
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
-#	untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
+#	Untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
 
 tarball: minigrace
