@@ -1,10 +1,11 @@
-import "ast" as ast
+import "mgcollections" as _
+import "buildinfo" as _
+import "util" as _
+    // required transitively by "ast" and "errormessages"
 import "errormessages" as errormessages
+import "ast" as ast
 
-import "StandardPrelude" as stdPrelude
-
-inherits stdPrelude.methods
-
+inherits prelude.methods
 
 // Checker error
 

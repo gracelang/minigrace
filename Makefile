@@ -140,10 +140,10 @@ js/minigrace.js: js/minigrace.in.js minigrace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/sample/dialects/requireTypes.js js/sample/dialects/requireTypes.gct js/sample/dialects/requireTypes.gso: js/sample/dialects/requireTypes.grace
-	$(MAKE) -C js/sample/dialects $(@F)
+	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso: js/sample/dialects/staticTypes.grace
-	$(MAKE) -C js/sample/dialects $(@F)
+	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js: js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 
@@ -260,16 +260,16 @@ rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
 	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
 
 sample-%: minigrace
-	$(MAKE) -C sample/$*
+	$(MAKE) -C sample/$* VERBOSITY=$(VERBOSITY)
 
 sample/dialects/%.gso: sample/dialects/%.grace
-	$(MAKE) -C sample/dialects $(<:sample/dialects/%.grace=%.grace)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(<:sample/dialects/%.grace=%.grace)
 
 sample/dialects/requireTypes.{gcn,gct,gso}: sample/dialects/requireTypes.grace
-	$(MAKE) -C sample/dialects $(@F)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/staticTypes.{gcn,gct,gso}: sample/dialects/staticTypes.grace
-	$(MAKE) -C sample/dialects $(@F)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 samples: sample-dialects sample-graphics sample-js
 

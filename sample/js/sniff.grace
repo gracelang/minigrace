@@ -2,8 +2,7 @@ import "mgcollections" as collections
 import "dom" as dom
 import "math" as mathModule
 
-import "StandardPrelude" as sp
-inherits sp.new
+inherits prelude.methods
 
 var document
 var canvas
@@ -13,7 +12,7 @@ var mouseDownListener
 var mouseMoveListener
 
 def trig = dom.window.Math
-def PI = 3.14159
+def π = math.π
 
 var stopRunning := false
 var initialised := false
@@ -86,8 +85,8 @@ class drawable.new {
         }
     }
     method forward(dist) {
-        def y' = trig.cos(angle / 180 * PI) * dist
-        def x' = trig.sin(angle / 180 * PI) * dist
+        def y' = trig.cos(angle / 180 * π) * dist
+        def x' = trig.sin(angle / 180 * π) * dist
         x := x + x'
         y := y + y'
     }
@@ -169,7 +168,7 @@ class drawable.new {
     }
     method face(other) {
         if ((other.x != x) || (other.y != y)) then {
-            angle := trig.atan2(other.x - x, other.y - y) * 180 / 3.1415
+            angle := trig.atan2(other.x - x, other.y - y) * 180 / π
         }
         normaliseAngle
     }
@@ -244,15 +243,15 @@ method image {
         method draw(ctx) {
             ctx.save
             ctx.translate(x, y)
-            ctx.rotate(-(angle + 180) / 180 * 3.1415)
+            ctx.rotate(-(angle + 180) / 180 * π)
             ctx.drawImage(imgTag, -width / 2, -height / 2, width, height)
             ctx.restore
         }
         method isPointOver(p) {
             // Rotate p and express it relative to (x, y), then just
             // check whether it's within the bounds of the rectangle.
-            def c = trig.cos(-(angle + 180) / 180 * 3.1415)
-            def s = trig.sin(-(angle + 180) / 180 * 3.1415)
+            def c = trig.cos(-(angle + 180) / 180 * π)
+            def s = trig.sin(-(angle + 180) / 180 * π)
             def rotatedX = c * (p.x - x) - s * (p.y - y)
             def rotatedY = s * (p.x - x) + c * (p.y - y)
             if (rotatedX < (-width / 2)) then {

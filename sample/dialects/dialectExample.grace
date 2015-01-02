@@ -1,8 +1,7 @@
 dialect "dialect"
-import "StandardPrelude" as StandardPrelude
-inherits StandardPrelude.methods
+inherits prelude.methods
 
-// This example implements most of the StaticGrace dialect.
+// This example implements most of the requireTypes dialect.
 // It must be compiled as a dynamic module to be used.
 
 fail "var declaration must have a static type"
