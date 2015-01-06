@@ -5,8 +5,8 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 C_MODULES = $(UNICODE_MODULE) $(OTHER_MODULES)
 DYNAMIC_STUBS = mirrors.grace
 EXTERNAL_STUBS = unicode.grace repl.grace math.grace
-GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace
-GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace objectdraw.grace rtobjectdraw.grace
+GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace rtobjectdraw.grace objectdraw.grace
+GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 INTERNAL_STUBS = sys.grace io.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
 KG=known-good/$(ARCH)/$(STABLE)
@@ -21,7 +21,7 @@ SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 STABLE=61482bce15cec41844a512fd6f07853796a59bdb
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html js/compiler.js js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(SOURCE_FILES:%.grace=js/%.js)
 
-all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects
+all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
@@ -121,7 +121,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
 
 js/%.js: %.grace minigrace
-	./minigrace $(VERBOSITY) --target js -o $@ $<
+	cd js; ../minigrace $(VERBOSITY) --target js -o $(@F) ../$<
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
@@ -250,6 +250,9 @@ mirrors.gso: mirrors.c gracelib.h
 objectdraw.grace:
 	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/objectdraw.grace > objectdraw.grace
 
+objectdraw.gcn objectdraw.gso:
+	@echo "Can't build $@; no C version of dom module"
+
 repl.gso: repl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
 
@@ -259,11 +262,14 @@ repltest: minigrace
 rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
 	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
 
+rtobjectdraw.gcn rtobjectdraw.gso:
+	@echo "Can't build $@; no C version of dom module"
+
 sample-%: minigrace
 	$(MAKE) -C sample/$* VERBOSITY=$(VERBOSITY)
 
 sample/dialects/%.gso: sample/dialects/%.grace
-	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(<:sample/dialects/%.grace=%.grace)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/requireTypes.{gcn,gct,gso}: sample/dialects/requireTypes.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
