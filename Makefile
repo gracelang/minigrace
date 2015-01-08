@@ -277,7 +277,7 @@ sample/dialects/requireTypes.{gcn,gct,gso}: sample/dialects/requireTypes.grace
 sample/dialects/staticTypes.{gcn,gct,gso}: sample/dialects/staticTypes.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
-samples: sample-dialects sample-graphics sample-js
+samples: sample-dialects sample-graphics
 
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genc.grace > tmp.grace

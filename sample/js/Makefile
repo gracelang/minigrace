@@ -1,4 +1,4 @@
-SAMPLES = simplegraphics turtle sniff
+SAMPLES = sniff sniffpong pong
 SAMPLES_JS = $(addsuffix .js,$(SAMPLES))
 
 all: $(SAMPLES_JS)
@@ -8,4 +8,4 @@ all: $(SAMPLES_JS)
 	../../minigrace --target js -o $@ $<
 
 clean:
-	rm -f *.gso *.gct *.gcn *.c *.js fsm_example ObjectAssociations_example dialect_example.gso
+	rm -f *.gso *.gct *.gcn *.c *.js

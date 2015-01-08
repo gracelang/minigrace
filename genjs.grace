@@ -62,15 +62,19 @@ method decreaseindent() {
 }
 
 method formatModname(name) {
-    var snm := ""
-    for (name) do {c->
+    "gracecode_" ++ basename(name)
+}
+
+method basename(filepath) {
+    var bnm := ""
+    for (filepath) do {c->
         if (c == "/") then {
-            snm := ""
+            bnm := ""
         } else {
-            snm := snm ++ c
+            bnm := bnm ++ c
         }
     }
-    "gracecode_" ++ snm
+    bnm
 }
 
 method noteLineNumber(n)comment(c) {
@@ -1687,7 +1691,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     out "if (typeof gctCache !== \"undefined\")"
-    out "  gctCache['{escapestring(modname)}'] = \"{escapestring(gctText)}\";"
+    out "  gctCache['{escapestring(basename(modname))}'] = \"{escapestring(gctText)}\";"
     out "if (typeof originalSourceLines !== \"undefined\") \{"
     out "  originalSourceLines[\"{modname}\"] = ["
     for (util.cLines) do {l->

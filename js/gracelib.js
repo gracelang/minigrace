@@ -1401,6 +1401,8 @@ function gracecode_io() {
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
         path = path._value;
+        var slash = path.lastIndexOf("/");
+        if (slash >= 0) path = path.substring(slash+1);
         if (path.substr(path.length - 4) == ".gct") {
             var gctpath = path.substr(0, path.length - 4);
             if (mode._value == "w")
@@ -1716,6 +1718,14 @@ function gracecode_util() {
         interactive: function(argcv) {
             return GraceFalse;
         },
+        "file()on()orPath()otherwise": function (argcv, fn, origin, pth, blk) {
+            var jsFn = fn._value
+            if (jsFn.substr(jsFn.length - 4) == ".gct") {
+                var gctfn = jsFn.substr(0, fn.length - 4);
+                if (fileExists(gctfn)) return fn;
+            }
+            return callmethod(blk, "apply", [0]);
+        },
         "file()onPath()otherwise": function (argcv, fn, p, blk) {
             var jsFn = fn._value
             if (jsFn.substr(jsFn.length - 4) == ".gct") {
@@ -1723,6 +1733,9 @@ function gracecode_util() {
                 if (fileExists(gctfn)) return fn;
             }
             return callmethod(blk, "apply", [0]);
+        },
+        sourceDir: function util_sourceDir (argcv) {
+            return new GraceString("./");
         },
         type_error: function(argcv, s) {
             minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +

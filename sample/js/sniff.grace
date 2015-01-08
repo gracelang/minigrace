@@ -1,6 +1,5 @@
-import "mgcollections" as collections
-import "dom" as dom
-import "math" as mathModule
+import "js/dom" as dom
+import "math" as math
 
 inherits prelude.methods
 
@@ -17,8 +16,8 @@ def π = math.π
 var stopRunning := false
 var initialised := false
 var backgroundColour := "white"
-def registeredObjects = collections.list.new
-def stepBlocks = collections.list.new
+def registeredObjects = prelude.list.empty
+def stepBlocks = prelude.list.empty
 
 var canvasWidth
 var canvasHeight
@@ -48,7 +47,7 @@ class drawable.new {
     registeredObjects.push(self)
     above := self
     Δ := self
-    def alwaysBlocks = collections.list.new
+    def alwaysBlocks = prelude.list.empty
     var x is readable := canvasWidth / 2
     var y is readable := canvasHeight / 2
     var destX := x
@@ -356,7 +355,7 @@ method background(col) {
     backgroundColour := col
 }
 method random(n) {
-    (n * mathModule.random).truncated
+    (n * math.random).truncated
 }
 method randomPoint {
     point.x(canvasWidth / 10 + random(canvasWidth * 0.8))
