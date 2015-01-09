@@ -255,9 +255,9 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
         }
     }
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 
@@ -272,9 +272,9 @@ method type_error(s) {
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 method semantic_error(s) {
@@ -285,7 +285,7 @@ method semantic_error(s) {
     if (s == "") then {
         io.error.write "\n"
         if (!interactivev) then {
-            sys.exit(1)
+            sys.exit(2)
         }
     }
     io.error.write ": {s}\n"
@@ -305,9 +305,9 @@ method semantic_error(s) {
         io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 method warning(s) {

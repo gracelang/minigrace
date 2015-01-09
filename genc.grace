@@ -2287,7 +2287,7 @@ method compile(vl, of, mn, rm, bt) {
         
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
-            sys.exit(1)
+            sys.exit(3)
         }
         if (util.noexec.not) then {
             log_verbose("linking.")
@@ -2322,7 +2322,7 @@ method compile(vl, of, mn, rm, bt) {
             util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed linking")
-                sys.exit(1)
+                sys.exit(3)
             }
         }
         if (util.dynamicModule) then {
@@ -2347,7 +2347,7 @@ method compile(vl, of, mn, rm, bt) {
             util.log_verbose "dynamic link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.")
-                sys.exit(1)
+                sys.exit(3)
             }
         }
         log_verbose("done.")
@@ -2365,7 +2365,7 @@ method compile(vl, of, mn, rm, bt) {
             if (io.spawn(cmd).success.not) then {
                 io.error.write("minigrace: Program exited with error: "
                     ++ modname ++ "\n")
-                sys.exit(1)
+                sys.exit(4)
             }
         }
     }

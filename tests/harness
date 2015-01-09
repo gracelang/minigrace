@@ -140,16 +140,18 @@ do
         else
             COMMAND="$GRACE --make --native $tcase"
         fi
-        if eval "$COMMAND" > test-$$.log 2>&1
+        eval "$COMMAND" > test-$$.log 2>&1
+        ret_code=$?
+        if [ $ret_code -eq 2 ]
         then
-            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
-            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
-            fail "${tcase} compiled"
-        else
             NUM_PASS=$((NUM_PASS + 1))
 #            echo "${NUM_TESTS} PASS: $tcase"
             printf %s .
             pass ${tcase}
+        else
+            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
+            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
+            fail "${tcase} compiled"
         fi
     fi
     if [ "$FAILED" = "true" ]
