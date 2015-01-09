@@ -625,10 +625,6 @@ method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
         atRange(node.line, node.linePos, node.linePos + name.size)
 }
 method reportUndeclaredIdentifier(node) {
-    if (node.wildcard) then {
-        errormessages.syntaxError("'_' can be used only as a parameter")
-            atRange(node.line, node.linePos, node.linePos)
-    }
     def nodeScope = node.scope
     def nm = node.nameString
     def suggestions = []
@@ -936,9 +932,9 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
                     var scope := pNode.scope
                     if (isParameter(kind).andAlso {scope.variety == "object"}) then {
                         // this is a hack for declaring the parameters of the factory 
-                        // method of a class.  The class's symbol table that of the object
-                        // fresh object; the factory method's parameters need to go in the
-                        // _enclosing_ scope.
+                        // method of a class.  The class's symbol table is that of the
+                        // fresh object; the factory method's parameters need to go in
+                        // the _enclosing_ scope.
                         scope := scope.parent
                         if (scope.variety != "method") then {
                             ProgrammingError.raise "object scope not in method scope"
@@ -946,6 +942,9 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
                     }
                     scope.addNode(o) as (kind)
                 }
+            } elseif {o.wildcard} then {
+                errormessages.syntaxError("'_' cannot be used in an expression")
+                    atRange(o.line, o.linePos, o.linePos)
             }
             true
         }
