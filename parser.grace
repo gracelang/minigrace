@@ -462,11 +462,7 @@ method block {
                     pushidentifier
                     expr1 := values.pop
                     expr1.isBindingOccurrence := true
-                    if (accept("colon")) then {
-                        next
-                        typeexpression
-                        expr1.dtype := values.pop
-                    }
+                    expr1.dtype := optionalTypeAnnotation
                     params.push(expr1)
                 }
                 if ((accept("arrow")).not) then {
@@ -2271,14 +2267,9 @@ method defdec {
         }
         pushidentifier
         var val := false
-        var dtype := ast.unknownType
         var name := values.pop
         name.isBindingOccurrence := true
-        if (accept("colon")) then {
-            next
-            typeexpression
-            dtype := values.pop
-        }
+        var dtype := optionalTypeAnnotation
         def anns = doannotation
         if (accept("op") && (sym.value == "=")) then {
             next
@@ -2345,14 +2336,9 @@ method vardec {
         }
         pushidentifier
         var val := false
-        var dtype := ast.unknownType
         var name := values.pop
         name.isBindingOccurrence := true
-        if (accept("colon")) then {
-            next
-            typeexpression
-            dtype := values.pop
-        }
+        def dtype = optionalTypeAnnotation
         def anns = doannotation
         if (accept("bind")) then {
             next
@@ -2388,7 +2374,7 @@ method vardec {
                     withSuggestions(suggestions)
             }
         }
-        var o := ast.varDecNode.new(name, val, dtype)
+        def o = ast.varDecNode.new(name, val, dtype)
         if (anns != false) then { o.annotations.extend(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
         values.push(o)
@@ -2608,7 +2594,7 @@ method doclass {
         var csig := s.sig
         var methodName := s.m
         methodName.isBindingOccurrence := true
-        var dtype := s.rtype
+        def dtype = s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
@@ -2686,7 +2672,7 @@ method dofactoryMethod {
         var csig := s.sig
         var methodName := s.m
         methodName.isBindingOccurrence := true
-        var dtype := s.rtype
+        def dtype = s.rtype
         def anns = doannotation
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
@@ -2742,7 +2728,7 @@ method methoddec {
         var m := methodsignature(false)
         var meth := m.m
         var signature := m.sig
-        var dtype := m.rtype
+        def dtype = m.rtype
         var varargs := m.v
         var generics := m.generics
         var body := []
@@ -2866,12 +2852,7 @@ method parsempmndecrest(tm, sameline) {
             pushidentifier
             nxt := values.pop
             nxt.isBindingOccurrence := true
-            if (accept("colon")) then {
-                next
-                typeexpression
-                var tp := values.pop
-                nxt.dtype := tp
-            }
+            nxt.dtype := optionalTypeAnnotation
             if (vararg) then {
                 part.vararg := nxt
                 tm.varargs := true
@@ -2903,8 +2884,31 @@ method parsempmndecrest(tm, sameline) {
     newName
 }
 
-// Accept a method signature
+method optionalTypeAnnotation {
+    // Accept a type annotation if present.
+    // Returns the type, or false if there is no annotation
+    if (accept("colon")) then {
+        next
+        if (didConsume { typeexpression }) then {
+            values.pop
+        } else {
+            checkBadTypeLiteral
+            def suggestions = []
+            var suggestion := errormessages.suggestion.new
+            suggestion.insert(" «type name»")afterToken(lastToken)
+            suggestions.push(suggestion)
+            suggestion := errormessages.suggestion.new
+            suggestion.deleteToken(lastToken)leading(true)trailing(false)
+            suggestions.push(suggestion)
+            errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
+                sym.line, sym.linePos)withSuggestions(suggestions)
+        }
+    } else {
+        false
+    }
+}
 method methodsignature(sameline) {
+    // Accept a method signature
     if((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
@@ -3011,24 +3015,7 @@ method methodsignature(sameline) {
             pushidentifier
             id := values.pop
             id.isBindingOccurrence := true
-            dtype := false
-            if (accept("colon")) then {
-                next
-                if (didConsume { typeexpression }) then {
-                    dtype := values.pop
-                } else {
-                    checkBadTypeLiteral
-                    def suggestions = []
-                    var suggestion := errormessages.suggestion.new
-                    suggestion.insert(" «type name»")afterToken(lastToken)
-                    suggestions.push(suggestion)
-                    suggestion := errormessages.suggestion.new
-                    suggestion.deleteToken(lastToken)leading(true)trailing(false)
-                    suggestions.push(suggestion)
-                    errormessages.syntaxError("A type name or type expression must follow ':'.")atPosition(
-                        sym.line, sym.linePos)withSuggestions(suggestions)
-                }
-            }
+            dtype := optionalTypeAnnotation
             id.dtype := dtype
             if (vararg) then {
                 part.vararg := id
@@ -3108,7 +3095,6 @@ method doimport {
     //      import ‹string› as ‹identifier›:‹type expression› is ‹annotation›
     if (accept("keyword") && (sym.value == "import")) then {
         def importline = sym.line
-        var dtype := ast.unknownType
         next
         if(sym.kind != "string") then {
             var suggestion := errormessages.suggestion.new
@@ -3152,11 +3138,7 @@ method doimport {
         pushidentifier
         def name = values.pop
         name.isBindingOccurrence := true
-        if (accept("colon")) then {
-            next
-            typeexpression
-            dtype := values.pop
-        }
+        def dtype = optionalTypeAnnotation
         util.setline(importline)
         def o = ast.importNode.new(p.value, name, dtype)
         def anns = doannotation
