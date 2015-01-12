@@ -19,7 +19,7 @@ endif
 REALSOURCEFILES = collectionsPrelude.grace StandardPrelude.grace compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace gUnit.grace
 SOURCEFILES = $(REALSOURCEFILES) buildinfo.grace
 STABLE=61482bce15cec41844a512fd6f07853796a59bdb
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html js/compiler.js js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(SOURCE_FILES:%.grace=js/%.js)
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(JSSOURCEFILES)
 
 all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
@@ -154,12 +154,6 @@ known-good/%:
 	@echo "making $@"
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
-
-$(KG)/%.gcn: $(KG)/%.grace $(KG)/collectionsPrelude.gct $(KG)/StandardPrelude.gct $(KG)/collectionsPrelude.gct
-	(cd $(KG); ./minigrace $(VERBOSITY) --vtag kg --make --noexec -XNoMain $(<F))
-
-$(KG)/%.gct: $(KG)/%.grace
-	(cd $(KG); ./minigrace $(VERBOSITY) --vtag kg --make --noexec -XNoMain $(<F))
 
 $(KG)/collectionsPrelude.gct: $(KG)/collectionsPrelude.grace
 	cd $(KG) ; ./minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace

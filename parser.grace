@@ -68,7 +68,7 @@ method next {
     }
 }
 
-// Search for the next token that the given block returns true for.
+// Search for the next token for which the given block returns true.
 // Used for generating suggestions.
 method findNextToken(tokenMatcher) {
     if(tokenMatcher.apply(sym)) then {

@@ -1913,6 +1913,9 @@ function gracecode_util() {
     return this;
 }
 
+if (typeof gctCache !== "undefined")
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n __compilerRevision\n __compilerRevision:=\n verbosityv\n verbosityv:=\n outfilev\n outfilev:=\n infilev\n infilev:=\n modnamev\n modnamev:=\n runmodev\n runmodev:=\n buildtypev\n buildtypev:=\n interactivev\n interactivev:=\n gracelibPathv\n gracelibPathv:=\n linenumv\n linenumv:=\n lineposv\n lineposv:=\n vtagv\n vtagv:=\n noexecv\n noexecv:=\n targetv\n targetv:=\n versionNumber\n versionNumber:=\n extensionsv\n extensionsv:=\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n runOnNew()else\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n engine\n extensions\n str()lastIndexOf\n sourceDirCache\n sourceDirCache:=\n sourceDir\n execDirCache\n execDirCache:=\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n processExtension\n printhelp\n debug\n hexdigits\n hexdigits:=\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
+
 var interactive_module = false;
 function gracecode_interactive() {
     return this;
@@ -2074,6 +2077,10 @@ function gracecode_mirrors() {
     return this;
 }
 
+if (typeof gctCache !== "undefined")
+    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
+
+
 function gracecode_math() {
     this.methods = {
         'asString': function(argcv) {
@@ -2133,6 +2140,10 @@ function gracecode_math() {
     this.definitionLine = 0;
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['math'] = "modules:\nfresh-methods:\npath:\n math\nclasses:\npublic:\n  asString\n asDebugString\n sin\n cos\n tan\n asin\n acos\n atan\n random\n π\n pi\n sqrt\n abs\n lg\n ln\n exp\n log10\nconfidential:\n";
+
 
 function checkmethodcall(func, methname, obj, args) {
     var pt = func.paramTypes;

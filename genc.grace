@@ -1830,6 +1830,15 @@ method spawnSubprocess(id, cmd, data) {
     return subprocesses.at(subprocesses.size)[2]
 }
 
+method waitForAllProcessesToTerminate {
+    for (subprocesses) do {spinfo->
+        def sp = spinfo[2]
+        if (!sp.terminated) then {
+            sp.wait
+        }
+    }
+}
+
 method addTransitiveImports(directory, moduleName, line) {
     def data = xmodule.parseGCT(moduleName) sourceDir(directory)
     if (data.contains "dialect") then {
@@ -1927,6 +1936,7 @@ method checkimport(nm, line, isDialect) {
 }
 method compileGraceFile (nm) in (directory) forDialect (isDialect) onLine (line) {
     var slashed := false
+    var extension := ".gcn"
     for (sys.argv.first) do {letter ->
         if(letter == "/") then {
             slashed := true
@@ -1948,24 +1958,26 @@ method compileGraceFile (nm) in (directory) forDialect (isDialect) onLine (line)
     cmd := cmd ++ " --noexec --no-recurse -XNoMain"
     if (util.dynamicModule || isDialect) then {
         cmd := cmd ++ " --dynamic-module"
+        extension := ".gso"
     }
     if (util.importDynamic) then {
         cmd := cmd ++ " --import-dynamic --dynamic-module"
+        extension := ".gso"
     }
     if (util.recurse || isDialect) then {
         if (directory != "") then {
             cmd := "cd {directory} && " ++ cmd
         }
-        var process := spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
-        // TODO: should be .gso?
-        if (isDialect) then {
+        var process := spawnSubprocess(nm, cmd, [nm ++ extension, nm, line])
+        if (isDialect) then { 
             // We must wait for the .gso to be built before
-            // we try to run loadDynamic on it. Block here.
+            // we try to run loadDynamic on it.
             process.wait
-            dynamicmodules.add(nm)
         }
     }
-    if (!util.importDynamic && !isDialect) then {
+    if (extension == ".gso") then {
+        dynamicmodules.add(nm)
+    } else {
         linkfiles.push("{directory}{nm}.gcn")
         staticmodules.add(nm)
     }
@@ -2350,6 +2362,7 @@ method compile(vl, of, mn, rm, bt) {
                 sys.exit(3)
             }
         }
+        waitForAllProcessesToTerminate
         log_verbose("done.")
         def allmodules = collections.set.new
         allmodules.extend(staticmodules)

@@ -4350,14 +4350,14 @@ void setModulePath(char *s) {
 }
 int find_resource(const char *name, char *buf) {
 
-    char *sep = execPathHelper();
+    char *execPath = execPathHelper();
     char *gmp = getenv("GRACE_MODULE_PATH");
     char *home = getenv("HOME");
     char buf1[PATH_MAX];
     struct stat st;
 
-    strcpy(buf1, sep);
-    char *locations[] = {".", sep, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+    strcpy(buf1, execPath);
+    char *locations[] = {".", execPath, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")};
 
     char buf5[PATH_MAX];
     if(modulePath != NULL){

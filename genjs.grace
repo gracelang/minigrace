@@ -1708,5 +1708,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     for (output) do { o ->
         outprint(o)
     }
+    genc.waitForAllProcessesToTerminate
     log_verbose("done.")
 }

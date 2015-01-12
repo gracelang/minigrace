@@ -483,11 +483,17 @@ method rewritematchblock(blk) {
                     )
                     pattern := bindingpat
                     for (tmp[2]) do {p->
-                        def extraParam = p.deepCopy
-                        // The deepCopy copies the type too.
-                        // Does this cause an unnecessary dynamic type-check?
-                        extraParam.isBindingOccurrence := true
-                        newparams.push(extraParam)
+                        // We can't name both p and the extra param binding
+                        // occurences, because then there would be shadowing.
+                        if (p.wildcard) then {
+                            p.isBindingOccurrence := true
+                        } else {
+                            def extraParam = p.deepCopy
+                            // The deepCopy copies the type too.
+                            // Does this cause an unnecessary dynamic type-check?
+                            extraParam.isBindingOccurrence := true
+                            newparams.push(extraParam)
+                        }
                     }
                 }
         } else {
