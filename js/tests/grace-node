@@ -258,18 +258,23 @@ MiniGrace.prototype.loadModule = function(moduleName) {
     }
 }
 
-require("../gracelib")
-require("../unicodedata")
-minigrace = new MiniGrace();
-minigrace.loadModule("../StandardPrelude")
+try {
+    require("../gracelib")
+    require("../unicodedata")
+    minigrace = new MiniGrace();
+    minigrace.loadModule("StandardPrelude")
 
-// as as special case, do_import("StandardPrelude") adds to Grace)prelude, rather
-// than creating a new module object.
+    // as as special case, do_import("StandardPrelude") adds to Grace)prelude, rather
+    // than creating a new module object.
 
-do_import('StandardPrelude', gracecode_StandardPrelude);
+    do_import('StandardPrelude', gracecode_StandardPrelude);
 
-process.argv.slice(2).forEach(function (fn) {
-    minigrace.run(fn)
-});
+    process.argv.slice(2).forEach(function (fn) {
+        minigrace.run(fn)
+    });
+} catch (e) {
+    console.error(e.message);
+    process.exit(1);
+}
 
 

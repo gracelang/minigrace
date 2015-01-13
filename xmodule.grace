@@ -19,7 +19,7 @@ method parseGCT(moduleName) sourceDir(dir) {
     def data = collections.map.new
     def sz = moduleName.size
     def sought = 
-        if (moduleName.substringFrom(sz - 3) to(sz) == ".gct") then {
+        if ((sz >= 4).andAlso{moduleName.substringFrom(sz - 3) to(sz) == ".gct"}) then {
         moduleName
     } else {
         moduleName ++ ".gct"

@@ -167,7 +167,7 @@ $(KG)/StandardPrelude.grace: StandardPrelude.grace
 $(KG)/collectionsPrelude.grace: collectionsPrelude.grace
 	ln -sf $(realpath $<) $@
 
-l1/%.gct: l1/%.grace
+l1/%.gct: l1/%.grace $(KG)/StandardPrelude.gct
 	(cd l1; ./minigrace $(VERBOSITY) --vtag l1 --make --noexec -XNoMain $(<F))
 
 l1/%.grace: l1/exists
@@ -191,7 +191,7 @@ l1/gracelib.o: gracelib-basic.o debugger.o $(KG)/minigrace StandardPrelude.grace
 l1/math.gcn: math.c
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -fPIC $<
 
-l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) l1/collectionsPrelude.gct l1/StandardPrelude.gct $(SOURCEFILES) gracelib.c gracelib.h $(KG)/gracelib.o
+l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=$(KG)/%.gct) $(KG)/collectionsPrelude.gct $(KG)/StandardPrelude.gct $(SOURCEFILES) gracelib.c gracelib.h $(KG)/gracelib.o
 	@echo "dependencies are $^"
 	(cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ../$(KG) --vtag kg -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace)
 
@@ -232,11 +232,10 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic --vtag l2 compiler.grace
 
-minigrace: l2/minigrace $(SOURCEFILES) $(C_MODULES) l2/gracelib.o $(STUBS:%.grace=%.gct)
+minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES) l2/gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg
-	@[ -e .git/hooks/commit-msg ] || ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
@@ -294,6 +293,9 @@ StandardPrelude.gcn StandardPrelude.gct: StandardPrelude.grace collectionsPrelud
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.grace l2/minigrace l2/StandardPrelude.gct
 	cd stubs; rm -f $(@:%.gct=%{.c,.gcn,}); ../l2/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $@ ../ && rm -f $(@:%.gct=%{.c,.gcn});
 
+$(STUBS:%.grace=$(KG)/%.gct): $(KG)/%.gct: stubs/%.grace $(KG)/minigrace $(KG)/StandardPrelude.gct
+	cd stubs; rm -f $(@F:%.gct=%{.c,.gcn,}); ../$(KG)/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $(@F) ../$(KG) && rm -f $(@F:%.gct=%{.c,.gcn})
+
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.grace l1/exists $(KG)/minigrace $(KG)/StandardPrelude.gct
 	cd stubs; rm -f $(@F:%.gct=%{.c,.gcn,}); ../$(KG)/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $(@F) ../l1 && rm -f $(@F:%.gct=%{.c,.gcn})
 
@@ -343,6 +345,9 @@ uninstall:
 
 %.gcn %.gct: %.grace StandardPrelude.gct
 	./minigrace $(VERBOSITY) --make --noexec $<
+
+.git/hooks/commit-msg: tools/validate-commit-message
+	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<

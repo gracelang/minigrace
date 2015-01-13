@@ -311,7 +311,7 @@ method compileclass(o) {
     newmeth.isFresh := true
     def dbBody = [ast.stringNode.new("class {o.name.value}")]
     def dbMeth = ast.methodNode.new(
-        ast.identifierNode.new("asDebugString", false), [], dbBody, false)
+        ast.identifierNode.new("asString", false), [], dbBody, false)
     var obody := [newmeth, dbMeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
@@ -1613,7 +1613,11 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     values := vl
     outfile := of
-    modname := mn
+    var slashPos := 0
+    (range.from (mn.size) downTo 1).do { ix ->
+        if (mn.at(ix) == "/") then { slashPos := ix }
+    }
+    modname := mn.substringFrom (slashPos+1) to (mn.size)
     runmode := rm
     buildtype := bt
     gracelibPath := glpath
