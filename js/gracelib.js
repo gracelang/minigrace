@@ -1408,8 +1408,12 @@ function gracecode_io() {
             if (mode._value == "w")
                 gctCache[gctpath] = "";
             else if (mode._value == "r") {
-                o._lines = gctCache[gctpath].split("\n");
-                o._index = 0;
+                if (typeof gctCache[gctpath] == "undefined")
+                    throw new GraceExceptionPacket(EnvironmentExceptionObject, new GraceString("Can't open file " + gctpath + ".gct for 'r'.  File does not exist."))
+                else {
+                    o._lines = gctCache[gctpath].split("\n");
+                    o._index = 0;
+                }
             }
             o.methods['write'] = function io_gct_write (argcv, s) {
                 gctCache[gctpath] += s._value;
@@ -1578,6 +1582,10 @@ function gracecode_unicode() {
     this.superobj = new GraceModule("unicode");
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category\n bidirectional\n combining\n mirrored\n name\n iscategory\n isSeparator\n isControl\n isLetter\n isNumber\n isSymbolMathematical\n create\nconfidential:\nfresh-methods:\nmodules:\n";
+
 
 function GraceUnicodePattern(pos, neg) {
     this.pos = pos;

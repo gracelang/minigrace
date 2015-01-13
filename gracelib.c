@@ -2734,8 +2734,7 @@ Object alloc_File_from_stream(FILE *stream) {
 Object alloc_File(const char *filename, const char *mode) {
     FILE *file = fopen(filename, mode);
     if (file == NULL) {
-        perror("File access failed");
-        gracedie("File access failed: could not open %s for %s.",
+        graceRaise(EnvironmentExceptionObject, "could not open file %s for %s.",
                 filename, mode);
     }
     return alloc_File_from_stream(file);

@@ -5,7 +5,7 @@ ARCH:=$(shell uname -s)-$(shell uname -m)
 C_MODULES = $(UNICODE_MODULE) $(OTHER_MODULES)
 DYNAMIC_STUBS = mirrors.grace
 EXTERNAL_STUBS = unicode.grace repl.grace math.grace
-GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace rtobjectdraw.grace objectdraw.grace
+GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace rtobjectdraw.grace objectdraw.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 INTERNAL_STUBS = sys.grace io.grace
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js 
@@ -155,18 +155,6 @@ known-good/%:
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
-$(KG)/collectionsPrelude.gct: $(KG)/collectionsPrelude.grace
-	cd $(KG) ; ./minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
-
-$(KG)/StandardPrelude.gct: $(KG)/StandardPrelude.grace $(KG)/collectionsPrelude.gct
-	cd $(KG) ; ./minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
-
-$(KG)/StandardPrelude.grace: StandardPrelude.grace
-	ln -sf $(realpath $<) $@
-
-$(KG)/collectionsPrelude.grace: collectionsPrelude.grace
-	ln -sf $(realpath $<) $@
-
 l1/%.gct: l1/%.grace
 	(cd l1; ./minigrace $(VERBOSITY) --vtag l1 --make --noexec -XNoMain $(<F))
 
@@ -232,7 +220,7 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic --vtag l2 compiler.grace
 
-minigrace: l2/minigrace $(SOURCEFILES) $(C_MODULES) l2/gracelib.o $(STUBS:%.grace=l2/%.gct)
+minigrace: l2/minigrace $(SOURCEFILES) $(C_MODULES) l2/gracelib.o $(STUBS:%.grace=%.gct)
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg
@@ -291,13 +279,13 @@ StandardPrelude.gcn StandardPrelude.gct: StandardPrelude.grace collectionsPrelud
 # The next three rules are Static Pattern Rules.  Each is like an implicit rule 
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(STUBS:%.grace=%.gct): %.gct: stubs/%.grace l2/minigrace l2/StandardPrelude.gct
+$(STUBS:%.grace=%.gct): %.gct: stubs/%.grace l2/minigrace StandardPrelude.gct
 	cd stubs; rm -f $(@:%.gct=%{.c,.gcn,}); ../l2/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $@ ../ && rm -f $(@:%.gct=%{.c,.gcn});
 
-$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.grace l1/exists $(KG)/minigrace $(KG)/StandardPrelude.gct
+$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.grace l1/exists $(KG)/minigrace l1/StandardPrelude.gct
 	cd stubs; rm -f $(@F:%.gct=%{.c,.gcn,}); ../$(KG)/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $(@F) ../l1 && rm -f $(@F:%.gct=%{.c,.gcn})
 
-$(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.grace l2/exists l1/minigrace l1/StandardPrelude.gct
+$(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.grace l2/exists l1/minigrace l2/StandardPrelude.gct
 	cd stubs; rm -f $(@F:%.gct=%{.c,.gcn,}); ../l1/minigrace $(VERBOSITY) --make --noexec $(<F) && mv $(@F) ../l2 && rm -f $(@F:%.gct=%{.c,.gcn})
 
 tarWeb: js samples
