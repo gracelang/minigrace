@@ -11,6 +11,7 @@ type FileStream = Object & type {
     next -> Object
     readBinary -> Object
     writeBinary -> Object
+    pathname -> String
     eof -> Boolean
     isatty -> Boolean
 }
@@ -67,6 +68,7 @@ factory method input ->  FileStream {
     method next -> Object { }
     method readBinary -> Object { }
     method writeBinary -> Object { }
+    method pathname -> String { }
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
@@ -83,6 +85,7 @@ factory method output ->  FileStream {
     method next -> Object { }
     method readBinary -> Object { }
     method writeBinary -> Object { }
+    method pathname -> String { }
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
@@ -99,6 +102,7 @@ factory method error ->  FileStream {
     method next -> Object { }
     method readBinary -> Object { }
     method writeBinary -> Object { }
+    method pathname -> String { }
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
@@ -115,6 +119,7 @@ factory method open (fileName:String, mode:String) -> FileStream {
     method next -> Object { }
     method readBinary -> Object { }
     method writeBinary -> Object { }
+    method pathname -> String { }
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }

@@ -1,10 +1,8 @@
-#pragma DefaultVisibility=public
 import "io" as io
 import "sys" as sys
 import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
 
-var __compilerRevision := false
 var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
@@ -28,16 +26,7 @@ var cLines := list.empty
 var lines := list.empty
 var filename
 
-var errno := 0
-
-method runOnNew(b)else(e) {
-    if ((__compilerRevision != "d5f6522d5c5e3f5b1f40d77502a66954955d0e5a")
-        && (__compilerRevision != false)) then {
-        b.apply
-    } else {
-        e.apply
-    }
-}
+var errno is readable := 0
 
 method parseargs {
     var argv := sys.argv
@@ -156,10 +145,13 @@ method parseargs {
                         var accum := ""
                         modnamev := ""
                         for (filename) do { c->
-                            if (c == ".") then {
+                            if (c == "/") then {
+                                accum := ""
+                            } elseif {c == "."} then {
                                 modnamev := accum
+                            } else {
+                                accum := accum ++ c
                             }
-                            accum := accum ++ c
                         }
                     }
                 }
@@ -168,8 +160,8 @@ method parseargs {
     }
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "c" -> io.open(modnamev ++ ".c", "w") }
-            case { "js" -> io.open(modnamev ++ ".js", "w") }
+            case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
+            case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
             case { _ -> io.output }
     }
     if (gracelibPathv == false) then {

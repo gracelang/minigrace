@@ -2,27 +2,14 @@ DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant while
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
-DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) dialectExample.js
 VERBOSITY = --verbose
 
-all: $(DIALECT_MODULES) $(DIALECTS_JS) $(SAMPLES)
+c: $(DIALECT_MODULES) $(SAMPLES)
 
 %.gso %.gct: %.grace
 	../../minigrace $(VERBOSITY) --dynamic-module $<
 
-staticTypes.js: staticTypes.grace dialect.gso
-	../../minigrace $(VERBOSITY) --target js -o $@ staticTypes.grace
-
-requireTypes.js: requireTypes.grace dialect.js
-	../../minigrace $(VERBOSITY) --target js -o $@ requireTypes.grace
-
-whileLiteral.js: whileLiteral.grace dialect.js
-	../../minigrace $(VERBOSITY) --target js -o $@ whileLiteral.grace
-
-%.js: %.grace
-	../../minigrace $(VERBOSITY) --target js -o $@ $<
-
-whileLiteral.gso: whileLiteral.grace dialect.gso dialect.c
+whileLiteral.gso: whileLiteral.grace dialect.gso
 	../../minigrace $(VERBOSITY) --dynamic-module $<
 
 staticTypes.gso: staticTypes.grace dialect.gso
@@ -34,8 +21,5 @@ requireTypes.gso: requireTypes.grace dialect.gso
 %Example: %Example.grace %.gso
 	../../minigrace $(VERBOSITY) $<
 
-%Example.js: %Example.grace %.js
-	../../minigrace $(VERBOSITY) -target js $<
-
 clean:
-	rm -fR *.gso *.c *.gct *.gcn *.c *.js *.gso.dSYM $(SAMPLES) $(DIALECTS)
+	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)

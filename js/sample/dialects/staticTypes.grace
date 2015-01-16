@@ -1,0 +1,1 @@
+../../../sample/dialects/staticTypes.grace

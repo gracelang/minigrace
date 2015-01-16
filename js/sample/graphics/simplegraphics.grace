@@ -1,4 +1,4 @@
-import "js/dom" as dom
+import "dom" as dom
 
 var document
 var canvas

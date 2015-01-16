@@ -159,6 +159,7 @@ struct IOModuleObject {
 };
 struct FileObject {
     OBJECT_HEADER;
+    Object pathname;
     FILE* file;
 };
 struct SysModule {
@@ -2694,6 +2695,11 @@ Object File_next(Object self, int nparts, int *argcv,
     *b = 0;
     return alloc_String(buf);
 }
+Object File_pathname(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    return s->pathname;
+}
 Object File_eof(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
@@ -2706,7 +2712,7 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 18);
+        File = alloc_class("File", 19);
         add_Method(File, "read", &File_read);
         add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
@@ -2721,14 +2727,16 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "next", &File_next);
         add_Method(File, "readBinary", &File_readBinary);
         add_Method(File, "writeBinary", &File_writeBinary);
+        add_Method(File, "pathname", &File_pathname);
         add_Method(File, "eof", &File_eof);
         add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
     }
-    Object o = alloc_obj(sizeof(FILE*) + sizeof(int), File);
+    Object o = alloc_obj(sizeof(struct FileObject) - sizeof(struct Object), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
+    so->pathname = alloc_String("");
     return o;
 }
 Object alloc_File(const char *filename, const char *mode) {
@@ -2737,7 +2745,14 @@ Object alloc_File(const char *filename, const char *mode) {
         graceRaise(EnvironmentExceptionObject, "could not open file %s for %s.",
                 filename, mode);
     }
-    return alloc_File_from_stream(file);
+    Object o = alloc_File_from_stream(file);
+    struct FileObject *fo = (struct FileObject *)o;
+    char resolvedName[PATH_MAX];
+    realpath(filename, resolvedName);
+    Object name = alloc_String(resolvedName);
+    gc_root(name);
+    fo->pathname = name;
+    return o;
 }
 Object io_input(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2896,6 +2911,7 @@ Object io_spawnv(Object self, int nparts, int *argcv,
 Object io_listdir(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     DIR *dp;
+    gc_pause();
     Object ret = alloc_BuiltinList();
     Object argobj = args[0];
     char *strval = grcstring(argobj);
@@ -2908,6 +2924,7 @@ Object io_listdir(Object self, int nparts, int *argcv,
         Object str = alloc_String(entry->d_name);
         callmethod(ret,"push",1,partcv,&str);
     }
+    gc_unpause();
     return ret;
 }
 void io__mark(struct IOModuleObject *o) {
@@ -4350,7 +4367,6 @@ void setModulePath(char *s) {
 int find_resource(const char *name, char *buf) {
 
     char *execPath = execPathHelper();
-    char *gmp = getenv("GRACE_MODULE_PATH");
     char *home = getenv("HOME");
     char buf1[PATH_MAX];
     struct stat st;
@@ -4367,31 +4383,40 @@ int find_resource(const char *name, char *buf) {
         strcpy(buf2, home); 
         locations[3] = strcat(buf2, "/.local/lib/grace/modules");
     }
-    char buf3[PATH_MAX];
-    if(gmp != NULL){
-        locations[4] = strncpy(buf3, gmp, PATH_MAX);
-    }
     char buf4[PATH_MAX];
     if(compilerModulePath != NULL){
         locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
     }
 
-    int i = 0;
-
-    for(i = 0; i < 8; i++){
+    int i;
+    for(i = 0; i < 7; i++){
         if(locations[i] == NULL){
             continue;
         }
         strncpy(buf, locations[i], PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
-
-
         if(stat(buf, &st) == 0){
             return 1;
         }
     }
 
+    char *elem;
+    char *gmp = getenv("GRACE_MODULE_PATH");
+    char *context;
+
+    for ( elem = strtok_r(gmp, ":", &context);
+          elem;
+          elem = strtok_r(NULL, ":", &context)
+        )
+    {
+        strncpy(buf, elem, PATH_MAX);
+        strcat(buf, "/");
+        strcat(buf, name);
+        if(stat(buf, &st) == 0){
+            return 1;
+        }
+    }
     return 0;
 }
 int find_gso(const char *name, char *buf) {
@@ -4405,7 +4430,7 @@ Object dlmodule(const char *name) {
     char buf[blen];
     char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
-        gracedie("unable to find dynamic module '%s'", name);
+        gracedie("unable to find dynamic module '%s.gso'", name);
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle)

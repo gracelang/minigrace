@@ -1569,8 +1569,7 @@ method compiledialect(o) {
     }
     var nm := "dialect"
     var fn := escapestring2(o.value)
-    var modg := "module_" ++ escapeident(o.value)
-    var modgn := "module_" ++ nm
+    var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
     out("  if ({modg} == NULL)")
     if (staticmodules.contains(o.value)) then {
@@ -1607,8 +1606,7 @@ method compileimport(o) {
     o.register := "done"
     var nm := escapeident(o.nameString)
     var fn := escapestring2(o.path)
-    var modg := "module_" ++ escapeident(o.path)
-    var modgn := "module_" ++ nm
+    var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
     modules.add(nm)
     declaredvars.push(nm)
@@ -1892,8 +1890,8 @@ method checkimport(nm, line, isDialect) {
     if (locations.contains "./".not) then {
         locations.addFirst "./"
     }
-    // The above location list mirrors that used in util.file()o onPath() otherwise()
-    // TODO: These two search algorithms shoudl be merged.
+    // The above location list mirrors that used in util.file() onPath() otherwise()
+    // TODO: These two search algorithms should be merged.
 
     for (locations) do { location ->
         if (binaryFound.not && io.exists("{location}{nm}.gso").andAlso
@@ -2260,9 +2258,7 @@ method compile(vl, of, mn, rm, bt) {
             var lcgfile := util.extensions.get("LogCallGraph")
             out("  enable_callgraph(\"{lcgfile}\");")
         }
-        util.runOnNew {
-            out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
-        } else {}
+        out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
         if(buildinfo.modulepath != "") then {
             out("  setModulePath(\"{buildinfo.modulepath}\");")
         }
@@ -2294,8 +2290,16 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
+        def ofpn = outfile.pathname
+        var ix := ofpn.size
+        while { (ix > 1).andAlso {ofpn.at(ix) != "."} } do { ix := ix - 1 }
+        def ofpnBase = if (ix > 0) then { 
+                ofpn.substringFrom 1 to (ix-1)
+            } else {
+                ofpn
+            }
 
-        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{ofpnBase}.gcn\" -c \"{ofpn}\""
         
         if ((io.system(cmd)).not) then {
             io.error.write("Fatal error: Failed C compilation of {modname}.\n")
@@ -2315,12 +2319,12 @@ method compile(vl, of, mn, rm, bt) {
             }
 
             if (io.exists "{util.gracelibPath}/gracelib.o") then {
-                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{modname}.gcn\" "
+                cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} "
+                    ++ "\"{ofpnBase}.gcn\" "
                     ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
             } elseif (io.exists "{buildinfo.objectpath}/gracelib.o") then {
-                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{modname}.gcn\" "
+                cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} "
+                    ++ "\"{ofpnBase}.gcn\" "
                     ++ "\"{buildinfo.objectpath}/gracelib.o\" "
             } else {
                 io.error.write("Unable to link: can't find file gracelib.o")
@@ -2354,11 +2358,11 @@ method compile(vl, of, mn, rm, bt) {
                     exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
                 }
             }
-            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
-                ++ "\"{modname}.c\" "
+            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{ofpnBase}.gso\" -fPIC {exportDynamicBit} "
+                ++ "\"{ofpnBase}.c\" "
             util.log_verbose "dynamic link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed producing dynamic module.")
+                io.error.write("Failed producing dynamic module.\n")
                 sys.exit(3)
             }
         }
@@ -2370,10 +2374,10 @@ method compile(vl, of, mn, rm, bt) {
         xmodule.writeGCT(modname, modname ++ ".gct")
             fromValues(values)modules(allmodules)
         if (buildtype == "run") then {
-            if (modname[1] != "/") then {
-                cmd := "./" ++ modname
+            if (ofpnBase[1] != "/") then {
+                cmd := "./" ++ ofpnBase
             } else {
-                cmd := modname
+                cmd := ofpnBase
             }
             if (io.spawn(cmd).success.not) then {
                 io.error.write("minigrace: Program exited with error: "

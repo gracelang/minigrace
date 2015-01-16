@@ -60,7 +60,7 @@ var samples = {
     },
     'simplegraphics': {
         'name': 'Simple graphics module',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': [],
     },
     'simplegraphics_example': {
@@ -70,7 +70,7 @@ var samples = {
     },
     'turtle': {
         'name': 'Turtle graphics module',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': [],
     },
     'logo': {
@@ -85,17 +85,17 @@ var samples = {
     },
     'pong': {
         'name': 'DOM Pong',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': [],
     },
     'sniff': {
         'name': 'Sniff graphics dialect',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': [],
     },
     'sniffpong': {
         'name': 'Sniff-based pong',
-        'dir': 'js',
+        'dir': 'graphics',
         'requires': ['sniff'],
     },
 };

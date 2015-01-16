@@ -9,15 +9,9 @@
 *.gcn
 *.gct
 *.c
-java/*.java
-tests/*.java
-*.class
 l1
 l2
 minigrace
-UnicodeData.txt
-NameAliases.txt
-unicodegen.py
 misc
 tests/test.log
 buildinfo.grace
@@ -56,14 +50,11 @@ c/Makefile.conf
 c/bin
 c/configure
 Makefile.conf
-java/*.grace
 .directory-environ
 stdin_minigrace
-java/grace/lib/StandardPrelude.java
-java/grace/lib/StandardPrelude.grace
-minigrace.xcodeproj
-minigrace.xcodeproj/*
-minigrace.xcworkspace
-minigrace.xcworkspace/*
+*.xcodeproj
+*.xcodeproj/*
+*.xcworkspace
+*.xcworkspace/*
 .gitignore~
 

@@ -2769,6 +2769,7 @@ if (typeof global !== "undefined") {
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
     global.type_Boolean = type_Boolean;
+    global.type_Block = type_Block;
     global.type_Number = type_Number;
     global.type_Object = type_Object;
     global.type_String = type_String;
