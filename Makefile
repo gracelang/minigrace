@@ -284,7 +284,8 @@ sample/dialects/requireTypes.gct sample/dialects/requireTypes.gso: sample/dialec
 sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: sample/dialects/staticTypes.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
-samples: sample-dialects js/sample-dialects js/sample-graphics
+samples: sample-dialects js/sample-dialects 
+# omitted for the time-being: js/sample-graphics
 
 selfhost-stats: minigrace
 	cat compiler.grace util.grace ast.grace parser.grace genc.grace > tmp.grace
@@ -330,7 +331,7 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js js/collections.js js/gUnit.js js/sample/dialects/requireTypes.js js/sample/dialects/ mgcollections.gso buildinfo.gso requireTypes.gct js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso
+test.js: js js/collections.js js/gUnit.js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso
 	npm install performance-now
 	js/tests/harness ../../minigrace js/tests ""
 

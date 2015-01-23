@@ -2,7 +2,11 @@ DIALECTS = simplegraphics logo turtle sniff
 SAMPLES =  simpleGraphicsExample logoExample sniffpong
 VERBOSITY = --verbose
 
-all: $(DIALECTS:%=%.js) $(SAMPLES:%=%.js)
+all: dialects samples
+
+dialects: $(DIALECTS:%=%.js)
+
+samples:  $(SAMPLES:%=%.js)
 
 %.js: %.grace
 	../../minigrace --target js $(VERBOSITY) -o $@ $<
