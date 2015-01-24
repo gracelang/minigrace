@@ -94,6 +94,9 @@ function gracecode_dom() {
     this.methods.document = function(argcv) {
         return wrapDOMObject(document);
     };
+    this.methods.document.paramCounts = [0];
+    this.methods.document.variableArities = [false];
+
     this.methods.window = function(argcv) {
         var win = wrapDOMObject(window);
         win.methods["Math"] = function() {
@@ -109,6 +112,9 @@ function gracecode_dom() {
         };
         return win;
     };
+    this.methods.window.paramCounts = [0];
+    this.methods.window.variableArities = [false];
+
     this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
         var ret = Grace_allocObject();
         ret.methods.then = function(argcv, block) {
@@ -129,7 +135,10 @@ function gracecode_dom() {
         }
         func();
         return ret;
-    }
+    };
+    this.methods["for()waiting()do"].paramCounts = [1, 1, 1];
+    this.methods["for()waiting()do"].variableArities = [false, false, false];
+
     this.methods["while()waiting()do"] = function(argcv, cond, delay, block) {
         var ret = Grace_allocObject();
         ret.methods.then = function(argcv, block) {
@@ -148,7 +157,13 @@ function gracecode_dom() {
         }
         func();
         return ret;
-    }
+    };
+    this.methods["while()waiting()do"].paramCounts = [1, 1, 1];
+    this.methods["while()waiting()do"].variableArities = [false, false, false];
     return this;
 }
+gracecode_dom.imports = [
+];
+if (typeof gctCache !== "undefined")
+gctCache['dom'] = "modules:\nfresh-methods:\npath:\n dom\nclasses:\npublic:\n document\n window\n for()waiting()do\n while()waiting()do\nconfidential:\n";
 
