@@ -74,12 +74,6 @@ def LexerClass = object {
             def value = s
             def size = s.size + 2
         }
-        class OctetsToken.new(s) {
-            inherits Token.new
-            def kind = "octets"
-            def value = s
-            def size = s.size + 3
-        }
         class LBraceToken.new {
             inherits Token.new
             def kind = "lbrace"
@@ -191,7 +185,7 @@ def LexerClass = object {
             // accumulated characters since that mode began. Modes are:
 
             //   n           Whitespace       i   Identifier
-            //   "           Quoted string    x   Octets literal
+            //   "           Quoted string
             //   m           Number           o   Any operator
             //   p           Pragma           d   Indentation
             //   c           Comment
@@ -227,7 +221,7 @@ def LexerClass = object {
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "x") then {
-                        tok := OctetsToken.new(accum)
+                        ProgrammingError.raise "obsolete Octet-token mode in lexer\n"
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == ",") then {
@@ -618,7 +612,7 @@ def LexerClass = object {
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
                 def brackets = unicode.pattern("(".ord, ")".ord,
                     "\{".ord, "}".ord, "[".ord, "]".ord)
-                def identifierChar = unicode.pattern("L", "N", 95, 39)
+                def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
                 def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
                     "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
                 def digitB = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
@@ -708,7 +702,7 @@ def LexerClass = object {
                     if (instr) then {
 
                     } elseif ((mode != "c") && (mode != "p")) then {
-                        // Not in a comment, so look for a mode.
+                        // Not in a comment or pragma, so look for a mode.
                         if ((c == " ") && (mode != "d")) then {
                             newmode := "n"
                         }
@@ -960,6 +954,9 @@ def LexerClass = object {
                             } elseif (c == "e") then {
                                 // Escape escape
                                 accum := accum ++ "\u001b"
+                            } elseif (c == " ") then {
+                                // non-breaking sapce
+                                accum := accum ++ "\u00a0"
                             } else {
                                 // For any other character preceded by \,
                                 // insert it literally.
