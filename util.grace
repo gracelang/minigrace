@@ -24,7 +24,22 @@ var importDynamic := false
 var jobs := 2
 var cLines := list.empty
 var lines := list.empty
-var filename
+var filename is readable
+
+def requiredModules is public = object {
+    def static is public = set.empty
+    def linkfiles is public = list.empty
+    def other is public = set.empty
+    method isAlready ( moduleName ) -> Boolean {
+        if ( static.contains(moduleName) ) then {
+            true 
+        } elseif { other.contains(moduleName ) } then {
+            true 
+        } else {
+            false
+        }
+    }
+}
 
 var errno is readable := 0
 
@@ -81,6 +96,7 @@ method parseargs {
                         interactivev := true
                     } case { "--noexec" ->
                         noexecv := true
+                        buildtypev := "bc"
                     } case { "--yesexec" ->
                         noexecv := false
                     } case { "--stdout" ->
@@ -360,9 +376,9 @@ method extensions {
     extensionsv
 }
 method str(s) lastIndexOf(ch) {
-    var ix := s.length
+    var ix := s.size
     while { ix > 0 } do {
-        if (s.at(ix) == "/") then { return ix }
+        if (s.at(ix) == ch) then { return ix }
         ix := ix - 1
     }
     return 0
@@ -422,11 +438,12 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
             return candidate
         }
     }
-    action.apply
+    action.apply(locations)
 }
 method file(name) onPath(pathString) otherwise(action) {
     file(name) on(sourceDir) orPath(pathString) otherwise(action)
 }
+
 method processExtension(ext) {
     var extn := ""
     var extv := true
@@ -450,10 +467,11 @@ method printhelp {
     print "Compile, process, or run a Grace source file or standard input."
     print ""
     print "Modes:"
-    print "  --make           Compile FILE to a native executable"
+    print "  --make           Compile FILE and link, creating a native executable"
     print "  --run            Compile FILE and execute the program [default]"
-    print "  --source         Compile FILE to source, but no further"
-    print "  --dynamic-module Compile FILE as a dynamic module (experimental!)"
+    print "  --source         Compile FILE to C source, but no further"
+    print "  --noexec         Compile FILE to native object code, but don't create executable"
+    print "  --dynamic-module Compile FILE as a dynamic module"
     print "  --interactive    Launch interactive read-eval-print interpreter"
     print ""
     print "Options:"

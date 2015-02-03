@@ -26,9 +26,6 @@ var usedvars := []
 var declaredvars := []
 var bblock := "entry"
 var linenum := 0
-var modules := collections.set.new
-var staticmodules := collections.set.new
-var dynamicmodules := collections.set.new
 var values := []
 var outfile
 var modname := "main"
@@ -43,9 +40,7 @@ var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = collections.map.new
-var importHook := false
-var subprocesses := collections.list.new
-var linkfiles := collections.list.new
+def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
 var dialectHasChecker := false
@@ -1567,20 +1562,18 @@ method compiledialect(o) {
             snm := snm ++ c
         }
     }
-    var nm := "dialect"
     var fn := escapestring2(o.value)
     var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
     out("  if ({modg} == NULL)")
-    if (staticmodules.contains(o.value)) then {
+    if (imports.static.contains(o.value)) then {
         out("    {modg} = {modg}_init();")
     } else {
         out("    {modg} = dlmodule(\"{fn}\");")
     }
-    out("  Object *var_{nm} = alloc_var();")
-    out("  *var_{nm} = {modg};")
+    out("  Object *var_dialect = alloc_var();")
+    out("  *var_dialect = {modg};")
     out("  prelude = {modg};")
-    modules.add("dialect")
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
@@ -1608,27 +1601,15 @@ method compileimport(o) {
     var fn := escapestring2(o.path)
     var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
-    modules.add(nm)
     declaredvars.push(nm)
     globals.push("Object {modg};")
-    if (false != importHook) then {
-        def res = importHook.processImport(nm)
-        if (false != res) then {
-            for (res.importCode) do {l->
-                out(l)
-            }
-            for (res.globals) do {l->
-                globals.push(l)
-            }
-            out("  *var_{nm} = {res.moduleSymbol};")
-            return true
-        }
-    }
     out("  if ({modg} == NULL)")
-    if (staticmodules.contains(o.path)) then {
-        out("    {modg} = {modg}_init();")
-    } else {
+    if (imports.other.contains(o.path)) then {
         out("    {modg} = dlmodule(\"{fn}\");")
+        // for dynamic modules
+    } else {
+        out("    {modg} = {modg}_init();")
+        // for both static and built-in modules
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
@@ -1805,181 +1786,6 @@ method compilenode(o) {
     compilationDepth := compilationDepth - 1
     o.register
 }
-method spawnSubprocess(id, cmd, data) {
-    if (subprocesses.size < util.jobs) then {
-        subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
-        return subprocesses[subprocesses.size][2] 
-    }
-    var alive := 0
-    var firstAlive := false
-    for (subprocesses) do {spinfo->
-        def sp = spinfo[2]
-        if (!sp.terminated) then {
-            if (false == firstAlive) then {
-                firstAlive := spinfo
-            }
-            alive := alive + 1
-        }
-    }
-    if (alive >= util.jobs) then {
-        firstAlive[2].wait
-    }
-    subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
-    return subprocesses.at(subprocesses.size)[2]
-}
-
-method waitForAllProcessesToTerminate {
-    for (subprocesses) do {spinfo->
-        def sp = spinfo[2]
-        if (!sp.terminated) then {
-            sp.wait
-        }
-    }
-}
-
-method addTransitiveImports(directory, moduleName, line) {
-    def data = xmodule.parseGCT(moduleName) sourceDir(directory)
-    if (data.contains "dialect") then {
-        checkimport(data.get("dialect").first, line, true)
-    }
-    if (data.contains("modules")) then {
-        for (data.get("modules")) do {m->
-            if (m == util.modname) then {
-                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atLine(line)
-            }
-            checkimport(m, line, false)
-        }
-    }
-//    if (data.contains("path")) then {
-//        def path = data.get("path").first
-//        if (path != moduleName) then {
-//            errormessages.syntaxError("Imported module '{moduleName}' compiled with"
-//                ++ " different path '{path}'.")atLine(line)
-//        }
-//    }
-}
-
-method checkimport(nm, line, isDialect) {
-    if ((nm == "sys") || (nm == "io") || (nm == "imports")) then {
-        staticmodules.add(nm)
-        return true
-    }
-    var binaryFound := false
-    var gctFound := false
-    def argv = sys.argv
-    if (staticmodules.contains(nm)) then {
-        return true
-    }
-    if (false != importHook) then {
-        def res = importHook.processImport(nm)
-        if (false != res) then {
-            for (res.linkTargets) do {t->
-                staticmodules.push(t)
-            }
-            return true
-        }
-    }
-    var locations := util.splitPath(sys.environ.at "GRACE_MODULE_PATH")
-    if (locations.contains(util.sourceDir).not) then {
-        locations.addFirst(util.sourceDir)
-    }
-    if (locations.contains(util.execDir).not) then {
-        locations.addFirst(util.execDir)
-    }
-    if (locations.contains "./".not) then {
-        locations.addFirst "./"
-    }
-    // The above location list mirrors that used in util.file() onPath() otherwise()
-    // TODO: These two search algorithms should be merged.
-
-    for (locations) do { location ->
-        if (binaryFound.not && io.exists("{location}{nm}.gso").andAlso
-                {!util.extensions.contains("Static")}) then {
-            if (io.newer("{location}{nm}.gso", "{location}{nm}.grace")) then {
-                binaryFound := true
-                dynamicmodules.add(nm)
-            }
-            addTransitiveImports("{location}{nm}.gso", nm, line)
-            gctFound := io.exists("{location}{nm}.gct")
-        } 
-        if (binaryFound.not && io.exists("{location}{nm}.gcn")) then {
-            if ((!util.importDynamic &&
-                    {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")})
-                        || (!io.exists("{location}{nm}.grace"))) then{
-                // Find static modules where the .gcn is either newer
-                // or the same age as the corresponding .grace file
-                // i.e. the modules that we don't need to recompile
-                binaryFound := true
-                linkfiles.push("{location}{nm}.gcn")
-                staticmodules.add(nm)
-                addTransitiveImports("{location}{nm}.gcn", nm, line)
-            }
-            gctFound := io.exists("{location}{nm}.gct")
-        }
-        if (binaryFound && gctFound) then { return true }
-    }
-    for (locations) do { location ->
-        if (io.exists "{location}{nm}.grace") then {
-            binaryFound := true
-            gctFound := true
-            compileGraceFile (nm) in (location) forDialect (isDialect) onLine (line)
-            return true
-        }
-    }
-    if (binaryFound.not) then {
-        errormessages.syntaxError("Failed to find imported module '{nm}'.\n" ++
-            "Looked in {locations}.") atLine(line)
-    }
-}
-method compileGraceFile (nm) in (directory) forDialect (isDialect) onLine (line) {
-    var slashed := false
-    var extension := ".gcn"
-    for (sys.argv.first) do {letter ->
-        if(letter == "/") then {
-            slashed := true
-        }
-    }
-    var cmd
-    if (slashed) then {
-        cmd := io.realpath(sys.argv.first)
-    } else {
-        cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
-    }
-    cmd := "{cmd} --target c --make \"{nm}.grace\" --gracelib \"{util.gracelibPath}\""
-    if (util.verbosity > 30) then {
-        cmd := cmd ++ " --verbose"
-    }
-    if (false != util.vtag) then {
-        cmd := cmd ++ " --vtag " ++ util.vtag
-    }
-    cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-    if (util.dynamicModule || isDialect) then {
-        cmd := cmd ++ " --dynamic-module"
-        extension := ".gso"
-    }
-    if (util.importDynamic) then {
-        cmd := cmd ++ " --import-dynamic --dynamic-module"
-        extension := ".gso"
-    }
-    if (util.recurse || isDialect) then {
-        if (directory != "") then {
-            cmd := "cd {directory} && " ++ cmd
-        }
-        var process := spawnSubprocess(nm, cmd, [nm ++ extension, nm, line])
-        if (isDialect) then { 
-            // We must wait for the .gso to be built before
-            // we try to run loadDynamic on it.
-            process.wait
-        }
-    }
-    if (extension == ".gso") then {
-        dynamicmodules.add(nm)
-    } else {
-        linkfiles.push("{directory}{nm}.gcn")
-        staticmodules.add(nm)
-    }
-}
 
 method processImports(values') {
     type LinePos = {
@@ -1993,19 +1799,9 @@ method processImports(values') {
         suggestions
     }
     if (util.runmode == "make") then {
-        log_verbose("checking imports.")
-        if (util.extensions.contains("ImportHook")) then {
-            importHook := mirrors.loadDynamicModule(
-                            util.extensions.get "ImportHook")
-        }
         for (values') do { v ->
-            if (v.kind == "import") then {
-                var nm := v.path
-                checkimport(nm, v.line, false)
-            }
             if (v.kind == "dialect") then {
                 var nm := v.value
-                checkimport(nm, v.line, true)
                 log_verbose("loading dialect for checker.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
                 var dobj
@@ -2034,40 +1830,24 @@ method processImports(values') {
                     match (e.data)
                         case { lp : LinePos ->
                             util.setPosition(e.data.line, e.data.linePos)
-                            errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                            errormessages.error("{e.exception}: {e.message}.")
+                                atPosition(lp.line, lp.linePos)
                         }
                         case { rs : RangeSuggestions ->
                             errormessages.error("{e.exception}: {e.message}.")
-                                atRange(rs.line, rs.posStart,
-                                    rs.posEnd)
+                                atRange(rs.line, rs.posStart, rs.posEnd)
                                 withSuggestions(rs.suggestions)
                         }
-                        case { _ -> }
-                    errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+                        case { _ ->
+                            errormessages.error("{e.exception}: {e.message}.")
+                                atPosition(util.linenum, 0)
+                        }
                 } catch { e : Exception ->
                     e.printBacktrace
                     errormessages.error("Unexpected exception raised by checker for dialect '{nm}'.\n"
                         ++ "{e.exception}: {e.message}.") atLine(v.line)
                 }
             }
-        }
-        def imperrors = []
-        while {subprocesses.size > 0} do {
-            def lsubprocesses = subprocesses
-            subprocesses := collections.list.new
-            for (lsubprocesses) do { tt->
-                def nm = tt[1]
-                def p = tt[2]
-                def pth = tt[3]
-                if (!p.success) then {
-                    imperrors.push(nm)
-                } else {
-                    addTransitiveImports(pth[1], pth[2], pth[3])
-                }
-            }
-        }
-        if (imperrors.size > 0) then {
-            errormessages.error("Failed processing import of {imperrors}.")
         }
     }
 }
@@ -2331,13 +2111,13 @@ method compile(vl, of, mn, rm, bt) {
 
             }
 
-            for (linkfiles) do { fn ->
+            for (imports.linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
             util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking")
+                io.error.write("Failed linking\n")
                 sys.exit(3)
             }
         }
@@ -2366,13 +2146,9 @@ method compile(vl, of, mn, rm, bt) {
                 sys.exit(3)
             }
         }
-        waitForAllProcessesToTerminate
         log_verbose("done.")
-        def allmodules = collections.set.new
-        allmodules.extend(staticmodules)
-        allmodules.extend(dynamicmodules)
-        xmodule.writeGCT(modname, modname ++ ".gct")
-            fromValues(values)modules(allmodules)
+        xmodule.writeGCT(modname)
+            fromValues(values) modules(imports.static ++ imports.other)
         if (buildtype == "run") then {
             if (ofpnBase[1] != "/") then {
                 cmd := "./" ++ ofpnBase

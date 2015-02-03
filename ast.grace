@@ -68,6 +68,9 @@ class baseNode.new {
     method isBind { false }
     method isObject { false }
     method isIdentifier { false }
+    method isDialect { false }
+    method isImport { false }
+
     method definesObject { false }
     method definesScope { false }
     method usesAsType(aNode) { false }
@@ -2046,6 +2049,7 @@ class importNode.new(path', name', dtype') {
     var path is public := path'
     var annotations is public := list.empty
     var dtype is public := dtype'
+    method isImport { true }
     method name { value }
     method nameString { value.nameString }
     method isPublic {
@@ -2053,6 +2057,17 @@ class importNode.new(path', name', dtype') {
         if (annotations.size == 0) then { return false }
         if (findAnnotation(self, "public")) then { return true }
         findAnnotation(self, "readable")
+    }
+    method moduleName {
+        var bnm := ""
+        for (path) do {c->
+            if (c == "/") then {
+                bnm := ""
+            } else {
+                bnm := bnm ++ c
+            }
+        }
+        bnm
     }
     method isWritable { false }
     method isReadable { isPublic }
@@ -2100,6 +2115,19 @@ class dialectNode.new(path') {
     inherits baseNode.new
     def kind is public = "dialect"
     var value is public := path'
+    
+    method isDialect { true }
+    method moduleName {
+        var bnm := ""
+        for (value) do {c->
+            if (c == "/") then {
+                bnm := ""
+            } else {
+                bnm := bnm ++ c
+            }
+        }
+        bnm
+    }
     
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitDialect(self) up(pNode)

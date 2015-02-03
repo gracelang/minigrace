@@ -19,7 +19,7 @@ var usedvars := []
 var declaredvars := []
 var bblock := "entry"
 var linenum := 0
-var modules := []
+
 var values := []
 var outfile
 var modname := "main"
@@ -40,6 +40,7 @@ def builtInModules = list.with(
     "unicode", 
     "util"
 )
+def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
 var dialectHasChecker := false
@@ -931,9 +932,8 @@ method compileidentifier(o) {
     if (name == "super") then {
         def sugg = errormessages.suggestion.new
         sugg.replaceRange(o.linePos, o.linePos + 4)with "self" onLine(o.line)
-        errormessages.syntaxError("'super' cannot be used except on the "
-                ++ "left-hand side of the . in a method request. "
-                ++ "Use 'self' instead.")
+        errormessages.syntaxError("'super' can be used only to the "
+                ++ "left of the . in a method request.")
             atRange(
                 o.line, o.linePos, o.linePos + 4)withSuggestion(sugg)
     }
@@ -942,14 +942,8 @@ method compileidentifier(o) {
     } elseif (name == "...") then {
         o.register := "ellipsis"
     } else {
-        if (modules.contains(name)) then {
-            out("// WARNING: module support not implemented in JS backend")
-            out("\"var_val_" ++ name ++ auto_count
-                ++ "\" = load %object** @.module." ++ name)
-        } else {
-            usedvars.push(name)
-            o.register := varf(name)
-        }
+        usedvars.push(name)
+        o.register := varf(name)
     }
 }
 method compilebind(o) {
@@ -1430,113 +1424,6 @@ method compilenode(o) {
     compilationDepth := compilationDepth - 1
     o.register
 }
-method addTransitiveImports(directory, moduleName, line) {
-    def data = xmodule.parseGCT(moduleName) sourceDir(directory)
-    if (data.contains "dialect") then {
-        checkimport(data.get("dialect").first, line, true)
-    }
-    if (data.contains("modules")) then {
-        for (data.get("modules")) do {m->
-            if (m == util.modname) then {
-                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{moduleName}', which is imported by '{m}'.")atLine(line)
-            }
-            checkimport(m, line, false)
-        }
-    }
-//    if (data.contains("path")) then {
-//        def path = data.get("path").first
-//        if (path != moduleName) then {
-//            errormessages.syntaxError("Imported module '{moduleName}' compiled with"
-//                ++ " different path '{path}'.")atLine(line)
-//        }
-//    }
-}
-
-method checkimport(nm, line, isDialect) {
-    if (builtInModules.contains(nm)) then {
-        importedModules.add(nm)
-        return true
-    }
-    var binaryFound := false
-    var gctFound := false
-    def argv = sys.argv
-    if (importedModules.contains(nm)) then {
-        return true
-    }
-    var locations := util.splitPath(sys.environ.at "GRACE_MODULE_PATH")
-    if (locations.contains(util.sourceDir).not) then {
-        locations.addFirst(util.sourceDir)
-    }
-    if (locations.contains(util.execDir).not) then {
-        locations.addFirst(util.execDir)
-    }
-    if (locations.contains "./".not) then {
-        locations.addFirst "./"
-    }
-    // The above location list mirrors that used in util.file()o onPath() otherwise()
-    // TODO: These two search algorithms should be merged.
-    for (locations) do { location ->
-        if (binaryFound.not && io.exists("{location}{nm}.js")) then {
-            if (io.newer("{location}{nm}.js", "{location}{nm}.grace")) then {
-                binaryFound := true
-                importedModules.add(nm)
-            }
-            addTransitiveImports("{location}{nm}.js", nm, line)
-            gctFound := io.exists("{location}{nm}.gct")
-        }
-        if (binaryFound && gctFound) then { return true }
-    }
-    for (locations) do { location ->
-        if (io.exists "{location}{nm}.grace") then {
-            binaryFound := true
-            gctFound := true
-            compileGraceFile (nm) in (location) forDialect (isDialect) onLine (line)
-            return true
-        }
-    }
-    if (binaryFound.not) then {
-        errormessages.syntaxError("Failed to find imported module '{nm}'.\n" ++
-            "Looked in {locations}.") atLine(line)
-    }
-}
-method compileGraceFile (nm) in (directory) forDialect (isDialect) onLine (line) {
-    var slashed := false
-    for (sys.argv.first) do {letter ->
-        if(letter == "/") then {
-            slashed := true
-        }
-    }
-    var cmd
-    if (slashed) then {
-        cmd := io.realpath(sys.argv.first)
-    } else {
-        cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
-    }
-    cmd := "{cmd} --target js --make \"{nm}.grace\" --gracelib \"{util.gracelibPath}\""
-    if (util.verbosity > 30) then {
-        cmd := cmd ++ " --verbose"
-    }
-    if (false != util.vtag) then {
-        cmd := cmd ++ " --vtag " ++ util.vtag
-    }
-    cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-    if (util.dynamicModule || isDialect) then {
-        cmd := cmd ++ " --dynamic-module"
-    }
-    if (util.recurse || isDialect) then {
-        if (directory != "") then {
-            cmd := "cd {directory} && " ++ cmd
-        }
-        var process := genc.spawnSubprocess(nm, cmd, [nm ++ ".js", nm, line])
-        if (isDialect) then {
-            // We must wait for the .js to be built before
-            // we try to run loadDynamic on it. Block here.
-            process.wait
-        }
-        importedModules.add(nm)
-    }
-}
 
 method processImports(values') {
     type LinePos = {
@@ -1551,12 +1438,12 @@ method processImports(values') {
     }
     log_verbose("checking imports.")
     for (values') do { v ->
-        if (v.kind == "import") then {
-            checkimport(v.path, v.line, false)
+        if (v.isImport) then {
+            xmodule.checkExternalModule(v)
         }
-        if (v.kind == "dialect") then {
+        if (v.isDialect) then {
             var nm := v.value
-            checkimport(nm, v.line, true)
+            xmodule.checkExternalModule(v)
             log_verbose("loading dialect for checkers.")
             def CheckerFailure = Exception.refine "CheckerFailure"
             def DialectError = ProgrammingError.refine "DialectError"
@@ -1690,8 +1577,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out "'{imp}',"
     }
     out "];"
-    xmodule.writeGCT(modname, modname ++ ".gct")
-        fromValues(values)modules(importedModules)
+    xmodule.writeGCT(modname)
+        fromValues(values)modules(imports.other)
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     out "if (typeof gctCache !== \"undefined\")"
@@ -1708,10 +1595,8 @@ method compile(vl, of, mn, rm, bt, glpath) {
     out "if (typeof window !== \"undefined\")"
     out "  window.{generatedModuleName} = {generatedModuleName};"
 
-
     for (output) do { o ->
         outprint(o)
     }
-    genc.waitForAllProcessesToTerminate
     log_verbose("done.")
 }

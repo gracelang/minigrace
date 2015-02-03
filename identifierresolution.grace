@@ -847,6 +847,7 @@ method setupContext(values) {
         for (values) do {val->
             if (val.kind == "dialect") then {
                 hadDialect := true
+                xmodule.checkExternalModule(val)
                 def data = xmodule.parseGCT(val.value)
                 if (data.contains("public")) then {
                     for (data.get("public")) do {mn->
@@ -956,6 +957,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
         }
         method visitImport(o) up(pNode) {
             o.parent := pNode
+            xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
             def otherModule = newScopeIn(pNode.scope) kind "module"
             processGCT(gct, otherModule)
