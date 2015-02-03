@@ -1,4 +1,6 @@
 include Makefile.conf
+# These are necessary until the $(KG) compiler learns about dependencies
+include Makefile.l1dependencies
 
 .PHONY: all c clean fullclean install js minigrace-environment selfhost-stats selftest samples sample-% test test.js uninstall
 ARCH:=$(shell uname -s)-$(shell uname -m)
@@ -176,7 +178,7 @@ $(KG)/collectionsPrelude.grace: collectionsPrelude.grace
 	ln -sf $(realpath $<) $@
 
 l1/%.gct: l1/%.grace $(KG)/StandardPrelude.gct
-	(cd l1; ./minigrace $(VERBOSITY) --vtag l1 --make --noexec -XNoMain $(<F))
+	(cd l1; ../$(KG)/minigrace $(VERBOSITY) --vtag l1 --make --noexec -XNoMain $(<F))
 
 l1/%.grace: l1/exists
 
@@ -213,7 +215,7 @@ l1/unicode.gcn: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 -c -o $@ -fPIC $<
 
 l2/%.gct: l2/%.grace
-	(cd l2; ./minigrace $(VERBOSITY) --vtag l2 --make --noexec -XNoMain $(<F))
+	(cd l2; ../l1/minigrace $(VERBOSITY) --vtag l2 --make --noexec -XNoMain $(<F))
 
 l2/collectionsPrelude.gct: l2/collectionsPrelude.grace l1/minigrace
 	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
