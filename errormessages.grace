@@ -378,6 +378,10 @@ method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(sugges
     util.generalError(message, errlinenum, ":{loc}", arr, false, suggestions)
 }
 
+method error(message) atRange(errlinenum, startpos, endpos) {
+    error (message) atRange(errlinenum, startpos, endpos) withSuggestions([])
+}
+
 method syntaxError(message)atPosition(errlinenum, errpos) {
     syntaxError(message)atPosition(errlinenum, errpos)withSuggestions([])
 }
