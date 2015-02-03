@@ -42,6 +42,11 @@ method isSymbolMathematical(char:String) -> Boolean {
 method create(codepoint:Number) -> String {
     // Return a string of length 1 containing the Unicode codepoint
 }
+method lookup(uName:String) -> String {
+    // Return the single-character-string representing the unicode codepoint 
+    // named by 'uName'. Takes log N time, were N is the number of
+    // named Unicode codepoints.
+}
 method pattern(*cs) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs.
     // Each c in cs can be a number, meaning the Unicode character with codepoint c,
