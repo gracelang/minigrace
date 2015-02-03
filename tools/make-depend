@@ -1,0 +1,19 @@
+#! /bin/bash -f
+
+Dependents=$(awk 'BEGIN { ORS = " " }
+    /^import / { print substr($2, 2, length($2)-2)
+}' $1.grace)
+for mod in ${Dependents}; do
+    if [ -f ${mod}.grace ]; then
+        subDependents=$(awk 'BEGIN { ORS = " " }
+            /^import / { print substr($2, 2, length($2)-2)".gct"
+        }' ${mod}.grace)
+        if [ -n "${subDependents}" ]; then 
+            echo ${mod}.gct: ${subDependents}
+        fi
+    fi
+done
+Dependents=$(awk 'BEGIN { ORS = " " }
+    /^import / { print substr($2, 2, length($2)-2)".gct"
+}' $1.grace)
+echo $1.gct: ${Dependents}
