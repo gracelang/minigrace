@@ -178,13 +178,10 @@ method compileGraceFile (nm) in (directory) forDialect (isDialect) atRange (line
         }
     }
     if (util.recurse || isDialect) then {
-        if (directory != "") then {
-            cmd := "cd {directory} && {cmd}"
-        }
         util.log_verbose "about to execute: {cmd}"
         def exitCode = io.spawn("bash", "-c", cmd).status
         if (exitCode != 0) then {
-            errormessages.error("Failed processing import of {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size)
+            errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size)
         }
     }
 }
