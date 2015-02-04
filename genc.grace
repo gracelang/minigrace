@@ -1802,7 +1802,7 @@ method processImports(values') {
         for (values') do { v ->
             if (v.kind == "dialect") then {
                 var nm := v.value
-                log_verbose("loading dialect for checker.")
+                log_verbose("loading dialect {nm} for checker.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
                 var dobj
                 try {
