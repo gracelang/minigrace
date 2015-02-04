@@ -2082,7 +2082,7 @@ method compile(vl, of, mn, rm, bt) {
         cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{ofpnBase}.gcn\" -c \"{ofpn}\""
         
         if ((io.system(cmd)).not) then {
-            io.error.write("Fatal error: Failed C compilation of {modname}.\n")
+            io.error.write("Fatal error: C compilation of {modname} failed.\n")
             sys.exit(3)
         }
         if (util.noexec.not) then {
@@ -2097,18 +2097,19 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
+            cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} \"{ofpnBase}.gcn\" "
 
             if (io.exists "{util.gracelibPath}/gracelib.o") then {
-                cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{ofpnBase}.gcn\" "
-                    ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
+                cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
             } elseif (io.exists "{buildinfo.objectpath}/gracelib.o") then {
-                cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{ofpnBase}.gcn\" "
-                    ++ "\"{buildinfo.objectpath}/gracelib.o\" "
+                cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
+            } elseif (io.exists "{util.sourceDir}/gracelib.o") then {
+                cmd := cmd ++ "\"{util.sourceDir}/gracelib.o\" "
+            } elseif (io.exists "{util.execDir}/gracelib.o") then {
+                cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
             } else {
-                io.error.write("Unable to link: can't find file gracelib.o")
-
+                io.error.write("Unable to link: can't find file gracelib.o\n")
+                sys.exit(3)
             }
 
             for (imports.linkfiles) do { fn ->
@@ -2117,7 +2118,7 @@ method compile(vl, of, mn, rm, bt) {
             cmd := cmd ++ " -lm {dlbit}"
             util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking\n")
+                io.error.write("Failed linking.\n")
                 sys.exit(3)
             }
         }
@@ -2156,8 +2157,7 @@ method compile(vl, of, mn, rm, bt) {
                 cmd := ofpnBase
             }
             if (io.spawn(cmd).success.not) then {
-                io.error.write("minigrace: Program exited with error: "
-                    ++ modname ++ "\n")
+                io.error.write "minigrace: Program {modname} exited with error.\n"
                 sys.exit(4)
             }
         }
