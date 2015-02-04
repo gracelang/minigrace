@@ -8,7 +8,7 @@ DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast
 
 c: $(DIALECT_MODULES) $(SAMPLES)
 
-%.gso %.gct: %.grace
+%.gso %.gct: %.grace ../../minigrace
 	../../minigrace $(VERBOSITY) --dynamic-module $<
     
 dialect.gso: $(DIALECT_DEPENDENCIES:%=../../%.gso)
@@ -22,8 +22,11 @@ staticTypes.gso: staticTypes.grace dialect.gso
 requireTypes.gso: requireTypes.grace dialect.gso
 	../../minigrace $(VERBOSITY) --dynamic-module $<
 
-%Example: %Example.grace %.gso
+%Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
 	../../minigrace $(VERBOSITY) $<
 
 clean:
 	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)
+
+../../minigrace: ../../gracelib.o:
+	$(MAKE) -C ../../ $(@F)
