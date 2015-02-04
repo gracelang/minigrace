@@ -1640,6 +1640,10 @@ var previousCPU = loadCPU;
 function gracecode_util() {
     if (util_module != false)
         return util_module;
+
+    this.methods.vtag = function(argcv) {
+        return new GraceBoolean(false);
+    };
     this.methods.outfile = function util_outfile(argcv) {
         return stdout;
     };
