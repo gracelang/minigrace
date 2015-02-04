@@ -3,7 +3,7 @@ var samples = {
         'name': 'Loop invariants dialect',
         'dir': 'dialects',
     },
-    'loopinvariant_example': {
+    'loopinvariantExample': {
         'name': 'Loop invariant example',
         'dir': 'dialects',
         'requires': ['loopinvariant'],
@@ -12,26 +12,26 @@ var samples = {
         'name': 'Finite state machine dialect',
         'dir': 'dialects',
     },
-    'fsm_example': {
+    'fsmExample': {
         'name': 'FSM client code',
         'requires': ['fsm'],
         'dir': 'dialects',
     },
-    'ObjectAssociations': {
+    'objectAssociations': {
         'name': 'Object associations dialect',
         'dir': 'dialects',
     },
-    'ObjectAssociations_example': {
-        'name': 'OA client code',
+    'objectAssociationsExample': {
+        'name': 'Object associations client',
         'dir': 'dialects',
-        'requires': ['ObjectAssociations'],
+        'requires': ['objectAssociations'],
     },
     'structural': {
         'name': 'Structural typing dialect',
         'dir': 'dialects',
         'requires': ['dialect'],
     },
-    'structural_example': {
+    'structuralExample': {
         'name': 'Structural typing example',
         'dir': 'dialects',
         'requires': ['dialect', 'structural'],
@@ -44,7 +44,7 @@ var samples = {
         'name': 'Dialect dialect',
         'dir': 'dialects',
     },
-    'dialect_example': {
+    'dialectExample': {
         'name': 'Dialect client code',
         'dir': 'dialects',
         'requires': ['dialect'],
@@ -53,7 +53,7 @@ var samples = {
         'name': 'GrAPL dialect',
         'dir': 'dialects',
     },
-    'grapl_example': {
+    'graplExample': {
         'name': 'GrAPL example',
         'dir': 'dialects',
         'requires': ['grapl'],
@@ -63,7 +63,7 @@ var samples = {
         'dir': 'graphics',
         'requires': [],
     },
-    'simplegraphics_example': {
+    'simplegraphicsExample': {
         'name': 'Simple graphics demo',
         'dir': 'graphics',
         'requires': ['simplegraphics'],
@@ -78,7 +78,7 @@ var samples = {
         'dir': 'graphics',
         'requires': ['turtle'],
     },
-    'logo_example': {
+    'logoExample': {
         'name': 'Logo-like client code',
         'dir': 'graphics',
         'requires': ['turtle', 'logo'],
