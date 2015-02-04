@@ -1706,6 +1706,95 @@ function gracecode_util() {
     this.methods.engine = function util_engine(argcv) {
         return new GraceString("js");
     };
+    var obj_requiredModules = Grace_allocObject();
+    var obj_init_requiredModules = function () {
+        var origSuperDepth = superDepth;
+        superDepth = obj_requiredModules;
+        var meth_isAlready = function(argcv) {    // method isAlready(1)
+            var curarg = 1;
+            var var_moduleName = arguments[curarg];
+            curarg++;
+            if (argcv[0] != 1)
+                callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for isAlready(1)"));
+            setModuleName("util");
+            var returnTarget = invocationCount;
+            invocationCount++;
+            try {
+                var if1246 = GraceDone;
+                onSelf = true;
+                var call1247 = callmethod(this, "static", [0]);
+                var call1248 = callmethod(call1247,"contains", [1], var_moduleName);
+                if (Grace_isTrue(call1248)) {
+                    var bool1249 = new GraceBoolean(true)
+                    if1246 = bool1249;
+                } else {
+                    var if1250 = GraceDone;
+                    onSelf = true;
+                    var call1251 = callmethod(this, "other", [0]);
+                    var call1252 = callmethod(call1251,"contains", [1], var_moduleName);
+                    if (Grace_isTrue(call1252)) {
+                        var bool1253 = new GraceBoolean(true)
+                        if1250 = bool1253;
+                    } else {
+                        var bool1254 = new GraceBoolean(false)
+                        if1250 = bool1254;
+                    }
+                    if1246 = if1250;
+                }
+                return if1246;
+            } catch(e) {
+                if ((e.exctype == 'return') && (e.target == returnTarget)) {
+                    return e.returnvalue;
+                } else {
+                    throw e;
+                }
+            }
+        }
+        meth_isAlready.paramCounts = [1];
+        meth_isAlready.variableArities = [false];
+        obj_requiredModules.methods["isAlready"] = meth_isAlready;
+        meth_isAlready.definitionModule = "util";
+        sourceObject = obj_requiredModules;
+        var call1255 = callmethod(Grace_prelude, "set", [0]);
+        var call1256 = callmethod(call1255,"empty", [0]);
+        obj_requiredModules.data["static"] = call1256;
+        var reader_util_static1257 = function() {
+            return this.data["static"];
+        }
+        reader_util_static1257.def = true;
+        obj_requiredModules.methods["static"] = reader_util_static1257;
+        sourceObject = obj_requiredModules;
+        var call1258 = callmethod(Grace_prelude, "list", [0]);
+        var call1259 = callmethod(call1258,"empty", [0]);
+        obj_requiredModules.data["linkfiles"] = call1259;
+        var reader_util_linkfiles1260 = function() {
+            return this.data["linkfiles"];
+        }
+        reader_util_linkfiles1260.def = true;
+        obj_requiredModules.methods["linkfiles"] = reader_util_linkfiles1260;
+        sourceObject = obj_requiredModules;
+        var call1261 = callmethod(Grace_prelude, "set", [0]);
+        var call1262 = callmethod(call1261,"empty", [0]);
+        obj_requiredModules.data["other"] = call1262;
+        var reader_util_other1263 = function() {
+            return this.data["other"];
+        }
+        reader_util_other1263.def = true;
+        obj_requiredModules.methods["other"] = reader_util_other1263;
+        sourceObject = obj_requiredModules;
+        superDepth = origSuperDepth;
+    }
+    obj_init_requiredModules.apply(obj_requiredModules, []);
+    var var_requiredModules = obj_requiredModules;
+    var util_requiredmodules = function(argcv) {    // method requiredModules
+        var curarg = 1;
+        if (argcv[0] != 0)
+            callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for requiredModules"));
+        return var_requiredModules;
+    };
+    util_requiredmodules.paramCounts = [ 0 ];
+    util_requiredmodules.variableArities = [false];
+    this.methods.requiredModules = util_requiredmodules;
     this.methods.debug = function util_debug(argcv, s) {
         dbg(s._value);
         return GraceDone;
@@ -1737,7 +1826,7 @@ function gracecode_util() {
             var gctfn = jsFn.substr(0, fn.length - 4);
             if (fileExists(gctfn)) return fn;
         }
-        return callmethod(blk, "apply", [0]);
+        return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
     this.methods.sourceDir = function util_sourceDir(argcv) {
         return new GraceString("./");
@@ -1913,7 +2002,7 @@ function gracecode_util() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n engine\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n engine\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
 function gracecode_interactive() {
@@ -2256,14 +2345,12 @@ function callmethod(obj, methname, argcv) {
             callStack.pop();
         sourceObject = oldSourceObject;
         setModuleName(origModuleName);
-        setLineNumber(origLineNumber);
     }
     return ret;
 }
 
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
-    setLineNumber(0);
     try {
         callmethod(obj, "apply")
     } catch (e) {
@@ -2287,7 +2374,6 @@ function catchCase(obj, cases, finallyblock) {
 
 function matchCase(obj, cases, elsecase) {
     setModuleName("match()case()...");
-    setLineNumber(0);
     for (var i = 0; i<cases.length; i++) {
         var ret = callmethod(cases[i], "match", [1], obj);
         if (Grace_isTrue(ret))
