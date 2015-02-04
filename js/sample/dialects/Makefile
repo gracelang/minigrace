@@ -1,3 +1,4 @@
+.PHONY: compile js run.js
 DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant
 DIALECT_DIALECTS = whileLiteral staticTypes requireTypes
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
@@ -7,9 +8,10 @@ VERBOSITY = --verbose
 
 DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast
 
+compile: $(DIALECTS_JS)
 js: $(DIALECTS_JS) run.js
 
-# These need the .gso to load ant compile time, and the .js to load at runtime.
+# These need the .gso to load at compile time, and the .js to load at runtime.
 
 staticTypes.js: staticTypes.grace dialect.gso dialect.js
 	GRACE_MODULE_PATH=../../../:$(GRACE_MODULE_PATH) ../../minigrace $(VERBOSITY) --target js -o $@ staticTypes.grace

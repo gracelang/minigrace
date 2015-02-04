@@ -4,10 +4,14 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
 
+DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast
+
 c: $(DIALECT_MODULES) $(SAMPLES)
 
 %.gso %.gct: %.grace
 	../../minigrace $(VERBOSITY) --dynamic-module $<
+    
+dialect.gso: $(DIALECT_DEPENDENCIES:%=../../%.gso)
 
 whileLiteral.gso: whileLiteral.grace dialect.gso
 	../../minigrace $(VERBOSITY) --dynamic-module $<
