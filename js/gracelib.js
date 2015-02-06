@@ -2733,10 +2733,16 @@ Grace_prelude.methods['become'] = function(argcv, a, b) {
     return GraceDone;
 }
 
+Grace_prelude.methods['inBrowser'] = function(argcv) {
+    if (typeof global == "undefined") return GraceTrue
+        else return GraceFalse;
+}
+
 var PrimitiveArrayClass = Grace_allocObject();
 PrimitiveArrayClass.methods['new'] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
-};
+}
+
 Grace_prelude.methods['PrimitiveArray'] = function() { return PrimitiveArrayClass; };
 Grace_prelude.methods['primitiveArray'] = function() { return PrimitiveArrayClass; };
 

@@ -4846,6 +4846,10 @@ Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return graceunbecome(argv[0]);
 }
+Object prelude_inBrowser(Object self, int argc, int *argcv, Object *argv,
+                         int flags) {
+    return alloc_Boolean(0);
+}
 Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     if (!(argv[0]->flags & OFLAG_USEROBJ))
@@ -4875,7 +4879,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 26, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 27, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4899,6 +4903,7 @@ Object grace_prelude() {
     add_Method(c, "primitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
+    add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
     add_Method(c, "true()object", &prelude_true_object);
     add_Method(c, "false()object", &prelude_false_object);

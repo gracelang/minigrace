@@ -824,7 +824,7 @@ method setupContext(values) {
     preludeScope.addName "become"
     preludeScope.addName "unbecome"
     preludeScope.addName "clone"
-
+    preludeScope.addName "inBrowser"
 
     graceObjectScope.addName "=="
     graceObjectScope.addName "!="

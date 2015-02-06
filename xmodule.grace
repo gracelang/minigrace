@@ -145,7 +145,12 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
     }
 }
 
-method compileGraceFile (nm) in (directory) forDialect (isDialect) atRange (line, linePos) is confidential {
+method compileGraceFile (nm) in (directory) 
+        forDialect (isDialect) atRange (line, linePos) is confidential {
+    if (prelude.inBrowser) then {
+        errormessages.error "Please compile module {nm} before importing it."
+            atRange(line, linePos, linePos + nm.size)
+    }
     var slashed := false
     var extension := ".js"
     if (target == c) then { extension := ".gcn" }
