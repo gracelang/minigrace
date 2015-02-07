@@ -28,10 +28,10 @@ dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../%.gso)
 	GRACE_MODULE_PATH=../../../:$(GRACE_MODULE_PATH) ../../minigrace $(VERBOSITY) --target js -o $@ $<
 
 $(addsuffix .js,$(DIALECTS)): %.js: %.grace
-	GRACE_MODULE_PATH=../../../:$(GRACE_MODULE_PATH) ../../minigrace $(VERBOSITY) --target js -o $@ $<
+	GRACE_MODULE_PATH="../../../:$(GRACE_MODULE_PATH)" ../../minigrace $(VERBOSITY) --target js -o $@ $<
 
 %.gso %.gct: %.grace
-	GRACE_MODULE_PATH=../../../:$(GRACE_MODULE_PATH) ../../../minigrace $(VERBOSITY) --dynamic-module $<
+	GRACE_MODULE_PATH="../../../:$(GRACE_MODULE_PATH)" ../../../minigrace $(VERBOSITY) --dynamic-module $<
 
 clean:
 	rm -fR *.gct *.gso *.c *.gcn $(DIALECTS) *.gso.dSYM *.js $(SAMPLES) $(DIALECTS_JS)

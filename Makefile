@@ -80,7 +80,7 @@ clean:
 	rm -f minigrace.gco minigrace
 	( cd sample/dialects && make clean )
 	( cd js/sample/graphics && make clean )
-	( cd js/sample/graphics && make clean )
+	( cd js/sample/dialects && make clean )
 
 collectionsPrelude.gcn collectionsPrelude.gct: collectionsPrelude.grace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
@@ -202,16 +202,16 @@ l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(KG)/collecti
 	@echo "dependencies are $^"
 	(cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ./ --vtag kg -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace)
 
-l1/mirrors.gso: mirrors.c
+l1/mirrors.gso: mirrors.c l1/exists
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -shared -o $@ -fPIC $<
 
 l1/repl.gcn: repl.c
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -fPIC $<
 
-l1/StandardPrelude.gct: l1/StandardPrelude.grace $(KG)/minigrace
+l1/StandardPrelude.gct: l1/StandardPrelude.grace $(KG)/minigrace l1/exists
 	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
 
-l1/unicode.gcn: unicode.c unicodedata.h gracelib.h
+l1/unicode.gcn: unicode.c unicodedata.h gracelib.h l1/exists
 	gcc -g -std=c99 -c -o $@ -fPIC $<
 
 l2/%.gct: l2/%.grace

@@ -27,6 +27,3 @@ requireTypes.gso: requireTypes.grace dialect.gso
 
 clean:
 	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)
-
-../../minigrace: ../../gracelib.o:
-	$(MAKE) -C ../../ $(@F)
