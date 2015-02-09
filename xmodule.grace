@@ -70,7 +70,7 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
         return true
     }
     var noSource := false
-    // this is for a module written in native code, like "unicode.c"
+    // noSource implies that the module is written in native code, like "unicode.c"
 
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
 
