@@ -110,7 +110,10 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
             }
         ) then {
         } else {
-            compileGraceFile (nm) in (location) forDialect (isDialect) atRange (line, linePos)
+            if (! io.newer(binaryFile, moduleFileGrace)) then {
+                util.log_verbose "{binaryFile} older than {moduleFileGrace}"
+            }
+            compileGraceFile (nm) in (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
     } else {  // target == js
@@ -122,7 +125,10 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
             }
         ) then {
         } else {
-            compileGraceFile (nm) in (location) forDialect (isDialect) atRange (line, linePos)
+            if (! io.newer(moduleFileJs, moduleFileGrace)) then {
+                util.log_verbose "{moduleFileJs} older than {moduleFileGrace}"
+            }
+            compileGraceFile (nm) in (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         imports.other.add(nm)
     }
@@ -145,15 +151,13 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
     }
 }
 
-method compileGraceFile (nm) in (directory) 
+method compileGraceFile (nm) in (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
     if (prelude.inBrowser) then {
         errormessages.error "Please compile module {nm} before importing it."
             atRange(line, linePos, linePos + nm.size)
     }
     var slashed := false
-    var extension := ".js"
-    if (target == c) then { extension := ".gcn" }
     for (sys.argv.first) do {letter ->
         if(letter == "/") then {
             slashed := true
@@ -165,7 +169,7 @@ method compileGraceFile (nm) in (directory)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
-    cmd := "{cmd} --target {target} --noexec -XNoMain \"{nm}.grace\""
+    cmd := "{cmd} --target {target} --noexec -XNoMain \"{sourceFile}\""
     if (util.verbosity > 30) then {
         cmd := cmd ++ " --verbose"
     }
@@ -175,15 +179,13 @@ method compileGraceFile (nm) in (directory)
     if (target == c) then {
         if (util.dynamicModule || isDialect) then {
             cmd := cmd ++ " --dynamic-module"
-            extension := ".gso"
         }
         if (util.importDynamic) then {
             cmd := cmd ++ " --import-dynamic --dynamic-module"
-            extension := ".gso"
         }
     }
     if (util.recurse || isDialect) then {
-        util.log_verbose "about to execute: {cmd}"
+        util.log_verbose "executing {cmd}"
         def exitCode = io.spawn("bash", "-c", cmd).status
         if (exitCode != 0) then {
             errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size)
