@@ -2128,7 +2128,9 @@ class dialectNode.new(path') {
         }
         bnm
     }
-    
+    method path {
+        value
+    }
     method accept(visitor : ASTVisitor) from(pNode) {
         visitor.visitDialect(self) up(pNode)
     }
