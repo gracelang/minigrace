@@ -8,22 +8,8 @@ import "errormessages" as errormessages
 
 def gctCache = collections.map.new
 
-def js = object {
-    inherits Singleton.new 
-    var asString is readable := "js"
-}
-
-def c = object {
-    inherits Singleton.new 
-    var asString is readable := "c"
-}
-
-def target = match (util.target)
-    case { "c" -> c }
-    case { "js" -> js }
-    case { _ -> ProgrammingError.raise "no such target as {util.target}" }
-    
-def builtInModules = if (target == c) then { 
+method builtInModules {
+    if (util.target == "c") then {
         list.with("sys",
                 "io",
                 "imports")
@@ -37,6 +23,7 @@ def builtInModules = if (target == c) then {
                 "unicode", 
                 "util")
     }
+}
     
 def imports = util.requiredModules
 
@@ -59,10 +46,10 @@ method dirName (filePath) is confidential {
 }
 
 method checkExternalModule(node) {
-    checkimport(node.moduleName, node.line, node.linePos, node.isDialect)
+    checkimport(node.moduleName, node.path, node.line, node.linePos, node.isDialect)
 }
 
-method checkimport(nm, line, linePos, isDialect) is confidential {
+method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (builtInModules.contains(nm)) then {
         return true
     }
@@ -74,9 +61,9 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
 
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
 
-    def moduleFileGrace = util.file "{nm}.grace" onPath (gmp) otherwise { _ ->
-        def moduleFileBinary = util.file "{nm}.gct" onPath (gmp) otherwise { l ->
-                errormessages.syntaxError("Failed to find imported module '{nm}'.\n" ++
+    def moduleFileGrace = util.file "{pathname}.grace" onPath (gmp) otherwise { _ ->
+        def moduleFileBinary = util.file "{pathname}.gct" onPath (gmp) otherwise { l ->
+                errormessages.syntaxError("Failed to find imported module '{pathname}'.\n" ++
                     "Looked in {l}.") atRange(line, linePos, linePos + nm.size)
             }
         noSource := true
@@ -89,7 +76,7 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
     def moduleFileJs = moduleFileRoot ++ ".js"
     def location = dirName(moduleFileRoot)
 
-    if (target == c) then {
+    if (util.target == "c") then {
         def needsDynamic = (isDialect || util.importDynamic ||
             util.dynamicModule)
         var binaryFile
@@ -116,7 +103,7 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
             compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
-    } else {  // target == js
+    } else {  // target == "js"
         if (io.exists(moduleFileJs).andAlso {
             io.exists(moduleFileGct) }.andAlso {
                 noSource.orElse {
@@ -138,7 +125,8 @@ method checkimport(nm, line, linePos, isDialect) is confidential {
 method addTransitiveImports(directory, moduleName, line, linePos) is confidential {
     def data = parseGCT(moduleName) sourceDir(directory)
     if (data.contains "dialect") then {
-        checkimport(data.get("dialect").first, line, linePos, true)
+        def dData = data.get("dialect").first
+        checkimport(dData, dData, line, linePos, true)
     }
     if (data.contains("modules")) then {
         for (data.get("modules")) do {m->
@@ -146,7 +134,7 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
                 errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
                     ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atRange(line, linePos, linePos + moduleName.size)
             }
-            checkimport(m, line, linePos, false)
+            checkimport(m, m, line, linePos, false)
         }
     }
 }
@@ -169,14 +157,14 @@ method compileModule (nm) inFile (sourceFile)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
-    cmd := "{cmd} --target {target} --noexec -XNoMain \"{sourceFile}\""
+    cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
     if (util.verbosity > 30) then {
         cmd := cmd ++ " --verbose"
     }
     if (false != util.vtag) then {
         cmd := cmd ++ " --vtag " ++ util.vtag
     }
-    if (target == c) then {
+    if (util.target == "c") then {
         if (util.dynamicModule || isDialect) then {
             cmd := cmd ++ " --dynamic-module"
         }
