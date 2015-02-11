@@ -1,6 +1,7 @@
 include Makefile.conf
-# These are necessary until the $(KG) compiler learns about dependencies
-include Makefile.l1dependencies
+# These are necessary for l1 until the $(KG) compiler learns about dependencies
+# The dependencises for l2 and . allow parallel compilation of the mg sub-modules
+include Makefile.mgDependencies
 
 .PHONY: all c clean dialects fullclean install js minigrace-environment selfhost-stats selftest samples sample-% test test.js uninstall
 ARCH:=$(shell uname -s)-$(shell uname -m)
@@ -337,8 +338,9 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js minigrace-environment
+test.js: js minigrace-environment js/sample/dialects/requireTypes.gso
 	npm install performance-now
+	cd js/tests; ln -sf ../sample/dialects/requireTypes.gso .
 	js/tests/harness ../../minigrace js/tests ""
 
 test: minigrace-environment
