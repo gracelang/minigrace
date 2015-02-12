@@ -100,7 +100,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             if (! io.newer(binaryFile, moduleFileGrace)) then {
                 util.log_verbose "{binaryFile} older than {moduleFileGrace}"
             }
-            compileGraceFile (nm) in (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
     } else {  // target == "js"
@@ -115,7 +115,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             if (! io.newer(moduleFileJs, moduleFileGrace)) then {
                 util.log_verbose "{moduleFileJs} older than {moduleFileGrace}"
             }
-            compileGraceFile (nm) in (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         imports.other.add(nm)
     }
@@ -139,7 +139,7 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
     }
 }
 
-method compileGraceFile (nm) in (sourceFile)
+method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
     if (prelude.inBrowser) then {
         errormessages.error "Please compile module {nm} before importing it."
