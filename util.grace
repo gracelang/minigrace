@@ -422,11 +422,11 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
     if (locations.contains(origin).not) then {
         locations.addFirst(origin)
     }
-    if (locations.contains(execDir).not) then {
-        locations.addFirst(execDir)
-    }
     if (locations.contains "./".not) then {
         locations.addFirst "./"
+    }
+    if (locations.contains(execDir).not) then {
+        locations.addLast(execDir)
     }
     locations.do { each ->
         def candidate = if (each.at(each.size) == "/") then {
