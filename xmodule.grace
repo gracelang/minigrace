@@ -46,7 +46,7 @@ method dirName (filePath) is confidential {
 }
 
 method checkExternalModule(node) {
-    checkimport(node.moduleName, node.path, node.line, node.linePos, node.isDialect)
+    checkimport(node.moduleName, node.path, node.line, node.linePos + 8, node.isDialect)
 }
 
 method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
@@ -64,7 +64,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     def moduleFileGrace = util.file "{pathname}.grace" onPath (gmp) otherwise { _ ->
         def moduleFileBinary = util.file "{pathname}.gct" onPath (gmp) otherwise { l ->
                 errormessages.syntaxError("Failed to find imported module '{pathname}'.\n" ++
-                    "Looked in {l}.") atRange(line, linePos, linePos + nm.size)
+                    "Looked in {l}.") atRange(line, linePos, linePos + nm.size - 1)
             }
         noSource := true
         moduleFileBinary.substringFrom 1 to (moduleFileBinary.size - 4) ++ ".grace"
@@ -141,9 +141,9 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
 
 method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
-    if (prelude.inBrowser) then {
+    if (prelude.inBrowser || util.recurse.not) then {
         errormessages.error "Please compile module {nm} before importing it."
-            atRange(line, linePos, linePos + nm.size)
+            atRange(line, linePos, linePos + nm.size - 1)
     }
     var slashed := false
     for (sys.argv.first) do {letter ->
@@ -157,7 +157,6 @@ method compileModule (nm) inFile (sourceFile)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
-    cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
     if (util.verbosity > 30) then {
         cmd := cmd ++ " --verbose"
     }
@@ -172,12 +171,11 @@ method compileModule (nm) inFile (sourceFile)
             cmd := cmd ++ " --import-dynamic --dynamic-module"
         }
     }
-    if (util.recurse || isDialect) then {
-        util.log_verbose "executing {cmd}"
-        def exitCode = io.spawn("bash", "-c", cmd).status
-        if (exitCode != 0) then {
-            errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size)
-        }
+    cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
+    util.log_verbose "executing {cmd}"
+    def exitCode = io.spawn("bash", "-c", cmd).status
+    if (exitCode != 0) then {
+        errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
     }
 }
 
