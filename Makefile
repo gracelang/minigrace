@@ -34,8 +34,6 @@ ace-code: js/ace/ace.js
 
 alltests: test test.js
 
-backendtests: test
-
 blackWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample black@cs.pdx.edu:public_html/minigrace
@@ -144,6 +142,9 @@ js/dom.gct: stubs/dom.gct
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
+
+js/gUnit.js: gUnit.grace minigrace
+	cd js; ln -fs ../gUnit.grace .; ../minigrace --target js --make $(<F)
 
 js/minigrace.js: js/minigrace.in.js
 	@echo Generating minigrace.js from minigrace.in.js...
@@ -348,7 +349,7 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: js minigrace-environment js/sample/dialects/requireTypes.gso
+test.js: minigrace-environment js/sample/dialects/requireTypes.gso
 	npm install performance-now
 	cd js/tests; ln -sf ../sample/dialects/requireTypes.gso .
 	js/tests/harness ../../minigrace js/tests ""
