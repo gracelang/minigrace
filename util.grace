@@ -156,7 +156,12 @@ method parseargs {
                     skip := false
                 } else {
                     filename := arg
-                    infilev := io.open(filename, "r")
+                    try {
+                        infilev := io.open(filename, "r")
+                    } catch {
+                        ex:EnvironmentException -> 
+                            generalError "Can't open file {filename}"
+                    }
                     if (modnamev == "stdin_minigrace") then {
                         var accum := ""
                         modnamev := ""
@@ -178,6 +183,11 @@ method parseargs {
         outfilev := match(targetv)
             case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
             case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
+            case { "parse" -> io.open(sourceDir ++ modnamev ++ ".parse", "w") }
+            case { "lex" -> io.open(sourceDir ++ modnamev ++ ".lex", "w") }
+            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".processed", "w") }
+            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".processed-ast", "w") }
+            case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
             case { _ -> io.output }
     }
     if (gracelibPathv == false) then {
@@ -410,7 +420,9 @@ method splitPath(pathString) -> List<String> {
         while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
             ox := ox + 1 
         }
-        locations.addLast (pathString.substringFrom(ix) to(ox-1))
+        var item := pathString.substringFrom(ix) to(ox-1)
+        if (item.at(item.size) != "/") then { item := item ++ "/" }
+        locations.addLast (item)
         ix := ox + 1
         ox := ix
     }
@@ -418,22 +430,12 @@ method splitPath(pathString) -> List<String> {
 }
 method file(name) on(origin) orPath(pathString) otherwise(action) {
     def locations = splitPath(pathString)
+    locations.addFirst(origin)
+    locations.addFirst "./"
+    locations.addLast(execDir)
 
-    if (locations.contains(origin).not) then {
-        locations.addFirst(origin)
-    }
-    if (locations.contains "./".not) then {
-        locations.addFirst "./"
-    }
-    if (locations.contains(execDir).not) then {
-        locations.addLast(execDir)
-    }
     locations.do { each ->
-        def candidate = if (each.at(each.size) == "/") then {
-            each ++ name
-        } else {
-            each ++ "/" ++ name
-        }
+        def candidate = each ++ name
         if ( io.exists(candidate) ) then {
             return candidate
         }
