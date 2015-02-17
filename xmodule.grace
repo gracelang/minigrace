@@ -173,11 +173,11 @@ method compileModule (nm) inFile (sourceFile)
     }
     cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
     util.log_verbose "executing {cmd}"
-        def exitCode = io.spawn("bash", "-c", cmd).status
-        if (exitCode != 0) then {
+    def exitCode = io.spawn("bash", "-c", cmd).status
+    if (exitCode != 0) then {
         errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
-        }
     }
+}
 
 method parseGCT(moduleName) {
     parseGCT(moduleName) sourceDir(util.sourceDir)
