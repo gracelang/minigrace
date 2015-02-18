@@ -81,7 +81,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             util.dynamicModule)
         var binaryFile
         var importsSet
-        if (needsDynamic.orElse {io.exists(moduleFileGso)} ) then {
+        if (needsDynamic) then {
             binaryFile := moduleFileGso
             importsSet := imports.other
         } else {
