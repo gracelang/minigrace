@@ -1378,8 +1378,20 @@ function GraceModule(name) {
 }
 
 function fileExists(path) {
-    var gctpath = path.substr(0, path.length - 4);
-    return typeof(gctCache[gctpath]) === "undefined"
+    var slashPosn = path.lastIndexOf("/");
+    if (slashPosn !== -1) path = path.substr(slashPosn + 1);
+    var dotPosn = path.lastIndexOf(".");
+    if (dotPosn === -1) return false;
+    var extn = path.substr(dotPosn);
+    var baseName = path.substring(0, dotPosn);
+    if (extn === ".gct") {
+        var gctpath = path.substr(0, path.length - 4);
+        return typeof(gctCache[gctpath]) !== "undefined";
+    }
+    if (extn == ".js") {
+        return eval("typeof(gracecode_" + baseName + ")") !== "undefined";
+    }
+    return false;
 }
 
 function gracecode_io() {
@@ -1817,19 +1829,13 @@ function gracecode_util() {
     };
     this.methods['file()on()orPath()otherwise'] =
         function util_file_on_orPath_otherwise (argcv, fn, origin, pth, blk) {
-        var jsFn = fn._value
-        if (jsFn.substr(jsFn.length - 4) == ".gct") {
-            var gctfn = jsFn.substr(0, fn.length - 4);
-            if (fileExists(gctfn)) return fn;
-        }
-        return callmethod(blk, "apply", [0]);
+        var jsFn = fn._value;
+        if (fileExists(jsFn)) return fn;
+        return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
     this.methods['file()onPath()otherwise'] = function (argcv, fn, p, blk) {
-        var jsFn = fn._value
-        if (jsFn.substr(jsFn.length - 4) == ".gct") {
-            var gctfn = jsFn.substr(0, fn.length - 4);
-            if (fileExists(gctfn)) return fn;
-        }
+        var jsFn = fn._value;
+        if (fileExists(jsFn)) return fn;
         return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
     this.methods.sourceDir = function util_sourceDir(argcv) {
@@ -1844,7 +1850,7 @@ function gracecode_util() {
         throw "ErrorExit";
     };
     // This is called by various wrapper methods in the errormessages module.
-    // The parameters are explained as follows:
+    // The parameters are as follows:
     // - message: The text of the error message.
     // - errlinenum: The line number on which the error occurred.
     // - position: A string used to show the position of the error in the error message.
