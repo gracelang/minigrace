@@ -130,6 +130,9 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
 
+js/%.js: %.grace minigrace
+	cd js; ln -sf ../$< .; ../minigrace $(VERBOSITY) --target js $<
+
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
@@ -228,7 +231,7 @@ l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collections
 l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES:%=l1/%) l2/gracelib.o
 	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
 
-l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
+l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/StandardPrelude.grace l2/collectionsPrelude.gct l2/mirrors.gso l1/minigrace
 	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
 
 Makefile.conf: configure
