@@ -24,7 +24,9 @@ method builtInModules {
                 "util")
     }
 }
-    
+
+def dynamicCModules = set.with("repl", "mirrors", "curl", "math", "unicode")
+
 def imports = util.requiredModules
 
 method dirName (filePath) is confidential {
@@ -77,8 +79,8 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     def location = dirName(moduleFileRoot)
 
     if (util.target == "c") then {
-        def needsDynamic = (isDialect || util.importDynamic ||
-            util.dynamicModule)
+        def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
+            .orElse { dynamicCModules.contains(nm) }
         var binaryFile
         var importsSet
         if (needsDynamic) then {
@@ -141,7 +143,7 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
 
 method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
-    if (prelude.inBrowser || util.recurse.not) then {
+    if ( prelude.inBrowser.orElse { util.recurse.not } ) then {
         errormessages.error "Please compile module {nm} before importing it."
             atRange(line, linePos, linePos + nm.size - 1)
     }
