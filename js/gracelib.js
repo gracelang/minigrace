@@ -2721,6 +2721,7 @@ function clone (obj) {
     if (obj.superobj)
         copy.superobj = clone(obj.superobj);
     copy.className = obj.className;
+    copy.methods = obj.methods;
     copy.mutable = obj.mutable;
     copy.definitionModule = obj.definitionModule;
     copy.definitionLine = obj.definitionLine;
