@@ -18,7 +18,7 @@ var noexecv := false
 var targetv := "c"
 var versionNumber := "0.0.9"
 var extensionsv := mgcollections.map.new
-var recurse := true
+var recurse is readable := true
 var dynamicModule := false
 var importDynamic := false
 var jobs := 2
@@ -160,7 +160,8 @@ method parseargs {
                         infilev := io.open(filename, "r")
                     } catch {
                         ex:EnvironmentException -> 
-                            generalError "Can't open file {filename}"
+                            generalError ("Can't open file {filename}",
+                                0, 0, "", false, sequence.empty)
                     }
                     if (modnamev == "stdin_minigrace") then {
                         var accum := ""
