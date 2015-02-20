@@ -97,7 +97,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE --make --target js $tcase"
+            COMMAND="$GRACE --verbose --target js $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then
