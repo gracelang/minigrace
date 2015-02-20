@@ -305,7 +305,7 @@ def Inherits is public = aNodePattern.forKind("inherits")
 // Special requests patterns.
 
 class aRequestPattern.forName(name : String) -> Pattern {
-    inherits BasicPattern.new
+    inherits prelude.BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
