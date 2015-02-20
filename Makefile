@@ -222,7 +222,7 @@ l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/collectionsPrelude.grace
 
 l2/exists: $(C_MODULES)
 	mkdir -p l2
-	cd l2 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o collectionsPrelude.gct StandardPrelude.gct ; do ln -sf ../$$f . ; done ;
+	cd l2 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
 	touch l2/exists
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
@@ -315,16 +315,18 @@ StandardPrelude.gcn StandardPrelude.gct: StandardPrelude.grace collectionsPrelud
 	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l2 $<
     
 stubs/collectionsPrelude.gct: l1/collectionsPrelude.gct l1/collectionsPrelude.gcn
-	ln $^ stubs
+	ln -f $^ stubs
 
 stubs/StandardPrelude.gct: l1/StandardPrelude.gct l1/StandardPrelude.gcn
-	ln $^ stubs
+	ln -f $^ stubs
 
 # The next three rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct $(KG)/minigrace
-	cd stubs; rm -f $(@:%.gct=%{.c,.gcn,}); ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && rm -f $(@:%.gct=%{.c,.gcn});
+	cd stubs && rm -f $(@:%.gct=%{.c,.gcn,}) && \
+	../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
+	rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -f $< ./
