@@ -9,5 +9,5 @@ before_script:
   - git fetch --unshallow
 script:
   - ./tools/tarball-bootstrap -a && (make test ; make test.js)
-  - (cd tests; more test.log)
-  - (cd js/tests ; more test.log)
+  - (cd tests; cat test.log)
+  - (cd js/tests ; cat test.log)
