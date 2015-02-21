@@ -33,6 +33,8 @@ if (util.interactive) then {
     sys.exit(0)
 }
 
+util.log_verbose "starting compilation"
+
 var tokens := lexer.Lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.

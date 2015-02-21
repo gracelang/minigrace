@@ -180,6 +180,7 @@ method parseargs {
             }
         }
     }
+    log_verbose "scanned arglist"
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
             case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
