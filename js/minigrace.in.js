@@ -1,3 +1,16 @@
+// declare global variables used to monitor execution:
+window.minigrace = {};
+window.sourceObject = null;
+window.superDepth = null;
+window.invocationCount = 0;
+window.onOuter = false;
+window.onSelf = false;
+window.callStack = [];
+window.gctCache = {};
+window.originalSourceLines = {};
+window.stackFrames = [];
+window.Grace_prelude = {};
+
 function MiniGrace() {
     this.compileError = false;
     this.vis = "standard";
@@ -55,7 +68,7 @@ MiniGrace.prototype.compile = function(grace_code) {
         callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
     }
     try {
-        gracecode_compiler.call(Grace_allocModule(":user:"));
+        gracecode_compiler.call(new GraceModule(":user:"));
     } catch (e) {
         if (e == "ErrorExit") {
             this.compileError = true;
@@ -63,12 +76,24 @@ MiniGrace.prototype.compile = function(grace_code) {
             // pass
         } else if (e.exctype == 'graceexception') {
             this.compileError = true;
-            this.stderr_write("Internal compiler error at line " + e.lineNumber
-                + " of " + e.moduleName
-                + ": " + e.exception.name + ": "
-                + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from " + e.callStack[i] + "\n");
+            if (e.exception.name == 'ImportError') {
+                this.stderr_write("Import error: " + e.message._value);
+            } else if (e.exception.name == 'CheckerFailure') {
+                this.stderr_write("Dialect detects an error: " + e.message._value);
+            } else {
+                var message;
+                if (e.exception.name == 'DialectError') {
+                    message = "Dialect " + e.message._value;
+                } else {
+                    message = "Internal compiler error at line " + e.lineNumber
+                    + " of " + e.moduleName
+                    + ". " + e.exception.name + ": "
+                    + e.message._value + "\n";
+                }
+                this.stderr_write(message);
+                for (i=e.callStack.length-1; i>=0; i--) {
+                    this.stderr_write("  called from " + e.callStack[i] + "\n");
+                }
             }
         } else {
             throw e;
@@ -87,9 +112,8 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("Error around line " + e.lineNumber
-                + " of " + e.moduleName
-                + ": " + e.exception.name + ": "
+            this.stderr_write("" + e.exception.name + " at line "
+                + e.lineNumber + " of " + e.moduleName + ": "
                 + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  called from " + e.callStack[i] + "\n");
@@ -113,7 +137,7 @@ MiniGrace.prototype.trapErrors = function(func) {
                         var debugString = "unknown";
                         try {
                             if (typeof value == "undefined") {
-                                debugString = "uninitialised";
+                                debugString = "‹undefined›";
                             } else {
                                 var debugString = callmethod(value,
                                     "asDebugString", [0])._value;
@@ -133,7 +157,7 @@ MiniGrace.prototype.trapErrors = function(func) {
             }
         } else if (e != "SystemExit") {
             this.stderr_write("Internal error around line "
-                + lineNumber + ": " + e + "\n");
+                + lineNumber + " of " + moduleName + ": " + e + "\n");
             throw e;
         }
     } finally {
@@ -149,11 +173,9 @@ MiniGrace.prototype.run = function() {
     var code = minigrace.generated_output;
     lineNumber = 1;
     moduleName = this.modname;
-    eval(code);
-    var theModule;
-    eval("theModule = gracecode_" + this.modname + ";");
-    window['gracecode_' + this.modname] = theModule;
-    testpass = false;
+    eval(code);     // defines a global gracecode_‹moduleName›
+    var theModule = window['gracecode_' + this.modname];
+    testpass = false;    // not used anywhere else ?
     var modname = this.modname;
     if (Grace_prelude.methods["while()do"])
         Grace_prelude.methods["while()do"].safe = this.breakLoops;

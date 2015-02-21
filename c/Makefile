@@ -42,10 +42,11 @@ repl.gso: repl.c gracelib.h
 repl.gcn: repl.c gracelib.h
 	gcc -std=c99 -g -c -o repl.gcn repl.c
 
-gracelib.o: gracelib.c StandardPrelude.c debugger.o
+gracelib.o: gracelib.c StandardPrelude.c collectionsPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
 	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
-	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
+	gcc -I. -std=c99 -c -o collectionsPrelude.gcn collectionsPrelude.c
+	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 install: selfhost
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)

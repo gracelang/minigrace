@@ -1,2 +1,11 @@
 *.js
-*_example
+objectAssociations
+dialect
+fsm
+grapl
+loopInvariant
+fsmExample
+graplExample
+loopInvariantExample
+objectAssociationsExample
+dialectExample

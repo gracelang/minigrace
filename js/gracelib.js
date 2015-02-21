@@ -1,17 +1,146 @@
+"use strict";
+
 var lineNumber = 0;
 var moduleName = "null";
-var superDepth = null;
-var invocationCount = 0;
+
 function setLineNumber(n) {
     lineNumber = n;
 }
-
+function getLineNumber() {
+    return lineNumber;
+}
 function setModuleName(m) {
     moduleName = m;
+}
+function getModuleName() {
+    return moduleName;
+}
+
+function GraceObject() {       // constructor function
+    // gets its methods from the prototype.  Don't add to them!
+    this.superobj = null;
+    this.data = {};
+    this.className = "object";
+    this.mutable = false;
+    this.definitionModule = "unknown";
+    this.definitionLine = 0;
+}
+
+function object_notEquals (argcv, o) {
+    var b = callmethod(this, "==", [1], o);
+    return callmethod(b, "not", [0]);
+}
+
+GraceObject.prototype = {
+    methods: {
+        "==": function object_equals (argcv, o) {
+            return callmethod(Grace_prelude, "identical", [2], this, o);
+        },
+        "!=": object_notEquals,
+        "≠": object_notEquals,
+        "basicAsString": function object_asString (argcv) {
+            var s = "object {";
+            var firstTime = true;
+            for (var i in this.data) {
+                if (firstTime) firstTime = false; else s += ", ";
+                try {
+                    s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
+                } catch (e) {
+                    s += "" + i + " = ?";
+                }
+            }
+            return new GraceString(s + "}");
+        },
+        "asString": function object_asString (argcv) {
+            if (!this.className || this.className.length == 0)
+                return new GraceString("an object");
+            var firstChar = this.className[0];
+            var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
+            return new GraceString(article + this.className);
+        },
+        "asDebugString": function object_asDebugString (argcv) {
+            return callmethod(this, "asString", [0]);
+        },
+        "debugValue": function object_debugValue (argcv) {
+            return new GraceString("object");
+        },
+        "debugIterator": function object_debugIterator (argcv) {
+            return new GraceIterator(this.data);
+        },
+        "::": function object_colonColon (argcv, other) {
+            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
+        },
+    },
+//    data: {}  The prototype should NOT have a data object — data should go in the
+//    child (non-shared) object.
+};
+
+function Grace_allocObject(superConstructor, givenName) {
+    // The difference between this function and "new GraceObject" is that the
+    // object returned here has its OWN methods object,
+    // whereas the one returned from new GraceObject shares its prototype's methods.
+    // Changing the 'methods' object has different effects in the two cases!
+    var sup = superConstructor ? new superConstructor() : null;
+    var resultObj = {
+        methods: {},
+        superobj: sup,
+        data: {},
+        className: givenName || "object",
+        mutable: false,
+        definitionModule: "unknown",
+        definitionLine: 0
+    };
+    for (var m in GraceObject.prototype.methods) {
+        resultObj.methods[m] = GraceObject.prototype.methods[m];
+    };
+    return resultObj;
+}
+
+function capitalize(str)
+{
+    return str.replace(/^.|\s\S/g, function(a) { return a.toUpperCase(); });
 }
 
 function GraceString(s) {
     this._value = s;
+}
+function string_greaterThanOrEqual (argcv, that) {
+    var self = this._value;
+    var other = that._value;
+    if (self >= other) return GraceTrue;
+    return GraceFalse;
+}
+function string_lessThanOrEqual (argcv, that) {
+    var self = this._value;
+    var other = that._value;
+    if (self <= other) return GraceTrue;
+    return GraceFalse;
+}
+function string_at(argcv, other) {
+    var o = callmethod(other, 'asString', [0]);
+    var idx = parseInt(o._value);
+    var s = this._value;
+    if (idx > s.length) {
+        var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
+        throw new GraceExceptionPacket(BoundsErrorObject,
+            new GraceString('"' + msgstr + "\".at(" + idx + ") but string.size = " + s.length))
+    };
+    if (idx < 1) {
+        var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
+        throw new GraceExceptionPacket(BoundsErrorObject,
+            new GraceString("'" + msgstr + "\".at(" + idx + ") but strings are indexed from 1"))
+    };
+    return new GraceString(s.charAt(idx-1));
+}
+
+function string_curriedAt(idx) {
+    var s = this._value;
+    if (idx > s.length) {
+        var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
+        throw new GraceExceptionPacket(BoundsErrorObject,
+            new GraceString('"' + msgstr + "\".at(" + idx + ") but string.size = " + s.length))
+    };
+    return new GraceString(s.charAt(idx-1));
 }
 
 GraceString.prototype = {
@@ -20,14 +149,20 @@ GraceString.prototype = {
             var o = callmethod(other, "asString", [0]);
             return new GraceString(this._value + o._value);
         },
-        "at": function(argcv, other) {
-            var o = callmethod(other, 'asString', [0]);
-            var idx = parseInt(o._value) - 1;
-            return new GraceString(this._value.charAt(idx));
-        },
+        "at": string_at,
+        "[]": string_at,
         "size": function(argcv) {
             return new GraceNum(this._value.length);
         },
+        "isEmpty": function(argcv) {
+            return (this._value.length === 0) ? GraceTrue : GraceFalse;
+        },
+        "first": function() { return string_curriedAt.call(this, 1) },
+        "second": function() { return string_curriedAt.call(this, 2) },
+        "third": function() { return string_curriedAt.call(this, 3) },
+        "fourth": function() { return string_curriedAt.call(this, 4) },
+        "fifth": function() { return string_curriedAt.call(this, 5) },
+        "last": function() { return string_curriedAt.call(this, this._value.length) },
         "_escape": function(argcv) {
             var tmp = callmethod(this, "replace()with", [2],
                     new GraceString("\\"), new GraceString("\\\\"));
@@ -50,47 +185,177 @@ GraceString.prototype = {
             os += s;
             return new GraceString(os);
         },
-        "substringFrom()to": function(argcv, from, to) {
-            var s = this._value;
-            return new GraceString(s.substring(from._value - 1, to._value));
+        "indexOf": function string_indexOf (argcv, needle, block0) {
+            var self = this._value;
+            var result = self.indexOf(needle._value);
+            if (result === -1) { return new GraceNum(0) };
+            return new GraceNum(result + 1);
         },
-        "startsWith": function(argcv, needle) {
+        "indexOf()ifAbsent": function string_indexOf_ifAbsent (argcv, needle, block0) {
+            var self = this._value;
+            var result = self.indexOf(needle._value);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
+            return new GraceNum(result + 1);
+        },
+        "indexOf()startingAt()ifAbsent": function string_indexOf_ifAbsent (argcv, needle, startPos, block0) {
+            var self = this._value;
+            var start = startPos._value - 1;
+            var result = self.indexOf(needle._value, start);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
+            return new GraceNum(result + 1);
+        },
+        "lastIndexOf()": function string_lastIndexOf_ifAbsent (argcv, needle, block0) {
+            var self = this._value;
+            var result = self.lastIndexOf(needle._value);
+            if (result === -1) { return new GraceNum(0) };
+            return new GraceNum(result + 1);
+        },
+        "lastIndexOf()startingAt()ifAbsent": function string_lastIndexOf (argcv, needle, startPos, block0) {
+            var self = this._value;
+            var start = startPos._value - 1;
+            var result = self.lastIndexOf(needle._value, start);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
+            return new GraceNum(result + 1);
+        },
+        "lastIndexOf()ifAbsent": function string_lastIndexOf (argcv, needle, block0) {
+            var self = this._value;
+            var result = self.lastIndexOf(needle._value);
+            if (result === -1) { return callmethod(block0, "apply", [0]) };
+            return new GraceNum(result + 1);
+        },
+        "contains": function string_contains(argcv, needle) {
+            var self = this._value;
+            var result = self.indexOf(needle._value);
+            if (result === -1) { return GraceFalse };
+            return GraceTrue;
+        },
+        "trim": function string_trim (argcv) {
+            var self = this._value;
+            return new GraceString(self.trim());
+        },
+        "substringFrom()to": function string_substringFrom_to(argcv, from, to) {
             var s = this._value;
+            var start = from._value;
+            var stop = to._value;
+            // we deliberately allow "abc".substringFrom 4 to (stop)
+            // and for stop to be beyond the end of s
+            if ((start < 1) || (start > s.length + 1)) {
+                var msgstr = s.length <= 20 ? s : (s.substr(0, 17) + "…");
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('"' + msgstr + "\".substringFrom(" + start + ")to("
+                                    + stop + ") but string.size = " + s.length));
+            };
+            return new GraceString(s.substring(start - 1, stop));
+        },
+        "substringFrom()size": function string_substringFrom_size(argcv, from, size) {
+            var s = this._value;
+            var start = from._value;
+            var n = size._value;
+            // we deliberatly allow "abc".substringFrom 4 size (size)
+            // and for start + n to extend beyond the end of s.
+            if ((start < 1) || (start > s.length + 1)) {
+                var msgstr = s.length <= 20 ? s : (s.substr(0, 17) + "…");
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('"' + msgstr + "\".substringFrom(" + start + ")size("
+                                    + n + ") but string.size = " + s.length));
+            };
+            return new GraceString(s.substr(start - 1, n));
+        },
+        "startsWith": function string_startsWith(argcv, needle) {
+            var self = this._value;
             var n = needle._value;
-            if (s.substring(0, n.length) == n)
-                return new GraceBoolean(true);
-            return new GraceBoolean(false);
+            if (self.lastIndexOf(n, 0) === 0) return GraceTrue
+            return GraceFalse;
         },
-        "asString": function(argcv) { return this ; },
-        "asDebugString": function(argcv) {
+        "endsWith": function string_endsWith(argvc, needle) {
+            var self = this._value;
+            var n = needle._value;
+            var startPosition = self.length - needle.length;
+            if (startPosition < 1) return GraceFalse;
+            var lastIndex = self.lastIndexOf(suffix, position);
+            if (lastIndex === position) return GraceTrue;
+            return GraceFalse;
+        },
+        "capitalized": function string_capitalized(argcv) {
+            var self = this._value;
+            return new GraceString(capitalize(self));
+        },
+        "asLower": function string_asLower(argcv) {
+            var self = this._value;
+            return new GraceString(self.toLowerCase());
+        },
+        "asUpper": function string_asUpper(argcv) {
+            var self = this._value;
+            return new GraceString(self.toUpperCase());
+        },
+        "asString": function string_asString(argcv) { return this ; },
+        "asDebugString": function string_asDebugString (argcv) {
+            var quote = new GraceString("\"");
+            var self = callmethod(this, "_escape", [0]);
+            var qSelf = callmethod(quote, "++", [1], self);
+            var qSelfq = callmethod(qSelf, "++", [1], quote);
+            return qSelfq;
+        },
+        "encode": function string_encode(argcv) {
+// TODO this is a hack
             var patt = /"/gm;
             var s = '"' + this._value.replace(patt, '\\"') + '"';
             return new GraceString(s);
         },
-        "encode": function(argcv) { return this ; }, // TODO this is a hack
+        "compare": function string_compare (argcv, that) {
+            var self = this._value;
+            var other = that._value;
+            if (self === other) return GraceNum(0)
+            if (self > other) return GraceNum(+1);
+            return GraceNum(-1);
+        },
+        ">": function string_greaterThan (argcv, that) {
+            var self = this._value;
+            var other = that._value;
+            if (self > other) return GraceTrue;
+            return GraceFalse;
+        },
+        ">=": string_greaterThanOrEqual,
+        "<": function string_lessThan (argcv, that) {
+            var self = this._value;
+            var other = that._value;
+            if (self < other) return GraceTrue;
+            return GraceFalse;
+        },
+        "<=": string_lessThanOrEqual,
+        "≤": string_lessThanOrEqual,
+        "≥": string_greaterThanOrEqual,
         "==": function(argcv, other) {
-            if (this == other)
+            if (this === other)
                 return GraceTrue;
             if (this.prototype == other.prototype
-                    && this._value == other._value)
+                && this._value == other._value)
                 return GraceTrue;
             return GraceFalse;
         },
-        "!=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "/=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "iterator": function(argcv) {
+        "iterator": function string_iterator(argcv) {
             return new GraceStringIterator(this);
         },
-        "ord": function(argcv) {
+        "do": function string_do(argcv, action1) {
+            var self = this._value;
+            var size = self.length;
+            for (var ix = 0; ix < size; ix ++) {
+                callmethod(action1, "apply", [1], new GraceString(self[ix]));
+            };
+            return GraceDone;
+        },
+        "keysAndValuesDo": function string_do(argcv, action2) {
+            var self = this._value;
+            var size = self.length;
+            for (var ix = 0; ix < size; ix ++) {
+                callmethod(action2, "apply", [2], new GraceNum(ix+1), new GraceString(self[ix]));
+            };
+            return GraceDone;
+        },
+        "ord": function string_ord (argcv) {
             return new GraceNum(this._value.charCodeAt(0));
         },
-        "hashcode": function(argcv) {
+        "hashcode": function string_hashcode(argcv) {
             var hc = 0;
             for (var i=0; i<this._value.length; i++) {
                 hc *= 23;
@@ -99,11 +364,20 @@ GraceString.prototype = {
             }
             return new GraceNum(hc);
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
+        "hash": function string_hash(argcv) {
+            var hc = 0;
+            for (var i=0; i<this._value.length; i++) {
+                hc *= 23;
+                hc += this._value.charCodeAt(i);
+                hc %= 0x100000000;
+            }
+            return new GraceNum(hc);
+        },
+        "match()matchesBinding()else": function string_match (argcv, pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", [3],
                     this, b, e);
         },
-        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
+        "matchObject()matchesBinding()else": function string_matchObject (argcv, obj, b, e) {
             var bl = callmethod(this, "==", [1], obj);
             if (Grace_isTrue(bl)) {
                 return callmethod(b, "apply", [1], obj);
@@ -111,54 +385,68 @@ GraceString.prototype = {
                 return callmethod(e, "apply", [1], obj);
             }
         },
-        "indices": function(argcv) {
-            var l = [];
-            for (var i=1; i<=this._value.length; i++)
-                l.push(new GraceNum(i));
-            return new GraceList(l);
+        "indices": function string_indices(argcv) {
+            var size = this._value.length;
+            return callmethod(GraceRangeClass(), "from()to", [1, 1], new GraceNum(1), new GraceNum(size));
         },
-        "asNumber": function(argcv) {
+        "asNumber": function string_asNumber(argcv) {
             return new GraceNum(+this._value);
         },
-        "match": function(argcv, o) {
+        "match": function string_match (argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
-        "|": function(argcv, o) {
+        "|": function string_orPattern(argcv, o) {
             return new GraceOrPattern(this, o);
         },
-        "&": function(argcv, o) {
+        "&": function string_andPattern (argcv, o) {
             return new GraceAndPattern(this, o);
         },
-        "startsWithSpace": function(argcv) {
-            if (this._value.charCodeAt(0) == 32) return GraceTrue; else return GraceFalse;
+        "startsWithSpace": function string_startsWithSpace (argcv) {
+            var s = this._value.charCodeAt(0);
+            return  ( (unicode.isCategory(s, "Zs") ) ? GraceTrue : GraceFalse);
         },
-        "startsWithPeriod": function(argcv) {
+        "startsWithPeriod": function string_startsWithPeriod (argcv) {
             if (this._value.charCodeAt(0) == 46) return GraceTrue; else return GraceFalse;
         },
-        "startsWithDigit": function(argcv) {
-            if ((this._value.charCodeAt(0) >= 48)&&(this._value.charCodeAt(0) <= 57)) return GraceTrue;
-            else return GraceFalse;
+        "startsWithDigit": function string_startsWithDigit (argcv) {
+            var s = this._value.charCodeAt(0);
+            return (  (unicode.isCategory(s, "Nd")
+                    || unicode.isCategory(s, "No")
+                    || unicode.isCategory(s, "Nl")) ? GraceTrue : GraceFalse);
         },
-        "asDebugString": function(argcv) {
-            return new GraceString("\"" + this._value + "\"");
-        },
-        "startsWithLetter": function(argcv) {
+        "startsWithLetter": function string_startsWithLetter (argcv) {
             var c = this._value.charCodeAt(0);
-            if (((c >= 97) && (c <= 122)) || ((c >= 65) && (c <= 90)))
-                return GraceTrue;
-            else return GraceFalse;
+            return (  (unicode.isCategory(c, "Ll")
+                    || unicode.isCategory(c, "Lu")
+                    || unicode.isCategory(c, "Lo")
+                    || unicode.isCategory(c, "Lm")) ? GraceTrue : GraceFalse);
         },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
+        "*": function string_times (argcv, num) {
+            // We could adapt the Russian Peasant algorithm for multiplication by addition,
+            // but this simpler algorithm will usually use fewer string operations.
+            var n;
+            if ((num.className !== 'number') || (! isFinite(n = parseInt(num._value)))) {
+                throw new GraceExceptionPacket(TypeErrorObject,
+                    new GraceString("argument to string * method must be a (finite) number"));
+            }
+            var output = this._value;
+            var requiredLength = output.length * n;
+            while (output.length < requiredLength) {
+                output = output.concat(output);
+            }
+            output = output.substr(0, requiredLength);
+            return new GraceString(output);
+        }
     },
-    className: "String",
+    className: "string",
     definitionModule: "unknown",
     definitionLine: 0,
+    superobj: new GraceObject()
 };
-GraceString.prototype.methods["[]"] = GraceString.prototype.methods["at"];
+
+var GraceEmptyString = new GraceString("");
 
 function GraceNum(n) {
     this._value = n;
@@ -200,10 +488,7 @@ GraceNum.prototype = {
         "..": function(argcv, other) {
             var o = callmethod(other, "asString", [0]);
             var ub = parseInt(o._value);
-            var l = [];
-            for (var i=this._value; i<=ub; i++)
-                l.push(new GraceNum(i));
-            return new GraceList(l);
+            return callmethod(GraceRangeClass(), "from()to", [1, 1], this, new GraceNum(ub));
         },
         "<": function(argcv, other) {
             if (this._value < other._value) return GraceTrue; else return GraceFalse;
@@ -227,10 +512,10 @@ GraceNum.prototype = {
             return new GraceString("" + this._value)
         },
         "==": function(argcv, other) {
-            if (this == other)
+            if (this === other)
                 return GraceTrue;
-            if (this.className == other.className
-                    && this._value == other._value)
+            if (this.className === other.className
+                    && this._value === other._value)
                 return GraceTrue;
             return GraceFalse;
         },
@@ -242,20 +527,11 @@ GraceNum.prototype = {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
-        "hashcode": function(argcv) {
+        "hash": function num_hash (argcv) {
             return new GraceNum(parseInt("" + (this._value * 10)));
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
-        "matchObject()matchesBinding()else": function(argcv, obj, b, e) {
-            var bl = callmethod(this, "==", [1], obj);
-            if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", [1], obj);
-            } else {
-                return callmethod(e, "apply", [1], obj);
-            }
+        "hashcode": function num_hashcode (argcv) {
+            return new GraceNum(parseInt("" + (this._value * 10)));
         },
         "inBase": function(argcv, other) {
             var mine = this._value;
@@ -281,6 +557,14 @@ GraceNum.prototype = {
                 return new GraceNum(Math.ceil(this._value));
             return new GraceNum(Math.floor(this._value));
         },
+        "truncated": function(argcv) {
+            if (this._value < 0)
+                return new GraceNum(Math.ceil(this._value));
+            return new GraceNum(Math.floor(this._value));
+        },
+        "rounded": function(argcv) {
+            return new GraceNum(Math.round(this._value));
+        },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
@@ -291,14 +575,12 @@ GraceNum.prototype = {
         },
         "&": function(argcv, o) {
             return new GraceAndPattern(this, o);
-        },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
         }
     },
-    className: "Number",
+    className: "number",
     definitionModule: "unknown",
     definitionLine: 0,
+    superobj: new GraceObject()
 };
 
 function GraceBoolean(b) {
@@ -364,34 +646,28 @@ GraceBoolean.prototype = {
                 return GraceTrue;
             return GraceFalse;
         },
-        "!=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "/=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
     },
-    className: "Boolean",
+    className: "boolean",
     definitionModule: "unknown",
     definitionLine: 0,
+    superobj: new GraceObject()
 };
 
 var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
+
+function RealGraceList(jsList) {
+    var newList = callmethod(GraceListClass(), "empty", [0]);
+    for (var ix = 0; ix < jsList.length; ix++) {
+        callmethod(newList, "push", [1], jsList[ix]);
+    }
+    return newList;
+}
 
 function GraceList(l) {
     this._value = l;
@@ -435,9 +711,9 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ", ";
+                    s += ",";
                 }
-                if (v.methods["asString"])
+                if (v.methods['asString'])
                     s += callmethod(v, "asString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
@@ -455,9 +731,9 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ", ";
+                    s += ",";
                 }
-                if (v.methods["asDebugString"])
+                if (v.methods['asDebugString'])
                     s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
@@ -494,35 +770,41 @@ GraceList.prototype = {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
-        "match()matchesBinding()else": function(argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
         "prepended": function(argcv, item) {
+            var self = this._value;
             var l = [item];
-            for (var i=0; i<this._value.length; i++)
-                l.push(this._value[i]);
+            for (var i=0; i<self.length; i++)
+                l.push(self[i]);
             return new GraceList(l);
         },
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);
         },
-        "indices": function(argcv) {
-            var l = [];
-            for (var i=1; i<=this._value.length; i++)
-                l.push(new GraceNum(i));
-            return new GraceList(l);
+        "do": function list_do(argcv, action1) {
+            var self = this._value;
+            var size = self.length;
+            for (var ix = 0; ix < size; ix ++) {
+                callmethod(action1, "apply", [1], self[ix]);
+            };
+            return GraceDone;
+        },
+        "indices": function list_indices(argcv) {
+            var size = this._value.length;
+            return callmethod(GraceRangeClass(), "from()to", [1, 1],
+                              new GraceNum(1), new GraceNum(size));
         },
         "first": function(argcv) {
             return this._value[0];
         },
         "last": function(argcv) {
-            return this._value[this._value.length-1];
+            var self = this._value;
+            return self[self.length-1];
         },
         "reduce": function(argcv, initial, block) {
+            var self = this._value;
             var res = initial;
-            for (var i=0; i<this._value.length; i++) {
-                var v = this._value[i];
+            for (var i=0; i<self.length; i++) {
+                var v = self[i];
                 res = callmethod(block, "apply", [2], res, v)
             }
             return res;
@@ -530,20 +812,18 @@ GraceList.prototype = {
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
             return new GraceList(l);
-        },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
+        }
     },
-    className: "List",
+    className: "list",
     definitionModule: "unknown",
-    definitionLine: 0
+    definitionLine: 0,
+    superobj: new GraceObject()
 };
 
-function GracePrimitiveArray(n) {
-    this._value = [];
-    for (var i=0; i<n; i++)
-        this._value.push(GraceDone);
+function GracePrimitiveArray(len) {
+    this._value = new Array(len);
+//    this._value.fill(undefined);
+//    elements are all undefined by default
 };
 
 GracePrimitiveArray.prototype = {
@@ -575,27 +855,28 @@ GracePrimitiveArray.prototype = {
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
                 var v = this._value[i];
-                if (v.methods["asString"])
+                if ((v) && (v.methods) &&
+                    (v.methods['asString']))
                     s += callmethod(v, "asString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
-                    s += "((" + q + ")), "
+                    s += "‹" + q + "›"
                 }
             }
             s += "]";
             return new GraceString(s);
         },
         "asDebugString": function(argcv) {
-            var s = "PrimArray(";
+            var s = "primArray(";
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
                 var v = this._value[i];
-                if (v.methods["asDebugString"])
+                if ((v) && (v.methods) && (v.methods['asDebugString']))
                     s += callmethod(v, "asDebugString", [0])._value;
                 else {
                     var q = dbgp(v, 2);
-                    s += "((" + q + ")), "
+                    s += "‹" + q + "›"
                 }
             }
             s += ")";
@@ -643,62 +924,31 @@ GracePrimitiveArray.prototype = {
             }
             return res;
         },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
+        "sortInitial()by": function(argcv, length, compareBlock) {
+            var origLength = this._value.length
+            this._value.length = length._value
+            function compareFun(a, b) {
+                var res = callmethod(compareBlock, "apply", [2], a, b);
+                if (res.className == "number") return res._value;
+                throw new GraceExceptionPacket(TypeErrorObject,
+                       new GraceString("compare block in primitiveArray.sort method " +
+                                       "did not return a number"));
+            }
+            this._value.sort(compareFun);
+            this._value.length = origLength
+            return this;
+        }
     },
-    className: "PrimitiveArray",
+    className: "primitiveArray",
     definitionModule: "unknown",
     definitionLine: 0,
+    superobj: new GraceObject()
 };
 
 function GraceOrPattern(l, r) {
-    this._left = l;
-    this._right = r;
+    var orClass = callmethod(Grace_prelude, "OrPattern", [0]);
+    return callmethod(orClass, "new", [2], l, r)
 }
-GraceOrPattern.prototype = {
-    methods: {
-        "==": function(argcv, other) {
-            if (this == other)
-                return GraceTrue;
-            return GraceFalse;
-        },
-        "!=": function(argcv, other) {
-            var t = callmethod(this, "==", [1], other);
-            return callmethod(t, "not", [0]);
-        },
-        "match": function(argcv, o) {
-            var m1 = callmethod(this._left, "match", [1], o);
-            if (Grace_isTrue(m1))
-                return new GraceSuccessfulMatch(o);
-            var m2 = callmethod(this._right, "match", [1], o);
-            if (Grace_isTrue(m2))
-                return new GraceSuccessfulMatch(o);
-            return new GraceFailedMatch(o);
-        },
-        "|": function(argcv, o) {
-            return new GraceOrPattern(this, o);
-        },
-        "&": function(argcv, o) {
-            return new GraceOrPattern(this, o);
-        },
-        "asString": function(argcv) {
-            return new GraceString("<OrPattern("
-                    + callmethod(this._left, "asString", [0])._value
-                    + ", " + callmethod(this._right, "asString", [0])._value
-                    + ")>");
-        },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
-        },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
-    },
-    className: "OrPattern",
-    definitionModule: "unknown",
-    definitionLine: 0,
-};
 
 function GraceAndPattern(l, r) {
     var andClass = callmethod(Grace_prelude, "AndPattern", [0]);
@@ -714,28 +964,6 @@ function Grace_isTrue(o) {
         return Grace_isTrue(o.superobj);
 }
 
-function Grace_egal(o1, o2) {
-    if (o1 == o2)
-        return GraceTrue;
-    if (o1.mutable || o2.mutable)
-        return GraceFalse;
-    var t1 = classType(o1);
-    var t2 = classType(o2);
-    var tm = callmethod(callmethod(t1, "match", [1], o2),
-            "&&", [1], callmethod(t2, "match", [1], o1));
-    if (!Grace_isTrue(tm))
-        return GraceFalse;
-    for (d in o1.data) {
-        var leftdata = o1.data[d];
-        var rightdata = o2.data[d];
-        if (typeof rightdata == 'undefined')
-            return GraceFalse;
-        if (!Grace_isTrue(callmethod(leftdata, "==", [1], rightdata)))
-            return GraceFalse;
-    }
-    return GraceTrue;
-}
-
 function Grace_print(obj) {
     var s = callmethod(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
@@ -743,135 +971,35 @@ function Grace_print(obj) {
 }
 
 function Grace_errorPrint(obj) {
-    var s = callmethod(obj, "asString", [0]);
-    minigrace.stderr_write(s._value + "\n");
-    return GraceDone;
+    try {
+        try {
+            var s = callmethod(obj, "asString", [0]);
+            minigrace.stderr_write(s._value + "\n");
+        } catch (e) {
+            minigrace.stderr_write("can't stringify object " + obj + "\n");
+        }
+    } finally {
+        return GraceDone;
+    }
 }
 
 function Grace_length(obj) {
     return new GraceNum(obj._value.length);
 }
 
-function GraceObject() {
-
-}
-GraceObject.prototype = {
-    methods: {
-        "==": function(argcv, o) {
-            if (this == o) return GraceTrue; else return GraceFalse;
-        },
-        "!=": function(argcv, o) {
-            var b = this.methods["=="].call(this, o);
-            return b.methods["not"].call(b);
-        },
-        "/=": function(argcv, o) {
-            var b = this.methods["=="].call(this, o);
-            return b.methods["not"].call(b);
-        },
-        "asDebugString": function(argcv) {
-            var s = "object {";
-            for (var i in this.data) {
-                try {
-                    s += "" + i + " = " + callmethod(this.data[i], "asDebugString", [0])._value + "; ";
-                } catch (e) {
-                    s += "var " + i + ";"
-                }
-            }
-            return new GraceString(s + "}");
-        },
-        "debugValue": function(argcv) {
-            return new GraceString("object");
-        },
-        "debugIterator": function(argcv) {
-            return new GraceIterator(this.data);
-        },
-        "asString": function(argcv) {
-            var s = "object {";
-            for (var i in this.data) {
-                try {
-                    s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value + "; ";
-                } catch (e) {
-                    s += "var " + i + ";"
-                }
-            }
-            return new GraceString(s + "}");
-        },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
-    },
-    data: {}
-};
-
-GraceObjectMethods = {
-    "==": function(argcv, o) {
-        return Grace_egal(this, o);
-    },
-    "!=": function(argcv, other) {
-        var t = callmethod(this, "==", [1], other);
-        return callmethod(t, "not", [0]);
-    },
-    "asDebugString": function(argcv) {
-        return callmethod(this, "asString", [0])
-    },
-    "debugValue": function(argcv) {
-        return new GraceString("object");
-    },
-    "debugIterator": function(argcv) {
-        return new GraceIterator(this.data);
-    },
-    "asString": function(argcv) {
-        return callmethod(this, "basicAsString", [0])
-    },
-    "basicAsString": function(argcv) {
-        // should not be overridden.
-        var s = "object {";
-        var firstTime = true;
-        for (var i in this.data) {
-            if (firstTime) firstTime = false; else s += ", ";
-            try {
-                s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
-            } catch (e) {
-                s += "var " + i + ";"
-            }
-        }
-        return new GraceString(s + "}");
-    }
-};
-
-function Grace_allocObject() {
-    return {
-        methods: {
-            "==": GraceObjectMethods["=="],
-            "!=": GraceObjectMethods["!="],
-            "asDebugString": GraceObjectMethods["asDebugString"],
-            "asString": GraceObjectMethods["asString"],
-            "debugValue": GraceObjectMethods["debugValue"],
-            "debugIterator": GraceObjectMethods["debugIterator"],
-            "basicAsString": GraceObjectMethods["basicAsString"]
-        },
-        superobj: null,
-        data: {},
-        className: "Object",
-        mutable: false,
-        definitionModule: "unknown",
-        definitionLine: 0,
-    };
-}
-
 function GraceMatchResult(result, bindings) {
-    this.data["result"] = result;
+    this.data['result'] = result;
     if (bindings == undefined)
         bindings = new GraceList([]);
-    this.data["bindings"] = bindings;
+    this.data['bindings'] = bindings;
     this._value = this.superobj._value;
 }
 GraceMatchResult.prototype = Grace_allocObject();
 GraceMatchResult.prototype.methods.result = function() {
-    return this.data["result"];
+    return this.data['result'];
 }
 GraceMatchResult.prototype.methods.bindings = function() {
-    return this.data["bindings"];
+    return this.data['bindings'];
 }
 GraceMatchResult.prototype.methods.asString = function() {
     var s = ""
@@ -879,23 +1007,23 @@ GraceMatchResult.prototype.methods.asString = function() {
         s = "SuccessfulMatch(result = ";
     else
         s = "FailedMatch(result = ";
-    s += callmethod(this.data["result"], "asString", [0])._value;
+    s += callmethod(this.data['result'], "asString", [0])._value;
     s += ", bindings = ";
-    s += callmethod(this.data["bindings"], "asString", [0])._value;
+    s += callmethod(this.data['bindings'], "asString", [0])._value;
     s += ")";
     return new GraceString(s);
 }
-GraceMatchResult.prototype.methods["::"] = function(argcv, other) {
+GraceMatchResult.prototype.methods['::'] = function(argcv, other) {
     return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
 }
 
 function GraceSuccessfulMatch(result, bindings) {
     this.superobj = new GraceBoolean(true);
     this.data = {};
-    this.data["result"] = result;
+    this.data['result'] = result;
     if (bindings == undefined)
         bindings = new GraceList([]);
-    this.data["bindings"] = bindings;
+    this.data['bindings'] = bindings;
     this._value = this.superobj._value;
 }
 GraceSuccessfulMatch.prototype = GraceMatchResult.prototype;
@@ -903,24 +1031,39 @@ GraceSuccessfulMatch.prototype = GraceMatchResult.prototype;
 function GraceFailedMatch(result, bindings) {
     this.superobj = new GraceBoolean(false);
     this.data = {};
-    this.data["result"] = result;
+    this.data['result'] = result;
     if (bindings == undefined)
         bindings = new GraceList([]);
-    this.data["bindings"] = bindings;
+    this.data['bindings'] = bindings;
     this._value = this.superobj._value;
 }
 GraceFailedMatch.prototype = GraceMatchResult.prototype;
 
+function GraceTypeIntersection(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeIntersection", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeUnion(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeUnion", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeVariant(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeVariant", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+function GraceTypeSubtraction(l, r) {
+    var opClass = callmethod(Grace_prelude, "TypeSubtraction", [0]);
+    return callmethod(opClass, "new", [2], l, r)
+}
+
 function GraceType(name) {
     this.name = name;
-    this.className = name;
     this.typeMethods = [];
 }
 GraceType.prototype = {
     methods: {
-        "match": function(argcv, other) {
-            var i;
-            for (i=0; i<this.typeMethods.length; i++) {
+        "match": function type_match (argcv, other) {
+            for (var i=0; i<this.typeMethods.length; i++) {
                 var m = this.typeMethods[i];
                 if (!other.methods[m]) {
                     var tmp = other;
@@ -939,27 +1082,68 @@ GraceType.prototype = {
             return new GraceSuccessfulMatch(other,
                     new GraceList([]));
         },
-        "|": function(argcv, other) {
-            return new GraceOrPattern(this, other);
+        "|": function type_or(argcv, other) {
+            return new GraceTypeVariant(this, other);
         },
-        "&": function(argcv, other) {
-            return new GraceAndPattern(this, other);
+        "&": function type_and(argcv, other) {
+            return new GraceTypeIntersection(this, other);
         },
-        "asString": function(argcv) {
-            return new GraceString("Type<" + this.name + ">");
+        "+": function type_and(argcv, other) {
+            return new GraceTypeUnion(this, other);
         },
-        "asDebugString": function(argcv) {
-            return callmethod(this, "asString", [0]);
+        "-": function type_and(argcv, other) {
+            return new GraceTypeSubtraction(this, other);
         },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
+        "asString": function type_asString (argcv) {
+            return new GraceString("type " + this.name);
         },
+        "methodNames": function type_methodNames (argcv) {
+            var result = callmethod(GraceSetClass(), "empty", [0]);
+            for (var i=0; i<this.typeMethods.length; i++) {
+                var methName = this.typeMethods[i];
+                callmethod(result, "add", [1], new GraceString(methName));
+            }
+            return result;
+        }
     },
-    typeMethods: [],
-    className: "Type",
+    className: "type",
     definitionModule: "unknown",
     definitionLine: 0,
+    superobj: new GraceObject()
 };
+
+function GraceBlock(recvr, lineNum, numParams) {
+    this.definitionModule = recvr.definitionModule;
+    this.definitionLine = lineNum;
+    this.numParams = numParams;
+    this.receiver = recvr;
+}
+
+GraceBlock.prototype = {
+    methods : {
+        "apply": function block_apply (argcv) {
+            var args = Array.prototype.slice.call(arguments, 1);
+            if (args.length != this.numParams)
+                callmethod(ProgrammingErrorObject, "raise", [1],
+                       new GraceString("block applied to " + args.length +
+                                       " arguments where " + this.numParams + " expected."));
+            return this.real.apply(this.receiver, args);
+        },
+        "applyIndirectly": function block_applyIndirectly (argcv, a) {
+            return this.real.apply(this.receiver, a._value);
+        },
+        "outer": function block_outer () {
+            return callmethod(this.receiver, 'outer', [0]);
+        },
+        "match": GraceBlock_match,
+        "asString": function block_asString (argcv) {
+            return new GraceString("block<" + this.definitionModule +
+                                   ":" + this.definitionLine + ">");
+        }
+    },
+    className: "block",
+    superobj: new GraceObject()
+}
 
 function GraceBlock_match(argcv, o) {
     if (!this.pattern) {
@@ -980,11 +1164,10 @@ function GraceBlock_match(argcv, o) {
 }
 
 function classType(obj) {
-    var t = new GraceType(obj.className);
+    var t = new GraceType(capitalize(obj.className));
     var o = obj;
     while (o != null) {
-        var i;
-        for (m in o.methods)
+        for (var m in o.methods)
             t.typeMethods.push(m);
         o = o.superobj;
     }
@@ -992,17 +1175,19 @@ function classType(obj) {
 }
 
 var var_Unknown = new GraceType("Unknown");
-var var_Dynamic = var_Unknown;
 var var_Done = new GraceType("Done");
-var var_String = classType(new GraceString(""));
+var_Done.typeMethods.push("asString");
+var_Done.typeMethods.push("asDebugString");
+var var_String = classType(GraceEmptyString);
 var var_Number = classType(new GraceNum(1));
-var var_Boolean = classType(new GraceBoolean(true));
+var var_Boolean = classType(GraceTrue);
+var var_Object = classType(new GraceObject);
 var var_Type = classType(var_Boolean);
 var type_String = var_String;
 var type_Number = var_Number;
 var type_Boolean = var_Boolean;
+var type_Object = var_Object;
 var type_Unknown = var_Unknown;
-var type_Dynamic = var_Dynamic;
 var var_Block = new GraceType("Block");
 var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
@@ -1012,10 +1197,13 @@ var var_None = new GraceType("None");
 var_None.typeMethods.push("==");
 var_None.typeMethods.push("!=");
 var type_None = var_None;
-var var_Void = var_None;
-var type_Void = var_None;
-var var_MatchFailed = Grace_allocObject();
-var_HashMap = { methods: { 'new': function() { return new GraceHashMap(); } } };
+
+var var_HashMap = { methods: { 'new':
+    function HashMap_new () { return new GraceHashMap(); } }
+};
+var var_GraceType = { methods: { 'new':
+    function GraceType_new () { return new GraceType(); } }
+};
 
 function GraceHashMap() {
     this.table = {};
@@ -1058,7 +1246,7 @@ GraceHashMap.prototype.methods.contains = function(argcv, k) {
 GraceHashMap.prototype.methods.asString = function() {
     var s = "[{";
     var first = true;
-    for (h in this.table) {
+    for (var h in this.table) {
         p = this.table[h];
         if (first)
             first = false;
@@ -1079,7 +1267,7 @@ function GraceListIterator(l) {
     this._max = l.length;
 }
 GraceListIterator.prototype = Grace_allocObject();
-GraceListIterator.prototype.methods.havemore = function() {
+GraceListIterator.prototype.methods.hasNext = function() {
     return ((this._index < this._max) ? GraceTrue : GraceFalse);
 }
 GraceListIterator.prototype.methods.next = function() {
@@ -1092,16 +1280,20 @@ function GraceStringIterator(s) {
     this._value = s._value;
     this._index = 0;
     this._max = s._value.length;
+    this.superobj = callmethod(callmethod(Grace_prelude, "iterable", [0]), "trait", [0]);
 }
-GraceStringIterator.prototype = Grace_allocObject();
-GraceStringIterator.prototype.methods.havemore = function() {
-    return ((this._index < this._max) ? GraceTrue : GraceFalse);
-}
-GraceStringIterator.prototype.methods.next = function() {
-    var rv = new GraceString(this._value.charAt(this._index));
-    this._index++;
-    return rv;
-}
+GraceStringIterator.prototype = {
+    methods: {
+        hasNext: function() {
+            return ((this._index < this._max) ? GraceTrue : GraceFalse);
+        },
+        next: function() {
+            var rv = new GraceString(this._value.charAt(this._index));
+            this._index++;
+            return rv;
+        }
+    }
+};
 
 function GraceIterator(obj) {
     this._value = obj;
@@ -1115,7 +1307,7 @@ function GraceIterator(obj) {
     this._max = this._keys.length;
 }
 GraceIterator.prototype = Grace_allocObject();
-GraceIterator.prototype.methods.havemore = function() {
+GraceIterator.prototype.methods.hasNext = function() {
     return ((this._trueIndex < this._max) ? GraceTrue : GraceFalse);
 }
 GraceIterator.prototype.methods.next = function() {
@@ -1147,10 +1339,6 @@ stderr.methods.write = function(junk, s) {
 }
 stderr.methods.close = function() {};
 
-var gctCache = {};
-var originalSourceLines = {};
-var stackFrames = [];
-
 function StackFrame(methodName) {
     this.methodName = methodName;
     this.variables = {};
@@ -1170,6 +1358,42 @@ StackFrame.prototype = {
     },
 };
 
+function GraceModule(name) {
+// The base to which a module adds its contents.  Thus, it is
+// important that 'methods' be a property of the module object itself,
+// and not of a prototype, since 'methods' will be changed.
+    var newModuleObject = Grace_allocObject();
+    newModuleObject.className = "module";
+    newModuleObject.definitionModule = name;
+    newModuleObject.definitionLine = 0;
+    newModuleObject.superobj = new GraceObject();
+//    newModuleObject.outer = Grace_prelude;
+    newModuleObject.methods.asString = function module_asString(argcv) {
+        return new GraceString("the " + this.definitionModule + " " + this.className);
+    };
+//    newModuleObject.methods.outer = function module_outer () {
+//        return this.outer;
+//    };
+    return newModuleObject;
+}
+
+function fileExists(path) {
+    var slashPosn = path.lastIndexOf("/");
+    if (slashPosn !== -1) path = path.substr(slashPosn + 1);
+    var dotPosn = path.lastIndexOf(".");
+    if (dotPosn === -1) return false;
+    var extn = path.substr(dotPosn);
+    var baseName = path.substring(0, dotPosn);
+    if (extn === ".gct") {
+        var gctpath = path.substr(0, path.length - 4);
+        return typeof(gctCache[gctpath]) !== "undefined";
+    }
+    if (extn == ".js") {
+        return eval("typeof(gracecode_" + baseName + ")") !== "undefined";
+    }
+    return false;
+}
+
 function gracecode_io() {
     this.methods.output = function() {
         return this._output;
@@ -1184,48 +1408,46 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
-        path = path._value;
-        var gctpath = path.substr(0, path.length - 4);
-        if (gctCache[gctpath])
-            return GraceTrue;
+        if (fileExists(path._value)) return GraceTrue;
         return GraceFalse;
-    }
+    };
     this.methods.open = function(argcv, path, mode) {
-        var o = new GraceObject();
-        o.methods['write'] = function() {};
-        o.methods['close'] = function() {};
+        var o = new Grace_allocObject();
+        o.methods['write'] = function io_write () {};
+        o.methods['close'] = function io_close () {};
         path = path._value;
+        var slash = path.lastIndexOf("/");
+        if (slash >= 0) path = path.substring(slash+1);
         if (path.substr(path.length - 4) == ".gct") {
             var gctpath = path.substr(0, path.length - 4);
             if (mode._value == "w")
                 gctCache[gctpath] = "";
             else if (mode._value == "r") {
-                o._lines = gctCache[gctpath].split("\n");
-                o._index = 0;
+                if (typeof gctCache[gctpath] == "undefined")
+                    throw new GraceExceptionPacket(EnvironmentExceptionObject, new GraceString("Can't open file " + gctpath + ".gct for 'r'.  File does not exist."))
+                else {
+                    o._lines = gctCache[gctpath].split("\n");
+                    o._index = 0;
+                }
             }
-            o.methods['write'] = function(argcv, s) {
+            o.methods['write'] = function io_gct_write (argcv, s) {
                 gctCache[gctpath] += s._value;
             }
-            o.methods['getline'] = function(argcv) {
+            o.methods['getline'] = function io_gct_getline (argcv) {
                 return new GraceString(this._lines[this._index++]);
             }
-            o.methods['eof'] = function() {
+            o.methods['eof'] = function io_gct_eof  () {
                 return ((this._index >= this._lines.length) ? GraceTrue : GraceFalse);
             }
         }
         return o;
     };
-    this.methods.realpath = function(junk, x) {
+    this.methods.realpath = function io_browser_realpath (argcv, x) {
         return x;
     };
-    this.methods.findResource = function(junk, path) {
-        return path;
+    this.methods.newer = function io_browser_newer(argcv, jsFile, sourceFile) {
+        return GraceTrue
     };
-    this.methods.asString = function(argcv) {
-        return new GraceString('the "io" module');
-    };
-    this.definitionModule = "io";
-    this.definitionLine = 0;
     return this;
 }
 
@@ -1246,19 +1468,17 @@ function gracecode_sys() {
         return new GraceString("./minigrace");
     };
     this.methods.environ = function() {
-        var o = new GraceObject();
-        o.methods['at'] = function() {return new GraceString("");};
+        var o = Grace_allocObject(GraceObject, "environmentObject");
+        o.methods['at'] = function environ_at() {return GraceEmptyString;};
         o.methods['[]'] = o.methods['at'];
-        o.methods['at()put'] = function() {return GraceTrue;};
+        o.methods['at()put'] = function environ_at_put() {return GraceTrue;};
         o.methods['[]:='] = o.methods['at()put'];
-        o.methods['contains'] = function() {return GraceFalse;};
+        o.methods['contains'] = function environ_contains() {return GraceFalse;};
         return o;
     };
     this.methods.asString = function(argcv) {
         return new GraceString('the "sys" module');
     };
-    this.definitionModule = "sys";
-    this.definitionLine = 0;
     return this;
 }
 
@@ -1295,85 +1515,77 @@ function gracecode_imports() {
         throw new GraceExceptionPacket(RuntimeErrorObject,
                 new GraceString("No mapping for extension '" + ext + "'."));
     };
-    this.methods.asString = function(argcv) {
-        return new GraceString('the "imports" module');
-    };
-    this.definitionModule = "imports";
-    this.definitionLine = 0;
     return this;
 }
 
 function gracecode_unicode() {
-    this.methods = {
-        isLetter: function(argcv, s) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return (  (unicode.isCategory(s, "Ll")
-                    || unicode.isCategory(s, "Lu")
-                    || unicode.isCategory(s, "Lo")
-                    || unicode.isCategory(s, "Lm")) ? GraceTrue : GraceFalse);
-        },
-        isNumber: function(argcv, s) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return (  (unicode.isCategory(s, "Nd")
-                    || unicode.isCategory(s, "No")
-                    || unicode.isCategory(s, "Nl")) ? GraceTrue : GraceFalse);
-        },
-        isSymbolMathematical: function(argcv, s) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return ((unicode.isCategory(s, "Sm")) ? GraceTrue : GraceFalse);
-        },
-        isSeparator: function(argcv, s) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return (  (unicode.isCategory(s, "Zs")
-                    || unicode.isCategory(s, "Zp")
-                    || unicode.isCategory(s, "Zl")) ? GraceTrue : GraceFalse);
-        },
-        isControl: function(argcv, s) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return  ( (unicode.isCategory(s, "Cf")
-                    || unicode.isCategory(s, "Cc")
-                    || unicode.isCategory(s, "Co")
-                    || unicode.isCategory(s, "Cs")) ? GraceTrue : GraceFalse);
-        },
-        iscategory: function(argcv, s, c) {
-            if (typeof s._value == "number")
-                s = String.fromCharCode(s._value);
-            else s = s._value;
-            return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
-        },
-        name: function(argcv, s) {
-            return new GraceString(unicode.name(s._value));
-        },
-        create: function(argcv, n) {
-            return new GraceString(String.fromCharCode(n._value));
-        },
-        pattern: function(argcv) {
-            var args = Array.prototype.slice.call(arguments, 1);
-            return new GraceUnicodePattern(args);
-        },
-        "pattern()not": function(argcv) {
-            var args = Array.prototype.slice.call(arguments, 1, argcv[0] + 1);
-            var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
-            return new GraceUnicodePattern(args, args2);
-        },
-        'asString': function(argcv) {
-            return new GraceString('the "unicode" module');
-        }
+    this.methods.isLetter = function unicode_isLetter(argcv, s) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return (  (unicode.isCategory(s, "Ll")
+                || unicode.isCategory(s, "Lu")
+                || unicode.isCategory(s, "Lo")
+                || unicode.isCategory(s, "Lm")) ? GraceTrue : GraceFalse);
     };
-    this.definitionModule = "unicode";
-    this.definitionLine = 0;
+    this.methods.isNumber = function unicode_isNumber(argcv, s) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return (  (unicode.isCategory(s, "Nd")
+                || unicode.isCategory(s, "No")
+                || unicode.isCategory(s, "Nl")) ? GraceTrue : GraceFalse);
+    };
+    this.methods.isSymbolMathematical = function unicode_isSymbolMathematical(argcv, s) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return ((unicode.isCategory(s, "Sm")) ? GraceTrue : GraceFalse);
+    };
+    this.methods.isSeparator = function unicode_isSeparator(argcv, s) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return (  (unicode.isCategory(s, "Zs")
+                || unicode.isCategory(s, "Zp")
+                || unicode.isCategory(s, "Zl")) ? GraceTrue : GraceFalse);
+    };
+    this.methods.isControl = function unicode_isControl(argcv, s) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return  ( (unicode.isCategory(s, "Cf")
+                || unicode.isCategory(s, "Cc")
+                || unicode.isCategory(s, "Co")
+                || unicode.isCategory(s, "Cs")) ? GraceTrue : GraceFalse);
+    };
+    this.methods.iscategory = function unicode_iscategory(argcv, s, c) {
+        if (typeof s._value == "number")
+            s = String.fromCharCode(s._value);
+        else s = s._value;
+        return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
+    };
+    this.methods.name = function unicode_name(argcv, s) {
+        return new GraceString(unicode.name(s._value));
+    };
+    this.methods.create = function unicode_create(argcv, n) {
+        return new GraceString(String.fromCharCode(n._value));
+    };
+    this.methods.pattern = function unicode_pattern(argcv) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return new GraceUnicodePattern(args);
+    };
+    this.methods['pattern()not'] = function unicode_pattern_not(argcv) {
+        var args = Array.prototype.slice.call(arguments, 1, argcv[0] + 1);
+        var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
+        return new GraceUnicodePattern(args, args2);
+    };
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['unicode'] = "path:\n unicode\nclasses:\npublic:\n category\n bidirectional\n combining\n mirrored\n name\n iscategory\n isSeparator\n isControl\n isLetter\n isNumber\n isSymbolMathematical\n create\nconfidential:\nfresh-methods:\nmodules:\n";
+
 
 function GraceUnicodePattern(pos, neg) {
     this.pos = pos;
@@ -1424,229 +1636,360 @@ GraceUnicodePattern.prototype = {
             return new GraceFailedMatch(o);
         }
     },
-    "::": function(argcv, other) {
-        return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-    },
+    typeMethods: [],
+    className: "unicodePattern",
+    definitionModule: "unicode",
+    definitionLine: 0,
+    superobj: new GraceObject()
 };
 
 var util_module = false;
+var loadDate = Date.now();
+var loadCPU = performance.now();
+var previousElapsed = loadDate;
+var previousCPU = loadCPU;
 
 function gracecode_util() {
     if (util_module != false)
         return util_module;
-    this.methods = {
-        outfile: function(argcv) {
-            return stdout;
-        },
-        infile: function(argcv) {
-            return stdin;
-        },
-        parseargs: function(argcv) {
-            return GraceDone;
-        },
-        target: function(argcv) {
-            return new GraceString(minigrace.mode);
-        },
-        modname: function(argcv) {
-            return new GraceString(minigrace.modname);
-        },
-        setline: function(argcv, i) {
-            lineNumber = i._value;
-            this._linenum = i;
-        },
-        linenum: function(argcv) {
-            return this._linenum;
-        },
-        linepos: function(argcv) {
-            return this._linepos;
-        },
-        setPosition: function(argcv, l, p) {
-            lineNumber = l._value;
-            this._linenum = l;
-            this._linepos = p;
-            return GraceDone;
-        },
-        buildtype: function(argcv) {
-            return new GraceString("normal");
-        },
-        runmode: function(argcv) {
-            return new GraceString("normal");
-        },
-        gracelibPath: function(argcv) {
-            return new GraceString("gracelib.h");
-        },
-        verbosity: function(argcv) {
-            return new GraceNum(30);
-        },
-        log_verbose: function(argcv, s) {
-            if (minigrace.verbose)
-            minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' + s._value + "\n");
-            return GraceDone;
-        },
-        outprint: function(argcv, s) {
-            minigrace.stdout_write(s._value + "\n");
-            return GraceDone;
-        },
-        engine: function(argcv) {
-            return new GraceString("js");
-        },
-        debug: function(argcv, s) {
-            dbg(s._value);
-            return GraceDone;
-        },
-        interactive: function(argcv) {
-            return GraceFalse;
-        },
-        type_error: function(argcv, s) {
-            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": type error: " + s._value + "\n");
-            throw "ErrorExit";
-        },
-        // This is called by various wrapper methods in the errormessages module.
-        // The parameters are explained as follows:
-        // - message: The text of the error message.
-        // - errlinenum: The line number on which the error occurred.
-        // - position: A string used to show the position of the error in the error message.
-        // - arr: The string used to draw an arrow showing the position of the error.
-        // - spacePos: The position in the error line that a space should be inserted, or false.
-        // - suggestions: A (possibly empty) list of suggestions to correct the error.
-        "syntaxError": function(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
-            callmethod(this, "generalError", [6], new GraceString("Syntax error: " + message._value), errlinenum,
-                position, arr, spacePos, suggestions);
-        },
-        "generalError": function(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
-            minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + position._value
-                + "]: " + message._value + "\n");
 
-            if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
-                minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value - 1))._value + "\n");
-
-            if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
-                var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
-                if(spacePos._value != false) {
-                    minigrace.stderr_write("  " + errlinenum._value + ": " + line.substring(0, spacePos._value - 1) + " "
-                        + line.substring(spacePos._value - 1) + "\n");
+    this.methods.vtag = function(argcv) {
+        return new GraceBoolean(false);
+    };
+    this.methods.outfile = function util_outfile(argcv) {
+        return stdout;
+    };
+    this.methods.infile = function util_infile(argcv) {
+        return stdin;
+    };
+    this.methods.parseargs = function util_parseargs(argcv) {
+        return GraceDone;
+    };
+    this.methods.target = function util_target(argcv) {
+        return new GraceString(minigrace.mode);
+    };
+    this.methods.modname = function util_modname(argcv) {
+        return new GraceString(minigrace.modname);
+    };
+    this.methods.setline = function util_setline(argcv, i) {
+        lineNumber = i._value;
+        this._linenum = i;
+    };
+    this.methods.linenum = function util_linenum(argcv) {
+        return this._linenum;
+    };
+    this.methods.linepos = function util_linepos(argcv) {
+        return this._linepos;
+    };
+    this.methods.setPosition = function util_setPosition(argcv, l, p) {
+        lineNumber = l._value;
+        this._linenum = l;
+        this._linepos = p;
+        return GraceDone;
+    };
+    this.methods.buildtype = function util_buildtype(argcv) {
+        return new GraceString("normal");
+    };
+    this.methods.runmode = function util_runmode(argcv) {
+        return new GraceString("normal");
+    };
+    this.methods.gracelibPath = function util_gracelibPath(argcv) {
+        return new GraceString("gracelib.h");
+    };
+    this.methods.verbosity = function util_verbosity(argcv) {
+        return new GraceNum(30);
+    };
+    this.methods.log_verbose = function util_log_verbose(argcv, s) {
+        if (minigrace.verbose) {
+            var cpu = Math.round((performance.now() - loadCPU)/10);  // 10 ms
+            var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
+            cpu = (cpu / 100);               // seconds, with 2 decimals
+            elapsed = (elapsed / 100);       // seconds, with 2 decimals
+            minigrace.stderr_write("minigrace: " + minigrace.modname + ': '
+                            + cpu + "/" + elapsed
+                            + " (+" + (cpu - previousCPU).toFixed(2) + "/"
+                            + (elapsed - previousElapsed).toFixed(2) + "): "
+                            + s._value + "\n");
+            previousElapsed = elapsed;
+            previousCPU = cpu;
+        }
+        return GraceDone;
+    };
+    this.methods.outprint = function util_outprint(argcv, s) {
+        minigrace.stdout_write(s._value + "\n");
+        return GraceDone;
+    };
+    this.methods.engine = function util_engine(argcv) {
+        return new GraceString("js");
+    };
+    var obj_requiredModules = Grace_allocObject();
+    var obj_init_requiredModules = function () {
+        var origSuperDepth = superDepth;
+        superDepth = obj_requiredModules;
+        var meth_isAlready = function(argcv) {    // method isAlready(1)
+            var curarg = 1;
+            var var_moduleName = arguments[curarg];
+            curarg++;
+            if (argcv[0] != 1)
+                callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for isAlready(1)"));
+            setModuleName("util");
+            var returnTarget = invocationCount;
+            invocationCount++;
+            try {
+                var if1246 = GraceDone;
+                onSelf = true;
+                var call1247 = callmethod(this, "static", [0]);
+                var call1248 = callmethod(call1247,"contains", [1], var_moduleName);
+                if (Grace_isTrue(call1248)) {
+                    var bool1249 = new GraceBoolean(true)
+                    if1246 = bool1249;
                 } else {
-                    minigrace.stderr_write("  " + errlinenum._value + ": " + line + "\n");
+                    var if1250 = GraceDone;
+                    onSelf = true;
+                    var call1251 = callmethod(this, "other", [0]);
+                    var call1252 = callmethod(call1251,"contains", [1], var_moduleName);
+                    if (Grace_isTrue(call1252)) {
+                        var bool1253 = new GraceBoolean(true)
+                        if1250 = bool1253;
+                    } else {
+                        var bool1254 = new GraceBoolean(false)
+                        if1250 = bool1254;
+                    }
+                    if1246 = if1250;
                 }
-                minigrace.stderr_write(arr._value + "\n");
-            }
-
-            if (errlinenum._value <
-                    callmethod(this._lines, "size", [0])._value)
-                minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
-                + callmethod(this._lines, "at",
-                        [1], new GraceNum(errlinenum._value + 1))._value + "\n");
-
-            var numsuggestions = callmethod(suggestions, "size", []);
-            if(numsuggestions._value > 0) {
-                for(var i=1; i <= numsuggestions._value; i++) {
-                    minigrace.stderr_write("\nDid you mean:\n");
-                    var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
-                    callmethod(suggestion, "print", [0]);
+                return if1246;
+            } catch(e) {
+                if ((e.exctype == 'return') && (e.target == returnTarget)) {
+                    return e.returnvalue;
+                } else {
+                    throw e;
                 }
             }
+        }
+        meth_isAlready.paramCounts = [1];
+        meth_isAlready.variableArities = [false];
+        obj_requiredModules.methods["isAlready"] = meth_isAlready;
+        meth_isAlready.definitionModule = "util";
+        sourceObject = obj_requiredModules;
+        var call1255 = callmethod(Grace_prelude, "set", [0]);
+        var call1256 = callmethod(call1255,"empty", [0]);
+        obj_requiredModules.data["static"] = call1256;
+        var reader_util_static1257 = function() {
+            return this.data["static"];
+        }
+        reader_util_static1257.def = true;
+        obj_requiredModules.methods["static"] = reader_util_static1257;
+        sourceObject = obj_requiredModules;
+        var call1258 = callmethod(Grace_prelude, "list", [0]);
+        var call1259 = callmethod(call1258,"empty", [0]);
+        obj_requiredModules.data["linkfiles"] = call1259;
+        var reader_util_linkfiles1260 = function() {
+            return this.data["linkfiles"];
+        }
+        reader_util_linkfiles1260.def = true;
+        obj_requiredModules.methods["linkfiles"] = reader_util_linkfiles1260;
+        sourceObject = obj_requiredModules;
+        var call1261 = callmethod(Grace_prelude, "set", [0]);
+        var call1262 = callmethod(call1261,"empty", [0]);
+        obj_requiredModules.data["other"] = call1262;
+        var reader_util_other1263 = function() {
+            return this.data["other"];
+        }
+        reader_util_other1263.def = true;
+        obj_requiredModules.methods["other"] = reader_util_other1263;
+        sourceObject = obj_requiredModules;
+        superDepth = origSuperDepth;
+    }
+    obj_init_requiredModules.apply(obj_requiredModules, []);
+    var var_requiredModules = obj_requiredModules;
+    var util_requiredmodules = function(argcv) {    // method requiredModules
+        var curarg = 1;
+        if (argcv[0] != 0)
+            callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for requiredModules"));
+        return var_requiredModules;
+    };
+    util_requiredmodules.paramCounts = [ 0 ];
+    util_requiredmodules.variableArities = [false];
+    this.methods.requiredModules = util_requiredmodules;
+    this.methods.debug = function util_debug(argcv, s) {
+        dbg(s._value);
+        return GraceDone;
+    };
+    this.methods.interactive = function util_interactive(argcv) {
+        return GraceFalse;
+    };
+    this.methods.splitPath = function util_splitPath(argcv, pathString) {
+        var locations = pathString._value.split(':');
+        var result = callmethod(GraceListClass(), "empty", [0]);
+        var len = locations.length;
+        for (var i = 0; i < len; i++) {
+            callmethod(result, "addLast", [1], new GraceString(locations[i]));
+        };
+        return result;
+    };
+    this.methods['file()on()orPath()otherwise'] =
+        function util_file_on_orPath_otherwise (argcv, fn, origin, pth, blk) {
+        var jsFn = fn._value;
+        if (fileExists(jsFn)) return fn;
+        return callmethod(blk, "apply", [1], new GraceString("gct cache"));
+    };
+    this.methods['file()onPath()otherwise'] = function (argcv, fn, p, blk) {
+        var jsFn = fn._value;
+        if (fileExists(jsFn)) return fn;
+        return callmethod(blk, "apply", [1], new GraceString("gct cache"));
+    };
+    this.methods.sourceDir = function util_sourceDir(argcv) {
+        return new GraceString("./");
+    };
+    this.methods.execDir = function util_execDir(argcv) {
+        return new GraceString("./");
+    };
+    this.methods.type_error = function util_type_error(argcv, s) {
+        minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+            this._linepos._value + ": type error: " + s._value + "\n");
+        throw "ErrorExit";
+    };
+    // This is called by various wrapper methods in the errormessages module.
+    // The parameters are as follows:
+    // - message: The text of the error message.
+    // - errlinenum: The line number on which the error occurred.
+    // - position: A string used to show the position of the error in the error message.
+    // - arr: The string used to draw an arrow showing the position of the error.
+    // - spacePos: The position in the error line that a space should be inserted, or false.
+    // - suggestions: A (possibly empty) list of suggestions to correct the error.
+    this.methods['syntaxError'] = function util_syntaxError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
+        callmethod(this, "generalError", [6], new GraceString("Syntax error: " + message._value), errlinenum,
+            position, arr, spacePos, suggestions);
+    };
+    this.methods['generalError'] = function util_generalError(argcv, message, errlinenum, position, arr, spacePos, suggestions) {
+        minigrace.stderr_write(minigrace.modname + ".grace[" + errlinenum._value + position._value
+            + "]: " + message._value + "\n");
 
-            throw "ErrorExit";
-        },
-        semantic_error: function(argcv, s) {
-            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": semantic error: " + s._value + "\n");
-            if (this._linenum._value > 1)
-                minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value - 1))._value
-                    + "\n");
-            var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
-            var arr = "----";
-            for (var i=1; i<this._linepos._value+linenumsize._value; i++)
-                arr = arr + "-";
-            minigrace.stderr_write("  " + this._linenum._value + ": "
+        if ((errlinenum._value > 1) && (callmethod(this._lines, "size", [0])._value > 1))
+            minigrace.stderr_write("  " + (errlinenum._value - 1) + ": "
                 + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value))._value + "\n");
-            minigrace.stderr_write(arr + "^\n");
-            if (this._linenum._value <
-                    callmethod(this._lines, "size", [])._value)
-                minigrace.stderr_write("  " + (this._linenum._value + 1) + ": "
-                    + callmethod(this._lines, "at",
-                        [1], new GraceNum(this._linenum._value + 1))._value
-                    + "\n");
-            throw "ErrorExit";
-        },
-        warning: function(argcv, s) {
-            minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
-                this._linepos._value + ": warning: " + s._value + "\n");
-        },
-        hex: function(argcv, n) {
-            var hexdigits = "0123456789abcdef"
-            var s = ""
-            var num = n._value
-            while (num > 0) {
-                var i = num % 16
-                s = hexdigits.charAt(i) + s
-                num = num - i
-                num = num / 16
-            }
-            return new GraceString(s)
-        },
-        join: function(argcv, joiner, iterable) {
-            var s = "";
-            var ind = callmethod(iterable, "indices", [0]);
-            for (var i=0; i<ind._value.length; i++) {
-                if (i > 0)
-                    s += ",";
-                s += callmethod(callmethod(iterable, "at", [1], new GraceNum(i + 1)),
-                        "asString", [0])._value;
-            }
-            return new GraceString(s);
-        },
-        split: function(argcv, str, by) {
-            var r = [];
-            var pts = str._value.split(by);
-            for (var i=0; i<pts.length; i++)
-                r.push(new GraceString(pts[i]));
-            return new GraceList(pts);
-        },
-        "runOnNew()else": function(argcv, b,e) {
-            return callmethod(b, "apply", [0]);
-        },
-        "extensions": function(argcv) {
-            return extensionsMap;
-        },
-        "processExtension": function(argcv, ext) {
-            var extn;
-            var extv;
-            ext = ext._value;
-            if (ext.indexOf("=") >= 0) {
-                var tmp = ext.split("=");
-                extn = new GraceString(tmp[0]);
-                extv = new GraceString(tmp[1]);
+                    [1], new GraceNum(errlinenum._value - 1))._value + "\n");
+
+        if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
+            var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
+            if(spacePos._value != false) {
+                minigrace.stderr_write("  " + errlinenum._value + ": " + line.substring(0, spacePos._value - 1) + " "
+                    + line.substring(spacePos._value - 1) + "\n");
             } else {
-                extn = new GraceString(ext);
-                extv = GraceTrue;
+                minigrace.stderr_write("  " + errlinenum._value + ": " + line + "\n");
             }
-            callmethod(extensionsMap, "put", [2], extn, extv);
-            return GraceDone;
-        },
-        "lines": function(argcv) {
-            return this._lines;
-        },
-        "cLines": function(argcv) {
-            return this._cLines;
-        },
-        "lines:=": function(argcv, v) {
-            this._lines = v;
-            return GraceDone;
-        },
-        "cLines:=": function(argcv, v) {
-            this._cLines = v;
-            return GraceDone;
-        },
-        "suggestion": function() {
-            return this._suggestion;
-        },
+            minigrace.stderr_write(arr._value + "\n");
+        }
+
+        if (errlinenum._value <
+                callmethod(this._lines, "size", [0])._value)
+            minigrace.stderr_write("  " + (errlinenum._value + 1) + ": "
+            + callmethod(this._lines, "at",
+                    [1], new GraceNum(errlinenum._value + 1))._value + "\n");
+
+        var numsuggestions = callmethod(suggestions, "size", []);
+        if(numsuggestions._value > 0) {
+            for(var i=1; i <= numsuggestions._value; i++) {
+                minigrace.stderr_write("\nDid you mean:\n");
+                var suggestion = callmethod(suggestions, "at", [1], new GraceNum(i));
+                callmethod(suggestion, "print", [0]);
+            }
+        }
+
+        throw "ErrorExit";
+    };
+    this.methods.semantic_error = function util_semantic_error(argcv, s) {
+        minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+            this._linepos._value + ": semantic error: " + s._value + "\n");
+        if (this._linenum._value > 1)
+            minigrace.stderr_write("  " + (this._linenum._value - 1) + ": "
+                + callmethod(this._lines, "at",
+                    [1], new GraceNum(this._linenum._value - 1))._value
+                + "\n");
+        var linenumsize = callmethod(callmethod(this._linenum, "asString", []), "size", []);
+        var arr = "----";
+        for (var i=1; i<this._linepos._value+linenumsize._value; i++)
+            arr = arr + "-";
+        minigrace.stderr_write("  " + this._linenum._value + ": "
+            + callmethod(this._lines, "at",
+                    [1], new GraceNum(this._linenum._value))._value + "\n");
+        minigrace.stderr_write(arr + "^\n");
+        if (this._linenum._value <
+                callmethod(this._lines, "size", [])._value)
+            minigrace.stderr_write("  " + (this._linenum._value + 1) + ": "
+                + callmethod(this._lines, "at",
+                    [1], new GraceNum(this._linenum._value + 1))._value
+                + "\n");
+        throw "ErrorExit";
+    };
+    this.methods.warning = function util_warning(argcv, s) {
+        minigrace.stderr_write(minigrace.modname + ".grace:" + this._linenum._value + ":" +
+            this._linepos._value + ": warning: " + s._value + "\n");
+    };
+    this.methods.hex = function util_hex(argcv, n) {
+        var hexdigits = "0123456789abcdef"
+        var s = ""
+        var num = n._value
+        while (num > 0) {
+            var i = num % 16
+            s = hexdigits.charAt(i) + s
+            num = num - i
+            num = num / 16
+        }
+        return new GraceString(s)
+    };
+    this.methods.join = function util_join(argcv, joiner, iterable) {
+        var s = "";
+        var ind = callmethod(iterable, "indices", [0]);
+        for (var i=0; i<ind._value.length; i++) {
+            if (i > 0)
+                s += ",";
+            s += callmethod(callmethod(iterable, "at", [1], new GraceNum(i + 1)),
+                    "asString", [0])._value;
+        }
+        return new GraceString(s);
+    };
+    this.methods.split = function util_split(argcv, str, by) {
+        var r = [];
+        var pts = str._value.split(by);
+        for (var i=0; i<pts.length; i++)
+            r.push(new GraceString(pts[i]));
+        return new GraceList(r);
+    };
+    this.methods.extensions = function util_extensions(argcv) {
+        return extensionsMap;
+    };
+    this.methods.processExtension = function util_processExtension(argcv, ext) {
+        var extn;
+        var extv;
+        ext = ext._value;
+        if (ext.indexOf("=") >= 0) {
+            var tmp = ext.split("=");
+            extn = new GraceString(tmp[0]);
+            extv = new GraceString(tmp[1]);
+        } else {
+            extn = new GraceString(ext);
+            extv = GraceTrue;
+        }
+        callmethod(extensionsMap, "put", [2], extn, extv);
+        return GraceDone;
+    };
+    this.methods['lines'] = function util_lines(argcv) {
+        return this._lines;
+    };
+    this.methods['cLines'] = function util_cLines(argcv) {
+        return this._cLines;
+    };
+    this.methods['lines:='] = function util_lines_set(argcv, v) {
+        this._lines = v;
+        return GraceDone;
+    };
+    this.methods['cLines:='] = function util_cLines_set(argcv, v) {
+        this._cLines = v;
+        return GraceDone;
+    };
+    this.methods.suggestion = function util_suggestion() {
+        return this._suggestion;
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
@@ -1654,22 +1997,22 @@ function gracecode_util() {
     this._cLines = new GraceList([]);
     this._suggestion = new Grace_allocObject();
 
-    this._suggestion.methods["new"] = function(argcv, line, code) {
+    this._suggestion.methods['new'] = function(argcv, line, code) {
         var suggestion = new Grace_allocObject();
-        suggestion.methods["line"] = function() {
+        suggestion.methods['line'] = function() {
             return line;
         };
-        suggestion.methods["code"] = function() {
+        suggestion.methods['code'] = function() {
             return code;
         };
         return suggestion;
     };
-
     util_module = this;
-    this.definitionModule = "util";
-    this.definitionLine = 0;
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n engine\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
 function gracecode_interactive() {
@@ -1679,8 +2022,12 @@ function gracecode_interactive() {
 function GraceMirrorMethod(o, k) {
     this.name = k;
     this.obj = o;
+    this.superobj = new GraceObject();
 }
 GraceMirrorMethod.prototype = Grace_allocObject();
+GraceMirrorMethod.prototype.methods['asString'] = function(argcv) {
+    return new GraceString("mirror on method '" + this.name + "'");
+}
 GraceMirrorMethod.prototype.methods['name'] = function(argcv) {
     return new GraceString(this.name);
 }
@@ -1718,6 +2065,10 @@ GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
 }
 
 GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
+    if (! argList) {
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("'request' requires one argument (a list of arg lists)"));
+    }
     var theFunction = this.obj.methods[this.name];
     var requiredLen = theFunction.paramCounts.length;
     var providedLen = callmethod(argList, "size", [0])._value;
@@ -1737,99 +2088,161 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     return callmethod.apply(null, allArgs);
 }
 
-GraceMirrorMethod.prototype.methods['::'] = function(argcv, other) {
-    return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
+function methodMirror_hash (argcv, argList) {
+    return callmethod(new GraceString(this.name), "hash", [0]);
 }
 
-function alloc_Mirror(o) {
-    var m = Grace_allocObject();
-    m.methods['methods'] = function(argcv) {
-        var meths = [];
-        for (k in o.methods) {
-            meths.push(new GraceMirrorMethod(o, k));
-        }
-        var l = new GraceList(meths);
-        return l;
-    }
-    m.methods['getMethod'] = function(argcv, gString) {
-        var name = gString._value
-        for (k in o.methods) {
-            if (name == k) {
-                return (new GraceMirrorMethod(o, k));
-            }
-        }
-    }
-    return m;
-}
+GraceMirrorMethod.prototype.methods['hashcode'] = methodMirror_hash;
+GraceMirrorMethod.prototype.methods['hash'] = methodMirror_hash;
 
-function gracecode_mirrors() {
-    this.methods = {
-        'loadDynamicModule': function(argcv, v) {
-            return do_import(v._value, window["gracecode_" + v._value]);
-        },
-        'reflect': function(argcv, o) {
-            return alloc_Mirror(o);
-        },
-        'asString': function(argcv) {
-            return new GraceString('the "mirrors" module');
-        }
-    };
+
+
+function GraceMirror(subj) {       // constructor function
+    this.superobj = new GraceObject();
+    this.subject = subj;
+    this.mutable = false;
     this.definitionModule = "mirrors";
     this.definitionLine = 0;
+}
+
+GraceMirror.prototype = {
+    methods: {
+        methods: function mirror_methods(argcv) {
+            var meths = [];
+            var current = this.subject;
+            while (current != null) {
+                for (var k in current.methods)
+                    meths.push(new GraceMirrorMethod(current, k));
+                current = current.superobj;
+            }
+            var l = new GraceList(meths);
+            return l;
+        },
+        methodNames: function mirror_methodName(argcv) {
+            var meths = callmethod(GraceSetClass(), "empty", [0])
+            var current = this.subject;
+            while (current != null) {
+                for (var k in current.methods)
+                    callmethod(meths, "add", [1], new GraceString(k));
+                current = current.superobj;
+            }
+            return meths;
+        },
+        superobject: function mirror_superobject (argcv) {
+            return this.superobj;
+        },
+        superobjectMirror: function mirror_superobject(argcv) {
+            return new GraceMirror(this.superobj);
+        },
+        getMethod: function mirror_getMethod (argcv, methName) {
+            var name = methName._value;
+            var current = this.subject;
+            while (current != null) {
+                if (current.methods[name]) {
+                    return (new GraceMirrorMethod(this.subject, name));
+                }
+                current = current.superobj;
+            }
+            var exceptionMsg = new GraceString("no method " + name + " in mirror for ");
+            var objDescription = callmethod(this.subject, "asString", [0]);
+            exceptionMsg = callmethod(exceptionMsg, "++", [1], objDescription);
+            throw new GraceExceptionPacket(NoSuchMethod, exceptionMsg);
+        }
+    },
+    className: 'objectMirror'
+};
+
+function gracecode_mirrors() {
+    this.methods['loadDynamicModule'] = function(argcv, v) {
+        var moduleFunc;
+        var modName = v._value;
+        var slash = modName.lastIndexOf("/");
+        if (slash >= 0) modName = modName.substring(slash+1);
+        try {
+            moduleFunc = eval("gracecode_" + modName);
+        } catch (e) {
+            throw new GraceExceptionPacket(ImportErrorObject,
+                       new GraceString("Can't find module " + v._value))
+        }
+        try {
+            return do_import(v._value, moduleFunc);
+        } catch (e) {
+            throw new GraceExceptionPacket(ProgrammingErrorObject,
+                                           new GraceString("Error importing module " + v._value));
+        }
+    };
+    this.methods['reflect'] = function(argcv, o) {
+        return new GraceMirror(o);
+    };
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
+
 
 function gracecode_math() {
-    this.methods = {
-        'asString': function(argcv) {
-            return new GraceString('the "math" module');
-        },
-        'asDebugString': function(argcv) {
-            return callmethod(this, "asString", [0]);
-        },
-        'sin': function(argcv, a) {
-            return new GraceNum(Math.sin(a._value));
-        },
-        'cos': function(argcv, a) {
-            return new GraceNum(Math.cos(a._value));
-        },
-        'tan': function(argcv, a) {
-            return new GraceNum(Math.tan(a._value));
-        },
-        'asin': function(argcv, a) {
-            return new GraceNum(Math.asin(a._value));
-        },
-        'acos': function(argcv, a) {
-            return new GraceNum(Math.acos(a._value));
-        },
-        'atan': function(argcv, a) {
-            return new GraceNum(Math.atan(a._value));
-        },
-        'random': function(argcv) {
-            return new GraceNum(Math.random());
-        },
-        'pi': function(argcv) {
-            return new GraceNum(3.141592653589793)
-        },
-        'π': function(argcv) {
-            return new GraceNum(3.141592653589793)
-        },
-        'sqrt': function(argcv, a) {
-            return new GraceNum(Math.sqrt(a._value));
-        },
-        'abs': function(argcv, a) {
-            return new GraceNum(Math.abs(a._value));
-        },
+    this.methods['asString'] = function math_asString(argcv) {
+        return new GraceString('the "math" module');
     };
-    this.definitionModule = "math";
-    this.definitionLine = 0;
+    this.methods['asDebugString'] = function math_asDebugString(argcv) {
+        return callmethod(this, "asString", [0]);
+    };
+    this.methods['sin'] = function math_sin(argcv, a) {
+        return new GraceNum(Math.sin(a._value));
+    };
+    this.methods['cos'] = function math_cos(argcv, a) {
+        return new GraceNum(Math.cos(a._value));
+    };
+    this.methods['tan'] = function math_tan(argcv, a) {
+        return new GraceNum(Math.tan(a._value));
+    };
+    this.methods['asin'] = function math_asin(argcv, a) {
+        return new GraceNum(Math.asin(a._value));
+    };
+    this.methods['acos'] = function math_acos(argcv, a) {
+        return new GraceNum(Math.acos(a._value));
+    };
+    this.methods['atan'] = function math_atan(argcv, a) {
+        return new GraceNum(Math.atan(a._value));
+    };
+    this.methods['random'] = function math_random(argcv) {
+        return new GraceNum(Math.random());
+    };
+    this.methods['pi'] = function math_pi(argcv) {
+        return new GraceNum(3.141592653589793)
+    };
+    this.methods['π'] = function math_π(argcv) {
+        return new GraceNum(3.141592653589793)
+    };
+    this.methods['sqrt'] = function math_sqrt(argcv, a) {
+        return new GraceNum(Math.sqrt(a._value));
+    };
+    this.methods['abs'] = function math_abs(argcv, a) {
+        return new GraceNum(Math.abs(a._value));
+    };
+    this.methods['lg'] = function math_lg(argcv, a) {
+        return new GraceNum(Math.log(a._value) / Math.LN2);
+    };
+    this.methods['ln'] = function math_ln(argcv, a) {
+        return new GraceNum(Math.log(a._value));  // JavaScript's log is base e!
+    };
+    this.methods['exp'] = function math_exp(argcv, a) {
+        return new GraceNum(Math.exp(a._value));
+    };
+    this.methods['log10'] = function math_log10(argcv, a) {
+        return new GraceNum(Math.log(a._value) / Math.LN10);
+    };
     return this;
 }
 
+if (typeof gctCache !== "undefined")
+    gctCache['math'] = "modules:\nfresh-methods:\npath:\n math\nclasses:\npublic:\n  asString\n asDebugString\n sin\n cos\n tan\n asin\n acos\n atan\n random\n π\n pi\n sqrt\n abs\n lg\n ln\n exp\n log10\nconfidential:\n";
+
+
 function checkmethodcall(func, methname, obj, args) {
-    var i = 0;
     var pt = func.paramTypes;
-    for (i=0; i<args.length, i<pt.length; i++) {
+    for (var i=0; i<args.length, i<pt.length; i++) {
         var p = pt[i];
         if (!p || p.length == 0)
             continue;
@@ -1843,11 +2256,7 @@ function checkmethodcall(func, methname, obj, args) {
     }
 }
 
-var callStack = [];
 var overrideReceiver = null;
-var onSelf = false;
-var onOuter = false;
-var sourceObject;
 
 function callmethodsuper(obj, methname, argcv) {
     overrideReceiver = obj;
@@ -1857,10 +2266,20 @@ function callmethodsuper(obj, methname, argcv) {
     return callmethod.apply(null, args);
 }
 
+function safeJsString (obj) {
+    var objString
+    try {
+        objString = callmethod(obj, "asString", [0])._value;
+    } catch (e) {
+        objString = "(without string representation)"
+    }
+    return objString;
+}
+
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("Requested method on uninitialised value."));
+                new GraceString("Requested method '" + methname + "' on uninitialised value."));
     if (!obj || obj === undefined || !obj.methods)
         debugger
     var meth = obj.methods[methname];
@@ -1896,12 +2315,12 @@ function callmethod(obj, methname, argcv) {
                 + " at " + moduleName
                 + ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method " + methname + " in " +
-                    obj.className + "."));
+                new GraceString("no method '" + methname + "' in " +
+                    obj.className + " " + safeJsString(obj) + "."));
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " from outside."));
+                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
@@ -1921,8 +2340,11 @@ function callmethod(obj, methname, argcv) {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
             if (typeof args[i] == 'undefined')
-                throw new GraceExceptionPacket(ProgrammingErrorObject,
-                       new GraceString("Uninitialised value used as argument to " + methname + "."));
+                throw new GraceExceptionPacket(
+                           ProgrammingErrorObject,
+                           new GraceString("Uninitialised value used as argument to "
+                                           + methname + "' in " + obj.className + " "
+                                           + safeJsString(obj) + "."));
         if (meth.paramTypes)
             checkmethodcall(meth, methname, obj, args);
         args.unshift(argcv);
@@ -1933,20 +2355,17 @@ function callmethod(obj, methname, argcv) {
             callStack.pop();
         sourceObject = oldSourceObject;
         setModuleName(origModuleName);
-        setLineNumber(origLineNumber);
     }
     return ret;
 }
 
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
-    setLineNumber(0);
-    var i = 0;
     try {
         callmethod(obj, "apply")
     } catch (e) {
         if (e.exctype == 'graceexception') {
-            for (i = 0; i<cases.length; i++) {
+            for (var i = 0; i<cases.length; i++) {
                 var ret = callmethod(cases[i], "match", [1],
                         e);
                 if (Grace_isTrue(ret))
@@ -1964,16 +2383,14 @@ function catchCase(obj, cases, finallyblock) {
 }
 
 function matchCase(obj, cases, elsecase) {
-    setModuleName("match()case()...else()");
-    setLineNumber(0);
-    var i = 0;
-    for (i = 0; i<cases.length; i++) {
+    setModuleName("match()case()...");
+    for (var i = 0; i<cases.length; i++) {
         var ret = callmethod(cases[i], "match", [1], obj);
         if (Grace_isTrue(ret))
             return callmethod(ret, "result", [0]);
     }
     if (elsecase != false)
-        return callmethod(elsecase, "apply", [1], obj);
+        return callmethod(elsecase, "apply", [0]);
     return new GraceFailedMatch(obj);
 }
 
@@ -1997,7 +2414,7 @@ function GraceExceptionPacket(exception, message, data) {
         this.callStack.push(callStack[i]);
     for (var i=0; i<stackFrames.length; i++)
         this.stackFrames.push(stackFrames[i]);
-    this.superobj = Grace_allocObject();
+    this.superobj = new GraceObject();
 }
 GraceExceptionPacket.prototype = {
     methods: {
@@ -2041,9 +2458,9 @@ GraceExceptionPacket.prototype = {
                 Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt, "pop", [0])));
             }
         },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
+        "reraise": function exception_reraise(argcv) {
+            throw this;
+        }
     },
     exctype: 'graceexception'
 };
@@ -2051,7 +2468,7 @@ GraceExceptionPacket.prototype = {
 function GraceException(name, parent) {
     this.name = name;
     this.parent = parent;
-    this.superobj = Grace_allocObject();
+    this.superobj = new GraceObject();
 }
 GraceException.prototype = {
     methods: {
@@ -2084,8 +2501,8 @@ GraceException.prototype = {
             return new GraceOrPattern(this, o);
         },
         "==": function(argcv, o) {
-            if (o == this) return GraceTrue; // not just for efficiency, but
-                                             // also to avoid infinite regress
+            if (o === this) return GraceTrue; // not just for efficiency, but
+                                              // also to avoid infinite regress
             if (o.className != 'Exception') return GraceFalse;
             if (o.name != this.name) return GraceFalse;
             if (o.parent != this.parent) return GraceFalse;
@@ -2102,12 +2519,12 @@ GraceException.prototype = {
                 return this
             else
                 return this.parent;
-        },
-        "::": function(argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        },
+        }
     },
-    className: 'Exception'
+    className: 'Exception',
+    definitionModule: "unknown",
+    definitionLine: 0,
+    superobj: new GraceObject()
 }
 
 var importedModules = {};
@@ -2120,20 +2537,26 @@ function do_import(modname, func) {
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("Could not find module '" + modname + "'"));
     var origSuperDepth = superDepth;
-    superDepth = Grace_allocModule(modname);
-    var f = func.call(superDepth);
-    superDepth = origSuperDepth;
-    importedModules[modname] = f;
-    return f;
+    superDepth = (modname === "StandardPrelude") ? Grace_prelude : new GraceModule(modname);
+    // importing "StandardPrelude" adds to the built-in prelude.
+    try {
+        var f = Function.prototype.call.call(func, superDepth);
+        return f;
+    } finally {
+        superDepth = origSuperDepth;
+        importedModules[modname] = f;
+    }
 }
 
 function dbgp(o, d) {
     if (d == undefined)
         d = 0;
-    var i;
     var ind = "";
-    for (i=0; i<d; i++)
+    for (var i=0; i<d; i++)
         ind += "  ";
+    if (typeof(o) == "undefined") {
+        return "undefined";
+    }
     if (typeof(o) == "function") {
         return "function";
     }
@@ -2150,7 +2573,7 @@ function dbgp(o, d) {
     for (var t in o) {
         s += ind + "  " + t + ": " + dbgp(o[t], d + 1) + "\n";
     }
-    return s + ind + "}";
+    return s + "}";
 }
 
 function dbg(o) {
@@ -2158,12 +2581,16 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var GraceDone = new GraceObject();
-GraceDone.methods.asString = function() {return new GraceString("done");}
-var var_done = GraceDone // for backward compatibility; case matters
+var GraceDone = Grace_allocObject(null, "done");
+GraceDone.methods.asString = function done_asString() {
+    return new GraceString("done");
+};
+GraceDone.methods.asDebugString = function done_asDebugString() {
+    return new callemethod(this, "asString", [0]);
+};
 
-var ellipsis = Grace_allocObject();
-ellipsis.methods.asString = function() {return new GraceString("ellipsis");}
+var ellipsis = Grace_allocObject(GraceObject, "ellipsis");
+ellipsis.methods.asString = function ellipsis_asString() {return new GraceString("...");}
 
 var ExceptionObject = new GraceException("Exception", false);
 var ErrorObject = new GraceException("Error", ExceptionObject);
@@ -2174,41 +2601,56 @@ var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
 var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionObject);
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
+var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
 
-var Grace_native_prelude = Grace_allocObject();
-var Grace_prelude = Grace_native_prelude;
-var var___95__prelude = Grace_native_prelude;
-Grace_prelude.methods["Exception"] = function(argcv) {
+//
+// Define "Grace_prelude" as a Grace object to which some methods are added here,
+// and to which more methods will be added by the compiled StandardPrelude module
+// when it is loaded.
+//
+
+var Grace_prelude = new GraceModule("StandardPrelude");
+
+Grace_prelude.methods['true()object'] = function prelude_true_object (argcv) {
+    return GraceTrue;
+}
+Grace_prelude.methods['false()object'] = function prelude_false_object (argcv) {
+    return GraceFalse;
+}
+Grace_prelude.methods['Exception'] = function(argcv) {
     return ExceptionObject;
 }
-Grace_prelude.methods["Error"] = function(argcv) {
+Grace_prelude.methods['Error'] = function(argcv) {
     return ErrorObject;
 }
-Grace_prelude.methods["ProgrammingError"] = function(argcv) {
+Grace_prelude.methods['ProgrammingError'] = function(argcv) {
     return ProgrammingErrorObject;
 }
-Grace_prelude.methods["EnvironmentException"] = function(argcv) {
+Grace_prelude.methods['EnvironmentException'] = function(argcv) {
     return EnvironmentExceptionObject;
 }
-Grace_prelude.methods["ResourceException"] = function(argcv) {
+Grace_prelude.methods['ResourceException'] = function(argcv) {
     return ResourceExceptionObject;
 }
-Grace_prelude.methods["RuntimeError"] = function(argcv) {
+Grace_prelude.methods['RuntimeError'] = function(argcv) {
     return RuntimeErrorObject;
 }
-Grace_prelude.methods["TypeError"] = function(argcv) {
+Grace_prelude.methods['TypeError'] = function(argcv) {
     return TypeErrorObject;
 }
-Grace_prelude.methods["NoSuchMethod"] = function(argcv) {
+Grace_prelude.methods['NoSuchMethod'] = function(argcv) {
     return NoSuchMethodErrorObject;
 }
-Grace_prelude.methods["while()do"] = function(argcv, c, b) {
+Grace_prelude.methods['BoundsError'] = function(argcv) {
+    return BoundsErrorObject;
+}
+Grace_prelude.methods['while()do'] = function(argcv, c, b) {
     if (c.className == "Boolean" || c.className == "Number")
         throw new GraceExceptionPacket(TypeErrorObject,
             new GraceString("expected Block for first argument of "
                             + "while()do, got " + c.className + "."));
-    if (Grace_prelude.methods["while()do"] &&
-            Grace_prelude.methods["while()do"].safe) {
+    if (Grace_prelude.methods['while()do'] &&
+            Grace_prelude.methods['while()do'].safe) {
         var count = 0;
         var runningTime = 0;
         var runningCount = 0;
@@ -2241,31 +2683,55 @@ Grace_prelude.methods["while()do"] = function(argcv, c, b) {
     }
     return GraceDone;
 }
-Grace_prelude.methods["for()do"] = function(argcv, c, b) {
+Grace_prelude.methods['for()do'] = function(argcv, c, b) {
     var iter = callmethod(c, "iterator", [0]);
-    while (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
+    while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
         var val = callmethod(iter, "next", [0]);
         callmethod(b, "apply", [1], val);
     }
     return GraceDone;
 }
-Grace_prelude.methods["_methods"] = function() {
+Grace_prelude.methods['identical'] = function prelude_identical (argcv, a, b) {
+    if (a === b) return GraceTrue; else return GraceFalse;
+}
+Grace_prelude.methods['different'] = function prelude_different (argcv, a, b) {
+    if (a !== b) return GraceTrue; else return GraceFalse;
+}
+Grace_prelude.methods['_methods'] = function() {
     var meths = [];
-    for (m in this.methods)
+    for (var m in this.methods)
         meths.push(new GraceString(m));
     var s = this.superobj;
     while (s) {
-        for (m in s.methods)
+        for (var m in s.methods)
             meths.push(new GraceString(m));
         s = s.superobj;
     }
     var l = new GraceList(meths);
     return l;
 }
-Grace_prelude.methods["clone"] = function(argcv, obj) {
-    return obj;
+
+Grace_prelude.methods['clone'] = function prelude_clone (argcv, obj) {
+    return clone(obj);
 }
-Grace_prelude.methods["become"] = function(argcv, a, b) {
+
+function clone (obj) {
+//   shallow copy, except up the superchain
+    var copy = new GraceObject();
+    if (obj.superobj)
+        copy.superobj = clone(obj.superobj);
+    copy.className = obj.className;
+    copy.methods = obj.methods;
+    copy.mutable = obj.mutable;
+    copy.definitionModule = obj.definitionModule;
+    copy.definitionLine = obj.definitionLine;
+    for (var attr in obj.data) {
+        if (obj.data.hasOwnProperty(attr))
+            copy.data[attr] = obj.data[attr];
+    }
+    return copy;
+}
+Grace_prelude.methods['become'] = function(argcv, a, b) {
     for(var k in a) {
         var t = a[k];
         a[k] = b[k];
@@ -2274,33 +2740,152 @@ Grace_prelude.methods["become"] = function(argcv, a, b) {
     return GraceDone;
 }
 
-var PrimitiveArrayClass = new GraceObject();
-PrimitiveArrayClass.methods["new"] = function(argcv, n) {
+Grace_prelude.methods['inBrowser'] = function(argcv) {
+    if (typeof global == "undefined") return GraceTrue
+        else return GraceFalse;
+}
+
+var PrimitiveArrayClass = Grace_allocObject();
+PrimitiveArrayClass.methods['new'] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
-};
-Grace_prelude.methods["PrimitiveArray"] = function() { return PrimitiveArrayClass; };
+}
 
+Grace_prelude.methods['PrimitiveArray'] = function() { return PrimitiveArrayClass; };
+Grace_prelude.methods['primitiveArray'] = function() { return PrimitiveArrayClass; };
 
-var _point2DClass = 'undefined';
+//
+//  Access methods declared in Grace's standard prelude
+//
+
+var _point2DClass;
 function GracePoint2DClass() {
-    if (_point2DClass == 'undefined')
+    if (!_point2DClass)
         _point2DClass = callmethod(Grace_prelude, "point2D", [0]);
     return _point2DClass
 }
 
-var _bindingClass = 'undefined';
+var _bindingClass;
 function GraceBindingClass() {
-    if (_bindingClass == 'undefined')
+    if (!_bindingClass)
         _bindingClass = callmethod(Grace_prelude, "binding", [0]);
     return _bindingClass
 }
 
-function Grace_allocModule(modname) {
-    var mod = Grace_allocObject();
-    mod.methods.outer = function() {
-        return this.outer;
-    }
-    mod.outer = Grace_prelude;
-    mod.className = "Module<" + modname + ">";
-    return mod;
+var _rangeClass;
+function GraceRangeClass() {
+    if (!_rangeClass)
+        _rangeClass = callmethod(Grace_prelude, "range", [0]);
+    return _rangeClass
 }
+
+var _setClass;
+function GraceSetClass() {
+    if (!_setClass)
+        _setClass = callmethod(Grace_prelude, "set", [0]);
+    return _setClass
+}
+
+var _sequenceClass;
+function GraceSequenceClass() {
+    if (!_sequenceClass)
+        _sequenceClass = callmethod(Grace_prelude, "sequence", [0]);
+    return _sequenceClass
+}
+
+var _listClass;
+function GraceListClass() {
+    if (!_listClass)
+        _listClass = callmethod(Grace_prelude, "list", [0]);
+    return _listClass
+}
+
+
+// these names are used in the generated code.
+// __95__ is the escape for _
+var var___95__prelude = Grace_prelude;
+var var_Done = GraceDone;
+var var_done = GraceDone;
+
+
+// for node: explicitly make names global
+if (typeof global !== "undefined") {
+    global.callmethod = callmethod;
+    global.callmethodsuper = callmethodsuper;
+    global.callStack = callStack;
+    global.catchCase = catchCase;
+    global.checkmethodcall = checkmethodcall;
+    global.classType = classType;
+    global.dbg = dbg;
+    global.dbgp = dbgp;
+    global.do_import = do_import;
+    global.EnvironmentExceptionObject = EnvironmentExceptionObject;
+    global.ErrorObject = ErrorObject;
+    global.ExceptionObject = ExceptionObject;
+    global.getLineNumber = getLineNumber;
+    global.getModuleName = getModuleName;
+    global.Grace_allocObject = Grace_allocObject;
+    global.Grace_errorPrint = Grace_errorPrint;
+    global.Grace_prelude = Grace_prelude;
+    global.Grace_print = Grace_print;
+    global.GraceBindingClass = GraceBindingClass;
+    global.GraceBlock_match = GraceBlock_match;
+    global.GraceBoolean = GraceBoolean;
+    global.gracecode_imports = gracecode_imports;
+    global.gracecode_interactive = gracecode_interactive;
+    global.gracecode_io = gracecode_io;
+    global.gracecode_math = gracecode_math;
+    global.gracecode_mirrors = gracecode_mirrors;
+    global.gracecode_sys = gracecode_sys;
+    global.gracecode_unicode = gracecode_unicode;
+    global.gracecode_util = gracecode_util;
+    global.GraceBlock = GraceBlock;
+    global.GraceDone = GraceDone;
+    global.GraceException = GraceException;
+    global.GraceExceptionPacket = GraceExceptionPacket;
+    global.GraceFailedMatch = GraceFailedMatch;
+    global.GraceFalse = GraceFalse;
+    global.GraceHashMap = GraceHashMap;
+    global.Grace_isTrue = Grace_isTrue;
+    global.GraceIterator = GraceIterator;
+    global.GraceList = GraceList;
+    global.GraceListIterator = GraceListIterator;
+    global.GraceMatchResult = GraceMatchResult;
+    global.GraceMirrorMethod = GraceMirrorMethod;
+    global.GraceNum = GraceNum;
+    global.GraceObject = GraceObject;
+    global.GracePoint2DClass = GracePoint2DClass;
+    global.GracePrimitiveArray = GracePrimitiveArray;
+    global.GraceString = GraceString;
+    global.GraceStringIterator = GraceStringIterator;
+    global.GraceSuccessfulMatch = GraceSuccessfulMatch;
+    global.GraceTrue = GraceTrue;
+    global.GraceType = GraceType;
+    global.GraceUnicodePattern = GraceUnicodePattern;
+    global.ImportErrorObject = ImportErrorObject;
+    global.matchCase = matchCase;
+    global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.ProgrammingErrorObject = ProgrammingErrorObject;
+    global.ResourceExceptionObject = ResourceExceptionObject;
+    global.ReturnException = ReturnException;
+    global.RuntimeErrorObject = RuntimeErrorObject;
+    global.setLineNumber = setLineNumber;
+    global.setModuleName = setModuleName;
+    global.StackFrame = StackFrame;
+    global.type_Boolean = type_Boolean;
+    global.type_Block = type_Block;
+    global.type_Number = type_Number;
+    global.type_Object = type_Object;
+    global.type_String = type_String;
+    global.type_Unknown = type_Unknown;
+    global.TypeErrorObject = TypeErrorObject;
+    global.var___95__prelude = Grace_prelude;
+    global.var_Done = GraceDone;
+    global.var_done = GraceDone;
+    global.var_Block = var_Block;
+    global.var_Boolean = var_Boolean;
+    global.var_GraceType = var_GraceType;
+    global.var_Number = var_Number;
+    global.var_Object = var_Object;
+    global.var_String = var_String,
+    global.var_Unknown = var_Unknown;
+};

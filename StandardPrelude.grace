@@ -1,10 +1,7 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
-inherits _prelude
-var isStandardPrelude := true
 
-import "collectionsPrelude" as coll
-def collections is readable = coll
+var isStandardPrelude := true
 
 class SuccessfulMatch.new(result', bindings') {
     inherits true
@@ -27,6 +24,27 @@ class FailedMatch.new(result') {
 type Extractable = {
     extract
 }
+
+type MatchResult = {
+  result -> Object
+  bindings -> List<Object>
+}
+
+type Pattern = {
+  &(and : Pattern) -> Pattern
+  |(or : Pattern) -> Pattern
+  match(value : Object) -> MatchResult
+}
+
+
+method repeat(n)times(action) {
+    var ix := n
+    while {ix > 0} do { 
+        ix := ix - 1
+        action.apply 
+    }
+}
+
 class BasicPattern.new {
     method &(o) {
         AndPattern.new(self, o)
@@ -131,6 +149,129 @@ class OrPattern.new(p1, p2) {
     }
 }
 
+class Singleton.new {
+    inherits BasicPattern.new
+    method match(other) {
+        if (self == other) then {
+            SuccessfulMatch.new(other, [])
+        } else {
+            FailedMatch.new(other);
+        }
+    }
+}
+
+class BaseType.new(name) {
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method asString {
+        if (name == "") then { "type ‹anon›" }
+                        else { "type {name}" }
+    }
+}
+
+class TypeIntersection.new(t1, t2) {
+    inherits AndPattern.new(t1, t2)
+    // inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method methodNames { 
+        t1.methodNames.addAll(t2.methodNames)
+    }
+    method asString { "({t1} & {t2})" }
+}
+
+class TypeVariant.new(t1, t2) {
+    inherits OrPattern.new(t1, t2)
+    // inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method methodNames { 
+        self.TypeVariantsCannotBeCharacterizedByASetOfMethods
+    }
+    method asString { "({t1} | {t2})" }
+}
+
+class TypeUnion.new(t1, t2) {
+    inherits BasicPattern.new(t1, t2)
+//    inherits BaseType.new
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method methodNames { 
+        t1.methodNames ** t2.methodNames
+    }
+    method match(o) {
+        import "mirrors" as m
+        def oMethodNames = o.reflect.methodNames
+        for (self.methodNames) do { each ->
+            if (! oMethodNames.contains(each)) then {
+                return FailedMatch.new(o)
+            }
+        }
+        return SuccessfulMatch.new(o, [])
+    }
+    method asString { "({t1} + {t2})" }
+}
+
+class TypeSubtraction.new(t1, t2) {
+    inherits BasicPattern.new(t1, t2)
+    method &(o) {
+        TypeIntersection.new(self, o)
+    }
+    method |(o) {
+        TypeVariant.new(self, o)
+    }
+    method +(o) {
+        TypeUnion.new(self, o)
+    }
+    method -(o) {
+        TypeSubtraction.new(self, o)
+    }
+    method methodNames { 
+        t1.methodNames.removeAll(t2.methodNames)
+    }
+    method asString { "({t1} - {t2})" }
+}
+
 type Point = type { 
     x -> Number
     y -> Number
@@ -147,9 +288,9 @@ class point2D.x(x')y(y') {
     def y is readable = y'
     method asString { "({x}@{y})" }
     method asDebugString { self.asString }
-    method distanceTo(other:XandY) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
-    method -(other:XandY) { point2D.x (x - other.x) y (y - other.y) }
-    method +(other:XandY) { point2D.x (x + other.x) y (y + other.y) }
+    method distanceTo(other:Point) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
+    method -(other:Point) { point2D.x (x - other.x) y (y - other.y) }
+    method +(other:Point) { point2D.x (x + other.x) y (y + other.y) }
     method length {((x^2) + (y^2))^0.5}
     method ==(other) {
         match (other)
@@ -158,43 +299,46 @@ class point2D.x(x')y(y') {
     }
 }
 
+import "collectionsPrelude" as coll
+// collectionsPrelude defines types using &, so it can't be imported until
+// the above definition of TypeIntersection has been executed.
+// We should just be able to put "is public" on the above import, but this is 
+// not fully implemented.  So intead we create an alias:
+def collections is public = coll
+
 type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
-type IndexableCollection<T> = collections.IndexableCollection
-type Collection = collections.Collection
-type Dictionary = collections.Dictionary
-type Binding = collections.Binding
+type Collection<T> = collections.Collection<T>
+type ReifiedCollection<T> = collections.ReifiedCollection<T>
+type Binding<K,T> = collections.Binding<K,T>
 type Iterator<T> = collections.Iterator<T>
-type CollectionFactory = collections.CollectionFactory
-type EmptyCollectionFactory = collections.EmptyCollectionFactory
+type CollectionFactory<T> = collections.CollectionFactory<T>
+type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
+type Sequence<T> = collections.Sequence<T>
+type List<T> = collections.List<T>
+type Set<T> = collections.Set<T>
+type Dictionary<K,T> = collections.Dictionary<K,T>
 
 def BoundsError is public = collections.BoundsError
 def Exhausted is public = collections.Exhausted
 def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
+def SubobjectResponsibility is public = collections.SubobjectResponsibility
 
 def collectionFactory is public = collections.collectionFactory
 def iterable is public = collections.iterable
 def enumerable is public = collections.enumerable
+def sequence is public = collections.sequence
 def list is public = collections.list
 def set is public = collections.set
 def dictionary is public = collections.dictionary
 def binding is public = collections.binding
 def range is public = collections.range
 
-def _standardPrelude = self
-def BasicGrace = object {
-    method new {
-        _prelude.clone(_standardPrelude)
-    }
-}
-method new {
-    _prelude.clone(self)
-}
 method methods {
-    _prelude.clone(self)
+    prelude.clone(self)
 }
 
 

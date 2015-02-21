@@ -1,19 +1,17 @@
-import "ast" as ast
 import "errormessages" as errormessages
-
-import "StandardPrelude" as prelude
+import "ast" as ast
 
 inherits prelude.methods
 
-
 // Checker error
 
-def CheckerFailure = Error.refine("CheckerFailure")
+def CheckerFailure is public = Error.refine("CheckerFailure")
 
 
 // Helper Map
 
 def MapException = Exception.refine("MapException")
+
 
 class anEntry.from(key') to(value') is confidential {
     def key is public = key'
@@ -192,7 +190,7 @@ class aStack.ofKind(kind : String) is confidential {
 
 }
 
-def scope = object {
+def scope is public = object {
     def variables is public = aStack.ofKind("variable")
     def methods is public = aStack.ofKind("method")
     def types is public = aStack.ofKind("type")
@@ -235,11 +233,10 @@ method runRules(node) {
     currentLine := node.line
 
     var result := done
-    for(rules) do { rule ->
-        def matched = rule.match(node)
+    for(rules) do { each ->
+        def matched = each.match(node)
         if(matched) then {
             def result' = matched.result
-
             if(done != result') then {
                 result := result'
                 cache.at(node) put(result)
@@ -265,13 +262,14 @@ class aNodePattern.forKind(kind : String) -> Pattern {
     inherits BasicPattern.new
 
     method match(obj : Object) {
-        match(obj) case { node : AstNode ->
+        match(obj) 
+          case { node : AstNode ->
             if(kind == node.kind) then {
                 SuccessfulMatch.new(node, [])
             } else {
                 FailedMatch.new(node)
             }
-        } else { FailedMatch.new(obj) }
+          } case { _ -> FailedMatch.new(obj) }
     }
 }
 
@@ -307,10 +305,11 @@ def Inherits is public = aNodePattern.forKind("inherits")
 // Special requests patterns.
 
 class aRequestPattern.forName(name : String) -> Pattern {
-    inherits BasicPattern.new
+    inherits prelude.BasicPattern.new
 
     method match(obj : Object) {
-        match(obj) case { node : AstNode ->
+        match(obj) 
+          case { node : AstNode ->
             if((node.kind == "call").andAlso {
                 node.value.value == name
             }) then {
@@ -318,7 +317,8 @@ class aRequestPattern.forName(name : String) -> Pattern {
             } else {
                 FailedMatch.new(node)
             }
-        } else { FailedMatch.new(obj) }
+          } case { _ -> FailedMatch.new(obj)
+          }
     }
 
     method makeBindings(node) { [] }
@@ -342,6 +342,7 @@ def For is public = object {
 }
 
 def astVisitor = object {
+    inherits ast.baseVisitor
 
     method checkMatch(node) -> Boolean {
         runRules(node)
@@ -419,7 +420,7 @@ def astVisitor = object {
 
         match(node.value) case { memb : Member ->
             memb.in.accept(self)
-        } else {}
+        } case { _ -> }
 
         for(node.with) do { part ->
             for(part.args) do { arg ->

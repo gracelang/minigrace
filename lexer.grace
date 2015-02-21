@@ -32,6 +32,7 @@ method padl(s, l, w) {
 }
 
 def LexerClass = object {
+    method asString { "LexerClass object" }
     method new {
         var lineNumber := 1
         var linePosition := 0
@@ -72,12 +73,6 @@ def LexerClass = object {
             def kind = "comment"
             def value = s
             def size = s.size + 2
-        }
-        class OctetsToken.new(s) {
-            inherits Token.new
-            def kind = "octets"
-            def value = s
-            def size = s.size + 3
         }
         class LBraceToken.new {
             inherits Token.new
@@ -190,7 +185,7 @@ def LexerClass = object {
             // accumulated characters since that mode began. Modes are:
 
             //   n           Whitespace       i   Identifier
-            //   "           Quoted string    x   Octets literal
+            //   "           Quoted string
             //   m           Number           o   Any operator
             //   p           Pragma           d   Indentation
             //   c           Comment
@@ -201,7 +196,7 @@ def LexerClass = object {
             // For mode i, a keyword token is created for an identifier
             // whose name is a reserved keyword.
             method modechange(tokens, mode, accum) {
-                var done := false
+                var isDone := false
                 var tok := 0
                 if ((mode != "n") || (accum.size > 0)) then {
                     if (mode == "i") then {
@@ -211,69 +206,69 @@ def LexerClass = object {
                             || (accum == "import") || (accum == "class")
                             || (accum == "return") || (accum == "def")
                             || (accum == "inherits") || (accum == "is")
-                            || (accum == "dialect")) then {
+                            || (accum == "dialect") || (accum == "factory")) then {
                             tok := KeywordToken.new(accum)
                         }
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     }
                     if (mode == "I") then {
                         tok := IdentifierToken.new(accum)
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "\"") then {
                         tok := StringToken.new(accum)
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "x") then {
-                        tok := OctetsToken.new(accum)
+                        ProgrammingError.raise "obsolete Octet-token mode in lexer\n"
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == ",") then {
                         tok := CommaToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == ".") then {
                         tok := DotToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "\{") then {
                         tok := LBraceToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "}") then {
                         tok := RBraceToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "(") then {
                         tok := LParenToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == ")") then {
                         tok := RParenToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "[") then {
                         tok := LSquareToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     }
                     if (mode == "]") then {
                         tok := RSquareToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "<") then {
                         tok := LGenericToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == ">") then {
                         tok := RGenericToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == ";") then {
                         tok := SemicolonToken.new
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "m") then {
                         if ((tokens.size > 1).andAlso {tokens.last.kind == "dot"}) then {
                             def dot = tokens.pop
@@ -309,7 +304,7 @@ def LexerClass = object {
                                 if(tokens.last.kind == "string") then {
                                     def suggestion = errormessages.suggestion.new
                                     suggestion.replaceChar(dot.linePos)with("++")onLine(dot.line)
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'. "
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'. "
                                         ++ "To join a number to a string, use '++'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestion(suggestion)
                                 } elseif((tokens.last.kind == "op") || (tokens.last.kind == "bind")) then {
@@ -327,10 +322,10 @@ def LexerClass = object {
                                     def suggestion = errormessages.suggestion.new
                                     suggestion.replaceRange(dot.linePos, linePosition - 1)with("({accum})")onLine(tokens.last.line)
                                     suggestions.push(suggestion)
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)withSuggestions(suggestions)
                                 } else {
-                                    errormessages.syntaxError("A number may only follow a '.' if there is a number before the '.'.")atRange(
+                                    errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
                                         dot.line, dot.linePos, dot.linePos)
                                 }
                             }
@@ -338,7 +333,7 @@ def LexerClass = object {
                             tok := makeNumToken(accum)
                         }
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "o") then {
                         tok := OpToken.new(accum)
                         if (accum == "->") then {
@@ -349,22 +344,22 @@ def LexerClass = object {
                             tok := ColonToken.new
                         }
                         tokens.push(tok)
-                        done := true
+                        isDone := true
                     } elseif (mode == "d") then {
                         indentLevel := linePosition - 1//accum.size
-                        done := true
+                        isDone := true
                     } elseif (mode == "n") then {
-                        done := true
+                        isDone := true
                     } elseif (mode == "c") then {
                         def cmt = accum.substringFrom(3)to(accum.size)
                         tokens.push(CommentToken.new(cmt))
-                        done := true
+                        isDone := true
                     } elseif (mode == "p") then {
                         if (accum.substringFrom(1)to(8) == "#pragma ") then {
                             util.processExtension(
                                 accum.substringFrom(9)to(accum.size))
                         }
-                    } elseif (done) then {
+                    } elseif (isDone) then {
                         //print(mode, accum, tokens)
                     } else {
                         errormessages.syntaxError("Lexing error: no handler for mode {mode} with accum {accum}.")atPosition(lineNumber, linePosition)
@@ -580,6 +575,9 @@ def LexerClass = object {
                             method havemore {
                                 n != false
                             }
+                            method hasNext {
+                                n != false
+                            }
                             method next {
                                 def ret = n
                                 n := n.next
@@ -614,7 +612,7 @@ def LexerClass = object {
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
                 def brackets = unicode.pattern("(".ord, ")".ord,
                     "\{".ord, "}".ord, "[".ord, "]".ord)
-                def identifierChar = unicode.pattern("L", "N", 95, 39)
+                def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
                 def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
                     "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
                 def digitB = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
@@ -704,7 +702,7 @@ def LexerClass = object {
                     if (instr) then {
 
                     } elseif ((mode != "c") && (mode != "p")) then {
-                        // Not in a comment, so look for a mode.
+                        // Not in a comment or pragma, so look for a mode.
                         if ((c == " ") && (mode != "d")) then {
                             newmode := "n"
                         }
@@ -956,6 +954,9 @@ def LexerClass = object {
                             } elseif (c == "e") then {
                                 // Escape escape
                                 accum := accum ++ "\u001b"
+                            } elseif (c == " ") then {
+                                // non-breaking sapce
+                                accum := accum ++ "\u00a0"
                             } else {
                                 // For any other character preceded by \,
                                 // insert it literally.

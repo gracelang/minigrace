@@ -1,22 +1,29 @@
-DIALECTS = StaticGrace fsm ObjectAssociations dialect grapl loopinvariant literalblock structural dbc
-SAMPLES = fsm_example ObjectAssociations_example dialect_example.gso grapl_example loopinvariant_example
+DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
+SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
-DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) dialect_example.js
+VERBOSITY = --verbose
 
-all: $(DIALECT_MODULES) $(SAMPLES) $(DIALECTS_JS)
+DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast
 
-%.gso: %.grace
-	../../minigrace --dynamic-module $<
+c: $(DIALECT_MODULES) $(SAMPLES)
 
-%.js: %.grace
-	../../minigrace --target js -o $@ $<
+%.gso %.gct: %.grace ../../minigrace
+	../../minigrace $(VERBOSITY) --dynamic-module $<
+    
+dialect.gso: $(DIALECT_DEPENDENCIES:%=../../%.gso)
 
-dialect_example.gso: dialect_example.grace dialect.gso
-	../../minigrace --dynamic-module $<
+whileLiteral.gso: whileLiteral.grace dialect.gso
+	../../minigrace $(VERBOSITY) --dynamic-module $<
 
-%: %.grace $(DIALECT_MODULES)
-	../../minigrace --make $<
+staticTypes.gso: staticTypes.grace dialect.gso
+	../../minigrace $(VERBOSITY) --dynamic-module $<
+    
+requireTypes.gso: requireTypes.grace dialect.gso
+	../../minigrace $(VERBOSITY) --dynamic-module $<
+
+%Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
+	../../minigrace $(VERBOSITY) $<
 
 clean:
-	rm -f *.gso *.gct *.gcn *.c *.js fsm_example ObjectAssociations_example dialect_example.gso
+	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)

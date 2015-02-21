@@ -119,6 +119,7 @@ Object alloc_userobj(int, int);
 Object alloc_userobj2(int, int, ClassData);
 Object alloc_obj2(int, int);
 Object* alloc_var();
+Object alloc_ObjectType();
 Object alloc_HashMapClassObject();
 Object gracelib_print(Object, int, Object*);
 Object gracelib_length(Object);
@@ -136,10 +137,9 @@ struct StackFrameObject *getclosureframe(Object);
 
 void setline(int);
 void gracedie(char *msg, ...);
+void graceRaise(Object, char *msg, ...);
 
 void grace_register_shutdown_function(void(*)());
-void grace_iterate(Object iterable, void(*callback)(Object, void *),
-        void *userdata);
 Object alloc_SuccessfulMatch(Object result, Object bindings);
 Object alloc_FailedMatch(Object result, Object bindings);
 
@@ -193,3 +193,4 @@ void setmodule(const char *);
 void setsource(char *sl[]);
 Object grace_userobj_outer(Object, int, int*, Object*, int);
 Object grace_prelude();
+

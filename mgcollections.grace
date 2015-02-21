@@ -85,10 +85,13 @@ class list.new(*a) {
         }
         res
     }
-    method iter {
+    method iterator {
         object {
             var idx := 1
             method havemore {
+                idx <= size
+            }
+            method hasNext {
                 idx <= size
             }
             method next {
@@ -98,8 +101,8 @@ class list.new(*a) {
             }
         }
     }
-    method iterator {
-        iter
+    method iter {
+        iterator
     }
     method expand {
         def c = inner.size
@@ -208,11 +211,14 @@ def set = object {
                 }
                 res
             }
-            method iter {
+            method iterator {
                 object {
                     var count := 1
                     var idx := 0
                     method havemore {
+                        count <= size
+                    }
+                    method hasNext {
                         count <= size
                     }
                     method next {
@@ -229,8 +235,8 @@ def set = object {
                     }
                 }
             }
-            method iterator {
-                iter
+            method iter {
+                iterator
             }
             method expand {
                 def c = inner.size
@@ -274,7 +280,15 @@ class map.new {
     method get(key') {
         var t := findPosition(key')
         var c := inner.at(t)
+        if (c == unused) then { NoSuchObject.raise "no value for key {key'}" }
         return c.value
+    }
+    method get(key') ifAbsent (absentBlock) {
+        var t := findPosition(key')
+        var c := inner.at(t)
+        if (c == unused) 
+            then { return absentBlock.apply }
+            else { return c.value }
     }
     method contains(key') {
         var t := findPosition(key')
@@ -314,11 +328,14 @@ class map.new {
     method asDebugString {
         asString
     }
-    method iter {
+    method iterator {
         object {
             var count := 1
             var idx := 0
             method havemore {
+                count <= size
+            }
+            method hasNext {
                 count <= size
             }
             method next {
@@ -333,8 +350,8 @@ class map.new {
             }
         }
     }
-    method iterator {
-        iter
+    method iter {
+        iterator
     }
     method expand {
         def c = inner.size

@@ -17,7 +17,7 @@ import "mirrors" as mirrors
 
 util.parseargs
 
-def targets = ["lex", "parse", "grace", "processed-ast",
+def targets = ["lex", "parse", "grace", "processed-ast", "patterns", "symbols",
     "imports", "c", "js"]
 
 if (util.target == "help") then {
@@ -32,6 +32,8 @@ if (util.interactive) then {
     interactive.startRepl
     sys.exit(0)
 }
+
+util.log_verbose "starting compilation"
 
 var tokens := lexer.Lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
@@ -86,27 +88,20 @@ if (util.target == "c") then {
     genc.processImports(values)
 }
 if (util.target == "js") then {
-    genjs.processDialect(values)
+    genjs.processImports(values)
 }
 if (util.target == "json") then {
-    genjs.processDialect(values)
+    genjs.processImports(values)
 }
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
-}
-values := identifierresolution.resolve(values)
-if (util.target == "processed-ast") then {
-    for (values) do { v ->
-        print(v.pretty(0))
-    }
-    sys.exit(0)
 }
 if (util.target == "imports") then {
     def imps = mgcollections.set.new
     def vis = object {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {
-            imps.add(o.value.value)
+            imps.add(o.path)
         }
     }
     for (values) do {v->
@@ -114,6 +109,17 @@ if (util.target == "imports") then {
     }
     for (imps) do {im->
         print(im)
+    }
+    sys.exit(0)
+}
+values := identifierresolution.resolve(values)
+if (util.target == "processed-ast") then {
+    print "====================================="
+    print "module-level symbol table"
+    print (values.first.parent.symbolTable.asStringWithParents)
+    print "====================================="
+    for (values) do { v ->
+        print(v.pretty(0))
     }
     sys.exit(0)
 }

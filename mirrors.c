@@ -10,6 +10,7 @@
 //   reflect(obj : Any) -> Mirror
 // Mirrors support two methods:
 //   methods -> List<MirrorMethod>
+//   methodNames -> Set<String>
 //   getMethod(name : String) -> MirrorMethod
 // MirrorMethods support four methods:
 //   name -> String
@@ -88,8 +89,8 @@ Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
     int i = 0;
     int size = 0;
     int cargcv[cparts];
-    Object partsiter = callmethod(partsl, "iter", 0, NULL, NULL);
-    while (istrue(callmethod(partsiter, "havemore", 0, NULL, NULL))) {
+    Object partsiter = callmethod(partsl, "iterator", 0, NULL, NULL);
+    while (istrue(callmethod(partsiter, "hasNext", 0, NULL, NULL))) {
         Object argsl = callmethod(partsiter, "next", 0, NULL, NULL);
         cargcv[i] = integerfromAny(callmethod(argsl, "size", 0, NULL, NULL));
         size += cargcv[i];
@@ -97,11 +98,11 @@ Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
     }
     Object cargv[size];
     i = 0;
-    partsiter = callmethod(partsl, "iter", 0, NULL, NULL);
-    while (istrue(callmethod(partsiter, "havemore", 0, NULL, NULL))) {
+    partsiter = callmethod(partsl, "iterator", 0, NULL, NULL);
+    while (istrue(callmethod(partsiter, "hasNext", 0, NULL, NULL))) {
         Object argsl = callmethod(partsiter, "next", 0, NULL, NULL);
-        Object argsiter = callmethod(argsl, "iter", 0, NULL, NULL);
-        while (istrue(callmethod(argsiter, "havemore", 0, NULL, NULL))) {
+        Object argsiter = callmethod(argsl, "iterator", 0, NULL, NULL);
+        while (istrue(callmethod(argsiter, "hasNext", 0, NULL, NULL))) {
             Object o = callmethod(argsiter, "next", 0, NULL, NULL);
             cargv[i] = o;
             i++;
@@ -160,10 +161,37 @@ Object Mirror_methods(Object self, int nparams, int *argcv, Object *args,
     return l;
 }
 
+Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
+                          int flags) {
+    struct MirrorObject *s = (struct MirrorObject*)self;
+    Object current = s->obj;
+    int i;
+    Object mn;
+    ClassData c;
+    int tmp = 1;
+    gc_pause();
+    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
+    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    while (current != NULL) {
+        c = current->class;
+        for (i=0; i < c->nummethods; i++) {
+            mn = alloc_String(c->methods[i].name);
+            callmethod(result, "add", 1, &tmp, &mn);
+        }
+        if (current->flags & OFLAG_USEROBJ) {
+            current = ((struct UserObject *) current)->super;
+        } else {
+            current = NULL;
+        }
+    }
+    return result;
+}
+
 Object alloc_mirror(Object obj) {
     if (MirrorClass == NULL) {
-        MirrorClass = alloc_class("Mirror", 2);
+        MirrorClass = alloc_class("Mirror", 3);
         add_Method(MirrorClass, "methods", &Mirror_methods);
+        add_Method(MirrorClass, "methodNames", &Mirror_methodNames);
         add_Method(MirrorClass, "getMethod", &Mirror_getMethod);
     }
     Object o = alloc_obj(sizeof(Object), MirrorClass);
@@ -185,6 +213,10 @@ Object mirrors_loadDynamicModule(Object self, int nparams, int *argcv,
         gracedie("mirrors.loadDynamicModule requires one argument");
     char *s = grcstring(argv[0]);
     return dlmodule(s);
+}
+
+Object idString() {
+    return alloc_String("The mirrors module with 'methodNames' method");
 }
 
 // Create and return a Grace object with all the above functions as methods.

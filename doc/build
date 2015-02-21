@@ -34,6 +34,35 @@ The main Git repository can be cloned with:
   git clone git://github.com/mwh/minigrace.git
 or:
   git clone https://github.com/mwh/minigrace.git
+  
+The build process
+-----------------
+
+There is a folk-theorem that if a self-hosting system can compile itself
+three times, then it is correct.  This theorem is of course false, but
+compiling three times does give one some confidence that _the features 
+of minigrace exercised by he minigrace compiler_ are being compiled
+correctly.  (It does nothing at all for the features of minigrace not
+exercised by the compiler, such as minigraces's behaviour when given 
+non-programs, or dialects).
+
+The subdirectory known-good comptains old but working binary versions
+of the minigrace compiler, orgainized by architecture in a directory
+named by the git commit hash for that version.  The version identified by
+the STABLE variable in the makefile is used to compile the compiler.
+The output of this compilation is stired in the l1 subdirectory.
+
+If this is successful, then the l1/minigrace compiler is used to compile
+the compiler again; the resulting files are in the the l2 directory.
+So the l2 directory will contain the binaries emitted by a run of your new
+version of the compiler.
+
+Finally, the l2/minigrace compiler is used to compile the compiler once
+again.  If the compiler is emmitting bad code, then this is unlikely to
+work — which is a good thing!   If the l2 compilation succeeds, then you
+should try running the tests (make test and make test.js) which will exercise
+some of the features of minigrace (such as its treatment of
+non-programs, and programs with types) not used in minigrace itself.
 
 Post-build
 ----------

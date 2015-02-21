@@ -6,12 +6,6 @@
 
 import "mirrors" as mirror
 
-type Object = { 
-    == (Object) -> Boolean
-//    asString  -> String
-//    asDebugString -> String
-}
-
 type Assertion = { 
     assert(bb:Boolean)description(str:String) -> Done
     deny(bb:Boolean)description (str:String)  -> Done        
@@ -20,6 +14,7 @@ type Assertion = {
     assert(s1:Object)shouldBe(s2:Object) -> Done
     assert(b:Block)shouldRaise(de:Exception) -> Done
     assert(b:Block)shouldntRaise(ue:Exception) -> Done
+    assert(s:Object) hasType (t:Type) -> Done
 }
    
 type TestCase = Assertion & type {
@@ -35,9 +30,9 @@ type Set = {
 }
 
 type TestResult =  {
-    testStarted(String) -> Done
-    testFailed(String) -> Done
-    testErrored(String) -> Done
+    testStarted(name:String) -> Done
+    testFailed(name:String) -> Done
+    testErrored(name:String) -> Done
     summary -> String
     detailedSummary -> String
     numberOfErrors -> Number
@@ -53,7 +48,7 @@ type TestSuite = TestCase & type {
 
 
 class assertion.trait {
-    def failure is readable = Error.refine "Assertion Failure"
+    def AssertionFailure is readable = Exception.refine "AssertionFailure"
     
     method failBecause(str) {
         assert (false) description (str)
@@ -62,7 +57,7 @@ class assertion.trait {
     method assert(bb: Boolean)description(str) {
         if (! bb) 
         then {
-            failure.raise(str)
+            AssertionFailure.raise(str)
         }        
     }
 
@@ -90,7 +85,8 @@ class assertion.trait {
         } catch { raisedException:desiredException ->
             completedNormally := false
         } catch { raisedException ->
-            failBecause "code raised exception {raisedException.exception}:\"raisedException.message\" instead of {desiredException}" 
+            failBecause "code raised exception {raisedException.exception}" +
+                ": \"{raisedException.message}\" instead of {desiredException}" 
         }
         if (completedNormally) then {failBecause "code did not raise an exception"}
     }
@@ -102,6 +98,34 @@ class assertion.trait {
             failBecause "code raised exception {raisedException.exception}"
         } catch { raisedException -> // do nothing: it's ok to raise some other exception
         }
+    }
+    
+    method assert(value) hasType (DesiredType) {
+        match (value)
+            case { _:DesiredType -> assert (true) }
+            case { _ -> 
+                def m = methodsIn(DesiredType) missingFrom (value)
+                failBecause "{value} does not have type {DesiredType}; it's missing methods {m}." }
+    }
+    
+    method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
+        def vMethods = mirror.reflect(value).methodNames
+        def tMethods = DesiredType.methodNames
+        def missing = tMethods -- vMethods
+        if (missing.size == 0) then {
+            ProgrammingError.raise "{value} seems to have all the methods of {DesiredType}"
+        } else {
+            var s := ""
+            missing.do { each -> s := s ++ each } 
+                separatedBy { s := s ++ ", " }
+            s
+        }
+    }
+    
+    method deny(value) hasType (UndesiredType) {
+        match (value)
+            case { _:UndesiredType -> failBecause "{value} has type {UndesiredType}" }
+            case { _ -> assert (true) }
     }
 }
 
@@ -121,10 +145,10 @@ method testCaseNamed(name') -> TestCase {
                     def methodImage = mirror.reflect(self).getMethod(name)
                     methodImage.request([[]])
                 } finally { teardown }
-            } catch {e: self.failure ->
+            } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
             } catch {e: Exception ->
-                result.testErrored(name)withMessage(e.message)
+                result.testErrored(name)withMessage "{e.exception}: {e.message}"
             }
         }
 
@@ -138,7 +162,7 @@ method testCaseNamed(name') -> TestCase {
                     def methodImage = mirror.reflect(self).getMethod(name)
                     methodImage.request([[]])
                 } finally { teardown }
-            } catch {e: self.failure ->
+            } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
                 printBackTrace(e) limitedTo(8)
             } catch {e: Exception ->
@@ -191,7 +215,7 @@ method testCaseNamed(name') -> TestCase {
 }
 
 
-class testResult {
+factory method testResult {
     var failSet := set.empty
     var errorSet := set.empty
     var runCount := 0
@@ -259,11 +283,11 @@ class testResult {
     }
 }
 
-class testRecordFor(testName)message(testMsg) {
+factory method testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
-    method hashcode {testName.hashcode}
+    method hash {testName.hash}
 }
 
 def testSuite is readable = object {

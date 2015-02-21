@@ -2,7 +2,6 @@ type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
-type IndexableCollection<T> = collections.IndexableCollection
 type Collection = collections.Collection
 type Dictionary = collections.Dictionary
 type Binding = collections.Binding

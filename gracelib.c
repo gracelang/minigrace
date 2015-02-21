@@ -39,8 +39,6 @@ Object Object_NotEquals(Object, int, int*,
         Object*, int);
 Object String_concat(Object, int nparts, int *argcv,
         Object*, int flags);
-Object String_index(Object, int nparts, int *argcv,
-        Object*, int flags);
 FILE *debugfp;
 int debug_enabled = 0;
 
@@ -50,6 +48,7 @@ Object String_replace_with(Object , int, int*, Object *, int flags);
 Object String_substringFrom_to(Object , int, int*, Object *, int flags);
 Object String_startsWith(Object , int, int*, Object *, int flags);
 Object makeEscapedString(char *);
+Object makeQuotedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
 
 Object alloc_OrPattern(Object l, Object r);
@@ -116,8 +115,8 @@ ClassData ExceptionPacket;
 ClassData Exception;
 
 Object Dynamic;
+Object ObjectType = NULL;
 Object Unknown;
-Object List;
 Object prelude = NULL;
 
 struct StringObject {
@@ -160,6 +159,7 @@ struct IOModuleObject {
 };
 struct FileObject {
     OBJECT_HEADER;
+    Object pathname;
     FILE* file;
 };
 struct SysModule {
@@ -266,6 +266,8 @@ static Object ResourceExceptionObject;
 static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
 
+Object ProgrammingError() { return ProgrammingErrorObject; }
+
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
@@ -301,7 +303,33 @@ void gracedie(char *msg, ...) {
                 RuntimeErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Error around line %i: RuntimeError: ", linenumber);
+    fprintf(stderr, "RuntimeError at line %i of %s: ", linenumber, modulename);
+    vfprintf(stderr, msg, args);
+    fprintf(stderr, "\n");
+    backtrace();
+    int fl = linenumber - 2;
+    if (fl < 0) fl = 0;
+    for (; fl<linenumber+1; fl++)
+        if (moduleSourceLines[fl])
+            fprintf(stderr, "    %i: %s\n", fl + 1, moduleSourceLines[fl]);
+        else
+            break;
+    va_end(args);
+    if (getenv("GRACE_DEBUGGER"))
+        debugger();
+    exit(1);
+}
+void graceRaise(Object exceptionKind, char *msg, ...) {
+    va_list args;
+    va_start(args, msg);
+    if (error_jump_set) {
+        char buf[strlen(msg) * 4 + 1024];
+        vsprintf(buf, msg, args);
+        currentException = alloc_ExceptionPacket(alloc_String(buf), exceptionKind);
+        longjmp(error_jump, 1);
+    }
+    struct ExceptionObject *ek = (struct ExceptionObject *)exceptionKind;
+    fprintf(stderr, "%s at line %i of %s: ", ek->name, linenumber, modulename);
     vfprintf(stderr, msg, args);
     fprintf(stderr, "\n");
     backtrace();
@@ -330,7 +358,7 @@ void debug(char *msg, ...) {
 
 void assertClass(Object obj, ClassData cl) {
     if (obj->class != cl)
-        gracedie("expected instance of %s; got a %s", cl->name,
+        graceRaise(TypeErrorObject, "expected instance of %s; got %s", cl->name,
                 obj->class->name);
 }
 
@@ -340,6 +368,10 @@ void *glmalloc(size_t s) {
     if (heapcurrent >= heapmax)
         heapmax = heapcurrent;
     void *v = calloc(1, s + sizeof(size_t));
+    if (v == NULL) {
+        fprintf(stderr, "Out of memory (line %i of %s)", linenumber, modulename);
+        graceRaise(EnvironmentExceptionObject, "Out of memory");
+    }
     size_t *i = v;
     *i = s;
     return v + sizeof(size_t);
@@ -417,6 +449,13 @@ int integerfromAny(Object p) {
     char *c = grcstring(p);
     int i = atoi(c);
     return i;
+}
+
+Object _rangeClass = NULL;
+Object grace_rangeClass() {
+    if (_rangeClass == NULL)
+        _rangeClass = callmethod(prelude, "range", 0, NULL, NULL);
+    return _rangeClass;
 }
 
 Object _bindingClass = NULL;
@@ -497,6 +536,10 @@ Object Object_asString(Object receiver, int nparts, int *argcv,
     char buf[40];
     sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
     return alloc_String(buf);
+}
+Object Object_asDebugString(Object receiver, int nparts, int *argcv,
+                       Object* params, int flags) {
+    return callmethod(receiver, "asString", 0, NULL, NULL);
 }
 
 Object Singleton_asString(Object receiver, int nparts, int *argcv,
@@ -984,7 +1027,7 @@ void BuiltinListIter_mark(Object o) {
 Object alloc_BuiltinListIter(Object array) {
     if (BuiltinListIter == NULL) {
         BuiltinListIter = alloc_class2("BuiltinListIter", 2, (void*)&BuiltinListIter_mark);
-        add_Method(BuiltinListIter, "havemore", &BuiltinListIter_havemore);
+        add_Method(BuiltinListIter, "hasNext", &BuiltinListIter_havemore);
         add_Method(BuiltinListIter, "next", &BuiltinListIter_next);
     }
     Object o = alloc_obj(sizeof(int) + sizeof(Object), BuiltinListIter);
@@ -1069,6 +1112,19 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     }
     return accum;
 }
+Object BuiltinList_do(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object functionBlock = args[0];
+    Object each;
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {1};
+        callmethod(functionBlock, "apply", 1, partcv, &each);
+    }
+    return done;
+}
 Object BuiltinList_index(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1117,17 +1173,15 @@ Object BuiltinList_asString(Object self, int nparts, int *argcv,
 Object BuiltinList_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
-    Object o = alloc_BuiltinList();
-    int slot = gc_frame_newslot(o);
-    int i;
-    Object f;
-    int partcv[] = {1};
-    for (i=1; i<=sself->size; i++) {
-        f = alloc_Float64(i);
-        BuiltinList_push(o, 1, partcv, &f, 0);
-    }
-    gc_frame_setslot(slot, undefined);
-    return o;
+    gc_pause();
+    Object upperBound = alloc_Float64(sself->size);
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = alloc_Float64(1);
+    params[1] = upperBound;
+    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    gc_unpause();
+    return res;
 }
 Object BuiltinList_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1164,9 +1218,9 @@ Object BuiltinList_concat(Object self, int nparts, int *argcv,
     int partcv[] = {1};
     for (i=0; i<sself->size; i++)
         BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
-    Object iter = callmethod(args[0], "iter", 0, NULL, NULL);
+    Object iter = callmethod(args[0], "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
         BuiltinList_push(nl, 1, partcv, &val, 0);
     }
@@ -1184,7 +1238,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 21, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 22, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "::", &Object_bind);
@@ -1207,6 +1261,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
+        add_Method(BuiltinList, "do", &BuiltinList_do);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
@@ -1249,20 +1304,103 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     }
     return sself->items[index];
 }
+Object PrimitiveArray_asString(Object self, int nparts, int *argcv,
+                            Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    int len = sself->size;
+    int i = 0;
+    int partcv[] = {1};
+    Object other;
+    gc_pause();
+    Object s = alloc_String("[");
+    other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
+    s = callmethod(s, "++", 1, partcv, &other);
+    other = alloc_String(": ");
+    s = callmethod(s, "++", 1, partcv, &other);
+    Object c = alloc_String(", ");
+    for (i=0; i<len; i++) {
+        Object nextItem = sself->items[i];
+        if (nextItem == undefined) {
+            other = alloc_String("‹undefined›");
+        } else {
+            other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
+        }
+        s = callmethod(s, "++", 1, partcv, &other);
+        if (i != len-1)
+            s = callmethod(s, "++", 1, partcv, &c);
+    }
+    Object cb = alloc_String("]");
+    s = callmethod(s, "++", 1, partcv, &cb);
+    gc_unpause();
+    return s;
+}
+Object PrimitiveArray_asDebugString(Object self, int nparts, int *argcv,
+                             Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    int len = sself->size;
+    int i = 0;
+    int partcv[] = {1};
+    Object other;
+    gc_pause();
+    Object s = alloc_String("primArray(");
+    other = callmethod(alloc_Float64(sself->size), "asString", 0, NULL, NULL);
+    s = callmethod(s, "++", 1, partcv, &other);
+    other = alloc_String(": ");
+    s = callmethod(s, "++", 1, partcv, &other);
+    Object c = alloc_String(", ");
+    for (i=0; i<len; i++) {
+        Object nextItem = sself->items[i];
+        if (nextItem == undefined) {
+            other = alloc_String("‹undefined›");
+        } else {
+            other = callmethod(sself->items[i], "asDebugString", 0, NULL, NULL);
+        }
+        s = callmethod(s, "++", 1, partcv, &other);
+        if (i != len-1)
+            s = callmethod(s, "++", 1, partcv, &c);
+    }
+    Object cb = alloc_String(")");
+    s = callmethod(s, "++", 1, partcv, &cb);
+    gc_unpause();
+    return s;
+}
+
+static Object compareBlock;
+
+int compareFun(const void *a, const void *b) {
+    int partcv[] = {2};
+    Object params[2];
+    params[0] = *(Object*) a;
+    params[1] = *(Object*) b;
+    Object res = callmethod(compareBlock, "apply", 1, partcv, params);
+    assertClass(res, Number);
+    return integerfromAny(res);
+}
+
+Object PrimitiveArray_sort(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
+    compareBlock = args[1];
+    size_t len = integerfromAny(args[0]);
+    int partcv[] = {1};
+    qsort(sself->items, len, sizeof(Object), &compareFun);
+    return self;
+}
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("PrimitiveArray", 10, (void*)&BuiltinList_mark,
-                (void*)&BuiltinList__release);
+        PrimitiveArray = alloc_class3("primitiveArray", 11, (void*)&BuiltinList_mark,
+                                      (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "at()put", &PrimitiveArray_indexAssign);
         add_Method(PrimitiveArray, "[]:=", &PrimitiveArray_indexAssign);
-        add_Method(PrimitiveArray, "asString", &BuiltinList_asString);
-        add_Method(PrimitiveArray, "asDebugString", &BuiltinList_asString);
+        add_Method(PrimitiveArray, "asString", &PrimitiveArray_asString);
+        add_Method(PrimitiveArray, "asDebugString", &PrimitiveArray_asDebugString);
         add_Method(PrimitiveArray, "::", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
+        add_Method(PrimitiveArray, "sortInitial()by", &PrimitiveArray_sort);
     }
     int i;
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, PrimitiveArray);
@@ -1382,7 +1520,7 @@ void StringIter__mark(Object o) {
 Object alloc_StringIter(Object string) {
     if (StringIter == NULL) {
         StringIter = alloc_class2("StringIter", 4, (void *)&StringIter__mark);
-        add_Method(StringIter, "havemore", &StringIter_havemore);
+        add_Method(StringIter, "hasNext", &StringIter_havemore);
         add_Method(StringIter, "next", &StringIter_next);
     }
     Object o = alloc_obj(sizeof(int) + sizeof(Object), StringIter);
@@ -1445,17 +1583,15 @@ void ConcatString__FillBuffer(Object self, char *buf, int len) {
 Object String_indices(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject *sself = (struct StringObject*)self;
-    Object o = alloc_BuiltinList();
-    int i;
-    Object f;
     gc_pause();
-    int partcv[] = {1};
-    for (i=1; i<=sself->size; i++) {
-        f = alloc_Float64(i);
-        BuiltinList_push(o, 1, partcv, &f, 0);
-    }
+    Object upperBound = alloc_Float64(sself->size);
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = alloc_Float64(1);
+    params[1] = upperBound;
+    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
     gc_unpause();
-    return o;
+    return res;
 }
 Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1478,6 +1614,19 @@ Object ConcatString__escape(Object self, int nparts, int *argcv,
     char *c = grcstring(self);
     Object o = makeEscapedString(c);
     return o;
+}
+Object ConcatString_QuotedString(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = grcstring(self);
+    int partcv[] = {1};
+    gc_pause();
+    Object q = alloc_String("\"");
+    Object esc = makeQuotedString(p);
+    Object qesc = callmethod(q, "++", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    gc_unpause();
+    return result;
 }
 Object ConcatString_ord(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1502,6 +1651,19 @@ Object ConcatString_at(Object self, int nparts, int *argcv,
     ConcatString__Flatten(self);
     return String_at(self, nparts, argcv, args, flags);
 }
+Object ConcatString_first(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    int ms = *(int*)(self->data + sizeof(int));
+    if (ms == 1)
+        return self;
+    ConcatString__Flatten(self);
+    gc_pause();
+    Object newargs[] = { alloc_Float64(1) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
+}
 Object ConcatString_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -1511,7 +1673,7 @@ Object ConcatString_iter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = ConcatString__Flatten(self);
     Object o = alloc_String(c);
-    return callmethod(o, "iter", 0, NULL, NULL);
+    return callmethod(o, "iterator", 0, NULL, NULL);
 }
 Object ConcatString_substringFrom_to(Object self,
         int nparts, int *argcv, Object *args, int flags) {
@@ -1571,10 +1733,11 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 24,
+        ConcatString = alloc_class3("ConcatString", 27,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
+        add_Method(ConcatString, "asDebugString", &ConcatString_QuotedString);
         add_Method(ConcatString, "::", &Object_bind);
         add_Method(ConcatString, "++", &String_concat);
         add_Method(ConcatString, "size", &String_size);
@@ -1582,6 +1745,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
         add_Method(ConcatString, "!=", &Object_NotEquals);
+        add_Method(ConcatString, "first", &ConcatString_first);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
@@ -1591,6 +1755,7 @@ Object alloc_ConcatString(Object left, Object right) {
                 &ConcatString_substringFrom_to);
         add_Method(ConcatString, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
+        add_Method(ConcatString, "hash", &String_hashcode);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "ord", &ConcatString_ord);
@@ -1631,6 +1796,7 @@ Object alloc_ConcatString(Object left, Object right) {
     return o;
 }
 Object String__escape(Object, int, int*, Object*, int flags);
+Object String_QuotedString(Object, int, int*, Object*, int flags);
 Object String_length(Object, int, int*, Object*, int flags);
 Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
@@ -1689,6 +1855,7 @@ Object String_substringFrom_to(Object self,
     struct StringObject* sself = (struct StringObject*)self;
     int st = integerfromAny(args[0]);
     int en = (argcv[1] > 0 ? integerfromAny(args[1]) : sself->size + 1);
+    if (st < 1) st = 1;
     st--;
     en--;
     int mysize = sself->size;
@@ -1767,8 +1934,10 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 23);
+        String = alloc_class("String", 25);
         add_Method(String, "asString", &identity_function);
+        add_Method(String, "asDebugString", &String_QuotedString
+                   );
         add_Method(String, "::", &Object_bind);
         add_Method(String, "++", &String_concat);
         add_Method(String, "at", &String_at);
@@ -1780,11 +1949,13 @@ Object alloc_String(const char *data) {
         add_Method(String, "length", &String_length);
         add_Method(String, "size", &String_size);
         add_Method(String, "iter", &String_iter);
+        add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
         add_Method(String, "startsWith", &String_startsWith);
         add_Method(String, "replace()with", &String_replace_with);
+        add_Method(String, "hash", &String_hashcode);
         add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
@@ -1861,26 +2032,48 @@ Object makeEscapedString(char *p) {
     buf[op] = 0;
     return alloc_String(buf);
 }
+Object makeQuotedString(char *p) {
+    int len = strlen(p);
+    char buf[len * 3 + 1];
+    int op;
+    int ip;
+    for (ip=0, op=0; ip<len; ip++, op++) {
+        if (p[ip] == '"') {
+            buf[op++] = '\\';
+            buf[op] = '"';
+        } else if (p[ip] == '\\') {
+            buf[op++] = '\\';
+            buf[op] = '\\';
+        } else {
+            buf[op] = p[ip];
+        }
+    }
+    buf[op] = 0;
+    return alloc_String(buf);
+}
 Object String__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     char *p = sself->body;
     return makeEscapedString(p);
 }
+Object String_QuotedString(Object self, int nparts, int *argcv,
+                      Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = sself->body;
+    int partcv[] = {1};
+    gc_pause();
+    Object q = alloc_String("\"");
+    Object esc = makeQuotedString(p);
+    Object qesc = callmethod(q, "++", 1, partcv, &esc);
+    Object result = callmethod(qesc, "++", 1, partcv, &q);
+    gc_unpause();
+    return result;
+}
 Object String_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->blen);
-}
-Object String_index(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    int index = integerfromAny(args[0]);
-    struct StringObject* sself = (struct StringObject*)self;
-    char buf[2];
-    char *c = sself->body;
-    buf[0] = c[index];
-    buf[1] = '\0';
-    return alloc_String(buf);
 }
 Object String_concat(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1976,19 +2169,11 @@ Object alloc_Octets(const char *data, int len) {
 Object Float64_Range(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
-    double a = *(double*)self->data;
-    double b = *(double*)other->data;
-    int i = a;
-    int j = b;
-    gc_pause();
-    Object arr = alloc_BuiltinList();
-    int partcv[] = {1};
-    for (; i<=b; i++) {
-        Object v = alloc_Float64(i);
-        BuiltinList_push(arr, 1, partcv, &v, 0);
-    }
-    gc_unpause();
-    return (Object)arr;
+    Object params[2];
+    int partcv[] = {1, 1};
+    params[0] = self;
+    params[1] = other;
+    return callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
 }
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2180,6 +2365,11 @@ Object Float64_truncate(Object self, int nparts, int *argcv,
         return self;
     return alloc_Float64(r);
 }
+Object Float64_round(Object self, int nparts, int *argcv,
+                        Object *args, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(rint(*d));
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -2206,7 +2396,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 27, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 31, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2217,6 +2407,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
         add_Method(Number, "hashcode", &Float64_hashcode);
+        add_Method(Number, "hash", &Float64_hashcode);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
@@ -2224,11 +2415,14 @@ Object alloc_Float64(double num) {
         add_Method(Number, ">=", &Float64_GreaterOrEqual);
         add_Method(Number, "..", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
+        add_Method(Number, "asDebugString", &Object_asDebugString);
         add_Method(Number, "::", &Object_bind);
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
+        add_Method(Number, "truncated", &Float64_truncate);
         add_Method(Number, "truncate", &Float64_truncate);
+        add_Method(Number, "rounded", &Float64_round);
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);
         add_Method(Number, "&", &literal_and);
@@ -2350,8 +2544,9 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 13);
+        Boolean = alloc_class("Boolean", 14);
         add_Method(Boolean, "asString", &Boolean_asString);
+        add_Method(Boolean, "asDebugString", &Object_asDebugString);
         add_Method(Boolean, "::", &Object_bind);
         add_Method(Boolean, "&", &literal_and);
         add_Method(Boolean, "|", &literal_or);
@@ -2500,6 +2695,11 @@ Object File_next(Object self, int nparts, int *argcv,
     *b = 0;
     return alloc_String(buf);
 }
+Object File_pathname(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    return s->pathname;
+}
 Object File_eof(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
@@ -2512,7 +2712,7 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 16);
+        File = alloc_class("File", 19);
         add_Method(File, "read", &File_read);
         add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
@@ -2520,29 +2720,39 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "seek", &File_seek);
         add_Method(File, "seekForward", &File_seekForward);
         add_Method(File, "seekBackward", &File_seekBackward);
-        add_Method(File, "iter", &File_iter);
+        add_Method(File, "iterator", &File_iter);
+        add_Method(File, "hasNext", &File_havemore);
+        add_Method(File, "iterator", &File_iter);
         add_Method(File, "havemore", &File_havemore);
         add_Method(File, "next", &File_next);
         add_Method(File, "readBinary", &File_readBinary);
         add_Method(File, "writeBinary", &File_writeBinary);
+        add_Method(File, "pathname", &File_pathname);
         add_Method(File, "eof", &File_eof);
         add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
     }
-    Object o = alloc_obj(sizeof(FILE*) + sizeof(int), File);
+    Object o = alloc_obj(sizeof(struct FileObject) - sizeof(struct Object), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
+    so->pathname = alloc_String("");
     return o;
 }
 Object alloc_File(const char *filename, const char *mode) {
     FILE *file = fopen(filename, mode);
     if (file == NULL) {
-        perror("File access failed");
-        gracedie("File access failed: could not open %s for %s.",
+        graceRaise(EnvironmentExceptionObject, "could not open file %s for %s.",
                 filename, mode);
     }
-    return alloc_File_from_stream(file);
+    Object o = alloc_File_from_stream(file);
+    struct FileObject *fo = (struct FileObject *)o;
+    char resolvedName[PATH_MAX];
+    realpath(filename, resolvedName);
+    Object name = alloc_String(resolvedName);
+    gc_root(name);
+    fo->pathname = name;
+    return o;
 }
 Object io_input(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2701,6 +2911,7 @@ Object io_spawnv(Object self, int nparts, int *argcv,
 Object io_listdir(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     DIR *dp;
+    gc_pause();
     Object ret = alloc_BuiltinList();
     Object argobj = args[0];
     char *strval = grcstring(argobj);
@@ -2713,18 +2924,8 @@ Object io_listdir(Object self, int nparts, int *argcv,
         Object str = alloc_String(entry->d_name);
         callmethod(ret,"push",1,partcv,&str);
     }
+    gc_unpause();
     return ret;
-}
-Object io_findResource(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    char *strval = grcstring(args[0]);
-    char buf[PATH_MAX];
-    if (find_resource(strval, buf)) {
-        return alloc_String(buf);
-    } else {
-        gracedie("Resource '%s' not found.", strval);
-        return NULL;
-    }
 }
 void io__mark(struct IOModuleObject *o) {
     gc_mark(o->_stdin);
@@ -2734,7 +2935,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 12, (void*)&io__mark);
+    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -2746,7 +2947,6 @@ Object module_io_init() {
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
-    add_Method(IOModule, "findResource", &io_findResource);
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
@@ -2997,6 +3197,20 @@ Object alloc_done() {
     done = o;
     gc_root(o);
     return o;
+}
+Object alloc_ObjectType() {
+    if (ObjectType != NULL)
+        return ObjectType;
+    ObjectType = alloc_Type("Object", 7);
+    gc_root(ObjectType);
+    add_Method((ClassData)ObjectType, "==", NULL);
+    add_Method((ClassData)ObjectType, "!=", NULL);
+    add_Method((ClassData)ObjectType, "≠", NULL);
+    add_Method((ClassData)ObjectType, "::", NULL);
+    add_Method((ClassData)ObjectType, "asString", NULL);
+    add_Method((ClassData)ObjectType, "asDebugString", NULL);
+    add_Method((ClassData)ObjectType, "basicAsString", NULL);
+    return ObjectType;
 }
 Object alloc_ellipsis() {
     if (ellipsis != NULL)
@@ -3285,13 +3499,14 @@ start:
     }
     if (error_jump_set) {
         char buf[1024];
-        sprintf(buf, "no method %s in %s.", name,
-                self->class->name);
+        sprintf(buf, "no method %s in %s %s.", name,
+                self->class->name, grcstring(callmethod(self, "asString", 0, NULL, NULL)));
         currentException = alloc_ExceptionPacket(alloc_String(buf),
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "Available methods are:\n");
+    fprintf(stderr, "No method %s in %s; ", name, self->class->name);
+    fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
         len += 2 + strlen(c->methods[i].name);
@@ -3302,8 +3517,9 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-    gracedie("no method %s in %s.",
-            name, self->class->name);
+//    gracedie("No method %s in %s %s.", name, self->class->name,
+//             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
+    gracedie("No method %s in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
@@ -3343,7 +3559,7 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        gracedie("method call on undefined value");
+        gracedie("method %s requested on undefined value", name);
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
@@ -3619,22 +3835,69 @@ Object Type_match(Object self, int nparts, int *argcv,
 Object Type_asString(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     struct TypeObject *t = (struct TypeObject *)self;
-    char buf[strlen(t->name) + 7];
-    strcpy(buf, "Type<");
+    char buf[strlen(t->name) + 5];
+    strcpy(buf, "type ");
     strcat(buf, t->name);
-    strcat(buf, ">");
     return alloc_String(buf);
+}
+Object Type_methodNames(Object self, int nparts, int *argcv,
+                     Object *argv, int flags) {
+    struct TypeObject *t = (struct TypeObject *)self;
+    int i;
+    int tmp = 1;
+    Object mn;
+    gc_pause();
+    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
+    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    for (i=0; i < t->nummethods; i++) {
+        mn = alloc_String(t->methods[i].name);
+        callmethod(result, "add", 1, &tmp, &mn);
+    }
+    return result;
+}
+Object Type_and(Object self, int nparts, int *argcv,
+                   Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("& requires an argument");
+    Object ti = callmethod(prelude, "TypeIntersection", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
+}
+Object Type_or(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("| requires an argument");
+    Object ti = callmethod(prelude, "TypeVariant", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
+}
+Object Type_plus(Object self, int nparts, int *argcv,
+                Object *argv, int flags) {
+    if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
+    gracedie("+ requires an argument");
+    Object ti = callmethod(prelude, "TypeUnion", 0, NULL, NULL);
+    int partcv[] = {2};
+    Object args[] = {self, argv[0]};
+    Object res = callmethod(ti, "new", 1, partcv, args);
+    return res;
 }
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
-        Type = alloc_class("Type", 7);
+        Type = alloc_class("Type", 10);
         add_Method(Type, "==", &Object_Equals);
         add_Method(Type, "!=", &Object_NotEquals);
+        add_Method(Type, "≠", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
         add_Method(Type, "::", &Object_bind);
         add_Method(Type, "match", &Type_match);
-        add_Method(Type, "&", &literal_and);
-        add_Method(Type, "|", &literal_or);
+        add_Method(Type, "&", &Type_and);
+        add_Method(Type, "|", &Type_or);
+        add_Method(Type, "+", &Type_plus);
+        add_Method(Type, "methodNames", &Type_methodNames);
     }
     Object o = alloc_obj(sizeof(struct TypeObject)
             - sizeof(int32_t) - sizeof(ClassData), Type);
@@ -4024,7 +4287,7 @@ void UserObj__release(struct UserObject *o) {
 Object GraceDefaultObject;
 Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
     if (GraceDefaultObject == NULL) {
-        ClassData dc = alloc_class2("DefaultObject", 7,
+        ClassData dc = alloc_class2("DefaultObject", 8,
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
                 sizeof(struct Object), dc);
@@ -4037,7 +4300,9 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "++", &Object_concat);
         addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
         addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
+        addmethod2(GraceDefaultObject, "≠", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
+        addmethod2(GraceDefaultObject, "basicAsString", &Object_asString);
         addmethod2(GraceDefaultObject, "::", &Object_bind);
     }
     if (c == NULL) {
@@ -4101,14 +4366,13 @@ void setModulePath(char *s) {
 }
 int find_resource(const char *name, char *buf) {
 
-    char *sep = execPathHelper();
-    char *gmp = getenv("GRACE_MODULE_PATH");
+    char *execPath = execPathHelper();
     char *home = getenv("HOME");
     char buf1[PATH_MAX];
     struct stat st;
 
-    strcpy(buf1, sep);
-    char *locations[] = {".", sep, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")}; 
+    strcpy(buf1, execPath);
+    char *locations[] = {".", execPath, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")};
 
     char buf5[PATH_MAX];
     if(modulePath != NULL){
@@ -4119,31 +4383,40 @@ int find_resource(const char *name, char *buf) {
         strcpy(buf2, home); 
         locations[3] = strcat(buf2, "/.local/lib/grace/modules");
     }
-    char buf3[PATH_MAX];
-    if(gmp != NULL){
-        locations[4] = strncpy(buf3, gmp, PATH_MAX);
-    }
     char buf4[PATH_MAX];
     if(compilerModulePath != NULL){
         locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
     }
 
-    int i = 0;
-
-    for(i = 0; i < 8; i++){
+    int i;
+    for(i = 0; i < 7; i++){
         if(locations[i] == NULL){
             continue;
         }
         strncpy(buf, locations[i], PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
-
-
         if(stat(buf, &st) == 0){
             return 1;
         }
     }
 
+    char *elem;
+    char *gmp = getenv("GRACE_MODULE_PATH");
+    char *context;
+
+    for ( elem = strtok_r(gmp, ":", &context);
+          elem;
+          elem = strtok_r(NULL, ":", &context)
+        )
+    {
+        strncpy(buf, elem, PATH_MAX);
+        strcat(buf, "/");
+        strcat(buf, name);
+        if(stat(buf, &st) == 0){
+            return 1;
+        }
+    }
     return 0;
 }
 int find_gso(const char *name, char *buf) {
@@ -4155,35 +4428,20 @@ int find_gso(const char *name, char *buf) {
 Object dlmodule(const char *name) {
     int blen = PATH_MAX;
     char buf[blen];
+    char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
-        gracedie("unable to find dynamic module '%s'", name);
+        gracedie("unable to find dynamic module '%s.gso'", name);
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle)
         gracedie("failed to load dynamic module '%s': %s", buf, dlerror());
     strcpy(buf, "module_");
-    int new_size = 0;
-    char c;
-    for (int i = 0; (c = name[i]) != '\0'; i++) {
-        new_size += c == '/' ? 4 : 1;
-    }
-    char escaped[new_size + 1];
-    for (int i = 0, j = 0; (c = name[i]) != '\0'; i++) {
-        if (c == '/') {
-            escaped[j++] = '_';
-            escaped[j++] = '4';
-            escaped[j++] = '7';
-            escaped[j++] = '_';
-        } else {
-            escaped[j++] = c;
-        }
-    }
-    escaped[new_size] = '\0';
-    strcat(buf, escaped);
+    strncpy(nameCopy, name, PATH_MAX);
+    strcat(buf, basename(nameCopy));
     strcat(buf, "_init");
     Object (*init)() = dlsym(handle, buf);
     if (!init)
-        gracedie("failed to find initialiser in dynamic module '%s'", buf);
+        gracedie("failed to find initialiser %s in dynamic module '%s'", buf, name);
     Object mod = init();
     gc_root(mod);
     return mod;
@@ -4258,32 +4516,16 @@ void gracelib_argv(char **argv) {
     Unknown = alloc_Type("Unknown", 0);
     gc_root(Unknown);
     Dynamic = Unknown;
-    List = alloc_Type("List", 15);
-    gc_root(List);
-    add_Method((ClassData)List, "==", NULL);
-    add_Method((ClassData)List, "!=", NULL);
-    add_Method((ClassData)List, "push", NULL);
-    add_Method((ClassData)List, "pop", NULL);
-    add_Method((ClassData)List, "at", NULL);
-    add_Method((ClassData)List, "at()put", NULL);
-    add_Method((ClassData)List, "[]", NULL);
-    add_Method((ClassData)List, "[]:=", NULL);
-    add_Method((ClassData)List, "size", NULL);
-    add_Method((ClassData)List, "iterator", NULL);
-    add_Method((ClassData)List, "++", NULL);
-    add_Method((ClassData)List, "asString", NULL);
-    add_Method((ClassData)List, "asDebugString", NULL);
-    add_Method((ClassData)List, "::", NULL);
     ExceptionObject = alloc_Exception("Exception", NULL);
     gc_root(ExceptionObject);
     ErrorObject = alloc_Exception("Error", ExceptionObject);
     gc_root(ErrorObject);
     RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
     gc_root(RuntimeErrorObject);
+    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
+    gc_root(ProgrammingErrorObject);
     NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingErrorObject);
     gc_root(NoSuchMethodErrorObject);
-    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
-    gc_root(ExceptionObject);
     ResourceExceptionObject = alloc_Exception("ResourceException", ExceptionObject);
     gc_root(ResourceExceptionObject);
     TypeErrorObject = alloc_Exception("TypeError", ProgrammingErrorObject);
@@ -4460,29 +4702,17 @@ Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         gracedie("for-do requires exactly two arguments");
-    Object iter = callmethod(argv[0], "iter", 0, NULL, NULL);
+    Object iter = callmethod(argv[0], "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
     // Stack slot for argument object
     int slot = gc_frame_newslot(NULL);
     int partcv[] = {1};
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object val = callmethod(iter, "next", 0, NULL, NULL);
         gc_frame_setslot(slot, val);
         callmethod(argv[1], "apply", 1, partcv, &val);
     }
     return done;
-}
-void grace_iterate(Object iterable, void(*callback)(Object, void *),
-        void *userdata) {
-    Object iter = callmethod(iterable, "iter", 0, NULL, NULL);
-    gc_frame_newslot(iter);
-    // Stack slot for argument object
-    int slot = gc_frame_newslot(NULL);
-    int partcv[] = {1};
-    while (istrue(callmethod(iter, "havemore", 0, NULL, NULL))) {
-        Object val = callmethod(iter, "next", 0, NULL, NULL);
-        callback(val, userdata);
-    }
 }
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))
 Object grace_octets(Object self, int npart, int *argcv,
@@ -4596,6 +4826,10 @@ Object prelude_ProgrammingError(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return ProgrammingErrorObject;
 }
+Object prelude_TypeError(Object self, int argc, int *argcv, Object *argv,
+                                int flags) {
+    return TypeErrorObject;
+}
 Object prelude_ResourceException(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return ResourceExceptionObject;
@@ -4612,32 +4846,46 @@ Object prelude_unbecome(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     return graceunbecome(argv[0]);
 }
+Object prelude_inBrowser(Object self, int argc, int *argcv, Object *argv,
+                         int flags) {
+    return alloc_Boolean(0);
+}
 Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-  if (!(argv[0]->flags & OFLAG_USEROBJ))
-    return argv[0];
-  Object obj = argv[0];
-  struct UserObject *uo = (struct UserObject *)obj;
-  void *sz = ((char *)obj) - sizeof(size_t);
-  size_t *size = sz;
-  int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
-  Object ret = alloc_userobj2(0, nfields, obj->class);
-  struct UserObject *uret = (struct UserObject *)ret;
-  memcpy(ret, obj, *size);
-  if (uo->super)
-    uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
-  return ret;
+    if (!(argv[0]->flags & OFLAG_USEROBJ))
+        return argv[0];
+    Object obj = argv[0];
+    struct UserObject *uo = (struct UserObject *)obj;
+    void *sz = ((char *)obj) - sizeof(size_t);
+    size_t *size = sz;
+    int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
+    Object ret = alloc_userobj2(0, nfields, obj->class);
+    struct UserObject *uret = (struct UserObject *)ret;
+    memcpy(ret, obj, *size);
+    if (uo->super)
+        uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
+    return ret;
 }
+Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Boolean(1);
+}
+Object prelude_false_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Boolean(0);
+}
+
 Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 21, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 27, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
+    add_Method(c, "≠", &Object_NotEquals);
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "Exception", &prelude_Exception);
@@ -4645,15 +4893,20 @@ Object grace_prelude() {
     add_Method(c, "RuntimeError", &prelude_RuntimeError);
     add_Method(c, "NoSuchMethod", &prelude_NoSuchMethod);
     add_Method(c, "ProgrammingError", &prelude_ProgrammingError);
+    add_Method(c, "TypeError", &prelude_TypeError);
     add_Method(c, "ResourceException", &prelude_ResourceException);
     add_Method(c, "EnvironmentException", &prelude_EnvironmentException);
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
     add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
+    add_Method(c, "primitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
+    add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
+    add_Method(c, "true()object", &prelude_true_object);
+    add_Method(c, "false()object", &prelude_false_object);
     _prelude = alloc_userobj2(0, 0, c);
     struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);

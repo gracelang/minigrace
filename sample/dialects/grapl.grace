@@ -34,16 +34,11 @@ class vector.new {
     method ×(v) {
         self * v
     }
-    method /(v) {
+    method /(v) { // compression: select elements from v according to 1s in self
         def tmp = vector.new
         for (data.indices) do {i->
             if (data.at(i) == 1) then {
-                //tmp.data.push(v.data.at(i))
-            }
-        }
-        for (v.data.indices) do {i->
-            if (v.data.at(i) == 1) then {
-                tmp.data.push(data.at(i))
+                tmp.data.push(v.data.at(i))
             }
         }
         tmp
@@ -101,7 +96,7 @@ class vector.new {
         def indices = ret.data
         def used = collections.set.new
         var min := 1
-        for (1..data.size) do {
+        for (1..data.size) do {_->
             for (data.indices) do {i->
                 if (data.at(i) < data.at(min)) then {
                     if (!used.contains(i)) then {
@@ -124,7 +119,7 @@ class vector.new {
         def indices = ret.data
         def used = collections.set.new
         var max := 1
-        for (1..data.size) do {
+        for (1..data.size) do {_->
             for (data.indices) do {i->
                 if (data.at(i) > data.at(max)) then {
                     if (!used.contains(i)) then {
@@ -205,32 +200,32 @@ method f(b) {
     }
 }
 
-def A = vector.new
-def B = vector.new
-def C = vector.new
-def D = vector.new
-def E = vector.new
-def F = vector.new
-def G = vector.new
-def H = vector.new
-def I = vector.new
-def J = vector.new
-def K = vector.new
-def L = vector.new
-def M = vector.new
-def N = vector.new
-def O = vector.new
-def P = vector.new
-def Q = vector.new
-def R = vector.new
-def S = vector.new
-def T = vector.new
-def U = vector.new
-def V = vector.new
-def W = vector.new
-def X = vector.new
-def Y = vector.new
-def Z = vector.new
+def A is public = vector.new
+def B is public = vector.new
+def C is public = vector.new
+def D is public = vector.new
+def E is public = vector.new
+def F is public = vector.new
+def G is public = vector.new
+def H is public = vector.new
+def I is public = vector.new
+def J is public = vector.new
+def K is public = vector.new
+def L is public = vector.new
+def M is public = vector.new
+def N is public = vector.new
+def O is public = vector.new
+def P is public = vector.new
+def Q is public = vector.new
+def R is public = vector.new
+def S is public = vector.new
+def T is public = vector.new
+def U is public = vector.new
+def V is public = vector.new
+def W is public = vector.new
+def X is public = vector.new
+def Y is public = vector.new
+def Z is public = vector.new
 
 method ι(n) {
     def tmp = vector.new
@@ -246,9 +241,9 @@ method n(n') {
             def ret = vector.new
             def used = collections.set.new
             for (1..n') do {i->
-                var num := 1 + (math.random * o).truncate
+                var num := 1 + (math.random * o).truncated
                 while {used.contains(num)} do {
-                    num := 1 + (math.random * o).truncate
+                    num := 1 + (math.random * o).truncated
                 }
                 used.add(num)
                 ret.data.push(num)

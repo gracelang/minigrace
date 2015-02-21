@@ -4,10 +4,11 @@ set -e
 
 if [ $# -lt 3 ]
 then
-    echo "Error: harness requires three arguments" >&2
-    echo "- Grace command" >&2
-    echo "- Directory of tests to run" >&2
-    echo "- Command to execute compiled code (empty for native)" >&2
+    echo "Error: harness requires three or more arguments" >&2
+    echo "- compilation command" >&2
+    echo "- directory containing tests" >&2
+    echo "- command to execute compiled code (empty for native)" >&2
+    echo '- <test file name prefix>*  ; if omitted, all tests in directory'
 fi
 GRACE="$1"
 TESTDIR="$2"
@@ -48,9 +49,11 @@ set +e
 
 pass() {
     echo "!PASS" >> test-$$.log
+    FAILED="false"
 }
 fail() {
     echo "!FAIL $*" >> test-$$.log
+    FAILED="true"
 }
 
 NUM_TESTS=0
@@ -87,13 +90,14 @@ do
     echo ================================================== >> test-$$.log
     echo Beginning case "$tcase"... >>test-$$.log
     NUM_TESTS=$((NUM_TESTS + 1))
+    FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
         if [ "$TYPE" = "repl" ]
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE -XDefaultVisibility=public --make --native $tcase"
+            COMMAND="$GRACE --verbose -XDefaultVisibility=public --make --native $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -102,62 +106,91 @@ do
                 cat $tcase | $GRACE --interactive > test-$$.out
             else
                 execname="${tcase%%.*}"
-                $EXECUTOR"$execname" > test-$$.out
+                $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+                if [ ! -s test-$$.err ]
+                then
+                /bin/rm -f test-$$.err
+                else
+                cat test-$$.err
+                fi
             fi
             if diff test-$$.out ${tcase%_test.grace}.out
             then
                 NUM_PASS=$((NUM_PASS + 1))
-                echo "${NUM_TESTS} PASS: $tcase"
-                pass
+#                echo "${NUM_TESTS} PASS: $tcase"
+                printf %s .
+                pass ${tcase}
                 rm -f test-$$.out
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
+                echo ""
                 echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
-                fail "wrong output"
+                fail "${tcase}: wrong output"
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
+            echo ""
             echo "${NUM_TESTS} ERROR: $tcase failed to compile"
-            fail "compile error"
+            fail "${tcase}: compile error"
         fi
     else
         if [ "$TYPE" = "repl" ]
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE --make --native $tcase"
+            COMMAND="$GRACE --verbose --make --native $tcase"
         fi
-        if eval "$COMMAND" > test-$$.log 2>&1
+        eval "$COMMAND" > test-$$.log 2>&1
+        ret_code=$?
+        if [ $ret_code -eq 2 ]
         then
+            NUM_PASS=$((NUM_PASS + 1))
+#            echo "${NUM_TESTS} PASS: $tcase"
+            printf %s .
+            pass ${tcase}
+        else
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
             NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
-            fail "compiled"
-        else
-            NUM_PASS=$((NUM_PASS + 1))
-            echo "${NUM_TESTS} PASS: $tcase"
-            pass
+            fail "${tcase} compiled"
         fi
     fi
-    cat test-$$.log >> test.log
-    if [ -e test-$$.out ]
+    if [ "$FAILED" = "true" ]
     then
-        echo "Got output:" >> test.log
-        cat test-$$.out >> test.log
-        echo "Expected output:" >> test.log
-        cat ${tcase%_test.grace}.out >> test.log
+        cat test-$$.log >> test.log
+        if [ -e test-$$.err ]
+        then
+            echo "Errors:" >> test.log
+            cat test-$$.err >> test.log
+        fi
+        if [ -e test-$$.out ]
+        then
+            echo "Got output:" >> test.log
+            cat test-$$.out >> test.log
+            echo "Expected output:" >> test.log
+            cat ${tcase%_test.grace}.out >> test.log
+        fi
     fi
-    rm -f test-$$.log test-$$.out ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *.gct
+    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *.gct
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
     fi
 done
 
-echo Ran $NUM_TESTS tests.
-echo $NUM_PASS/$NUM_TESTS passed.
-echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have."
-echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output."
-echo "$NUM_COMPILE_ERROR tests did not compile but should have."
+echo
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
+if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
+then
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
+fi
+if [ $NUM_WRONG_OUTPUT -ne "0" ]
+then
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+fi
+if [ $NUM_COMPILE_ERROR -ne "0" ]
+then
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
+fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
 then

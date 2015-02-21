@@ -1,11 +1,11 @@
-var factory
+var testFactory
 
-factory := object {
+testFactory := object {
     method create(n) {
         object {
             var value := n
             method +(other) {
-                factory.create(self.value + other.value)
+                testFactory.create(self.value + other.value)
             }
             method asString {
                 self.value.asString
@@ -14,8 +14,8 @@ factory := object {
     }
 }
 
-var a := factory.create(3)
-var b := factory.create(4)
+var a := testFactory.create(3)
+var b := testFactory.create(4)
 print(a)
 print(b)
 print(a + b)

@@ -1,11 +1,11 @@
 {
-    "loopinvariant": {
+    "loopInvariant": {
         "name": "Loop invariants dialect",
         "dir": "dialects",
         "categories": ["Dialects"],
         "description": "A small sample dialect enforcing loop invariants."
     },
-    "loopinvariant_example": {
+    "loopInvariantExample": {
         "name": "Loop invariant example",
         "dir": "dialects",
         "requires": ["loopinvariant"],
@@ -18,45 +18,45 @@
         "categories": ["Dialects"],
         "description": "A dialect for implementing finite state machines as modules."
     },
-    "fsm_example": {
+    "fsmExample": {
         "name": "FSM client code",
         "requires": ["fsm"],
         "dir": "dialects",
         "categories": ["Dialect examples"],
         "description": "Example using finite state machine dialect."
     },
-    "literalblock": {
-        "name": "Literal block dialect",
+    "whileLiteral": {
+        "name": "While: literal block dialect",
         "dir": "dialects",
         "requires": ["dialect"],
         "categories": ["Dialects"],
         "description": "A dialect enforcing that while loops are written with literal blocks, and offering errors and suggestions when they are not."
     },
-    "literal_test": {
-        "name": "Test for literal block dialect",
+    "whileLiteralExample": {
+        "name": "Example for literal block dialect",
         "dir": "dialects",
         "categories": ["Dialect examples"],
         "requires": ["literalblock"],
-        "description": "Example code producing an error from the literal block dialect"
+        "description": "Example code producing an error using the literal block dialect"
     },
-    "ObjectAssociations": {
+    "objectAssociations": {
         "name": "Object associations dialect",
         "dir": "dialects",
         "description": "A dialect for using object associations/relations in your program.",
         "categories": ["Dialects"]
     },
-    "ObjectAssociations_example": {
+    "objectAssociationsExample": {
         "name": "OA client code",
         "dir": "dialects",
         "categories": ["Dialect examples"],
         "requires": ["ObjectAssociations"],
         "description": "Example using the object associations dialect."
     },
-    "StaticGrace": {
+    "requireTypes": {
         "name": "Static Grace dialect",
         "dir": "dialects",
         "categories": ["Dialects"],
-        "description": "A dialect enforcing that static type annotations are always present."
+        "description": "A dialect that requires static type annotations on all declarations."
     },
     "dialect": {
         "name": "Dialect dialect",
@@ -64,12 +64,12 @@
         "categories": ["Dialects"],
         "description": "A dialect to assist in writing other dialects and checkers."
     },
-    "dialect_example": {
+    "dialectExample": {
         "name": "Dialect client code",
         "dir": "dialects",
         "categories": ["Dialects"],
         "requires": ["dialect"],
-        "description": "Example using the Dialect dialect to implement the StaticGrace dialect in a more concise way."
+        "description": "Example using the Dialect dialect to implement the requireTypes dialect in a more concise way."
     },
     "grapl": {
         "name": "GrAPL dialect",
@@ -77,7 +77,7 @@
         "categories": ["Dialects"],
         "description": "A Grace rendition of parts of APL, showing the use of operator definitions and other language features."
     },
-    "grapl_example": {
+    "graplExample": {
         "name": "GrAPL example",
         "dir": "dialects",
         "categories": ["Dialect examples"],
@@ -91,7 +91,7 @@
         "requires": [],
         "description": "Cross-platform graphics library."
     },
-    "simplegraphics_example": {
+    "simplegraphicsExample": {
         "name": "Simple graphics demo",
         "dir": "graphics",
         "categories": ["Dialect examples", "Graphics"],
@@ -140,19 +140,19 @@
         "requires": ["sniff"],
         "description": "Example code in the Sniff dialect, implementing Pong."
     },
-    "structural": {
-        "name": "Structural typechecking dialect",
+    "staticTypes": {
+        "name": "Static structural typechecking",
         "dir": "dialects",
         "categories": ["Dialects"],
         "requires": ["dialect"],
         "description": "A typechecking dialect enforcing structural subtyping."
     },
-    "structural_example": {
-        "name": "Structural typing example",
-        "description": "Sample code for the structural checking dialect.",
+    "staticTypesExample": {
+        "name": "Static typing example",
+        "description": "Sample code for the staticTypes dialect.",
         "dir": "dialects",
         "categories": ["Dialect examples"],
-        "requires": ["structural"]
+        "requires": ["staticTypes"]
     },
     "dbc": {
         "name": "Design-by-contract dialect",

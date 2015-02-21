@@ -1,5 +1,6 @@
 #!/usr/bin/python
-# Script to generate unicodedata.h from UnicodeData.txt
+# Script to generate js/unicodedata.js from UnicodeData.txt and NameAliases.txt,
+# which can be found at http://www.unicode.org/Public/UCD/latest/ucd/
 # By Michael Homer
 
 import os

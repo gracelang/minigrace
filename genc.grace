@@ -25,18 +25,13 @@ var output := []
 var usedvars := []
 var declaredvars := []
 var bblock := "entry"
-var linenum := 1
-var modules := collections.set.new
-var staticmodules := collections.set.new
-var dynamicmodules := collections.set.new
-def importnames = collections.map.new
+var linenum := 0
 var values := []
 var outfile
 var modname := "main"
 var escmodname := "main"
 var runmode := "build"
 var buildtype := "bc"
-var gracelibPath := "gracelib.o"
 var inBlock := false
 var paramsUsed := 1
 var partsUsed := 1
@@ -45,11 +40,10 @@ var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = collections.map.new
-var importHook := false
-var subprocesses := collections.list.new
-var linkfiles := collections.list.new
+def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
+var dialectHasChecker := false
 
 method out(s) {
     output.push(s)
@@ -68,7 +62,7 @@ method log_verbose(s) {
 }
 method countnodebindings(n) {
     if (n.kind == "if") then {
-        countbindings(n.thenblock) + countbindings(n.elseblock)
+        countbindings(n.thenblock.body) + countbindings(n.elseblock.body)
     } else {
         0
     }
@@ -76,8 +70,9 @@ method countnodebindings(n) {
 method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
-        if ((n.kind == "vardec") || (n.kind == "defdec")
-            || (n.kind == "class") || (n.kind == "type")) then {
+        def k = n.kind
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
+             || (k == "class")) then {
             numslots := numslots + 1
         } elseif (n.kind == "if") then {
             numslots := numslots + countnodebindings(n)
@@ -88,14 +83,15 @@ method countbindings(l) {
 method definebindings(l, slot') {
     var slot := slot'
     for (l) do { n ->
-        if ((n.kind == "vardec") || (n.kind == "defdec")
-            || (n.kind == "class")) then {
+        def k = n.kind
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
+             || (k == "class")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
                 tnm := escapeident(n.name.value.value)
                 snm := escapestring(n.name.value.value)
-            } else {
+            } else {  // identifier
                 tnm := escapeident(n.name.value)
                 snm := escapestring(n.name.value)
             }
@@ -105,29 +101,14 @@ method definebindings(l, slot') {
                 out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
                 slot := slot + 1
             }
-        } else {
-            if (n.kind == "if") then {
-                slot := definebindings(n.thenblock, slot)
-                slot := definebindings(n.elseblock, slot)
-                n.handledIdentifiers := true
-            } else {
-                if (n.kind == "type") then {
-                    var tnm := escapeident(n.value)
-                    def snm = escapestring(n.value)
-                    if (!declaredvars.contains(tnm)) then {
-                        declaredvars.push(tnm)
-                        out("  Object *var_{tnm} = "
-                            ++ "&(stackframe->slots[{slot}]);")
-                        out("  setframeelementname(stackframe, {slot}, \"{snm}\");")
-                        slot := slot + 1
-                    }
-                } else {
-                    if (n.kind == "import") then {
-                        var tnm := escapeident(n.value)
-                        out "Object *var_{tnm} = alloc_var();"
-                    }
-                }
-            }
+        } elseif {k == "if"} then {
+            slot := definebindings(n.thenblock.body, slot)
+            slot := definebindings(n.elseblock.body, slot)
+            n.handledIdentifiers := true
+        } elseif {n.kind == "import"} then {
+            var tnm := escapeident(n.nameString)
+            out "Object *var_{tnm} = alloc_var();"
+            // TODO: why is this different from a def?  Handle annotations!
         }
     }
     slot
@@ -402,6 +383,7 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o, includeConstant) {
     var signature := o.signature
+    util.setPosition(o.line, o.linePos)
     def obj = ast.objectNode.new(o.value, o.superclass)
     obj.classname := o.name.value
     var mbody := [obj]
@@ -409,7 +391,7 @@ method compileclass(o, includeConstant) {
     if (false != o.generics) then {
         newmeth.generics := o.generics
     }
-    newmeth.properties.put("fresh", true)
+    newmeth.isFresh := true
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     if (includeConstant) then {
@@ -446,7 +428,7 @@ method compileobject(o, outerRef) {
             numMethods := numMethods + 1
         }
         if (e.kind == "method") then {
-            if (e.properties.contains "fresh") then {
+            if (e.isFresh) then {
                 numMethods := numMethods + 1
                 numFields := numFields + 1
             }
@@ -501,7 +483,7 @@ method compileobject(o, outerRef) {
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif (e.kind == "type") then {
+        } elseif (e.kind == "typedec") then {
             out("if (objclass{myc} == NULL) \{")
             compileobjtypemeth(e, selfr, pos)
             out("\}")
@@ -538,10 +520,8 @@ method compileobject(o, outerRef) {
             compileobjvardecdata(e, selfr, pos)
         } elseif (e.kind == "defdec") then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif (e.kind == "type") then {
-            e.anonymous := true
-            def tn = compilenode(e)
-            out("  adddatum2({selfr}, {tn}, {pos});")
+        } elseif (e.kind == "typedec") then {
+            compileobjdefdecdata(e, selfr, pos)
         } elseif (e.kind == "class") then {
         } elseif (e.kind == "inherits") then {
             // The return value is irrelevant with factory inheritance,
@@ -592,7 +572,7 @@ method compileblock(o) {
     o.register := obj
     inBlock := origInBlock
 }
-method compiletype(o) {
+method compiletype(o) {     // dead code!
     def myc = auto_count
     auto_count := auto_count + 1
     def escName = escapestring2(o.value)
@@ -616,6 +596,37 @@ method compiletype(o) {
             [idd], false))
     }
 }
+method compiletypedec(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    def idName = if (o.name.kind == "generic") then {
+                        escapeident(o.name.value.value)
+                    } else {
+                        escapeident(o.name.value)
+                    }
+    out("// Type decl {o.name.value}")
+    declaredvars.push(idName)
+    if (o.value.kind == "typeliteral") then {o.value.name := idName }
+    compilenode(o.value)
+    out("  *var_{idName} = {o.value.register};")
+    o.register := "done"
+    if (compilationDepth == 1) then {
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)],
+            [o.name], false))  // TODO: should be TypeType
+    }
+}
+method compiletypeliteral(o) {
+    def myc = auto_count
+    auto_count := auto_count + 1
+    out("//   Type literal ")
+    out("    Object type{myc} = alloc_Type(\"{o.name}\", {o.methods.size});")
+    for (o.methods) do {meth->
+        def mnm = escapestring2(meth.value)
+        out("    add_Method((ClassData)type{myc}, \"{mnm}\", NULL);")
+    }
+    // TODO: types in the type literal
+    o.register := "type{myc}"
+}
 method compilefor(o) {
     var myc := auto_count
     auto_count := auto_count + 1
@@ -627,11 +638,11 @@ method compilefor(o) {
     out("  gc_frame_newslot({obj});")
     out("  params[0] = {over};")
     out("  partcv[0] = 1;")
-    out("  Object iter{myc} = callmethod({over}, \"iter\", 1, partcv, params);")
+    out("  Object iter{myc} = callmethod({over}, \"iterator\", 1, partcv, params);")
     out("  gc_frame_newslot(iter{myc});")
     out("  int forvalslot{myc} = gc_frame_newslot(NULL);")
     out("  while(1) \{")
-    out("    Object cond{myc} = callmethod(iter{myc}, \"havemore\", 0, NULL, NULL);")
+    out("    Object cond{myc} = callmethod(iter{myc}, \"hasNext\", 0, NULL, NULL);")
     out("    if (!istrue(cond{myc})) break;")
     out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL, NULL);")
     out("    gc_frame_setslot(forvalslot{myc}, params[0]);")
@@ -645,6 +656,7 @@ method compilemethod(o, selfobj, pos) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind var_x as usual, but
     // set to pointer from the additional closure parameter.
+    out "// method {o.nameString}"
     var origParamsUsed := paramsUsed
     paramsUsed := 1
     var origPartsUsed := partsUsed
@@ -656,7 +668,7 @@ method compilemethod(o, selfobj, pos) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
     output := []
-    usedvars := []
+    usedvars := []      // accumulates identifiers mentioned inside this method
     declaredvars := []
     var myc := auto_count
     auto_count := auto_count + 1
@@ -687,7 +699,7 @@ method compilemethod(o, selfobj, pos) {
             if (param.dtype != false) then {
                 if ((param.dtype.value != "Unknown")
                     && ((param.dtype.kind == "identifier")
-                        || (param.dtype.kind == "type"))) then {
+                        || (param.dtype.kind == "typeliteral"))) then {
                     haveTypedParams := true
                 }
             }
@@ -706,9 +718,8 @@ method compilemethod(o, selfobj, pos) {
             numslots := numslots + 1
         } else {
             if (!o.selfclosure) then {
-                // TODO currently blocks can have excess arguments
-                out "if (argcv && argcv[{partnr - 1}] > {part.params.size})"
-                out "  gracedie(\"too many arguments for {part.name}\");"
+                out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
+                out "    gracedie(\"wrong number of arguments for {part.name}\");"
             }
         }
     }
@@ -746,23 +757,31 @@ method compilemethod(o, selfobj, pos) {
     var ret := "done"
     numslots := numslots + countbindings(o.body)
     definebindings(o.body, slot)
-    var tailObj := false
+    var tailObject := false
     var tco := false
     if ((o.body.size > 0) && {o.body.last.kind == "call"}
         && {util.extensions.contains("TailCall")}) then {
         tco := o.body.pop
     }
     if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
-        tailObj := o.body.pop
+        tailObject := o.body.pop       // remove tail object
+        if (tailObject.classname == "object") then {
+            var selfName := selfobj
+            if (selfName.startsWith "var_") then {
+                selfName := selfName.substringFrom 5 to(selfName.size)
+            }
+            tailObject.classname := selfobj ++ "." ++ o.nameString
+        }
     }
     for (o.body) do { l ->
         ret := compilenode(l)
     }
-    if (false != tailObj) then {
+    if (false != tailObject) then {
+        o.body.push(tailObject)        // put tail object back
         out "  isTailObject = 1;"
         out "  inheritingObject = methodInheritingObject;"
-        compileobject(tailObj, "self")
-        ret := tailObj.register
+        compileobject(tailObject, "self")
+        ret := tailObject.register
     }
     if (false != tco) then {
         compilecall(tco, true)
@@ -771,6 +790,8 @@ method compilemethod(o, selfobj, pos) {
     out("  gc_frame_end(frame);")
     out("  return {ret};")
     out("\}")
+    // Now we've finished compiling the body of the method, we need to 
+    // construct the closure that makes the variables available.
     var body := output
     outswitchup
     var closurevars := []
@@ -828,7 +849,7 @@ method compilemethod(o, selfobj, pos) {
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method\");")
+            out("    gracedie(\"insufficient arguments to method {name}\");")
         }
     }
     // We need to detect which parameters are used in a closure, and
@@ -845,6 +866,10 @@ method compilemethod(o, selfobj, pos) {
             }
         }
     }
+    // APB: I believe that `toremove` is the list of enclosing
+    // variables that are shadowed by parameters.  This is unnecessary, 
+    // since it is syntactially illgeal for a parameter to have the
+    // same name as a variable in an enclosing scope.
     def origclosurevars = closurevars
     closurevars := []
     for (origclosurevars) do {pn->
@@ -893,7 +918,7 @@ method compilemethod(o, selfobj, pos) {
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
-        out("setclosureframe(closure{myc}, stackframe);")
+        out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  addtoclosure(closure{myc}, selfslot);")
@@ -915,14 +940,15 @@ method compilemethod(o, selfobj, pos) {
     }
     out("  meth_{litname}->definitionModule = modulename;")
     out("  meth_{litname}->definitionLine = {o.line};")
-    if (o.properties.contains("fresh")) then {
+    if (o.isFresh) then {
         compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
             oldout)
     }
     inBlock := origInBlock
     paramsUsed := origParamsUsed
     partsUsed := origPartsUsed
-}
+} // end of compilemethod
+
 // Compiles the "fresh" method version of a method, when applicable.
 // This method is given a different name ending in _object, with the final
 // parameter being the object into which to insert methods.
@@ -932,7 +958,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     auto_count := auto_count + 1
     var litname := escapeident("meth_{modname}_{escapestring2(nm)}_object")
     def name = escapestring2(o.value.value ++ "()object")
-    output := topOutput
+    outswitchup
     if (closurevars.size > 0) then {
         if (o.selfclosure) then {
             out("Object {litname}(Object realself, int nparts, int *argcv, "
@@ -964,7 +990,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method\");")
+            out("    gracedie(\"insufficient arguments to method {name}\");")
         }
     }
     out("  Object params[{paramsUsed}];")
@@ -992,7 +1018,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         out("  block_savedest({selfobj});")
         out("  Object closure" ++ myc ++ " = createclosure("
             ++ closurevars.size ++ ", \"{escapestring2(name)}\");")
-        out("setclosureframe(closure{myc}, stackframe);")
+        out("  setclosureframe(closure{myc}, stackframe);")
         for (closurevars) do { v ->
             if (v == "self") then {
                 out("  addtoclosure(closure{myc}, selfslot);")
@@ -1013,7 +1039,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     out("  meth_{litname}->definitionLine = {o.line};")
 }
 method compilemethodtypes(litname, o) {
-    var argcv := "int argcv_{litname}[] = \{"
+    var argcv := "  int argcv_{litname}[] = \{"
     for (o.signature.indices) do { partnr ->
         var part := o.signature[partnr]
         argcv := argcv ++ part.params.size
@@ -1023,7 +1049,7 @@ method compilemethodtypes(litname, o) {
     }
     argcv := argcv ++ "\};"
     out(argcv)
-    out("meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
+    out("  meth_{litname}->type = alloc_MethodType({o.signature.size}, argcv_{litname});")
     var pi := 0
     for (o.signature) do { part ->
         for (part.params) do { p ->
@@ -1031,7 +1057,7 @@ method compilemethodtypes(litname, o) {
             // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
                 if ((p.dtype.kind == "identifier")
-                    || (p.dtype.kind == "type")) then {
+                    || (p.dtype.kind == "typeliteral")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
                         out("meth_{litname}->type->types[{pi}] "
@@ -1076,26 +1102,28 @@ method compileifexpr(o) {
     out("  Object if{myc} = done;")
     out("struct StackFrameObject *iftmpstackframe{myc} = stackframe;")
     out("  if (istrue({cond})) \{")
-    var numslots := countbindings(o.thenblock)
+    var numslots := countbindings(o.thenblock.body)
     out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
     out("gc_frame_newslot((Object)stackframe);")
     var tret := "done"
     var fret := "done"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    definebindings(o.thenblock, 0)
-    for (o.thenblock) do { l->
+    def thenList = o.thenblock.body
+    definebindings(thenList, 0)
+    for (thenList) do { l->
         tret := compilenode(l)
     }
     out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
     out("  \} else \{")
-    if (o.elseblock.size > 0) then {
-        numslots := countbindings(o.elseblock)
-        out("stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
-        out("gc_frame_newslot((Object)stackframe);")
-        definebindings(o.elseblock, 0)
-        for (o.elseblock) do { l->
+    def elseList = o.elseblock.body
+    if (elseList.size > 0) then {
+        numslots := countbindings(elseList)
+        out("  stackframe = alloc_StackFrame({numslots}, iftmpstackframe{myc});")
+        out("  gc_frame_newslot((Object)stackframe);")
+        definebindings(elseList, 0)
+        for (elseList) do { l->
             fret := compilenode(l)
         }
         out("    gc_frame_newslot({fret});")
@@ -1118,14 +1146,16 @@ method compileif(o) {
     var fret := "done"
     var tblock := "ERROR"
     var fblock := "ERROR"
-    for (o.thenblock) do { l->
+    def thenList = o.thenblock.body
+    for (thenList) do { l->
         tret := compilenode(l)
     }
     out("    gc_frame_newslot({tret});")
     out("    if{myc} = {tret};")
     out("  \} else \{")
-    if (o.elseblock.size > 0) then {
-        for (o.elseblock) do { l->
+    def elseList = o.elseblock.body
+    if (elseList.size > 0) then {
+        for (elseList) do { l->
             fret := compilenode(l)
         }
         out("    gc_frame_newslot({fret});")
@@ -1407,6 +1437,7 @@ method compilecall(o, tailcall) {
     evl := escapestring2(o.value.value)
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
+        out "// call case 1: super request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1420,6 +1451,7 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
             o.value.in.value == "outer"}) then {
+        out "// call case 2: outer request"
         def ot = compilenode(o.value.in)
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1433,10 +1465,12 @@ method compilecall(o, tailcall) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
+        out "// call case 3: self.outer request"
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
+        out "// call case 4: self request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1448,6 +1482,7 @@ method compilecall(o, tailcall) {
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
+        out "// call case 5: prelude request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1458,6 +1493,7 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
     } elseif (o.value.kind == "member") then {
+        out "// call case 6: other member request"
         obj := compilenode(o.value.in)
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1475,6 +1511,7 @@ method compilecall(o, tailcall) {
             out("    {nparts}, partcv, params);")
         }
     } else {
+        out "// call case 7: all other requests"
         obj := "self"
         len := o.value.value.size + 1
         for (args) do { arg ->
@@ -1525,22 +1562,18 @@ method compiledialect(o) {
             snm := snm ++ c
         }
     }
-    var nm := "dialect"
     var fn := escapestring2(o.value)
-    var modg := "module_" ++ escapeident(o.value)
-    var modgn := "module_" ++ nm
+    var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
-    importnames.put(nm, modg)
     out("  if ({modg} == NULL)")
-    if (staticmodules.contains(o.value)) then {
+    if (imports.static.contains(o.value)) then {
         out("    {modg} = {modg}_init();")
     } else {
         out("    {modg} = dlmodule(\"{fn}\");")
     }
-    out("  Object *var_{nm} = alloc_var();")
-    out("  *var_{nm} = {modg};")
+    out("  Object *var_dialect = alloc_var();")
+    out("  *var_dialect = {modg};")
     out("  prelude = {modg};")
-    modules.add("dialect")
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
@@ -1553,7 +1586,7 @@ method compiledialect(o) {
     o.register := "done"
 }
 method compileimport(o) {
-    out("// Import of {o.path} as {o.value}")
+    out("// Import of {o.path} as {o.nameString}")
     var con
     var snm := ""
     for (o.path) do {c->
@@ -1564,34 +1597,34 @@ method compileimport(o) {
         }
     }
     o.register := "done"
-    var nm := escapeident(o.value)
+    var nm := escapeident(o.nameString)
     var fn := escapestring2(o.path)
-    var modg := "module_" ++ escapeident(o.path)
-    var modgn := "module_" ++ nm
+    var modg := "module_" ++ escapeident(snm)
     var modgs := "module_" ++ snm
-    modules.add(nm)
+    declaredvars.push(nm)
     globals.push("Object {modg};")
-    importnames.put(nm, modg)
-    if (false != importHook) then {
-        def res = importHook.processImport(nm)
-        if (false != res) then {
-            for (res.importCode) do {l->
-                out(l)
-            }
-            for (res.globals) do {l->
-                globals.push(l)
-            }
-            out("  *var_{nm} = {res.moduleSymbol};")
-            return true
-        }
-    }
     out("  if ({modg} == NULL)")
-    if (staticmodules.contains(o.path)) then {
-        out("    {modg} = {modg}_init();")
-    } else {
+    if (imports.other.contains(o.path)) then {
         out("    {modg} = dlmodule(\"{fn}\");")
+        // for dynamic modules
+    } else {
+        out("    {modg} = {modg}_init();")
+        // for both static and built-in modules
     }
     out("  *var_{nm} = {modg};")
+    if (compilationDepth == 1) then {
+        def methodIdent = o.value
+        methodIdent.line := o.line
+        methodIdent.linePos := o.linePos
+        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.name)],
+                        [methodIdent], o.dtype))
+        accessor.line := o.line
+        accessor.linePos := o.linePos
+        if ( o.isConfidential ) then {
+            accessor.annotations.push(ast.identifierNode.new("confidential", false))
+        }
+//        compilenode(accessor)
+    }
     globals.push("Object {modg}_init();")
 }
 method compilereturn(o) {
@@ -1632,13 +1665,11 @@ method compilenode(o) {
         out("  setmodule(modulename);")
         out("  setsource(originalSourceLines);")
     }
+    out "// starting to compile {o.kind} node (depth = {compilationDepth})"
     if (o.kind == "num") then {
         compilenum(o)
     }
-    var l := ""
     if (o.kind == "string") then {
-        l := o.value.size
-        l := l + 1
         o.value := escapestring2(o.value)
         out("  if (strlit{auto_count} == NULL) \{")
         out("    strlit{auto_count} = alloc_String(\"{o.value}\");")
@@ -1666,17 +1697,18 @@ method compilenode(o) {
     if (o.kind == "generic") then {
         o.register := compilenode(o.value)
     }
-    if ((o.kind == "identifier")
-        && ((o.value == "true") || (o.value == "false"))) then {
-        var val := 0
-        if (o.value == "true") then {
-            val := 1
+    if (o.kind == "identifier") then {
+        if ((o.value == "true") || (o.value == "false")) then {
+            var val := 0
+            if (o.value == "true") then {
+                val := 1
+            }
+            out("  Object bool" ++ auto_count ++ " = alloc_Boolean({val});")
+            o.register := "bool" ++ auto_count
+            auto_count := auto_count + 1
+        } else {
+            compileidentifier(o)
         }
-        out("  Object bool" ++ auto_count ++ " = alloc_Boolean({val});")
-        o.register := "bool" ++ auto_count
-        auto_count := auto_count + 1
-    } elseif (o.kind == "identifier") then {
-        compileidentifier(o)
     }
     if (o.kind == "defdec") then {
         compiledefdec(o)
@@ -1715,8 +1747,11 @@ method compilenode(o) {
     if (o.kind == "object") then {
         compileobject(o, "self")
     }
-    if (o.kind == "type") then {
-        compiletype(o)
+    if (o.kind == "typedec") then {
+        compiletypedec(o)
+    }
+    if (o.kind == "typeliteral") then {
+        compiletypeliteral(o)
     }
     if (o.kind == "member") then {
         compilemember(o)
@@ -1747,170 +1782,9 @@ method compilenode(o) {
     if (o.kind == "op") then {
         compileop(o)
     }
+    out "// compiled {o.kind} node returning {o.register} (depth = {compilationDepth})"
     compilationDepth := compilationDepth - 1
-    out("// compilenode returning " ++ o.register)
     o.register
-}
-method spawnSubprocess(id, cmd, data) {
-    if (subprocesses.size < util.jobs) then {
-        subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
-        return subprocesses[subprocesses.size][2] 
-    }
-    var alive := 0
-    var firstAlive := false
-    for (subprocesses) do {spinfo->
-        def sp = spinfo[2]
-        if (!sp.terminated) then {
-            if (false == firstAlive) then {
-                firstAlive := spinfo
-            }
-            alive := alive + 1
-        }
-    }
-    if (alive >= util.jobs) then {
-        firstAlive[2].wait
-    }
-    subprocesses.push([id, io.spawn("bash", "-c", cmd), data])
-    return subprocesses.at(subprocesses.size)[2]
-}
-method parseGCT(path, filepath) {
-    xmodule.parseGCT(path,
-        filepath.replace(".gcn")with(".gct").replace(".gso")with(".gct"))
-}
-method addTransitiveImports(filepath, epath, line) {
-    def data = parseGCT(epath, filepath)
-    if (data.contains "dialect") then {
-        checkimport(data.get("dialect").first, line, true)
-    }
-    if (data.contains("modules")) then {
-        for (data.get("modules")) do {m->
-            if (m == util.modname) then {
-                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{epath}', which is imported by '{m}' (and so on).")atLine(line)
-            }
-            checkimport(m, line, false)
-        }
-    }
-    if (data.contains("path")) then {
-        def path = data.get("path").first
-        if (path != epath) then {
-            errormessages.syntaxError("Imported module '{epath}' compiled with"
-                ++ " different path '{path}'.")atLine(line)
-        }
-    }
-}
-
-method checkimport(nm, line, isDialect) {
-    var exists := false
-    var ext := false
-    var cmd
-    def argv = sys.argv
-    if (staticmodules.contains(nm)) then {
-        return true
-    }
-    if (false != importHook) then {
-        def res = importHook.processImport(nm)
-        if (false != res) then {
-            for (res.linkTargets) do {t->
-                staticmodules.push(t)
-            }
-            return true
-        }
-    }
-    var locationList := collections.list.new
-    locationList.push("")
-    locationList.push("{sys.execPath}/")
-    if(buildinfo.modulepath != "") then {
-        locationList.push("{buildinfo.modulepath}/")
-    }
-    var homePath := sys.environ["HOME"]
-    locationList.push("{homePath}/.local/lib/grace/modules/")
-    locationList.push("{sys.execPath}/../lib/minigrace/modules/")
-    
-    if(nm == "StandardPrelude") then {
-        staticmodules.add(nm)
-        addTransitiveImports(io.realpath(sys.execPath)++ "/StandardPrelude.gcn", nm, line)
-        return
-    }
-    for(locationList) do { location ->
-        if (exists.not && io.exists("{location}{nm}.gso").andAlso
-                {!util.extensions.contains("Static")}) then {
-            if (io.newer("{location}{nm}.gso", "{location}{nm}.grace")) then {
-                exists := true
-                dynamicmodules.add(nm)
-            }
-            addTransitiveImports("{location}{nm}.gso", nm, line)
-        } 
-        if (exists.not && io.exists("{location}{nm}.gcn")) then {
-            if((!util.importDynamic && 
-                        {io.newer("{location}{nm}.gcn", "{location}{nm}.grace")})
-                        || (!io.exists("{location}{nm}.grace"))) then{
-                //Find static modules where the .gcn is either newer
-                //or the same age as the corresponding .grace file
-                //i.e. whether we need to recompile again or not
-                exists := true
-                linkfiles.push("{location}{nm}.gcn")
-                staticmodules.add(nm)
-                addTransitiveImports("{location}{nm}.gcn", nm, line)
-            }
-        } 
-        if (exists.not && io.exists("{location}{nm}.grace")) then {
-            // Check for the .grace file first so that we know that
-            // when we look for .gcn the corresponding .grace won't exist.
-            exists := true
-            var slash := false
-            for(argv.first) do {letter ->
-                if(letter == "/") then {
-                    slash := true
-                }
-            }
-
-            if(slash) then {
-                cmd := "{argv.first} --target c --make \"{nm}.grace\""
-            }else{
-                cmd := "{sys.execPath}/{argv.first} --target c --make \"{nm}.grace\""
-            }
-            cmd := cmd ++ " --gracelib \"{util.gracelibPath}\""
-            if (util.verbosity > 30) then {
-                cmd := cmd ++ " --verbose"
-            }
-            if (false != util.vtag) then {
-                cmd := cmd ++ " --vtag " ++ util.vtag
-            }
-            cmd := cmd ++ " --noexec --no-recurse -XNoMain"
-            if (util.dynamicModule || isDialect) then {
-                cmd := cmd ++ " --dynamic-module"
-            }
-            if (util.importDynamic) then {
-                cmd := cmd ++ " --import-dynamic --dynamic-module"
-            }
-            if (util.recurse || isDialect) then {
-                if(location != "") then {
-                    cmd := "cd {location} && "++cmd
-                }
-                var process := spawnSubprocess(nm, cmd, [nm ++ ".gcn", nm, line])
-                if(isDialect) then {
-                    // We must wait for the .gso to be built before
-                    // we try to run loadDynamic on it. Block here.
-                    process.wait
-                    dynamicmodules.add(nm)
-                }
-                //addTransitiveImports("{location}{nm}.gso", nm, line)
-            }
-            if (!util.importDynamic && !isDialect) then {
-                linkfiles.push("{location}{nm}.gcn")
-                staticmodules.add(nm)
-            }
-        }
-    }
-    if ((nm == "sys") || (nm == "io") || (nm == "imports")) then {
-        exists := true
-        staticmodules.add(nm)
-    }
-    if (exists.not) then {
-        errormessages.syntaxError("Failed finding import of '{nm}'.")
-            atLine(line)
-    }
 }
 
 method processImports(values') {
@@ -1925,28 +1799,18 @@ method processImports(values') {
         suggestions
     }
     if (util.runmode == "make") then {
-        log_verbose("checking imports.")
-        if (util.extensions.contains("ImportHook")) then {
-            importHook := mirrors.loadDynamicModule(
-                            util.extensions.get "ImportHook")
-        }
         for (values') do { v ->
-            if (v.kind == "import") then {
-                var nm := v.path
-                checkimport(nm, v.line, false)
-            }
             if (v.kind == "dialect") then {
                 var nm := v.value
-                checkimport(nm, v.line, true)
-                log_verbose("loading dialect for checkers.")
+                log_verbose("loading dialect {nm} for checker.")
                 def CheckerFailure = Exception.refine "CheckerFailure"
+                var dobj
                 try {
-                    def dobj = mirrors.loadDynamicModule(nm)
+                    dobj := mirrors.loadDynamicModule(nm)
                     def mths = mirrors.reflect(dobj).methods
                     for (mths) do { m->
                         if (m.name == "checker") then {
-                            log_verbose("running dialect's checkers.")
-                            dobj.checker(values')
+                            dialectHasChecker := true
                         }
                         if (m.name == "atModuleEnd") then {
                             dialectHasAtModuleEnd := true
@@ -1957,41 +1821,33 @@ method processImports(values') {
                     }
                 } catch { e : RuntimeError ->
                     util.setPosition(v.line, 1)
+                    e.printBacktrace
                     errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
+                } 
+                try {
+                    if (dialectHasChecker) then { dobj.checker(values') }
                 } catch { e : CheckerFailure ->
                     match (e.data)
                         case { lp : LinePos ->
                             util.setPosition(e.data.line, e.data.linePos)
-                            errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                            errormessages.error("{e.exception}: {e.message}.")
+                                atPosition(lp.line, lp.linePos)
                         }
                         case { rs : RangeSuggestions ->
                             errormessages.error("{e.exception}: {e.message}.")
-                                atRange(rs.line, rs.posStart,
-                                    rs.posEnd)
+                                atRange(rs.line, rs.posStart, rs.posEnd)
                                 withSuggestions(rs.suggestions)
                         }
-                        case { _ -> }
-                    errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+                        case { _ ->
+                            errormessages.error("{e.exception}: {e.message}.")
+                                atPosition(util.linenum, 0)
+                        }
+                } catch { e : Exception ->
+                    e.printBacktrace
+                    errormessages.error("Unexpected exception raised by checker for dialect '{nm}'.\n"
+                        ++ "{e.exception}: {e.message}.") atLine(v.line)
                 }
             }
-        }
-        def imperrors = []
-        while {subprocesses.size > 0} do {
-            def lsubprocesses = subprocesses
-            subprocesses := collections.list.new
-            for (lsubprocesses) do { tt->
-                def nm = tt[1]
-                def p = tt[2]
-                def pth = tt[3]
-                if (!p.success) then {
-                    imperrors.push(nm)
-                } else {
-                    addTransitiveImports(pth[1], pth[2], pth[3])
-                }
-            }
-        }
-        if (imperrors.size > 0) then {
-            errormessages.syntaxError("Failed processing import of {imperrors}.")atLine(1)
         }
     }
 }
@@ -2006,7 +1862,7 @@ method compile(vl, of, mn, rm, bt) {
             nummethods := nummethods + 1
         } elseif (v.kind == "method") then {
             nummethods := nummethods + 1
-            if (v.properties.contains("fresh")) then {
+            if (v.isFresh) then {
                 nummethods := nummethods + 1
             }
         }
@@ -2027,6 +1883,7 @@ method compile(vl, of, mn, rm, bt) {
     outprint("static Object undefined;")
     outprint("extern Object done;")
     outprint("extern Object _prelude;")
+    outprint("extern Object ObjectType;")
     outprint("extern Object String;")
     outprint("extern Object Number;")
     outprint("extern Object Boolean;")
@@ -2037,11 +1894,13 @@ method compile(vl, of, mn, rm, bt) {
     outprint("extern Object Type;")
     outprint("extern Object GraceDefaultObject;")
     outprint("extern Object sourceObject;")
+    outprint("static Object type_Object;")
     outprint("static Object type_String;")
     outprint("static Object type_Number;")
     outprint("static Object type_Boolean;")
     outprint("static Object type_Block;")
     outprint("static Object type_Done;")
+    outprint("static Object type_Type;")
     outprint("static Object argv;")
     outprint("static Object emptyclosure;")
     outprint("static Object prelude;")
@@ -2059,22 +1918,16 @@ method compile(vl, of, mn, rm, bt) {
     topLevelTypes.put("Boolean", true)
     topLevelTypes.put("Done", true)
     topLevelTypes.put("Block", true)
-    for (values) do {v->
-        if (v.kind == "type") then {
-            def typeid = escapeident(v.value)
-            outprint("static Object type_{typeid};")
-            topLevelTypes.put(typeid, true)
-        }
-    }
     out("Object module_{escmodname}_init() \{")
     out("  int flags = 0;")
     out("  int frame = gc_frame_new();")
     out("  Object self = alloc_obj2({nummethods}, {nummethods});")
     out "  self->class->definitionModule = modulename;"
-    out("  gc_root(self);")
+    out "  gc_root(self);"
     if (util.extensions.contains("NativePrelude")) then {
-        out("  prelude = grace_prelude();")
-        out("  adddatum2(self, grace_prelude(), 0);")
+        out "  prelude = grace_prelude();"
+        out "  adddatum2(self, grace_prelude(), 0);"
+        out "  Object ObjectType = alloc_ObjectType();"
     } else {
         out("  prelude = module_StandardPrelude_init();")
         out("  adddatum2(self, prelude, 0);")
@@ -2091,6 +1944,9 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_noSuchValue = done;")
     out("  Object *var_done = alloc_var();")
     out("  *var_done = done;")
+    out("  Object *var_Object = alloc_var();")
+    out("  *var_Object = ObjectType;")
+    out("  type_Object = ObjectType;")
     out("  Object *var_String = alloc_var();")
     out("  *var_String = String;")
     out("  type_String = String;")
@@ -2112,8 +1968,11 @@ method compile(vl, of, mn, rm, bt) {
     out("  *var_Unknown= Unknown;")
     out("  Object *var_Type = alloc_var();")
     out("  *var_Type = Type;")
+    out("  type_Done = Type;")
     out("  Object *var__prelude = alloc_var();")
     out("  *var__prelude = grace_prelude();")
+    out("  Object *var_prelude = alloc_var();")
+    out("  *var_prelude = grace_prelude();")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
@@ -2135,6 +1994,11 @@ method compile(vl, of, mn, rm, bt) {
             def typeid = escapeident(o.value)
             out("type_{typeid} = *var_{typeid};")
         }
+    }
+    if (modname == "StandardPrelude") then {
+    // this has the same effect as "inherits _prelude" in the source
+        out("  self = setsuperobj(self, *var__prelude);")
+        out("  *selfslot = self;")
     }
     for (values) do { o ->
         if (o.kind == "inherits") then {
@@ -2174,12 +2038,7 @@ method compile(vl, of, mn, rm, bt) {
             var lcgfile := util.extensions.get("LogCallGraph")
             out("  enable_callgraph(\"{lcgfile}\");")
         }
-        if (!util.extensions.contains("NativePrelude")) then {
-            //out("  prelude = module_StandardPrelude_init();")
-        }
-        util.runOnNew {
-            out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
-        } else {}
+        out("  setCompilerModulePath(\"{io.realpath(sys.execPath)}\");")
         if(buildinfo.modulepath != "") then {
             out("  setModulePath(\"{buildinfo.modulepath}\");")
         }
@@ -2211,12 +2070,20 @@ method compile(vl, of, mn, rm, bt) {
     if (runmode == "make") then {
         log_verbose("compiling C code.")
         outfile.close
+        def ofpn = outfile.pathname
+        var ix := ofpn.size
+        while { (ix > 1).andAlso {ofpn.at(ix) != "."} } do { ix := ix - 1 }
+        def ofpnBase = if (ix > 0) then { 
+                ofpn.substringFrom 1 to (ix-1)
+            } else {
+                ofpn
+            }
 
-        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{modname}.gcn\" -c \"{modname}.c\""
+        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{ofpnBase}.gcn\" -c \"{ofpn}\""
         
         if ((io.system(cmd)).not) then {
-            io.error.write("Fatal error: Failed C compilation of {modname}.\n")
-            sys.exit(1)
+            io.error.write("Fatal error: C compilation of {modname} failed.\n")
+            sys.exit(3)
         }
         if (util.noexec.not) then {
             log_verbose("linking.")
@@ -2230,27 +2097,29 @@ method compile(vl, of, mn, rm, bt) {
             if (io.system(cmd)) then {
                 exportDynamicBit := "-Wl,--export-dynamic"
             }
+            cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} \"{ofpnBase}.gcn\" "
 
-            if(io.exists("{util.gracelibPath}/gracelib.o")) then {
-                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{modname}.gcn\" "
-                    ++ "\"" ++ util.gracelibPath ++ "/gracelib.o\" "
-            } elseif(buildinfo.includepath != "") then {
-                cmd := "gcc -g -o \"{modname}\" -fPIC {exportDynamicBit} "
-                    ++ "\"{modname}.gcn\" "
-                    ++ "\"{buildinfo.objectpath}/gracelib.o\" "
-            }else{
-                io.error.write("Try setting the include path before moving the executable")
-
+            if (io.exists "{util.gracelibPath}/gracelib.o") then {
+                cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
+            } elseif (io.exists "{buildinfo.objectpath}/gracelib.o") then {
+                cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
+            } elseif (io.exists "{util.sourceDir}/gracelib.o") then {
+                cmd := cmd ++ "\"{util.sourceDir}/gracelib.o\" "
+            } elseif (io.exists "{util.execDir}/gracelib.o") then {
+                cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
+            } else {
+                io.error.write("Unable to link: can't find file gracelib.o\n")
+                sys.exit(3)
             }
 
-            for (linkfiles) do { fn ->
+            for (imports.linkfiles) do { fn ->
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
+            util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking")
-                sys.exit(1)
+                io.error.write("Failed linking.\n")
+                sys.exit(3)
             }
         }
         if (util.dynamicModule) then {
@@ -2270,29 +2139,26 @@ method compile(vl, of, mn, rm, bt) {
                     exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
                 }
             }
-            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{modname}.gso\" -fPIC {exportDynamicBit} "
-                ++ "\"{modname}.c\" "
+            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{ofpnBase}.gso\" -fPIC {exportDynamicBit} "
+                ++ "\"{ofpnBase}.c\" "
+            util.log_verbose "dynamic link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
-                io.error.write("Failed producing dynamic module.")
-                sys.exit(1)
+                io.error.write("Failed producing dynamic module.\n")
+                sys.exit(3)
             }
         }
         log_verbose("done.")
-        def allmodules = collections.set.new
-        allmodules.extend(staticmodules)
-        allmodules.extend(dynamicmodules)
-        xmodule.writeGCT(modname, modname ++ ".gct")
-            fromValues(values)modules(allmodules)
+        xmodule.writeGCT(modname)
+            fromValues(values) modules(imports.static ++ imports.other)
         if (buildtype == "run") then {
-            if (modname[1] != "/") then {
-                cmd := "./" ++ modname
+            if (ofpnBase[1] != "/") then {
+                cmd := "./" ++ ofpnBase
             } else {
-                cmd := modname
+                cmd := ofpnBase
             }
             if (io.spawn(cmd).success.not) then {
-                io.error.write("minigrace: Program exited with error: "
-                    ++ modname ++ "\n")
-                sys.exit(1)
+                io.error.write "minigrace: Program {modname} exited with error.\n"
+                sys.exit(4)
             }
         }
     }

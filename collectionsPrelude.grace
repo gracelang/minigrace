@@ -1,13 +1,6 @@
 #pragma NativePrelude
-#pragma DefaultVisibility=public
 
-var isStandardPrelude := true
-
-def ProgrammingError = _prelude.RuntimeError.refine "fake programming error"
-    // this can be replaced by _prelude.ProgrammingError once the built-in
-    // ProgrammingError has propagated to the known-good compiler.
-
-def BoundsError = ProgrammingError.refine "index out of bounds"
+def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
 def SubobjectResponsibility = ProgrammingError.refine "a subobject should have overridden this method"
 def NoSuchObject = ProgrammingError.refine "no such object"
@@ -25,86 +18,89 @@ type Block2<S,T,R> = type {
     apply(a:S, b:T) -> R
 }
 
-type IndexableCollection<T> = {
-    size -> Number
-    at -> T
-}
+type SelfType = Unknown     // becuase it's not yet in the language
 
-type Collection<T> = {
-    size -> Number
-    contains(e:Object) -> Boolean
+type Collection<T> = Object & type {
+    isEmpty -> Boolean
+    do(block1: Block1<T,Done>) -> Done
+    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
+    map(blk:Block1<T,Object>) -> Iterator<Object>
+    filter(condition:Block1<T,Boolean>) -> Iterator<T>
     iterator -> Iterator<T>
+    ++(o: Collection<T>) -> Collection<T>
+    contains(element) -> Boolean
 }
 
-type Sequence<T> = {
+type ReifiedCollection<T> = Collection<T> & type {
     size -> Number
-    at(n: Number) -> T
-    [](n: Number) -> T
-    indices -> Collection<T>   // range type?
+}
+
+type Sequence<T> = ReifiedCollection<T> & type {
+    at(n:Number) -> T
+    [](n:Number) -> T
+    indices -> ReifiedCollection<T>
     first -> T 
     second -> T
     third -> T
     fourth -> T 
-    last -> T 
-    ++(o: Sequence<T>) -> Sequence<T>
-    asString -> String
-    contains(element) -> Boolean
-    do(block1: Block1<T,Done>) -> Done
-    ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
+    fifth -> T
+    last -> T
+    keys -> Collection<Number>
+    values -> Collection<T>
+    copySortedBy(comparison:Block2<T,T,Number>) -> SelfType
+    asList -> List<T>
+    asSequence -> Sequence<T>
+    asDictionary -> Dictionary<Number,T>
+    asSet -> Set<T>
+    keysAndValuesDo(action:Block2<Number,T,Done>) -> Done
 }
 
-type List<T> = {  
-    size -> Number
-    at(n: Number) -> T
-    [](n: Number) -> T
-    at(n: Number)put(x: T) -> List<T>
-    []:=(n: Number,x: T) -> List<T> 
+type List<T> = Sequence<T> & type {
     add(x: T) -> List<T>
-    push(x: T) -> List<T>
-    addLast(x: T) -> List<T>    // compatibility
-    removeLast -> T 
-    addFirst(x: T) -> List<T> 
+    addFirst(x: T) -> List<T>
+    addLast(x: T) -> List<T>    // same as add
+    at(ix:Number) put(v:T) -> List<T>
+    []:= (ix:Number, v:T) -> Done
     removeFirst -> T 
     removeAt(n: Number) -> T
+    removeLast -> T
+    remove(*v:T)
+    remove(*v:T) ifAbsent(action:Block0<Done>)
+    removeAll(vs: Collection<T>)
+    removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)
+    indexOf(v:T)
+    indexOf<U>(v:T) ifAbsent(action:Block0<U>)
     pop -> T
-    indices -> Collection<T>   // range type?
     first -> T 
     second -> T
     third -> T
-    fourth -> T 
+    fourth -> T
+    fifth -> T
     last -> T 
     ++(o: List<T>) -> List<T>
-    asString -> String
-    addAll(l: List<T>) -> List<T>
-    extend(l: List<T>) -> Done
-    contains(element) -> Boolean
-    do(block1: Block1<T,Done>) -> Done
-    ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
+    addAll(l: Collection<T>) -> List<T>
+    extend(l: Collection<T>) -> Done
     copy -> List<T>
+    copySorted -> SelfType
+    sort -> SelfType
 }
 
-type Set<T> = {
-    size -> Number
-    add(*elements:T) -> Set<T>
+type Set<T> = ReifiedCollection<T> & type {
+    add(*elements:T) -> SelfType
+    addAll(elements:Collection<T>) -> SelfType
     remove(*elements: T) -> Set<T>
     remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
-    contains(x: T) -> Boolean
     includes(booleanBlock: Block1<T,Boolean>) -> Boolean
     find(booleanBlock: Block1<T,Boolean>) ifNone(notFoundBlock: Block0<T>) -> T
-    asString -> String
     -(o: T) -> Set<T>
     extend(l: Collection<T>) -> Set<T>
-    do(block1: Block1<T,Done>) -> Done
-    iterator -> Iterator<T>
-    ==(other: Object) -> Boolean
-    iterator -> Iterator<T>
     copy -> Set<T>
 }
 
 type Dictionary<K,T> = {
     size -> Number
+    isEmpty -> Boolean
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
     at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
@@ -112,80 +108,90 @@ type Dictionary<K,T> = {
     []:=(k:K, v:T) -> Done
     at(k:K) -> T
     [](k:K) -> T
-    containsKey(k:K) -> Boolean
     removeAllKeys(keys:Collection<K>) -> Dictionary<K,T>
     removeKey(*keys:K) -> Dictionary<K,T>
-    removeAllValues(removals:Collection<K>) -> Dictionary<K,T>
-    removeValue(*removals:K) -> Dictionary<K,T>
-    containsValue(v:T) -> Boolean
+    removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
+    removeValue(*removals:T) -> Dictionary<K,T>
     keys -> Iterator<K>
     values -> Iterator<T>
     bindings -> Iterator<Binding<K,T>>
-    keysAndValuesDo(action:Block2<K,T,Done>)
+    keysAndValuesDo(action:Block2<K,T,Done>) -> Done
     keysDo(action:Block1<K,Done>) -> Done
     valuesDo(action:Block1<T,Done>) -> Done
-    do(action:Block1<K,Done>) -> Done
+    do(action:Block1<T,Done>) -> Done
     ==(other:Object) -> Boolean
     copy -> Dictionary<K,T>
 }
 
 type Iterator<T> = {
+    hasNext -> Boolean
+    next -> T
     iterator -> Iterator
     iter -> Iterator
-    onto(factory:EmptyCollectionFactory) -> Collection<T>
+    onto(resultFactory:EmptyCollectionFactory) -> Collection<T>
     into(accumulator:Collection<Unknown>) -> Collection<Unknown>
     do(action:Block) -> Done
     do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-    fold(blk:Block1<T,Object>) startingWith(initial:T) -> Object
+    fold(blk:Block1<Object,T>) startingWith(initial:Object) -> Object
     map(blk:Block1<T,Object>) -> Iterator<Object>
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
 }
 
-type CollectionFactory = {
+type CollectionFactory<T> = {
     withAll<T> (elts:Collection<T>) -> Collection<T>
     with<T> (*elts:Object) -> Collection<T>
     empty<T> -> Collection<T>
 }
 
-type EmptyCollectionFactory = {
+type EmptyCollectionFactory<T> = {
     empty<T> -> Collection<T>
 }
 
-class collectionFactory.trait {
+class collectionFactory.trait<T> {
     // requires withAll(elts:Collection<T>) -> Collection<T>
-    method with(*a) { self.withAll(a) }
-    method empty { self.with() }
+    method with(*a:T) -> Unknown { self.withAll(a) }
+    method empty -> Unknown { self.with() }
 }
 
-class iterable.trait {
-    // requires next, havemore
-    //    method havemore { SubobjectResponsibility.raise "havemore" }
+class iterable.trait<T> {
+    // requires next, hasNext
+    //    method hasNext { SubobjectResponsibility.raise "hasNext" }
     //    method next is abstract { SubobjectResponsibility.raise "next" }
     method iterator { self }
     method iter { self }
-    method onto(factory) {
-        def resultCollection = factory.empty
-        while {self.havemore} do { resultCollection.add(self.next) }
+    method onto(resultFactory) {
+        def resultCollection = resultFactory.empty
+        while {self.hasNext} do { resultCollection.add(self.next) }
         return resultCollection
     }
     method into(existingCollection) {
-        while {self.havemore} do { existingCollection.add(self.next) }
+        while {self.hasNext} do { existingCollection.add(self.next) }
         return existingCollection
     }
-    method do(block1) {
-        while {self.havemore} do { block1.apply(self.next) }
+    method asSet {
+        return self.onto(set)
+    }
+    method asList {
+        return self.onto(list)
+    }
+    method asSequence {
+        return self.onto(list).asSequence
+    }
+    method do(block1:Block1<T,Done>) -> SelfType {
+        while {self.hasNext} do { block1.apply(self.next) }
         return self
     }
-    method map(block1) {
+    method map<R>(block1:Block1<T,R>) -> Iterator<R> {
         return object {                     // this "return" is to work around a compiler bug
-            inherits iterable.trait
+            inherits iterable.trait<T>
             method havemore { outer.havemore }
+            method hasNext { outer.hasNext }
             method next { block1.apply(outer.next) }
         }
     }
     method fold(block2)startingWith(initial) {
         var res := initial
-        while { self.havemore } do { res := block2.apply(res, self.next) }
+        while { self.hasNext } do { res := block2.apply(res, self.next) }
         return res
     }
     method filter(selectionCondition) {
@@ -206,6 +212,18 @@ class iterable.trait {
                 } catch { ex:Exhausted -> return false }
                 return true
             }
+            method hasNext {
+            // return true if this iterator has a next element.
+            // To determine the answer, we have to find an acceptable element;
+            // this is then cached, for the use of next
+                if (cacheLoaded) then { return true }
+                try {
+                    cache := nextAcceptableElement
+                    cacheLoaded := true
+                } catch { ex:Exhausted -> return false }
+                return true
+            }
+
             method next {
                 if (cacheLoaded.not) then { cache := nextAcceptableElement }
                 cacheLoaded := false
@@ -223,14 +241,12 @@ class iterable.trait {
             }
         }
     }
-    method asString { "an Iterator" }
-    method asDebugString { self.asString }
+    method asString { "a filter iterator" }
 }
 
-class enumerable.trait {
-    // requires do, iterator
-    method iterator { SubobjectResponsibility.raise "iterator" }
-    method do { SubobjectResponsibility.raise "do" }
+class enumerable.trait<T> {
+    // requires do, iterator, size
+    method isEmpty { self.size == 0 }
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
@@ -248,33 +264,191 @@ class enumerable.trait {
         fold(blk)startingWith(initial)
     }
     method map(block1) {
-        iterator.map(block1)
+        self.iterator.map(block1)
     }
     method fold(blk)startingWith(initial) {
         var res := initial
-        for (self) do {it->
+        self.do {it->
             res := blk.apply(res, it)
         }
         return res
     }
     method filter(condition) {
-        iterator.filter(condition)
+        self.iterator.filter(condition)
     }
     method iter { return self.iterator }
+    method asSequence {
+        sequence.withAll(self)
+    }
+    method asList {
+        list.withAll(self)
+    }
+    method asSet {
+        set.withAll(self)
+    }
+}
+
+class indexable.trait<T> {
+    inherits enumerable.trait<T>
+    // requires do, iterator, at(ix:Number), size, keysAndValuesDo
+    method at { SubobjectResponsibility.raise "at" }
+    method first { at(1) }
+    method second { at(2) }
+    method third { at(3) }
+    method fourth { at(4) }
+    method fifth { at(5) }
+    method last { at(self.size) }
+    method [](ix) { at(ix) }
+    method indices {
+        range.from(1)to(self.size)
+    }
+    method indexOf(sought:T)  {
+        indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }
+    }
+    method indexOf(sought:T) ifAbsent(action:Block0)  {
+        self.keysAndValuesDo { ix, v ->
+            if (v == sought) then { return ix }
+        }
+        action.apply
+    }
+    method asDictionary {
+        def result = dictionary.empty
+        self.keysAndValuesDo { k, v -> 
+            result.at(k) put(v)
+        }
+        return result
+    }
 }
 
 method max(a,b) is confidential {
     if (a > b) then { a } else { b }
 }
 
-def list is readable = object {
-    inherits collectionFactory.trait
-
-    method withAll(a) {
+factory method sequence<T> {
+    inherits collectionFactory.trait<T>
+    
+    method withAll(*a:Collection) {
+        var totalSize := 0
+        for (a) do { arg ->
+            totalSize := totalSize + arg.size
+        }
+        def inner = _prelude.PrimitiveArray.new(totalSize)
+        var ix := 0
+        for (a) do { arg ->
+            for (arg) do { elt ->
+                inner.at(ix)put(elt)
+                ix := ix + 1
+            }
+        }
+        self.fromPrimitiveArray(inner, totalSize)
+    }
+    method fromPrimitiveArray(pArray, sz) is confidential {
         object {
-            inherits enumerable.trait
+            inherits indexable.trait
+            def size is public = sz
+            def inner = pArray
+
+            method boundsCheck(n) is confidential {
+                if ((n < 1) || (n > size)) then {
+                    BoundsError.raise "index {n} out of bounds 1..{size}" 
+                }
+            }
+            method at(n) {
+                boundsCheck(n)
+                inner.at(n-1)
+            }
+            method [](n) {
+                boundsCheck(n)
+                inner.at(n-1)
+            }
+            method keys {
+                range.from(1)to(size).iterator
+            }
+            method values {
+                self.iterator
+            }
+            method keysAndValuesDo(block2) {
+                var i := 0
+                while {i < size} do { 
+                    block2.apply(i+1, inner.at(i))
+                    i := i + 1
+                }
+            }
+            method ++(other:Collection) {
+                sequence.withAll(self, other)
+            }
+            method asString {
+                var s := "⟨"
+                for (0..(size-1)) do {i->
+                    s := s ++ inner.at(i).asString
+                    if (i < (size-1)) then { s := s ++ "," }
+                }
+                s ++ "⟩"
+            }
+            method contains(element) {
+                do { each -> if (each == element) then { return true } }
+                return false
+            }
+            method do(block1) {
+                var i := 0
+                while {i < size} do { 
+                    block1.apply(inner.at(i))
+                    i := i + 1
+                }
+            }
+            method ==(other) {
+                match (other)
+                    case {o:Sequence<T> ->
+                        if (self.size != o.size) then {return false}
+                        self.indices.do { ix ->
+                            if (self.at(ix) != o.at(ix)) then {
+                                return false
+                            }
+                        }
+                        return true
+                    } 
+                    case {_ ->
+                        return false
+                    }
+            }
+            method iterator {
+                object {
+                    inherits iterable.trait
+                    var idx := 1
+                    method asDebugString { "{asString}⟪{idx}⟫" }
+                    method asString { "aSequenceIterator" }
+                    method havemore { idx <= size }
+                    method hasNext { idx <= size }
+                    method next {
+                        if (idx > size) then { Exhausted.raise "on sequence" }
+                        def ret = at(idx)
+                        idx := idx + 1
+                        ret
+                    }
+                }
+            }
+            method copySorted {
+                asList.sortBy { l, r ->
+                    if (l == r) then {0} 
+                        elseif (l < r) then {-1} 
+                        else {1}
+                }.asSequence
+            }
+            method copySortedBy(sortBlock:Block2){
+                asList.sortBy(sortBlock:Block2).asSequence
+            }
+        }
+    }
+}
+
+factory method list<T> {
+    inherits collectionFactory.trait<T>
+
+    method withAll(a:Collection<T>) -> List<T> {
+        object {
+            inherits indexable.trait<T>
             var inner := _prelude.PrimitiveArray.new(a.size * 2 + 1)
-            var size is readable := 0
+            var size is public := 0
             for (a) do {x->
                 inner.at(size)put(x)
                 size := size + 1
@@ -293,8 +467,12 @@ def list is readable = object {
                 inner.at(n-1)
             }
             method at(n)put(x) {
-                boundsCheck(n)
-                inner.at(n-1)put(x)
+                if (n == (size+1)) then {
+                    addLast(x)
+                } else {
+                    boundsCheck(n)
+                    inner.at(n-1)put(x)
+                }
                 self
             }
             method []:=(n,x) {
@@ -356,29 +534,34 @@ def list is readable = object {
                 size := size - 1
                 return removed
             }
-            method pop { removeLast }
-            method indices {
-                range.from(1)to(size)
+            method remove(*v:T) {
+                removeAll(v)
             }
-            method first { at(1) }
-            method second { at(2) }
-            method third { at(3) }
-            method fourth { at(4) }
-            method last { at(size) }
+            method remove(*v:T) ifAbsent(action:Block0<Done>) {
+                removeAll(v) ifAbsent (action)
+            }
+            method removeAll(vs: Collection<T>) {
+                removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
+            }
+            method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+                for (vs) do { each -> 
+                    def ix = indexOf(each) ifAbsent {return action.apply}
+                    removeAt(ix)
+                }
+                self
+            }
+            method pop { removeLast }
             method ++(o) {
                 def l = list.withAll(self)
-                for (o) do {it->
-                    l.push(it)
-                }
-                l
+                l.addAll(o)
             }
             method asString {
-                var s := "list<"
+                var s := "["
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ "," }
                 }
-                s ++ ">"
+                s ++ "]"
             }
             method extend(l) { addAll(l); done }    // compatibility
             method contains(element) {
@@ -394,7 +577,7 @@ def list is readable = object {
             }
             method ==(other) {
                 match (other)
-                    case {o:IndexableCollection ->
+                    case {o:Sequence ->
                         if (self.size != o.size) then {return false}
                         self.indices.do { ix ->
                             if (self.at(ix) != o.at(ix)) then {
@@ -411,9 +594,10 @@ def list is readable = object {
                 object {
                     inherits iterable.trait
                     var idx := 1
-                    method asDebugString { "aListIterator<{idx}>" }
+                    method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aListIterator" }
                     method havemore { idx <= size }
+                    method hasNext { idx <= size }
                     method next {
                         if (idx > size) then { Exhausted.raise "on list" }
                         def ret = at(idx)
@@ -422,7 +606,19 @@ def list is readable = object {
                     }
                 }
             }
-
+            method values {
+                self.iterator
+            }
+            method keys {
+                self.indices.iterator
+            }
+            method keysAndValuesDo(block2) {
+                var i := 0
+                while {i < size} do { 
+                    block2.apply(i+1, inner.at(i))
+                    i := i + 1
+                }
+            }
             method expandTo(newSize) is confidential {
                 def newInner = _prelude.PrimitiveArray.new(newSize)
                 for (0..(size-1)) do {i->
@@ -430,7 +626,23 @@ def list is readable = object {
                 }
                 inner := newInner
             }
-
+            method sortBy(sortBlock:Block2) {
+                inner.sortInitial(size) by(sortBlock)
+                self
+            }
+            method sort {
+                sortBy { l, r ->
+                    if (l == r) then {0} 
+                        elseif (l < r) then {-1} 
+                        else {1}
+                }
+            }
+            method copySortedBy(sortBlock:Block2) {
+                copy.sortBy(sortBlock:Block2)
+            }
+            method copySorted {
+                copy.sort
+            }
             method copy {
                 outer.withAll(self)
             }
@@ -438,10 +650,10 @@ def list is readable = object {
     }
 }
 
-def set is readable = object {
-    inherits collectionFactory.trait
+factory method set<T> {
+    inherits collectionFactory.trait<T>
 
-    method withAll(a:Collection) {
+    method withAll(a:Collection<T>) -> Set<T> {
         object {
             inherits enumerable.trait
             var inner := _prelude.PrimitiveArray.new(if (a.size > 1)
@@ -453,9 +665,8 @@ def set is readable = object {
             def removed = object { 
                 var removed := true 
                 method asString { "removed" }
-                method asDebugString { "removed" }
             }
-            var size is readable := 0
+            var size is public := 0
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -464,7 +675,7 @@ def set is readable = object {
             method addAll(elements) {
                 for (elements) do { x ->
                     if (! contains(x)) then {
-                        var t := findPositionForAdd(x)
+                        def t = findPositionForAdd(x)
                         inner.at(t)put(x)
                         size := size + 1
                         if (size > (inner.size / 2)) then {
@@ -526,7 +737,7 @@ def set is readable = object {
                 return notFoundBlock.apply
             }
             method findPosition(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -548,7 +759,7 @@ def set is readable = object {
                 return t
             }
             method findPositionForAdd(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -608,9 +819,8 @@ def set is readable = object {
                     inherits iterable.trait
                     var count := 1
                     var idx := 0
-                    method havemore {
-                        count <= size
-                    }
+                    method havemore { count <= size }
+                    method hasNext { count <= size }
                     method next {
                         var candidate
                         while {
@@ -644,7 +854,6 @@ def set is readable = object {
                     }
                 }
             }
-            
             method ==(other) {
                 match (other)
                     case {o:Collection ->
@@ -660,19 +869,29 @@ def set is readable = object {
                         return false
                     }
             }
-
             method copy {
                 outer.withAll(self)
             }
-
+            method ++ (other) {
+            // set union
+                copy.addAll(other)
+            }
+            method -- (other) {
+            // set difference
+                copy.removeAll(other) ifAbsent { done }
+            }
+            method ** (other) {
+            // set intersection
+                (filter {each -> other.contains(each)}).asSet
+            }
         }
     }
 }
 
-type Binding = {
-    key -> Object
-    value -> Object
-    hashcode -> Number
+type Binding<K,T> = {
+    key -> K
+    value -> T
+    hash -> Number
     == -> Boolean
 }
 
@@ -680,8 +899,8 @@ class binding.key(k)value(v) {
     method key {k}
     method value {v}
     method asString { "{k}::{v}" }
-    method asDebugString { asString }
     method hashcode { (k.hashcode * 1021) + v.hashcode }
+    method hash { (k.hash * 1021) + v.hash }
     method == (other) {
         match (other)
             case {o:Binding -> (k == o.key) && (v == o.value) }
@@ -689,29 +908,27 @@ class binding.key(k)value(v) {
     }
 }
 
-def dictionary is readable = object {
-    inherits collectionFactory.trait
-    method at(k)put(v) {
+factory method dictionary<K,T> {
+    inherits collectionFactory.trait<T>
+    method at(k:K)put(v:T) {
             self.empty.at(k)put(v)
     }
-    method withAll(initialBindings) {
+    method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits enumerable.trait
-            var size is readable := 0
+            var size is public := 0
             var inner := _prelude.PrimitiveArray.new(8)
             def unused = object { 
                 var unused := true
-                def key is readable = self
-                def value is readable = self
+                def key is public = self
+                def value is public = self
                 method asString { "unused" }
-                method asDebugString { "unused" }
             }
             def removed = object { 
                 var removed := true
-                def key is readable = self
-                def value is readable = self
+                def key is public = self
+                def value is public = self
                 method asString { "removed" }
-                method asDebugString { "removed" }
             }
             for (0..(inner.size-1)) do {i->
                 inner.at(i)put(unused)
@@ -789,7 +1006,7 @@ def dictionary is readable = object {
             }
             method contains(v) { containsValue(v) }
             method findPosition(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -807,7 +1024,7 @@ def dictionary is readable = object {
                 return t
             }
             method findPositionForAdd(x) is confidential {
-                def h = x.hashcode
+                def h = x.hash
                 def s = inner.size
                 var t := h % s
                 var jump := 5
@@ -825,7 +1042,7 @@ def dictionary is readable = object {
                 return t
             }
             method asString {
-                var s := "dict["
+                var s := "dict⟬"
                 var numberRemaining := size
                 for (0..(inner.size-1)) do {i->
                     def a = inner.at(i)
@@ -837,12 +1054,12 @@ def dictionary is readable = object {
                         }
                     }
                 }
-//                self.do { a -> s := s ++ "{a.key}=>{a.value}" }
+//                self.do { a -> s := s ++ "{a.key}::{a.value}" }
 //                    separatedBy { s := s ++ ", " }
-                return (s ++ "]")
+                return (s ++ "⟭")
             }
             method asDebugString {
-                var s := "dict["
+                var s := "dict⟬"
                 for (0..(inner.size-1)) do {i->
                     if (i > 0) then { s := s ++ ", " }
                     def a = inner.at(i)
@@ -851,9 +1068,8 @@ def dictionary is readable = object {
                     } else {
                         s := s ++ "{i}:{a.asDebugString}"
                     }
-
                 }
-                s ++ "]"
+                s ++ "⟭"
             }
             method keys {
                 object {
@@ -861,9 +1077,10 @@ def dictionary is readable = object {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.key
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = bindings
-                    method havemore { outerIterator.havemore }
-                    method next { outerIterator.next.key }
+                    def baseIterator = bindings
+                    method havemore { baseIterator.havemore }
+                    method hasNext { baseIterator.hasNext }
+                    method next { baseIterator.next.key }
                 }
             }
             method values {
@@ -872,9 +1089,10 @@ def dictionary is readable = object {
                     // We could just inherit from outer.bindings, and
                     // override next to do return super.next.value
                     // This would use stateful inheritance, and save two lines.
-                    def outerIterator = bindings
-                    method havemore { outerIterator.havemore }
-                    method next { outerIterator.next.value }
+                    def baseIterator = bindings
+                    method havemore { baseIterator.havemore }
+                    method hasNext { baseIterator.hasNext }
+                    method next { baseIterator.next.value }
                 }
             }
             method iterator { values }
@@ -884,9 +1102,8 @@ def dictionary is readable = object {
                     var count := 1
                     var idx := 0
                     var elt
-                    method havemore {
-                        count <= size
-                    }
+                    method havemore { count <= size }
+                    method hasNext { count <= size }
                     method next {
                         if (count > size) then { 
                             Exhausted.raise "over {outer.asString}"
@@ -968,19 +1185,31 @@ def dictionary is readable = object {
                 }
                 newCopy
             }
+            
+            method asDictionary {
+                self
+            }
+
+            method ++(other) {
+                def newDict = self.copy
+                other.keysAndValuesDo {k, v -> 
+                    newDict.at(k) put(v)
+                }
+                return newDict
+            }
         }
     }
 }
 
-def range is readable = object {
-    method from(lower)to(upper) {
+factory method range {
+    method from(lower)to(upper) -> Sequence<Number> {
         object {
-            inherits enumerable.trait
+            inherits indexable.trait<Number>
             match (lower)
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
-            def start = lower.truncate
+            def start = lower.truncated
             if (start != lower) then {
                 RequestError.raise "lower bound {lower}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
@@ -989,21 +1218,23 @@ def range is readable = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "upper bound {upper}" ++
                     " in range.from({lower})to({upper}) is not an integer" }
-            def stop = upper.truncate
+            def stop = upper.truncated
             if (stop != upper) then {
                 RequestError.raise "upper bound {upper}" ++
                     " in range.from()to() is not an integer"
             }
 
-            def size is readable = 
+            def size is public =
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
+
+            def hash is public = { ((start.hash * 1021) + stop.hash) * 3 }
+
             method iterator -> Iterator {
                 object {
                     inherits iterable.trait
                     var val := start
-                    method havemore {
-                        val <= stop
-                    }
+                    method havemore { val <= stop }
+                    method hasNext { val <= stop }
                     method next {
                         if (val > stop) then { 
                             Exhausted.raise "over {outer.asString}" 
@@ -1014,9 +1245,18 @@ def range is readable = object {
                     method asString { "{super.asString} from {upper} to {lower}" }
                 }
             }
+            method at(ix:Number) {
+                if (ix > self.size) then {
+                    BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
+                }
+                if (ix < 1) then {
+                    BoundsError.raise "requested range.at({ix}), but lower bound is 1"
+                }
+                return start + (ix - 1)
+            }
             method contains(elem) -> Boolean {
                 try {
-                    def intElem = elem.truncate
+                    def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
@@ -1030,8 +1270,20 @@ def range is readable = object {
                     val := val + 1
                 }
             }
+            method keysAndValuesDo(block2) {
+                var key := 1
+                var val := start
+                while {val <= stop} do {
+                    block2.apply(key, val)
+                    key := key + 1
+                    val := val + 1
+                }
+            }
             method reversed {
                 from(upper)downTo(lower)
+            }
+            method ++(other) {
+                sequence.withAll(self, other)
             }
             method ==(other) {
                 match (other)
@@ -1039,7 +1291,7 @@ def range is readable = object {
                         if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.havemore} do {
+                        while {selfIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }
@@ -1050,9 +1302,14 @@ def range is readable = object {
                         return false
                     }
             }
+            method copySortedBy(c) { self.asList.sortBy(c) }
+            
+            method keys { 1..self.size }
+            
+            method values { self }
 
             method asString -> String{
-                return "range.from({lower})to({upper})"
+                "range.from({lower})to({upper})"
             }
 
             method asList{
@@ -1060,16 +1317,20 @@ def range is readable = object {
                 for (self) do { each -> result.add(each) }
                 result
             }
+            
+            method asSequence {
+                self
+            }
         }
     }
-    method from(upper)downTo(lower) {
+    method from(upper)downTo(lower) -> Sequence<Number> {
         object {
-            inherits enumerable.trait
+            inherits indexable.trait
             match (upper)
                 case {_:Number -> }
                 case {_ -> RequestError.raise "upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer" }
-            def start = upper.truncate
+            def start = upper.truncated
             if (start != upper) then {
                 RequestError.raise "upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer"
@@ -1078,31 +1339,39 @@ def range is readable = object {
                 case {_:Number -> }
                 case {_ -> RequestError.raise "lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer" }
-            def stop = lower.truncate
+            def stop = lower.truncated
             if (stop != lower) then {
                 RequestError.raise "lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer"
             }
-            def size is readable = 
+            def size is public = 
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
             method iterator {
                 object {
                     inherits iterable.trait
                     var val := start
-                    method havemore {
-                        val >= stop
-                    }
+                    method havemore { val >= stop }
+                    method hasNext { val >= stop }
                     method next {
-                        if (val < stop) then { Exhausted.raise "outer.asString" }
+                        if (val < stop) then { Exhausted.raise "over {outer.asString}" }
                         val := val - 1
                         return (val + 1)
                     }
-                    method asString { "{super.asString} from {upper} downTo {lower}" }
+                    method asString { "anIterator over {super.asString}" }
                 }
+            }
+            method at(ix:Number) {
+                if (ix > self.size) then {
+                    BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
+                }
+                if (ix < 1) then {
+                    BoundsError.raise "requested range.at({ix}) but lower bound is 1"
+                }
+                return start - (ix - 1)
             }
             method contains(elem) -> Boolean {
                 try {
-                    def intElem = elem.truncate
+                    def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}
@@ -1116,16 +1385,28 @@ def range is readable = object {
                     val := val - 1
                 }
             }
+            method keysAndValuesDo(block2) {
+                var key := 1
+                var val := start
+                while {val >= stop} do {
+                    block2.apply(key, val)
+                    key := key + 1
+                    val := val - 1
+                }
+            }
             method reversed {
                 from(lower)to(upper)
             }
-            method ==(other){
+            method ++(other) {
+                sequence.withAll(self, other)
+            }
+            method ==(other) {
                 match (other)
                     case {o:Collection ->
                         if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.havemore} do {
+                        while {selfIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }
@@ -1136,21 +1417,17 @@ def range is readable = object {
                         return false
                     }
             }
+            method copySortedBy(c) { self.asList.sortBy(c) }
+            
+            method keys { 1..self.size }
+            
+            method values { self }
 
-            method asString -> String{
-                return "range.from({upper})downTo({lower})"
+            method asString -> String {
+                "range.from({upper})downTo({lower})"
             }
-
-            method asList{
-                var result := list.empty
-
-                def iter = self.iterator
-
-                while {iter.havemore} do {
-                    result.add(iter.next)
-                }
-
-                result
+            method asSequence {
+                self
             }
         }
     }

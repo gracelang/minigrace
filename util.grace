@@ -1,10 +1,8 @@
-#pragma DefaultVisibility=public
 import "io" as io
 import "sys" as sys
 import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
 
-var __compilerRevision := false
 var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
@@ -20,23 +18,30 @@ var noexecv := false
 var targetv := "c"
 var versionNumber := "0.0.9"
 var extensionsv := mgcollections.map.new
-var recurse := true
+var recurse is readable := true
 var dynamicModule := false
 var importDynamic := false
 var jobs := 2
-var cLines := []
-var lines := []
+var cLines := list.empty
+var lines := list.empty
+var filename is readable
 
-var errno := 0
-
-method runOnNew(b)else(e) {
-    if ((__compilerRevision != "d5f6522d5c5e3f5b1f40d77502a66954955d0e5a")
-        && (__compilerRevision != false)) then {
-        b.apply
-    } else {
-        e.apply
+def requiredModules is public = object {
+    def static is public = set.empty
+    def linkfiles is public = list.empty
+    def other is public = set.empty
+    method isAlready ( moduleName ) -> Boolean {
+        if ( static.contains(moduleName) ) then {
+            true 
+        } elseif { other.contains(moduleName ) } then {
+            true 
+        } else {
+            false
+        }
     }
 }
+
+var errno is readable := 0
 
 method parseargs {
     var argv := sys.argv
@@ -91,6 +96,7 @@ method parseargs {
                         interactivev := true
                     } case { "--noexec" ->
                         noexecv := true
+                        buildtypev := "bc"
                     } case { "--yesexec" ->
                         noexecv := false
                     } case { "--stdout" ->
@@ -149,26 +155,41 @@ method parseargs {
                 if (skip) then {
                     skip := false
                 } else {
-                    var filename := arg
-                    infilev := io.open(filename, "r")
+                    filename := arg
+                    try {
+                        infilev := io.open(filename, "r")
+                    } catch {
+                        ex:EnvironmentException -> 
+                            generalError ("Can't open file {filename}",
+                                0, 0, "", false, sequence.empty)
+                    }
                     if (modnamev == "stdin_minigrace") then {
                         var accum := ""
                         modnamev := ""
                         for (filename) do { c->
-                            if (c == ".") then {
+                            if (c == "/") then {
+                                accum := ""
+                            } elseif {c == "."} then {
                                 modnamev := accum
+                            } else {
+                                accum := accum ++ c
                             }
-                            accum := accum ++ c
                         }
                     }
                 }
             }
         }
     }
+    log_verbose "scanned arglist"
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "c" -> io.open(modnamev ++ ".c", "w") }
-            case { "js" -> io.open(modnamev ++ ".js", "w") }
+            case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
+            case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
+            case { "parse" -> io.open(sourceDir ++ modnamev ++ ".parse", "w") }
+            case { "lex" -> io.open(sourceDir ++ modnamev ++ ".lex", "w") }
+            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".processed", "w") }
+            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".processed-ast", "w") }
+            case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
             case { _ -> io.output }
     }
     if (gracelibPathv == false) then {
@@ -194,14 +215,21 @@ method parseargs {
     }
 }
 
+var previousElapsed := 0
+var previousCPU := 0
+
 method log_verbose(s) {
     if (verbosityv >= 40) then {
         var vtagw := ""
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
         }
-        io.error.write("minigrace{vtagw}: {modnamev}: {sys.cputime}/"
-            ++ "{sys.elapsed}: {s}\n")
+        def cpu = (sys.cputime * 100).rounded / 100
+        def elapsed = (sys.elapsed * 100).rounded / 100
+        io.error.write("minigrace{vtagw}: {modnamev}: {cpu}/"
+            ++ "{elapsed} (+{cpu-previousCPU}/{elapsed-previousElapsed}): {s}\n")
+        previousElapsed := elapsed
+        previousCPU := cpu
     }
 }
 
@@ -231,7 +259,7 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
     if ((errlinenum > 1) && (lines.size > 1)) then {
         io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
     }
-    if (lines.size >= errlinenum) then {
+    if ((lines.size >= errlinenum) && (errlinenum > 0)) then {
         var line := lines.at(errlinenum)
         if(spacePos != false) then {
             io.error.write("  {errlinenum}: {line.substringFrom(1)to(spacePos-1)} {line.substringFrom(spacePos)to(line.size)}\n")
@@ -240,9 +268,6 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
         }
         io.error.write("{arr}\n")
     }
-    if (errlinenum < lines.size) then {
-        io.error.write("  {errlinenum + 1}: {lines.at(errlinenum + 1)}\n")
-    }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->
             io.error.write("\nDid you mean:\n")
@@ -250,9 +275,9 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
         }
     }
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 
@@ -267,9 +292,9 @@ method type_error(s) {
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 method semantic_error(s) {
@@ -280,7 +305,7 @@ method semantic_error(s) {
     if (s == "") then {
         io.error.write "\n"
         if (!interactivev) then {
-            sys.exit(1)
+            sys.exit(2)
         }
     }
     io.error.write ": {s}\n"
@@ -290,7 +315,7 @@ method semantic_error(s) {
         }
     }
     var arr := "----"
-    for (2..(lineposv + linenumv.asString.size)) do {
+    for (2..(lineposv + linenumv.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     if (lines.size >= linenumv) then {
@@ -300,9 +325,9 @@ method semantic_error(s) {
         io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
     if (interactivev.not) then {
-        sys.exit(1)
+        sys.exit(2)
     } else {
-        errno := 1
+        errno := 2
     }
 }
 method warning(s) {
@@ -362,6 +387,67 @@ method engine {
 method extensions {
     extensionsv
 }
+method str(s) lastIndexOf(ch) {
+    var ix := s.size
+    while { ix > 0 } do {
+        if (s.at(ix) == ch) then { return ix }
+        ix := ix - 1
+    }
+    return 0
+}
+var sourceDirCache := ""
+method sourceDir {
+    if (sourceDirCache == "") then {
+        sourceDirCache := filename.substringFrom 1 to (str(filename) lastIndexOf("/"))
+    }
+    if (sourceDirCache == "") then { sourceDirCache := "./" }
+    sourceDirCache
+}
+var execDirCache := ""
+method execDir {
+    if (execDirCache == "") then {
+        execDirCache := sys.execPath
+        if (execDirCache.at(execDirCache.size) != "/") then {
+            execDirCache := execDirCache ++ "/"
+        }
+    }
+    execDirCache
+}
+method splitPath(pathString) -> List<String> {
+    def locations = list.empty
+    var ix := 1
+    var ox := 1
+    def pss = pathString.size
+    while { ox <= pss } do {
+        while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
+            ox := ox + 1 
+        }
+        var item := pathString.substringFrom(ix) to(ox-1)
+        if (item.at(item.size) != "/") then { item := item ++ "/" }
+        locations.addLast (item)
+        ix := ox + 1
+        ox := ix
+    }
+    return locations
+}
+method file(name) on(origin) orPath(pathString) otherwise(action) {
+    def locations = splitPath(pathString)
+    locations.addFirst(origin)
+    locations.addFirst "./"
+    locations.addLast(execDir)
+
+    locations.do { each ->
+        def candidate = each ++ name
+        if ( io.exists(candidate) ) then {
+            return candidate
+        }
+    }
+    action.apply(locations)
+}
+method file(name) onPath(pathString) otherwise(action) {
+    file(name) on(sourceDir) orPath(pathString) otherwise(action)
+}
+
 method processExtension(ext) {
     var extn := ""
     var extv := true
@@ -385,10 +471,11 @@ method printhelp {
     print "Compile, process, or run a Grace source file or standard input."
     print ""
     print "Modes:"
-    print "  --make           Compile FILE to a native executable"
+    print "  --make           Compile FILE and link, creating a native executable"
     print "  --run            Compile FILE and execute the program [default]"
-    print "  --source         Compile FILE to source, but no further"
-    print "  --dynamic-module Compile FILE as a dynamic module (experimental!)"
+    print "  --source         Compile FILE to C source, but no further"
+    print "  --noexec         Compile FILE to native object code, but don't create executable"
+    print "  --dynamic-module Compile FILE as a dynamic module"
     print "  --interactive    Launch interactive read-eval-print interpreter"
     print ""
     print "Options:"
@@ -421,34 +508,4 @@ method hex(num) {
         tmp := tmp / 16
     }
     s
-}
-
-method join(joiner, iterable) {
-    def ind = iterable.indices
-    def min = ind.first
-    var s := ""
-    for (ind) do {i->
-        if (i != min) then {
-            s := s ++ joiner
-        }
-        s := s ++ iterable.at(i)
-    }
-    s
-}
-
-method split(str, by) {
-    def results = []
-    def bylen = by.size
-    var start := 1
-    var i := 1
-    def strlen = str.size
-    while {i <= strlen} do {
-        if (str.substringFrom(i)to(i+bylen-1) == by) then {
-            results.push(str.substringFrom(start)to(i-1))
-            start := i + bylen
-        }
-        i := i + 1
-    }
-    results.push(str.substringFrom(start)to(strlen))
-    results
 }

@@ -267,8 +267,8 @@ class suggestion.new() {
                 io.error.write("    {s}...\n")
             }
             // Handle insertion of new lines.
-            if(lineNumbers[i].truncate != lineNumbers[i]) then {
-                io.error.write(" *{lineNumbers[i].truncate}: {lines[i]}\n")
+            if(lineNumbers[i].truncated != lineNumbers[i]) then {
+                io.error.write(" *{lineNumbers[i].truncated}: {lines[i]}\n")
             } else {
                 io.error.write("  {lineNumbers[i]}: {lines[i]}\n")
             }
@@ -319,8 +319,8 @@ method dameraulevenshtein(s, t) {
             def addcost = thisrow[y - 1] + 1
             def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
             thisrow[y] := min(delcost, addcost, subcost)
-            if ((x > 1) && (y > 1) && (s[x] == t[y - 1])
-                && (s[x - 1] == t[y]) && (s[x] != t[y])) then {
+            if (((x > 1) && (y > 1)).andAlso{(s[x] == t[y - 1])
+                && (s[x - 1] == t[y]) && (s[x] != t[y])}) then {
                 thisrow[y] := min(thisrow[y], twoago[y - 2] + 1)
             }
         }
@@ -357,10 +357,10 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestion(s
 method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
     var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do {
+    for (2..(startpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
-    for (startpos..endpos) do {
+    for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
     util.syntaxError(message, errlinenum, ":{loc}", arr, false, suggestions)
@@ -369,13 +369,17 @@ method syntaxError(message)atRange(errlinenum, startpos, endpos)withSuggestions(
 method error(message)atRange(errlinenum, startpos, endpos)withSuggestions(suggestions) {
     var loc := if(startpos == endpos) then {startpos.asString} else { "{startpos}-{endpos}" }
     var arr := "----"
-    for (2..(startpos + errlinenum.asString.size)) do {
+    for (2..(startpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
-    for (startpos..endpos) do {
+    for (startpos..endpos) do { _ ->
         arr := arr ++ "^"
     }
     util.generalError(message, errlinenum, ":{loc}", arr, false, suggestions)
+}
+
+method error(message) atRange(errlinenum, startpos, endpos) {
+    error (message) atRange(errlinenum, startpos, endpos) withSuggestions([])
 }
 
 method syntaxError(message)atPosition(errlinenum, errpos) {
@@ -392,7 +396,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestion(suggesti
 
 method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggestions) {
     var arr := "----"
-    for (2..(errpos + errlinenum.asString.size)) do {
+    for (2..(errpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
@@ -402,19 +406,23 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
 method error(message) atPosition(errlinenum, errpos)
         withSuggestions(suggestions) {
     var arr := "----"
-    for (2..(errpos + errlinenum.asString.size)) do {
+    for (2..(errpos + errlinenum.asString.size)) do { _ ->
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
     util.generalError(message, errlinenum, ":({errpos})", arr, errpos, suggestions)
 }
 
+method error(message) {
+    util.generalError(message, 0, "", "", false, [])
+}
+
 method error(message)atLine(errlinenum)withSuggestions(suggestions) {
     var arr := "----"
-    for (1..errlinenum.asString.size) do {
+    for (1..errlinenum.asString.size) do { _ ->
         arr := arr ++ "-"
     }
-    for (1..util.lines.at(errlinenum).size) do {
+    for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
     util.generalError(message, errlinenum, "", arr, false, suggestions)
@@ -434,10 +442,10 @@ method syntaxError(message)atLine(errlinenum)withSuggestion(suggestion') {
 
 method syntaxError(message)atLine(errlinenum)withSuggestions(suggestions) {
     var arr := "----"
-    for (1..errlinenum.asString.size) do {
+    for (1..errlinenum.asString.size) do { _ ->
         arr := arr ++ "-"
     }
-    for (1..util.lines.at(errlinenum).size) do {
+    for (1..util.lines.at(errlinenum).size) do { _ ->
         arr := arr ++ "^"
     }
     util.syntaxError(message, errlinenum, "", arr, false, suggestions)
