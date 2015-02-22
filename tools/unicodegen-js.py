@@ -12,6 +12,7 @@ with open("UnicodeData.txt") as fp:
         data.append(line.strip().split(";"))
 
 data[-4:] = []
+# removes the last 4 items from the array
 
 categories = set()
 bidirectionals = set()
@@ -125,10 +126,27 @@ print("Writing postlude ...")
 fp.write("""
 unicode = {};
 unicode.name = function(s) {
+    function charCode() {
+        var code = s.charCodeAt(0);
+        var hi, low;
+        if (0xD800 <= code && code <= 0xDBFF) {
+            // char is a 2-byte sequence, starting with a high surrogate
+            hi = code;
+            low = s.charCodeAt(1);
+            if (isNaN(low)) {
+                throw 'High surrogate not followed by low surrogate in fixedCharCodeAt()';
+            }
+            return ((hi - 0xD800) * 0x400) + (low - 0xDC00) + 0x10000;
+        }
+        return code;
+    };
+    if (typeof s === "number")
+        s = String.fromCodePoint(s);
     if (unicodedata.names[s])
          return unicodedata.names[s];
-    return "UNICODE CHARACTER " + s.charCodeAt(0);
+    return "UNICODE CHARACTER " + charCode().toString(16);
 };
+
 unicode.isCategory = function(s, c) {
     var table = unicodedata.categories[c];
     var o = s;
@@ -147,6 +165,19 @@ unicode.isCategory = function(s, c) {
     return false;
 };
 
+unicode.category = function(s) {
+    var o = s;
+    if (typeof o == "string")
+        o = s.charCodeAt(0);
+    for (catName in unicodedata.categories) {
+        if (unicodedata.categories.hasOwnProperty(catName)) {
+            if (unicode.isCategory(o, catName)) {
+                return catName;
+            }
+        }
+    }
+    return false;
+}
 
 // for node:
 if (typeof global !== "undefined") {

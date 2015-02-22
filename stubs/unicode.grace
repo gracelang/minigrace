@@ -19,7 +19,7 @@ method name(char:String) -> String {
     // Return the Unicode name of the first character in 'char'
     // (e.g., "LATIN SMALL LETTER A WITH DIARESIS").
 }
-method iscategory(char:String, cat:String) -> Boolean {
+method inCategory(char:String, cat:String) -> Boolean {
     // Is the first character of 'char' in the Unicode category 'cat'?
     // 'cat' can be either one or two characters, testing for either
     // a broad category (like "N") or a specific one (like "Nd").
@@ -46,6 +46,7 @@ method lookup(uName:String) -> String {
     // Return the single-character-string representing the unicode codepoint 
     // named by 'uName'. Takes log N time, were N is the number of
     // named Unicode codepoints.
+    // NB -- currently missing from the Javascript implementation 
 }
 method pattern(*cs) -> Pattern {
     // Returns a pattern that matches any of the Unicode characters in cs.
@@ -57,6 +58,6 @@ method pattern(*cs)not(*ncs) -> Pattern {
     // not in ncs.  Each c in cs and ncs can be a number, meaning the
     // Unicode character with codepoint c,  or a one or two letter string 
     // indicating a Unicode category.
-    // For example, pattern("C")not(10, 13) mathches any Unicode Control character
-    // (in category "C") other than U+0010 and U+0013  (LF and CR)
+    // For example, pattern("C")not(10, 13) mathches any Unicode Control
+    // character (in category "C") other than U+0010 and U+0013 (LF and CR)
 }

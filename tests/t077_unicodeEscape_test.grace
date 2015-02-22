@@ -1,7 +1,7 @@
 import "gUnit" as gU
 import "unicode" as u
 
-class paternTest.forMethod(m) {
+class patternTest.forMethod(m) {
     inherits gU.testCaseNamed(m)
     
     method testUnicodeEscape {
@@ -12,11 +12,24 @@ class paternTest.forMethod(m) {
         assert(u.name "\u202f") shouldBe "NARROW NO-BREAK SPACE"
     }
     
-    method testClass {
-        assert (u.category "\u202f") shouldBe "Zs"
+    method testInCategoryNBS {
+        assert (u.inCategory("\u202f", "Zs")) description "\\u202f is not in category Zs"
+        assert (u.inCategory("\u202f", "Z")) description "\\u202f is not in category Z"
+    }
+
+    method testInCategorySpace {
+        assert (u.inCategory(" ", "Zs")) description "space is not in category Zs"
+        assert (u.inCategory(" ", "Z")) description "space is not in category Z"
+    }
+    
+    method testCategorySpace {
         assert (u.category " ") shouldBe "Zs"
     }
     
+    method testCategoryæ {
+        assert (u.category "æ") shouldBe "Ll"
+    }
+
     method testOrd {
         assert("\u202f".ord) shouldBe 16x202f
     }
@@ -28,7 +41,7 @@ class paternTest.forMethod(m) {
     method testLookupDAGGER {
         assert(u.lookup "DAGGER") shouldBe "\u2020"
     }
-    
+
     method testPatternBadSeparatorNNBS {
         def badSeparator = u.pattern("Z", 9)not(32, 8232)
         assert(badSeparator.match "\u202f") 
@@ -60,6 +73,11 @@ class paternTest.forMethod(m) {
     }
 }
 
-def patternTests = gU.testSuite.fromTestMethodsIn(paternTest)
-// patternTests.debugAndPrintResults
+def patternTests = gU.testSuite.fromTestMethodsIn(patternTest)
+//patternTests.debugAndPrintResults
 patternTests.runAndPrintResults
+//def failingTests = gU.testSuite.empty
+//failingTests.add(patternTest.forMethod("testInCategorySpace"))
+//failingTests.add(patternTest.forMethod("testInCategoryNBS"))
+//failingTests.debugAndPrintResults
+
