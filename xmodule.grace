@@ -123,10 +123,10 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(location, nm, line, linePos)
+    addTransitiveImports(location, isDialect, nm, line, linePos)
 }
 
-method addTransitiveImports(directory, moduleName, line, linePos) is confidential {
+method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
     def data = parseGCT(moduleName) sourceDir(directory)
     if (data.contains "dialect") then {
         def dData = data.get("dialect").first
@@ -138,7 +138,7 @@ method addTransitiveImports(directory, moduleName, line, linePos) is confidentia
                 errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
                     ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atRange(line, linePos, linePos + moduleName.size)
             }
-            checkimport(m, m, line, linePos, false)
+            checkimport(m, m, line, linePos, isDialect)
         }
     }
 }
