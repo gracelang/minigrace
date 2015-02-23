@@ -189,9 +189,8 @@ l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: l1/collectionsPrelude.grace
 	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
 
 l1/exists: $(C_MODULES)
-	mkdir -p l1
+	if [ ! -e l1/exists ] ; then mkdir -p l1 && touch l1/exists ; fi
 	cd l1 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
-	touch l1/exists
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
@@ -221,9 +220,8 @@ l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/collectionsPrelude.grace
 	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 
 l2/exists: $(C_MODULES)
-	mkdir -p l2
+	if [ ! -e l2/exists ] ; then mkdir -p l2 && touch l2/exists ; fi
 	cd l2 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
-	touch l2/exists
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
 	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
