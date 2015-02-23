@@ -99,7 +99,9 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             }
         ) then {
         } else {
-            if (! io.newer(binaryFile, moduleFileGrace)) then {
+            if (! io.exists(binaryFile)) then {
+                util.log_verbose "{binaryFile} does not exist"
+            } elseif { ! io.newer(binaryFile, moduleFileGrace) } then {
                 util.log_verbose "{binaryFile} older than {moduleFileGrace}"
             }
             compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)

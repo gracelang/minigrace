@@ -2066,10 +2066,14 @@ method compile(vl, of, mn, rm, bt) {
     for (output) do { x ->
         outprint(x)
     }
+    
+    xmodule.writeGCT(modname)
+        fromValues(values) modules(imports.static ++ imports.other)
+        
+    outfile.close
 
     if (runmode == "make") then {
         log_verbose("compiling C code.")
-        outfile.close
         def ofpn = outfile.pathname
         var ix := ofpn.size
         while { (ix > 1).andAlso {ofpn.at(ix) != "."} } do { ix := ix - 1 }
@@ -2148,8 +2152,6 @@ method compile(vl, of, mn, rm, bt) {
             }
         }
         log_verbose("done.")
-        xmodule.writeGCT(modname)
-            fromValues(values) modules(imports.static ++ imports.other)
         if (buildtype == "run") then {
             if (ofpnBase[1] != "/") then {
                 cmd := "./" ++ ofpnBase
