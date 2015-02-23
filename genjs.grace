@@ -1598,5 +1598,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     for (output) do { o ->
         outprint(o)
     }
+    outfile.close
     log_verbose("done.")
 }
