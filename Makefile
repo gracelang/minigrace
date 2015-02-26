@@ -352,7 +352,7 @@ test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: minigrace-environment js/sample/dialects/requireTypes.gso util.gso
+test.js: minigrace-environment js/sample/dialects/requireTypes.gso util.gso ast.gso
 	npm install performance-now
 	cd js/tests; ln -sf ../sample/dialects/requireTypes.gso .
 	js/tests/harness ../../minigrace js/tests ""
