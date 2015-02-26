@@ -212,20 +212,22 @@ function findOnPath(fn, pathArray) {
     return -1
 }
 
-var graceModulePath = process.env.GRACE_MODULE_PATH;
-var fallbackPath = "/usr/lib/grace/modules/"
-if (! graceModulePath) {
-    try {
-        if (fs.statSync(fallbackPath).isDirectory) {
-            graceModulePath = fallbackPath + ":./:../";
-        }
-    } catch (e) {
-            graceModulePath = "./:../";
-    }
-    if (! process.env.CI) {
-        console.warn("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
-    }
-}
+//var graceModulePath = process.env.GRACE_MODULE_PATH;
+//var fallbackPath = "/usr/lib/grace/modules/"
+//if (! graceModulePath) {
+//    try {
+//        if (fs.statSync(fallbackPath).isDirectory) {
+//            graceModulePath = fallbackPath + ":./:../";
+//        }
+//    } catch (e) {
+//            graceModulePath = "./:../";
+//    }
+//    if (! process.env.CI) {
+//        console.warn("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
+//    }
+//}
+
+var graceModulePath = "./:../"
 var pathdirs = graceModulePath.split(path.delimiter);
 
 if ( pathdirs.indexOf("./") === -1 ) {
