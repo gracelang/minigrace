@@ -6,20 +6,6 @@ import "unicode" as unicode
 import "mgcollections" as collections
 import "errormessages" as errormessages
 
-// Return the numeric value of the single hexadecimal character c.
-method hexdecchar(c) {
-    var chars := ["0", "1", "2", "3", "4", "5", "6", "7", "8",
-                 "9", "a", "b", "c", "d", "e", "f"]
-    var ret := 0
-    var i := 0
-    for (chars) do {cr->
-        if (cr == c) then {
-            ret := i
-        }
-        i := i + 1
-    }
-    ret
-}
 method padl(s, l, w) {
     if (s.size >= l) then {
         return s
@@ -409,6 +395,25 @@ def LexerClass = object {
                 }
                 val
             }
+                    
+            method hexdecchar(c) {
+            // Return the numeric value of the single hexadecimal character c.
+                def AOrd = "A".ord
+                def aOrd = "a".ord
+                def zeroOrd = "0".ord
+                def cOrd = c.ord
+                if ( (cOrd >= AOrd) && (cOrd <= "F".ord) ) then {
+                    cOrd - AOrd + 10
+                } elseif { (cOrd >= aOrd) && (cOrd <= "f".ord) } then {
+                    cOrd - aOrd + 10
+                } elseif { (cOrd >= zeroOrd) && (cOrd <= "9".ord) } then {
+                    cOrd - zeroOrd
+                } else {
+                    errormessages.syntaxError("The character '{c}' must be a hexadecimal digit")
+                        atRange(lineNumber, linePosition, linePosition)
+                }
+            }
+
             method makeNumToken(accum) {
                 var base := 10
                 var baseSet := false
@@ -604,9 +609,10 @@ def LexerClass = object {
                 var interpdepth := 0
                 var interpString := false
                 var atStart := true
+                var newlineFound := false
                 linePosition := 0
                 util.log_verbose("lexing.")
-                def badSeparator = unicode.pattern("Z", 9)not(32, 8232)
+                def badSeparator = unicode.pattern("Z", 9)not(32, 160)
                 def badControl =  unicode.pattern("C")not(10, 13)
                 def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
@@ -614,8 +620,6 @@ def LexerClass = object {
                     "\{".ord, "}".ord, "[".ord, "]".ord)
                 def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
                 def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
-                    "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
-                def digitB = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
                     "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
                 def operatorChar = unicode.pattern("Sm", "So",
                     "-".ord, "&".ord, "|".ord, ":".ord,
@@ -629,7 +633,7 @@ def LexerClass = object {
                     var ordval := c.ord // String.ord gives the codepoint
                     if (badSeparator.match(ordval)) then {
                         // Character is whitespace, but not an ASCII space or
-                        // Unicode LINE SEPARATOR, or is a tab
+                        // Unicode LINE SEPARATOR.  For example, a tab
                         def suggestion = errormessages.suggestion.new
                         suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
                         if(ordval == 9) then {
@@ -949,13 +953,13 @@ def LexerClass = object {
                                 // LINE SEPARATOR escape
                                 accum := accum ++ "\u2028"
                             } elseif (c == "f") then {
-                                // Form feed/"page down" escape
+                                // Form feed/page down escape
                                 accum := accum ++ "\u000c"
                             } elseif (c == "e") then {
                                 // Escape escape
                                 accum := accum ++ "\u001b"
-                            } elseif (c == " ") then {
-                                // non-breaking sapce
+                            } elseif (c == "_") then {
+                                // non-breaking space
                                 accum := accum ++ "\u00a0"
                             } else {
                                 // For any other character preceded by \,
@@ -995,12 +999,14 @@ def LexerClass = object {
                         } else {
                             accum := accum ++ c
                         }
-                    } elseif ((c == "\n") || (c == "\r")) then {
+                    } elseif ((c == "\n") || (c == "\r") || (c == "\l")) then {
                         // Linebreaks terminate any open tokens
+                        newlineFound := true
                         modechange(tokens, mode, accum)
                         mode := "d"
                         newmode := "d"
                         accum := ""
+
                     } else {
                         accum := accum ++ c
                     }
@@ -1012,11 +1018,12 @@ def LexerClass = object {
                             accum := ""
                         }
                     }
-                    if (c == "\n") then {
+                    if (newlineFound) then {
                         // Linebreaks increment the line counter and insert a
                         // special "line" token, which the parser can use to
                         // track the origin of AST nodes for later error
                         // reporting.
+                        newlineFound := false
                         lineNumber := lineNumber + 1
                         linePosition := 0
                         startPosition := 1

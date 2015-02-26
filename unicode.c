@@ -372,11 +372,16 @@ Object unicode_pattern(Object self, int nparts, int *argcv,
     return unicode_pattern_not(self, 2, argcv2, args, flags);
 }
 
+Object unicode_asString(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    return alloc_String("the Unicode module");
+}
+
 // Create and return a Grace object with all the above functions as methods.
 Object module_unicode_init() {
     if (unicode_module != NULL)
         return unicode_module;
-    ClassData c = alloc_class("Module<unicode>", 15);
+    ClassData c = alloc_class("Module<unicode>", 18);
     add_Method(c, "category", &unicode_category);
     add_Method(c, "bidirectional", &unicode_bidirectional);
     add_Method(c, "combining", &unicode_combining);
@@ -384,6 +389,7 @@ Object module_unicode_init() {
     add_Method(c, "name", &unicode_name);
     add_Method(c, "create", &unicode_create);
     add_Method(c, "iscategory", &unicode_iscategory);
+    add_Method(c, "inCategory", &unicode_iscategory);
     add_Method(c, "isSeparator", &unicode_isSeparator);
     add_Method(c, "isControl", &unicode_isControl);
     add_Method(c, "isLetter", &unicode_isLetter);
@@ -392,6 +398,8 @@ Object module_unicode_init() {
     add_Method(c, "lookup", &unicode_lookup);
     add_Method(c, "pattern", &unicode_pattern);
     add_Method(c, "pattern()not", &unicode_pattern_not);
+    add_Method(c, "asString", &unicode_asString);
+    add_Method(c, "asDebugString", &unicode_asString);
     Object o = alloc_newobj(0, c);
     unicode_module = o;
     gc_root(o);

@@ -1559,12 +1559,16 @@ function gracecode_unicode() {
                 || unicode.isCategory(s, "Co")
                 || unicode.isCategory(s, "Cs")) ? GraceTrue : GraceFalse);
     };
-    this.methods.iscategory = function unicode_iscategory(argcv, s, c) {
+    this.methods.inCategory = function unicode_inCategory(argcv, s, c) {
         if (typeof s._value == "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
     };
+    this.methods.iscategory = this.methods.inCategory;
+    this.methods.category = function unicode_category(argcv, s) {
+        return new GraceString(unicode.category(s._value));
+    }
     this.methods.name = function unicode_name(argcv, s) {
         return new GraceString(unicode.name(s._value));
     };

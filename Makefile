@@ -189,9 +189,8 @@ l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: l1/collectionsPrelude.grace
 	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
 
 l1/exists: $(C_MODULES)
-	mkdir -p l1
+	if [ ! -e l1/exists ] ; then mkdir -p l1 && touch l1/exists ; fi
 	cd l1 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
-	touch l1/exists
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
@@ -221,9 +220,8 @@ l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/collectionsPrelude.grace
 	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 
 l2/exists: $(C_MODULES)
-	mkdir -p l2
+	if [ ! -e l2/exists ] ; then mkdir -p l2 && touch l2/exists ; fi
 	cd l2 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
-	touch l2/exists
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
 	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
@@ -249,7 +247,7 @@ $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l2/minigrace
 $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --dynamic-module --vtag l2 $<
 
-$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct minigrace
+$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js -o $(@F) $<
 
 # Giant hack! Not suitable for use.
@@ -261,7 +259,7 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES) l2/gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
 
-minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg js/StandardPrelude.js js/gUnit.js js/ast.js js/errormessages.js
+minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js
 
 mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
