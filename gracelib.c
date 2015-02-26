@@ -2745,6 +2745,7 @@ Object alloc_File(const char *filename, const char *mode) {
         graceRaise(EnvironmentExceptionObject, "could not open file %s for %s.",
                 filename, mode);
     }
+    gc_pause();
     Object o = alloc_File_from_stream(file);
     struct FileObject *fo = (struct FileObject *)o;
     char resolvedName[PATH_MAX];
@@ -2752,6 +2753,7 @@ Object alloc_File(const char *filename, const char *mode) {
     Object name = alloc_String(resolvedName);
     gc_root(name);
     fo->pathname = name;
+    gc_unpause();
     return o;
 }
 Object io_input(Object self, int nparts, int *argcv,
@@ -3853,6 +3855,7 @@ Object Type_methodNames(Object self, int nparts, int *argcv,
         mn = alloc_String(t->methods[i].name);
         callmethod(result, "add", 1, &tmp, &mn);
     }
+    gc_unpause();
     return result;
 }
 Object Type_and(Object self, int nparts, int *argcv,
