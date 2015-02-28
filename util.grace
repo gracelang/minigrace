@@ -186,6 +186,7 @@ method parseargs {
             case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
             case { _ -> io.output }
     }
+    log_verbose "outfilev is {outfilev.pathname}"
     if (gracelibPathv == false) then {
         if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {
             gracelibPathv := sys.execPath ++ "/../lib/minigrace"
