@@ -6,7 +6,7 @@ import "mgcollections" as mgcollections
 var verbosityv := 30
 var outfilev := io.output
 var infilev := io.input
-var modnamev := "stdin_minigrace"
+var modnamev := "standardInput"
 var runmodev := "make"
 var buildtypev := "run"
 var interactivev := false
@@ -16,7 +16,6 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "c"
-var versionNumber := "0.0.9"
 var extensionsv := mgcollections.map.new
 var recurse is readable := true
 var dynamicModule := false
@@ -24,7 +23,7 @@ var importDynamic := false
 var jobs := 2
 var cLines := list.empty
 var lines := list.empty
-var filename is readable
+var filename is readable := "standardInput.grace"
 
 def requiredModules is public = object {
     def static is public = set.empty
@@ -132,14 +131,9 @@ method parseargs {
                         }
                         jobs := argv.at(ai + 1).asNumber
                     } case { "--version" ->
-                        print("minigrace "
-                            ++ "{versionNumber}.{buildinfo.gitgeneration}")
+                        print("minigrace version "
+                            ++ "{buildinfo.gitgeneration}")
                         print("git revision " ++ buildinfo.gitrevision)
-                        print("<http://ecs.vuw.ac.nz/~mwh/minigrace/>")
-                        sys.exit(0)
-                    } case { "--help" ->
-                        print "Usage: minigrace <file>.grace"
-                        print "See the documentation for more options."
                         sys.exit(0)
                     } case { _ ->
                         if (arg.at(2) == "X") then {
@@ -163,7 +157,7 @@ method parseargs {
                             generalError ("Can't open file {filename}",
                                 0, 0, "", false, sequence.empty)
                     }
-                    if (modnamev == "stdin_minigrace") then {
+                    if (modnamev == "standardInput") then {
                         var accum := ""
                         modnamev := ""
                         for (filename) do { c->
@@ -180,7 +174,7 @@ method parseargs {
             }
         }
     }
-    log_verbose "scanned arglist"
+    def b = outfilev == io.output
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
             case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
@@ -201,7 +195,7 @@ method parseargs {
     }
     if (infilev == io.input) then {
         if (infilev.isatty) then {
-            print("minigrace {versionNumber}.{buildinfo.gitgeneration} / "
+            print("minigrace {buildinfo.gitgeneration} / "
                 ++ buildinfo.gitrevision)
             print "Copyright (C) 2011-2014 Michael Homer"
             print("This is free software with ABSOLUTELY NO WARRANTY. "
