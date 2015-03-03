@@ -2712,7 +2712,7 @@ Object File_isatty(Object self, int nparts, int *argcv,
 }
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
-        File = alloc_class("File", 19);
+        File = alloc_class("File", 21);
         add_Method(File, "read", &File_read);
         add_Method(File, "getline", &File_getline);
         add_Method(File, "write", &File_write);
@@ -2732,6 +2732,8 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
+        add_Method(File, "asString", &Object_asString);
+        add_Method(File, "asDebugString", &Object_asDebugString);
     }
     Object o = alloc_obj(sizeof(struct FileObject) - sizeof(struct Object), File);
     struct FileObject* so = (struct FileObject*)o;
