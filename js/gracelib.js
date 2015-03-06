@@ -2381,6 +2381,7 @@ function callmethod(obj, methname, argcv) {
             callStack.pop();
         sourceObject = oldSourceObject;
         setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
     }
     return ret;
 }
