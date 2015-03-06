@@ -159,8 +159,8 @@ struct IOModuleObject {
 };
 struct FileObject {
     OBJECT_HEADER;
-    Object pathname;
-    FILE* file;
+    char *pathname;
+    FILE *file;
 };
 struct SysModule {
     int flags;
@@ -2698,7 +2698,7 @@ Object File_next(Object self, int nparts, int *argcv,
 Object File_pathname(Object self, int nparts, int *argcv,
                 Object *argv, int flags) {
     struct FileObject *s = (struct FileObject*)self;
-    return s->pathname;
+    return alloc_String(s->pathname);
 }
 Object File_eof(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
@@ -2710,6 +2710,15 @@ Object File_isatty(Object self, int nparts, int *argcv,
     struct FileObject *s = (struct FileObject*)self;
     return alloc_Boolean(isatty(fileno(s->file)));
 }
+Object File_asString(Object self, int nparts, int *argcv,
+                     Object *argv, int flags) {
+    struct FileObject *s = (struct FileObject*)self;
+    char answer[PATH_MAX+5];
+    strcpy(answer, "File ");
+    strncat(answer, s->pathname, PATH_MAX);
+    return alloc_String(answer);
+}
+
 Object alloc_File_from_stream(FILE *stream) {
     if (File == NULL) {
         File = alloc_class("File", 21);
@@ -2732,13 +2741,13 @@ Object alloc_File_from_stream(FILE *stream) {
         add_Method(File, "isatty", &File_isatty);
         add_Method(File, "==", &Object_Equals);
         add_Method(File, "!=", &Object_NotEquals);
-        add_Method(File, "asString", &Object_asString);
+        add_Method(File, "asString", &File_asString);
         add_Method(File, "asDebugString", &Object_asDebugString);
     }
     Object o = alloc_obj(sizeof(struct FileObject) - sizeof(struct Object), File);
     struct FileObject* so = (struct FileObject*)o;
     so->file = stream;
-    so->pathname = alloc_String("");
+    so->pathname = "(un-opened)";
     return o;
 }
 Object alloc_File(const char *filename, const char *mode) {
@@ -2752,9 +2761,9 @@ Object alloc_File(const char *filename, const char *mode) {
     struct FileObject *fo = (struct FileObject *)o;
     char resolvedName[PATH_MAX];
     realpath(filename, resolvedName);
-    Object name = alloc_String(resolvedName);
-    gc_root(name);
-    fo->pathname = name;
+    int len = strnlen(resolvedName, PATH_MAX);
+    fo->pathname = calloc(1, len+1);
+    strncpy(fo->pathname, resolvedName, len+1);
     gc_unpause();
     return o;
 }
