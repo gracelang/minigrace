@@ -632,7 +632,6 @@ def LexerClass = object {
                    "*".ord, "/".ord, "+".ord, "!".ord
                     )
                 def iGTLT = unicode.pattern("i".ord, "<".ord, ">".ord)
-                def notcp = unicode.pattern()not("c".ord, "p".ord)
                 def mainBlock = { c->
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
@@ -1014,14 +1013,14 @@ def LexerClass = object {
                         } else {
                             accum := accum ++ c
                         }
-                    } elseif ((c == "\n") || (c == "\r") || (c == "\l")) then {
+                    } elseif ( ((c == "\n") || (c == "\r") || (c == "\l"))
+                            && (mode != "q") ) then {
                         // Linebreaks terminate any open tokens
                         newlineFound := true
                         modechange(tokens, mode, accum)
                         mode := "d"
                         newmode := "d"
                         accum := ""
-
                     } else {
                         accum := accum ++ c
                     }
@@ -1065,9 +1064,8 @@ def LexerClass = object {
                         suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
                         errormessages.syntaxError("A string must end with a '\"'.")atPosition(
                             lineNumber, linePosition)withSuggestion(suggestion)
-                    }
-                    if (mode == "x") then {
-                        errormessages.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
+                    } elseif {mode == "q"} then {
+                        errormessages.syntaxError("A multi-line string must end with a '›'.\nString opened on line {lineNumber} and unclosed at end of input.")atLine(lineNumber)
                     }
                 }
                 modechange(tokens, mode, accum)
