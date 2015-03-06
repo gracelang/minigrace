@@ -250,7 +250,7 @@ method compileobjdefdec(o, selfr, pos) {
                 out "  [1], {val})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
                 out "          new GraceString(\"expected \""
-                out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.value}\"))";
+                out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }
@@ -295,7 +295,7 @@ method compileobjvardec(o, selfr, pos) {
                 out "  [1], {val})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
                 out "          new GraceString(\"expected \""
-                out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
+                out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }
@@ -1007,7 +1007,7 @@ method compiledefdec(o) {
                 out "  [1], {varf(nm)})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
                 out "          new GraceString(\"expected \""
-                out "          + \"initial value of def '{snm}' to be of type {o.dtype.value}\"))"
+                out "          + \"initial value of def '{snm}' to be of type {o.dtype.toGrace(0)}\"))"
             }
         }
     }
@@ -1047,7 +1047,7 @@ method compilevardec(o) {
                     out "  [1], {varf(nm)})))"
                     out "    throw new GraceExceptionPacket(TypeErrorObject,"
                     out "          new GraceString(\"expected \""
-                    out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.value}\"))";
+                    out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
                 }
             }
         }
@@ -1309,7 +1309,7 @@ method compileimport(o) {
                 out "  [1], {varf(nm)})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
                 out "          new GraceString(\"expected \""
-                out "          + \"module {o.nameString} to be of type {o.dtype.value}\"))";
+                out "          + \"module {o.nameString} to be of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }
