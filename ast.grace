@@ -1418,7 +1418,7 @@ class memberNode.new(what, in') {
         }
         s
     }
-    method asString { "Member‹{value}›" }
+    method asString { "{in}.{value}" }
     method asIdentifier {
         // make an identifiderNode with the same properties as me
         def resultNode = identifierNode.new(value, false)
@@ -1460,7 +1460,7 @@ class genericNode.new(base, params') {
         n
     }
     method pretty(depth) {
-        var s := "{super.pretty(depth)}‹self.value.value›<"
+        var s := "{super.pretty(depth)}‹{self.value.value}›<"
         for (self.params.indices) do { i ->
             s := s ++ self.params[i].pretty(depth+2)
             if (i < self.params.size) then {
