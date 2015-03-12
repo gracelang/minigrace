@@ -684,7 +684,10 @@ GraceList.prototype = {
         },
         "remove": function (argcv, val) {
             var list = this._value;
-            var index = list.indexOf(val);
+            var index = -1;
+            for (var i = 0; i < list.length && index == -1; i++)
+                if (Grace_isTrue(callmethod(val, "==", [1], list[i])))
+                    index = i;
             if (index > -1)
                 list.splice(index, 1);
             return new GraceNum(index + 1);

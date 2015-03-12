@@ -207,7 +207,7 @@ l1/mirrors.gso: mirrors.c l1/exists
 l1/repl.gcn: repl.c
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -fPIC $<
 
-l1/StandardPrelude.gct l1/StandardPrelude.gcn: l1/StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace l1/exists
+l1/StandardPrelude.gct l1/StandardPrelude.gcn: l1/exists l1/StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace 
 	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
 
 l1/unicode.gcn: unicode.c unicodedata.h gracelib.h l1/exists
@@ -229,7 +229,7 @@ l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collections
 l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES:%=l1/%) l2/gracelib.o
 	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
 
-l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/StandardPrelude.grace l2/collectionsPrelude.gct l2/mirrors.gso l1/minigrace
+l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/exists l2/StandardPrelude.grace l2/collectionsPrelude.gct l2/mirrors.gso l1/minigrace
 	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
 
 Makefile.conf: configure
