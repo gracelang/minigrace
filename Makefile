@@ -154,6 +154,8 @@ js/minigrace.js: js/minigrace.in.js
 	@cat js/minigrace.in.js > js/minigrace.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
+	@cat js/gracelib.js >> js/minigrace.js
+	@cat `ls js/*.js | grep -v 'background\|gracelib\|minigrace\|node-server\|tabs'` >> js/minigrace.js
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
