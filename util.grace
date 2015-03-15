@@ -174,7 +174,6 @@ method parseargs {
             }
         }
     }
-    def b = outfilev == io.output
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
             case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
@@ -186,7 +185,6 @@ method parseargs {
             case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
             case { _ -> io.output }
     }
-    log_verbose "outfilev is {outfilev.pathname}"
     if (gracelibPathv == false) then {
         if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {
             gracelibPathv := sys.execPath ++ "/../lib/minigrace"
