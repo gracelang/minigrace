@@ -808,6 +808,7 @@ method setupContext(values) {
     preludeScope.addName "for()do"
     preludeScope.addName "while()do"
     preludeScope.addName "print"
+    preludeScope.addName "native()code"
     preludeScope.addName "Exception" as "defdec"
     preludeScope.addName "Error" as "defdec"
     preludeScope.addName "RuntimeError" as "defdec"

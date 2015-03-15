@@ -941,6 +941,10 @@ method compileidentifier(o) {
         o.register := "this"
     } elseif (name == "...") then {
         o.register := "ellipsis"
+    } elseif (name == "true") then {
+        o.register := "GraceTrue"
+    } elseif (name == "false") then {
+        o.register := "GraceFalse"
     } else {
         usedvars.push(name)
         o.register := varf(name)
@@ -1325,6 +1329,27 @@ method compilereturn(o) {
     }
     o.register := "undefined"
 }
+method compilePrint(o) {
+    var args := []
+    for (o.with) do { part ->
+        for (part.args) do { prm ->
+            var r := compilenode(prm)
+            args.push(r)
+        }
+    }
+    if(args.size != 1) then {
+        errormessages.syntaxError "method print takes a single argument"
+            atRange(o.line, o.linePos, o.linePos + 4)
+    } else {
+        out("var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
+    }
+    o.register := "call" ++ auto_count
+    auto_count := auto_count + 1
+}
+method compileNativeCode(o) {
+    out "   // native code here"
+}
+
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
     linenum := o.line
@@ -1333,21 +1358,15 @@ method compilenode(o) {
     if (oKind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
     }
-    var l := ""
     if (oKind == "string") then {
-        l := o.value.size
-        l := l + 1
-        var os := ""
         // Escape characters that may not be legal in string literals
-        os := escapestring(o.value)
+        def os = escapestring(o.value)
         out("var string" ++ auto_count ++ " = new GraceString(\""
             ++ os ++ "\");")
         o.register := "string" ++ auto_count
         auto_count := auto_count + 1
     } elseif (oKind == "index") then {
         compileindex(o)
-    } elseif (oKind == "octets") then {
-        compileoctets(o)
     } elseif (oKind == "dialect") then {
         compiledialect(o)
     } elseif (oKind == "import") then {
@@ -1356,15 +1375,6 @@ method compilenode(o) {
         compilereturn(o)
     } elseif (oKind == "generic") then {
         o.register := compilenode(o.value)
-    } elseif ((oKind == "identifier")
-        && ((o.value == "true") || (o.value == "false"))) then {
-        var val := 0
-        if (o.value == "true") then {
-            val := 1
-        }
-        out("var bool" ++ auto_count ++ " = new GraceBoolean(" ++ o.value ++ ")")
-        o.register := "bool" ++ auto_count
-        auto_count := auto_count + 1
     } elseif (oKind == "identifier") then {
         compileidentifier(o)
     } elseif (oKind == "defdec") then {
@@ -1399,26 +1409,19 @@ method compilenode(o) {
         compilemember(o)
     } elseif (oKind == "for") then {
         compilefor(o)
-    } elseif ((oKind == "call")) then {
-        if ((o.value.value == "print") && (o.value.in.value == "prelude")) then {
-            var args := []
-            for (o.with) do { part ->
-                for (part.args) do { prm ->
-                    var r := compilenode(prm)
-                    args.push(r)
-                }
-            }
-            if(args.size == 0) then {
-                out("var call" ++ auto_count ++ " = Grace_print(new GraceString(\"\"));")
+    } elseif { oKind == "call" } then {
+        if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
+            if (o.nameString == "print") then {
+                compilePrint(o)
+            } elseif {o.nameString == "native()code"} then {
+                compileNativeCode(o)
             } else {
-                out("var call" ++ auto_count ++ " = Grace_print(" ++ args.first ++ ");")
+                compilecall(o)
             }
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
         } else {
             compilecall(o)
         }
-    } elseif (oKind == "op") then {
+    } elseif { oKind == "op" } then {
         compileop(o)
     }
     compilationDepth := compilationDepth - 1
