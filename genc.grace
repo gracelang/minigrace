@@ -1852,7 +1852,7 @@ method processImports(values') {
     }
 }
 method compile(vl, of, mn, rm, bt) {
-    util.log_verbose "generating C code..."
+    log_verbose "generating C code..."
     var argv := sys.argv
     var cmd
     values := vl
@@ -2059,7 +2059,6 @@ method compile(vl, of, mn, rm, bt) {
         out("  return 0;")
         out("}")
     }
-    log_verbose("writing file.")
     for (topOutput) do { x ->
         outprint(x)
     }
@@ -2120,7 +2119,6 @@ method compile(vl, of, mn, rm, bt) {
                 cmd := cmd ++ " " ++ fn
             }
             cmd := cmd ++ " -lm {dlbit}"
-            util.log_verbose "static link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed linking.\n")
                 sys.exit(3)
@@ -2145,7 +2143,6 @@ method compile(vl, of, mn, rm, bt) {
             }
             cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{ofpnBase}.gso\" -fPIC {exportDynamicBit} "
                 ++ "\"{ofpnBase}.c\" "
-            util.log_verbose "dynamic link cmd = {cmd}"
             if ((io.system(cmd)).not) then {
                 io.error.write("Failed producing dynamic module.\n")
                 sys.exit(3)
