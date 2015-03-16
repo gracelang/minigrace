@@ -1347,7 +1347,30 @@ method compilePrint(o) {
     auto_count := auto_count + 1
 }
 method compileNativeCode(o) {
-    out "   // native code here"
+    if(o.with.size != 2) then {
+        errormessages.syntaxError "method native()code takes two arguments"
+            atRange(o.line, o.linePos, o.linePos + 5)
+    }
+    def param1 = o.with.first.args.first
+    if (param1.kind != "string") then {
+        errormessages.syntaxError "the first argument to native()code must be a string literal"
+            atRange(param1.line, param1.linePos, param1.linePos)
+    }
+    if (param1.value != "js") then { return }
+    def param2 = o.with.second.args.first
+    if (param2.kind != "string") then {
+        errormessages.syntaxError "the second argument to native()code must be a string literal"
+            atLine(param2.line)
+    }
+    def codeString = param2.value
+    out "   // start native code from line {o.line}"
+    out "var result = GraceDone;"
+    out(codeString)
+    def reg = "nat" ++ auto_count
+    auto_count := auto_count + 1
+    out "var {reg} = result;"
+    o.register := reg
+    out "   // end native code insertion"
 }
 
 method compilenode(o) {
