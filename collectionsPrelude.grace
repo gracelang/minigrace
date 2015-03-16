@@ -476,8 +476,12 @@ factory method list<T> {
                 self
             }
             method []:=(n,x) {
-                boundsCheck(n)
-                inner.at(n-1)put(x)
+                if (n == (size+1)) then {
+                    addLast(x)
+                } else {
+                    boundsCheck(n)
+                    inner.at(n-1)put(x)
+                }
                 done
             }
             method add(*x) {
