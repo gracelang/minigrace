@@ -40,7 +40,7 @@ if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
         if (util.verbosity > 30) then {
-            util.outprint "{v.kind}: {v.value}  [line: {v.line} position: {v.linePos} indent: {v.indent}]"
+            util.outprint "{v.kind}: {v.value}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
         } else {
             util.outprint "{v.kind}: {v.value}"
         }
