@@ -10,6 +10,7 @@ factory method list<T> {
 
     factory method withAll(a:Collection<T>) -> List<T> {
         inherits collections.indexable.trait<T>
+        var sz := 0
         var jsArray := native "js" code ‹var result = [];›
         a.do { each ->
             native "js" code ‹this.data.jsArray.push(var_each);›
@@ -41,8 +42,6 @@ if ((ix < 1) || (ix > this.data.jsArray.length)) {
     callmethod(var_BoundsError, "raise", [1], new GraceString(msg));
 }
 return this.data.jsArray[ix - 1];›
-            boundsCheck(n)
-            inner.at(n-1)
         }
         
 
@@ -54,7 +53,6 @@ if ((ix < 1) || (ix > this.data.jsArray.length)) {
 }
 return this.data.jsArray[ix - 1];›
             boundsCheck(n)
-            inner.at(n-1)
         }
         
 
@@ -66,14 +64,8 @@ if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
 }
 this.data.jsArray[ix-1] = var_x;
 return this;›
-            if (n == (size+1)) then {
-                addLast(x)
-            } else {
-                boundsCheck(n)
-                inner.at(n-1)put(x)
-            }
-            self
         }
+
         method []:=(n, x) {
             native "js" code ‹var ix = var_n._value;
 if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
@@ -81,42 +73,33 @@ if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
     callmethod(var_BoundsError,"raise", [1], new GraceString(msg));
 }
 this.data.jsArray[ix-1] = var_x;
-return this;›
-            if (n == (size+1)) then {
-                push(x)
-            } else {
-                boundsCheck(n)
-                inner.at(n-1)put(x)
-            }
-            done
+return GraceDone;›
         }
+
         method add(*x) {
             if (x.size == 1) then {
                 native "js" code ‹var v = callmethod(x, "first", [0]);
 this.data.jsArray.push(v);
 return this;›
+            }
             addAll(x)
         }
+
         method addAll(l) {
-            if ((size + l.size) > inner.size) then {
-                expandTo(max(size + l.size, size * 2))
-            }
-            for (l) do {each ->
-                inner.at(size)put(each)
-                size := size + 1
-            }
+            for (l) do { each -> push(each) }
             self
         }
+
         method push(x) {
-            if (size == inner.size) then { expandTo(inner.size * 2) }
-            inner.at(size)put(x)
-            size := size + 1
-            self
+            native "js" code ‹var v = callmethod(x, "first", [0]);
+this.data.jsArray.push(v);
+return this;›
         }
+        
         method addLast(*x) { addAll(x) }    // compatibility
         method removeLast {
             def result = inner.at(size - 1)
-            size := size - 1
+            sz := sz - 1
             result
         }
         method addAllFirst(l) {
@@ -132,7 +115,7 @@ return this;›
                 inner.at(insertionIndex)put(each)
                 insertionIndex := insertionIndex + 1
             }
-            size := size + increase
+            sz := sz + increase
             self
         }
         method addFirst(*l) { addAllFirst(l) }
@@ -145,7 +128,7 @@ return this;›
             for (n..(size-1)) do {i->
                 inner.at(i-1)put(inner.at(i))
             }
-            size := size - 1
+            sz := sz - 1
             return removed
         }
         method remove(*v:T) {
@@ -171,9 +154,10 @@ return this;›
         }
         method asString {
             var s := "["
-            for (0..(size-1)) do {i->
-                s := s ++ inner.at(i).asString
-                if (i < (size-1)) then { s := s ++ "," }
+            def curSize = self.size
+            for (1..curSize) do { i ->
+                s := s ++ at(i).asString
+                if (i < curSize) then { s := s ++ "," }
             }
             s ++ "]"
         }
@@ -183,9 +167,10 @@ return this;›
             return false
         }
         method do(block1) {
-            var i := 0
-            while {i < size} do { 
-                block1.apply(inner.at(i))
+            var i := 1
+            def curSize = self.size
+            while {i <= curSize} do {
+                block1.apply(self.at(i))
                 i := i + 1
             }
         }
@@ -227,9 +212,10 @@ return this;›
             self.indices.iterator
         }
         method keysAndValuesDo(block2) {
-            var i := 0
-            while {i < size} do { 
-                block2.apply(i+1, inner.at(i))
+            def curSize = size
+            var i := 1
+            while {i <= size} do {
+                block2.apply(i, self.at(i))
                 i := i + 1
             }
         }
@@ -263,10 +249,6 @@ return this;›
     }
 }
 
-        
-
-    }
-}
 
 
 def lst = list.with(2, 3, 5, 7)
