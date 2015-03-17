@@ -1084,7 +1084,8 @@ def LexerClass = object {
                         errormessages.syntaxError("A string must end with a '\"'.")atPosition(
                             lineNumber, linePosition)withSuggestion(suggestion)
                     } elseif {mode == "q"} then {
-                        errormessages.syntaxError("A multi-line string must end with a '›'.\nString opened on line {lineNumber} and unclosed at end of input.")atLine(lineNumber)
+                        errormessages.syntaxError("A multi-line string must end with a '›'.\nString opened on line {startLine} and unclosed at end of input.")
+                            atRange(startLine, stringStart, util.lines.at(startLine).size)
                     }
                 }
                 modechange(tokens, mode, accum)
