@@ -24,6 +24,8 @@ def LexerClass = object {
         var linePosition := 0
         var startPosition := 1
         var indentLevel := 0
+        var startLine := 1
+        var stringStart
 
         class Token.new() {
             def line = lineNumber
@@ -34,7 +36,7 @@ def LexerClass = object {
             var prev := false
 
             method ==(other) {
-                if(other == false) then {
+                if (other == false) then {
                     false
                 } else {
                     (other.line == line) && (other.linePos == linePos)
@@ -52,7 +54,17 @@ def LexerClass = object {
             inherits Token.new
             def kind = "string"
             def value = s
+            def size = linePosition - stringStart + 1
+        }
+        class MultiLineStringToken.new(s) {
+            inherits Token.new
+            def kind = "string"
+            def value = s
             def size = s.size + 2
+            def line' = startLine
+            def linePos' = stringStart
+            method line is override { line' }
+            method linePos is override { linePos' }
         }
         class CommentToken.new(s) {
             inherits Token.new
@@ -207,7 +219,7 @@ def LexerClass = object {
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "q") then {
-                        tok := StringToken.new(accum)
+                        tok := MultiLineStringToken.new(accum)
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "x") then {
@@ -336,7 +348,7 @@ def LexerClass = object {
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "d") then {
-                        indentLevel := linePosition - 1//accum.size
+                        indentLevel := linePosition - 1
                         isDone := true
                     } elseif (mode == "n") then {
                         isDone := true
@@ -617,7 +629,7 @@ def LexerClass = object {
                 linePosition := 0
                 util.log_verbose("lexing.")
                 def badSeparator = unicode.pattern("Z", 9)not(32, 160)
-                    // 32 is SPAC, and 160 NO-BREAK SPACE
+                    // 32 is SPACE, and 160 NO-BREAK SPACE
                 def badControl =  unicode.pattern("C")not(10, 13)
                 def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
@@ -717,10 +729,13 @@ def LexerClass = object {
                             // Beginning of a string
                             newmode := "\""
                             inStr := true
+                            stringStart := linePosition
                         } elseif { c == "‹" } then {
                             // Beginning of a multi-line string
                             newmode := "q"
                             inStr := true
+                            startLine := lineNumber
+                            stringStart := linePosition
                         } elseif { identifierChar.match(ordval) } then {
                             newmode := "i"
                         }
@@ -1013,14 +1028,18 @@ def LexerClass = object {
                         } else {
                             accum := accum ++ c
                         }
-                    } elseif ( ((c == "\n") || (c == "\r") || (c == "\l"))
-                            && (mode != "q") ) then {
-                        // Linebreaks terminate any open tokens
+                    } elseif ((c == "\n") || (c == "\r") || (c == "\l")) then {
                         newlineFound := true
-                        modechange(tokens, mode, accum)
-                        mode := "d"
-                        newmode := "d"
-                        accum := ""
+                        if (mode == "q") then {
+                            accum := accum ++ c
+                        } else {
+                            // Linebreaks terminate any open tokens
+                            newlineFound := true
+                            modechange(tokens, mode, accum)
+                            mode := "d"
+                            newmode := "d"
+                            accum := ""
+                        }
                     } else {
                         accum := accum ++ c
                     }
