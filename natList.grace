@@ -19,10 +19,11 @@ factory method list<T> {
 
         method boundsCheck(n) is confidential {
             native "js" code ‹var ix = var_n._value;
-if ((ix < 1) || (ix > this.data.jsArray.length)) {
-    var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-    callmethod(var_BoundsError,"raise", [1], new GraceString(msg));
-}›
+                    if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError,"raise", [1], new GraceString(msg));
+                    }›
             if ((n < 1) || (n > size)) then {
                 BoundsError.raise "index {n} out of bounds 1..{size}" 
             }
@@ -37,50 +38,54 @@ if ((ix < 1) || (ix > this.data.jsArray.length)) {
 
         method at(n) {
             native "js" code ‹var ix = var_n._value;
-if ((ix < 1) || (ix > this.data.jsArray.length)) {
-    var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-    callmethod(var_BoundsError, "raise", [1], new GraceString(msg));
-}
-return this.data.jsArray[ix - 1];›
+                    if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    }
+                    return this.data.jsArray[ix - 1];›
         }
         
 
         method [](n) {
             native "js" code ‹var ix = var_n._value;
-if ((ix < 1) || (ix > this.data.jsArray.length)) {
-    var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-    callmethod(var_BoundsError, "raise", [1], new GraceString(msg));
-}
-return this.data.jsArray[ix - 1];›
+                    if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    }
+                    return this.data.jsArray[ix - 1];›
             boundsCheck(n)
         }
         
 
         method at(n)put(x) {
             native "js" code ‹var  ix = var_n._value;
-if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
-    var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-    callmethod(var_BoundsError, "raise", [1], new GraceString(msg));
-}
-this.data.jsArray[ix-1] = var_x;
-return this;›
+                    if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    }
+                    this.data.jsArray[ix-1] = var_x;
+                    return this;›
         }
 
         method []:=(n, x) {
             native "js" code ‹var ix = var_n._value;
-if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
-    var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-    callmethod(var_BoundsError,"raise", [1], new GraceString(msg));
-}
-this.data.jsArray[ix-1] = var_x;
-return GraceDone;›
+                    if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    }
+                    this.data.jsArray[ix-1] = var_x;
+                    return GraceDone;›
         }
 
         method add(*x) {
             if (x.size == 1) then {
-                native "js" code ‹var v = callmethod(x, "first", [0]);
-this.data.jsArray.push(v);
-return this;›
+                native "js" code ‹var v = callmethod(var_x, "first", [0]);
+                    this.data.jsArray.push(v);
+                    return this;›
             }
             addAll(x)
         }
@@ -91,67 +96,81 @@ return this;›
         }
 
         method push(x) {
-            native "js" code ‹var v = callmethod(x, "first", [0]);
-this.data.jsArray.push(v);
-return this;›
+            native "js" code ‹this.data.jsArray.push(var_x);
+                    return this;›
         }
         
         method addLast(*x) { addAll(x) }    // compatibility
+        
+
         method removeLast {
-            def result = inner.at(size - 1)
-            sz := sz - 1
-            result
+            def result = self.at(size)
+            native "js" code ‹if (this.data.jsArray.length = 0) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    } else return this.data.jsArray.pop();›
         }
+
         method addAllFirst(l) {
-            def increase = l.size
-            if ((size + increase) > inner.size) then {
-                expandTo(max(size + increase, size * 2))
+            var ix := l.size;
+            while {ix > 0} do {
+                def each = l.at(ix)
+                ix := ix - 1
+                native "js" code ‹this.data.jsArray.unshift(var_each);›
             }
-            for (range.from(size-1)downTo(0)) do {i->
-                inner.at(i+increase)put(inner.at(i))
-            }
-            var insertionIndex := 0
-            for (l) do {each ->
-                inner.at(insertionIndex)put(each)
-                insertionIndex := insertionIndex + 1
-            }
-            sz := sz + increase
             self
         }
+        
+
         method addFirst(*l) { addAllFirst(l) }
+        
+
         method removeFirst {
             removeAt(1)
         }
+        
+
         method removeAt(n) {
-            boundsCheck(n)
-            def removed = inner.at(n-1)
-            for (n..(size-1)) do {i->
-                inner.at(i-1)put(inner.at(i))
-            }
-            sz := sz - 1
+            def removed = self.at(n)    // does the bounds check
+            native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
             return removed
         }
+        
+
         method remove(*v:T) {
             removeAll(v)
         }
+        
+
         method remove(*v:T) ifAbsent(action:Block0<Done>) {
             removeAll(v) ifAbsent (action)
         }
+        
+
         method removeAll(vs: Collection<T>) {
             removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
         }
+        
+
         method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
             for (vs) do { each -> 
-                def ix = indexOf(each) ifAbsent {return action.apply}
+                def ix = self.indexOf(each) ifAbsent {return action.apply}
                 removeAt(ix)
             }
             self
         }
+        
+
         method pop { removeLast }
+        
+
         method ++(o) {
             def l = list.withAll(self)
             l.addAll(o)
         }
+        
+
         method asString {
             var s := "["
             def curSize = self.size
@@ -161,11 +180,17 @@ return this;›
             }
             s ++ "]"
         }
+        
+
         method extend(l) { addAll(l); done }    // compatibility
+        
+
         method contains(element) {
             do { each -> if (each == element) then { return true } }
             return false
         }
+        
+
         method do(block1) {
             var i := 1
             def curSize = self.size
@@ -174,6 +199,8 @@ return this;›
                 i := i + 1
             }
         }
+        
+
         method ==(other) {
             match (other)
                 case {o:Sequence ->
@@ -189,6 +216,8 @@ return this;›
                     return false
                 }
         }
+        
+
         method iterator {
             object {
                 inherits iterable.trait
@@ -205,12 +234,18 @@ return this;›
                 }
             }
         }
+        
+
         method values {
             self.iterator
         }
+        
+
         method keys {
             self.indices.iterator
         }
+        
+
         method keysAndValuesDo(block2) {
             def curSize = size
             var i := 1
@@ -219,17 +254,19 @@ return this;›
                 i := i + 1
             }
         }
-        method expandTo(newSize) is confidential {
-            def newInner = _prelude.PrimitiveArray.new(newSize)
-            for (0..(size-1)) do {i->
-                newInner.at(i)put(inner.at(i))
-            }
-            inner := newInner
-        }
+
         method sortBy(sortBlock:Block2) {
-            inner.sortInitial(size) by(sortBlock)
+            native "js" code ‹var compareFun = function compareFun(a, b) {
+                      var res = callmethod(var_sortBlock, "apply", [2], a, b);
+                      if (res.className == "number") return res._value;
+                      throw new GraceExceptionPacket(TypeErrorObject,
+                             new GraceString("sort block in list.sortBy method did not return a number"));
+                  }
+                  this.data.jsArray.sort(compareFun);›
             self
         }
+        
+
         method sort {
             sortBy { l, r ->
                 if (l == r) then {0} 
@@ -248,12 +285,3 @@ return this;›
         }
     }
 }
-
-
-
-def lst = list.with(2, 3, 5, 7)
-print "lst[1] = {lst.at(1)}"
-print "lst[2] = {lst.at(2)}"
-print "lst[3] = {lst.at(3)}"
-print "lst[4] = {lst.at(4)}"
-
