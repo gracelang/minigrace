@@ -305,9 +305,9 @@ GraceString.prototype = {
         "compare": function string_compare (argcv, that) {
             var self = this._value;
             var other = that._value;
-            if (self === other) return GraceNum(0)
-            if (self > other) return GraceNum(+1);
-            return GraceNum(-1);
+            if (self === other) return new GraceNum(0)
+            if (self > other) return new GraceNum(+1);
+            return new GraceNum(-1);
         },
         ">": function string_greaterThan (argcv, that) {
             var self = this._value;
