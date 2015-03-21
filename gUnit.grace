@@ -329,7 +329,14 @@ def testSuite is readable = object {
             }
             
             method iterator { tests.iterator }
-            method do { tests.do }
+            method do (aBlock) { tests.do (aBlock) }
+            method addAll(anotherSuite) {
+                anotherSuite.do { each -> self.add(each) }
+                self
+            }
+            method ++ (anotherSuite) {
+                outer.withAll(tests).addAll(anotherSuite)
+            }
         }
     }
     
