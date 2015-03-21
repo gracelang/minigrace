@@ -5,11 +5,16 @@ def list = natList.list
 
 class listTest.forMethod(m) {
     inherits gU.testCaseNamed(m)
+    
+    var oneToFive
+    var evens
+    var empty
 
-    def oneToFive = list.with(1, 2, 3, 4, 5)
-    def evens = list.with(2, 4, 6, 8)
-    def empty = list.empty
-
+    method setup {
+        oneToFive := list.with(1, 2, 3, 4, 5)
+        evens := list.with(2, 4, 6, 8)
+        empty := list.empty
+    }
 
     method testListSize {
         assert(oneToFive.size) shouldBe 5
@@ -195,7 +200,46 @@ class listTest.forMethod(m) {
         evens.push(20)
         assert (evens) shouldBe (list.with(2, 4, 6, 8, 10, 12, 14, 16, 18, 20))
     }
+
+    method testListReversedOneToFive {
+        def ofr = oneToFive.reversed
+        assert (ofr) shouldBe (list.with(5, 4, 3, 2, 1))
+        assert (oneToFive) shouldBe (list.with(1, 2, 3, 4, 5))
+    }
     
+    method testListReversedEvens {
+        def er = evens.reversed
+        assert (er) shouldBe (list.with(8, 6, 4, 2))
+        assert (evens) shouldBe (list.with(2, 4, 6, 8))
+        assert (er.reversed) shouldBe (evens)
+    }
+    
+    method testListReversedEmpty {
+        assert (empty.reversed) shouldBe (empty)
+    }
+    
+    method testListReverseOneToFive {
+        def ofr = oneToFive.reverse
+        assert (prelude.identical(ofr, oneToFive)) description "reverse does not return self"
+        assert (ofr) shouldBe (list.with(5, 4, 3, 2, 1))
+        assert (oneToFive) shouldBe (list.with(5, 4, 3, 2, 1))
+        oneToFive.reverse
+        assert (oneToFive) shouldBe (list.with(1, 2, 3, 4, 5))
+    }
+    
+    method testListReverseEvens {
+        def er = evens.reverse
+        assert (prelude.identical(er, evens)) description "reverse does not return self"
+        assert (er) shouldBe (list.with(8, 6, 4, 2))
+        assert (evens) shouldBe (list.with(8, 6, 4, 2))
+        assert (er.reversed) shouldBe (list.with(2, 4, 6, 8))
+    }
+    
+    method testListReverseEmpty {
+        def er = empty.reverse
+        assert (empty.reverse.size) shouldBe 0
+    }
+
     method testListConcatWithEmpty {
         assert(empty ++ oneToFive)shouldBe(oneToFive)        
         assert(oneToFive ++ empty)shouldBe(oneToFive)
@@ -389,7 +433,10 @@ def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 listTests.runAndPrintResults
 
 def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
-typeTests.debugAndPrintResults
+typeTests.runAndPrintResults
+
+def allTests = listTests ++ typeTests
+allTests.runAndPrintResults
 
 //listTest.forMethod("testMapAndFilter").debugAndPrintResults
 

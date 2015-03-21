@@ -55,7 +55,6 @@ factory method list<T> {
                         callmethod(BoundsError, "raise", [1], new GraceString(msg));
                     }
                     return this.data.jsArray[ix - 1];›
-            boundsCheck(n)
         }
         
 
@@ -163,7 +162,24 @@ factory method list<T> {
         
 
         method pop { removeLast }
-        
+
+        method reversed {
+            def result = list.empty
+            do { each -> result.addFirst(each) }
+            result
+        }
+        method reverse {
+            var hiIx := size
+            var loIx := 1
+            while {loIx < hiIx} do {
+                def hiVal = self.at(hiIx)
+                self.at(hiIx) put (self.at(loIx))
+                self.at(loIx) put (hiVal)
+                hiIx := hiIx - 1
+                loIx := loIx + 1
+            }
+            self
+        }
 
         method ++(o) {
             def l = list.withAll(self)
