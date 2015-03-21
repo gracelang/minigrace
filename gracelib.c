@@ -4880,6 +4880,18 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
     return ret;
 }
+Object prelude_identical(Object self, int argc, int *argcv, Object *argv,
+                      int flags) {
+    return alloc_Boolean(argv[0] == argv[1]);
+}
+Object prelude_different(Object self, int argc, int *argcv, Object *argv,
+                      int flags) {
+    return alloc_Boolean(argv[0] != argv[1]);
+}
+Object prelude_engine(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return alloc_String("c");
+}
 Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
                      int flags) {
     return alloc_Boolean(1);
@@ -4893,7 +4905,7 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 27, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 30, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -4919,6 +4931,9 @@ Object grace_prelude() {
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
+    add_Method(c, "identical", &prelude_identical);
+    add_Method(c, "different", &prelude_different);
+    add_Method(c, "engine", &prelude_engine);
     add_Method(c, "true()object", &prelude_true_object);
     add_Method(c, "false()object", &prelude_false_object);
     _prelude = alloc_userobj2(0, 0, c);

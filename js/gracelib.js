@@ -2783,6 +2783,10 @@ PrimitiveArrayClass.methods['new'] = function(argcv, n) {
 Grace_prelude.methods['PrimitiveArray'] = function() { return PrimitiveArrayClass; };
 Grace_prelude.methods['primitiveArray'] = function() { return PrimitiveArrayClass; };
 
+Grace_prelude.methods['engine'] = function prelude_engine(argcv) {
+    return new GraceString("js");
+};
+
 //
 //  Access methods declared in Grace's standard prelude
 //
