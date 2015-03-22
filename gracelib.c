@@ -861,7 +861,7 @@ Object alloc_ExceptionPacket(Object msg, Object exception) {
         add_Method(ExceptionPacket, "lineNumber", &ExceptionPacket_lineNumber);
         add_Method(ExceptionPacket, "moduleName", &ExceptionPacket_moduleName);
         add_Method(ExceptionPacket, "data", &ExceptionPacket_data);
-        add_Method(ExceptionPacket, "asDebugString", &Object_asString);
+        add_Method(ExceptionPacket, "asDebugString", &Object_asDebugString);
         add_Method(ExceptionPacket, "backtrace", &ExceptionPacket_backtrace);
         add_Method(ExceptionPacket, "printBacktrace",
                 &ExceptionPacket_printBacktrace);
@@ -959,7 +959,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(Exception, "==", &Object_Equals);
         add_Method(Exception, "!=", &Object_NotEquals);
         add_Method(Exception, "asString", &Exception_asString);
-        add_Method(Exception, "asDebugString", &Object_asString);
+        add_Method(Exception, "asDebugString", &Object_asDebugString);
         add_Method(Exception, "::", &Object_bind);
         add_Method(Exception, "|", &literal_or);
         add_Method(Exception, "&", &literal_and);
@@ -1609,6 +1609,42 @@ Object ConcatString_Equals(Object self, int nparts, int *argcv,
     char *b = grcstring(args[0]);
     return alloc_Boolean(strcmp(a,b) == 0);
 }
+int String_Compare_int(Object self, Object other) {
+    if (self == other)
+        return 0;
+    char *a = grcstring(self);
+    if (other->class != String && other->class != ConcatString)
+        graceRaise(TypeErrorObject, "Argument to \"%s\".compare is not a string", a);
+    char *b = grcstring(other);
+    return strcmp(a,b);
+}
+Object String_Compare(Object self, int nparts, int *argcv,
+                          Object *args, int flags) {
+    int res = String_Compare_int(self, args[0]);
+    if (res < 0) return alloc_Float64(-1);
+    if (res > 0) return alloc_Float64(1);
+    return alloc_Float64(0);
+}
+Object String_Less(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    int cmp = String_Compare_int(self, args[0]);
+    return alloc_Boolean(cmp < 0);
+}
+Object String_LessOrEqual(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    int cmp = String_Compare_int(self, args[0]);
+    return alloc_Boolean(cmp <= 0);
+}
+Object String_Greater(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    int cmp = String_Compare_int(self, args[0]);
+    return alloc_Boolean(cmp > 0);
+}
+Object String_GreaterOrEqual(Object self, int nparts, int *argcv,
+                          Object *args, int flags) {
+    int cmp = String_Compare_int(self, args[0]);
+    return alloc_Boolean(cmp >= 0);
+}
 Object ConcatString__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = grcstring(self);
@@ -1733,7 +1769,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 27,
+        ConcatString = alloc_class3("ConcatString", 34,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1744,21 +1780,28 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "==", &ConcatString_Equals);
+        add_Method(ConcatString, ">", &String_Greater);
+        add_Method(ConcatString, ">=", &String_GreaterOrEqual);
+        add_Method(ConcatString, "≥", &String_GreaterOrEqual);
+        add_Method(ConcatString, "<", &String_Less);
+        add_Method(ConcatString, "<=", &String_LessOrEqual);
+        add_Method(ConcatString, "≤", &String_LessOrEqual);
         add_Method(ConcatString, "!=", &Object_NotEquals);
+        add_Method(ConcatString, "compare", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
+        add_Method(ConcatString, "iterator", &ConcatString_iter);
+        add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "encode", &String_encode);
-        add_Method(ConcatString, "substringFrom()to",
-                &ConcatString_substringFrom_to);
+        add_Method(ConcatString, "substringFrom()to", &ConcatString_substringFrom_to);
         add_Method(ConcatString, "startsWith", &String_startsWith);
         add_Method(ConcatString, "replace()with", &String_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
-        add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "asNumber", &String_asNumber);
         add_Method(ConcatString, "match", &literal_match);
         add_Method(ConcatString, "|", &literal_or);
@@ -1822,6 +1865,14 @@ Object String_at(Object self, int nparts, int *argcv,
     }
     getutf8char(ptr, buf);
     return alloc_String(buf);
+}
+Object String_first(Object self, int nparts, int *argcv,
+                    Object *args, int flags) {
+    gc_pause();
+    Object newargs[] = { alloc_Float64(1) };
+    Object result = String_at(self, nparts, argcv, newargs, flags);
+    gc_unpause();
+    return result;
 }
 Object String_ord(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1934,20 +1985,27 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 25);
+        String = alloc_class("String", 34);
         add_Method(String, "asString", &identity_function);
-        add_Method(String, "asDebugString", &String_QuotedString
-                   );
+        add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
         add_Method(String, "++", &String_concat);
+        add_Method(String, "size", &String_size);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_at);
         add_Method(String, "==", &String_Equals);
+        add_Method(String, ">", &String_Greater);
+        add_Method(String, ">=", &String_GreaterOrEqual);
+        add_Method(String, "≥", &String_GreaterOrEqual);
+        add_Method(String, "<", &String_Less);
+        add_Method(String, "<=", &String_LessOrEqual);
+        add_Method(String, "≤", &String_LessOrEqual);
         add_Method(String, "!=", &Object_NotEquals);
+        add_Method(String, "compare", &String_Compare);
+        add_Method(String, "first", &String_first);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
-        add_Method(String, "size", &String_size);
         add_Method(String, "iter", &String_iter);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
@@ -3200,10 +3258,11 @@ Object module_imports_init() {
 Object alloc_done() {
     if (done != NULL)
         return done;
-    Done = alloc_class("done", 5);
+    Done = alloc_class("done", 6);
     add_Method(Done, "==", &Object_Equals);
     add_Method(Done, "!=", &Object_NotEquals);
-    add_Method(Done, "asDebugString", &Singleton_asString);
+    add_Method(Done, "≠", &Object_NotEquals);
+    add_Method(Done, "asDebugString", &Object_asDebugString);
     add_Method(Done, "asString", &Singleton_asString);
     add_Method(Done, "::", &Object_bind);
     Object o = alloc_obj(0, Done);
@@ -3228,12 +3287,14 @@ Object alloc_ObjectType() {
 Object alloc_ellipsis() {
     if (ellipsis != NULL)
         return ellipsis;
-    ellipsisClass = alloc_class("ellipsis", 5);
+    ellipsisClass = alloc_class("ellipsis", 7);
     add_Method(ellipsisClass, "asString", &Object_asString);
+    add_Method(ellipsisClass, "asDebugString", &Object_asDebugString);
     add_Method(ellipsisClass, "::", &Object_bind);
     add_Method(ellipsisClass, "++", &Object_concat);
     add_Method(ellipsisClass, "==", &Object_Equals);
     add_Method(ellipsisClass, "!=", &Object_NotEquals);
+    add_Method(ellipsisClass, "≠", &Object_NotEquals);
     Object o = alloc_obj(0, ellipsisClass);
     gc_root(o);
     ellipsis = o;
@@ -4208,7 +4269,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "applyIndirectly", &Block_applyIndirectly);
     add_Method(c, "match", &Block_match);
     add_Method(c, "asString", &Object_asString);
-    add_Method(c, "asDebugString", &Object_asString);
+    add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
@@ -4315,7 +4376,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
         addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "≠", &Object_NotEquals);
-        addmethod2(GraceDefaultObject, "asDebugString", &Object_asString);
+        addmethod2(GraceDefaultObject, "asDebugString", &Object_asDebugString);
         addmethod2(GraceDefaultObject, "basicAsString", &Object_asString);
         addmethod2(GraceDefaultObject, "::", &Object_bind);
     }
@@ -4880,6 +4941,18 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
     return ret;
 }
+Object prelude_identical(Object self, int argc, int *argcv, Object *argv,
+                      int flags) {
+    return alloc_Boolean(argv[0] == argv[1]);
+}
+Object prelude_different(Object self, int argc, int *argcv, Object *argv,
+                      int flags) {
+    return alloc_Boolean(argv[0] != argv[1]);
+}
+Object prelude_engine(Object self, int argc, int *argcv, Object *argv,
+                            int flags) {
+    return alloc_String("c");
+}
 Object prelude_true_object(Object self, int argc, int *argcv, Object *argv,
                      int flags) {
     return alloc_Boolean(1);
@@ -4893,8 +4966,9 @@ Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
-    ClassData c = alloc_class2("NativePrelude", 27, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("NativePrelude", 31, (void*)&UserObj__mark);
     add_Method(c, "asString", &Object_asString);
+    add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
     add_Method(c, "==", &Object_Equals);
@@ -4919,6 +4993,9 @@ Object grace_prelude() {
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
+    add_Method(c, "identical", &prelude_identical);
+    add_Method(c, "different", &prelude_different);
+    add_Method(c, "engine", &prelude_engine);
     add_Method(c, "true()object", &prelude_true_object);
     add_Method(c, "false()object", &prelude_false_object);
     _prelude = alloc_userobj2(0, 0, c);

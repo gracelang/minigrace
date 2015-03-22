@@ -174,7 +174,6 @@ method parseargs {
             }
         }
     }
-    def b = outfilev == io.output
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
             case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
@@ -374,9 +373,6 @@ method noexec {
 }
 method target {
     targetv
-}
-method engine {
-    "native"
 }
 method extensions {
     extensionsv

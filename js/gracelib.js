@@ -305,9 +305,9 @@ GraceString.prototype = {
         "compare": function string_compare (argcv, that) {
             var self = this._value;
             var other = that._value;
-            if (self === other) return GraceNum(0)
-            if (self > other) return GraceNum(+1);
-            return GraceNum(-1);
+            if (self === other) return new GraceNum(0)
+            if (self > other) return new GraceNum(+1);
+            return new GraceNum(-1);
         },
         ">": function string_greaterThan (argcv, that) {
             var self = this._value;
@@ -1449,7 +1449,9 @@ function gracecode_io() {
                 gctCache[gctpath] = "";
             else if (mode._value == "r") {
                 if (typeof gctCache[gctpath] == "undefined")
-                    throw new GraceExceptionPacket(EnvironmentExceptionObject, new GraceString("Can't open file " + gctpath + ".gct for 'r'.  File does not exist."))
+                    throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                           new GraceString("Can't open file " + gctpath +
+                                           ".gct for 'r'.  File does not exist."))
                 else {
                     o._lines = gctCache[gctpath].split("\n");
                     o._index = 0;
@@ -1748,9 +1750,6 @@ function gracecode_util() {
         minigrace.stdout_write(s._value + "\n");
         return GraceDone;
     };
-    this.methods.engine = function util_engine(argcv) {
-        return new GraceString("js");
-    };
     var obj_requiredModules = Grace_allocObject();
     var obj_init_requiredModules = function () {
         var origSuperDepth = superDepth;
@@ -2041,7 +2040,7 @@ function gracecode_util() {
 }
 
 if (typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n engine\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
 function gracecode_interactive() {
@@ -2782,6 +2781,10 @@ PrimitiveArrayClass.methods['new'] = function(argcv, n) {
 
 Grace_prelude.methods['PrimitiveArray'] = function() { return PrimitiveArrayClass; };
 Grace_prelude.methods['primitiveArray'] = function() { return PrimitiveArrayClass; };
+
+Grace_prelude.methods['engine'] = function prelude_engine(argcv) {
+    return new GraceString("js");
+};
 
 //
 //  Access methods declared in Grace's standard prelude

@@ -3,9 +3,9 @@ types
 binding
 6 run, 0 failed, 0 errors
 sequence
-39 run, 0 failed, 0 errors
+42 run, 0 failed, 0 errors
 list
-64 run, 0 failed, 0 errors
+70 run, 0 failed, 0 errors
 range
 41 run, 0 failed, 0 errors
 set

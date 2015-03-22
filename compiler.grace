@@ -39,11 +39,13 @@ var tokens := lexer.Lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
-        print(v.kind ++ ": " ++ v.value)
         if (util.verbosity > 30) then {
-            print("  [line: {v.line} position: {v.linePos} indent: {v.indent}]")
+            util.outprint "{v.kind}: {v.value}  [pos: {v.line}.{v.linePos} size: {v.size} indent: {v.indent}]"
+        } else {
+            util.outprint "{v.kind}: {v.value}"
         }
     }
+    util.outfile.close
     sys.exit(0)
 }
 
@@ -74,14 +76,16 @@ if (util.extensions.contains("ClassWrap")) then {
 if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
     for (values) do { v ->
-        print(v.pretty(0))
+        util.outprint(v.pretty(0))
     }
+    util.outfile.close
     sys.exit(0)
 }
 if (util.target == "grace") then {
     for (values) do { v ->
-        print(v.toGrace(0))
+        util.outprint(v.toGrace(0))
     }
+    util.outfile.close
     sys.exit(0)
 }
 if (util.target == "c") then {
@@ -108,19 +112,21 @@ if (util.target == "imports") then {
         v.accept(vis)
     }
     for (imps) do {im->
-        print(im)
+        util.outprint(im)
     }
+    util.outfile.close
     sys.exit(0)
 }
 values := identifierresolution.resolve(values)
 if (util.target == "processed-ast") then {
-    print "====================================="
-    print "module-level symbol table"
-    print (values.first.parent.symbolTable.asStringWithParents)
-    print "====================================="
+    util.outprint "====================================="
+    util.outprint "module-level symbol table"
+    util.outprint (values.first.parent.symbolTable.asStringWithParents)
+    util.outprint "====================================="
     for (values) do { v ->
-        print(v.pretty(0))
+        util.outprint(v.pretty(0))
     }
+    util.outfile.close
     sys.exit(0)
 }
 

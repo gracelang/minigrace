@@ -24,6 +24,8 @@ def LexerClass = object {
         var linePosition := 0
         var startPosition := 1
         var indentLevel := 0
+        var startLine := 1
+        var stringStart
 
         class Token.new() {
             def line = lineNumber
@@ -34,7 +36,7 @@ def LexerClass = object {
             var prev := false
 
             method ==(other) {
-                if(other == false) then {
+                if (other == false) then {
                     false
                 } else {
                     (other.line == line) && (other.linePos == linePos)
@@ -52,7 +54,17 @@ def LexerClass = object {
             inherits Token.new
             def kind = "string"
             def value = s
+            def size = linePosition - stringStart + 1
+        }
+        class MultiLineStringToken.new(s) {
+            inherits Token.new
+            def kind = "string"
+            def value = s
             def size = s.size + 2
+            def line' = startLine
+            def linePos' = stringStart
+            method line is override { line' }
+            method linePos is override { linePos' }
         }
         class CommentToken.new(s) {
             inherits Token.new
@@ -171,7 +183,7 @@ def LexerClass = object {
             // accumulated characters since that mode began. Modes are:
 
             //   n           Whitespace       i   Identifier
-            //   "           Quoted string
+            //   "           Quoted string    q   extended string
             //   m           Number           o   Any operator
             //   p           Pragma           d   Indentation
             //   c           Comment
@@ -204,6 +216,10 @@ def LexerClass = object {
                         isDone := true
                     } elseif (mode == "\"") then {
                         tok := StringToken.new(accum)
+                        tokens.push(tok)
+                        isDone := true
+                    } elseif (mode == "q") then {
+                        tok := MultiLineStringToken.new(accum)
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "x") then {
@@ -332,7 +348,7 @@ def LexerClass = object {
                         tokens.push(tok)
                         isDone := true
                     } elseif (mode == "d") then {
-                        indentLevel := linePosition - 1//accum.size
+                        indentLevel := linePosition - 1
                         isDone := true
                     } elseif (mode == "n") then {
                         isDone := true
@@ -397,7 +413,7 @@ def LexerClass = object {
             }
                     
             method hexdecchar(c) {
-            // Return the numeric value of the single hexadecimal character c.
+            // Return the numeric value of the single hexadecimal digit c.
                 def AOrd = "A".ord
                 def aOrd = "a".ord
                 def zeroOrd = "0".ord
@@ -598,7 +614,7 @@ def LexerClass = object {
 
                 var mode := "d"
                 var newmode := mode
-                var instr := false
+                var inStr := false
                 var inBackticks := false
                 var backtickIdent := false
                 var accum := ""
@@ -613,6 +629,7 @@ def LexerClass = object {
                 linePosition := 0
                 util.log_verbose("lexing.")
                 def badSeparator = unicode.pattern("Z", 9)not(32, 160)
+                    // 32 is SPACE, and 160 NO-BREAK SPACE
                 def badControl =  unicode.pattern("C")not(10, 13)
                 def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
                     ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
@@ -627,17 +644,16 @@ def LexerClass = object {
                    "*".ord, "/".ord, "+".ord, "!".ord
                     )
                 def iGTLT = unicode.pattern("i".ord, "<".ord, ">".ord)
-                def notcp = unicode.pattern()not("c".ord, "p".ord)
                 def mainBlock = { c->
                     var ct := ""
                     var ordval := c.ord // String.ord gives the codepoint
-                    if (badSeparator.match(ordval)) then {
+                    if (badSeparator.match(ordval).andAlso { mode != "q" }) then {
                         // Character is whitespace, but not an ASCII space or
-                        // Unicode LINE SEPARATOR.  For example, a tab
+                        // Unicode NO-BREAK SPACE.  For example, a tab
                         def suggestion = errormessages.suggestion.new
                         suggestion.replaceChar(linePosition)with(" ")onLine(lineNumber)
-                        if(ordval == 9) then {
-                            if (instr) then {
+                        if (ordval == 9) then {
+                            if (inStr) then {
                                 suggestion.replaceRange(linePosition, linePosition)
                                     with("\\u{padl(ordval.inBase 16, 4, "0")}")
                                     onLine(lineNumber)
@@ -652,7 +668,7 @@ def LexerClass = object {
                             errormessages.syntaxError("Tabs are not allowed; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         } else {
-                            if (instr) then {
+                            if (mode == "\"") then {
                                 suggestion.replaceRange(linePosition, linePosition)
                                     with("\\u{padl(ordval.inBase 16, 4, "0")}")
                                     onLine(lineNumber)
@@ -670,12 +686,11 @@ def LexerClass = object {
                                 ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
                                 linePosition, linePosition)withSuggestion(suggestion)
                         }
-                    }
-                    if (badControl.match(ordval)) then {
+                    } elseif {badControl.match(ordval).andAlso { mode != "q" }} then {
                         // Character is a control character other than
                         // carriage return or line feed.
                         def suggestion = errormessages.suggestion.new
-                        if (instr) then {
+                        if (inStr) then {
                             suggestion.replaceRange(linePosition, linePosition)
                                 with("\\u{padl(ordval.inBase 16, 4, "0")}")
                                 onLine(lineNumber)
@@ -703,9 +718,9 @@ def LexerClass = object {
                             }
                         }
                     }
-                    if (instr) then {
+                    if (inStr) then {
 
-                    } elseif ((mode != "c") && (mode != "p")) then {
+                    } elseif ( (mode != "c") && (mode != "p") ) then {
                         // Not in a comment or pragma, so look for a mode.
                         if ((c == " ") && (mode != "d")) then {
                             newmode := "n"
@@ -713,13 +728,20 @@ def LexerClass = object {
                         if (c == "\"") then {
                             // Beginning of a string
                             newmode := "\""
-                            instr := true
-                        }
-                        if (identifierChar.match(ordval)) then {
+                            inStr := true
+                            stringStart := linePosition
+                        } elseif { c == "‹" } then {
+                            // Beginning of a multi-line string
+                            newmode := "q"
+                            inStr := true
+                            startLine := lineNumber
+                            stringStart := linePosition
+                        } elseif { identifierChar.match(ordval) } then {
                             newmode := "i"
                         }
-                        ct := ((ordval >= 48) && (ordval <=57))
                         if (digit.match(ordval)) then {
+                            // This may overwrite newmode := "i"
+                            // established 5 lines up
                             if (mode != "i") then {
                                 newmode := "m"
                             }
@@ -814,7 +836,7 @@ def LexerClass = object {
                             if (escaped.not) then {
                                 // End of string literal
                                 newmode := "n"
-                                instr := false
+                                inStr := false
                                 if (interpString) then {
                                     modechange(tokens, mode, accum)
                                     modechange(tokens, ")", ")")
@@ -823,6 +845,12 @@ def LexerClass = object {
                                 }
                             }
                         }
+                    } elseif {mode == "q"} then {
+                        if (c == "›") then {
+                            //end of literal
+                            newmode := "n"
+                            inStr := false
+                        }
                     }
                     if (newmode != mode) then {
                         // This character is the beginning of a different
@@ -830,7 +858,8 @@ def LexerClass = object {
                         modechange(tokens, mode, accum)
                         if (interpdepth > 0) then {
                             if (newmode == "}") then {
-                                // Find the position of the opening brace to check in the interpolation is empty.
+                                // Find the position of the opening brace to 
+                                // check if the interpolation is empty.
                                 if (util.lines.at(tokens.last.line)[tokens.last.linePos] == "\{") then {
                                     def suggestion = errormessages.suggestion.new
                                     suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
@@ -840,12 +869,12 @@ def LexerClass = object {
                                 modechange(tokens, ")", ")")
                                 modechange(tokens, "o", "++")
                                 newmode := "\""
-                                instr := true
+                                inStr := true
                                 interpdepth := interpdepth - 1
                             }
                         }
                         mode := newmode
-                        if (instr) then {
+                        if (inStr) then {
                             // String accum should skip the opening quote, but
                             // other modes' should include their first
                             // character.
@@ -859,7 +888,7 @@ def LexerClass = object {
                             newmode := "n"
                             accum := ""
                         }
-                    } elseif (instr) then {
+                    } elseif (mode == "\"") then {
                         if (c == "\n") then {
                             if (interpdepth > 0) then {
                                 // Find closest {.
@@ -994,19 +1023,23 @@ def LexerClass = object {
                             mode := "n"
                             newmode := "n"
                             accum := ""
-                            instr := false
+                            inStr:= false
                             interpdepth := interpdepth + 1
                         } else {
                             accum := accum ++ c
                         }
                     } elseif ((c == "\n") || (c == "\r") || (c == "\l")) then {
-                        // Linebreaks terminate any open tokens
                         newlineFound := true
-                        modechange(tokens, mode, accum)
-                        mode := "d"
-                        newmode := "d"
-                        accum := ""
-
+                        if (mode == "q") then {
+                            accum := accum ++ c
+                        } else {
+                            // Linebreaks terminate any open tokens
+                            newlineFound := true
+                            modechange(tokens, mode, accum)
+                            mode := "d"
+                            newmode := "d"
+                            accum := ""
+                        }
                     } else {
                         accum := accum ++ c
                     }
@@ -1044,15 +1077,15 @@ def LexerClass = object {
                     prev := c
                 }
                 linePosition := linePosition + 1
-                if (instr) then {
+                if (inStr) then {
                     if (mode == "\"") then {
                         def suggestion = errormessages.suggestion.new
                         suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
                         errormessages.syntaxError("A string must end with a '\"'.")atPosition(
                             lineNumber, linePosition)withSuggestion(suggestion)
-                    }
-                    if (mode == "x") then {
-                        errormessages.syntaxError("Unfinished octets literal, expected '\"'.")atPosition(lineNumber, linePosition)
+                    } elseif {mode == "q"} then {
+                        errormessages.syntaxError("A multi-line string must end with a '›'.\nString opened on line {startLine} and unclosed at end of input.")
+                            atRange(startLine, stringStart, util.lines.at(startLine).size)
                     }
                 }
                 modechange(tokens, mode, accum)

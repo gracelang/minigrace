@@ -441,6 +441,19 @@ def sequenceTest = object {
             }
             assert(accum) shouldBe (dictionary.with(1::2, 2::4, 3::6, 4::8))
         }
+        
+        method testSequenceReversedOneToFive {
+            assert (oneToFive.reversed) shouldBe (sequence.with(5, 4, 3, 2, 1))
+        }
+        
+        method testSequenceReversedEvens {
+            assert (evens.reversed) shouldBe (sequence.with(8, 6, 4, 2))
+            assert (evens.reversed.reversed) shouldBe (evens)
+        }
+        
+        method testSequenceReversedEmpty {
+            assert (empty.reversed) shouldBe (empty)
+        }
 
         method testSequenceAsStringNonEmpty {
             assert (evens.asString) shouldBe ("⟨2,4,6,8⟩")
@@ -739,6 +752,45 @@ def listTest = object {
             assert (evens) shouldBe (list.with(2, 4, 6, 8, 10, 12, 14, 16, 18, 20))
         }
         
+        method testListReversedOneToFive {
+            def ofr = oneToFive.reversed
+            assert (ofr) shouldBe (list.with(5, 4, 3, 2, 1))
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4, 5))
+        }
+        
+        method testListReversedEvens {
+            def er = evens.reversed
+            assert (er) shouldBe (list.with(8, 6, 4, 2))
+            assert (evens) shouldBe (list.with(2, 4, 6, 8))
+            assert (er.reversed) shouldBe (evens)
+        }
+        
+        method testListReversedEmpty {
+            assert (empty.reversed) shouldBe (empty)
+        }
+        
+        method testListReverseOneToFive {
+            def ofr = oneToFive.reverse
+            assert (identical(ofr, oneToFive)) description "reverse does not return self"
+            assert (ofr) shouldBe (list.with(5, 4, 3, 2, 1))
+            assert (oneToFive) shouldBe (list.with(5, 4, 3, 2, 1))
+            oneToFive.reverse
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4, 5))
+        }
+        
+        method testListReverseEvens {
+            def er = evens.reverse
+            assert (identical(er, evens)) description "reverse does not return self"
+            assert (er) shouldBe (list.with(8, 6, 4, 2))
+            assert (evens) shouldBe (list.with(8, 6, 4, 2))
+            assert (er.reversed) shouldBe (list.with(2, 4, 6, 8))
+        }
+        
+        method testListReverseEmpty {
+            def er = empty.reverse
+            assert (empty.reverse.size) shouldBe 0
+        }
+
         method testListConcatWithEmpty {
             assert(empty ++ oneToFive)shouldBe(oneToFive)        
             assert(oneToFive ++ empty)shouldBe(oneToFive)
