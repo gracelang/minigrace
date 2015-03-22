@@ -9,7 +9,7 @@ class stringTest.forMethod(m) {
     
     method test_identity {
         def s = "abcd" ++ "ef"
-        assert (prelude.identical(s, s)) description "identical strings are not!"
+        assert (identical(s, s)) description "identical strings are not!"
     }
     
     method test_different {

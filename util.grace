@@ -374,9 +374,6 @@ method noexec {
 method target {
     targetv
 }
-method engine {
-    "native"
-}
 method extensions {
     extensionsv
 }
