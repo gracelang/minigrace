@@ -805,6 +805,7 @@ method setupContext(values) {
     preludeScope.addName "++"
     preludeScope.addName "=="
     preludeScope.addName "!="
+    preludeScope.addName "≠"
     preludeScope.addName "for()do"
     preludeScope.addName "while()do"
     preludeScope.addName "print"
@@ -826,6 +827,9 @@ method setupContext(values) {
     preludeScope.addName "unbecome"
     preludeScope.addName "clone"
     preludeScope.addName "inBrowser"
+    preludeScope.addName "identical"
+    preludeScope.addName "different"
+    preludeScope.addName "engine"
 
     graceObjectScope.addName "=="
     graceObjectScope.addName "!="
