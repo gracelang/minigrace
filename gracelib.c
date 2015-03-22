@@ -4833,36 +4833,43 @@ Object prelude__methods(Object self, int argc, int *argcv,
     return l;
 }
 Object minigrace_obj;
+Object minigrace_credits(Object self, int argc, int *argcv,
+                         Object *argv, int flags) {
+    char *w =
+    "Minigrace contains code written by the following people:\n"
+    " * Michael Homer\n"
+    " * Andrew P. Black\n"
+    " * Daniel Gibbs\n"
+    " * Timothy Jones\n"
+    " * Jan Larres\n"
+    " * Jameson McCowan\n"
+    " * Scott Weston\n"
+    " * Timothy Jones\n"
+    " * Kim Bruce\n"
+    " * Ryan Niebur\n"
+    " * Uro Boros\n"
+    " * Alex Sandilands";
+    fprintf(stdout, "%s", w);
+    return done;
+}
 Object minigrace_warranty(Object self, int argc, int *argcv,
         Object *argv, int flags) {
     char *w =
-    "Copyright (C) 2011-2014 Michael Homer and authors\n"
+    "Copyright © 2011-2015 rests with the authors.\n\n"
     "This program is free software: you can redistribute it and/or modify\n"
     "it under the terms of the GNU General Public License as published by\n"
     "the Free Software Foundation, either version 3 of the License, or\n"
     "(at your option) any later version.\n"
     "\n"
     "This program is distributed in the hope that it will be useful,\n"
-    "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+    "but without any warranty --- without even the implied warranty of\n"
+    "merchantability or fitness for a particular purpose.  See the\n"
     "GNU General Public License for more details.\n"
     "\n"
     "You should have received a copy of the GNU General Public License\n"
-    "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n";
+    "along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\n";
     fprintf(stdout, "%s", w);
-    return done;
-}
-Object minigrace_credits(Object self, int argc, int *argcv,
-        Object *argv, int flags) {
-    char *w =
-    "Minigrace contains code by:\n"
-    " * Michael Homer\n"
-    " * Timothy Jones\n"
-    " * Daniel Gibbs\n"
-    " * Jan Larres\n"
-    " * Scott Weston\n"
-    "Further information may be found in doc/authors in the source code.\n";
-    fprintf(stdout, "%s", w);
+    minigrace_credits(self, argc, argcv, argv, flags);
     return done;
 }
 Object grace_minigrace(Object self, int argc, int *argcv,
