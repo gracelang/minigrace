@@ -21,12 +21,12 @@ then
     echo Will fetch tarball from $url...
     if wget --version >/dev/null 2>&1
     then
-        wget "$url" || die "Error fetching file. Download manually and re-run script."
+        wget "$url" || die "Error fetching file. Download tarball manually and re-run this script with the tarball as argument."
     elif curl --version >/dev/null 2>&1
     then
-        curl -L -O "$url" || die "Error fetching file. Download manually and re-run script."
+        curl -L -O "$url" || die "Error fetching file. Download tarball manually and re-run this script with the tarball as argument."
     else
-        die "Neither wget nor curl were found. Unable to retrieve file automatically. Download manually and re-run script."
+        die "Neither wget nor curl were found. Unable to retrieve file automatically. Download tarball manually and re-run this script with the tarball as argument."
     fi
     echo "Download complete. Will compile now..."
     "$0" "minigrace-$ver.tar.bz2" || die "Failed to build. See above for details."
@@ -39,11 +39,11 @@ then
     echo "Usage: $0 TARBALL"
     echo "Compiles TARBALL and installs it as known-good bootstrap version."
     echo
-    echo "Download the tarball of a past bootstrap version and pass it to"
+    echo "Download the tarball of a past bootstrap version. Then pass it to"
     echo "this script as TARBALL to install it for bootstrapping. Afterwards"
     echo "\`make\` will build the latest version from the source repository."
     echo
-    echo "You can also run \`$0 -a\` to download and install automatically."
+    echo "\`$0 -a\` to download tarball and install automatically."
     echo
     cd "$(git rev-parse --show-toplevel)"
     rev=$(awk -F= '/STABLE=/ { print $2 }' Makefile)
@@ -54,13 +54,13 @@ then
     then
         echo "The newest bootstrap tarball could not be calculated on your"
         echo "system, but a working tarball should be available from:"
-        echo "   http://ecs.vuw.ac.nz/~mwh/minigrace/dist/minigrace-0.0.7.1033.tar.bz2"
+        echo "   http://www.cs.pdx.edu/~grace/minigrace/dist/minigrace-.xxxx.tar.bz2"
         exit 0
     fi
     echo "The tarball for the newest bootstrapping version should be called:"
     echo "   minigrace-$ver.$gen.tar.bz2"
     echo "and should be available from:"
-    echo "   http://ecs.vuw.ac.nz/~mwh/minigrace/dist/minigrace-$ver.$gen.tar.bz2"
+    echo "   http://www.cs.pdx.edu/~grace/minigrace/dist/minigrace-$ver.$gen.tar.bz2"
     exit 0
 fi
 
