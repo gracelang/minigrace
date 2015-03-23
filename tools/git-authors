@@ -1,0 +1,12 @@
+#! /bin/bash
+if [ -e .git ]
+then
+    git log --format='%aN' | \
+        sed -e 's/jamesonmccowan/Jameson McCowan/' \
+            -e 's/Jameson L McCowan/Jameson McCowan/' |\
+        awk '{arr[$0]++} END{for (i in arr){print arr[i], i;}}' |\
+        sort -rn |\
+        sed -e 's/[0-9]*/ */' ;
+else 
+	echo "unknown"
+fi

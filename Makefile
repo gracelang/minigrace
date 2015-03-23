@@ -49,7 +49,11 @@ buildinfo.grace:
 	@echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo_tmp.grace
 	@echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo_tmp.grace
 	@echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo_tmp.grace
-	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; then mv buildinfo_tmp.grace buildinfo.grace ; echo "buildinfo rebuilt." ; else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ; fi
+	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace
+	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; \
+	  then mv buildinfo_tmp.grace buildinfo.grace ; echo "buildinfo rebuilt." ;\
+	  else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ;\
+	  fi
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c mirrors.gct mirrors.gso
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c mirrors.gct mirrors.gso math.c definitions.h debugger.c curl.c repl.c ;\
