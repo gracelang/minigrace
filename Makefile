@@ -23,7 +23,7 @@ PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 MGSOURCEFILES = buildinfo.grace compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
-STABLE=3351a750205e9eabde8cbf2d23c38256c10ee20c
+STABLE=cb98313ab53772c38b0f444091c3f2a4acf35835
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(JSSOURCEFILES)
 
 all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
