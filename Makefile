@@ -3,7 +3,7 @@ include Makefile.conf
 # The dependencises for l2 and . allow parallel compilation of the mg sub-modules
 include Makefile.mgDependencies
 
-.PHONY: all c clean dialects fullclean install js minigrace-environment selfhost-stats selftest samples sample-% test test.js uninstall
+.PHONY: all buildinfo.grace c clean dialects fullclean install js minigrace-environment selfhost-stats selftest samples sample-% test test.js uninstall
 ARCH:=$(shell uname -s)-$(shell uname -m)
 C_MODULES = $(UNICODE_MODULE) $(OTHER_MODULES)
 DYNAMIC_STUBS = mirrors.grace
@@ -43,14 +43,13 @@ bruceWeb: js samples ace-code
 	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
 
 buildinfo.grace:
-	@echo "Checking buildinfo."
 	@echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo_tmp.grace
 	@echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo_tmp.grace
 	@echo "method prefix { \"$(PREFIX)\" }" >> buildinfo_tmp.grace
 	@echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo_tmp.grace
 	@echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo_tmp.grace
 	@echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo_tmp.grace
-	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; then mv buildinfo_tmp.grace buildinfo.grace ; else rm buildinfo_tmp.grace ; fi
+	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; then mv buildinfo_tmp.grace buildinfo.grace ; echo "buildinfo rebuilt." ; else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ; fi
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
 	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace && ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace && rm -f *.gcn $(UNICODE_MODULE)
