@@ -51,8 +51,14 @@ buildinfo.grace:
 	@echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo_tmp.grace
 	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; then mv buildinfo_tmp.grace buildinfo.grace ; echo "buildinfo rebuilt." ; else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ; fi
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c math.c definitions.h debugger.c curl.c repl.c ; do cp $$f c ; done && cd c && ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace && ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace && ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace && rm -f *.gcn $(UNICODE_MODULE)
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c mirrors.gct mirrors.gso
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c mirrors.gct mirrors.gso math.c definitions.h debugger.c curl.c repl.c ;\
+    do cp $$f c ; done &&\
+    cd c &&\
+    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
+    ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace &&\
+    ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
+    rm -f *.gcn $(UNICODE_MODULE)
 
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
@@ -345,7 +351,13 @@ tarball: minigrace
 	make c
 	sed -e 's/DISTRIB=tree/DISTRIB=tarball/' < configure > c/configure
 	chmod 755 c/configure
-	VER=$$(tools/calculate-version) ; mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ; mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ; mkdir -p minigrace-$$VER/sample/dialects ; cp sample/dialects/*.grace sample/dialects/README sample/dialects/Makefile minigrace-$$VER/sample/dialects ; cp -R README doc minigrace-$$VER ; tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ; rm -rf minigrace-$$VER
+	VER=$$(tools/calculate-version) ;\
+      mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ;\
+      mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ;\
+      mkdir -p minigrace-$$VER/sample/dialects ; cp sample/dialects/*.grace sample/dialects/README sample/dialects/Makefile minigrace-$$VER/sample/dialects ;\
+      cp -R README doc minigrace-$$VER ;\
+      tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ;\
+      rm -rf minigrace-$$VER
 
 test.js.compile:
 	@echo "compiling tests to JavaScript"
