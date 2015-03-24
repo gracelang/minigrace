@@ -17,13 +17,13 @@ VERBOSITY = --verbose
 
 MINIGRACE_BUILD_SUBPROCESSES ?= 9
 
-override MAKEFLAGS := $(MAKEFLAGS) --debug=b
+# override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 MGSOURCEFILES = buildinfo.grace compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
-STABLE=cb98313ab53772c38b0f444091c3f2a4acf35835
+STABLE=50558d917022cc1c820b4617ce552e91fc7814b6
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(JSSOURCEFILES)
 
 all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
@@ -55,8 +55,8 @@ buildinfo.grace:
 	  else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ;\
 	  fi
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c math.c mirrors.gct mirrors.gso
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.c mirrors.gct mirrors.gso math.c definitions.h debugger.c curl.c repl.c ;\
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c repl.gct math.c math.gct mirrors.gct
+	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.{gso,gct} repl.{gso,gct} math.{gso,gct} definitions.h debugger.c curl.c ;\
     do cp $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
