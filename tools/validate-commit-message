@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Enforce that the commit message is correctly formatted.
 # It must:
