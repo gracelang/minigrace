@@ -134,6 +134,15 @@ fulltest: gencheck clean selftest test
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
+grace-web-editor/package.json:
+	git clone https://github.com/gracelang/grace-web-editor/
+
+grace-web-editor/scripts/minigrace.js: $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
+	cat $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) > $@
+
+grace-web-editor/scripts/setup.js: grace-web-editor/package.json $(filter-out %/minigrace.js,$(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js))) $(wildcard grace-web-editor/scripts/*/*.js)
+	cd grace-web-editor; npm install
+
 graceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
@@ -306,6 +315,9 @@ rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
 
 rtobjectdraw.gcn rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
+
+ryanWeb: js grace-web-editor/scripts/setup.js grace-web-editor/scripts/minigrace.js
+	rsync -a -l -z --delete grace-web-editor/ ~/public_html/minigrace/exp/
 
 sample-dialects: minigrace
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
