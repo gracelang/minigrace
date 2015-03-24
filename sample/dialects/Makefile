@@ -1,5 +1,5 @@
-DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
-SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
+DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc test
+SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample testExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
