@@ -2466,13 +2466,13 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    var objDesc = "";
-    if (obj.definitionLine && obj.definitionModule != "unknown")
-        objDesc = " in object at " + obj.definitionModule
-            + ":" + obj.definitionLine;
-    else if (obj.definitionModule != "unknown")
-        objDesc = " in " + obj.definitionModule + " module";
     if (typeof(meth) != "function") {
+        var objDesc = "";
+        if (obj.definitionLine && obj.definitionModule != "unknown")
+            objDesc = " in object at " + obj.definitionModule
+                + ":" + obj.definitionLine;
+        else if (obj.definitionModule != "unknown")
+            objDesc = " in " + obj.definitionModule + " module";
         callStack.push(obj.className + "." + methname
                 + " (defined nowhere"
                 + objDesc + ")"
