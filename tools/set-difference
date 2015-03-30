@@ -1,0 +1,11 @@
+#! /bin/bash
+#
+# computes $1 \ $2
+# each parameter must be a list of words, separated by spaces
+# echo \$1 = ‹$1›
+# echo \$2 = ‹$2›
+echo $1 | tr ' ' \\n > /tmp/$$set1
+echo $2 | tr ' ' \\n > /tmp/$$set2
+grep -vxF -f /tmp/$$set1 /tmp/$$set2 | tr \\n ' '
+echo
+rm -f /tmp/$$set1 /tmp/$$set2

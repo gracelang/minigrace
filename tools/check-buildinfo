@@ -1,0 +1,28 @@
+#! /bin/bash
+
+PREFIX=$1
+INCLUDE_PATH=$2
+MODULE_PATH=$3
+OBJECT_PATH=$4
+
+# Regenerate the file buildinfo.grace, but only if necessary.
+# If none of the info has changed, take case not to change the timestamp
+
+REV=$([ -e .git ] && git rev-parse HEAD || echo unknown )
+GEN=$([ -e .git ] && tools/git-calculate-generation || echo unknown )
+
+echo "method gitrevision { \"$REV\" }" > buildinfo_tmp.grace
+echo "method gitgeneration { \"$GEN\" }" >> buildinfo_tmp.grace
+echo "method prefix { \"$PREFIX\" }" >> buildinfo_tmp.grace
+echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace
+echo "method modulepath { \"$MODULE_PATH\" }" >> buildinfo_tmp.grace
+echo "method objectpath { \"$OBJECT_PATH\" }" >> buildinfo_tmp.grace
+#	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace
+
+if ! cmp -s buildinfo_tmp.grace buildinfo.grace
+then 
+    mv buildinfo_tmp.grace buildinfo.grace
+    echo "buildinfo rebuilt."
+else
+    rm buildinfo_tmp.grace ; echo "buildinfo up-to-date"
+fi

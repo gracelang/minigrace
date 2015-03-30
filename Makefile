@@ -1,18 +1,26 @@
 include Makefile.conf
-# These are necessary for l1 until the $(KG) compiler learns about dependencies
-# The dependencises for l2 and . allow parallel compilation of the mg sub-modules
-include Makefile.mgDependencies
 
-.PHONY: all buildinfo.grace c clean dialects fullclean install js minigrace-environment selfhost-stats selftest samples sample-% test test.js uninstall
-ARCH:=$(shell uname -s)-$(shell uname -m)
-C_MODULES = $(UNICODE_MODULE) $(OTHER_MODULES)
-DYNAMIC_STUBS = mirrors.grace
-EXTERNAL_STUBS = unicode.grace repl.grace math.grace
+.PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env selfhost-stats selftest samples sample-% test test.js uninstall
+
+ARCH := $(shell uname -s)-$(shell uname -m)
+C_MODULES_GSO := $(UNICODE_MODULE) $(OTHER_MODULES)
+C_MODULES_GCN := $(OTHER_MODULES:%.gso=%.gcn)
+C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
+CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
+# The next rule is here for its side effect: updating buildinfo.grace if necessary
+CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
+JS_STUBS = dom.grace
+INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
+DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
+STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
+EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace rtobjectdraw.grace objectdraw.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
-INTERNAL_STUBS = sys.grace io.grace
+MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js
 KG=known-good/$(ARCH)/$(STABLE)
+STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
+
 VERBOSITY = --verbose
 
 MINIGRACE_BUILD_SUBPROCESSES ?= 9
@@ -20,13 +28,18 @@ MINIGRACE_BUILD_SUBPROCESSES ?= 9
 # override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
-MGSOURCEFILES = buildinfo.grace compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
+REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
-STABLE=50558d917022cc1c820b4617ce552e91fc7814b6
+STABLE=b1dca49eaa379aeca5fedc79a8051500b963fa1e
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(JSSOURCEFILES)
 
-all: minigrace-environment $(C_MODULES) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
+all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
+
+# These are necessary for l1 until the $(KG) compiler learns about dependencies
+# The dependencises for l2 and . allow parallel compilation of the mg sub-modules
+
+include Makefile.mgDependencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
 
@@ -42,27 +55,17 @@ bruceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
 	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
 
-buildinfo.grace:
-	@echo "method gitrevision { \"$(shell [ -e .git ] && git rev-parse HEAD || echo unknown )\" }" > buildinfo_tmp.grace
-	@echo "method gitgeneration { \"$(shell [ -e .git ] && tools/git-calculate-generation || echo unknown )\" }" >> buildinfo_tmp.grace
-	@echo "method prefix { \"$(PREFIX)\" }" >> buildinfo_tmp.grace
-	@echo "method includepath { \"$(INCLUDE_PATH)\" }" >> buildinfo_tmp.grace
-	@echo "method modulepath { \"$(MODULE_PATH)\" }" >> buildinfo_tmp.grace
-	@echo "method objectpath { \"$(OBJECT_PATH)\" }" >> buildinfo_tmp.grace
-	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace
-	@if ! cmp -s buildinfo_tmp.grace buildinfo.grace ; \
-	  then mv buildinfo_tmp.grace buildinfo.grace ; echo "buildinfo rebuilt." ;\
-	  else rm buildinfo_tmp.grace ; echo "buildinfo up-to-date" ;\
-	  fi
-
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h Makefile c/Makefile mirrors.c definitions.h curl.c repl.c repl.gct math.c math.gct mirrors.gct
-	for f in gracelib.c gracelib.h unicode.c unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace $(UNICODE_MODULE) mirrors.{gso,gct} repl.{gso,gct} math.{gso,gct} definitions.h debugger.c curl.c ;\
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.c math.gct
+	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} repl.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
     do cp $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace &&\
     ../minigrace --target c --make $(VERBOSITY) --module minigrace --noexec compiler.grace &&\
-    rm -f *.gcn $(UNICODE_MODULE)
+    rm -f *.gcn *.gso
+
+$(C_MODULES_GCN): %.gcn: %.c gracelib.h
+	gcc -g -std=c99 -c -o $@ -fPIC $<
 
 clean:
 	rm -f gracelib.bc gracelib.o gracelib-basic.o
@@ -77,21 +80,22 @@ clean:
 	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
 	rm -f $(SOURCEFILES:.grace=.gso) minigrace.gso
 	rm -f $(SOURCEFILES:.grace=.gct) minigrace.gct
-	rm -f $(STUBS:.grace=.gct)
+	rm -f $(STUB_GCTS)
+	rm -rf *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM
 	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
 	rm -f objectdraw.* rtobjectdraw.*
-	( cd known-good && make clean )
-	( cd js ; for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
-	( cd js ; for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
+	( cd known-good && $(MAKE) clean )
+	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
+	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
 	rm -f js/minigrace.js
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
-	rm -f minigrace.gco minigrace
+	rm -f minigrace.gco minigrace *.js
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
-	cd sample/dialects && make clean
-	cd js/sample/graphics && make clean
-	cd js/sample/dialects && make clean
+	cd sample/dialects && $(MAKE)  clean
+	cd js/sample/graphics && $(MAKE) clean
+	cd js/sample/dialects && $(MAKE) clean
 
 collectionsPrelude.gcn collectionsPrelude.gct: collectionsPrelude.grace l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l2 $<
@@ -101,11 +105,25 @@ curl.gso: curl.c gracelib.h
 
 dialects: js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso
 
+$(DYNAMIC_STUBS:%.grace=l1/%.gso): l1/%.gso: %.gso l1/exists
+	@cd l1 && ln -sf ../$< .
+
+$(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso l2/exists
+	@cd l2 && ln -sf ../$< .
+
 echo:
 	@echo MINIGRACE_BUILD_SUBPROCESSES = $(MINIGRACE_BUILD_SUBPROCESSES)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo WEBFILES = $(WEBFILES)
 	@echo KG = $(KG):
+	@echo STUBS = $(STUBS)
+	@echo DYNAMIC_STUBS = $(DYNAMIC_STUBS)
+	@echo STATIC_STUBS = $(STATIC_STUBS)
+	@echo INTERNAL_STUBS = $(INTERNAL_STUBS)
+	@echo EXTERNAL_STUBS = $(EXTERNAL_STUBS)
+	@echo C_MODULES_GCN = $(C_MODULES_GCN)
+	@echo C_MODULES_GSO = $(C_MODULES_GSO)
+	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 
 fullclean: clean
 	rm -f Makefile.conf
@@ -114,7 +132,7 @@ fullclean: clean
 fulltest: gencheck clean selftest test
 
 gencheck:
-	( X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache )
+	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
 graceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
@@ -132,7 +150,7 @@ gUnit.gct gUnit.gcn: gUnit.grace StandardPrelude.gct minigrace
 install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace js/grace $(PREFIX)/bin/minigrace
-	install -m 755 $(C_MODULES) $(MODULE_PATH)
+	install -m 755 $(C_MODULES_BIN) $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
@@ -194,60 +212,60 @@ l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 
 l1/%.grace: l1/exists
 
-l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: l1/collectionsPrelude.grace $(KG)/minigrace
-	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
+l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: l1/exists l1/collectionsPrelude.grace $(KG)/minigrace
+	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
 
-l1/exists: $(C_MODULES)
-	if [ ! -e l1/exists ] ; then mkdir -p l1 && touch l1/exists ; fi
-	cd l1 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
+l1/collectionsPrelude.grace: l1/exists collectionsPrelude.grace
+	@cd l1 && ln -sf ../collectionsPrelude.grace .
+
+l1/exists: $(C_MODULES_BIN) $(STUB_GCTS)
+	@if [ ! -e l1/exists ] ; then mkdir -p l1 ; fi && touch l1/exists
+	@cd l1 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
-l1/math.gcn: math.c
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -fPIC $<
-
-l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
+l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
 	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ./ --vtag kg -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
 
-l1/mirrors.gso: mirrors.c l1/exists
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -shared -o $@ -fPIC $<
+l1/StandardPrelude.gct l1/StandardPrelude.gcn: l1/StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
+	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
 
-l1/repl.gcn: repl.c
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -fPIC $<
-
-l1/StandardPrelude.gct l1/StandardPrelude.gcn: l1/exists l1/StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace 
-	cd l1 ; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
+l1/StandardPrelude.grace: l1/exists StandardPrelude.grace
+	@cd l1 && ln -sf ../StandardPrelude.grace .
 
 l1/unicode.gcn: unicode.c unicodedata.h gracelib.h l1/exists
 	gcc -g -std=c99 -c -o $@ -fPIC $<
+    
+$(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn l1/exists
+	cd l1 && ln -sf ../$< .
 
 l2/%.gct: l2/%.grace l1/minigrace
-	(cd l2; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F))
+	(cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F))
 
-l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/collectionsPrelude.grace l1/minigrace
-	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
+l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/exists l2/collectionsPrelude.grace l1/minigrace
+	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 
-l2/exists: $(C_MODULES)
-	if [ ! -e l2/exists ] ; then mkdir -p l2 && touch l2/exists ; fi
-	cd l2 ; for f in $(SOURCEFILES) $(C_MODULES) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
+l2/exists: $(C_MODULES_BIN) $(STUB_GCTS)
+	if [ ! -e l2/exists ] ; then mkdir -p l2 ; fi && touch l2/exists
+	cd l2 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
 	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
 
-l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES:%=l1/%) l2/gracelib.o
+l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
 	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
 
-l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/exists l2/StandardPrelude.grace l2/collectionsPrelude.gct l2/mirrors.gso l1/minigrace
-	cd l2 ; ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
+l2/StandardPrelude.gct l2/StandardPrelude.gcn: l2/exists l2/StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
+	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
 
 Makefile.conf: configure
 	./configure
 
-math.gso: math.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o math.gso -shared -fPIC math.c
+$(C_MODULES_GCN:%=l2/%): l2/%.gcn: %.gcn l2/exists
+	@cd l2 && ln -sf ../$< .
 
-$(MGSOURCEFILES:%.grace=%.gcn): %.gcn  %.grace StandardPrelude.gct l2/minigrace
+$(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.grace StandardPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec --vtag l2 $<
 
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l2/minigrace
@@ -265,22 +283,20 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic --vtag l2 compiler.grace
 
-minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES) l2/gracelib.o
+minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l2/gracelib.o
 	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
 
-minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js
+minigrace-environment: minigrace-c-env minigrace-js-env
 
-mirrors.gso: mirrors.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o mirrors.gso -shared -fPIC mirrors.c
+minigrace-c-env: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/commit-msg
+
+minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js dom.gct
 
 objectdraw.grace:
 	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/objectdraw.grace > objectdraw.grace
 
 objectdraw.gcn objectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
-
-repl.gso: repl.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o repl.gso -shared -fPIC repl.c
 
 repltest: minigrace
 	./tests/harness "../minigrace" tests repl
@@ -315,20 +331,25 @@ selftest: minigrace
 	rm -rf selftest
 	mkdir -p selftest
 	for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do ln -sf ../$$f selftest ; done
-	( cd selftest ; ../minigrace $(VERBOSITY) --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
+	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
 	rm -rf selftest
 
 StandardPrelude.gcn StandardPrelude.gct: StandardPrelude.grace collectionsPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l2 $<
-    
-stubs/collectionsPrelude.gct: l1/collectionsPrelude.gct l1/collectionsPrelude.gcn
-	ln -f $^ stubs
 
-stubs/StandardPrelude.gct: l1/StandardPrelude.gct l1/StandardPrelude.gcn
-	ln -f $^ stubs
+stubs/collectionsPrelude.gct: collectionsPrelude.grace
+	cd stubs && ln -sf ../collectionsPrelude.grace . && \
+    ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
 
-# The next three rules are Static Pattern Rules.  Each is like an implicit rule
+stubs/StandardPrelude.gct: StandardPrelude.grace stubs/collectionsPrelude.gct
+	cd stubs && ln -sf ../StandardPrelude.grace . && \
+    ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
+
+# The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
+
+$(DYNAMIC_STUBS:%.grace=%.gso): %.gso: %.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct $(KG)/minigrace
 	cd stubs && rm -f $(@:%.gct=%{.c,.gcn,}) && \
@@ -336,13 +357,13 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.g
 	rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
-	ln -f $< ./
+	@ln -f $< ./
 
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct l1/exists
-	ln -f $< l1/
+	@ln -f $< l1/
 
 $(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.gct l2/exists
-	ln -f $< l2/
+	@ln -f $< l2/
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
@@ -351,38 +372,38 @@ tarWeb: js samples
 
 tarball: minigrace
 	touch c/Makefile.conf
-	make -C c fullclean
-	make c
+	$(MAKE) -C c fullclean
+	$(MAKE) c
 	sed -e 's/DISTRIB=tree/DISTRIB=tarball/' < configure > c/configure
 	chmod 755 c/configure
 	VER=$$(tools/calculate-version) ;\
-      mkdir minigrace-$$VER ; cp -R c/* minigrace-$$VER ;\
+      mkdir minigrace-$$VER ; cp -R c/* gUnit.grace minigrace-$$VER ;\
       mkdir minigrace-$$VER/tests ; cp tests/*.grace tests/*.out tests/harness minigrace-$$VER/tests ;\
+      mkdir minigrace-$$VER/stubs ; cp stubs/*.grace minigrace-$$VER/stubs ;\
       mkdir -p minigrace-$$VER/sample/dialects ; cp sample/dialects/*.grace sample/dialects/README sample/dialects/Makefile minigrace-$$VER/sample/dialects ;\
       cp -R README doc minigrace-$$VER ;\
       tar cjvf ../minigrace-$$VER.tar.bz2 minigrace-$$VER ;\
+      chmod a+r ../minigrace-$$VER.tar.bz2 ;\
       rm -rf minigrace-$$VER
 
 test.js.compile:
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
-test.js: minigrace-environment js/sample/dialects/requireTypes.gso util.gso ast.gso
+test.js: minigrace-js-env js/sample/dialects/requireTypes.gso util.gso ast.gso
 	npm install performance-now
 	cd js/tests; ln -sf ../sample/dialects/requireTypes.gso .
 	js/tests/harness ../../minigrace js/tests ""
 
-test: minigrace-environment
+test: minigrace-c-env
 	./tests/harness "../minigrace" tests ""
 
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
 
-unicode.gcn: unicode.c unicodedata.h gracelib.h
-	gcc -g -std=c99 -fPIC -c -o unicode.gcn unicode.c
-
-unicode.gso: unicode.c unicodedata.h gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o unicode.gso unicode.c
+# The dependency on unicodedata.h isn't captured by the static pattern rule
+# unicode.gcn: unicode.c unicodedata.h gracelib.h
+#	gcc -g -std=c99 -fPIC -c -o unicode.gcn unicode.c
 
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
@@ -396,3 +417,7 @@ uninstall:
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
+
+%.gso: %.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+
