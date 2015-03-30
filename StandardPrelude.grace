@@ -240,8 +240,11 @@ class TypeUnion.new(t1, t2) {
         t1.methodNames ** t2.methodNames
     }
     method match(o) {
-        import "mirrors" as m
-        def oMethodNames = o.reflect.methodNames
+        ResourceException.raise "matching against a TypeUnion not yet implemented"
+        // Why not?  Becuase it requires reflection, which 
+        // requires the mirror module, which requires this module.
+        def mirror = ...
+        def oMethodNames = mirror.reflect(o).methodNames
         for (self.methodNames) do { each ->
             if (! oMethodNames.contains(each)) then {
                 return FailedMatch.new(o)
