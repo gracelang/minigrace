@@ -4832,19 +4832,25 @@ Object prelude__methods(Object self, int argc, int *argcv,
     gc_unpause();
     return l;
 }
-
-Object module_buildinfo;
-Object module_buildinfo_init();
-Object buildinfo() {
-    if (module_buildinfo == NULL)
-        module_buildinfo = module_buildinfo_init();
-    return module_buildinfo;
-}
-
 Object minigrace_obj;
 Object minigrace_credits(Object self, int argc, int *argcv,
                          Object *argv, int flags) {
-    return callmethod(buildinfo(), "credits", 0, NULL, NULL);
+    char *w =
+    "Minigrace contains code written by the following people:\n"
+    " * Michael Homer\n"
+    " * Andrew P. Black\n"
+    " * Daniel Gibbs\n"
+    " * Timothy Jones\n"
+    " * Jan Larres\n"
+    " * Jameson McCowan\n"
+    " * Scott Weston\n"
+    " * Timothy Jones\n"
+    " * Kim Bruce\n"
+    " * Ryan Niebur\n"
+    " * Uro Boros\n"
+    " * Alex Sandilands";
+    fprintf(stdout, "%s", w);
+    return done;
 }
 Object minigrace_warranty(Object self, int argc, int *argcv,
         Object *argv, int flags) {
