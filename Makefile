@@ -147,10 +147,10 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 gUnit.gct gUnit.gcn: gUnit.grace StandardPrelude.gct minigrace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=js/%.js)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace js/grace $(PREFIX)/bin/minigrace
-	install -m 755 $(C_MODULES_BIN) $(MODULE_PATH)
+	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
@@ -407,7 +407,6 @@ togracetest: minigrace
 
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
-	rm -f $(MODULE_PATH)/*.gso
 	rm -f $(OBJECT_PATH)/gracelib.o
 	rm -f $(INCLUDE_PATH)/gracelib.h
 	rm -f $(MODULE_PATH)/*.{gct,js,grace,gcn,gso}
