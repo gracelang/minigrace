@@ -79,7 +79,7 @@ do
     [ -e "$f" ] && cp $f "$kgdir/$f"
 done
 popd
-# rm -rf "$dir"
-ls -l "$dir"
+rm -rf "$dir"
+#ls -l "$dir"
 
 echo Installed tarball $TARBALL into $kgdir. You can now run make.
