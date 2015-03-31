@@ -276,9 +276,7 @@ try {
     // rather than creating a new module object.
     do_import('StandardPrelude', gracecode_StandardPrelude);
 
-    process.argv.slice(2).forEach(function (fn) {
-        minigrace.run(fn)
-    });
+    minigrace.run(process.argv[2]);
 } catch (e) {
     console.error(e.message);
     console.error(e.stack);
