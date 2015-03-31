@@ -92,6 +92,7 @@ clean:
 	rm -f js/minigrace.js
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace.gco minigrace *.js
+	rm -fr grace-web-editor
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
