@@ -1,5 +1,10 @@
 "use strict";
 
+if(typeof(process) != "undefined") {
+    var fs = require("fs");
+    var child_process = require('child_process');
+}
+
 var lineNumber = 0;
 var moduleName = "null";
 
@@ -169,7 +174,7 @@ GraceString.prototype = {
             tmp = callmethod(tmp, "replace()with", [2],
                     new GraceString("\""), new GraceString("\\\""));
             tmp = callmethod(tmp, "replace()with", [2],
-                    new GraceString("\n"), new GraceString("\\n"));
+                    new GraceString("\n"), new GraceString("\\0a"));
             return tmp;
         },
         "replace()with": function(argcv, what, wth) {
@@ -1346,14 +1351,31 @@ var stdout = Grace_allocObject();
 stdout.methods.write = function(junk, s) {
     minigrace.stdout_write(s._value);
 }
+stdout.methods.isatty = function() {
+        if(typeof(process) != "undefined") {
+            return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
+        } else {
+            return GraceFalse;
+        }
+}
 stdout.methods.close = function() {};
 
 var stdin = Grace_allocObject();
+stdin.methods.getline = function() {
+    return new GraceString(minigrace.stdin_read());
+}
 stdin.methods.read = function() {
     return new GraceString(minigrace.stdin_read());
 }
 stdin.methods.iterator = function() {
     return callmethod(new GraceString(minigrace.stdin_read()), "iterator", [0]);
+}
+stdin.methods.isatty = function() {
+        if(typeof(process) != "undefined") {
+            return Boolean(process.stdin.isTTY) ? GraceTrue : GraceFalse;
+        } else {
+            return GraceFalse;
+        }
 }
 stdin.methods.close = function() {};
 
@@ -1361,6 +1383,13 @@ var stderr = Grace_allocObject();
 stderr.methods.write = function(junk, s) {
     minigrace.stderr_write(s._value);
     return GraceDone;
+}
+stderr.methods.isatty = function() {
+        if(typeof(process) != "undefined") {
+            return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
+        } else {
+            return GraceFalse;
+        }
 }
 stderr.methods.close = function() {};
 
@@ -1433,10 +1462,58 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
+	if(typeof(process) != "undefined") {
+            return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
+	}
         if (fileExists(path._value)) return GraceTrue;
         return GraceFalse;
     };
+    this.methods.system = function(argcv, systemString) {
+        if(typeof(process) != "undefined") {
+	    try {
+		var result = child_process.execSync(safeJsString(systemString), {stdio: [process.stdin, process.stdout, process.stderr]});
+		return GraceTrue;
+	    } catch(e) {
+		return GraceFalse;
+	    }
+	}
+	return GraceFalse;
+    };
+    this.methods.spawn = function() {
+        if(typeof(process) != "undefined") {
+	    var cmd = safeJsString(arguments[1]);
+	    var args = [];
+	    for(var i = 2; i < arguments.length; i++)
+		args.push(safeJsString(arguments[i]));
+	    var result = child_process.spawnSync(cmd, args, {stdio: [process.stdin, process.stdout, process.stderr]});
+            var o = new Grace_allocObject();
+	    o.methods['terminated'] = function () { return GraceTrue; };
+	    o.methods['wait'] = function () { return GraceTrue; };
+	    o.methods['status'] = function () { return new GraceNum(result.status); };
+	    o.methods['success'] = function () { return result.status == 0 ? GraceTrue : GraceFalse; };
+	    return o;
+	}
+	return GraceFalse;
+    };
     this.methods.open = function(argcv, path, mode) {
+	if(typeof(process) != "undefined") {
+            var p = safeJsString(path);
+            var m = safeJsString(mode);
+            var o = new Grace_allocObject();
+	    var f = fs.openSync(p, m);
+            if(fs.existsSync(p)) {
+                var c = fs.readFileSync(p);
+		var a = c.toString().split('\n');
+	    }
+	    var i = 0;
+            o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
+            o.methods['close'] = function () { fs.closeSync(f); };
+            o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
+            o.methods['eof'] = function () { return (i == a.length) ? GraceTrue : GraceFalse; };
+            o.methods['read'] = function () { return new GraceString(c.toString()); };
+            o.methods['pathname'] = function () { return new GraceString(p);};
+            return o;
+	}
         var o = new Grace_allocObject();
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
@@ -1470,7 +1547,22 @@ function gracecode_io() {
         return o;
     };
     this.methods.realpath = function io_browser_realpath (argcv, x) {
+        if(typeof(process) != "undefined") {
+            return new GraceString(fs.realpathSync(safeJsString(x)));
+	}
         return x;
+    };
+    this.methods.listdir = function (argcv, x) {
+        if(typeof(process) != "undefined") {
+            var list = [];
+	    list.push(new GraceString("."));
+	    list.push(new GraceString(".."));
+            fs.readdirSync(safeJsString(x)).forEach(function(val, index, array) {
+                list.push(new GraceString(val));
+            });
+            return new GraceList(list);
+        }
+        return new GraceList([]);
     };
     this.methods.newer = function io_browser_newer(argcv, jsFile, sourceFile) {
         return GraceTrue
@@ -1480,27 +1572,60 @@ function gracecode_io() {
 
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
+    this.methods.cputime = function() {
+	return new GraceNum((performance.now() - loadCPU)/1000);
+    }
     this.methods.argv = function() {
-        return new GraceList([
-            new GraceString("minigrace"),
-            new GraceString("--target"),
-            new GraceString("js"),
-        ]);
+        if(typeof(process) != "undefined") {
+            var list = [];
+	    
+            process.argv.forEach(function(val, index, array) {
+		if(index > 1)
+                    list.push(new GraceString(val));
+            });
+            return new GraceList(list);
+        } else {
+            return new GraceList([
+                new GraceString("minigrace"),
+                new GraceString("--target"),
+                new GraceString("js"),
+            ]);
+	}
     };
     this.methods.elapsed = function() {return new GraceNum(((new Date).getTime()/1000)-startTime);};
     this.methods.exit = function() {
         throw "SystemExit";
     };
     this.methods.execPath = function() {
-        return new GraceString("./minigrace");
+        return new GraceString(".");
     };
     this.methods.environ = function() {
         var o = Grace_allocObject(GraceObject, "environmentObject");
-        o.methods['at'] = function environ_at() {return GraceEmptyString;};
+        o.methods['at'] = function environ_at(argcv, key) {
+            if(typeof(process) != "undefined") {
+                var str = safeJsString(key);
+                if(str in process.env)
+                    return new GraceString(process.env[str]);
+	    }
+	    return GraceEmptyString;
+	};
         o.methods['[]'] = o.methods['at'];
-        o.methods['at()put'] = function environ_at_put() {return GraceTrue;};
+        o.methods['at()put'] = function environ_at_put(argcv, key, value) {
+            if(typeof(process) != "undefined") {
+                var kstr = safeJsString(key);
+                var vstr = safeJsString(value);
+                process.env[kstr] = vstr;
+	    }
+	    return GraceTrue;
+	};
         o.methods['[]:='] = o.methods['at()put'];
-        o.methods['contains'] = function environ_contains() {return GraceFalse;};
+        o.methods['contains'] = function environ_contains(argcv, searchkey) {
+            if(typeof(process) != "undefined") {
+                return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
+            } else {
+		return GraceFalse;
+	    }
+        };
         return o;
     };
     this.methods.asString = function(argcv) {
@@ -1676,6 +1801,7 @@ GraceUnicodePattern.prototype = {
 
 var util_module = false;
 var loadDate = Date.now();
+// NOTE: loadCPU is used in sys above as well
 var loadCPU = performance.now();
 var previousElapsed = loadDate;
 var previousCPU = loadCPU;
@@ -2039,7 +2165,7 @@ function gracecode_util() {
     return this;
 }
 
-if (typeof gctCache !== "undefined")
+if (typeof(process) == "undefined" && typeof gctCache !== "undefined")
     gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
@@ -2870,7 +2996,10 @@ if (typeof global !== "undefined") {
     global.gracecode_mirrors = gracecode_mirrors;
     global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;
-    global.gracecode_util = gracecode_util;
+    // NOTE: intentionally exclude gracecode_util
+    // We use the stub JS version only on the web!
+    // For the node version, we do want util.grace
+    // global.gracecode_util = gracecode_util;
     global.GraceBlock = GraceBlock;
     global.GraceDone = GraceDone;
     global.GraceException = GraceException;

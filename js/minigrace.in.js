@@ -28,15 +28,25 @@ function MiniGrace() {
     this.generated_output = "";
     
     this.stdout_write = function(value) {
-        
+        if(typeof(process) != "undefined") {
+            process.stdout.write(value);
+        }
     }
     
     this.stderr_write = function(value) {
-        console.log(value);
+        if(typeof(process) != "undefined") {
+            process.stderr.write(value);
+        } else {
+            console.log(value);
+        }
     };
     
     this.stdin_read = function() {
-        return "";
+        if(typeof(process) != "undefined") {
+            return process.stdin.read();
+        } else {
+            return "";
+        }
     }
 }
 
