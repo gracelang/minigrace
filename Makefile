@@ -320,8 +320,9 @@ rtobjectdraw.gcn rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
 
 ryanWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
-	rsync -a -l -z --delete grace-web-editor/ ~/public_html/minigrace/exp/
-	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) ~/public_html/minigrace/exp/js/
+	@[ -n "$(SERVER)" ] || { echo "Please set the SERVER environment variable to something like user@machine" && false; }
+	rsync -a -l -z --delete grace-web-editor/ $(SERVER):public_html/minigrace/exp/
+	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SERVER):public_html/minigrace/exp/js/
 
 sample-dialects: minigrace
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
