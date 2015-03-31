@@ -70,6 +70,7 @@ node_modules
 Makefile.conf
 .directory-environ
 stdin_minigrace
+grace-web-editor/
 *.xcodeproj
 *.xcodeproj/*
 *.xcworkspace

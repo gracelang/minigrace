@@ -134,6 +134,12 @@ fulltest: gencheck clean selftest test
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
+grace-web-editor/index.html:
+	git clone https://github.com/ryan52/grace-web-editor/
+
+grace-web-editor/scripts/setup.js: grace-web-editor/index.html $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
+	cd grace-web-editor; npm install
+
 graceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
@@ -157,14 +163,11 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
 
-js/%.js: %.grace minigrace
-	cd js; ln -sf ../$< .; ../minigrace $(VERBOSITY) -XnoStrict --target js $<
-
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.js js/collectionsPrelude.gct: collectionsPrelude.grace
-	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) -XnoStrict --target js --make $(<F)
+	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -173,14 +176,20 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
 
-js/gUnit.js: gUnit.grace minigrace
-	cd js; ln -fs ../gUnit.grace .; ../minigrace --target js --make $(<F)
+js/gUnit.js js/gUnit.gct: gUnit.grace minigrace
+	cd js; ln -fs ../$< .; ../minigrace --target js --make $(VERBOSITY) $<
 
 js/minigrace.js: js/minigrace.in.js
 	@echo Generating minigrace.js from minigrace.in.js...
 	@cat js/minigrace.in.js > js/minigrace.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
+
+js/objectdraw.js: objectdraw.grace
+	cd js && ln -sf ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
+
+js/rtobjectdraw.js js/rtobjectdraw.gct: rtobjectdraw.grace minigrace
+	cd js && ln -sf ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -194,7 +203,7 @@ js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/d
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct
-	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) -XnoStrict --target js --make $(<F)
+	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
 js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
 	ln -f minigrace js/minigrace
@@ -219,7 +228,7 @@ l1/collectionsPrelude.grace: l1/exists collectionsPrelude.grace
 	@cd l1 && ln -sf ../collectionsPrelude.grace .
 
 l1/exists: $(C_MODULES_BIN) $(STUB_GCTS)
-	@if [ ! -e l1/exists ] ; then mkdir -p l1 ; fi && touch l1/exists
+	@if [ ! -e l1/exists ] ; then mkdir -p l1 && touch l1/exists ; fi
 	@cd l1 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
@@ -247,7 +256,7 @@ l2/collectionsPrelude.gct l2/collectionsPrelude.gcn: l2/exists l2/collectionsPre
 	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 
 l2/exists: $(C_MODULES_BIN) $(STUB_GCTS)
-	if [ ! -e l2/exists ] ; then mkdir -p l2 ; fi && touch l2/exists
+	if [ ! -e l2/exists ] ; then mkdir -p l2 && touch l2/exists ; fi
 	cd l2 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do ln -sf ../$$f . ; done ;
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
@@ -272,7 +281,9 @@ $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec --vtag l2 $<
 
 $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l2/minigrace
+	if [ $*.gct -nt $*.grace ] ; then mv $*.gct $*.gct.save ; fi
 	l2/minigrace $(VERBOSITY) --make --dynamic-module --vtag l2 $<
+	if [ -e $*.gct.save ] ; then mv $*.gct.save $*.gct ; fi
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js -o $(@F) $<
@@ -306,6 +317,10 @@ rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
 
 rtobjectdraw.gcn rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
+
+ryanWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
+	rsync -a -l -z --delete grace-web-editor/ ~/public_html/minigrace/exp/
+	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) ~/public_html/minigrace/exp/js/
 
 sample-dialects: minigrace
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
