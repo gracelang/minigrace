@@ -161,6 +161,7 @@ method compileModule (nm) inFile (sourceFile)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
+    cmd := "\"{cmd}\""
     if (util.verbosity > 30) then {
         cmd := cmd ++ " --verbose"
     }
