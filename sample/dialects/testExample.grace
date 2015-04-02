@@ -1,10 +1,14 @@
-dialect "test"
-import "collections" as collections
+dialect "minitest"
 
 testSuite {
-    def l = collections.list.with(1, 3, 5, 2, 4)
+    def l = list.with(1, 3, 5, 2, 4)
 
-    test "list size after an add is 6" by { l.push(6); assert (l.size()) shouldBe (6) }
+    test "list is mutated by add" by {
+        l.push(6)
+        assert (l.size) shouldBe (6)
+    }
 
-    test "list size originally was 5" by { assert (l.size()) shouldBe (5) }
+    test "list unchanged in separate test" by {
+        assert (l.size) shouldBe (5)
+    }
 }
