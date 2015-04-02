@@ -3,6 +3,7 @@ include Makefile.conf
 .PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
 ARCH := $(shell uname -s)-$(shell uname -m)
+STUBS := $(filter-out %Prelude.grace,$(STUBS))
 C_MODULES_GSO := $(UNICODE_MODULE) $(OTHER_MODULES)
 C_MODULES_GCN := $(OTHER_MODULES:%.gso=%.gcn)
 C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
@@ -14,7 +15,7 @@ INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c 
 DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
 EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
-GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace rtobjectdraw.grace objectdraw.grace ast.grace util.grace buildinfo.grace
+GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
@@ -32,7 +33,7 @@ REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
 STABLE=66625d4f94cdf2ecc7b7689ea147277ffe16f1c1
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
@@ -46,6 +47,9 @@ include Makefile.mgDependencies
 ace-code: js/ace/ace.js
 
 alltests: test test.js
+
+animation.grace:
+	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/animation.grace > animation.grace
 
 blackWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
@@ -127,6 +131,11 @@ echo:
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 
+expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
+	@[ -n "$(EXP_WEB_SERVER)" ] || { echo "Please set the EXP_WEB_SERVER variable to something like user@machine" && false; }
+	rsync -a -l -z --delete grace-web-editor/ $(EXP_WEB_SERVER):public_html/minigrace/exp/
+	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
+
 fullclean: clean
 	rm -f Makefile.conf
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
@@ -168,6 +177,9 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
+js/animation.js: animation.grace minigrace
+	cd js && ln -sf ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
+
 js/collectionsPrelude.js js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
@@ -206,6 +218,9 @@ js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/d
 
 js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
+
+js/timer.gct: stubs/timer.gct
+	cd js; ln -fs ../stubs/timer.gct .
 
 js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES)
 	ln -f minigrace js/minigrace
@@ -326,11 +341,6 @@ rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
 rtobjectdraw.gcn rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
 
-ryanWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
-	@[ -n "$(SERVER)" ] || { echo "Please set the SERVER environment variable to something like user@machine" && false; }
-	rsync -a -l -z --delete grace-web-editor/ $(SERVER):public_html/minigrace/exp/
-	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SERVER):public_html/minigrace/exp/js/
-
 sample-dialects: minigrace
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
 
@@ -376,9 +386,9 @@ $(DYNAMIC_STUBS:%.grace=%.gso): %.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct $(KG)/minigrace
-	cd stubs && rm -f $(@:%.gct=%{.c,.gcn,}) && \
+	cd stubs && rm -f $(@F:%.gct=%{.c,.gcn,}) && \
 	../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
-	rm -f $(@:%.gct=%{.c,.gcn});
+	rm -f $(@F:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	@ln -f $< ./
