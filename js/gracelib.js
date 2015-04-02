@@ -2430,6 +2430,16 @@ function safeJsString (obj) {
     return objString;
 }
 
+function GraceCallStackToString() {
+    var errorLine = this.lineNumber;
+    if (typeof(errorLine) == "undefined" || errorLine == 0) {
+       var errorString = this.className + "." + this.methname + " in " + this.moduleName;
+    } else {
+       var errorString = this.className + "." + this.methname + " at line " + errorLine + " of " + this.moduleName;
+    }
+    return errorString;
+}
+
 function callmethod(obj, methname, argcv) {
     if (typeof obj == 'undefined')
         throw new GraceExceptionPacket(ProgrammingErrorObject,
@@ -2456,13 +2466,13 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    var objDesc = "";
-    if (obj.definitionLine && obj.definitionModule != "unknown")
-        objDesc = " in object at " + obj.definitionModule
-            + ":" + obj.definitionLine;
-    else if (obj.definitionModule != "unknown")
-        objDesc = " in " + obj.definitionModule + " module";
     if (typeof(meth) != "function") {
+        var objDesc = "";
+        if (obj.definitionLine && obj.definitionModule != "unknown")
+            objDesc = " in object at " + obj.definitionModule
+                + ":" + obj.definitionLine;
+        else if (obj.definitionModule != "unknown")
+            objDesc = " in " + obj.definitionModule + " module";
         callStack.push(obj.className + "." + methname
                 + " (defined nowhere"
                 + objDesc + ")"
@@ -2485,11 +2495,7 @@ function callmethod(obj, methname, argcv) {
         overrideReceiver = null;
     }
     var beforeSize = callStack.length;
-    if (lineNumber == 0) {
-        callStack.push(obj.className + "." + methname + " in " + moduleName);
-    } else {
-        callStack.push(obj.className + "." + methname + " at line " + lineNumber + " of " + moduleName);
-    }
+    callStack.push({className: obj.className, methname: methname, moduleName: moduleName, lineNumber: lineNumber, toString: GraceCallStackToString});
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
