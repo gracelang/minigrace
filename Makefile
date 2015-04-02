@@ -390,14 +390,16 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.g
 	../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
 	rm -f $(@F:%.gct=%{.c,.gcn});
 
+# The next 3 rules copy rather than link, so that the target has a new timestamp.
+
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
-	@ln -f $< ./
+	rm -f $@ && cp $< .
 
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct l1/exists
-	@ln -f $< l1/
+	rm -f $@ && cp $< l1
 
 $(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.gct l2/exists
-	@ln -f $< l2/
+	rm -f $@ && cp $< l2
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
