@@ -1,4 +1,17 @@
 {
+    "minitest": {
+        "name": "minitest dialect for writing tests",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "Allows writing of testsuites without inheritance or classes."
+    },
+    "testExample": {
+        "name": "minitest example",
+        "dir": "dialects",
+        "requires": ["minitest"],
+        "categories": ["Dialect examples"],
+        "description": "Example using minitest for two trivial tests."
+    },
     "loopInvariant": {
         "name": "Loop invariants dialect",
         "dir": "dialects",
