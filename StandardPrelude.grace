@@ -36,6 +36,18 @@ type Pattern = {
   match(value : Object) -> MatchResult
 }
 
+method abstract {
+    // this is copied from collectionsPrelude, because there is
+    // no simple way to delegate to it.
+    SubobjectResponsibility.raise "abstract method not overriden by subobject"
+}
+
+method do(action)while(condition) {
+    while {
+        action.apply
+        condition.apply
+    } do { }
+}
 
 method repeat(n)times(action) {
     var ix := n
@@ -149,14 +161,20 @@ class OrPattern.new(p1, p2) {
     }
 }
 
-class Singleton.new {
-    inherits BasicPattern.new
-    method match(other) {
-        if (self == other) then {
-            SuccessfulMatch.new(other, [])
-        } else {
-            FailedMatch.new(other);
+def Singleton is public = object {
+    factory method new {
+        inherits BasicPattern.new
+        method match(other) {
+            if (self == other) then {
+                SuccessfulMatch.new(other, [])
+            } else {
+                FailedMatch.new(other)
+            }
         }
+    }
+    factory method named(printString) {
+        inherits Singleton.new
+        method asString { printString }
     }
 }
 
@@ -305,6 +323,7 @@ class point2D.x(x')y(y') {
 import "collectionsPrelude" as coll
 // collectionsPrelude defines types using &, so it can't be imported until
 // the above definition of TypeIntersection has been executed.
+
 // We should just be able to put "is public" on the above import, but this is 
 // not fully implemented.  So intead we create an alias:
 def collections is public = coll
