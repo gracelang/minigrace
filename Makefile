@@ -17,7 +17,7 @@ EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(J
 GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace rtobjectdraw.grace objectdraw.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
-JSSOURCEFILES = js/compiler.js js/errormessages.js js/ast.js js/lexer.js js/parser.js js/genjs.js js/genc.js js/mgcollections.js js/xmodule.js js/identifierresolution.js js/buildinfo.js js/genjson.js js/collections.js js/collectionsPrelude.js js/gUnit.js js/util.js
+JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 
@@ -32,7 +32,7 @@ REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
 STABLE=66625d4f94cdf2ecc7b7689ea147277ffe16f1c1
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(JSSOURCEFILES)
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
@@ -115,6 +115,7 @@ $(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso l2/exists
 echo:
 	@echo MINIGRACE_BUILD_SUBPROCESSES = $(MINIGRACE_BUILD_SUBPROCESSES)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
+	@echo SOURCEFILES = $(SOURCEFILES)
 	@echo WEBFILES = $(WEBFILES)
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
@@ -206,7 +207,7 @@ js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/d
 js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
-js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
+js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES)
 	ln -f minigrace js/minigrace
 
 just-minigrace:
