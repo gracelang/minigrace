@@ -1,6 +1,6 @@
 include Makefile.conf
 
-.PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env selfhost-stats selftest samples sample-% test test.js uninstall
+.PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 C_MODULES_GSO := $(UNICODE_MODULE) $(OTHER_MODULES)
@@ -104,7 +104,7 @@ collectionsPrelude.gcn collectionsPrelude.gct: collectionsPrelude.grace l2/minig
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
 
-dialects: js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso
+dialects: js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/sample/dialects/minitest.js gUnit.js gUnit.gso
 
 $(DYNAMIC_STUBS:%.grace=l1/%.gso): l1/%.gso: %.gso l1/exists
 	@cd l1 && ln -sf ../$< .
@@ -167,7 +167,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.g
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
-js/collectionsPrelude.js js/collectionsPrelude.gct: collectionsPrelude.grace
+js/collectionsPrelude.js js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
 js/dom.gct: stubs/dom.gct
@@ -186,7 +186,7 @@ js/minigrace.js: js/minigrace.in.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/objectdraw.js: objectdraw.grace
+js/objectdraw.js: objectdraw.grace minigrace
 	cd js && ln -sf ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
 
 js/rtobjectdraw.js js/rtobjectdraw.gct: rtobjectdraw.grace minigrace
@@ -203,7 +203,7 @@ js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/d
 	echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct
+js/StandardPrelude.js js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	cd js && ln -sf ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
 
 js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFILES)
@@ -274,6 +274,12 @@ Makefile.conf: configure
 
 $(C_MODULES_GCN:%=l2/%): l2/%.gcn: %.gcn l2/exists
 	@cd l2 && ln -sf ../$< .
+
+$(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/exists l1/StandardPrelude.gct $(KG)/minigrace
+	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
+
+$(MGSOURCEFILES:%.grace=l2/%.gct): l2/%.gct: l2/%.grace l2/exists l2/StandardPrelude.gct l1/minigrace
+	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.grace StandardPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec --vtag l2 $<
@@ -403,7 +409,7 @@ tarball: minigrace
       chmod a+r ../minigrace-$$VER.tar.bz2 ;\
       rm -rf minigrace-$$VER
 
-test.js.compile:
+test.js.compile: minigrace
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
