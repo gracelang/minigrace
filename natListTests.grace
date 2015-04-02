@@ -24,6 +24,7 @@ class listTest.forMethod(m) {
     
     method testListEmptyDo {
         empty.do {each -> failBecause "emptyList.do did with {each}"}
+        assert (true)
     }
     
     method testListEqualityEmpty {
