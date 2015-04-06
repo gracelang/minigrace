@@ -7,6 +7,8 @@ include Makefile.conf
 
 .PHONY: selfhost test buildclean fullclean install
 
+STUBS := $(filter-out %Prelude.grace,$(STUBS))
+
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
 
 minigrace: $(CFILES:.c=.gcn) minigrace.gcn $(STATIC_MODULES) $(UNICODE_MODULE) gracelib.o $(OTHER_MODULES)
@@ -18,13 +20,13 @@ buildinfo.grace: Makefile.conf
 	mv buildinfo.grace.new buildinfo.grace
 
 buildclean:
-	rm -rf *.gcn minigrace unicode.gso gracelib.o bin Makefile.conf
+	rm -rf *.gcn *.gct *.gso minigrace unicode.gso gracelib.o bin Makefile.conf
 
 curl.gso: curl.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o curl.gso curl.c -lcurl
 
 fullclean: buildclean
-	rm -f *.grace *.c *.h configure
+	rm -f *.grace *.c *.h
 
 gracelib.o: gracelib.c StandardPrelude.c collectionsPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
@@ -58,18 +60,24 @@ repl.gcn: repl.c gracelib.h
 
 selfhost: minigrace $(CFILES:.c=.grace) $(STUBS:%.grace=%.gct)
 	rm -f $(CFILES:.c=.gcn)
-	./minigrace --make --verbose --target c --module minigrace compiler.grace
+	./minigrace --make $(VERBOSITY) --target c --module minigrace compiler.grace
 
 # The next two rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct minigrace
 	cd stubs && rm -f $(@:%.gct=%{.c,.gcn,}) && \
-	../minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
+	../minigrace $(VERBOSITY) --make --noexec --vtag stub $(<F) && \
 	rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -f $< ./
+
+stubs/collectionsPrelude.gct stubs/collectionsPrelude.gcn: stubs/collectionsPrelude.grace minigrace
+	./minigrace $(VERBOSITY) --make --noexec --vtag stub $<
+
+stubs/StandardPrelude.gct stubs/StandardPrelude.gcn: stubs/StandardPrelude.grace stubs/collectionsPrelude.gct minigrace
+	./minigrace $(VERBOSITY) --make --noexec --vtag stub $<
 
 test: minigrace-environment
 	./tests/harness "../minigrace" tests ""

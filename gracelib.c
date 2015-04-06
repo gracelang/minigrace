@@ -4848,7 +4848,7 @@ Object minigrace_credits(Object self, int argc, int *argcv,
     " * Kim Bruce\n"
     " * Ryan Niebur\n"
     " * Uro Boros\n"
-    " * Alex Sandilands";
+    " * Alex Sandilands\n";
     fprintf(stdout, "%s", w);
     return done;
 }

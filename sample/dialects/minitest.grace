@@ -1,5 +1,7 @@
 import "gUnit" as gu
 
+inherits prelude.methods
+
 var currentTestSuiteForDialect := done
 var currentSetupBlockForTesting := done
 var currentTestBlockForTesting := 0

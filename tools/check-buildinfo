@@ -11,18 +11,18 @@ OBJECT_PATH=$4
 REV=$([ -e .git ] && git rev-parse HEAD || echo unknown )
 GEN=$([ -e .git ] && tools/git-calculate-generation || echo unknown )
 
-echo "method gitrevision { \"$REV\" }" > buildinfo_tmp.grace
-echo "method gitgeneration { \"$GEN\" }" >> buildinfo_tmp.grace
-echo "method prefix { \"$PREFIX\" }" >> buildinfo_tmp.grace
-echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace
-echo "method modulepath { \"$MODULE_PATH\" }" >> buildinfo_tmp.grace
-echo "method objectpath { \"$OBJECT_PATH\" }" >> buildinfo_tmp.grace
-#	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace
+echo "method gitrevision { \"$REV\" }" > buildinfo_tmp.grace.$$
+echo "method gitgeneration { \"$GEN\" }" >> buildinfo_tmp.grace.$$
+echo "method prefix { \"$PREFIX\" }" >> buildinfo_tmp.grace.$$
+echo "method includepath { \"$INCLUDE_PATH\" }" >> buildinfo_tmp.grace.$$
+echo "method modulepath { \"$MODULE_PATH\" }" >> buildinfo_tmp.grace.$$
+echo "method objectpath { \"$OBJECT_PATH\" }" >> buildinfo_tmp.grace.$$
+#	@echo "method authors { ‹$$(./tools/git-authors)› }" >> buildinfo_tmp.grace.$$
 
-if ! cmp -s buildinfo_tmp.grace buildinfo.grace
+if ! cmp -s buildinfo_tmp.grace.$$ buildinfo.grace
 then 
-    mv buildinfo_tmp.grace buildinfo.grace
+    mv buildinfo_tmp.grace.$$ buildinfo.grace
     echo "buildinfo rebuilt."
 else
-    rm buildinfo_tmp.grace ; echo "buildinfo up-to-date"
+    rm buildinfo_tmp.grace.$$ ; echo "buildinfo up-to-date"
 fi

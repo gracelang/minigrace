@@ -2,9 +2,14 @@
 
 def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
-def SubobjectResponsibility = ProgrammingError.refine "a subobject should have overridden this method"
+def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject = ProgrammingError.refine "no such object"
 def RequestError = ProgrammingError.refine "inapproriate argument in method request"
+
+method abstract {
+    // repeated in StandardPrelude
+    SubobjectResponsibility.raise "abstract method not overriden by subobject"
+}
 
 type Block0<R> = type {
     apply -> R
@@ -154,9 +159,8 @@ class collectionFactory.trait<T> {
 }
 
 class iterable.trait<T> {
-    // requires next, hasNext
-    //    method hasNext { SubobjectResponsibility.raise "hasNext" }
-    //    method next is abstract { SubobjectResponsibility.raise "next" }
+    method hasNext { abstract }
+    method next { abstract }
     method iterator { self }
     method iter { self }
     method onto(resultFactory) {
@@ -291,7 +295,7 @@ class enumerable.trait<T> {
 class indexable.trait<T> {
     inherits enumerable.trait<T>
     // requires do, iterator, at(ix:Number), size, keysAndValuesDo
-    method at { SubobjectResponsibility.raise "at" }
+    method at { abstract }
     method first { at(1) }
     method second { at(2) }
     method third { at(3) }
