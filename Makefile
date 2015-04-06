@@ -499,7 +499,7 @@ test.js: minigrace-js-env sample/dialects/requireTypes.gso sample/dialects/minit
 	cd js/tests; cp -f ../../util.gso .
 	js/tests/harness ../../minigrace js/tests ""
 
-test: minigrace-c-env
+test: minigrace-c-env sample/dialects/minitest.gso
 	./tests/harness "../minigrace" tests ""
 
 togracetest: minigrace
