@@ -270,7 +270,7 @@ l2/%.grace: l2/exists
 l1/%.grace: l1/exists
 	@echo "$@ was created with l1/exists"
 
-l1/exists: $(C_MODULES_BIN) $(STUB_GCTS)
+l1/exists: $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o
 	@if [ ! -e l1/exists ] ; then mkdir -p l1 ; fi
 	touch l1/exists
 	@cd l1 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do cp -f ../$$f . ; done ;
@@ -314,7 +314,7 @@ l2/collectionsPrelude.gcn: l2/collectionsPrelude.gct
 l2/collectionsPrelude.gct: l2/exists l2/collectionsPrelude.grace l1/minigrace
 	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
 
-l2/exists: $(C_MODULES_BIN) $(STUB_GCTS)
+l2/exists: $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o
 	if [ ! -e l2/exists ] ; then mkdir -p l2 ; fi
 	touch l2/exists
 	cd l2 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do cp -f ../$$f . ; done ;
