@@ -1,0 +1,13 @@
+modules:
+fresh-methods:
+path:
+ timer
+classes:
+public:
+ intervalList
+ timeoutList
+ every()do
+ after()do
+ stop
+ stopAll
+confidential:
