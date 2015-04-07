@@ -15,7 +15,8 @@ INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c 
 DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
 EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
-GRACE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
+SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
+GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out js/interactive.js,$(SOURCEFILES:%.grace=js/%.js)))
@@ -34,7 +35,7 @@ REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 
 STABLE=66625d4f94cdf2ecc7b7689ea147277ffe16f1c1
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/rtobjectdraw.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
@@ -135,10 +136,13 @@ echo:
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 
-expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES)))
+expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js)
 	@[ -n "$(EXP_WEB_SERVER)" ] || { echo "Please set the EXP_WEB_SERVER variable to something like user@machine" && false; }
-	rsync -a -l -z --delete grace-web-editor/ $(EXP_WEB_SERVER):public_html/minigrace/exp/
-	rsync -a -l -z --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
+	rsync -az --delete grace-web-editor/ $(EXP_WEB_SERVER):public_html/minigrace/exp/
+	rsync -az --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
+	rsync -az --delete $(SAMPLE_DIALECTS:%.grace=js/%.js) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
+	ssh $(EXP_WEB_SERVER) "chmod a+rx public_html/minigrace/exp/js"
+# why this ssh command is necessary is a mystery.  The -a flag claims that it preserves permissions.
 
 fullclean: clean
 	rm -f Makefile.conf
@@ -221,11 +225,7 @@ js/rtobjectdraw.js js/rtobjectdraw.gct: rtobjectdraw.grace minigrace
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
 
-js/sample/dialects/requireTypes.js js/sample/dialects/requireTypes.gct js/sample/dialects/requireTypes.gso: js/sample/dialects/requireTypes.grace minigrace
-	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
-	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
-
-js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso: js/sample/dialects/staticTypes.grace minigrace
+js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace minigrace
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 

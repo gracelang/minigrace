@@ -1,5 +1,5 @@
 .PHONY: compile js run.js
-DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant
+DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant minitest
 DIALECT_DIALECTS = whileLiteral staticTypes requireTypes
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
