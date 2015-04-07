@@ -30,8 +30,8 @@ fullclean: buildclean
 
 gracelib.o: gracelib.c StandardPrelude.c collectionsPrelude.c debugger.o
 	gcc -std=c99 -c -o gracelib-basic.o gracelib.c
-	gcc -I. -std=c99 -c -o StandardPrelude.gcn StandardPrelude.c
-	gcc -I. -std=c99 -c -o collectionsPrelude.gcn collectionsPrelude.c
+	gcc -std=c99 -I. -c -o StandardPrelude.gcn StandardPrelude.c
+	gcc -std=c99 -I. -c -o collectionsPrelude.gcn collectionsPrelude.c
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
 gUnit.gct gUnit.gcn: gUnit.grace StandardPrelude.gct minigrace
@@ -96,10 +96,10 @@ uninstall:
 	rm -f $(MODULE_PATH)/*.{gct,js,grace,gcn,gso}
 
 %.o: %.c gracelib.h
-	gcc -g -I. -std=c99 -c -o $@ $<
+	gcc -std=c99 -g -I. -c -o $@ $<
     
 %.gcn: %.c gracelib.h
-	gcc -I. -std=c99 -c -o $@ $<
+	gcc -std=c99 -I. -c -o $@ $<
 
 %.gso: %.c gracelib.h
 	gcc -std=c99 $(UNICODE_LDFLAGS) -fPIC -shared -o $@ $<
