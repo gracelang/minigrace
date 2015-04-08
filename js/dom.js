@@ -106,6 +106,14 @@ function wrapGraceObject(o) {
 
 function gracecode_dom() {
     this.methods.document = function(argcv) {
+        if (typeof(document) === "undefined") {
+            return wrapDOMObject(null);
+            // This return is here because objectdraw requests `dom.document` in its initialization.
+            // When used as a dialect, the initialization code runs inside the compiler, were there
+            // is no document.  Raising an exception at this point kills the compiler.
+            throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                       new GraceString("There is no 'document' in this context."));
+        }
         return wrapDOMObject(document);
     };
     this.methods.document.paramCounts = [0];
