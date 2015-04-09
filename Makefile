@@ -138,11 +138,10 @@ echo:
 
 expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js)
 	@[ -n "$(EXP_WEB_SERVER)" ] || { echo "Please set the EXP_WEB_SERVER variable to something like user@machine" && false; }
+	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
+	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
+	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) grace-web-editor/js
 	rsync -az --delete grace-web-editor/ $(EXP_WEB_SERVER):public_html/minigrace/exp/
-	rsync -az --delete $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
-	rsync -az --delete $(SAMPLE_DIALECTS:%.grace=js/%.js) $(EXP_WEB_SERVER):public_html/minigrace/exp/js/
-	ssh $(EXP_WEB_SERVER) "chmod a+rx public_html/minigrace/exp/js"
-# why this ssh command is necessary is a mystery.  The -a flag claims that it preserves permissions.
 
 fullclean: clean
 	rm -f Makefile.conf
@@ -301,7 +300,7 @@ l2/%.gso: %.c unicodedata.h gracelib.h l2/exists
 
 l2/unicode.gcn: unicode.c unicodedata.h gracelib.h l2/exists
 	gcc -g -std=c99 -c -o $@ -fPIC $<
-    
+
 $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn l1/exists
 	cd l1 && cp -f ../$< .
 
