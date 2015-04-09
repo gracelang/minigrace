@@ -154,7 +154,7 @@ gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
 grace-web-editor/index.html:
-	git clone https://github.com/ryan52/grace-web-editor/
+	git clone --branch pdx https://github.com/gracelang/grace-web-editor/
 
 grace-web-editor/scripts/setup.js: grace-web-editor/index.html $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
