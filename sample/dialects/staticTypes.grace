@@ -1,3 +1,5 @@
+#pragma noTypeChecks
+// until [] means a real list, it won't match type List
 dialect "dialect"
 
 import "ast" as ast
@@ -429,7 +431,7 @@ def anObjectType = object {
 
     method dynamic -> ObjectType {
         object {
-            def methods : List<MethodType> is public = []
+            def methods is public = []
 
             method getMethod(_ : String) -> noSuchMethod { noSuchMethod }
 
