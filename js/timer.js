@@ -59,3 +59,8 @@ function gracecode_timer() {
 
     return o;
 }
+
+gracecode_timer.imports = [];
+
+if (typeof gctCache !== "undefined")
+    gctCache['timer'] = "modules:\nfresh-methods:\npath:\n timer\nclasses:\npublic:\n intervalList\n timeoutList\n every()do\n after()do\n stop\n stopAll\nconfidential:\n";
