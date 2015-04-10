@@ -10,6 +10,12 @@ C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
 # The next rule is here for its side effect: updating buildinfo.grace if necessary
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
+CHECK_OBJECTDRAW := $(shell if [ -e objectdraw ] ; \
+    then cd objectdraw; git pull ; \
+    else git clone https://github.com/gracelang/objectdraw/ ; fi)
+CHECK_GRACE_WEB_EDITOR := $(shell if [ -e grace-web-editor ] ; \
+    then cd grace-web-editor; git pull ; \
+    else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi)
 JS_STUBS = dom.grace
 INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
 DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
@@ -30,6 +36,7 @@ MINIGRACE_BUILD_SUBPROCESSES ?= 9
 
 # override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
+OBJECTDRAW_BITS = objectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
@@ -49,9 +56,6 @@ include Makefile.mgDependencies
 ace-code: js/ace/ace.js
 
 alltests: test test.js
-
-animation.grace:
-	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/animation.grace > animation.grace
 
 blackWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
@@ -157,6 +161,7 @@ grace-web-editor/index.html:
 
 grace-web-editor/scripts/setup.js: grace-web-editor/index.html $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
+	sed -e 's/  editor.setFontSize(14);/  editor.setFontSize(14);  editor.$$blockScrolling = Infinity;/' -i '~' grace-web-editor/scripts/setup.js
 
 graceWeb: js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
@@ -373,8 +378,11 @@ minigrace-c-env: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/c
 
 minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
 
-objectdraw.grace:
-	curl https://raw.githubusercontent.com/gracelang/objectdraw/master/objectdraw.grace > objectdraw.grace
+objectdraw/objectdraw.grace:
+	git clone https://github.com/gracelang/objectdraw/ objectdraw
+
+$(OBJECTDRAW_BITS): %.grace: objectdraw/%.grace
+	ln -f $< .
 
 objectdraw.gcn objectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
