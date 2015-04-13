@@ -156,7 +156,7 @@ def aMethodType = object {
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
         } case { _ ->
-            prelude.Exception.raiseWith("unrecognised method node", node)
+            prelude.Exception.raise "unrecognised method node" with(node)
         }
     }
 
@@ -345,6 +345,9 @@ def anObjectType = object {
         match(dtype) case { (false) ->
             dynamic
         } case { lit : TypeDeclaration ->
+//        TODO: re-write this code to understand the syntax of type expressions
+//          and type declarations, which are not the same!
+            return dynamic
             def intersection = lit.intersectionTypes
             if(intersection.size > 1) then {
                 var oType := fromDType(intersection.first)
@@ -397,8 +400,11 @@ def anObjectType = object {
             }
         } case { ident : Identifier ->
             anObjectType.fromIdentifier(ident)
+        } case { generic : Generic ->
+//            TODO: figure out what to do here!
+            anObjectType.fromIdentifier(generic.value)
         } case { _ ->
-            prelude.Exception.raise("unrecognised object type node", dtype)
+            ProgrammingError.raise "No case for node of kind {dtype.kind}" with(dtype)
         }
     }
 
@@ -414,8 +420,8 @@ def anObjectType = object {
         def apply = bType.getMethod("apply")
 
         match(apply) case { (noSuchMethod) ->
-            TypeError.raiseWith("the expression `{block.toGrace(0)}` of " ++
-                "type '{bType}' does not satisfy the type 'Block'", block)
+            TypeError.raise ("the expression `{block.toGrace(0)}` of " ++
+                "type '{bType}' does not satisfy the type 'Block'") with(block)
         } case { meth : MethodType ->
             return meth.returnType
         }
@@ -644,7 +650,7 @@ rule { req : Request ->
         def rec = memb.in
         def rType = if(Identifier.match(rec) && (rec.value == "self")) then {
             scope.types.find("Self") butIfMissing {
-                prelude.Exception.raiseWith("type of self missing", rec)
+                prelude.Exception.raise "type of self missing" with(rec)
             }
         } else {
             typeOf(rec)
@@ -656,8 +662,8 @@ rule { req : Request ->
             def name = memb.value
 
             match(rType.getMethod(name)) case { (noSuchMethod) ->
-                RequestError.raiseWith("no such method '{name}' in " ++
-                    "`{rec.toGrace(0)}` of type '{rType}'", memb)
+                RequestError.raise("no such method '{name}' in " ++
+                    "`{rec.toGrace(0)}` of type '{rType}'") with(memb)
             } case { meth : MethodType ->
                 check(req) against(meth)
             }
@@ -688,9 +694,9 @@ method check(req : Request)
             }
 
             RequestError
-                .raiseWith("too {which} arguments to method part " ++
-                    "'{part.name}', expected {pSize} but got {aSize}",
-                    where)
+                .raise("too {which} arguments to method part " ++
+                    "'{part.name}', expected {pSize} but got {aSize}") 
+                    with(where)
         }
 
         for(params) and(args) do { param, arg ->
@@ -698,10 +704,10 @@ method check(req : Request)
             def aType = typeOf(arg)
 
             if(typeOf(arg).isSubtypeOf(pType).not) then {
-                RequestError.raiseWith("the expression " ++
+                RequestError.raise("the expression " ++
                     "`{arg.toGrace(0)}` of type '{aType}' does not " ++
                     "satisfy the type of parameter '{param}' in the " ++
-                    "method '{name}'", arg)
+                    "method '{name}'") with(arg)
             }
         }
     }
@@ -803,9 +809,9 @@ rule { req : If ->
             "satisfy the type 'Boolean' for an 'if' condition'", cond)
     }
 
-    def then = anObjectType.fromBlockBody(req.thenblock)
+    def then = anObjectType.fromBlock(req.thenblock)
 
-    def else = anObjectType.fromBlockBody(req.elseblock)
+    def else = anObjectType.fromBlock(req.elseblock)
 
     then | else
 }
@@ -1046,7 +1052,7 @@ rule { bind : Bind ->
 // Import declarations.
 
 rule { imp : Import ->
-    scope.variables.at(imp.value) put(anObjectType.dynamic)
+    scope.variables.at(imp.nameString) put(anObjectType.dynamic)
 }
 
 
@@ -1211,9 +1217,9 @@ method collectTypes(nodes : List) -> Done is confidential {
 
     for(nodes) do { node ->
         match(node) case { td : TypeDeclaration ->
-            if(names.contains(td.value)) then {
-                TypeDeclarationError.raiseWith("the type 'A' uses the same " ++
-                    "name as another type in the same scope", td)
+            if(names.contains(td.nameString)) then {
+                TypeDeclarationError.raise("the type {td.nameString} uses " ++
+                    "the same name as another type in the same scope") with(td)
             }
 
             names.push(td.value)
@@ -1223,7 +1229,7 @@ method collectTypes(nodes : List) -> Done is confidential {
             def placeholder = anObjectType.dynamic
             types.push(td)
             placeholders.push(placeholder)
-            scope.types.at(td.value) put(placeholder)
+            scope.types.at(td.nameString) put(placeholder)
         }
     }
 
