@@ -280,6 +280,12 @@ factory method newScopeIn(parent') kind(variety') {
         def priorScope = thatDefines(name) ifNone {
             return
         }
+        def description = 
+            if (priorScope == self) then {
+                "this"
+            } else {
+                "an enclosing {priorScope.variety}"
+            }
         def priorKind = priorScope.kind(name)
         if (priorScope.isObjectScope.andAlso{self.isObjectScope}) then {
             return
@@ -304,15 +310,14 @@ factory method newScopeIn(parent') kind(variety') {
                 more := more ++ ". To assign to the existing variable, remove 'var'"
             }
             errormessages.syntaxError("'{name}' cannot be "
-                ++ "redeclared because it is already declared in an "
-                ++ "enclosing {priorScope.variety} scope{more}.")
+                ++ "redeclared because it is already declared in "
+                ++ "{description} scope{more}.")
                 atRange(ident.line, ident.linePos, ident.linePos + name.size - 1)
                 withSuggestions(suggs)
         } else {
             errormessages.syntaxError("'{name}' cannot be "
-                ++ "redeclared because it is already declared in an "
-                ++ "enclosing {priorScope.variety} scope{more}. "
-                ++ "Use a different name.")
+                ++ "redeclared because it is already declared in "
+                ++ "{description} scope{more}. Use a different name.")
                 atRange(ident.line, ident.linePos,
                     ident.linePos + name.size - 1)
         }
