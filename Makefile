@@ -1,47 +1,39 @@
 include Makefile.conf
 
-.PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
+.PHONY: all c clean dialects echo fullclean install js minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
 C_MODULES_GSO := $(UNICODE_MODULE) $(OTHER_MODULES)
 C_MODULES_GCN := $(OTHER_MODULES:%.gso=%.gcn)
-C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
-CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
-# The next rule is here for its side effect: updating buildinfo.grace if necessary
-CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
-CHECK_OBJECTDRAW := $(shell if [ -e objectdraw ] ; \
-    then cd objectdraw; git pull ; \
-    else git clone https://github.com/gracelang/objectdraw/ ; fi)
-CHECK_GRACE_WEB_EDITOR := $(shell if [ -e grace-web-editor ] ; \
-    then cd grace-web-editor; git pull ; \
-    else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi)
-JS_STUBS = dom.grace
 INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
 DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
 EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
+
+# override MAKEFLAGS := $(MAKEFLAGS) --debug=b
+
+C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
+CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
+# The next rule is here for its side effect: updating buildinfo.grace if necessary
+CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
+DIALECT_DEPENDENCIES = minigrace errormessages.gso ast.gso util.gso mgcollections.gso buildinfo.gso gUnit.gso
+JS_STUBS = dom.grace
+EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out js/interactive.js,$(SOURCEFILES:%.grace=js/%.js)))
 KG=known-good/$(ARCH)/$(STABLE)
-STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
-DIALECT_DEPENDENCIES=minigrace errormessages.gso ast.gso util.gso mgcollections.gso buildinfo.gso gUnit.gso
-
-VERBOSITY = --verbose
-
-MINIGRACE_BUILD_SUBPROCESSES ?= 9
-
-# override MAKEFLAGS := $(MAKEFLAGS) --debug=b
-
 OBJECTDRAW_BITS = objectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-
 STABLE=66625d4f94cdf2ecc7b7689ea147277ffe16f1c1
+STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
+VERBOSITY = --verbose
+WEB_DIRECTORY = public_html/minigrace/js/
 WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
@@ -57,13 +49,11 @@ ace-code: js/ace/ace.js
 
 alltests: test test.js
 
-blackWeb: js samples ace-code
-	rsync -a -l -z --delete $(WEBFILES) black@cs.pdx.edu:public_html/minigrace/js
-	rsync -a -l -z --delete sample black@cs.pdx.edu:public_html/minigrace
+blackWeb:
+	$(MAKE) WEB_SERVER=black@cs.pdx.edu oldWeb
 
-bruceWeb: js samples ace-code
-	rsync -a -l -z --delete $(WEBFILES) kim@project.cs.pomona.edu:www/minigrace/js
-	rsync -a -l -z --delete sample kim@project.cs.pomona.edu:www/minigrace
+bruceWeb:
+	$(MAKE) WEB_SERVER=kim@project.cs.pomona.edu WEB_DIRECTORY=www/minigrace/js/ oldWeb
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.c math.gct
 	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} repl.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
@@ -126,7 +116,6 @@ $(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso l2/exists
 	@cd l2 && cp -f ../$< .
 
 echo:
-	@echo MINIGRACE_BUILD_SUBPROCESSES = $(MINIGRACE_BUILD_SUBPROCESSES)
 	@echo MAKEFLAGS = $(MAKEFLAGS)
 	@echo SOURCEFILES = $(SOURCEFILES)
 	@echo WEBFILES = $(WEBFILES)
@@ -141,11 +130,11 @@ echo:
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 
 expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js)
-	@[ -n "$(EXP_WEB_SERVER)" ] || { echo "Please set the EXP_WEB_SERVER variable to something like user@machine" && false; }
+	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) grace-web-editor/js
-	rsync -az --delete grace-web-editor/ $(EXP_WEB_SERVER):public_html/minigrace/exp/
+	rsync -az --delete grace-web-editor/ $(WEB_SERVER):$(EXP_WEB_DIRECTORY)
 
 fullclean: clean
 	rm -f Makefile.conf
@@ -156,14 +145,13 @@ fulltest: gencheck clean selftest test
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
 
-grace-web-editor/index.html:
-	git clone --branch pdx https://github.com/gracelang/grace-web-editor/
+grace-web-editor/index.html: pull-web-editor
 
-grace-web-editor/scripts/setup.js: grace-web-editor/index.html $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
+grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
 	sed -e 's/  editor.setFontSize(14);/  editor.setFontSize(14);  editor.$$blockScrolling = Infinity;/' -i '~' grace-web-editor/scripts/setup.js
 
-graceWeb: js samples ace-code
+graceWeb: pull-objectdraw js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
 	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
 
@@ -220,7 +208,7 @@ js/minigrace.js: js/minigrace.in.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/objectdraw.js: objectdraw.grace minigrace
+js/objectdraw.js: objectdraw.grace pull-objectdraw minigrace
 	cd js && cp -f ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
 
 js/rtobjectdraw.js js/rtobjectdraw.gct: rtobjectdraw.grace minigrace
@@ -246,7 +234,7 @@ js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFIL
 	ln -f minigrace js/minigrace
 
 just-minigrace:
-	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
+	./l2/minigrace --vtag l2 --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 known-good/%:
 	@echo "making $@"
@@ -283,7 +271,7 @@ l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collections
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
 l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
-	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ./ --vtag kg -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
+	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ./ --vtag kg compiler.grace
 
 l1/StandardPrelude.gcn: l1/StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
@@ -327,7 +315,7 @@ l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collections
 	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
 
 l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
-	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace
+	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 compiler.grace
 
 l2/StandardPrelude.gcn: l2/StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
@@ -370,7 +358,7 @@ minigrace-dynamic: l2/minigrace $(SOURCEFILES)
 	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic --vtag l2 compiler.grace
 
 minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l2/gracelib.o
-	./l2/minigrace --vtag l2 -j $(MINIGRACE_BUILD_SUBPROCESSES) --make --native --module minigrace $(VERBOSITY) compiler.grace
+	./l2/minigrace --vtag l2 --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -378,8 +366,7 @@ minigrace-c-env: minigrace StandardPrelude.gct gracelib.o gUnit.gct .git/hooks/c
 
 minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
 
-objectdraw/objectdraw.grace:
-	git clone https://github.com/gracelang/objectdraw/ objectdraw
+$(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
 $(OBJECTDRAW_BITS): %.grace: objectdraw/%.grace
 	ln -f $< .
@@ -387,10 +374,24 @@ $(OBJECTDRAW_BITS): %.grace: objectdraw/%.grace
 objectdraw.gcn objectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
 
+oldWeb:
+	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z --delete sample $(WEB_SERVER):$(WEB_DIRECTORY)
+
+pull-web-editor:
+	if [ -e grace-web-editor ] ; \
+    then cd grace-web-editor; git pull ; \
+    else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
+
+pull-objectdraw:
+	if [ -e objectdraw ] ; \
+    then cd objectdraw; git pull ; \
+    else git clone https://github.com/gracelang/objectdraw/ ; fi
+
 repltest: minigrace
 	./tests/harness "../minigrace" tests repl
 
-rtobjectdraw.grace: objectdraw.grace tools/make-rt-version
+rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
 	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
 
 rtobjectdraw.gcn rtobjectdraw.gso:
@@ -423,7 +424,7 @@ selftest: minigrace
 	rm -rf selftest
 	mkdir -p selftest
 	for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do cp -f ../$$f selftest ; done
-	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --vtag selftest -j $(MINIGRACE_BUILD_SUBPROCESSES) compiler.grace )
+	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --vtag selftest compiler.grace )
 	rm -rf selftest
 
 StandardPrelude.gcn: StandardPrelude.gct
