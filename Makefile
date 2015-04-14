@@ -149,7 +149,6 @@ grace-web-editor/index.html: pull-web-editor
 
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
-	sed -e 's/  editor.setFontSize(14);/  editor.setFontSize(14);  editor.$$blockScrolling = Infinity;/' -i '~' grace-web-editor/scripts/setup.js
 
 graceWeb: pull-objectdraw js samples ace-code
 	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
