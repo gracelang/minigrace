@@ -8,7 +8,7 @@ var currentTestBlockForTesting := 0
 var currentTestInThisEvaluation := 0
 var currentCountOfAssertions := 0
 
-method test(name:String) by(block:Block) is public {
+method test(name:String) by(block:Block) {
     if(currentTestSuiteForDialect == done) then {
         Exception.raise("a test can only be created within a testSuite")
     }
@@ -26,47 +26,51 @@ method test(name:String) by(block:Block) is public {
     }
 }
 
-method assert(bb:Boolean)description(str:String) is public {
+method assert(bb:Boolean)description(str:String) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(bb)description(str)
 }
 
-method deny(bb:Boolean)description (str:String) is public {
+method deny(bb:Boolean)description (str:String) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.deny(bb)description(str)
 }
 
-method assert(bb:Boolean) is public {
+method assert(bb:Boolean) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(bb)
 }
 
-method deny(bb:Boolean) is public {
+method deny(bb:Boolean) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.deny(bb)
 }
 
-method assert(s1:Object)shouldBe(s2:Object) is public {
+method assert(s1:Object)shouldBe(s2:Object) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(s1)shouldBe(s2)
 }
 
-method assert(b:Block)shouldRaise(de:Exception) is public {
+method assert(b:Block)shouldRaise(de:Exception) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(b)shouldRaise(de)
 }
 
-method assert(b:Block)shouldntRaise(ue:Exception) is public {
+method assert(b:Block)shouldntRaise(ue:Exception) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(b)shouldntRaise(ue)
 }
 
-method assert(s:Object) hasType (t:Type) is public {
+method assert(s:Object) hasType (t:Type) {
     currentCountOfAssertions := currentCountOfAssertions + 1
     gu.assertion.trait.assert(s) hasType (t)
 }
 
-method testSuite(block:Block) is public {
+method failBecause(reason) {
+    assert(false) description(reason)
+}
+
+method testSuite(block:Block) {
     if(currentTestSuiteForDialect != done) then {
         Exception.raise("a testSuite cannot be created inside a testSuite")
     }
