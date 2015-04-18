@@ -22,11 +22,12 @@ JS_STUBS = dom.grace
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
+GRACE_DIALECTS_GSO = $(patsubst %.grace, %.gso, $(filter-out $(OBJECTDRAW_BITS), $(GRACE_DIALECTS)))
 GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out js/interactive.js,$(SOURCEFILES:%.grace=js/%.js)))
 KG=known-good/$(ARCH)/$(STABLE)
-OBJECTDRAW_BITS = objectdraw.grace animation.grace
+OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
@@ -128,6 +129,7 @@ echo:
 	@echo C_MODULES_GCN = $(C_MODULES_GCN)
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
+	@echo GRACE_DIALECTS_GSO = $(GRACE_DIALECTS_GSO)
 
 expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js)
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
@@ -166,21 +168,19 @@ gUnit.gcn: gUnit.gct
 gUnit.gct: gUnit.grace StandardPrelude.gct minigrace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
-	install -m 755 minigrace js/grace $(PREFIX)/bin/minigrace
+	install -m 755 minigrace $(PREFIX)/bin/minigrace
+	install -m 755 js/grace $(PREFIX)/bin/grace
 	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS:%.grace=js/%.js) $(GRACE_DIALECTS:%.grace=%.gct) $(GRACE_DIALECTS:%.grace=%.gso) $(GRACE_DIALECTS:%.grace=%.gcn) $(MODULE_PATH)
+	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS_GSO:%.gso=js/%.js) $(GRACE_DIALECTS_GSO:%.gso=%.gct) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS_GSO:%.gso=%.gcn) $(MODULE_PATH)
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
-
-js/animation.js: animation.grace minigrace
-	cd js && cp -f ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
 
 js/collectionsPrelude.js: js/collectionsPrelude.gct
 	@echo "$@ was built with the gct"
@@ -207,10 +207,7 @@ js/minigrace.js: js/minigrace.in.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-js/objectdraw.js: objectdraw.grace pull-objectdraw minigrace
-	cd js && cp -f ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
-
-js/rtobjectdraw.js js/rtobjectdraw.gct: rtobjectdraw.grace minigrace
+$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace
 	cd js && cp -f ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
@@ -367,7 +364,7 @@ minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/ho
 
 $(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
-$(OBJECTDRAW_BITS): %.grace: objectdraw/%.grace
+$(filter-out rtobjectdraw.grace, $(OBJECTDRAW_BITS)): %.grace: objectdraw/%.grace
 	ln -f $< .
 
 objectdraw.gcn objectdraw.gso:
