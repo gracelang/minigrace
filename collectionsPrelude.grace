@@ -152,8 +152,13 @@ type EmptyCollectionFactory<T> = {
     empty<T> -> Collection<T>
 }
 
+def unknown = object { 
+    method asString { "unknown" }
+    method match(other) { self == other }
+}
+
 class collectionFactory.trait<T> {
-    // requires withAll(elts:Collection<T>) -> Collection<T>
+    method withAll(elts:Collection<T>) -> Collection<T> { abstract }
     method with(*a:T) -> Unknown { self.withAll(a) }
     method empty -> Unknown { self.with() }
 }
@@ -186,11 +191,13 @@ class iterable.trait<T> {
         return self
     }
     method map<R>(block1:Block1<T,R>) -> Iterator<R> {
-        return object {                     // this "return" is to work around a compiler bug
+        object {
             inherits iterable.trait<T>
             method havemore { outer.havemore }
             method hasNext { outer.hasNext }
             method next { block1.apply(outer.next) }
+            method size { outer.size }
+            method asString { "a map iterator" }
         }
     }
     method fold(block2)startingWith(initial) {
@@ -201,7 +208,7 @@ class iterable.trait<T> {
     method filter(selectionCondition) {
     // return an iterator that emits only those elements of the underlying
     // iterator for which selectionCondition holds.
-        return object {                     // this "return" is to work around a compiler bug
+        object {
             inherits iterable.trait
             var cache
             var cacheLoaded := false
@@ -243,13 +250,17 @@ class iterable.trait<T> {
                     if (acceptable) then { return outerNext }
                 }
             }
+            method size { unknown }
+            method asString { "a filter iterator" }
         }
     }
-    method asString { "a filter iterator" }
+    method asString { "an iterator" }
 }
 
 class enumerable.trait<T> {
-    // requires do, iterator, size
+    method do { abstract }
+    method iterator { abstract }
+    method size { abstract }
     method isEmpty { self.size == 0 }
     method do(block1) separatedBy(block0) {
         var firstTime := true
@@ -264,7 +275,9 @@ class enumerable.trait<T> {
         }
         return self
     }
-    method reduce(initial, blk) {   // backwawrd compatibility
+    method reduce(initial, blk) {   
+    // backward compatibility
+
         fold(blk)startingWith(initial)
     }
     method map(block1) {
@@ -294,30 +307,30 @@ class enumerable.trait<T> {
 
 class indexable.trait<T> {
     inherits enumerable.trait<T>
-    // requires do, iterator, at(ix:Number), size, keysAndValuesDo
     method at { abstract }
+    method size { abstract }
+    method keysAndValuesDo { abstract }
+
     method first { at(1) }
     method second { at(2) }
     method third { at(3) }
     method fourth { at(4) }
     method fifth { at(5) }
-    method last { at(self.size) }
+    method last { at(size) }
     method [](ix) { at(ix) }
-    method indices {
-        range.from(1)to(self.size)
-    }
+    method indices { range.from 1 to(size) }
     method indexOf(sought:T)  {
-        indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in list" }
+        indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in collection" }
     }
     method indexOf(sought:T) ifAbsent(action:Block0)  {
-        self.keysAndValuesDo { ix, v ->
+        keysAndValuesDo { ix, v ->
             if (v == sought) then { return ix }
         }
         action.apply
     }
     method asDictionary {
         def result = dictionary.empty
-        self.keysAndValuesDo { k, v -> 
+        keysAndValuesDo { k, v ->
             result.at(k) put(v)
         }
         return result
@@ -430,14 +443,15 @@ factory method sequence<T> {
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aSequenceIterator" }
-                    method havemore { idx <= size }
-                    method hasNext { idx <= size }
+                    method havemore { idx <= sz }
+                    method hasNext { idx <= sz }
                     method next {
-                        if (idx > size) then { Exhausted.raise "on sequence" }
+                        if (idx > sz) then { Exhausted.raise "on sequence {outer}⟪{idx}⟫" }
                         def ret = at(idx)
                         idx := idx + 1
                         ret
                     }
+                    method size { sz - idx + 1 }
                 }
             }
             method copySorted {
