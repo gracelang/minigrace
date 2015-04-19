@@ -23,13 +23,13 @@ EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
 GRACE_DIALECTS_GSO = $(patsubst %.grace, %.gso, $(filter-out $(OBJECTDRAW_BITS), $(GRACE_DIALECTS)))
-GRACE_MODULES = gUnit.grace collections.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
+GRACE_MODULES = gUnit.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out js/interactive.js,$(SOURCEFILES:%.grace=js/%.js)))
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
-REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace collections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
+REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=66625d4f94cdf2ecc7b7689ea147277ffe16f1c1
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
