@@ -168,11 +168,11 @@ gUnit.gcn: gUnit.gct
 gUnit.gct: gUnit.grace StandardPrelude.gct minigrace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
-	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) $(MODULE_PATH)
+	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
@@ -194,6 +194,9 @@ js/dom.gct: stubs/dom.gct
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
+
+js/grace: js/grace.in
+	sed -e "s|@MODULE_PATH@|$(MODULE_PATH)|" $< > js/grace
 
 js/gUnit.js: js/gUnit.gct
 	echo "$@ made with the gct"
