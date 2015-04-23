@@ -1156,11 +1156,13 @@ def setTest = object {
         }
 
         method testSetFilterNone {
-            deny(oneToFive.filter{x -> false}.hasNext)
+            assert(oneToFive.filter{x -> false}.isEmpty)
+                description "filtered(false) set isn't empty"
         }
         
         method testSetFilterEmpty {
-            deny(empty.filter{x -> (x % 2) == 1}.hasNext)
+            assert(evens.filter{x -> (x % 2) == 1}.isEmpty)
+                description "filtered(odd) set isn't empty"
         }
 
         method testSetFilterOdd {
@@ -1245,9 +1247,9 @@ def dictionaryTest = object {
         }
         method testDictionaryInequalityEmpty {
             deny(empty == dictionary.with("one"::1)) 
-                description "empty dictionary equals non-empty dictionary with \"one\"::1"
+                description "empty dictionary equals dictionary with \"one\"::1"
             assert(empty != dictionary.with("two"::2))
-                description "empty dictionary equals non-empty dictionary with \"two\"::2"
+                description "empty dictionary equals dictionary with \"two\"::2"
             deny(empty == 3)
             deny(empty == evens)
         }
@@ -1272,10 +1274,11 @@ def dictionaryTest = object {
             assert(accum) shouldBe (oneToFive)
         }
         method testDictionaryEmptyBindingsIterator {
-            deny (empty.bindings.hasNext) description "the empty iterator has elements"
+            deny (empty.bindings.iterator.hasNext) 
+                description "the empty bindings iterator has elements"
         }
         method testDictionaryEvensBindingsIterator {
-            def ei = evens.bindings
+            def ei = evens.bindings.iterator
             assert (evens.size == 4) description "evens doesn't contain 4 elements!"
             assert (ei.hasNext) description "the evens iterator has no elements"
             def copyDict = dictionary.with(ei.next, ei.next, ei.next, ei.next)
@@ -1285,7 +1288,8 @@ def dictionaryTest = object {
         method testDictionaryAdd {
             assert (empty.at "nine" put(9)) 
                 shouldBe (dictionary.with("nine"::9))
-            assert (evens.at "ten" put(10).values.onto(set)) shouldBe (set.with(2, 4, 6, 8, 10))
+            assert (evens.at "ten" put(10).values.onto(set)) 
+                shouldBe (set.with(2, 4, 6, 8, 10))
         }
         method testDictionaryRemoveKeyTwo {
             assert (evens.removeKey "two".values.onto(set)) shouldBe (set.with(4, 6, 8))
@@ -1427,15 +1431,22 @@ def dictionaryTest = object {
             assert(evens.asDictionary) shouldBe (evens)
         }
         
-        method testDictionaryAsSequenceEmpty {
-            assert(empty.asSequence) shouldBe (sequence.empty)
+        method testDictionaryValuesEmpty {
+            assert(empty.values) shouldBe (sequence.empty)
+        }        
+        method testDictionaryKeysEmpty {
+            assert(empty.keys) shouldBe (sequence.empty)
         }
-        method testDictionaryAsSequenceSingle {
-            assert(dictionary.with("one"::1).asSequence) shouldBe 
-                (sequence.with("one"::1))
+        method testDictionaryValuesSingle {
+            assert(dictionary.with("one"::1).values) shouldBe
+                (sequence.with 1)
         }
-        method testDictionaryAsSequenceEvens {
-            assert(evens.asSequence.asSet) shouldBe 
+        method testDictionaryKeysSingle {
+            assert(dictionary.with("one"::1).keys) shouldBe
+                (sequence.with "one")
+        }
+        method testDictionaryBindingsEvens {
+            assert(evens.bindings.asSet) shouldBe
                 (set.with("two"::2, "four"::4, "six"::6, "eight"::8))
         }
     }
@@ -1452,7 +1463,7 @@ def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
 print "sequence"
 //sequenceTests.debugAndPrintResults
 sequenceTests.runAndPrintResults
-sequenceTest.forMethod "testSequenceAsDictionary".debugAndPrintResults
+//sequenceTest.forMethod "testSequenceAsDictionary".debugAndPrintResults
 //sequenceTest.forMethod("testSequenceMapEmpty").debugAndPrintResults
 def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 print "list"

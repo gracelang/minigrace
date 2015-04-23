@@ -299,6 +299,23 @@ class lazySequence.trait<T> {
         }
         existing
     }
+    method ==(other) {
+        // TODO: fix inheritance!  This whole method is copied from sequence.
+        match (other)
+            case {o:Collection ->
+                def selfIter = self.iterator
+                def otherIter = other.iterator
+                while {selfIter.hasNext && otherIter.hasNext} do {
+                    if (selfIter.next != otherIter.next) then {
+                        return false
+                    }
+                }
+                return selfIter.hasNext == otherIter.hasNext
+            } 
+            case {_ ->
+                return false
+            }
+    }
     method do(block1:Block1<T,Done>) -> Done {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do { 
@@ -1427,9 +1444,21 @@ factory method dictionary<K,T> {
                 return t
             }
             method asString {
+                // do()separatedBy won't work, because it iterates over values, 
+                // and we need an iterator over bindings.
                 var s := "dict⟬"
-                do { a -> s := s ++ "{a.key}::{a.value}" }
-                    separatedBy { s := s ++ ", " }
+                var firstElement := true
+                for (0..(inner.size-1)) do {i->
+                    def a = inner.at(i)
+                    if ((a != unused) && (a != removed)) then {
+                        if (! firstElement) then {
+                            s := s ++ ", "
+                        } else {
+                            firstElement := false
+                        }
+                        s := s ++ "{a.key}::{a.value}"
+                    }
+                }
                 s ++ "⟭"
             }
             method asDebugString {
@@ -1447,30 +1476,58 @@ factory method dictionary<K,T> {
             }
             method keys -> LazySequence<K> {
                 def sourceDictionary = self
-                object {
+                return object {
                     inherits lazySequence.trait<K>
                     factory method iterator {
-                        def sourceIterator = sourceDictionary.bindings
+                        def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
                         method next { sourceIterator.next.key }
+                        method asString { 
+                            "an iterator over keys of {sourceDictionary}"
+                        }
                     }
                     def size is public = sourceDictionary.size
+                    method asString { super.asString }  // TODO: fix code generator bug!
+                    method ==(other) { super == other } // TODO: fix code generator bug!
+                    method asDebugString { 
+                        "a lazy sequence over keys of {sourceDictionary}"
+                    }
                 }
             }
             method values -> LazySequence<T> {
                 def sourceDictionary = self
-                object {
+                return object {
                     inherits lazySequence.trait<T>
                     factory method iterator {
-                        def sourceIterator = sourceDictionary.bindings
+                        def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
                         method next { sourceIterator.next.value }
+                        method asString { 
+                            "an iterator over values of {sourceDictionary}"
+                        }
                     }
                     def size is public = sourceDictionary.size
+                    method asString { super.asString }  // TODO: fix code generator bug!
+                    method ==(other) { super == other } // TODO: fix code generator bug!
+                    method asDebugString { 
+                        "a lazy sequence over values of {sourceDictionary}"
+                    }
+                }
+            }
+            method bindings -> LazySequence<T> {
+                def sourceDictionary = self
+                object {
+                    inherits lazySequence.trait<T>
+                    method iterator { sourceDictionary.bindingsIterator }
+                    def size is public = sourceDictionary.size
+                    method asDebugString { 
+                        "a lazy sequence over bindings of {sourceDictionary}"
+                    }
                 }
             }
             method iterator -> Iterator<T> { values.iterator }
-            factory method bindings -> Iterator<Binding<K, T>> {
+            factory method bindingsIterator -> Iterator<Binding<K, T>> {
+                // this should be confidential, but can't be until `outer` is fixed.
                 var count := 1
                 var idx := 0
                 var elt
@@ -1481,7 +1538,7 @@ factory method dictionary<K,T> {
                     }
                     while {
                         elt := inner.at(idx)
-                        (elt == unused).orElse{ elt == removed }
+                        (elt == unused) || (elt == removed)
                     } do {
                         idx := idx + 1
                     }
@@ -1558,14 +1615,6 @@ factory method dictionary<K,T> {
             
             method asDictionary {
                 self
-            }
-            
-            method asSequence {
-                def sourceDict = self
-                object {
-                    inherits lazySequence.trait<T>
-                    method iterator {sourceDict.bindings}
-                }
             }
 
             method ++(other) {
