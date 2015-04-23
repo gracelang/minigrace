@@ -1437,10 +1437,10 @@ factory method dictionary<K,T> {
                 for (0..(inner.size-1)) do {i->
                     if (i > 0) then { s := s ++ ", " }
                     def a = inner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        s := s ++ "{i}:{a.key}=>{a.value}"
+                    if ((a != unused) && (a != removed)) then {
+                        s := s ++ "{i}→{a.key}::{a.value}"
                     } else {
-                        s := s ++ "{i}:{a.asDebugString}"
+                        s := s ++ "{i}→{a.asDebugString}"
                     }
                 }
                 s ++ "⟭"
