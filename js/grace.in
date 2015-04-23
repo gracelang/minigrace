@@ -209,7 +209,7 @@ function findOnPath(fn, pathArray) {
             // path.resolve joins, normalizes, & makes absolute
         if (fs.existsSync(candidate)) { return candidate };
     }
-    return -1
+    throw new Error('module "' + fn + '" not found on path ' + pathArray + '.');
 }
 
 function addToPathIfNecessary(dir) {
@@ -250,11 +250,6 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
         fileName = fileName + extn;
     }
     var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
-    if (found === -1) {
-        console.error("fileName = " + fileName);
-        console.error("path = " + [referencingDir].concat(pathdirs));
-        throw new Error('module "' + moduleName + '" not found.');
-    }
     var sourceDir = fsPath.dirname(fs.realpathSync(found));
     require(found);
     if (typeof global[graceModule] !== 'function') {
