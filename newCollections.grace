@@ -47,6 +47,7 @@ type LazySequence<T> = Collection<T> & type {
     keys -> Collection<Number>
     values -> Collection<T>
     copySortedBy(comparison:Block2<T,T,Number>) -> SelfType
+    copySorted -> SelfType
     asList -> List<T>
     asSequence -> Sequence<T>
     asDictionary -> Dictionary<Number,T>
@@ -162,41 +163,6 @@ class collectionFactory.trait<T> {
     method empty -> Unknown { self.with() }
 }
 
-class lazySequence.trait<T> {
-    inherits collection.trait<T>
-    method iterator { abstract }
-    method asSet -> Set<T> {
-        set.withAll(self)
-    }
-    method asList -> List<T> {
-        list.withAll(self)
-    }
-    method asSequence -> Sequence<T> {
-        sequence.withAll(self)
-    }
-    method onto(f: CollectionFactory<T>) -> Collection<T> {
-        f.withAll(self)
-    }
-    method into(existing: Collection<T>) -> Collection<T> {
-        def selfIterator = self.iterator
-        while {selfIterator.hasNext} do { 
-            existing.add(selfIterator.next)
-        }
-    }
-    method do(block1:Block1<T,Done>) -> Done {
-        def selfIterator = self.iterator
-        while {selfIterator.hasNext} do { 
-            block1.apply(selfIterator.next)
-        }
-    }
-    method fold<R>(block2)startingWith(initial) -> R {
-        var res := initial
-        while { self.hasNext } do { res := block2.apply(res, self.next) }
-        return res
-    }
-    method asString { "a lazy sequence" }
-}
-
 class collection.trait<T> {
     method do { abstract }
     method iterator { abstract }
@@ -227,79 +193,77 @@ class collection.trait<T> {
         }
         return res
     }
-    factory method map<R>(block1:Block1<T,R>) -> LazySequence<R> {
+    method map<R>(block1:Block1<T,R>) -> LazySequence<R> {
     // returns a lazy sequence that maps the underlying collection
-        inherits lazySequence.trait<T>
-        def mapSequence = self
-        factory method iterator {
-            def sourceIterator = mapSequence.iterator       
-            // TODO: using outer instead of mapSequence causes infinite recursion
-            method asString { "an iterator over a lazy map sequence" }
-            method hasNext { sourceIterator.hasNext }
-            method next { block1.apply(sourceIterator.next) }
+        def sourceSequence = self
+        object {
+            inherits lazySequence.trait<T>
+            factory method iterator {
+                def sourceIterator = sourceSequence.iterator       
+                // TODO: using outer instead of sourceSequence causes infinite recursion
+                method asString { "an iterator over a lazy map sequence" }
+                method hasNext { sourceIterator.hasNext }
+                method next { block1.apply(sourceIterator.next) }
+            }
+            method size { sourceSequence.size } // outer seems to work here, though
+            method asDebugString { "a lazy sequence mapping over {sourceSequence}" }
         }
-        method size { outer.size }
-        method asString { "a lazy sequence mapping over {outer}" }
     }
-    factory method filter(selectionCondition) -> LazySequence<T> {
+    method filter(selectionCondition) -> LazySequence<T> {
     // return a lazy sequence that contains only those elements of the
     // underlying collection for which selectionCondition holds.
-        inherits lazySequence.trait
-        def filterSequence = self
-        factory method iterator {
-            var cache
-            var cacheLoaded := false
-            def sourceIterator = filterSequence.iterator       
-            // TODO: using outer instead of filterSequence causes infinite recursion
-            method asString { "an iterator over {filterSequence}" }
-            method hasNext {
-            // return true if this iterator has a next element.
-            // To determine the answer, we have to find an acceptable element;
-            // this is then cached, for the use of next
-                if (cacheLoaded) then { return true }
-                try {
-                    cache := nextAcceptableElement
-                    cacheLoaded := true
-                } catch { ex:Exhausted -> return false }
-                return true
-            }
+        def sourceSequence = self
+        object {
+            inherits lazySequence.trait<T>
+            factory method iterator {
+                var cache
+                var cacheLoaded := false
+                def sourceIterator = sourceSequence.iterator       
+                // TODO: using outer instead of sourceSequence causes infinite recursion
+                method asString { "an iterator over {sourceSequence}" }
+                method hasNext {
+                // return true if this iterator has a next element.
+                // To determine the answer, we have to find an acceptable element;
+                // this is then cached, for the use of next
+                    if (cacheLoaded) then { return true }
+                    try {
+                        cache := nextAcceptableElement
+                        cacheLoaded := true
+                    } catch { ex:Exhausted -> return false }
+                    return true
+                }
 
-            method next {
-                if (cacheLoaded.not) then { cache := nextAcceptableElement }
-                cacheLoaded := false
-                return cache
-            }
-            method nextAcceptableElement is confidential {
-            // return the next element of the underlying iterator satisfying
-            // selectionCondition; if there is none, raises Exhausted.
-                while { true } do {
-                    def outerNext = sourceIterator.next
-                    def acceptable = selectionCondition.apply(outerNext)
-                    if (acceptable) then { return outerNext }
+                method next {
+                    if (cacheLoaded.not) then { cache := nextAcceptableElement }
+                    cacheLoaded := false
+                    return cache
+                }
+                method nextAcceptableElement is confidential {
+                // return the next element of the underlying iterator satisfying
+                // selectionCondition; if there is none, raises Exhausted.
+                    while { true } do {
+                        def outerNext = sourceIterator.next
+                        def acceptable = selectionCondition.apply(outerNext)
+                        if (acceptable) then { return outerNext }
+                    }
                 }
             }
+            method size { unknown }
+            method asDebugString { "a lazy sequence filtering {sourceSequence}" }
         }
-        method size { unknown }
-        method asString { "a lazy sequence filtering {outer}" }
     }
 
     method iter { return self.iterator }
-    method onto(resultFactory) {
-        resultFactory.withAll(self)
-//        def resultCollection = resultFactory.empty
-//        def selfIterator = self.iterator
-//        while {selfIterator.hasNext} do { 
-//            resultCollection.add(selfIterator.next) 
-//        }
-//        resultCollection
+
+    method onto(f: CollectionFactory<T>) -> Collection<T> {
+        f.withAll(self)
     }
-    method into(existingCollection) {
-        existingCollection.addAll(self)
-//        def selfIterator = self.iterator
-//        while {selfIterator.hasNext} do {
-//            existingCollection.add(selfIterator.next) 
-//        }
-//        existingCollection
+    method into(existing: Collection<T>) -> Collection<T> {
+        def selfIterator = self.iterator
+        while {selfIterator.hasNext} do { 
+            existing.add(selfIterator.next)
+        }
+        existing
     }
     method asSequence {
         sequence.withAll(self)
@@ -312,12 +276,74 @@ class collection.trait<T> {
     }
 }
 
+class lazySequence.trait<T> {
+    inherits collection.trait<T>
+    method iterator { abstract }
+    method size { unknown }     // can be overridden if size is known
+    method asSet -> Set<T> {
+        set.withAll(self)
+    }
+    method asList -> List<T> {
+        list.withAll(self)
+    }
+    method asSequence -> Sequence<T> {
+        sequence.withAll(self)
+    }
+    method onto(f: CollectionFactory<T>) -> Collection<T> {
+        f.withAll(self)
+    }
+    method into(existing: Collection<T>) -> Collection<T> {
+        def selfIterator = self.iterator
+        while {selfIterator.hasNext} do { 
+            existing.add(selfIterator.next)
+        }
+        existing
+    }
+    method do(block1:Block1<T,Done>) -> Done {
+        def selfIterator = self.iterator
+        while {selfIterator.hasNext} do { 
+            block1.apply(selfIterator.next)
+        }
+    }
+    method fold<R>(block2)startingWith(initial) -> R {
+        var res := initial
+        while { self.hasNext } do { res := block2.apply(res, self.next) }
+        return res
+    }
+    method isEmpty {
+        def mySize = size
+        if (mySize == 0) then { return true }
+        if (mySize == unknown) then { return iterator.hasNext.not }
+        return false
+    }
+    method copy (sortBlock:Block2) {
+        self.asList.sortBy(sortBlock:Block2)
+    }
+    method copySortedBy(sortBlock:Block2) -> List<T> {
+        self.asList.sortBy(sortBlock:Block2).asSequence
+    }
+    method copySorted -> List<T> {
+        self.asList.sort
+    }
+    method asString {
+        var s := "⟨"
+        do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
+        s ++ "⟩"
+    }
+}
+
 class indexable.trait<T> {
     inherits collection.trait<T>
     method at { abstract }
     method size { abstract }
-    method keysAndValuesDo { abstract }
-
+    method keysAndValuesDo(action:Block2<Number,T,Done>) -> Done {
+        def curSize = size
+        var i := 1
+        while {i <= curSize} do {
+            action.apply(i, self.at(i))
+            i := i + 1
+        }
+    }
     method first { at(1) }
     method second { at(2) }
     method third { at(3) }
@@ -413,10 +439,10 @@ factory method sequence<T> {
                 inner.at(n-1)
             }
             method keys {
-                range.from(1)to(size).iterator
+                range.from(1)to(size)
             }
             method values {
-                self.iterator
+                self
             }
             method keysAndValuesDo(block2) {
                 var i := 0
@@ -441,7 +467,7 @@ factory method sequence<T> {
                 var s := "⟨"
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
-                    if (i < (size-1)) then { s := s ++ "," }
+                    if (i < (size-1)) then { s := s ++ ", " }
                 }
                 s ++ "⟩"
             }
@@ -458,14 +484,15 @@ factory method sequence<T> {
             }
             method ==(other) {
                 match (other)
-                    case {o:Sequence<T> ->
-                        if (self.size != o.size) then {return false}
-                        self.indices.do { ix ->
-                            if (self.at(ix) != o.at(ix)) then {
+                    case {o:Collection ->
+                        def selfIter = self.iterator
+                        def otherIter = other.iterator
+                        while {selfIter.hasNext && otherIter.hasNext} do {
+                            if (selfIter.next != otherIter.next) then {
                                 return false
                             }
                         }
-                        return true
+                        return selfIter.hasNext == otherIter.hasNext
                     } 
                     case {_ ->
                         return false
@@ -585,18 +612,10 @@ factory method list<T> {
                     addAll(x)
                 }
 
-                method addAll(l) {
-                    for (l) do { each -> push(each) }
-                    self
-                }
-
                 method push(x) {
                     native "js" code ‹this.data.jsArray.push(var_x);
                             return this;›
                 }
-                
-                method addLast(*x) { addAll(x) }    // compatibility
-                
 
                 method removeLast {
                     def result = self.at(size)
@@ -616,20 +635,37 @@ factory method list<T> {
                     }
                     self
                 }
+
+                method removeAt(n) {
+                    def removed = self.at(n)    // does the bounds check
+                    native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
+                    return removed
+                }
                 
+                method sortBy(sortBlock:Block2) {
+                    native "js" code ‹var compareFun = function compareFun(a, b) {
+                              var res = callmethod(var_sortBlock, "apply", [2], a, b);
+                              if (res.className == "number") return res._value;
+                              throw new GraceExceptionPacket(TypeErrorObject,
+                                     new GraceString("sort block in list.sortBy method did not return a number"));
+                          }
+                          this.data.jsArray.sort(compareFun);›
+                    self
+                }
+                // end of native methods
+
+                
+                method addLast(*x) { addAll(x) }    // compatibility
+                method addAll(l) {
+                    for (l) do { each -> push(each) }
+                    self
+                }
 
                 method addFirst(*l) { addAllFirst(l) }
                 
 
                 method removeFirst {
                     removeAt(1)
-                }
-                
-
-                method removeAt(n) {
-                    def removed = self.at(n)    // does the bounds check
-                    native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
-                    return removed
                 }
                 
 
@@ -688,7 +724,7 @@ factory method list<T> {
                     def curSize = self.size
                     for (1..curSize) do { i ->
                         s := s ++ at(i).asString
-                        if (i < curSize) then { s := s ++ "," }
+                        if (i < curSize) then { s := s ++ ", " }
                     }
                     s ++ "]"
                 }
@@ -713,22 +749,23 @@ factory method list<T> {
                 }
                 
 
+                
                 method ==(other) {
                     match (other)
-                        case {o:Sequence ->
-                            if (self.size != o.size) then {return false}
-                            self.indices.do { ix ->
-                                if (self.at(ix) != o.at(ix)) then {
+                        case {o:Collection ->
+                            def selfIter = self.iterator
+                            def otherIter = other.iterator
+                            while {selfIter.hasNext && otherIter.hasNext} do {
+                                if (selfIter.next != otherIter.next) then {
                                     return false
                                 }
                             }
-                            return true
+                            return selfIter.hasNext == otherIter.hasNext
                         } 
                         case {_ ->
                             return false
                         }
                 }
-                
 
                 method iterator {
                     object {
@@ -754,28 +791,6 @@ factory method list<T> {
                 method keys {
                     self.indices
                 }
-                
-
-                method keysAndValuesDo(block2) {
-                    def curSize = size
-                    var i := 1
-                    while {i <= size} do {
-                        block2.apply(i, self.at(i))
-                        i := i + 1
-                    }
-                }
-
-                method sortBy(sortBlock:Block2) {
-                    native "js" code ‹var compareFun = function compareFun(a, b) {
-                              var res = callmethod(var_sortBlock, "apply", [2], a, b);
-                              if (res.className == "number") return res._value;
-                              throw new GraceExceptionPacket(TypeErrorObject,
-                                     new GraceString("sort block in list.sortBy method did not return a number"));
-                          }
-                          this.data.jsArray.sort(compareFun);›
-                    self
-                }
-                
 
                 method sort {
                     sortBy { l, r ->
@@ -934,7 +949,7 @@ factory method list<T> {
                 var s := "["
                 for (0..(size-1)) do {i->
                     s := s ++ inner.at(i).asString
-                    if (i < (size-1)) then { s := s ++ "," }
+                    if (i < (size-1)) then { s := s ++ ", " }
                 }
                 s ++ "]"
             }
@@ -950,16 +965,18 @@ factory method list<T> {
                     i := i + 1
                 }
             }
+            
             method ==(other) {
                 match (other)
-                    case {o:Sequence ->
-                        if (self.size != o.size) then {return false}
-                        self.indices.do { ix ->
-                            if (self.at(ix) != o.at(ix)) then {
+                    case {o:Collection ->
+                        def selfIter = self.iterator
+                        def otherIter = other.iterator
+                        while {selfIter.hasNext && otherIter.hasNext} do {
+                            if (selfIter.next != otherIter.next) then {
                                 return false
                             }
                         }
-                        return true
+                        return selfIter.hasNext == otherIter.hasNext
                     } 
                     case {_ ->
                         return false
@@ -984,13 +1001,6 @@ factory method list<T> {
             }
             method keys {
                 self.indices
-            }
-            method keysAndValuesDo(block2) {
-                var i := 0
-                while {i < size} do { 
-                    block2.apply(i+1, inner.at(i))
-                    i := i + 1
-                }
             }
             method expandTo(newSize) is confidential {
                 def newInner = _prelude.PrimitiveArray.new(newSize)
@@ -1028,8 +1038,12 @@ factory method set<T> {
     method withAll(a:Collection<T>) -> Set<T> {
         object {
             inherits collection.trait
-            var inner := _prelude.PrimitiveArray.new(if (a.size > 1)
-                then {a.size * 3 + 1} else {8})
+            var initialSize := 8
+            def aSize = a.size
+            if ( (aSize != unknown).andAlso { aSize > 2 } ) then {
+                initialSize := aSize * 3 + 1
+            }
+            var inner := _prelude.PrimitiveArray.new(initialSize)
             def unused = object { 
                 var unused := true 
                 method asString { "unused" }
@@ -1039,7 +1053,7 @@ factory method set<T> {
                 method asString { "removed" }
             }
             var size is public := 0
-            for (0..(inner.size-1)) do {i->
+            for (0..(initialSize - 1)) do {i->
                 inner.at(i)put(unused)
             }
             for (a) do { x-> add(x) }
@@ -1156,7 +1170,7 @@ factory method set<T> {
             method asString {
                 var s := "set\{"
                 do {each -> s := s ++ each.asString }
-                    separatedBy { s := s ++ "," }
+                    separatedBy { s := s ++ ", " }
                 s ++ "\}"
             }
             method -(o) {
@@ -1227,13 +1241,14 @@ factory method set<T> {
             method ==(other) {
                 match (other)
                     case {o:Collection ->
-                        if (self.size != o.size) then {return false}
-                        self.do { each ->
-                            if (! o.contains(each)) then {
+                        var oSize := 0
+                        o.do { each ->
+                            oSize := oSize + 1
+                            if (! self.contains(each)) then {
                                 return false
                             }
                         }
-                        return true
+                        return oSize == self.size
                     } 
                     case {_ ->
                         return false
@@ -1285,8 +1300,8 @@ factory method dictionary<K,T> {
     }
     method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
         object {
-            inherits collection.trait
-            var size is public := 0
+            inherits collection.trait<T>
+            var size is readable := 0
             var inner := _prelude.PrimitiveArray.new(8)
             def unused = object { 
                 var unused := true
@@ -1325,7 +1340,7 @@ factory method dictionary<K,T> {
                 }
                 NoSuchObject.raise "dictionary does not contain entry with key {k}"
             }
-            method at(k)ifAbsent(action) {
+            method at(k) ifAbsent(action) {
                 var b := inner.at(findPosition(k))
                 if (b.key == k) then {
                     return b.value
@@ -1413,20 +1428,9 @@ factory method dictionary<K,T> {
             }
             method asString {
                 var s := "dict⟬"
-                var numberRemaining := size
-                for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        s := s ++ "{a.key}::{a.value}"
-                        numberRemaining := numberRemaining - 1
-                        if (numberRemaining > 0) then {
-                            s := s ++ ", "
-                        }
-                    }
-                }
-//                self.do { a -> s := s ++ "{a.key}::{a.value}" }
-//                    separatedBy { s := s ++ ", " }
-                return (s ++ "⟭")
+                do { a -> s := s ++ "{a.key}::{a.value}" }
+                    separatedBy { s := s ++ ", " }
+                s ++ "⟭"
             }
             method asDebugString {
                 var s := "dict⟬"
@@ -1441,26 +1445,32 @@ factory method dictionary<K,T> {
                 }
                 s ++ "⟭"
             }
-            factory method keys -> LazySequence<K> {
-                inherits lazySequence.trait<K>
-                factory method iterator {
-                    def baseIterator = outer.bindings
-                    method hasNext { baseIterator.hasNext }
-                    method next { baseIterator.next.key }
+            method keys -> LazySequence<K> {
+                def sourceDictionary = self
+                object {
+                    inherits lazySequence.trait<K>
+                    factory method iterator {
+                        def sourceIterator = sourceDictionary.bindings
+                        method hasNext { sourceIterator.hasNext }
+                        method next { sourceIterator.next.key }
+                    }
+                    def size is public = sourceDictionary.size
                 }
-                def size is public = outer.size
             }
-            factory method values -> LazySequence<T> {
-                inherits lazySequence.trait<T>
-                factory method iterator {
-                    def baseIterator = outer.bindings
-                    method hasNext { baseIterator.hasNext }
-                    method next { baseIterator.next.value }
+            method values -> LazySequence<T> {
+                def sourceDictionary = self
+                object {
+                    inherits lazySequence.trait<T>
+                    factory method iterator {
+                        def sourceIterator = sourceDictionary.bindings
+                        method hasNext { sourceIterator.hasNext }
+                        method next { sourceIterator.next.value }
+                    }
+                    def size is public = sourceDictionary.size
                 }
-                def size is public = outer.size
             }
             method iterator -> Iterator<T> { values.iterator }
-            factory method bindings {
+            factory method bindings -> Iterator<Binding<K, T>> {
                 var count := 1
                 var idx := 0
                 var elt
@@ -1471,7 +1481,7 @@ factory method dictionary<K,T> {
                     }
                     while {
                         elt := inner.at(idx)
-                        (elt == unused).orElse{elt == removed}
+                        (elt == unused).orElse{ elt == removed }
                     } do {
                         idx := idx + 1
                     }
@@ -1485,11 +1495,11 @@ factory method dictionary<K,T> {
                 def n = c * 2
                 def oldInner = inner
                 inner := _prelude.PrimitiveArray.new(n)
-                for (0..(inner.size-1)) do {i->
+                for (0..(n - 1)) do {i->
                     inner.at(i)put(unused)
                 }
                 size := 0
-                for (0..(oldInner.size-1)) do {i->
+                for (0..(c - 1)) do {i->
                     def a = oldInner.at(i)
                     if ((a != unused).andAlso{a != removed}) then {
                         self.at(a.key)put(a.value)
@@ -1548,6 +1558,14 @@ factory method dictionary<K,T> {
             
             method asDictionary {
                 self
+            }
+            
+            method asSequence {
+                def sourceDict = self
+                object {
+                    inherits lazySequence.trait<T>
+                    method iterator {sourceDict.bindings}
+                }
             }
 
             method ++(other) {
@@ -1646,20 +1664,21 @@ factory method range {
             method ==(other) {
                 match (other)
                     case {o:Collection ->
-                        if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.hasNext} do {
+                        while {selfIter.hasNext && otherIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }
                         }
-                        return true
+                        return selfIter.hasNext == otherIter.hasNext
                     } 
                     case {_ ->
                         return false
                     }
             }
+            method copySorted { self }
+
             method copySortedBy(c) { self.asList.sortBy(c) }
             
             method keys { 1..self.size }
@@ -1759,20 +1778,21 @@ factory method range {
             method ==(other) {
                 match (other)
                     case {o:Collection ->
-                        if (self.size != other.size) then { return false }
                         def selfIter = self.iterator
                         def otherIter = other.iterator
-                        while {selfIter.hasNext} do {
+                        while {selfIter.hasNext && otherIter.hasNext} do {
                             if (selfIter.next != otherIter.next) then {
                                 return false
                             }
                         }
-                        return true
+                        return selfIter.hasNext == otherIter.hasNext
                     } 
                     case {_ ->
                         return false
                     }
             }
+            method copySorted { self.reversed }
+
             method copySortedBy(c) { self.asList.sortBy(c) }
             
             method keys { 1..self.size }
@@ -1780,7 +1800,7 @@ factory method range {
             method values { self }
 
             method asString -> String {
-                "range.from({upper})downTo({lower})"
+                "range.from {upper} downTo {lower}"
             }
             method asSequence {
                 self

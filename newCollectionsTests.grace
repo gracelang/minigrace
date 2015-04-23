@@ -45,9 +45,9 @@ def typeTest = object {
             def witness = sequence<Number>.with(1,3)
             assert (witness) hasType (Sequence<Number>)
         }
-        method testSequenceTypeReifiedCollection {
+        method testSequenceTypeLazySequence {
             def witness = sequence<Number>.with(1,3)
-            assert (witness) hasType (ReifiedCollection<Number>)
+            assert (witness) hasType (LazySequence<Number>)
         }
         method testSequenceNotTypeWithWombat {
             def witness = sequence<Number>.with(1,3)
@@ -61,9 +61,9 @@ def typeTest = object {
             def witness = range.from 1 to 6
             assert (witness) hasType (Sequence<Number>)
         }
-        method testRangeTypeReifiedCollection {
+        method testRangeTypeLazySequence {
             def witness = range.from 1 to 6
-            assert (witness) hasType (ReifiedCollection<Number>)
+            assert (witness) hasType (LazySequence<Number>)
         }
         method testRangeTypeNotTypeWithWombat {
             def witness = range.from 1 to 6
@@ -77,9 +77,9 @@ def typeTest = object {
             def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
             assert (witness) hasType (List<Number>)
         }
-        method testListTypeReifiedCollection {
+        method testListTypeSequence {
             def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-            assert (witness) hasType (ReifiedCollection<Number>)
+            assert (witness) hasType (Sequence<Number>)
         }
         method testListTypeNotTypeWithWombat {
             def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
@@ -92,10 +92,6 @@ def typeTest = object {
         method testDictionaryTypeDictionary {
             def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
             assert (witness) hasType (Dictionary<String,Number>)
-        }
-        method testDictionaryTypeReifiedCollection {
-            def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
-            assert (witness) hasType (ReifiedCollection<Binding<String,Number>>)
         }
         method testDictionaryTypeNotTypeWithWombat {
             def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
@@ -192,7 +188,7 @@ def rangeTest = object {
         def elements = list.empty 
         for (rangeUp) do {each -> elements.add(each)}
         assert (elements) shouldBe (list.with(3, 4, 5, 6))
-        assert (rangeUp.onto(list)) shouldBe (list.with(3, 4, 5, 6))
+        assert (rangeUp.asList) shouldBe (list.with(3, 4, 5, 6))
     }    
     method testRangeElementsUpWithFold {
         def elements = rangeUp.fold {acc, each -> acc.add(each)} 
@@ -275,7 +271,7 @@ def rangeTest = object {
         assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
     }
     method testRangeFilterExhausted {
-        assert {rangeUp.filter{each -> each > 10}.next} shouldRaise (Exhausted)
+        assert {rangeUp.filter{each -> each > 10}.iterator.next} shouldRaise (Exhausted)
     }
     method testRangeFilter {
         assert (rangeUp.filter{each -> each > 10}.onto(list)) shouldBe (list.empty)
@@ -486,7 +482,7 @@ def sequenceTest = object {
         }
 
         method testSequenceAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("⟨2,4,6,8⟩")
+            assert (evens.asString) shouldBe ("⟨2, 4, 6, 8⟩")
         }
              
         method testSequenceAsStringEmpty {
@@ -507,11 +503,11 @@ def sequenceTest = object {
         }
 
         method testSequenceFilterNone {
-            assert(oneToFive.filter{x -> false}.iterator.hasNext)
+            deny(oneToFive.filter{x -> false}.iterator.hasNext)
         }
         
         method testSequenceFilterEmpty {
-            assert(empty.filter{x -> (x % 2) == 1}.iterator.isEmpty)
+            assert(empty.filter{x -> (x % 2) == 1}.isEmpty)
         }
 
         method testSequenceFilterOdd {
@@ -881,7 +877,7 @@ def listTest = object {
         }
          
         method testListAsStringNonEmpty {
-            assert (evens.asString) shouldBe ("[2,4,6,8]")
+            assert (evens.asString) shouldBe ("[2, 4, 6, 8]")
         }
              
         method testListAsStringEmpty {
@@ -902,11 +898,11 @@ def listTest = object {
         }
 
         method testListFilterNone {
-            deny(oneToFive.filter{x -> false}.hasNext)
+            deny(oneToFive.filter{x -> false}.iterator.hasNext)
         }
         
         method testListFilterEmpty {
-            deny(empty.filter{x -> (x % 2) == 1}.hasNext)
+            deny(empty.filter{x -> (x % 2) == 1}.iterator.hasNext)
         }
 
         method testListFilterOdd {
@@ -1138,7 +1134,8 @@ def setTest = object {
          
         method testSetAsStringNonEmpty {
             evens.remove(6).remove(8)
-            assert ((evens.asString == "set\{2,4\}") || (evens.asString == "set\{4,2\}"))
+            assert ((evens.asString == "set\{2, 4\}") || (evens.asString == "set\{4, 2\}"))
+                description "set\{2, 4\}.asString is {evens.asString}"
         }
              
         method testSetAsStringEmpty {
@@ -1239,6 +1236,7 @@ def dictionaryTest = object {
 
         method testDictionaryEmptyDo {
             empty.do {each -> failBecause "emptySet.do did with {each}"}
+            assert (true)   // so that there is always an assert
         }
 
         method testDictionaryEqualityEmpty {
@@ -1387,11 +1385,11 @@ def dictionaryTest = object {
         }
 
         method testDictionaryFilterNone {
-            deny(oneToFive.filter{x -> false}.hasNext)
+            assert(oneToFive.filter{x -> false}.isEmpty)
         }
         
         method testDictionaryFilterEmpty {
-            deny(empty.filter{x -> (x % 2) == 1}.hasNext)
+            assert(empty.filter{x -> (x % 2) == 1}.isEmpty)
         }
 
         method testDictionaryFilterOdd {
@@ -1421,11 +1419,24 @@ def dictionaryTest = object {
             evens.removeKey("two")
             evens.removeValue(4)
             assert (evens.size) shouldBe 2
-            assert (evensCopy) shouldBe (dictionary.with("two"::2, "four"::4, "six"::6, "eight"::8))
+            assert (evensCopy) shouldBe 
+                (dictionary.with("two"::2, "four"::4, "six"::6, "eight"::8))
         }
         
         method testDictionaryAsDictionary {
             assert(evens.asDictionary) shouldBe (evens)
+        }
+        
+        method testDictionaryAsSequenceEmpty {
+            assert(empty.asSequence) shouldBe (sequence.empty)
+        }
+        method testDictionaryAsSequenceSingle {
+            assert(dictionary.with("one"::1).asSequence) shouldBe 
+                (sequence.with("one"::1))
+        }
+        method testDictionaryAsSequenceEvens {
+            assert(evens.asSequence.asSet) shouldBe 
+                (set.with("two"::2, "four"::4, "six"::6, "eight"::8))
         }
     }
 }
@@ -1441,7 +1452,8 @@ def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
 print "sequence"
 //sequenceTests.debugAndPrintResults
 sequenceTests.runAndPrintResults
-sequenceTest.forMethod("testSequenceMapEmpty").debugAndPrintResults
+sequenceTest.forMethod "testSequenceAsDictionary".debugAndPrintResults
+//sequenceTest.forMethod("testSequenceMapEmpty").debugAndPrintResults
 def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 print "list"
 //listTests.debugAndPrintResults
@@ -1457,6 +1469,7 @@ setTests.runAndPrintResults
 def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
 print "dictionary"
 dictTests.runAndPrintResults
+dictionaryTest.forMethod "testDictionaryChaining".debugAndPrintResults
 //def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests)
 
 //dictTests.runAndPrintResults
