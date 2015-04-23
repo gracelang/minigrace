@@ -85,8 +85,8 @@ class assertion.trait {
         } catch { raisedException:desiredException ->
             completedNormally := false
         } catch { raisedException ->
-            failBecause "code raised exception {raisedException.exception}" +
-                ": \"{raisedException.message}\" instead of {desiredException}" 
+            failBecause("code raised exception {raisedException.exception}" ++
+                ": \"{raisedException.message}\" instead of {desiredException}")
         }
         if (completedNormally) then {failBecause "code did not raise an exception"}
     }
@@ -164,10 +164,10 @@ method testCaseNamed(name') -> TestCase {
                 } finally { teardown }
             } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(8)
+                printBackTrace(e) limitedTo(16)
             } catch {e: Exception ->
                 result.testErrored(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(8)
+                printBackTrace(e) limitedTo(16)
             }
         }
         
