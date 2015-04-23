@@ -2155,8 +2155,9 @@ method compile(vl, of, mn, rm, bt) {
             } else {
                 cmd := ofpnBase
             }
-            if (io.spawn(cmd).success.not) then {
-                io.error.write "minigrace: Program {modname} exited with error.\n"
+            def runExitCode = io.spawn(cmd).wait
+            if (runExitCode < 0) then {
+                io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
                 sys.exit(4)
             }
         }
