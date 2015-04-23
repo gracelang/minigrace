@@ -19,6 +19,7 @@ objectdraw.grace
 rtobjectdraw.grace
 animation.grace
 js/.DS_Store
+js/grace
 js/index.html
 js/StandardPrelude.js
 js/minigrace.js
