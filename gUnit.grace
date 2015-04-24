@@ -5,6 +5,7 @@
 
 
 import "mirrors" as mirror
+import "math" as math
 
 type Assertion = { 
     assert(bb:Boolean)description(str:String) -> Done
@@ -44,6 +45,7 @@ type TestResult =  {
 
 type TestSuite = TestCase & type {
     add(t:TestCase) -> Done
+    rerunErrorsAndFailures(r:TestResult) -> Done
 }
 
 
@@ -53,27 +55,19 @@ class assertion.trait {
     method failBecause(str) {
         assert (false) description (str)
     }
-
-    method assert(bb: Boolean)description(str) {
-        if (! bb) 
-        then {
-            AssertionFailure.raise(str)
-        }        
+    method assert(bb: Boolean) description (str) {
+        if (! bb) then { AssertionFailure.raise(str) }
     }
-
-    method deny(bb: Boolean)description (str) {
+    method deny(bb: Boolean) description (str) {
         assert (! bb) description (str)
     }
-        
     method assert(bb: Boolean) {
         assert (bb) description "Assertion failed!"
     }
-
     method deny(bb: Boolean) {
         assert (! bb)
     }
-
-    method assert(s1:Object)shouldBe(s2:Object) {
+    method assert(s1:Object) shouldBe (s2:Object) {
         assert (s1 == s2) description "‹{s1}› should be ‹{s2}›"
     }
     
@@ -90,8 +84,7 @@ class assertion.trait {
         }
         if (completedNormally) then {failBecause "code did not raise an exception"}
     }
-    
-    method assert(block0)shouldntRaise(undesiredException) {
+    method assert(block0) shouldntRaise (undesiredException) {
         try {
             block0.apply
         } catch { raisedException:undesiredException ->
@@ -99,7 +92,6 @@ class assertion.trait {
         } catch { raisedException -> // do nothing: it's ok to raise some other exception
         }
     }
-    
     method assert(value) hasType (DesiredType) {
         match (value)
             case { _:DesiredType -> assert (true) }
@@ -107,7 +99,6 @@ class assertion.trait {
                 def m = methodsIn(DesiredType) missingFrom (value)
                 failBecause "{value} does not have type {DesiredType}; it's missing methods {m}." }
     }
-    
     method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
         def vMethods = mirror.reflect(value).methodNames
         def tMethods = DesiredType.methodNames
@@ -121,7 +112,6 @@ class assertion.trait {
             s
         }
     }
-    
     method deny(value) hasType (UndesiredType) {
         match (value)
             case { _:UndesiredType -> failBecause "{value} has type {UndesiredType}" }
@@ -130,87 +120,84 @@ class assertion.trait {
 }
 
 
-method testCaseNamed(name') -> TestCase {
-    object {
-        inherits assertion.trait
-             
-        method setup { }
-        method teardown { }
+factory method testCaseNamed(name') -> TestCase {
+    inherits assertion.trait
 
-        method run (result) {
-            result.testStarted(name)
+    def size is public = 1
+    method name {name'}
+
+    method setup { }
+    method teardown { }
+
+    method run (result) {
+        result.testStarted(name)
+        try {
             try {
-                try {
-                    setup
-                    def methodImage = mirror.reflect(self).getMethod(name)
-                    methodImage.request([[]])
-                } finally { teardown }
-            } catch {e: self.AssertionFailure ->
-                result.testFailed(name)withMessage(e.message)
-            } catch {e: Exception ->
-                result.testErrored(name)withMessage "{e.exception}: {e.message}"
-            }
+                setup
+                def methodImage = mirror.reflect(self).getMethod(name)
+                methodImage.request([[]])
+            } finally { teardown }
+        } catch {e: self.AssertionFailure ->
+            result.testFailed(name)withMessage(e.message)
+        } catch {e: Exception ->
+            result.testErrored(name)withMessage "{e.exception}: {e.message}"
         }
+    }
 
-        method debug (result) {
-            result.testStarted(name)
+    method debug (result) {
+        result.testStarted(name)
+        try {
+            print ""
+            print "debugging method {name} ..."
             try {
-                print ""
-                print "debugging method {name} ..."
-                try {
-                    setup
-                    def methodImage = mirror.reflect(self).getMethod(name)
-                    methodImage.request([[]])
-                } finally { teardown }
-            } catch {e: self.AssertionFailure ->
-                result.testFailed(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(16)
-            } catch {e: Exception ->
-                result.testErrored(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(16)
+                setup
+                def methodImage = mirror.reflect(self).getMethod(name)
+                methodImage.request([[]])
+            } finally { teardown }
+        } catch {e: self.AssertionFailure ->
+            result.testFailed(name)withMessage(e.message)
+            printBackTrace(e) limitedTo(16)
+        } catch {e: Exception ->
+            result.testErrored(name)withMessage(e.message)
+            printBackTrace(e) limitedTo(16)
+        }
+    }
+    
+    method printBackTrace(exceptionPacket) limitedTo(callLimit) {
+        def ex = exceptionPacket.exception
+        def msg = exceptionPacket.message
+        def lineNr = exceptionPacket.lineNumber
+        print "{ex} on line {lineNr}: {msg}"
+        def bt = exceptionPacket.backtrace
+        var backTraceLimit := callLimit
+        while {bt.size > 0} do {
+            backTraceLimit := backTraceLimit - 1
+            if (backTraceLimit <= 0) then {
+                print "..."
+                return
             }
+            print("  called from " ++ bt.pop)
         }
-        
-        method printBackTrace(exceptionPacket) limitedTo(callLimit) {
-            def ex = exceptionPacket.exception
-            def msg = exceptionPacket.message
-            def lineNr = exceptionPacket.lineNumber
-            print "{ex} on line {lineNr}: {msg}"
-            def bt = exceptionPacket.backtrace
-            var backTraceLimit := callLimit
-            while {bt.size > 0} do {
-                backTraceLimit := backTraceLimit - 1
-                if (backTraceLimit <= 0) then {
-                    print "..."
-                    return
-                }
-                print("  called from " ++ bt.pop)
-            }
+    }
+    
+    method printFullBacktrace(exceptionPacket) {
+        print "backtrace:"
+        def bt = exceptionPacket.backtrace
+        while {bt.size > 0} do {
+            print("  called from " ++ bt.pop)
         }
-        
-        method printFullBacktrace(exceptionPacket) {
-            print "backtrace:"
-            def bt = exceptionPacket.backtrace
-            while {bt.size > 0} do {
-                print("  called from " ++ bt.pop)
-            }
-        }
+    }
 
-        method runAndPrintResults {
-            def result = testResult
-            self.run(result)
-            print(result.detailedSummary)
-        }
-        
-        method debugAndPrintResults {
-            def result = testResult
-            self.debug(result)
-            print(result.detailedSummary)
-        }
-
-        def size is public = 1
-
-        method name {name'}
+    method runAndPrintResults {
+        def result = testResult
+        self.run(result)
+        print(result.detailedSummary)
+    }
+    
+    method debugAndPrintResults {
+        def result = testResult
+        self.debug(result)
+        print(result.detailedSummary)
     }
 }
 
@@ -292,50 +279,62 @@ factory method testRecordFor(testName)message(testMsg) {
 
 def testSuite is readable = object {
     inherits collections.collectionFactory.trait
-    method withAll(initialContents) -> TestSuite {
-        object {
-            inherits collections.enumerable.trait
-            def tests = list.empty
-            for (initialContents) do { each -> self.add(each) }
-                    
-            method add(e) { tests.push(e) }
-            
-            method run(result) {
-                for (tests) do { each -> each.run(result) }
-            }
-            
-            method debug(result) {
-                for (tests) do { each -> each.debug(result) }
-            }
+    factory method withAll(initialContents) -> TestSuite {
+        inherits collections.enumerable.trait
+        def tests = list.empty
+        for (initialContents) do { each -> self.add(each) }
+                
+        method add(e) { tests.push(e) }
+        
+        method run(result) {
+            for (tests) do { each -> each.run(result) }
+        }
+        
+        method debug(result) {
+            for (tests) do { each -> each.debug(result) }
+        }
 
-            method size { tests.size }
-            
-            method name { 
-                var namelist := ""
-                for (tests) do { each -> namelist := namelist ++ each.name ++ " " }
-                namelist
+        method size { tests.size }
+        
+        method name { 
+            var namelist := ""
+            for (tests) do { each -> namelist := namelist ++ each.name ++ " " }
+            namelist
+        }
+        
+        method runAndPrintResults {
+            def result = testResult
+            self.run(result)
+            print(result.detailedSummary)
+            if ((result.numberOfErrors + result.numberOfFailures) > 0) then {
+                rerunErrorsAndFailures(result)
             }
-            
-            method runAndPrintResults {
-                def result = testResult
-                self.run(result)
-                print(result.detailedSummary)
-            }
-            
-            method debugAndPrintResults {
-                def result = testResult
-                self.debug(result)
-                print(result.detailedSummary)
-            }
-            
-            method iterator { tests.iterator }
-            method do (aBlock) { tests.do (aBlock) }
-            method addAll(anotherSuite) {
-                anotherSuite.do { each -> self.add(each) }
-                self
-            }
-            method ++ (anotherSuite) {
-                outer.withAll(tests).addAll(anotherSuite)
+        }
+        
+        method debugAndPrintResults {
+            def result = testResult
+            self.debug(result)
+            print(result.detailedSummary)
+        }
+        
+        method iterator { tests.iterator }
+        method do (aBlock) { tests.do (aBlock) }
+        method addAll(anotherSuite) {
+            anotherSuite.do { each -> self.add(each) }
+            self
+        }
+        method ++ (anotherSuite) {
+            outer.withAll(tests).addAll(anotherSuite)
+        }
+        method rerunErrorsAndFailures(result) {
+            print "\nRe-running errors and failures."
+            def newResult = testResult
+            def errorsAndFailures = 
+                result.erroredTestNames.addAll(result.failedTestNames)
+            tests.do { each ->
+                if (errorsAndFailures.contains(each.name)) then {
+                    each.debug(newResult)
+                }
             }
         }
     }
