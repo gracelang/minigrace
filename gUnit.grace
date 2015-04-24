@@ -70,8 +70,10 @@ class assertion.trait {
     method assert(s1:Object) shouldBe (s2:Object) {
         assert (s1 == s2) description "‹{s1}› should be ‹{s2}›"
     }
-    
-    method assert(block0)shouldRaise(desiredException) {
+    method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
+        assert (math.abs(n1 - n2) <= epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
+    }
+    method assert(block0) shouldRaise (desiredException) {
         var completedNormally
         try {
             block0.apply
