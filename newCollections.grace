@@ -1311,7 +1311,7 @@ factory method dictionary<K,T> {
     method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits collection.trait<T>
-            var size is readable := 0
+            var numBindings := 0
             var inner := _prelude.PrimitiveArray.new(8)
             def unused = object { 
                 var unused := true
@@ -1329,11 +1329,11 @@ factory method dictionary<K,T> {
                 inner.at(i)put(unused)
             }
             for (initialBindings) do { b -> at(b.key)put(b.value) }
-            
+            method size { numBindings }
             method at(key')put(value') {
                 var t := findPositionForAdd(key')
                 if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
-                    size := size + 1
+                    numBindings := numBindings + 1
                 }
                 inner.at(t)put(binding.key(key')value(value'))
                 if ((size * 2) > inner.size) then { expand }
@@ -1370,7 +1370,7 @@ factory method dictionary<K,T> {
                     var t := findPosition(k)
                     if (inner.at(t).key == k) then {
                         inner.at(t)put(removed)
-                        size := size - 1
+                        numBindings := numBindings - 1
                     } else {
                         NoSuchObject.raise "dictionary does not contain entry with key {k}"
                     }
@@ -1385,7 +1385,7 @@ factory method dictionary<K,T> {
                     def a = inner.at(i)
                     if (removals.contains(a.value)) then {
                         inner.at(i)put(removed)
-                        size := size - 1
+                        numBindings := numBindings - 1
                     }
                 }
                 return self
@@ -1491,6 +1491,7 @@ factory method dictionary<K,T> {
                 def sourceDictionary = self
                 object {
                     inherits lazySequence.trait<T>
+                    print "building lazy sequence for values"
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
@@ -1505,6 +1506,7 @@ factory method dictionary<K,T> {
                     method asDebugString { 
                         "a lazy sequence over values of {sourceDictionary}"
                     }
+                    print "built {self.asDebugString}"
                 }
             }
             method bindings -> LazySequence<T> {
@@ -1548,7 +1550,7 @@ factory method dictionary<K,T> {
                 for (0..(n - 1)) do {i->
                     inner.at(i)put(unused)
                 }
-                size := 0
+                numBindings := 0
                 for (0..(c - 1)) do {i->
                     def a = oldInner.at(i)
                     if ((a != unused).andAlso{a != removed}) then {
