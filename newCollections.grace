@@ -5,6 +5,7 @@ def Exhausted = ProgrammingError.refine "iterator Exhausted"
 def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject = ProgrammingError.refine "no such object"
 def RequestError = ProgrammingError.refine "inapproriate argument in method request"
+def SizeUnknown = Exception.refine "the size is unknown"
 
 method abstract {
     // repeated in StandardPrelude
@@ -42,8 +43,6 @@ type BoundedCollection<T> = Collection<T> & type {
 }
 
 type LazySequence<T> = Collection<T> & type {
-    at(n:Number) -> T
-    [](n:Number) -> T
     keys -> Collection<Number>
     values -> Collection<T>
     copySortedBy(comparison:Block2<T,T,Number>) -> SelfType
@@ -60,6 +59,8 @@ type LazySequence<T> = Collection<T> & type {
 }
 
 type Sequence<T> = LazySequence<T> & type {
+    at(n:Number) -> T
+    [](n:Number) -> T
     size -> Number
     indices -> BoundedCollection<T>
     first -> T 
@@ -152,11 +153,6 @@ type EmptyCollectionFactory<T> = {
     empty<T> -> Collection<T>
 }
 
-def unknown = object { 
-    method asString { "unknown" }
-    method match(other) { self == other }
-}
-
 class collectionFactory.trait<T> {
     method withAll(elts:Collection<T>) -> Collection<T> { abstract }
     method with(*a:T) -> Unknown { self.withAll(a) }
@@ -167,7 +163,10 @@ class collection.trait<T> {
     method do { abstract }
     method iterator { abstract }
     method size { abstract }
-    method isEmpty { self.size == 0 }
+    method isEmpty {
+        try { return size == 0 } 
+            catch { _:SizeUnknown -> return iterator.hasNext.not }
+    }
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
@@ -220,7 +219,7 @@ class collection.trait<T> {
                 var cacheLoaded := false
                 def sourceIterator = sourceSequence.iterator       
                 // TODO: using outer instead of sourceSequence causes infinite recursion
-                method asString { "an iterator over {sourceSequence}" }
+                method asString { "an iterator over filtered {sourceSequence}" }
                 method hasNext {
                 // return true if this iterator has a next element.
                 // To determine the answer, we have to find an acceptable element;
@@ -232,7 +231,6 @@ class collection.trait<T> {
                     } catch { ex:Exhausted -> return false }
                     return true
                 }
-
                 method next {
                     if (cacheLoaded.not) then { cache := nextAcceptableElement }
                     cacheLoaded := false
@@ -248,7 +246,7 @@ class collection.trait<T> {
                     }
                 }
             }
-            method size { unknown }
+            method size { SizeUnknown.raise "size requested on {asDebugString}" }
             method asDebugString { "a lazy sequence filtering {sourceSequence}" }
         }
     }
@@ -279,7 +277,10 @@ class collection.trait<T> {
 class lazySequence.trait<T> {
     inherits collection.trait<T>
     method iterator { abstract }
-    method size { unknown }     // can be overridden if size is known
+    method size { 
+        // override if size is known
+        SizeUnknown.raise "size requested on {asDebugString}"
+    }
     method asSet -> Set<T> {
         set.withAll(self)
     }
@@ -326,12 +327,6 @@ class lazySequence.trait<T> {
         var res := initial
         while { self.hasNext } do { res := block2.apply(res, self.next) }
         return res
-    }
-    method isEmpty {
-        def mySize = size
-        if (mySize == 0) then { return true }
-        if (mySize == unknown) then { return iterator.hasNext.not }
-        return false
     }
     method copy (sortBlock:Block2) {
         self.asList.sortBy(sortBlock:Block2)
@@ -831,8 +826,9 @@ factory method list<T> {
         object {
             // the new list object without native code
             inherits indexable.trait<T>
-            def initialSize = if (a.size == unknown) then 
-                                    { 9 } else { a.size * 2 + 1 }
+            var initialSize
+            try { initialSize := a.size * 2 + 1 } 
+                catch { _ex:SizeUnknown -> initialSize := 9 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
             var size is public := 0
             for (a) do {x->
@@ -1055,11 +1051,9 @@ factory method set<T> {
     method withAll(a:Collection<T>) -> Set<T> {
         object {
             inherits collection.trait
-            var initialSize := 8
-            def aSize = a.size
-            if ( (aSize != unknown).andAlso { aSize > 2 } ) then {
-                initialSize := aSize * 3 + 1
-            }
+            var initialSize
+            try { initialSize := max(a.size * 3 + 1, 8) } 
+                catch { _:SizeUnknown -> initialSize := 8 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
             def unused = object { 
                 var unused := true 
@@ -1220,21 +1214,20 @@ factory method set<T> {
             method iterator {
                 object {
                     var count := 1
-                    var idx := 0
-                    method hasNext { count <= size }
+                    var idx := -1
+                    method hasNext { size >= count }
                     method next {
                         var candidate
+                        def innerSize = inner.size
                         while {
+                            idx := idx + 1
+                            if (idx >= innerSize) then {
+                                Exhausted.raise "iterator over {outer.asString}"
+                            }
                             candidate := inner.at(idx)
                             (candidate == unused).orElse{candidate == removed}
-                        } do {
-                            idx := idx + 1
-                            if (idx == inner.size) then {
-                                Exhausted.raise "over {outer.asString}"
-                            }
-                        }
+                        } do { }
                         count := count + 1
-                        idx := idx + 1
                         candidate
                     }
                 }
@@ -1476,7 +1469,7 @@ factory method dictionary<K,T> {
             }
             method keys -> LazySequence<K> {
                 def sourceDictionary = self
-                return object {
+                object {
                     inherits lazySequence.trait<K>
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
@@ -1496,7 +1489,7 @@ factory method dictionary<K,T> {
             }
             method values -> LazySequence<T> {
                 def sourceDictionary = self
-                return object {
+                object {
                     inherits lazySequence.trait<T>
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
@@ -1531,9 +1524,9 @@ factory method dictionary<K,T> {
                 var count := 1
                 var idx := 0
                 var elt
-                method hasNext { count <= size }
+                method hasNext { size >= count }
                 method next {
-                    if (count > size) then { 
+                    if (size < count) then {
                         Exhausted.raise "over {outer.asString}"
                     }
                     while {

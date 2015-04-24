@@ -1452,41 +1452,33 @@ def dictionaryTest = object {
     }
 }
 
-def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
 print "types"
-//typeTests.debugAndPrintResults
+def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
 typeTests.runAndPrintResults
-def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
+
 print "binding"
+def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
 bindingTests.runAndPrintResults
-def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
+
 print "sequence"
-//sequenceTests.debugAndPrintResults
+def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
 sequenceTests.runAndPrintResults
-//sequenceTest.forMethod "testSequenceAsDictionary".debugAndPrintResults
-//sequenceTest.forMethod("testSequenceMapEmpty").debugAndPrintResults
-def listTests = gU.testSuite.fromTestMethodsIn(listTest)
+
 print "list"
-//listTests.debugAndPrintResults
+def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 listTests.runAndPrintResults
-def rangeTests = gU.testSuite.fromTestMethodsIn(rangeTest)
-print "range"
-//rangeTests.debugAndPrintResults
-rangeTests.runAndPrintResults
-def setTests = gU.testSuite.fromTestMethodsIn(setTest)
+
 print "set"
-//setTests.debugAndPrintResults
+def setTests = gU.testSuite.fromTestMethodsIn(setTest)
 setTests.runAndPrintResults
-def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
+
+print "range"
+def rangeTests = gU.testSuite.fromTestMethodsIn(rangeTest)
+rangeTests.runAndPrintResults
+
 print "dictionary"
-dictTests.runAndPrintResults
-dictionaryTest.forMethod "testDictionaryChaining".debugAndPrintResults
+def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
+dictTests.debugAndPrintResults
+
 //def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests)
-
-//dictTests.runAndPrintResults
 //allTests.runAndPrintResults
-
-//setTest.forMethod("testSetRemove5").debugAndPrintResults
-//listTest.forMethod("testMapAndFilter").debugAndPrintResults
-//dictionaryTest.forMethod("testDictionarySizeAfterRemove").debugAndPrintResults
-//dictionaryTest.forMethod("testDictionaryBindings").debugAndPrintResults
