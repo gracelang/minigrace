@@ -1280,7 +1280,7 @@ Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index >= sself->size) {
-        gracedie("Error: array index out of bounds: %i/%i",
+        gracedie("Error: array index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
