@@ -1519,7 +1519,6 @@ method processImports(values') {
 }
 method compile(vl, of, mn, rm, bt, glpath) {
     var argv := sys.argv
-    var cmd
     def isPrelude = util.extensions.contains("NativePrelude")
     if (util.extensions.contains "noTypeChecks") then {
         emitTypeChecks := false
@@ -1626,4 +1625,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     outfile.close
     log_verbose("done.")
+    if (buildtype == "run") then {
+        def cmd = "grace {of}"
+        def runExitCode = io.spawn(cmd).wait
+        if (runExitCode < 0) then {
+            io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
+            sys.exit(4)
+        }
+    }
 }
