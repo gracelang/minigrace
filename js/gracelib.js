@@ -507,6 +507,12 @@ GraceNum.prototype = {
         ">=": function(argcv, other) {
             if (this._value >= other._value) return GraceTrue; else return GraceFalse;
         },
+        "≤": function(argcv, other) {
+            if (this._value <= other._value) return GraceTrue; else return GraceFalse;
+        },
+        "≥": function(argcv, other) {
+            if (this._value >= other._value) return GraceTrue; else return GraceFalse;
+        },
         "prefix-": function(argcv) {
             return new GraceNum(-this._value)
         },
@@ -529,6 +535,10 @@ GraceNum.prototype = {
             return callmethod(t, "not", [0]);
         },
         "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "≠": function(argcv, other) {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
         },
@@ -569,6 +579,9 @@ GraceNum.prototype = {
         },
         "rounded": function(argcv) {
             return new GraceNum(Math.round(this._value));
+        },
+        "abs": function(argcv) {
+            return new GraceNum(Math.abs(this._value));
         },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))

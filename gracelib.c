@@ -39,6 +39,8 @@ Object Object_NotEquals(Object, int, int*,
         Object*, int);
 Object String_concat(Object, int nparts, int *argcv,
         Object*, int flags);
+Object String_endsWith(Object, int nparts, int *argcv,
+        Object*, int flags);
 FILE *debugfp;
 int debug_enabled = 0;
 
@@ -1717,6 +1719,24 @@ Object ConcatString_substringFrom_to(Object self,
     ConcatString__Flatten(self);
     return String_substringFrom_to(self, nparts, argcv, args, flags);
 }
+Object ConcatString_startsWith(Object self,
+        int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_startsWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_endsWith(Object self,
+       int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_endsWith(self, nparts, argcv, args, flags);
+}
+Object ConcatString_replace_with(Object self,
+       int nparts, int *argcv, Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    ConcatString__Flatten(self);
+    return String_replace_with(self, nparts, argcv, args, flags);
+}
 Object String_hashcode(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
@@ -1769,7 +1789,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 34,
+        ConcatString = alloc_class3("ConcatString", 36,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1787,6 +1807,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "<=", &String_LessOrEqual);
         add_Method(ConcatString, "≤", &String_LessOrEqual);
         add_Method(ConcatString, "!=", &Object_NotEquals);
+        add_Method(ConcatString, "≠", &Object_NotEquals);
         add_Method(ConcatString, "compare", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
@@ -1797,8 +1818,9 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "ord", &ConcatString_ord);
         add_Method(ConcatString, "encode", &String_encode);
         add_Method(ConcatString, "substringFrom()to", &ConcatString_substringFrom_to);
-        add_Method(ConcatString, "startsWith", &String_startsWith);
-        add_Method(ConcatString, "replace()with", &String_replace_with);
+        add_Method(ConcatString, "startsWith", &ConcatString_startsWith);
+        add_Method(ConcatString, "endsWith", &ConcatString_endsWith);
+        add_Method(ConcatString, "replace()with", &ConcatString_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
         add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
@@ -1942,6 +1964,17 @@ Object String_startsWith(Object self, int nparts, int *argcv,
         return alloc_Boolean(1);
     return alloc_Boolean(0);
 }
+Object String_endsWith(Object self, int nparts, int *argcv,
+                         Object *args, int flags) {
+    const char *sstr = grcstring(self);
+    const char *needle = grcstring(args[0]);
+    size_t lenSelf = strlen(sstr);
+    size_t lenNeedle = strlen(needle);
+    if (lenNeedle >  lenSelf) return alloc_Boolean(0);
+    if (strncmp(sstr + lenSelf - lenNeedle, needle, lenNeedle) == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
 Object String_replace_with(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
@@ -1985,7 +2018,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 34);
+        String = alloc_class("String", 36);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2001,6 +2034,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "<=", &String_LessOrEqual);
         add_Method(String, "≤", &String_LessOrEqual);
         add_Method(String, "!=", &Object_NotEquals);
+        add_Method(String, "≠", &Object_NotEquals);
         add_Method(String, "compare", &String_Compare);
         add_Method(String, "first", &String_first);
         add_Method(String, "iterator", &String_iter);
@@ -2012,6 +2046,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "encode", &String_encode);
         add_Method(String, "substringFrom()to", &String_substringFrom_to);
         add_Method(String, "startsWith", &String_startsWith);
+        add_Method(String, "endsWith", &String_endsWith);
         add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hash", &String_hashcode);
         add_Method(String, "hashcode", &String_hashcode);
@@ -2428,6 +2463,11 @@ Object Float64_round(Object self, int nparts, int *argcv,
     double *d = (double*)self->data;
     return alloc_Float64(rint(*d));
 }
+Object Float64_abs(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(fabs(*d));
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -2454,7 +2494,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 31, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 35, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2464,13 +2504,16 @@ Object alloc_Float64(double num) {
         add_Method(Number, "@", &Float64_Point);
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
+        add_Method(Number, "≠", &Object_NotEquals);
         add_Method(Number, "hashcode", &Float64_hashcode);
         add_Method(Number, "hash", &Float64_hashcode);
         add_Method(Number, "++", &Object_concat);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
         add_Method(Number, "<=", &Float64_LessOrEqual);
+        add_Method(Number, "≤", &Float64_LessOrEqual);
         add_Method(Number, ">=", &Float64_GreaterOrEqual);
+        add_Method(Number, "≥", &Float64_GreaterOrEqual);
         add_Method(Number, "..", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asDebugString", &Object_asDebugString);
@@ -2481,6 +2524,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "truncated", &Float64_truncate);
         add_Method(Number, "truncate", &Float64_truncate);
         add_Method(Number, "rounded", &Float64_round);
+        add_Method(Number, "abs", &Float64_abs);
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);
         add_Method(Number, "&", &literal_and);
