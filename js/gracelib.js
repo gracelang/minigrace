@@ -275,10 +275,10 @@ GraceString.prototype = {
         "endsWith": function string_endsWith(argvc, needle) {
             var self = this._value;
             var n = needle._value;
-            var startPosition = self.length - needle.length;
+            var startPosition = self.length - n.length;
             if (startPosition < 1) return GraceFalse;
-            var lastIndex = self.lastIndexOf(suffix, position);
-            if (lastIndex === position) return GraceTrue;
+            var lastIndex = self.lastIndexOf(n, startPosition);
+            if (lastIndex === startPosition) return GraceTrue;
             return GraceFalse;
         },
         "capitalized": function string_capitalized(argcv) {
