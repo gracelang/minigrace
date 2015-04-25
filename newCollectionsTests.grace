@@ -1402,7 +1402,7 @@ def dictionaryTest = object {
         }
         
         method testDictionaryMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.onto(set))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.asSet)
                 shouldBe (set.with(11, 13, 15))
         }
         method testDictionaryBindings {

@@ -159,6 +159,57 @@ class collectionFactory.trait<T> {
     method empty -> Unknown { self.with() }
 }
 
+factory method lazySequenceOver<T,R>(source:Collection<T>)
+        mappedBy(function:Block1<T,R>) -> LazySequence<R> is confidential {
+    inherits lazySequence.trait<T>
+    factory method iterator {
+        def sourceIterator = source.iterator
+        method asString { "an iterator over a lazy map sequence" }
+        method hasNext { sourceIterator.hasNext }
+        method next { function.apply(sourceIterator.next) }
+    }
+    method size { source.size }
+    method asDebugString { "a lazy sequence mapping over {source}" }
+}
+
+factory method lazySequenceOver<T>(source:Collection<T>) 
+        filteredBy(predicate:Block1<T,Boolean>) -> LazySequence<T> is confidential {
+    inherits lazySequence.trait<T>
+    method thisIsTheObjectAtLine178 {}
+    factory method iterator {
+        var cache
+        var cacheLoaded := false
+        def sourceIterator = source.iterator
+        method asString { "an iterator over filtered {source}" }
+        method hasNext {
+        // To determine if this iterator has a next element, we have to find
+        // an acceptable element; this is then cached, for the use of next
+            if (cacheLoaded) then { return true }
+            try {
+                cache := nextAcceptableElement
+                cacheLoaded := true
+            } catch { ex:Exhausted -> return false }
+            return true
+        }
+        method next {
+            if (cacheLoaded.not) then { cache := nextAcceptableElement }
+            cacheLoaded := false
+            return cache
+        }
+        method nextAcceptableElement is confidential {
+        // return the next element of the underlying iterator satisfying
+        // predicate; if there is none, raises Exhausted.
+            while { true } do {
+                def outerNext = sourceIterator.next
+                def acceptable = predicate.apply(outerNext)
+                if (acceptable) then { return outerNext }
+            }
+        }
+    }
+    method size { SizeUnknown.raise "size requested on {asDebugString}" }
+    method asDebugString { "a lazy sequence filtering {source}" }
+}
+
 class collection.trait<T> {
     method do { abstract }
     method iterator { abstract }
@@ -181,77 +232,27 @@ class collection.trait<T> {
         return self
     }
     method reduce(initial, blk) {   
-    // compatibility with builtInList
-
+    // deprecated; for compatibility with builtInList
         fold(blk)startingWith(initial)
     }
     method fold(blk)startingWith(initial) {
-        var res := initial
-        self.do {it->
-            res := blk.apply(res, it)
+        var result := initial
+        self.do {it ->
+            result := blk.apply(result, it)
         }
-        return res
+        return result
     }
     method map<R>(block1:Block1<T,R>) -> LazySequence<R> {
-    // returns a lazy sequence that maps the underlying collection
-        def sourceSequence = self
-        object {
-            inherits lazySequence.trait<T>
-            factory method iterator {
-                def sourceIterator = sourceSequence.iterator       
-                // TODO: using outer instead of sourceSequence causes infinite recursion
-                method asString { "an iterator over a lazy map sequence" }
-                method hasNext { sourceIterator.hasNext }
-                method next { block1.apply(sourceIterator.next) }
-            }
-            method size { sourceSequence.size } // outer seems to work here, though
-            method asDebugString { "a lazy sequence mapping over {sourceSequence}" }
-        }
+        lazySequenceOver(self) mappedBy(block1)
     }
-    method filter(selectionCondition) -> LazySequence<T> {
-    // return a lazy sequence that contains only those elements of the
-    // underlying collection for which selectionCondition holds.
-        def sourceSequence = self
-        object {
-            inherits lazySequence.trait<T>
-            factory method iterator {
-                var cache
-                var cacheLoaded := false
-                def sourceIterator = sourceSequence.iterator       
-                // TODO: using outer instead of sourceSequence causes infinite recursion
-                method asString { "an iterator over filtered {sourceSequence}" }
-                method hasNext {
-                // return true if this iterator has a next element.
-                // To determine the answer, we have to find an acceptable element;
-                // this is then cached, for the use of next
-                    if (cacheLoaded) then { return true }
-                    try {
-                        cache := nextAcceptableElement
-                        cacheLoaded := true
-                    } catch { ex:Exhausted -> return false }
-                    return true
-                }
-                method next {
-                    if (cacheLoaded.not) then { cache := nextAcceptableElement }
-                    cacheLoaded := false
-                    return cache
-                }
-                method nextAcceptableElement is confidential {
-                // return the next element of the underlying iterator satisfying
-                // selectionCondition; if there is none, raises Exhausted.
-                    while { true } do {
-                        def outerNext = sourceIterator.next
-                        def acceptable = selectionCondition.apply(outerNext)
-                        if (acceptable) then { return outerNext }
-                    }
-                }
-            }
-            method size { SizeUnknown.raise "size requested on {asDebugString}" }
-            method asDebugString { "a lazy sequence filtering {sourceSequence}" }
-        }
+    method filter(selectionCondition:Block1<T,Boolean>) -> LazySequence<T> {
+        print "building filter over {self}"
+        def res = lazySequenceOver(self) filteredBy(selectionCondition)
+        print "result is {res.asSequence}"
+        res
     }
 
-    method iter { return self.iterator }
+    method iter { self.iterator }
 
     method onto(f: CollectionFactory<T>) -> Collection<T> {
         f.withAll(self)
@@ -394,12 +395,12 @@ factory method sequence<T> {
         var sizeUncertain := false
         // size might be uncertain if one of the arguments is a lazy collection.
         for (a) do { arg ->
-            var argSize := arg.size
-            if (argSize == Unknown) then {
-                argSize := 8
+            try {
+                forecastSize := forecastSize + arg.size
+            } catch { _:SizeUnknown -> 
+                forecastSize := forecastSize + 8
                 sizeUncertain := true
             }
-            forecastSize := forecastSize + arg.size
         }
         var inner := _prelude.PrimitiveArray.new(forecastSize)
         var innerSize := inner.size
@@ -1273,6 +1274,7 @@ factory method set<T> {
             }
             method -- (other) {
             // set difference
+                print "about to copy"
                 copy.removeAll(other) ifAbsent { done }
             }
             method ** (other) {
