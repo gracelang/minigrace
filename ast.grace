@@ -582,7 +582,7 @@ class typeLiteralNode.new(methods', types') {
     var value is public := "‹anon›"
     
     method name { value }
-    method name:=(n:String) {
+    method name:=(n) {
         value := n
         anonymous := false
     }
