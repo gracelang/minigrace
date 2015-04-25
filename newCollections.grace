@@ -175,7 +175,6 @@ factory method lazySequenceOver<T,R>(source:Collection<T>)
 factory method lazySequenceOver<T>(source:Collection<T>) 
         filteredBy(predicate:Block1<T,Boolean>) -> LazySequence<T> is confidential {
     inherits lazySequence.trait<T>
-    method thisIsTheObjectAtLine178 {}
     factory method iterator {
         var cache
         var cacheLoaded := false

@@ -131,12 +131,12 @@ def rangeTest = object {
   class forMethod(m) {
     inherits gU.testCaseNamed(m)
     
-    def rangeUp = range.from(3)to(6)
-    def rangeDown = range.from(10)downTo(7)
-    def emptyUp = range.from(5)to(4)
-    def emptyDown = range.from(7)downTo(8)
-    def singleUp = range.from(4)to(4)
-    def singleDown = range.from(7)downTo(7)
+    def rangeUp = range.from 3 to 6
+    def rangeDown = range.from 10 downTo 7
+    def emptyUp = range.from 5 to 4
+    def emptyDown = range.from 7 downTo 8
+    def singleUp = range.from 4 to 4
+    def singleDown = range.from 7 downTo 7
     
     method testRangePreconditionUp1 {
         assert {range.from 4.5 to 5} shouldRaise (RequestError)
@@ -271,25 +271,34 @@ def rangeTest = object {
         assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
     }
     method testRangeFilterExhausted {
-        assert {rangeUp.filter{each -> each > 10}.iterator.next} shouldRaise (Exhausted)
+        assert {rangeUp.filter{each -> each > 10}.iterator.next} 
+            shouldRaise (Exhausted)
     }
-    method testRangeFilter {
+    method testRangeFilterEmptyList {
         assert (rangeUp.filter{each -> each > 10}.onto(list)) shouldBe (list.empty)
+    }
+    method testRangeFilterEmpty {
+        assert (rangeUp.filter{each -> each > 10}.isEmpty) 
+            description "range filter by an everywhere-false predicate isn't empty"
     }
     method testRangeDownReverse {
         assert (rangeDown.reversed) shouldBe (range.from(7)to(10))
     }
     method testRangeEqualityWithList {
-        assert(rangeDown == list.with(10,9,8,7)) description "range.from 10 downTo 7 ≠ list.with(10, 9, 8 ,7)"
-        assert(emptyUp == list.empty) description "The empty range was not equal to the empty list"
+        assert(rangeDown == list.with(10,9,8,7)) 
+            description "range.from 10 downTo 7 ≠ list.with(10, 9, 8 ,7)"
+        assert(emptyUp == list.empty) 
+            description "The empty range was not equal to the empty list"
     }
     method testRangeInequalityWithNumber {
         deny(rangeDown == 7) description ("rangeDown == 7")
     }
     method testRangeInequalityWithList {
-        assert(rangeDown != [])description("Failed trying the empty list")
-        assert(rangeDown != [3,4,5])description("List with a different size")
-        assert(rangeDown != [10,9,8,5])description("List with the same size, but different contents")
+        assert(rangeDown != []) description("Failed trying the empty list")
+        assert(rangeDown != [3,4,5]) 
+            description("Range = list with a different size.")
+        assert(rangeDown != [10,9,8,5]) 
+            description("Range = list with different contents")
     }
     method testRangeUpListConversion {
         assert(rangeUp.asList == list.with(3,4,5,6))
