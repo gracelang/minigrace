@@ -2362,6 +2362,16 @@ Object Float64_LessThan(Object self, int nparts, int *argcv,
         b = integerfromAny(other);
     return alloc_Boolean(a < b);
 }
+Object Float64_Compare(Object self, int nparts, int *argcv,
+          Object *args, int flags) {
+    Object other = args[0];
+    assertClass(other, Number);
+    double a = *(double*)self->data;
+    double b = *(double*)other->data;
+    if (a == b) return alloc_Float64(0);
+    if (a < b) return alloc_Float64(-1);
+    alloc_Float64(+1);
+}
 Object Float64_GreaterThan(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
@@ -2494,7 +2504,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 35, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 36, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2508,6 +2518,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "hashcode", &Float64_hashcode);
         add_Method(Number, "hash", &Float64_hashcode);
         add_Method(Number, "++", &Object_concat);
+        add_Method(Number, "compare", &Float64_Compare);
         add_Method(Number, "<", &Float64_LessThan);
         add_Method(Number, ">", &Float64_GreaterThan);
         add_Method(Number, "<=", &Float64_LessOrEqual);
@@ -3542,6 +3553,10 @@ start:
                 originalself->class->definitionModule);
     else
         objDesc[0] = 0;
+    if (m == NULL) {
+        if ((strcmp(name, "asString") == 0 || strcmp(name, "asDebugString") == 0))
+            return alloc_String(objDesc);
+    }
     if (m)
         sprintf(methDesc, "at %s:%i", m->definitionModule,
                 m->definitionLine);

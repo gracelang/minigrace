@@ -495,6 +495,13 @@ GraceNum.prototype = {
             var ub = parseInt(o._value);
             return callmethod(GraceRangeClass(), "from()to", [1, 1], this, new GraceNum(ub));
         },
+        "compare": function(argcv, that) {
+            var self = this._value;
+            var other = that._value;
+            if (self === other) return new GraceNum(0)
+            if (self > other) return new GraceNum(+1);
+            return new GraceNum(-1);
+        },
         "<": function(argcv, other) {
             if (this._value < other._value) return GraceTrue; else return GraceFalse;
         },
