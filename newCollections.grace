@@ -35,16 +35,16 @@ type Collection<T> = Object & type {
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
     iterator -> Iterator<T>
     ++(o: Collection<T>) -> Collection<T>
+    asList -> List<T>
+    asSequence -> Sequence<T>
+    asSet -> Set<T>
 }
 
 type Enumerable<T> = Collection<T> & type {
     size -> Number  
         // may raise SizeUnknow if size is expensive to computer
     values -> Collection<T>
-    asList -> List<T>
-    asSequence -> Sequence<T>
     asDictionary -> Dictionary<Number,T>
-    asSet -> Set<T>
     keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
     onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
     into(existing:Collection<Unknown>) -> Collection<Unknown>
@@ -115,17 +115,20 @@ type Set<T> = Collection<T> & type {
     ++ (other:Set<T>) -> Set<T>
     removeAll(elems:Collection<T>)
     removeAll(elems:Collection<T>)ifAbsent(action:Block0<Done>) -> Set<T>
+    onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
+    into(existing:Collection<Unknown>) -> Collection<Unknown>
 }
 
 type Dictionary<K,T> = Collection<T> & type {
+    size -> Number
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
     contains(elem:T) -> Boolean
     at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
     at(key:K)put(value:T) -> Dictionary<K,T>
-    []:=(k:K, v:T) -> Done
+    []:= (k:K, v:T) -> Done
     at(k:K) -> T
-    [](k:K) -> T
+    [] (k:K) -> T
     removeAllKeys(keys:Collection<K>) -> Dictionary<K,T>
     removeKey(*keys:K) -> Dictionary<K,T>
     removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
@@ -136,9 +139,11 @@ type Dictionary<K,T> = Collection<T> & type {
     keysAndValuesDo(action:Block2<K,T,Done>) -> Done
     keysDo(action:Block1<K,Done>) -> Done
     valuesDo(action:Block1<T,Done>) -> Done
-    ==(other:Object) -> Boolean
+    == (other:Object) -> Boolean
     copy -> Dictionary<K,T>
-    ++(other:Dictionary<K, T>) -> Dictionary<K, T>
+    ++ (other:Dictionary<K, T>) -> Dictionary<K, T>
+    -- (other:Dictionary<K, T>) -> Dictionary<K, T>
+    asDictionary -> Dictionary<K, T>
 }
 
 type Iterator<T> = type {
@@ -278,16 +283,6 @@ class collection.trait<T> {
 
     method iter { self.iterator }
 
-    method onto(f: CollectionFactory<T>) -> Collection<T> {
-        f.withAll(self)
-    }
-    method into(existing: Collection<T>) -> Collection<T> {
-        def selfIterator = self.iterator
-        while {selfIterator.hasNext} do { 
-            existing.add(selfIterator.next)
-        }
-        existing
-    }
     method asSequence {
         sequence.withAll(self)
     }
@@ -378,9 +373,6 @@ class lazySequence.trait<T> {
     method ++ (other) -> Enumerable<T> {
         lazyConcatenation(self, other)
     }
-    method as (sortBlock:Block2) {
-        self.asList.sortBy(sortBlock:Block2)
-    }
     method sortedBy(sortBlock:Block2) -> List<T> {
         self.asList.sortBy(sortBlock:Block2)
     }
@@ -429,6 +421,16 @@ class indexable.trait<T> {
             result.at(k) put(v)
         }
         return result
+    }
+    method onto(f: CollectionFactory<T>) -> Collection<T> {
+        f.withAll(self)
+    }
+    method into(existing: Collection<T>) -> Collection<T> {
+        def selfIterator = self.iterator
+        while {selfIterator.hasNext} do { 
+            existing.add(selfIterator.next)
+        }
+        existing
     }
 }
 
@@ -809,8 +811,6 @@ factory method list<T> {
                         i := i + 1
                     }
                 }
-                
-
                 
                 method ==(other) {
                     match (other)
@@ -1320,10 +1320,18 @@ factory method set<T> {
                         result.add(v)
                     }
                 }
+                result
             }
             method ** (other) {
             // set intersection
                 (filter {each -> other.contains(each)}).asSet
+            }
+            method onto(f: CollectionFactory<T>) -> Collection<T> {
+                f.withAll(self)
+            }
+            method into(existing: Collection<T>) -> Collection<T> {
+                do { each -> existing.add(each) }
+                existing
             }
         }
     }
@@ -1539,6 +1547,7 @@ factory method dictionary<K,T> {
                     inherits lazySequence.trait<T>
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
+                        // should be request on outer
                         method hasNext { sourceIterator.hasNext }
                         method next { sourceIterator.next.value }
                         method asString { 
@@ -1564,6 +1573,7 @@ factory method dictionary<K,T> {
                 object {
                     inherits lazySequence.trait<T>
                     method iterator { sourceDictionary.bindingsIterator }
+                    // should be request on outer
                     def size is public = sourceDictionary.size
                     method asDebugString { 
                         "a lazy sequence over bindings of {sourceDictionary}"

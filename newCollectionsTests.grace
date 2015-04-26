@@ -32,79 +32,9 @@ def dictionary is public = collections.dictionary
 def binding is public = collections.binding
 def range is public = collections.range
 
-def typeTest = object {
-    class forMethod(m) {
-        inherits gU.testCaseNamed(m)
-        
-        method testSequenceTypeCollection {
-            def witness = sequence<Number>.with(1,3)
-            assert (witness) hasType (Collection<Number>)
-        }
-        method testSequenceTypeSequence {
-            def witness = sequence<Number>.with(1,3)
-            assert (witness) hasType (Sequence<Number>)
-        }
-        method testSequenceTypeEnumerable {
-            def witness = sequence<Number>.with(1,3)
-            assert (witness) hasType (Enumerable<Number>)
-        }
-        method testFilteredSequenceTypeEnumerable {
-            def witness = sequence<Number>.with(1,3).filter{x -> true}
-            assert (witness) hasType (Enumerable<Number>)
-        }
-        method testSequenceNotTypeWithWombat {
-            def witness = sequence<Number>.with(1,3)
-            deny (witness) hasType (Collection<Number> & type { wombat })
-        }
-        method testRangeTypeCollection {
-            def witness = range.from 1 to 6
-            assert (witness) hasType (Collection<Number>)
-        }
-        method testRangeTypeSequence {
-            def witness = range.from 1 to 6
-            assert (witness) hasType (Sequence<Number>)
-        }
-        method testRangeTypeEnumerable {
-            def witness = range.from 1 to 6
-            assert (witness) hasType (Enumerable<Number>)
-        }
-        method testRangeTypeNotTypeWithWombat {
-            def witness = range.from 1 to 6
-            deny (witness) hasType (Collection<Number> & type { wombat })
-        }
-        method testListTypeCollection {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-            assert (witness) hasType (Collection<Number>)
-        }
-        method testListTypeList {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-            assert (witness) hasType (List<Number>)
-        }
-        method testListTypeSequence {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-            assert (witness) hasType (Sequence<Number>)
-        }
-        method testListTypeNotTypeWithWombat {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
-            deny (witness) hasType (List<Number> & type { wombat })
-        }
-        method testDictionaryTypeCollection {
-            def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
-            assert (witness) hasType (Collection<Binding<String,Number>>)
-        }
-        method testDictionaryTypeDictionary {
-            def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
-            assert (witness) hasType (Dictionary<String,Number>)
-        }
-        method testDictionaryTypeNotTypeWithWombat {
-            def witness = dictionary<String,Number>.with("one"::1, "two"::2, "three"::3)
-            deny (witness) hasType (Dictionary<String,Number> & type { wombat })
-        }
-    }
-}
 
 def bindingTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         method testStringification {
@@ -131,239 +61,274 @@ def bindingTest = object {
 }
 
 def rangeTest = object {
-  class forMethod(m) {
-    inherits gU.testCaseNamed(m)
-    
-    def rangeUp = range.from 3 to 6
-    def rangeDown = range.from 10 downTo 7
-    def emptyUp = range.from 5 to 4
-    def emptyDown = range.from 7 downTo 8
-    def singleUp = range.from 4 to 4
-    def singleDown = range.from 7 downTo 7
-    
-    method testRangePreconditionUp1 {
-        assert {range.from 4.5 to 5} shouldRaise (RequestError)
-    }
-    
-    method testRangePreconditionUp2 {
-        assert {range.from 4 to 9.5} shouldRaise (RequestError)
-    }
-    
-    method testRangePreconditionUp3 {
-        assert {range.from 4 to "foo"} shouldRaise (RequestError)
-    }
+    factory method forMethod(m) {
+        inherits gU.testCaseNamed(m)
         
-    method testRangePreconditionDown1 {
-        assert {range.from 4 downTo 1.5} shouldRaise (RequestError)
-    }
+        def rangeUp = range.from 3 to 6
+        def rangeDown = range.from 10 downTo 7
+        def emptyUp = range.from 5 to 4
+        def emptyDown = range.from 7 downTo 8
+        def singleUp = range.from 4 to 4
+        def singleDown = range.from 7 downTo 7
 
-    method testRangePreconditionDown2 {
-        assert {range.from 4 downTo 1.5} shouldRaise (RequestError)
-    }
-                
-    method testRangePreconditionDown3 {
-        assert {range.from 4.5 downTo "foo"} shouldRaise (RequestError)
-    }
+        method testRangeTypeCollection {
+            def witness = range.from 1 to 6
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testRangeTypeSequence {
+            def witness = range.from 1 to 6
+            assert (witness) hasType (Sequence<Number>)
+        }
+        method testRangeTypeEnumerable {
+            def witness = range.from 1 to 6
+            assert (witness) hasType (Enumerable<Number>)
+        }
+        method testRangeTypeNotTypeWithWombat {
+            def witness = range.from 1 to 6
+            deny (witness) hasType (Collection<Number> & type { wombat })
+        }
 
-    method testRangeSizesUp {
-        assert (rangeUp.size) shouldBe (4)
-        assert (emptyUp.size) shouldBe (0)
-        assert (singleUp.size) shouldBe (1)
-    }
-    method testRangeSizesDown {
-        assert (rangeDown.size) shouldBe (4)
-        assert (emptyDown.size) shouldBe (0)
-        assert (singleDown.size) shouldBe (1)
-    }
-    method testRangeUpContainsIn {
-        assert (rangeUp.contains 3) description "{rangeUp} doesn't contain 3"
-        assert (rangeUp.contains 4) description "{rangeUp} doesn't contain 4"
-        assert (rangeUp.contains 5) description "{rangeUp} doesn't contain 5"
-        assert (rangeUp.contains 6) description "{rangeUp} doesn't contain 6"
-    }
-    method testRangeUpContainsOut {
-        deny (rangeUp.contains 2) description "{rangeUp} contains 2"
-        deny (rangeUp.contains 7) description "{rangeUp} contains 7"
-        deny (rangeUp.contains 5.5) description "{rangeUp} contains 5.5"
-        deny (rangeUp.contains "foo") description "{rangeUp} contains \"foo\""
-    }
-    method testRangeElementsUp {
-        def elements = list.empty 
-        for (rangeUp) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(3, 4, 5, 6))
-        assert (rangeUp.asList) shouldBe (list.with(3, 4, 5, 6))
-    }    
-    method testRangeElementsUpWithFold {
-        def elements = rangeUp.fold {acc, each -> acc.add(each)} 
-            startingWith (list.empty)
-        assert (elements) shouldBe (list.with(3, 4, 5, 6))
-    }
-    method testRangeUpFold {
-        def sum = rangeUp.fold {acc, each -> acc + each} startingWith 0
-        assert (sum) shouldBe 18
-    }
-    method testRangeDownContainsIn {
-        assert (rangeDown.contains 10) description "{rangeDown} doesn't contain 10"
-        assert (rangeDown.contains 9) description "{rangeDown} doesn't contain 9"
-        assert (rangeDown.contains 8) description "{rangeDown} doesn't contain 8"
-        assert (rangeDown.contains 7) description "{rangeDown} doesn't contain 7"
-    }
-    method testRangeDownContainsOut {
-        deny (rangeDown.contains 6) description "{rangeDown} contains 6"
-        deny (rangeDown.contains 11) description "{rangeDown} contains 11"
-        deny (rangeDown.contains 5.5) description "{rangeDown} contains 5.5"
-        deny (rangeDown.contains "foo") description "{rangeDown} contains \"foo\""
-    }
 
-    method testRangeElementsDown {
-        def elements = list.empty 
-        for (rangeDown) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(10, 9, 8, 7))
+        method testRangePreconditionUp1 {
+            assert {range.from 4.5 to 5} shouldRaise (RequestError)
+        }
+        
+        method testRangePreconditionUp2 {
+            assert {range.from 4 to 9.5} shouldRaise (RequestError)
+        }
+        
+        method testRangePreconditionUp3 {
+            assert {range.from 4 to "foo"} shouldRaise (RequestError)
+        }
+            
+        method testRangePreconditionDown1 {
+            assert {range.from 4 downTo 1.5} shouldRaise (RequestError)
+        }
+
+        method testRangePreconditionDown2 {
+            assert {range.from 4 downTo 1.5} shouldRaise (RequestError)
+        }
+                    
+        method testRangePreconditionDown3 {
+            assert {range.from 4.5 downTo "foo"} shouldRaise (RequestError)
+        }
+
+        method testRangeSizesUp {
+            assert (rangeUp.size) shouldBe (4)
+            assert (emptyUp.size) shouldBe (0)
+            assert (singleUp.size) shouldBe (1)
+        }
+        method testRangeSizesDown {
+            assert (rangeDown.size) shouldBe (4)
+            assert (emptyDown.size) shouldBe (0)
+            assert (singleDown.size) shouldBe (1)
+        }
+        method testRangeUpContainsIn {
+            assert (rangeUp.contains 3) description "{rangeUp} doesn't contain 3"
+            assert (rangeUp.contains 4) description "{rangeUp} doesn't contain 4"
+            assert (rangeUp.contains 5) description "{rangeUp} doesn't contain 5"
+            assert (rangeUp.contains 6) description "{rangeUp} doesn't contain 6"
+        }
+        method testRangeUpContainsOut {
+            deny (rangeUp.contains 2) description "{rangeUp} contains 2"
+            deny (rangeUp.contains 7) description "{rangeUp} contains 7"
+            deny (rangeUp.contains 5.5) description "{rangeUp} contains 5.5"
+            deny (rangeUp.contains "foo") description "{rangeUp} contains \"foo\""
+        }
+        method testRangeElementsUp {
+            def elements = list.empty 
+            for (rangeUp) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(3, 4, 5, 6))
+            assert (rangeUp.asList) shouldBe (list.with(3, 4, 5, 6))
+        }    
+        method testRangeElementsUpWithFold {
+            def elements = rangeUp.fold {acc, each -> acc.add(each)} 
+                startingWith (list.empty)
+            assert (elements) shouldBe (list.with(3, 4, 5, 6))
+        }
+        method testRangeUpFold {
+            def sum = rangeUp.fold {acc, each -> acc + each} startingWith 0
+            assert (sum) shouldBe 18
+        }
+        method testRangeDownContainsIn {
+            assert (rangeDown.contains 10) description "{rangeDown} doesn't contain 10"
+            assert (rangeDown.contains 9) description "{rangeDown} doesn't contain 9"
+            assert (rangeDown.contains 8) description "{rangeDown} doesn't contain 8"
+            assert (rangeDown.contains 7) description "{rangeDown} doesn't contain 7"
+        }
+        method testRangeDownContainsOut {
+            deny (rangeDown.contains 6) description "{rangeDown} contains 6"
+            deny (rangeDown.contains 11) description "{rangeDown} contains 11"
+            deny (rangeDown.contains 5.5) description "{rangeDown} contains 5.5"
+            deny (rangeDown.contains "foo") description "{rangeDown} contains \"foo\""
+        }
+
+        method testRangeElementsDown {
+            def elements = list.empty 
+            for (rangeDown) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(10, 9, 8, 7))
+        }
+        method testRangeElementsEmptyUp {
+            def elements = list.empty 
+            for (emptyUp) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.empty)
+        }
+        method testRangeElementsEmptyDown {
+            def elements = list.empty 
+            for (emptyDown) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.empty)
+        }
+        method testRangeElementsSingletonUp {
+            def elements = list.empty 
+            for (singleUp) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(4))
+        }
+        method testRangeElementsSingletonDown {
+            def elements = list.empty 
+            for (singleDown) do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(7))
+        }
+        method testRangeElementsDoUp {
+            def elements = list.empty 
+            (rangeUp).do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(3, 4, 5, 6))
+        }
+        method testRangeKeysAndValues {
+            var s := ""
+            rangeUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+            assert (s) shouldBe "1::3 2::4 3::5 4::6 "
+        }
+        method testRangeUpKeysAndValuesEmpty {
+            var s := ""
+            emptyUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+            assert (s) shouldBe ""
+        }
+        method testRangeElementsDoDown {
+            def elements = list.empty 
+            (rangeDown).do {each -> elements.add(each)}
+            assert (elements) shouldBe (list.with(10, 9, 8, 7))
+        } 
+        method testRangeKeysAndValuesDown {
+            var s := ""
+            rangeDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+            assert (s) shouldBe "1::10 2::9 3::8 4::7 "
+        }
+        method testRangeDownKeysAndValuesEmpty {
+            var s := ""
+            emptyDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
+            assert (s) shouldBe ""
+        }
+        method testRangeUpReverse {
+            assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
+        }
+        method testRangeFilterExhausted {
+            def rangeFiltered = rangeUp.filter{each -> each > 10}
+            print "rangeFiltered = {rangeFiltered.asDebugString}"
+            print "rangeFiltered = {rangeFiltered}"
+            def rangeFilteredIterator = rangeFiltered.iterator
+            print "rangeFilteredIterator = {rangeFilteredIterator.asDebugString}"
+            print "rangeFilteredIterator = {rangeFilteredIterator}"
+            assert(rangeFilteredIterator) hasType (Iterator)
+            deny(rangeFilteredIterator.hasNext) description "empty rangeFilteredIterator hasNext!"
+            assert{rangeFilteredIterator.next} shouldRaise (Exhausted)
+        }
+        method testRangeFilterEmptyList {
+            assert (rangeUp.filter{each -> each > 10}.onto(list)) shouldBe (list.empty)
+        }
+        method testRangeFilterEmpty {
+            assert (rangeUp.filter{each -> each > 10}.isEmpty) 
+                description "range filter by an everywhere-false predicate isn't empty"
+        }
+        method testRangeDownReverse {
+            assert (rangeDown.reversed) shouldBe (range.from(7)to(10))
+        }
+        method testRangeEqualityWithList {
+            assert(rangeDown == list.with(10,9,8,7)) 
+                description "range.from 10 downTo 7 ≠ list.with(10, 9, 8 ,7)"
+            assert(emptyUp == list.empty) 
+                description "The empty range was not equal to the empty list"
+        }
+        method testRangeInequalityWithNumber {
+            deny(rangeDown == 7) description ("rangeDown == 7")
+        }
+        method testRangeInequalityWithList {
+            assert(rangeDown != []) description("Failed trying the empty list")
+            assert(rangeDown != [3,4,5]) 
+                description("Range = list with a different size.")
+            assert(rangeDown != [10,9,8,5]) 
+                description("Range = list with different contents")
+        }
+        method testRangeUpListConversion {
+            assert(rangeUp.asList == list.with(3,4,5,6))
+            assert(rangeUp.asList) hasType (List)
+        }
+        method testRangeUpSequenceConversion {
+            assert(rangeUp.asSequence == sequence.with(3,4,5,6))
+            assert(rangeUp.asSequence) hasType (Sequence)
+        }
+        method testRangeDownListConversion {
+            assert(rangeDown.asList == list.with(10,9,8,7))
+            assert(rangeDown.asList) hasType (List)
+        }
+        method testRangeDownSequenceConversion {
+            assert(rangeDown.asSequence == sequence.with(10,9,8,7))
+            assert(rangeDown.asSequence) hasType (Sequence)
+        }
+        method testRangeDownAt {
+            assert(rangeDown.at(1)) shouldBe 10
+            assert(rangeDown.at(2)) shouldBe 9
+            assert(rangeDown.at(3)) shouldBe 8
+            assert(rangeDown.at(4)) shouldBe 7
+            assert{rangeDown.at(5)} shouldRaise (BoundsError)
+            assert{rangeDown.at(0)} shouldRaise (BoundsError)
+        }
+        method testRangeUpAt {
+            assert(rangeUp.at(1)) shouldBe 3
+            assert(rangeUp.at(2)) shouldBe 4
+            assert(rangeUp.at(3)) shouldBe 5
+            assert(rangeUp.at(4)) shouldBe 6
+            assert{rangeUp.at(5)} shouldRaise (BoundsError)
+            assert{rangeUp.at(0)} shouldRaise (BoundsError)
+        }
+        method testRangeUpAsDictionary {
+            assert(rangeUp.asDictionary) shouldBe 
+                (dictionary.with(1::3, 2::4, 3::5, 4::6))
+        }
+        method testRangeDownAsDictionary {
+            assert(rangeDown.asDictionary) shouldBe
+                (dictionary.with(1::10, 2::9, 3::8, 4::7))
+        }
     }
-    method testRangeElementsEmptyUp {
-        def elements = list.empty 
-        for (emptyUp) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.empty)
-    }
-    method testRangeElementsEmptyDown {
-        def elements = list.empty 
-        for (emptyDown) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.empty)
-    }
-    method testRangeElementsSingletonUp {
-        def elements = list.empty 
-        for (singleUp) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(4))
-    }
-    method testRangeElementsSingletonDown {
-        def elements = list.empty 
-        for (singleDown) do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(7))
-    }
-    method testRangeElementsDoUp {
-        def elements = list.empty 
-        (rangeUp).do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(3, 4, 5, 6))
-    }
-    method testRangeKeysAndValues {
-        var s := ""
-        rangeUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
-        assert (s) shouldBe "1::3 2::4 3::5 4::6 "
-    }
-    method testRangeUpKeysAndValuesEmpty {
-        var s := ""
-        emptyUp.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
-        assert (s) shouldBe ""
-    }
-    method testRangeElementsDoDown {
-        def elements = list.empty 
-        (rangeDown).do {each -> elements.add(each)}
-        assert (elements) shouldBe (list.with(10, 9, 8, 7))
-    } 
-    method testRangeKeysAndValuesDown {
-        var s := ""
-        rangeDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
-        assert (s) shouldBe "1::10 2::9 3::8 4::7 "
-    }
-    method testRangeDownKeysAndValuesEmpty {
-        var s := ""
-        emptyDown.keysAndValuesDo { k, v -> s := s ++ "{k}::{v} " }
-        assert (s) shouldBe ""
-    }
-    method testRangeUpReverse {
-        assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
-    }
-    method testRangeFilterExhausted {
-        def rangeFiltered = rangeUp.filter{each -> each > 10}
-        print "rangeFiltered = {rangeFiltered.asDebugString}"
-        print "rangeFiltered = {rangeFiltered}"
-        def rangeFilteredIterator = rangeFiltered.iterator
-        print "rangeFilteredIterator = {rangeFilteredIterator.asDebugString}"
-        print "rangeFilteredIterator = {rangeFilteredIterator}"
-        assert(rangeFilteredIterator) hasType (Iterator)
-        deny(rangeFilteredIterator.hasNext) description "empty rangeFilteredIterator hasNext!"
-        assert{rangeFilteredIterator.next}
-//        assert {rangeUp.filter{each -> each > 10}.iterator.next} 
-            shouldRaise (Exhausted)
-    }
-    method testRangeFilterEmptyList {
-        assert (rangeUp.filter{each -> each > 10}.onto(list)) shouldBe (list.empty)
-    }
-    method testRangeFilterEmpty {
-        assert (rangeUp.filter{each -> each > 10}.isEmpty) 
-            description "range filter by an everywhere-false predicate isn't empty"
-    }
-    method testRangeDownReverse {
-        assert (rangeDown.reversed) shouldBe (range.from(7)to(10))
-    }
-    method testRangeEqualityWithList {
-        assert(rangeDown == list.with(10,9,8,7)) 
-            description "range.from 10 downTo 7 ≠ list.with(10, 9, 8 ,7)"
-        assert(emptyUp == list.empty) 
-            description "The empty range was not equal to the empty list"
-    }
-    method testRangeInequalityWithNumber {
-        deny(rangeDown == 7) description ("rangeDown == 7")
-    }
-    method testRangeInequalityWithList {
-        assert(rangeDown != []) description("Failed trying the empty list")
-        assert(rangeDown != [3,4,5]) 
-            description("Range = list with a different size.")
-        assert(rangeDown != [10,9,8,5]) 
-            description("Range = list with different contents")
-    }
-    method testRangeUpListConversion {
-        assert(rangeUp.asList == list.with(3,4,5,6))
-        assert(rangeUp.asList) hasType (List)
-    }
-    method testRangeUpSequenceConversion {
-        assert(rangeUp.asSequence == sequence.with(3,4,5,6))
-        assert(rangeUp.asSequence) hasType (Sequence)
-    }
-    method testRangeDownListConversion {
-        assert(rangeDown.asList == list.with(10,9,8,7))
-        assert(rangeDown.asList) hasType (List)
-    }
-    method testRangeDownSequenceConversion {
-        assert(rangeDown.asSequence == sequence.with(10,9,8,7))
-        assert(rangeDown.asSequence) hasType (Sequence)
-    }
-    method testRangeDownAt {
-        assert(rangeDown.at(1)) shouldBe 10
-        assert(rangeDown.at(2)) shouldBe 9
-        assert(rangeDown.at(3)) shouldBe 8
-        assert(rangeDown.at(4)) shouldBe 7
-        assert{rangeDown.at(5)} shouldRaise (BoundsError)
-        assert{rangeDown.at(0)} shouldRaise (BoundsError)
-    }
-    method testRangeUpAt {
-        assert(rangeUp.at(1)) shouldBe 3
-        assert(rangeUp.at(2)) shouldBe 4
-        assert(rangeUp.at(3)) shouldBe 5
-        assert(rangeUp.at(4)) shouldBe 6
-        assert{rangeUp.at(5)} shouldRaise (BoundsError)
-        assert{rangeUp.at(0)} shouldRaise (BoundsError)
-    }
-    method testRangeUpAsDictionary {
-        assert(rangeUp.asDictionary) shouldBe 
-            (dictionary.with(1::3, 2::4, 3::5, 4::6))
-    }
-    method testRangeDownAsDictionary {
-        assert(rangeDown.asDictionary) shouldBe
-            (dictionary.with(1::10, 2::9, 3::8, 4::7))
-    }
-  }
 }
 
 def sequenceTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = sequence.with(1, 2, 3, 4, 5)
         def evens = sequence.with(2, 4, 6, 8)
         def empty = sequence.empty
 
-
+        method testSequenceTypeCollection {
+            def witness = sequence<Number>.with(1,3)
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testSequenceTypeSequence {
+            def witness = sequence<Number>.with(1,3)
+            assert (witness) hasType (Sequence<Number>)
+        }
+        method testSequenceTypeEnumerable {
+            def witness = sequence<Number>.with(1,3)
+            assert (witness) hasType (Enumerable<Number>)
+        }
+        method testFilteredSequenceTypeEnumerable {
+            def witness = sequence<Number>.with(1,3).filter{x -> true}
+            assert (witness) hasType (Enumerable<Number>)
+        }
+        method testSequenceNotTypeWithWombat {
+            def witness = sequence<Number>.with(1,3)
+            deny (witness) hasType (Collection<Number> & type { wombat })
+        }
         method testSequenceSize {
             assert(oneToFive.size) shouldBe 5
             assert(empty.size) shouldBe 0
@@ -615,13 +580,29 @@ def sequenceTest = object {
 }
 
 def listTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = list.with(1, 2, 3, 4, 5)
         def evens = list.with(2, 4, 6, 8)
         def empty = list.empty
 
+        method testListTypeCollection {
+            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testListTypeList {
+            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (List<Number>)
+        }
+        method testListTypeSequence {
+            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Sequence<Number>)
+        }
+        method testListTypeNotTypeWithWombat {
+            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            deny (witness) hasType (List<Number> & type { wombat })
+        }
 
         method testListSize {
             assert(oneToFive.size) shouldBe 5
@@ -1021,7 +1002,7 @@ def listTest = object {
 }
 
 def setTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = set.with(1, 2, 3, 4, 5)
@@ -1219,12 +1200,23 @@ def setTest = object {
 }
 
 def dictionaryTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
         def oneToFive = dictionary.with("one"::1, "two"::2, "three"::3, 
             "four"::4, "five"::5)
         def evens = dictionary.with("two"::2, "four"::4, "six"::6, "eight"::8)
         def empty = dictionary.empty
+        
+        
+        method testDictionaryTypeCollection {
+            assert (oneToFive) hasType (Collection<Binding<String,Number>>)
+        }
+        method testDictionaryTypeDictionary {
+            assert (oneToFive) hasType (Dictionary<String,Number>)
+        }
+        method testDictionaryTypeNotTypeWithWombat {
+            deny (oneToFive) hasType (Dictionary<String,Number> & type { wombat })
+        }
 
         method testDictionarySize {
             assert(oneToFive.size) shouldBe 5
@@ -1459,14 +1451,7 @@ def dictionaryTest = object {
         method testDictionaryValuesEmpty {
             def vs = empty.values
             assert(vs.isEmpty)
-            print "asserted vs isEmpty"
-            print "vs = {vs}"
-            print "sequence.empty = {sequence.empty}"
-            print "vs.iterator.hasNext == {vs.iterator.hasNext}"
-            print "sequence.empty.iterator.hasNext == {sequence.empty.iterator.hasNext}"
-            print "vs == sequence.empty? {vs == sequence.empty}"
             assert(vs) shouldBe (sequence.empty)
-            print "asserted vs == empty sequence"
         }
         method testDictionaryKeysEmpty {
             assert(empty.keys) shouldBe (sequence.empty)
@@ -1483,12 +1468,16 @@ def dictionaryTest = object {
             assert(evens.bindings.asSet) shouldBe
                 (set.with("two"::2, "four"::4, "six"::6, "eight"::8))
         }
+        method testDictionarySortedOnValues {
+            assert(evens.bindings.sortedBy{b1, b2 -> b1.value.compare(b2.value)})
+                shouldBe (sequence.with("two"::2, "four"::4, "six"::6, "eight"::8))
+        }
+        method testDictionarySortedOnKeys {
+            assert(evens.bindings.sortedBy{b1, b2 -> b1.key.compare(b2.key)})
+                shouldBe (sequence.with("eight"::8, "four"::4, "six"::6, "two"::2))
+        }
     }
 }
-
-print "types"
-def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
-typeTests.runAndPrintResults
 
 print "binding"
 def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
