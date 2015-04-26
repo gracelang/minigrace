@@ -1,26 +1,24 @@
 import "mirrors" as mirror
 import "newCollections" as nc
 
-method compareType(DesiredType) and (value) -> String {
+method compareType(DesiredType:Type) and (value) -> String {
     var s
     def vMethods = mirror.reflect(value).methodNames
     def tMethods = DesiredType.methodNames
     def missing = tMethods -- vMethods
     if (missing.size == 0) then {
-        s := "{value} has all the methods of {DesiredType}"
+        s := "{value.asDebugString} has all the methods of {DesiredType}"
     } else {
-        s := "{value} is missing "
+        s := "{value.asDebugString} is missing "
         missing.do { each -> s := s ++ each } 
             separatedBy { s := s ++ ", " }
     }
     var extra := (vMethods -- tMethods)
-    print "extra methods: {extra}"
-    extra := extra.filter{m -> ! m.endsWith "()object"}
-
+    extra := extra.filter{m -> (! m.endsWith "()object") && (m != "outer")}.onto(set)
     if (extra.size == 0) then {
-        s := s ++ "\n{value} has no extra methods beyond {DesiredType}"
+        s := s ++ "\n{value.asDebugString} has no extra methods beyond {DesiredType}"
     } else {
-        s := s ++ "\n{value} has extra methods "
+        s := s ++ "\n{value.asDebugString} has extra methods "
         extra.do { each -> s := s ++ each }
             separatedBy { s := s ++ ", " }
     }
@@ -31,7 +29,11 @@ method compareType(DesiredType) and (value) -> String {
 def s1 = nc.sequence.with(4)
 def s2 = s1.filter{ x -> true }
 def l1 = nc.list.with(2)
+def st = nc.set.with("a", "b")
 
 print(compareType(nc.Sequence) and (s1))
-print(compareType(nc.LazySequence) and (s2))
+print(compareType(nc.Enumerable) and (s2))
 print(compareType(nc.List) and(l1))
+print(compareType(nc.Set) and(st))
+print(compareType(nc.Sequence) and (nc.range.from 1 to 10))
+

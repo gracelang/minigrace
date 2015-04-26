@@ -6,12 +6,11 @@ type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
 type Collection<T> = collections.Collection<T>
-type BoundedCollection<T> = collections.BoundedCollection<T>
 type Binding<K,T> = collections.Binding<K,T>
 type Iterator<T> = collections.Iterator<T>
 type CollectionFactory<T> = collections.CollectionFactory<T>
 type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
-type LazySequence<T> = collections.LazySequence<T>
+type Enumerable<T> = collections.Enumerable<T>
 type Sequence<T> = collections.Sequence<T>
 type List<T> = collections.List<T>
 type Set<T> = collections.Set<T>
@@ -45,9 +44,13 @@ def typeTest = object {
             def witness = sequence<Number>.with(1,3)
             assert (witness) hasType (Sequence<Number>)
         }
-        method testSequenceTypeLazySequence {
+        method testSequenceTypeEnumerable {
             def witness = sequence<Number>.with(1,3)
-            assert (witness) hasType (LazySequence<Number>)
+            assert (witness) hasType (Enumerable<Number>)
+        }
+        method testFilteredSequenceTypeEnumerable {
+            def witness = sequence<Number>.with(1,3).filter{x -> true}
+            assert (witness) hasType (Enumerable<Number>)
         }
         method testSequenceNotTypeWithWombat {
             def witness = sequence<Number>.with(1,3)
@@ -61,9 +64,9 @@ def typeTest = object {
             def witness = range.from 1 to 6
             assert (witness) hasType (Sequence<Number>)
         }
-        method testRangeTypeLazySequence {
+        method testRangeTypeEnumerable {
             def witness = range.from 1 to 6
-            assert (witness) hasType (LazySequence<Number>)
+            assert (witness) hasType (Enumerable<Number>)
         }
         method testRangeTypeNotTypeWithWombat {
             def witness = range.from 1 to 6
@@ -271,7 +274,16 @@ def rangeTest = object {
         assert (rangeUp.reversed) shouldBe (range.from(6)downTo(3))
     }
     method testRangeFilterExhausted {
-        assert {rangeUp.filter{each -> each > 10}.iterator.next} 
+        def rangeFiltered = rangeUp.filter{each -> each > 10}
+        print "rangeFiltered = {rangeFiltered.asDebugString}"
+        print "rangeFiltered = {rangeFiltered}"
+        def rangeFilteredIterator = rangeFiltered.iterator
+        print "rangeFilteredIterator = {rangeFilteredIterator.asDebugString}"
+        print "rangeFilteredIterator = {rangeFilteredIterator}"
+        assert(rangeFilteredIterator) hasType (Iterator)
+        deny(rangeFilteredIterator.hasNext) description "empty rangeFilteredIterator hasNext!"
+        assert{rangeFilteredIterator.next}
+//        assert {rangeUp.filter{each -> each > 10}.iterator.next} 
             shouldRaise (Exhausted)
     }
     method testRangeFilterEmptyList {
@@ -569,17 +581,17 @@ def sequenceTest = object {
             while {iter.hasNext} do { accum.add(iter.next) }
             assert (accum) shouldBe (set.with(1, 2, 4))
         }
-        method testSequenceCopySorted {
+        method testSequenceSorted {
             def input = sequence.with(5, 3, 11, 7, 2)
-            def output = input.copySorted
+            def output = input.sorted
             assert (output) shouldBe (sequence.with(2, 3, 5, 7, 11))
             assert (output.asString.startsWith (sequence.empty.asString.first)) description
-                ".copySorted does not look like a sequence"
+                ".sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
-        method testSequenceCopySortedBy {
+        method testSequenceSortedBy {
             def input = sequence.with(5, 3, 11, 7, 2)
-            def output = input.copySortedBy {l, r -> 
+            def output = input.sortedBy {l, r -> 
                 if (l == r) then {0}
                     elseif (l < r) then {1}
                     else {-1}
@@ -587,14 +599,18 @@ def sequenceTest = object {
             assert (input) shouldBe (sequence.with(5, 3, 11, 7, 2))
             assert (output) shouldBe (sequence.with(11, 7, 5, 3, 2))
             assert (output.asString.startsWith (sequence.empty.asString.first)) description
-                ".copySorted does not look like a sequence"
+                "sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
         method testSequenceAsDictionary {
             assert(evens.asDictionary) shouldBe
                 (dictionary.with(1::2, 2::4, 3::6, 4::8))
         }
-
+        method lazyConcat {
+            def s1 = oneToFive.filter{x -> (x % 2) == 1}
+            def s2 = evens.filter{x -> true}
+            assert(s1 ++ s2) shouldBe (sequence.with(1, 3, 5, 2, 4, 6, 8))
+        }
     }
 }
 
@@ -985,16 +1001,16 @@ def listTest = object {
             assert (input.sortBy{a, b -> b - a}) shouldBe (output)
             assert (input) shouldBe (output)
         }        
-        method testListCopySorted {
+        method testListSorted {
             def input = list.with(7, 6, 4, 1)
             def output = list.with(1, 4, 6, 7)
-            assert (input.copySorted) shouldBe (output)
+            assert (input.sorted) shouldBe (output)
             assert (input) shouldBe (list.with(7, 6, 4, 1))
         }
-        method testListCopySortedBlock {
+        method testListSortedBlock {
             def input = list.with(6, 7, 4, 1)
             def output = list.with(7, 6, 4, 1)
-            assert (input.copySortedBy{a, b -> b-a}) shouldBe (output)
+            assert (input.sortedBy{a, b -> b-a}) shouldBe (output)
             assert (input) shouldBe (list.with(6, 7, 4, 1))
         }
         method testListAsDictionary {
@@ -1441,8 +1457,17 @@ def dictionaryTest = object {
         }
         
         method testDictionaryValuesEmpty {
-            assert(empty.values) shouldBe (sequence.empty)
-        }        
+            def vs = empty.values
+            assert(vs.isEmpty)
+            print "asserted vs isEmpty"
+            print "vs = {vs}"
+            print "sequence.empty = {sequence.empty}"
+            print "vs.iterator.hasNext == {vs.iterator.hasNext}"
+            print "sequence.empty.iterator.hasNext == {sequence.empty.iterator.hasNext}"
+            print "vs == sequence.empty? {vs == sequence.empty}"
+            assert(vs) shouldBe (sequence.empty)
+            print "asserted vs == empty sequence"
+        }
         method testDictionaryKeysEmpty {
             assert(empty.keys) shouldBe (sequence.empty)
         }

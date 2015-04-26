@@ -35,45 +35,44 @@ type Collection<T> = Object & type {
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
     iterator -> Iterator<T>
     ++(o: Collection<T>) -> Collection<T>
-    contains(element) -> Boolean
 }
 
-type BoundedCollection<T> = Collection<T> & type {
-    size -> Number
-}
-
-type LazySequence<T> = Collection<T> & type {
-    keys -> Collection<Number>
+type Enumerable<T> = Collection<T> & type {
+    size -> Number  
+        // may raise SizeUnknow if size is expensive to computer
     values -> Collection<T>
-    copySortedBy(comparison:Block2<T,T,Number>) -> SelfType
-    copySorted -> SelfType
     asList -> List<T>
     asSequence -> Sequence<T>
     asDictionary -> Dictionary<Number,T>
     asSet -> Set<T>
-    keysAndValuesDo(action:Block2<Number,T,Done>) -> Done
-    iterator -> Iterator
-    iter -> Iterator
-    onto(resultFactory:EmptyCollectionFactory) -> Collection<T>
-    into(accumulator:Collection<Unknown>) -> Collection<Unknown>
+    keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
+    onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
+    into(existing:Collection<Unknown>) -> Collection<Unknown>
+    sortedBy(comparison:Block2<T,T,Number>) -> SelfType
+    sorted -> SelfType
 }
 
-type Sequence<T> = LazySequence<T> & type {
+type Sequence<T> = Enumerable<T> & type {
     at(n:Number) -> T
     [](n:Number) -> T
-    size -> Number
-    indices -> BoundedCollection<T>
+    indices -> Sequence<Number>
+    keys -> Sequence<Number>
     first -> T 
     second -> T
     third -> T
     fourth -> T 
     fifth -> T
     last -> T
+    indexOf<W>(elem:T)ifAbsent(action:Block0<W>) -> Number | W
+    indexOf(elem:T) -> Number
+    contains(elem:T) -> Boolean
+    reversed -> Sequence<T>
 }
 
 type List<T> = Sequence<T> & type {
-    add(x: T) -> List<T>
-    addFirst(x: T) -> List<T>
+    add(*x: T) -> List<T>
+    addFirst(*x: T) -> List<T>
+    addAllFirst(xs:Collection<T>) -> List<T>
     addLast(x: T) -> List<T>    // same as add
     at(ix:Number) put(v:T) -> List<T>
     []:= (ix:Number, v:T) -> Done
@@ -95,29 +94,33 @@ type List<T> = Sequence<T> & type {
     last -> T 
     ++(o: List<T>) -> List<T>
     addAll(l: Collection<T>) -> List<T>
-    extend(l: Collection<T>) -> Done
     copy -> List<T>
-    copySorted -> SelfType
-    sort -> SelfType
+    sort -> List<T>
+    sortBy(sortBlock:Block2<T,T,Number>) -> List<T>
+    reverse -> List<T>
 }
 
-type Set<T> = BoundedCollection<T> & type {
+type Set<T> = Collection<T> & type {
+    size -> Number
     add(*elements:T) -> SelfType
     addAll(elements:Collection<T>) -> SelfType
     remove(*elements: T) -> Set<T>
     remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
     includes(booleanBlock: Block1<T,Boolean>) -> Boolean
     find(booleanBlock: Block1<T,Boolean>) ifNone(notFoundBlock: Block0<T>) -> T
-    -(o: T) -> Set<T>
-    extend(l: Collection<T>) -> Set<T>
     copy -> Set<T>
+    contains(elem:T) -> Boolean
+    ** (other:Set<T>) -> Set<T>
+    -- (other:Set<T>) -> Set<T>
+    ++ (other:Set<T>) -> Set<T>
+    removeAll(elems:Collection<T>)
+    removeAll(elems:Collection<T>)ifAbsent(action:Block0<Done>) -> Set<T>
 }
 
-type Dictionary<K,T> = {
-    size -> Number
-    isEmpty -> Boolean
+type Dictionary<K,T> = Collection<T> & type {
     containsKey(k:K) -> Boolean
     containsValue(v:T) -> Boolean
+    contains(elem:T) -> Boolean
     at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
     at(key:K)put(value:T) -> Dictionary<K,T>
     []:=(k:K, v:T) -> Done
@@ -127,29 +130,29 @@ type Dictionary<K,T> = {
     removeKey(*keys:K) -> Dictionary<K,T>
     removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
     removeValue(*removals:T) -> Dictionary<K,T>
-    keys -> LazySequence<K>
-    values -> LazySequence<T>
-    bindings -> LazySequence<Binding<K,T>>
+    keys -> Enumerable<K>
+    values -> Enumerable<T>
+    bindings -> Enumerable<Binding<K,T>>
     keysAndValuesDo(action:Block2<K,T,Done>) -> Done
     keysDo(action:Block1<K,Done>) -> Done
     valuesDo(action:Block1<T,Done>) -> Done
-    do(action:Block1<T,Done>) -> Done
     ==(other:Object) -> Boolean
     copy -> Dictionary<K,T>
+    ++(other:Dictionary<K, T>) -> Dictionary<K, T>
 }
 
-type Iterator<T> = {
+type Iterator<T> = type {
     hasNext -> Boolean
     next -> T
 }
 
-type CollectionFactory<T> = {
+type CollectionFactory<T> = type {
     withAll<T> (elts:Collection<T>) -> Collection<T>
     with<T> (*elts:Object) -> Collection<T>
     empty<T> -> Collection<T>
 }
 
-type EmptyCollectionFactory<T> = {
+type EmptyCollectionFactory<T> = type {
     empty<T> -> Collection<T>
 }
 
@@ -160,7 +163,7 @@ class collectionFactory.trait<T> {
 }
 
 factory method lazySequenceOver<T,R>(source:Collection<T>)
-        mappedBy(function:Block1<T,R>) -> LazySequence<R> is confidential {
+        mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
     inherits lazySequence.trait<T>
     factory method iterator {
         def sourceIterator = source.iterator
@@ -173,7 +176,7 @@ factory method lazySequenceOver<T,R>(source:Collection<T>)
 }
 
 factory method lazySequenceOver<T>(source:Collection<T>) 
-        filteredBy(predicate:Block1<T,Boolean>) -> LazySequence<T> is confidential {
+        filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
     inherits lazySequence.trait<T>
     factory method iterator {
         var cache
@@ -207,6 +210,31 @@ factory method lazySequenceOver<T>(source:Collection<T>)
     }
     method size { SizeUnknown.raise "size requested on {asDebugString}" }
     method asDebugString { "a lazy sequence filtering {source}" }
+    method asString { super.asString }  // fix code generator bug
+}
+factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
+    method next {
+        if (left.hasNext) then {
+            left.next
+        } else {
+            right.next
+        }
+    }
+    method hasNext {
+        if (left.hasNext) then { return true }
+        return right.hasNext
+    }
+    method asDebugString { "iteratorConcat of {left} and {right}" }
+    method asString { "an iterator over a concatenation" }
+}
+factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
+    inherits lazySequence.trait<T>
+    method iterator {
+        iteratorConcat(left.iterator, right.iterator)
+    }
+    method asDebugString { "lazy concatenation of {left} and {right}" }
+    method asString { super.asString }
+    method size { left.size + right.size }  // may raise SizeUnknown
 }
 
 class collection.trait<T> {
@@ -241,14 +269,11 @@ class collection.trait<T> {
         }
         return result
     }
-    method map<R>(block1:Block1<T,R>) -> LazySequence<R> {
+    method map<R>(block1:Block1<T,R>) -> Enumerable<R> {
         lazySequenceOver(self) mappedBy(block1)
     }
-    method filter(selectionCondition:Block1<T,Boolean>) -> LazySequence<T> {
-        print "building filter over {self}"
-        def res = lazySequenceOver(self) filteredBy(selectionCondition)
-        print "result is {res.asSequence}"
-        res
+    method filter(selectionCondition:Block1<T,Boolean>) -> Enumerable<T> {
+        lazySequenceOver(self) filteredBy(selectionCondition)
     }
 
     method iter { self.iterator }
@@ -289,6 +314,13 @@ class lazySequence.trait<T> {
     }
     method asSequence -> Sequence<T> {
         sequence.withAll(self)
+    }    
+    method asDictionary {
+        def result = dictionary.empty
+        keysAndValuesDo { k, v ->
+            result.at(k) put(v)
+        }
+        return result
     }
     method onto(f: CollectionFactory<T>) -> Collection<T> {
         f.withAll(self)
@@ -302,6 +334,7 @@ class lazySequence.trait<T> {
     }
     method ==(other) {
         // TODO: fix inheritance!  This whole method is copied from sequence.
+        print "entering lazySequence.trait == method"
         match (other)
             case {o:Collection ->
                 def selfIter = self.iterator
@@ -311,9 +344,12 @@ class lazySequence.trait<T> {
                         return false
                     }
                 }
-                return selfIter.hasNext == otherIter.hasNext
+                def result = selfIter.hasNext == otherIter.hasNext
+                print "    leaving == with {result}"
+                return result
             } 
             case {_ ->
+                print "    other not a Collection"
                 return false
             }
     }
@@ -323,18 +359,32 @@ class lazySequence.trait<T> {
             block1.apply(selfIterator.next)
         }
     }
+    method keysAndValuesDo(block2:Block2<Number,T,Done>) -> Done {
+        var ix := 0
+        def selfIterator = self.iterator
+        while {selfIterator.hasNext} do { 
+            ix := ix + 1
+            block2.apply(ix, selfIterator.next)
+        }
+    }
+    method values -> Collection<T> {
+        self
+    }
     method fold<R>(block2)startingWith(initial) -> R {
         var res := initial
         while { self.hasNext } do { res := block2.apply(res, self.next) }
         return res
     }
-    method copy (sortBlock:Block2) {
+    method ++ (other) -> Enumerable<T> {
+        lazyConcatenation(self, other)
+    }
+    method as (sortBlock:Block2) {
         self.asList.sortBy(sortBlock:Block2)
     }
-    method copySortedBy(sortBlock:Block2) -> List<T> {
-        self.asList.sortBy(sortBlock:Block2).asSequence
+    method sortedBy(sortBlock:Block2) -> List<T> {
+        self.asList.sortBy(sortBlock:Block2)
     }
-    method copySorted -> List<T> {
+    method sorted -> List<T> {
         self.asList.sort
     }
     method asString {
@@ -524,14 +574,14 @@ factory method sequence<T> {
                     }
                 }
             }
-            method copySorted {
+            method sorted {
                 asList.sortBy { l, r ->
                     if (l == r) then {0} 
                         elseif (l < r) then {-1} 
                         else {1}
                 }.asSequence
             }
-            method copySortedBy(sortBlock:Block2){
+            method sortedBy(sortBlock:Block2){
                 asList.sortBy(sortBlock:Block2).asSequence
             }
         }
@@ -811,10 +861,10 @@ factory method list<T> {
                             else {1}
                     }
                 }
-                method copySortedBy(sortBlock:Block2) {
+                method sortedBy(sortBlock:Block2) {
                     copy.sortBy(sortBlock:Block2)
                 }
-                method copySorted {
+                method sorted {
                     copy.sort
                 }
                 method copy {
@@ -1033,10 +1083,10 @@ factory method list<T> {
                         else {1}
                 }
             }
-            method copySortedBy(sortBlock:Block2) {
+            method sortedBy(sortBlock:Block2) {
                 copy.sortBy(sortBlock:Block2)
             }
-            method copySorted {
+            method sorted {
                 copy.sort
             }
             method copy {
@@ -1184,15 +1234,6 @@ factory method set<T> {
                     separatedBy { s := s ++ ", " }
                 s ++ "\}"
             }
-            method -(o) {
-                def result = set.empty
-                for (self) do {v->
-                    if (!o.contains(v)) then {
-                        result.add(v)
-                    }
-                }
-                result
-            }
             method extend(l) {
                 for (l) do {i->
                     add(i)
@@ -1273,8 +1314,12 @@ factory method set<T> {
             }
             method -- (other) {
             // set difference
-                print "about to copy"
-                copy.removeAll(other) ifAbsent { done }
+                def result = set.empty
+                for (self) do {v->
+                    if (!other.contains(v)) then {
+                        result.add(v)
+                    }
+                }
             }
             method ** (other) {
             // set intersection
@@ -1468,7 +1513,7 @@ factory method dictionary<K,T> {
                 }
                 s ++ "⟭"
             }
-            method keys -> LazySequence<K> {
+            method keys -> Enumerable<K> {
                 def sourceDictionary = self
                 object {
                     inherits lazySequence.trait<K>
@@ -1481,18 +1526,17 @@ factory method dictionary<K,T> {
                         }
                     }
                     def size is public = sourceDictionary.size
-                    method asString { super.asString }  // TODO: fix code generator bug!
-                    method ==(other) { super == other } // TODO: fix code generator bug!
+                    method asString { super.asString }  // TODO: fix js code generator bug!
+                    method ==(other) { super == other } // TODO: fix js code generator bug!
                     method asDebugString { 
                         "a lazy sequence over keys of {sourceDictionary}"
                     }
                 }
             }
-            method values -> LazySequence<T> {
+            method values -> Enumerable<T> {
                 def sourceDictionary = self
                 object {
                     inherits lazySequence.trait<T>
-                    print "building lazy sequence for values"
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
@@ -1503,14 +1547,19 @@ factory method dictionary<K,T> {
                     }
                     def size is public = sourceDictionary.size
                     method asString { super.asString }  // TODO: fix code generator bug!
-                    method ==(other) { super == other } // TODO: fix code generator bug!
-                    method asDebugString { 
+                    method ==(other) { 
+                        // TODO: fix code generator bug!
+                        print "requesting super =="
+                        def result = (super == other)
+                        print "done requesting super =="
+                        return result
+                    }
+                    method asDebugString {
                         "a lazy sequence over values of {sourceDictionary}"
                     }
-                    print "built {self.asDebugString}"
                 }
             }
-            method bindings -> LazySequence<T> {
+            method bindings -> Enumerable<T> {
                 def sourceDictionary = self
                 object {
                     inherits lazySequence.trait<T>
@@ -1620,6 +1669,16 @@ factory method dictionary<K,T> {
                 }
                 return newDict
             }
+            
+            method --(other) {
+                def newDict = dictionary.empty
+                keysAndValuesDo { k, v -> 
+                    if (! other.containsKey(k)) then {
+                        newDict.at(k) put(v)
+                    }
+                }
+                return newDict
+            }
         }
     }
 }
@@ -1722,9 +1781,9 @@ factory method range {
                         return false
                     }
             }
-            method copySorted { self }
+            method sorted { self }
 
-            method copySortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { self.asList.sortBy(c) }
             
             method keys { 1..self.size }
             
@@ -1836,9 +1895,9 @@ factory method range {
                         return false
                     }
             }
-            method copySorted { self.reversed }
+            method sorted { self.reversed }
 
-            method copySortedBy(c) { self.asList.sortBy(c) }
+            method sortedBy(c) { self.asList.sortBy(c) }
             
             method keys { 1..self.size }
             
