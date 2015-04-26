@@ -329,7 +329,7 @@ class lazySequence.trait<T> {
     }
     method ==(other) {
         // TODO: fix inheritance!  This whole method is copied from sequence.
-        print "entering lazySequence.trait == method"
+//        print "entering lazySequence.trait == method"
         match (other)
             case {o:Collection ->
                 def selfIter = self.iterator
@@ -340,11 +340,11 @@ class lazySequence.trait<T> {
                     }
                 }
                 def result = selfIter.hasNext == otherIter.hasNext
-                print "    leaving == with {result}"
+//                print "    leaving == with {result}"
                 return result
             } 
             case {_ ->
-                print "    other not a Collection"
+//                print "    other not a Collection"
                 return false
             }
     }
@@ -1558,9 +1558,9 @@ factory method dictionary<K,T> {
                     method asString { super.asString }  // TODO: fix code generator bug!
                     method ==(other) { 
                         // TODO: fix code generator bug!
-                        print "requesting super =="
+//                        print "requesting super =="
                         def result = (super == other)
-                        print "done requesting super =="
+//                        print "done requesting super =="
                         return result
                     }
                     method asDebugString {

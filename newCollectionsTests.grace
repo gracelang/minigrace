@@ -223,11 +223,7 @@ def rangeTest = object {
         }
         method testRangeFilterExhausted {
             def rangeFiltered = rangeUp.filter{each -> each > 10}
-            print "rangeFiltered = {rangeFiltered.asDebugString}"
-            print "rangeFiltered = {rangeFiltered}"
             def rangeFilteredIterator = rangeFiltered.iterator
-            print "rangeFilteredIterator = {rangeFilteredIterator.asDebugString}"
-            print "rangeFilteredIterator = {rangeFilteredIterator}"
             assert(rangeFilteredIterator) hasType (Iterator)
             deny(rangeFilteredIterator.hasNext) description "empty rangeFilteredIterator hasNext!"
             assert{rangeFilteredIterator.next} shouldRaise (Exhausted)
@@ -1501,7 +1497,7 @@ rangeTests.runAndPrintResults
 
 print "dictionary"
 def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
-dictTests.debugAndPrintResults
+dictTests.runAndPrintResults
 
 //def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests)
 //allTests.runAndPrintResults
