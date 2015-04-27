@@ -204,7 +204,7 @@ js/gUnit.js: js/gUnit.gct
 js/gUnit.gct: gUnit.grace minigrace
 	cd js; cp -f ../$< .; ../minigrace --target js --make $(VERBOSITY) $<
 
-js/minigrace.js: js/minigrace.in.js
+js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo Generating minigrace.js from minigrace.in.js...
 	@cat js/minigrace.in.js > js/minigrace.js
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
