@@ -328,8 +328,7 @@ class lazySequence.trait<T> {
         existing
     }
     method ==(other) {
-        // TODO: fix inheritance!  This whole method is copied from sequence.
-//        print "entering lazySequence.trait == method"
+        // TODO: fix inheritance!  There are now 4 copies of this method!
         match (other)
             case {o:Collection ->
                 def selfIter = self.iterator
@@ -340,11 +339,9 @@ class lazySequence.trait<T> {
                     }
                 }
                 def result = selfIter.hasNext == otherIter.hasNext
-//                print "    leaving == with {result}"
                 return result
             } 
             case {_ ->
-//                print "    other not a Collection"
                 return false
             }
     }
@@ -547,6 +544,7 @@ factory method sequence<T> {
                 }
             }
             method ==(other) {
+                // there are 4 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -1535,7 +1533,25 @@ factory method dictionary<K,T> {
                     }
                     def size is public = sourceDictionary.size
                     method asString { super.asString }  // TODO: fix js code generator bug!
-                    method ==(other) { super == other } // TODO: fix js code generator bug!
+                    method ==(other) {
+                        // this is copied from lazySequence to work around two
+                        // code generator bugs, one in JS and the other in C
+                        match (other)
+                            case {o:Collection ->
+                                def selfIter = self.iterator
+                                def otherIter = other.iterator
+                                while {selfIter.hasNext && otherIter.hasNext} do {
+                                    if (selfIter.next != otherIter.next) then {
+                                        return false
+                                    }
+                                }
+                                def result = selfIter.hasNext == otherIter.hasNext
+                                return result
+                            } 
+                            case {_ ->
+                                return false
+                            }
+                    }
                     method asDebugString { 
                         "a lazy sequence over keys of {sourceDictionary}"
                     }
@@ -1556,12 +1572,27 @@ factory method dictionary<K,T> {
                     }
                     def size is public = sourceDictionary.size
                     method asString { super.asString }  // TODO: fix code generator bug!
-                    method ==(other) { 
-                        // TODO: fix code generator bug!
-//                        print "requesting super =="
-                        def result = (super == other)
-//                        print "done requesting super =="
-                        return result
+                    method ==(other) {
+                        // this is copied from lazySequence to work around two
+                        // code generator bugs, one in JS and the other in C
+                        print "entering dictionary == method"
+                        match (other)
+                            case {o:Collection ->
+                                def selfIter = self.iterator
+                                def otherIter = other.iterator
+                                while {selfIter.hasNext && otherIter.hasNext} do {
+                                    if (selfIter.next != otherIter.next) then {
+                                        return false
+                                    }
+                                }
+                                def result = selfIter.hasNext == otherIter.hasNext
+                                print "    leaving == with {result}"
+                                return result
+                            } 
+                            case {_ ->
+                                print "    other not a Collection"
+                                return false
+                            }
                     }
                     method asDebugString {
                         "a lazy sequence over values of {sourceDictionary}"
