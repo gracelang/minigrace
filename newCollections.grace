@@ -1532,26 +1532,6 @@ factory method dictionary<K,T> {
                         }
                     }
                     def size is public = sourceDictionary.size
-                    method asString { super.asString }  // TODO: fix js code generator bug!
-                    method ==(other) {
-                        // this is copied from lazySequence to work around two
-                        // code generator bugs, one in JS and the other in C
-                        match (other)
-                            case {o:Collection ->
-                                def selfIter = self.iterator
-                                def otherIter = other.iterator
-                                while {selfIter.hasNext && otherIter.hasNext} do {
-                                    if (selfIter.next != otherIter.next) then {
-                                        return false
-                                    }
-                                }
-                                def result = selfIter.hasNext == otherIter.hasNext
-                                return result
-                            } 
-                            case {_ ->
-                                return false
-                            }
-                    }
                     method asDebugString { 
                         "a lazy sequence over keys of {sourceDictionary}"
                     }
@@ -1571,29 +1551,6 @@ factory method dictionary<K,T> {
                         }
                     }
                     def size is public = sourceDictionary.size
-                    method asString { super.asString }  // TODO: fix code generator bug!
-                    method ==(other) {
-                        // this is copied from lazySequence to work around two
-                        // code generator bugs, one in JS and the other in C
-                        print "entering dictionary == method"
-                        match (other)
-                            case {o:Collection ->
-                                def selfIter = self.iterator
-                                def otherIter = other.iterator
-                                while {selfIter.hasNext && otherIter.hasNext} do {
-                                    if (selfIter.next != otherIter.next) then {
-                                        return false
-                                    }
-                                }
-                                def result = selfIter.hasNext == otherIter.hasNext
-                                print "    leaving == with {result}"
-                                return result
-                            } 
-                            case {_ ->
-                                print "    other not a Collection"
-                                return false
-                            }
-                    }
                     method asDebugString {
                         "a lazy sequence over values of {sourceDictionary}"
                     }
