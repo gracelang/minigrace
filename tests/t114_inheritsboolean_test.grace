@@ -29,9 +29,9 @@ if (x.isAnX) then {
     print "Not OK; x.isAnX should return a true value."
 }
 if (x == true) then {
-    print "Not OK; x is not equal to true because of isAnX."
-} else {
     print "OK"
+} else {
+    print "Not OK; two booleanish object are equal if they share the same prototype and underlying value"
 }
 if (true == !y) then {
     print "OK"

@@ -2647,7 +2647,7 @@ Object Boolean_not(Object self, int nparts, int *argcv,
 }
 Object Boolean_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    return alloc_Boolean(self == args[0] && ((flags >> 24 & 255) == 0));
+    return alloc_Boolean(self == args[0]);
 }
 Object Boolean_NotEquals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
