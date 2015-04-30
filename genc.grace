@@ -74,7 +74,7 @@ method countbindings(l) {
         if ((k == "vardec") || (k == "defdec") || (k == "typedec")
              || (k == "class")) then {
             numslots := numslots + 1
-        } elseif (n.kind == "if") then {
+        } elseif { n.kind == "if" } then {
             numslots := numslots + countnodebindings(n)
         }
     }
@@ -143,9 +143,9 @@ method escapestring2(s) {
         if (ls && (c == "\\")) then {
             ls := false
             ns := ns ++ "\\\\"
-        } elseif (c == "\\") then {
+        } elseif { c == "\\" } then {
             ls := true
-        } elseif (ls) then {
+        } elseif { ls } then {
             ns := ns ++ "\"\"\\x" ++ c
             ls := false
             cd := 2
@@ -155,7 +155,7 @@ method escapestring2(s) {
         if (cd == 1) then {
             ns := ns ++ "\"\""
             cd := 0
-        } elseif (cd > 0) then {
+        } elseif { cd > 0 } then {
             cd := cd - 1
         }
     }
@@ -230,7 +230,7 @@ method compileobjdefdecdata(o, selfr, pos) {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
             val := o.value.register
-        } elseif (o.value.kind == "class") then {
+        } elseif { o.value.kind == "class" } then {
             compileclass(o.value, false)
             val := o.value.register
         } else {
@@ -472,23 +472,23 @@ method compileobject(o, outerRef) {
     for (o.value) do { e ->
         if (e.kind == "method") then {
             compilemethod(e, selfr, pos)
-        } elseif (e.kind == "vardec") then {
+        } elseif { e.kind == "vardec" } then {
             out("if (objclass{myc} == NULL) \{")
             compileobjvardecmeth(e, selfr, pos)
             out("\}")
             out("{selfr}->flags |= OFLAG_MUTABLE;")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif (e.kind == "defdec") then {
+        } elseif { e.kind == "defdec" } then {
             out("if (objclass{myc} == NULL) \{")
             compileobjdefdecmeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif (e.kind == "typedec") then {
+        } elseif { e.kind == "typedec" } then {
             out("if (objclass{myc} == NULL) \{")
             compileobjtypemeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif (e.kind == "class") then {
+        } elseif { e.kind == "class" } then {
             def cd = ast.defDecNode.new(e.name,
                 e, false)
             for (e.annotations) do {a->
@@ -516,14 +516,14 @@ method compileobject(o, outerRef) {
     for (o.value) do { e ->
         out "  sourceObject = {selfr};"
         if (e.kind == "method") then {
-        } elseif (e.kind == "vardec") then {
+        } elseif { e.kind == "vardec" } then {
             compileobjvardecdata(e, selfr, pos)
-        } elseif (e.kind == "defdec") then {
+        } elseif { e.kind == "defdec" } then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif (e.kind == "typedec") then {
+        } elseif { e.kind == "typedec" } then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif (e.kind == "class") then {
-        } elseif (e.kind == "inherits") then {
+        } elseif { e.kind == "class" } then {
+        } elseif { e.kind == "inherits" } then {
             // The return value is irrelevant with factory inheritance,
             // but we save it as super for the sake of "inherits true".
             superobj := compilenode(e.value)
@@ -536,7 +536,7 @@ method compileobject(o, outerRef) {
         }
         pos := pos + 1
     }
-    out("objclass{myc} = {selfr}->class;")
+    out("  objclass{myc} = {selfr}->class;")
     out("  objclass{myc}->definitionModule = modulename;")
     out("  objclass{myc}->definitionLine = {o.line};")
     out "  (*(struct UserObject *)self).data[0] = lowerouter{myc};"
@@ -908,7 +908,7 @@ method compilemethod(o, selfobj, pos) {
     }
     var len := name.size + 1
     if (selfobj == false) then {
-    } elseif (closurevars.size == 0) then {
+    } elseif { closurevars.size == 0 } then {
         var uo2 := "uo{myc}"
         out("  struct UserObject *{uo2} = (struct UserObject*){selfobj};")
         out("  {uo2}->data[{pos}] = emptyclosure;")
@@ -1011,7 +1011,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     output := oldout
     var len := name.size + 1
     if (selfobj == false) then {
-    } elseif (closurevars.size == 0) then {
+    } elseif { closurevars.size == 0 } then {
         out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
         compilemethodtypes(litname, o)
     } else {
@@ -1177,12 +1177,12 @@ method compileidentifier(o) {
     }
     if (name == "self") then {
         o.register := "self"
-    } elseif (name == "__compilerRevision") then {
+    } elseif { name == "__compilerRevision" } then {
         out("  Object var_val___compilerRevision" ++ auto_count
             ++ " = alloc_String(compilerRevision);")
         o.register := "var_val___compilerRevision" ++ auto_count
         auto_count := auto_count + 1
-    } elseif (name == "_46__46__46_") then {
+    } elseif { name == "_46__46__46_" } then {
         out("  Object ellipsis{auto_count} = alloc_ellipsis();")
         o.register := "ellipsis{auto_count}"
         auto_count := auto_count + 1
@@ -1207,12 +1207,12 @@ method compilebind(o) {
         out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
         auto_count := auto_count + 1
         o.register := val
-    } elseif (dest.kind == "member") then {
+    } elseif { dest.kind == "member" } then {
         dest.value := dest.value ++ ":="
         c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
         r := compilenode(c)
         o.register := r
-    } elseif (dest.kind == "index") then {
+    } elseif { dest.kind == "index" } then {
         var imem := ast.memberNode.new("[]:=", dest.value)
         c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
         r := compilenode(c)
@@ -1448,9 +1448,9 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
-    } elseif ((o.value.kind == "member").andAlso {
+    } elseif {(o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
-            o.value.in.value == "outer"}) then {
+            o.value.in.value == "outer"} } then {
         out "// call case 2: outer request"
         def ot = compilenode(o.value.in)
         for (args) do { arg ->
@@ -1462,14 +1462,13 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self") && (o.value.value == "outer")}
-        ) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        && (o.value.in.value == "self") && (o.value.value == "outer")} } then {
         out "// call case 3: self.outer request"
         out("  Object call{auto_count} = callmethod3(self, \"{evl}\", "
             ++ "0, 0, NULL, ((flags >> 24) & 0xff));")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self")}) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        && (o.value.in.value == "self")} } then {
         out "// call case 4: self request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1480,8 +1479,8 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "prelude")}) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+        && (o.value.in.value == "prelude")} } then {
         out "// call case 5: prelude request"
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
@@ -1492,7 +1491,7 @@ method compilecall(o, tailcall) {
         }
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
-    } elseif (o.value.kind == "member") then {
+    } elseif { o.value.kind == "member" } then {
         out "// call case 6: other member request"
         obj := compilenode(o.value.in)
         len := o.value.value.size + 1
@@ -1644,6 +1643,50 @@ method compilereturn(o) {
     }
     o.register := "undefined"
 }
+method compilePrint(o) {
+    var args := []
+    for (o.with.first.args) do { prm ->
+        var r := compilenode(prm)
+        args.push(r)
+    }
+    var parami := 0
+    for (args) do { arg ->
+        out("  params[{parami}] = {arg};")
+        parami := parami + 1
+    }
+    out("  Object call{auto_count} = gracelib_print(NULL, "
+          ++ args.size ++ ",  params);")
+    o.register := "call" ++ auto_count
+    auto_count := auto_count + 1
+}
+method compileNativeCode(o) {
+    if(o.with.size != 2) then {
+        errormessages.syntaxError "method native()code takes two arguments"
+            atRange(o.line, o.linePos, o.linePos + 5)
+    }
+    def param1 = o.with.first.args.first
+    if (param1.kind != "string") then {
+        errormessages.syntaxError "the first argument to native()code must be a string literal"
+            atRange(param1.line, param1.linePos, param1.linePos)
+    }
+    if (param1.value != "c") then { return }
+    def param2 = o.with.second.args.first
+    if (param2.kind != "string") then {
+        errormessages.syntaxError "the second argument to native()code must be a string literal"
+            atLine(param2.line)
+    }
+    def codeString = param2.value
+    out "   // start native code from line {o.line}"
+    def reg = "nat" ++ auto_count
+    auto_count := auto_count + 1
+    out "  Object {reg};"
+    out "  \{ Object result = done;"
+    out(codeString)
+    out "  {reg} = result;"
+    out "  }"
+    o.register := reg
+}
+
 method compilenum(o) {
     var cnum := o.value
     var havedot := false
@@ -1665,11 +1708,11 @@ method compilenode(o) {
         out("  setmodule(modulename);")
         out("  setsource(originalSourceLines);")
     }
-    out "// starting to compile {o.kind} node (depth = {compilationDepth})"
-    if (o.kind == "num") then {
+    def oKind = o.kind
+    out "// starting to compile {oKind} node (depth = {compilationDepth})"
+    if (oKind == "num") then {
         compilenum(o)
-    }
-    if (o.kind == "string") then {
+    } elseif { oKind == "string" } then {
         o.value := escapestring2(o.value)
         out("  if (strlit{auto_count} == NULL) \{")
         out("    strlit{auto_count} = alloc_String(\"{o.value}\");")
@@ -1678,26 +1721,17 @@ method compilenode(o) {
         globals.push("static Object strlit{auto_count};")
         o.register := "strlit" ++ auto_count
         auto_count := auto_count + 1
-    }
-    if (o.kind == "index") then {
+    } elseif { oKind == "index" } then {
         compileindex(o)
-    }
-    if (o.kind == "octets") then {
-        compileoctets(o)
-    }
-    if (o.kind == "dialect") then {
+    } elseif { oKind == "dialect" } then {
         compiledialect(o)
-    }
-    if (o.kind == "import") then {
+    } elseif { oKind == "import" } then {
         compileimport(o)
-    }
-    if (o.kind == "return") then {
+    } elseif { oKind == "return" } then {
         compilereturn(o)
-    }
-    if (o.kind == "generic") then {
+    } elseif { oKind == "generic" } then {
         o.register := compilenode(o.value)
-    }
-    if (o.kind == "identifier") then {
+    } elseif { oKind == "identifier" } then {
         if ((o.value == "true") || (o.value == "false")) then {
             var val := 0
             if (o.value == "true") then {
@@ -1709,80 +1743,55 @@ method compilenode(o) {
         } else {
             compileidentifier(o)
         }
-    }
-    if (o.kind == "defdec") then {
+    } elseif { oKind == "defdec" } then {
         compiledefdec(o)
-    }
-    if (o.kind == "vardec") then {
+    } elseif { oKind == "vardec" } then {
         compilevardec(o)
-    }
-    if (o.kind == "block") then {
+    } elseif { oKind == "block" } then {
         compileblock(o)
-    }
-    if (o.kind == "method") then {
+    } elseif { oKind == "method" } then {
         compilemethod(o, "self", topLevelMethodPos)
         topLevelMethodPos := topLevelMethodPos + 1
-    }
-    if (o.kind == "array") then {
+    } elseif { oKind == "array" } then {
         compilearray(o)
-    }
-    if (o.kind == "bind") then {
+    } elseif { oKind == "bind" } then {
         compilebind(o)
-    }
-    if (o.kind == "while") then {
+    } elseif { oKind == "while" } then {
         compilewhile(o)
-    }
-    if (o.kind == "if") then {
+    } elseif { oKind == "if" } then {
         compileif(o)
-    }
-    if (o.kind == "matchcase") then {
+    } elseif { oKind == "matchcase" } then {
         compilematchcase(o)
-    }
-    if (o.kind == "catchcase") then {
+    } elseif { oKind == "catchcase" } then {
         compilecatchcase(o)
-    }
-    if (o.kind == "class") then {
+    } elseif { oKind == "class" } then {
         compileclass(o, true)
-    }
-    if (o.kind == "object") then {
+    } elseif { oKind == "object" } then {
         compileobject(o, "self")
-    }
-    if (o.kind == "typedec") then {
+    } elseif { oKind == "typedec" } then {
         compiletypedec(o)
-    }
-    if (o.kind == "typeliteral") then {
+    } elseif { oKind == "typeliteral" } then {
         compiletypeliteral(o)
-    }
-    if (o.kind == "member") then {
+    } elseif { oKind == "member" } then {
         compilemember(o)
-    }
-    if (o.kind == "for") then {
+    } elseif { oKind == "for" } then {
         compilefor(o)
-    }
-    if ((o.kind == "call")) then {
-        if ((o.value.value == "print").andAlso {o.value.in.value == "prelude"}) then {
-            var args := []
-            for (o.with.first.args) do { prm ->
-                var r := compilenode(prm)
-                args.push(r)
+    } elseif { oKind == "call" } then {
+        if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
+            if (o.nameString == "print") then {
+                compilePrint(o)
+            } elseif {o.nameString == "native()code"} then {
+                compileNativeCode(o)
+            } else {
+                compilecall(o, false)
             }
-            var parami := 0
-            for (args) do { arg ->
-                out("  params[{parami}] = {arg};")
-                parami := parami + 1
-            }
-            out("  Object call{auto_count} = gracelib_print(NULL, "
-                  ++ args.size ++ ",  params);")
-            o.register := "call" ++ auto_count
-            auto_count := auto_count + 1
         } else {
             compilecall(o, false)
         }
-    }
-    if (o.kind == "op") then {
+    } elseif { oKind == "op" } then {
         compileop(o)
     }
-    out "// compiled {o.kind} node returning {o.register} (depth = {compilationDepth})"
+    out "// compiled {oKind} node returning {o.register} (depth = {compilationDepth})"
     compilationDepth := compilationDepth - 1
     o.register
 }
@@ -1860,7 +1869,7 @@ method compile(vl, of, mn, rm, bt) {
     for (values) do { v->
         if (v.kind == "vardec") then {
             nummethods := nummethods + 1
-        } elseif (v.kind == "method") then {
+        } elseif { v.kind == "method" } then {
             nummethods := nummethods + 1
             if (v.isFresh) then {
                 nummethods := nummethods + 1
@@ -1874,6 +1883,8 @@ method compile(vl, of, mn, rm, bt) {
     buildtype := bt
     outprint("#include <gracelib.h>")
     outprint("#include <stdlib.h>")
+    outprint("#include <math.h>")
+    outprint("#include <float.h>")
     if (!util.extensions.contains("NoMain")) then {
         outprint "#ifndef __CYGWIN__"
         outprint "#pragma weak main"
@@ -2104,11 +2115,11 @@ method compile(vl, of, mn, rm, bt) {
 
             if (io.exists "{util.gracelibPath}/gracelib.o") then {
                 cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
-            } elseif (io.exists "{buildinfo.objectpath}/gracelib.o") then {
+            } elseif { io.exists "{buildinfo.objectpath}/gracelib.o" } then {
                 cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
-            } elseif (io.exists "{util.sourceDir}/gracelib.o") then {
+            } elseif { io.exists "{util.sourceDir}/gracelib.o" } then {
                 cmd := cmd ++ "\"{util.sourceDir}/gracelib.o\" "
-            } elseif (io.exists "{util.execDir}/gracelib.o") then {
+            } elseif { io.exists "{util.execDir}/gracelib.o" } then {
                 cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
             } else {
                 io.error.write("Unable to link: can't find file gracelib.o\n")
