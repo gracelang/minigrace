@@ -41,6 +41,8 @@ Object String_concat(Object, int nparts, int *argcv,
         Object*, int flags);
 Object String_endsWith(Object, int nparts, int *argcv,
         Object*, int flags);
+Object String_do(Object self, int nparts, int *argcv,
+        Object *args, int flags);
 FILE *debugfp;
 int debug_enabled = 0;
 
@@ -1713,6 +1715,12 @@ Object ConcatString_iter(Object self, int nparts, int *argcv,
     Object o = alloc_String(c);
     return callmethod(o, "iterator", 0, NULL, NULL);
 }
+Object ConcatString_do(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    ConcatString__Flatten(self);
+    String_do(self, nparts, argcv, args, flags);
+    return done;
+}
 Object ConcatString_substringFrom_to(Object self,
         int nparts, int *argcv, Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
@@ -1789,7 +1797,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 36,
+        ConcatString = alloc_class3("ConcatString", 37,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1810,6 +1818,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "≠", &Object_NotEquals);
         add_Method(ConcatString, "compare", &String_Compare);
         add_Method(ConcatString, "first", &ConcatString_first);
+        add_Method(ConcatString, "do", &ConcatString_do);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
@@ -1956,6 +1965,19 @@ Object String_substringFrom_to(Object self,
     }
     return alloc_String(buf);
 }
+Object String_do(Object self, int nparts, int *argcv,
+                 Object *args, int flags) {
+    Object block = args[0];
+    Object iter = alloc_StringIter(self);
+    gc_root(iter);
+    int partcv[] = {1};
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object next = callmethod(iter, "next", 0, NULL, NULL);
+        callmethod(block, "apply", 1, partcv, &next);
+    }
+//    gc_unroot(iter);
+    return done;
+}
 Object String_startsWith(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     const char *sstr = grcstring(self);
@@ -2018,7 +2040,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 36);
+        String = alloc_class("String", 37);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2040,6 +2062,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
+        add_Method(String, "do", &String_do);
         add_Method(String, "iter", &String_iter);
         add_Method(String, "iterator", &String_iter);
         add_Method(String, "ord", &String_ord);
@@ -4726,6 +4749,20 @@ void gc_root(Object o) {
     r->next = GC_roots;
     GC_roots = r;
 }
+//void gc_unroot(Object o) {
+//    struct GC_Root *r = GC_roots;
+//    void *p = &GC_roots;
+//    while (r != NULL) {
+//        if (r->object == o) {
+//            fprintf(stderr, "found object for unroot\n");
+//            p->next = r->next;
+//            free(r);
+//            return;
+//        }
+//        p = ;
+//        r = r->next;
+//    }
+//}
 int gc_paused;
 int gc_wouldHaveRun;
 void gc_pause() {

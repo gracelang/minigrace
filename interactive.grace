@@ -920,7 +920,7 @@ method startRepl {
                 // skip comments
             } else {
                 util.errno := 0
-                var toks := lexer.Lexer.new.lexinput(completeline)
+                var toks := lexer.new.lexinput(completeline)
                 if (!io.input.isatty && (util.errno != 0)) then {
                     sys.exit(util.errno)
                 } elseif (util.errno == 0) then {

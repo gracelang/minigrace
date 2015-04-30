@@ -35,7 +35,7 @@ if (util.interactive) then {
 
 util.log_verbose "starting compilation"
 
-var tokens := lexer.Lexer.new.lexfile(util.infile)
+var tokens := lexer.new.lexfile(util.infile)
 if (util.target == "lex") then {
     // Print the lexed tokens and quit.
     for (tokens) do { v ->
