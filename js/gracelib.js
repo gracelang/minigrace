@@ -1327,7 +1327,8 @@ function GraceStringIterator(s) {
     this._value = s._value;
     this._index = 0;
     this._max = s._value.length;
-    this.superobj = callmethod(callmethod(Grace_prelude, "iterable", [0]), "trait", [0]);
+    this.superobj = new GraceObject();
+    this.className = "stringIterator";
 }
 GraceStringIterator.prototype = {
     methods: {
