@@ -1356,7 +1356,10 @@ method compileNativeCode(o) {
         errormessages.syntaxError "the first argument to native()code must be a string literal"
             atRange(param1.line, param1.linePos, param1.linePos)
     }
-    if (param1.value != "js") then { return }
+    if (param1.value != "js") then { 
+        o.register := "GraceDone"
+        return
+    }
     def param2 = o.with.second.args.first
     if (param2.kind != "string") then {
         errormessages.syntaxError "the second argument to native()code must be a string literal"
