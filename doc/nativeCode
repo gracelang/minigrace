@@ -1,0 +1,103 @@
+It is possible to put native code into a Grace method.  This can 
+be used to implement primitives not otherwise avaiable, or to speed-up 
+performance-critical methods.
+
+It is also possible to implement a whole module in native code, but that 
+requires much more extensive knowledge of the calling conventions and
+data formats, and requires that the programmer maually create all of the
+boilerplate thet Grace relies on, such as the gct data (which defines
+the module's interface), and the reflection data.  It also puts the onus of
+checking argument counts and types on the programmer.  Thus, it is much
+more convenient to write a Grace module skeleton that contains an
+object constructor or factory method, and method headers for the desired
+methods, and just fill in the method bodies with native code.
+
+Native code is inserted using the native()code() pseudo-method.  Both arguments
+to native()code() must be string literals, i.e., their value must be known at
+compile time.
+
+The first argument must be either "c" or "js", indicating that the native 
+code is for the code generator with that name.  Thus, if the JavaScrpt code
+generator encounters a native()code() method with "c" (or any other string) as
+its first argument, that method will be silently ignored.  This behaviour
+is deliberate; it allows a single source file to contain native code inserts 
+for multiple target languages.
+
+The second argument is usually a multi-line string, that is, a string delimited
+by ‹ and ›.  Such strings obviate the need for escaping embedded quotes;
+unlike strings delimited by quotes, such strings can contain newlines.  
+The string should contain JavaScript or C code that will be dumped unchanged
+into the generated code stream.
+
+Here is an example:
+
+    method sin(a:Number) {
+        // sine of a (assumed to be radians)
+        native "c" code ‹    return alloc_Float64(sin(*(double*) args[0]->data));›
+        native "js" code ‹    return new GraceNum(Math.sin(var_a._value));›
+    }
+
+To successfully write native code inserts, you need to know certain conventions.
+
+C conventions:
+   - the method's arguments are in args[0], args[1], ...
+   - the instance variables of an object o are in o->data, but exactly where
+       depends on whether it is built-in or an object defined in Grace.
+   - set result by assigning to ‹result›
+   - ‹return› returns from the method
+
+JS conventions:
+   - Access ‹param› by writing var_‹param›
+   - Access ‹field› by writing this.data.‹field›
+   - set result by assigning to ‹result›
+   - ‹return› returns from the method
+
+Notice that in both cases, it's necessary to convert the native value into a
+Grace value.
+
+As these examples, show, native code can execute a return, which will return
+from the enclosing Grace method.  If the native code does _not_ retiurn, 
+control will fall-through to the Grace code
+that follows the native code insert.  This makes it possible to implement the
+fast-path code natively, while handling the more complex cases in Grace.
+
+Native code can also be used in an expression context, in which case the
+resulting value should be left in the variable result.  (In the JS
+implementation, this means that you can't have two native code inserts in the
+same scope, because they will both declare result.)  
+
+As an exmple of this, the native code implementation of lists has a field that
+is a JavaScript list, defined as follows:
+
+    var jsArray := native "js" code ‹var result = [];›
+    
+And here is the add method:
+
+    method add(*x) {
+        if (x.size == 1) then {
+            native "js" code ‹var v = callmethod(var_x, "first", [0]);
+                this.data.jsArray.push(v);
+                return this;›
+        }
+        addAll(x)
+    }
+    
+Notice the combinaiton of Grace and JavaScript.  Grace code checks to see if
+the arity of the agrument list is 1.  If so, a native code insert takes case of
+this common case.  To do so, it calls back into Grace with callmethod to 
+extract the first (and only) argument, appends it to jsArray, and returns.
+Otherwise, Grace forwards the argument collection to addAll, which iterates
+through the argument list in Grace.
+
+Life is more complicated in C, because of the garbage collector.  In general,
+you must be just as careful writing native code inserts as when writing the bodies
+of methods in a native module.  Debugging them will inevitably require looking
+at the generated C code or JS code.  Unsurprisingly, writing incorrect JS or C
+in a native codde insert can cause the generated .js or .c file to fail to 
+parse, compile, or run.  
+
+Caveat actarius!
+
+There are examples in the doc/tnativeCodeExamples directory.
+
+
