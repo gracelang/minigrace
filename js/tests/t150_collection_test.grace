@@ -668,6 +668,14 @@ def listTest = object {
         method testListRemoveAbsentExcpetion {
             assert {oneToFive.remove(1, 7, 5)} shouldRaise (NoSuchObject)
         }
+        method testListRemoveLast {
+            assert (oneToFive.removeLast) shouldBe 5
+            assert (oneToFive) shouldBe (list.with(1, 2, 4))
+        }
+        method testListPop {
+            assert (oneToFive.pop) shouldBe 5
+            assert (oneToFive) shouldBe (list.with(1, 2, 4))
+        }
         method testListRemoveAbsentActionBlock {
             assert (oneToFive.remove 9 ifAbsent {99}) shouldBe 99
         }

@@ -328,7 +328,7 @@ class enumerable.trait<T> {
         existing
     }
     method ==(other) {
-        // TODO: fix inheritance!  There are now 4 copies of this method!
+        // there are 6 copies of this method!  Do we need traits!
         match (other)
             case {o:Collection ->
                 def selfIter = self.iterator
@@ -544,7 +544,7 @@ factory method sequence<T> {
                 }
             }
             method ==(other) {
-                // there are 4 copies of this method!  Do we need traits!
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -680,12 +680,12 @@ factory method list<T> {
                 }
 
                 method removeLast {
-                    def result = self.at(size)
-                    native "js" code ‹if (this.data.jsArray.length = 0) {
-                                var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                                callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                            } else return this.data.jsArray.pop();›
+                    native "js" code ‹if (this.data.jsArray.length === 0) {
+                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    } else 
+                        return this.data.jsArray.pop();›
                 }
 
                 method addAllFirst(l) {
@@ -811,6 +811,7 @@ factory method list<T> {
                 }
                 
                 method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                     match (other)
                         case {o:Collection ->
                             def selfIter = self.iterator
@@ -1027,6 +1028,7 @@ factory method list<T> {
             }
             
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -1763,6 +1765,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -1877,6 +1880,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
