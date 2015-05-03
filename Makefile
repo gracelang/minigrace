@@ -31,7 +31,7 @@ OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=3929f71a888fe131175684285ef6f3b2ac609a76
+STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/

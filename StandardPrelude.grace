@@ -333,7 +333,7 @@ type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
 type Collection<T> = collections.Collection<T>
-type ReifiedCollection<T> = collections.ReifiedCollection<T>
+type Enumerable<T> = collections.Enumerable<T>
 type Binding<K,T> = collections.Binding<K,T>
 type Iterator<T> = collections.Iterator<T>
 type CollectionFactory<T> = collections.CollectionFactory<T>
@@ -350,8 +350,9 @@ def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility
 
 def collectionFactory is public = collections.collectionFactory
-def iterable is public = collections.iterable
+def collection is public = collections.collection
 def enumerable is public = collections.enumerable
+def indexable is public = collections.indexable
 def sequence is public = collections.sequence
 def list is public = collections.list
 def set is public = collections.set

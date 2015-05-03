@@ -1300,7 +1300,7 @@ method compileimport(o) {
         [methodIdent], o.dtype))
     accessor.line := o.line
     accessor.linePos := o.linePos
-    accessor.annotations.extend(o.annotations)
+    accessor.annotations.addAll(o.annotations)
     compilenode(accessor)
     out("{accessor.register}.debug = \"import\";")
     if (o.isReadable.not) then {

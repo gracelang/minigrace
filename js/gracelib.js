@@ -758,7 +758,7 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ",";
+                    s += ", ";
                 }
                 if (v.methods['asString'])
                     s += callmethod(v, "asString", [0])._value;
@@ -778,7 +778,7 @@ GraceList.prototype = {
                 if (isFirst) {
                     isFirst = false;
                 } else {
-                    s += ",";
+                    s += ", ";
                 }
                 if (v.methods['asDebugString'])
                     s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
@@ -2115,7 +2115,7 @@ function gracecode_util() {
         var ind = callmethod(iterable, "indices", [0]);
         for (var i=0; i<ind._value.length; i++) {
             if (i > 0)
-                s += ",";
+                s += ", ";
             s += callmethod(callmethod(iterable, "at", [1], new GraceNum(i + 1)),
                     "asString", [0])._value;
         }

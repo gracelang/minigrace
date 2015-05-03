@@ -70,6 +70,11 @@ class list.new(*a) {
     method asDebugString {
         asString
     }
+    method addAll(l) {
+        for (l) do {i->
+            push(i)
+        }
+    }
     method extend(l) {
         for (l) do {i->
             push(i)

@@ -1,14 +1,12 @@
-types
-16 run, 0 failed, 0 errors
 binding
 6 run, 0 failed, 0 errors
 sequence
-42 run, 0 failed, 0 errors
+47 run, 0 failed, 0 errors
 list
-70 run, 0 failed, 0 errors
-range
-41 run, 0 failed, 0 errors
+74 run, 0 failed, 0 errors
 set
 36 run, 0 failed, 0 errors
+range
+46 run, 0 failed, 0 errors
 dictionary
-39 run, 0 failed, 0 errors
+49 run, 0 failed, 0 errors

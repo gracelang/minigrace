@@ -1162,7 +1162,7 @@ Object BuiltinList_asString(Object self, int nparts, int *argcv,
     Object other;
     gc_pause();
     Object s = alloc_String("[");
-    Object c = alloc_String(",");
+    Object c = alloc_String(", ");
     for (i=0; i<len; i++) {
         other = callmethod(sself->items[i], "asString", 0, NULL, NULL);
         s = callmethod(s, "++", 1, partcv, &other);

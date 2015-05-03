@@ -197,10 +197,6 @@ factory method list<T> {
             s ++ "]"
         }
         
-
-        method extend(l) { addAll(l); done }    // compatibility
-        
-
         method contains(element) {
             do { each -> if (each == element) then { return true } }
             return false

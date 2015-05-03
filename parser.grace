@@ -2308,7 +2308,7 @@ method defdec {
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
         var o := ast.defDecNode.new(name, val, dtype)
-        if (anns != false) then { o.annotations.extend(anns) }
+        if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         o.startToken := defTok
         values.push(o)
@@ -2375,7 +2375,7 @@ method vardec {
             }
         }
         def o = ast.varDecNode.new(name, val, dtype)
-        if (anns != false) then { o.annotations.extend(anns) }
+        if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
         values.push(o)
     }
@@ -2630,7 +2630,7 @@ method doclass {
         }
         o.generics := s.generics
         if (false != anns) then {
-            o.annotations.extend(anns)
+            o.annotations.addAll(anns)
         } else {
             if (defaultMethodVisibility == "confidential") then {
                 o.annotations.push(ast.identifierNode.new("confidential",
@@ -2705,7 +2705,7 @@ method dofactoryMethod {
             collections.list.new(obj), dtype)
         meth.generics := s.generics
         if (false != anns) then {
-            meth.annotations.extend(anns)
+            meth.annotations.addAll(anns)
         } else {
             if (defaultMethodVisibility == "confidential") then {
                 meth.annotations.push(ast.identifierNode.new("confidential",
@@ -2794,7 +2794,7 @@ method methoddec {
             o.varargs := true
         }
         o.generics := generics
-        if (anns != false) then { o.annotations.extend(anns) }
+        if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultMethodVisibility) overriding("public")
         values.push(o)
     }
@@ -3142,7 +3142,7 @@ method doimport {
         util.setline(importline)
         def o = ast.importNode.new(p.value, name, dtype)
         def anns = doannotation
-        if (anns != false) then { o.annotations.extend(anns) }
+        if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         values.push(o)
     }
@@ -3289,7 +3289,7 @@ method typedec {
         def nt = ast.typeDecNode.new(p, values.pop)
         nt.generics := gens
         if (false != anns) then {
-            nt.annotations.extend(anns)
+            nt.annotations.addAll(anns)
         }
         values.push(nt)
     }
