@@ -670,11 +670,17 @@ def listTest = object {
         }
         method testListRemoveLast {
             assert (oneToFive.removeLast) shouldBe 5
-            assert (oneToFive) shouldBe (list.with(1, 2, 4))
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
+        }
+        method testListRemoveLastEmpty {
+            assert {empty.removeLast} shouldRaise (BoundsError)
         }
         method testListPop {
             assert (oneToFive.pop) shouldBe 5
-            assert (oneToFive) shouldBe (list.with(1, 2, 4))
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
+        }
+        method testListPopEmpty {
+            assert {empty.pop} shouldRaise (BoundsError)
         }
         method testListRemoveAbsentActionBlock {
             assert (oneToFive.remove 9 ifAbsent {99}) shouldBe 99

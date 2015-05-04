@@ -681,7 +681,7 @@ factory method list<T> {
 
                 method removeLast {
                     native "js" code ‹if (this.data.jsArray.length === 0) {
-                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
+                        var msg = "you can't remove an element from an empty list";
                         var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                         callmethod(BoundsError, "raise", [1], new GraceString(msg));
                     } else 
