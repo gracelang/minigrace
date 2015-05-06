@@ -54,7 +54,7 @@ blackWeb:
 	$(MAKE) WEB_SERVER=black@cs.pdx.edu oldWeb
 
 bruceWeb:
-	$(MAKE) WEB_SERVER=kim@project.cs.pomona.edu WEB_DIRECTORY=www/minigrace/js/ oldWeb
+	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.c math.gct
 	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} repl.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
