@@ -262,6 +262,7 @@ static jmp_buf *exceptionHandler_stack;
 static Object *finally_stack;
 static int exceptionHandlerDepth;
 static Object ExceptionObject;
+static Object BoundsErrorObject;
 static Object ErrorObject;
 static Object RuntimeErrorObject;
 static Object NoSuchMethodErrorObject;
@@ -1073,11 +1074,11 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index > sself->size) {
-        gracedie("Error: list index out of bounds: %i > %i",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        gracedie("Error: list index out of bounds: %i <= 0",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1134,11 +1135,11 @@ Object BuiltinList_index(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     int index = integerfromAny(args[0]);
     if (index > sself->size) {
-        gracedie("Error: list index out of bounds: %i > %i",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        gracedie("Error: list index out of bounds: %i <= 0",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1284,11 +1285,11 @@ Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index >= sself->size) {
-        gracedie("Error: array index out of bounds: %i >= %i",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
-        gracedie("Error: array index out of bounds: %i < 0",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i < 0",
                 index);
     }
     sself->items[index] = val;
@@ -1299,11 +1300,11 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
     int index = integerfromAny(args[0]);
     if (index >= sself->size) {
-        gracedie("Error: array index out of bounds: %i >= %i",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
-        gracedie("Error: array index out of bounds: %i < 0",
+        graceRaise(BoundsErrorObject, "index out of bounds: %i < 0",
                 index);
     }
     return sself->items[index];
@@ -4688,6 +4689,8 @@ void gracelib_argv(char **argv) {
     gc_root(RuntimeErrorObject);
     ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
     gc_root(ProgrammingErrorObject);
+    BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingErrorObject);
+    gc_root(BoundsErrorObject);
     NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingErrorObject);
     gc_root(NoSuchMethodErrorObject);
     ResourceExceptionObject = alloc_Exception("ResourceException", ExceptionObject);
