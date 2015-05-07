@@ -8,6 +8,5 @@ install:
 before_script:
   - git fetch --unshallow
 script:
-  - ./tools/tarball-bootstrap -a && (make test ; make test.js)
-  - (cd tests; cat test.log)
-  - (cd js/tests ; cat test.log)
+  - ./tools/tarball-bootstrap -a && (make test || ( cat tests/test.log ; exit 1))
+  - ([ -e ./minigrace ] && ( make test.js || ( cat js/tests/test.log ; exit 1 )))
