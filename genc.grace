@@ -189,7 +189,6 @@ method compileobjouter(selfr, outerRef) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := "outer"
-    var len := nm.size + 1
     var enm := escapestring2(nm)
     out("// OBJECT OUTER DEC " ++ enm)
     out("  adddatum2({selfr}, {outerRef}, 0);")
@@ -204,8 +203,7 @@ method compileobjouter(selfr, outerRef) {
 method compileobjtypemeth(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
-    var nm := o.value
-    var len := nm.size + 1
+    var nm := o.nameString
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
@@ -246,7 +244,6 @@ method compileobjdefdecmeth(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
@@ -285,7 +282,6 @@ method compileobjdefdec(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     out("// OBJECT CONST DEC " ++ enm)
@@ -309,7 +305,6 @@ method compileobjvardecmeth(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     outprint("Object reader_{escmodname}_{inm}_{myc}"
@@ -334,7 +329,6 @@ method compileobjvardecmeth(o, selfr, pos) {
     outprint("\}")
     out("  Method *reader{myc} = addmethodrealflags({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc}, {rflags});")
     var nmw := nm ++ ":="
-    len := nmw.size + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
@@ -357,7 +351,6 @@ method compileobjvardec(o, selfr, pos) {
     var myc := auto_count
     auto_count := auto_count + 1
     var nm := o.name.value
-    var len := nm.size + 1
     var enm := escapestring2(nm)
     var inm := escapeident(nm)
     out("// OBJECT VAR DEC " ++ nm)
@@ -370,7 +363,6 @@ method compileobjvardec(o, selfr, pos) {
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}\",&reader_{escmodname}_{inm}_{myc});")
     var nmw := nm ++ ":="
-    len := nmw.size + 1
     nmw := escapestring2(nmw)
     outprint("Object writer_{escmodname}_{inm}_{myc}"
         ++ "(Object self, int nparams, int *argcv, "
@@ -395,7 +387,7 @@ method compileclass(o, includeConstant) {
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
     if (includeConstant) then {
-        var con := ast.defDecNode.new(o.name, cobj, false)
+        def con = ast.defDecNode.new(o.name, cobj, false)
         if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
             def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)], [o.name], false)
             compilenode(meth)
@@ -906,7 +898,6 @@ method compilemethod(o, selfobj, pos) {
             }
         }
     }
-    var len := name.size + 1
     if (selfobj == false) then {
     } elseif { closurevars.size == 0 } then {
         var uo2 := "uo{myc}"
@@ -1009,7 +1000,6 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         out(l)
     }
     output := oldout
-    var len := name.size + 1
     if (selfobj == false) then {
     } elseif { closurevars.size == 0 } then {
         out("  Method *meth_{litname} = addmethod2pos({selfobj}, \"{escapestring2(name)}\", &{litname}, {pos});")
@@ -1349,8 +1339,7 @@ method compileop(o) {
     out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
     if ((o.left.kind == "identifier").andAlso {o.left.value == "super"}) then {
-        var len := o.value.size + 1
-        var evl := escapestring2(o.value)
+        def evl = escapestring2(o.value)
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{myc} = callmethod4(self, "
@@ -1383,10 +1372,6 @@ method compileop(o) {
         o.register := rnm ++ auto_count
         auto_count := auto_count + 1
     } else {
-        var len := o.value.size + 1
-        var evl := escapestring2(o.value)
-        var con := "@.str" ++ constants.size ++ " = private unnamed_addr "
-            ++ "constant [" ++ len ++ " x i8] c\"" ++ evl ++ "\\00\""
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{auto_count} = "
@@ -1400,7 +1385,6 @@ method compilecall(o, tailcall) {
     auto_count := auto_count + 1
     var args := []
     var obj := ""
-    var len := 0
     var evl
     var i := 0
     out("  int callframe{myc} = gc_frame_new();")
@@ -1494,7 +1478,6 @@ method compilecall(o, tailcall) {
     } elseif { o.value.kind == "member" } then {
         out "// call case 6: other member request"
         obj := compilenode(o.value.in)
-        len := o.value.value.size + 1
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1512,7 +1495,6 @@ method compilecall(o, tailcall) {
     } else {
         out "// call case 7: all other requests"
         obj := "self"
-        len := o.value.value.size + 1
         for (args) do { arg ->
             out("  params[{i}] = {arg};")
             i := i + 1
@@ -1552,7 +1534,6 @@ method compileoctets(o) {
 }
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
-    var con
     var snm := ""
     for (o.value) do {c->
         if (c == "/") then {
@@ -1586,7 +1567,6 @@ method compiledialect(o) {
 }
 method compileimport(o) {
     out("// Import of {o.path} as {o.nameString}")
-    var con
     var snm := ""
     for (o.path) do {c->
         if (c == "/") then {
