@@ -3698,7 +3698,7 @@ Object callmethodflags(Object receiver, const char *name,
     int start_calldepth = calldepth;
     int start_exceptionHandlerDepth = exceptionHandlerDepth;
     if (receiver->flags & FLAG_DEAD) {
-        debug("called method on freed object %p: %s.%s",
+        debug("requested method on freed object %p: %s.%s",
                 receiver, receiver->class->name, name);
     }
     if (strcmp(name, "_apply") != 0 && strcmp(name, "apply") != 0
@@ -3721,13 +3721,13 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        gracedie("method %s requested on undefined value", name);
+        graceRaise(ProgrammingErrorObject, "method %s requested on uninitialized variable", name);
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
         for (j = 0; j < nparamsv[i]; j++) {
             if (args[n] == undefined)
-                gracedie("undefined value used as argument to %s", name);
+                graceRaise(ProgrammingErrorObject, "uninitialized variable used as argument %i to %s.", n+1, name);
             n++;
         }
     }
