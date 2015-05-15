@@ -32,6 +32,10 @@ def undiscovered = object {
     var asString is readable := "undiscovered"
 }
 var stSerial := 100
+
+def reserved = sequence.with("self", "super", "outer", "true", "false")
+// reserved names that cannot be re-assigned or re-declared
+
 method newScopeKind(variety') {
     // for the top of the scope chain
     // TODO: switch the dependency between this and the next method.
@@ -620,7 +624,7 @@ method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
     if (currentScope != definingScope) then { return done }
     // TODO This isn't quite right:  currentScope might be a block (or method)
-    // node might be definedby inheritance in the object containing currentScope,
+    // node might be defined by inheritance in the object containing currentScope,
     // and also in an enclosing scope.
     if (declKind != "inherited") then { return done }
     def name = node.value
@@ -700,6 +704,10 @@ method reportAssignmentTo(node) declaredInScope(scp) {
         more := " on line {scp.elementLines.get(name)}"
     }
     if (kind == "defdec") then {
+        if (reserved.contains(name)) then {
+            errormessages.syntaxError("'{name}' is a reserved name and "
+                ++ "cannot be re-bound.") atLine(node.line)
+        }
         if (scp.elementTokens.contains(name)) then {
             def tok = scp.elementTokens.get(name)
             def sugg = errormessages.suggestion.new
@@ -1080,7 +1088,9 @@ method collectInheritedNames(node) {
         }
     }
     for (superScope.elements) do { each ->
-        nodeScope.addName(each) as "inherited"
+        if (each != "self") then {
+            nodeScope.addName(each) as "inherited"
+        }
     }
     nodeScope.inheritedNames := completed
 }
@@ -1142,7 +1152,9 @@ method transformInherits(inhNode) {
     newInhNode.providedNames.addAll(superScope.elements)
         // iterating through elements returns just the keys (= names)
     for (newInhNode.providedNames) do { each ->
-        currentScope.addName(each) as "inherited"
+        if (each != "self") then {
+            currentScope.addName(each) as "inherited"
+        }
     }
     newInhNode.withParentRefs
 }
