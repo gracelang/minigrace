@@ -991,6 +991,23 @@ Object Float64_Point(Object self, int nparts, int *argcv,
     return callmethod(grace_point2DClass(), "x()y", 2, partcv, params);
 }
 
+Object String_Contains(Object self, int nparts, int *argcv,
+                             Object *args, int flags) {
+    struct StringObject *sself = (struct StringObject*)self;
+    struct StringObject *needle = (struct StringObject*)args[0];
+    if (needle->class != String && needle->class != ConcatString)
+        graceRaise(TypeErrorObject, "argument to string.contains must be a String");
+    if (sself->size <= needle->size)
+        return alloc_Boolean(0);
+    char *a = grcstring(self);
+    char *b = grcstring(args[0]);
+    char *p = strstr(a, b);
+    if (p == NULL) return alloc_Boolean(0);
+    return alloc_Boolean(1);
+        // Notice that indexOf would be more complicated, since each Unicode
+        // char may be multiple C chars.
+}
+
 Object String_Equals(Object self, int nparts, int *argcv,
         Object *params, int flags) {
     Object other = params[0];
@@ -1598,6 +1615,22 @@ Object String_indices(Object self, int nparts, int *argcv,
     gc_unpause();
     return res;
 }
+Object ConcatString_Contains(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    struct ConcatStringObject *needle = (struct ConcatStringObject*)args[0];
+    if (needle->class != String && needle->class != ConcatString)
+        graceRaise(TypeErrorObject, "argument to contains must be a String");
+    if (sself->size <= needle->size)
+        return alloc_Boolean(0);
+    char *a = grcstring(self);
+    char *b = grcstring(args[0]);
+    char *p = strstr(a,b);
+    if (p == NULL) return alloc_Boolean(0);
+    return alloc_Boolean(1);
+    // Notice that indexOf would be more complicated, since each Unicode
+    // char may be multiple C chars.
+}
 Object ConcatString_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == args[0])
@@ -1798,7 +1831,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 37,
+        ConcatString = alloc_class3("ConcatString", 38,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1808,6 +1841,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "size", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "[]", &ConcatString_at);
+        add_Method(ConcatString, "contains", &ConcatString_Contains);
         add_Method(ConcatString, "==", &ConcatString_Equals);
         add_Method(ConcatString, ">", &String_Greater);
         add_Method(ConcatString, ">=", &String_GreaterOrEqual);
@@ -2041,7 +2075,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 37);
+        String = alloc_class("String", 38);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2049,6 +2083,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "size", &String_size);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_at);
+        add_Method(String, "contains", &String_Contains);
         add_Method(String, "==", &String_Equals);
         add_Method(String, ">", &String_Greater);
         add_Method(String, ">=", &String_GreaterOrEqual);
