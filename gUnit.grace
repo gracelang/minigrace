@@ -158,38 +158,26 @@ factory method testCaseNamed(name') -> TestCase {
             } finally { teardown }
         } catch {e: self.AssertionFailure ->
             result.testFailed(name)withMessage(e.message)
-            printBackTrace(e) limitedTo(16)
+            printBackTrace(e) limitedTo(name)
         } catch {e: Exception ->
             result.testErrored(name)withMessage(e.message)
-            printBackTrace(e) limitedTo(16)
+            printBackTrace(e) limitedTo(name)
         }
     }
     
-    method printBackTrace(exceptionPacket) limitedTo(callLimit) {
+    method printBackTrace(exceptionPacket) limitedTo(testName) {
         def ex = exceptionPacket.exception
         def msg = exceptionPacket.message
         def lineNr = exceptionPacket.lineNumber
         print "{ex} on line {lineNr}: {msg}"
         def bt = exceptionPacket.backtrace
-        var backTraceLimit := callLimit
         while {bt.size > 0} do {
-            backTraceLimit := backTraceLimit - 1
-            if (backTraceLimit <= 0) then {
-                print "..."
-                return
-            }
-            print("  called from " ++ bt.pop)
+            def frameDescription = bt.pop
+            print("  called from " ++ frameDescription)
+            if (frameDescription.contains(testName)) then { return }
         }
     }
     
-    method printFullBacktrace(exceptionPacket) {
-        print "backtrace:"
-        def bt = exceptionPacket.backtrace
-        while {bt.size > 0} do {
-            print("  called from " ++ bt.pop)
-        }
-    }
-
     method runAndPrintResults {
         def result = testResult
         self.run(result)
