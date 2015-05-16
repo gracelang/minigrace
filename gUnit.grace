@@ -45,7 +45,7 @@ type TestResult =  {
 
 type TestSuite = TestCase & type {
     add(t:TestCase) -> Done
-    rerunErrorsAndFailures(r:TestResult) -> Done
+    rerunErrors(r:TestResult) -> Done
 }
 
 
@@ -296,8 +296,8 @@ def testSuite is readable = object {
             def result = testResult
             self.run(result)
             print(result.detailedSummary)
-            if ((result.numberOfErrors + result.numberOfFailures) > 0) then {
-                rerunErrorsAndFailures(result)
+            if (result.numberOfErrors > 0) then {
+                rerunErrors(result)
             }
         }
         
@@ -316,13 +316,12 @@ def testSuite is readable = object {
         method ++ (anotherSuite) {
             outer.withAll(tests).addAll(anotherSuite)
         }
-        method rerunErrorsAndFailures(result) {
-            print "\nRe-running errors and failures."
+        method rerunErrors(result) {
+            print "\nRe-running errors."
             def newResult = testResult
-            def errorsAndFailures = 
-                result.erroredTestNames.addAll(result.failedTestNames)
+            def errors = result.erroredTestNames
             tests.do { each ->
-                if (errorsAndFailures.contains(each.name)) then {
+                if (errors.contains(each.name)) then {
                     each.debug(newResult)
                 }
             }
