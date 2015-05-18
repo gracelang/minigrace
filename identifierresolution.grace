@@ -926,10 +926,23 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             def classNameNode = o.name
             def factoryMeth = o.constructor
             def pScope = pNode.scope
+            if (reserved.contains(classNameNode.nameString)) then {
+                errormessages.syntaxError("{classNameNode.nameString} is a " ++
+                    "reserved name and cannot be re-declared.")
+                    atRange(classNameNode.line, classNameNode.linePos,
+                    classNameNode.linePos + classNameNode.nameString.size - 1)
+            }
             pScope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
             def outerObjectScope = newScopeIn(pScope) kind "object"
             pScope.at(classNameNode.nameString) putScope(outerObjectScope)
+            
+            if (reserved.contains(factoryMeth.nameString)) then {
+                errormessages.syntaxError("{factoryMeth.nameString} is a " ++
+                    "reserved name and cannot be re-declared.")
+                    atRange(factoryMeth.line, factoryMeth.linePos,
+                    factoryMeth.linePos + factoryMeth.nameString.size - 1)
+            }
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
@@ -953,6 +966,10 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             o.parent := pNode
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
+                    if (reserved.contains(o.nameString)) then {
+                        errormessages.syntaxError "{o.nameString} is a reserved name and cannot be re-declared"
+                            atRange(o.line, o.linePos, o.linePos + o.nameString.size - 1)
+                    }
                     def kind = o.declarationKind
                     var scope := pNode.scope
                     if (isParameter(kind).andAlso {scope.variety == "object"}) then {
@@ -1000,8 +1017,13 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
         }
         method visitMethod(o) up(pNode) { 
             o.parent := pNode
-            pNode.scope.addNode(o.value) as "method"
-            o.value.isDeclaredByParent := true
+            def ident = o.value
+            if (reserved.contains(ident.nameString)) then {
+                errormessages.syntaxError "{ident.nameString} is a reserved name and cannot be re-declared."
+                    atRange(ident.line, ident.linePos, ident.linePos + ident.nameString.size - 1)
+            }
+            pNode.scope.addNode(ident) as "method"
+            ident.isDeclaredByParent := true
             o.symbolTable := newScopeIn(pNode.scope) kind "method"
             if (o.definesScope) then { o.isFresh := true }
             true
