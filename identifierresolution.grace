@@ -534,7 +534,7 @@ method rewriteIdentifier(node) {
     // There is no spec for what this method should do.  The code below 
     // was developed by addding and removing particular cases until
     // the transformed AST was sufficiecntly similar to the one emitted by the
-    // old revolveidentifiers pass for the C code generator to accept it.
+    // old identifier resolution pass for the C code generator to accept it.
     // This method seems to do the following:
     // - id is self => do nothing
     // - id is super => do nothing
@@ -638,6 +638,13 @@ method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     }
     errormessages.syntaxError "{name} is defined both by inheritance and by an enclosing scope{more}."
         atRange(node.line, node.linePos, node.linePos + name.size)
+}
+method checkForReservedName(node) {
+    def ns = node.nameString
+    if (reserved.contains(ns)) then {
+        errormessages.syntaxError "{ns} is a reserved name and cannot be re-declared."
+            atRange(node.line, node.linePos, node.linePos + ns.size - 1)
+    }
 }
 method reportUndeclaredIdentifier(node) {
     def nodeScope = node.scope
@@ -926,23 +933,12 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             def classNameNode = o.name
             def factoryMeth = o.constructor
             def pScope = pNode.scope
-            if (reserved.contains(classNameNode.nameString)) then {
-                errormessages.syntaxError("{classNameNode.nameString} is a " ++
-                    "reserved name and cannot be re-declared.")
-                    atRange(classNameNode.line, classNameNode.linePos,
-                    classNameNode.linePos + classNameNode.nameString.size - 1)
-            }
+            checkForReservedName(classNameNode)
             pScope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
             def outerObjectScope = newScopeIn(pScope) kind "object"
             pScope.at(classNameNode.nameString) putScope(outerObjectScope)
-            
-            if (reserved.contains(factoryMeth.nameString)) then {
-                errormessages.syntaxError("{factoryMeth.nameString} is a " ++
-                    "reserved name and cannot be re-declared.")
-                    atRange(factoryMeth.line, factoryMeth.linePos,
-                    factoryMeth.linePos + factoryMeth.nameString.size - 1)
-            }
+            checkForReservedName(factoryMeth)
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
@@ -966,10 +962,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             o.parent := pNode
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
-                    if (reserved.contains(o.nameString)) then {
-                        errormessages.syntaxError "{o.nameString} is a reserved name and cannot be re-declared"
-                            atRange(o.line, o.linePos, o.linePos + o.nameString.size - 1)
-                    }
+                    checkForReservedName(o)
                     def kind = o.declarationKind
                     var scope := pNode.scope
                     if (isParameter(kind).andAlso {scope.variety == "object"}) then {
@@ -1018,10 +1011,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
         method visitMethod(o) up(pNode) { 
             o.parent := pNode
             def ident = o.value
-            if (reserved.contains(ident.nameString)) then {
-                errormessages.syntaxError "{ident.nameString} is a reserved name and cannot be re-declared."
-                    atRange(ident.line, ident.linePos, ident.linePos + ident.nameString.size - 1)
-            }
+            checkForReservedName(ident)
             pNode.scope.addNode(ident) as "method"
             ident.isDeclaredByParent := true
             o.symbolTable := newScopeIn(pNode.scope) kind "method"
