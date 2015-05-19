@@ -35,7 +35,7 @@ STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js js/sample/dialects/minitest.js $(GRACE_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
