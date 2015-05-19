@@ -1,8 +1,8 @@
-type A has methods set{a}
-type B has methods set{b}
-type A has methods set{a}
-type B has methods set{b}
-(type A & type B) has methods set{a, b}
+type A has methods [a]
+type B has methods [b]
+type A has methods [a]
+type B has methods [b]
+(type A & type B) has methods [a, b]
 ⟨2, 3, 4⟩ is a sequence
 The following list methods are not in sequence:
     []:=
