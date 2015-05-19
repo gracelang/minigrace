@@ -553,7 +553,7 @@ method compilemethod(o, selfobj) {
         }
         if (part.vararg != false) then {
             if (! isSequenceDefined) then {
-                out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
                 isSequenceDefined := true
             }
             def pName = varf(part.vararg.value)
@@ -617,7 +617,7 @@ method compilemethod(o, selfobj) {
             }
             if (part.vararg != false) then {
                 if (! isSequenceDefined) then {
-                    out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                    out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
                     isSequenceDefined := true
                 }
                 def pName = varf(part.vararg.value)
@@ -751,7 +751,7 @@ method compilefreshmethod(o, selfobj) {
         }
         if (part.vararg != false) then {
             if (! isSequenceDefined) then {
-                out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
                 isSequenceDefined := true
             }
             def pName = varf(part.vararg.value)
@@ -802,7 +802,7 @@ method compilefreshmethod(o, selfobj) {
             }
             if (part.vararg != false) then {
                 if (! isSequenceDefined) then {
-                    out "var var_sequenceClass = callmethod(Grace_prelude, \"sequence\", [0]);"
+                    out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
                     isSequenceDefined := true
                 }
                 def pName = varf(part.vararg.value)

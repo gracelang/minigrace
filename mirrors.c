@@ -215,15 +215,16 @@ Object mirrors_loadDynamicModule(Object self, int nparams, int *argcv,
     return dlmodule(s);
 }
 
-Object idString() {
-    return alloc_String("The mirrors module with 'methodNames' method");
+Object mirrors_asString() {
+    return alloc_String("the mirrors module");
 }
 
-// Create and return a Grace object with all the above functions as methods.
+// Create and return a Grace object with the above functions as methods.
 Object module_mirrors_init() {
     if (mirrors_module != NULL)
         return mirrors_module;
-    ClassData c = alloc_class("Module<mirrors>", 12);
+    ClassData c = alloc_class("mirrors", 3);
+    add_Method(c, "asString", &mirrors_asString);
     add_Method(c, "reflect", &mirrors_reflect);
     add_Method(c, "loadDynamicModule", &mirrors_loadDynamicModule);
     Object o = alloc_newobj(0, c);

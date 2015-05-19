@@ -160,6 +160,7 @@ Object Object_Equals(Object, int, int *, Object*, int);
 Object Object_NotEquals(Object, int, int *, Object*, int);
 Object Object_asString(Object, int, int *, Object*, int);
 Object Singleton_asString(Object, int, int *, Object*, int);
+Object Module_asString(Object, int, int *, Object*, int);
 
 // These are used by code generation, and shouldn't need to be
 // used elsewhere.

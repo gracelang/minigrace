@@ -2986,6 +2986,7 @@ function GraceListClass() {
 // these names are used in the generated code.
 // __95__ is the escape for _
 var var___95__prelude = Grace_prelude;
+var var_prelude = Grace_prelude;
 var var_Done = GraceDone;
 var var_done = GraceDone;
 
@@ -3065,6 +3066,7 @@ if (typeof global !== "undefined") {
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var___95__prelude = Grace_prelude;
+    global.var_prelude = var_prelude;
     global.var_Done = GraceDone;
     global.var_done = GraceDone;
     global.var_Block = var_Block;
