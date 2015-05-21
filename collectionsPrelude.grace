@@ -247,8 +247,8 @@ class collection.trait<T> {
     method iterator { abstract }
     method size { abstract }
     method isEmpty {
-        try { return size == 0 } 
-            catch { _:SizeUnknown -> return iterator.hasNext.not }
+        try { size == 0 }
+            catch { _:SizeUnknown -> iterator.hasNext.not }
     }
     method do(block1) separatedBy(block0) {
         var firstTime := true
