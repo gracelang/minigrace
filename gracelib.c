@@ -121,7 +121,8 @@ ClassData Exception;
 Object Dynamic;
 Object ObjectType = NULL;
 Object Unknown;
-Object prelude = NULL;
+Object prelude = NULL;          // the current prelude, i.e., the dialect
+Object _prelude = NULL;         // the standard prelude
 
 struct StringObject {
     OBJECT_HEADER;
@@ -5116,7 +5117,6 @@ Object prelude_false_object(Object self, int argc, int *argcv, Object *argv,
     return alloc_Boolean(0);
 }
 
-Object _prelude = NULL;
 Object grace_prelude() {
     if (prelude != NULL)
         return prelude;
