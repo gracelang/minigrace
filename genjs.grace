@@ -310,28 +310,29 @@ method compileclass(o) {
         newmeth.generics := o.generics
     }
     newmeth.isFresh := true
-    def dbBody = [ast.stringNode.new("class {o.name.value}")]
+    def dbBody = [ast.stringNode.new("class {o.nameString}")]
     def dbMeth = ast.methodNode.new(
         ast.identifierNode.new("asString", false), [], dbBody, false)
     var obody := [newmeth, dbMeth]
     var cobj := ast.objectNode.new(obody, false)
     var con := ast.defDecNode.new(o.name, cobj, false)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
+        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString)],
             [o.name], false)
         compilenode(meth)
     }
     for (o.annotations) do {a->
         con.annotations.push(a)
     }
-    o.register := compilenode(con)
+    o.register := compilenode(con.withParentRefs)
 }
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
     inBlock := false
     var myc := auto_count
     auto_count := auto_count + 1
-    var selfr := "obj" ++ myc
+    def selfr = "obj" ++ myc
+    o.register := selfr
     var superobj := false
     for (o.value) do {e->
         if (e.kind == "inherits") then {
@@ -389,7 +390,6 @@ method compileobject(o, outerRef, inheritingObject) {
     } else {
         out "obj_init_{myc}.apply({selfr}, []);"
     }
-    o.register := selfr
     inBlock := origInBlock
 }
 method compileblock(o) {
@@ -599,7 +599,7 @@ method compilemethod(o, selfobj) {
         for (o.signature.indices) do { partnr ->
             var part := o.signature[partnr]
             for (part.params) do { p ->
-                if (p.dtype != false) then {
+                if (emitTypeChecks && (p.dtype != false)) then {
                     for (o.generics) do {g->
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
@@ -784,7 +784,7 @@ method compilefreshmethod(o, selfobj) {
         for (o.signature.indices) do { partnr ->
             var part := o.signature[partnr]
             for (part.params) do { p ->
-                if (p.dtype != false) then {
+                if (emitTypeChecks && (p.dtype != false)) then {
                     for (o.generics) do {g->
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
@@ -1185,8 +1185,7 @@ method compilecall(o) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
-        out("var call{auto_count} = callmethod(superDepth, "
-            ++ "\"outer\", [0]);")
+        out "var call{auto_count} = {o.enclosingObject.register}.outer"
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
         var call := "var call" ++ auto_count ++ " = callmethod(this"
@@ -1200,7 +1199,7 @@ method compilecall(o) {
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
-        var call := "var call" ++ auto_count ++ " = callmethod(Grace_prelude, \""
+        var call := "var call" ++ auto_count ++ " = callmethod(var_prelude, \""
             ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1279,10 +1278,10 @@ method compileoctets(o) {
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
     var fn := escapestring(o.value)
-    out("this.outer = do_import(\"{fn}\", {formatModname(o.value)});")
-    out("var Grace_prelude = this.outer;")
+    out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
+    out "this.outer = var_prelude;"
     if (dialectHasAtModuleStart) then {
-        out "callmethod(Grace_prelude, \"atModuleStart\", [1], "
+        out "callmethod(var_prelude, \"atModuleStart\", [1], "
         out "  new GraceString(\"{escapestring(modname)}\"));"
     }
     o.register := "undefined"
@@ -1552,7 +1551,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out "\"use strict\";"
     }
     if (isPrelude.not) then {
-        out "this.outer = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
+        out "var___95__prelude = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
     }
     util.setline(1)
     out("function {formatModname(modname)} () \{")
@@ -1566,6 +1565,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         out "myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
     }
+    compileobjouter("this", "var_prelude")
     for (values) do { o ->
         if (o.kind == "method") then {
             compilenode(o)
@@ -1582,15 +1582,12 @@ method compile(vl, of, mn, rm, bt, glpath) {
         if (o.kind != "method") then {
             compilenode(o)
         }
-        if (o.kind == "import") then {
+        if ((o.kind == "import").orElse{o.kind == "dialect"}) then {
             imported.push(o.path)
-        }
-        if (o.kind == "dialect") then {
-            imported.push(o.value)
         }
     }
     if (dialectHasAtModuleEnd) then {
-        out("callmethod(Grace_prelude, \"atModuleEnd\", [1], this);")
+        out("callmethod(var_prelude, \"atModuleEnd\", [1], this);")
     }
     if (debugMode) then {
         out "stackFrames.pop();"

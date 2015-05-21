@@ -125,6 +125,15 @@ class baseNode.new {
         }
         return true
     }
+    method enclosingObject {
+        var n := self
+        util.log_verbose "looking for object enclosing {self}..."
+        while { n.isObject.not } do { 
+            util.log_verbose "parent is {n.parent}"
+            n := n.parent 
+        }
+        n       // the top-most node is always the module object
+    }
 }
 
 class symbolTableNode.new {
@@ -191,6 +200,7 @@ class ifNode.new(cond, thenblock', elseblock') {
         n.thenblock := thenblock.map(blk) parent(n)
         n.elseblock := elseblock.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -285,6 +295,7 @@ class blockNode.new(params', body') {
         n.body := listMap(body, blk) parent(n)
         n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -429,6 +440,7 @@ class matchCaseNode.new(matchee', cases', elsecase') {
         n.cases := listMap(cases, blk) parent(n)
         n.elsecase := maybeMap(elsecase, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -520,6 +532,7 @@ class methodTypeNode.new(name', signature', rtype') {
         n.signature := listMap(signature, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -604,6 +617,7 @@ class typeLiteralNode.new(methods', types') {
         n.methods := listMap(methods, blk) parent (n)
         n.types := listMap(types, blk) parent (n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -697,6 +711,7 @@ class typeDecNode.new(name', typeValue) {
         n.annotations := listMap(annotations, blk) parent(n)
         n.generics := listMap(generics, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -832,6 +847,7 @@ class methodNode.new(name', signature', body', dtype') {
         n.generics := listMap(generics, blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -986,6 +1002,7 @@ class callNode.new(what, with') {
             n.generics := listMap(generics, blk) parent(n)
         }
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1144,6 +1161,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         n.constructor := constructor.map(blk) parent(n)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1273,6 +1291,7 @@ class objectNode.new(body, superclass') {
         n.value := listMap(value, blk) parent(n)
         n.superclass := maybeMap(superclass, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth') {
@@ -1333,6 +1352,7 @@ class arrayNode.new(values) {
         var n := shallowCopyWithParent(p)
         n.value := listMap(value, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1384,6 +1404,7 @@ class memberNode.new(what, in') {
             n.generics := listMap(generics, blk) parent(n)
         }
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1457,6 +1478,7 @@ class genericNode.new(base, params') {
         n.value := value.map(blk) parent(n)
         n.params := listMap(params, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1532,6 +1554,7 @@ class identifierNode.new(name, dtype') {
         var n := shallowCopyWithParent(p)
         n.dtype := maybeMap(dtype, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1619,6 +1642,7 @@ class octetsNode.new(num) {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method shallowCopyWithParent(p) {
@@ -1635,6 +1659,7 @@ class stringNode.new(v) {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1673,6 +1698,7 @@ class numNode.new(val) {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1704,6 +1730,7 @@ class opNode.new(op, l, r) {
         n.left := left.map(blk) parent(n)
         n.right := right.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1768,6 +1795,7 @@ class indexNode.new(expr, index') {
         n.value := value.map(blk) parent(n)
         n.index := index.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1814,6 +1842,7 @@ class bindNode.new(dest', val') {
         n.dest := dest.map(blk) parent(n)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -1895,6 +1924,7 @@ class defDecNode.new(name', val, dtype') {
         n.dtype := maybeMap(dtype, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2000,6 +2030,7 @@ class varDecNode.new(name', val', dtype') {
         n.dtype := maybeMap(dtype, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2089,6 +2120,7 @@ class importNode.new(path', name', dtype') {
         n.dtype := maybeMap(dtype, blk) parent(n)
         n.annotations := listMap(annotations, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2137,6 +2169,7 @@ class dialectNode.new(path') {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2169,6 +2202,7 @@ class returnNode.new(expr) {
         var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2205,6 +2239,7 @@ class inheritsNode.new(expr) {
         var n := shallowCopyWithParent(p)
         n.value := value.map(blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2243,6 +2278,7 @@ class blankNode.new {
     method map(blk) parent(p) {
         var n := shallowCopyWithParent(p)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method toGrace(depth : Number) -> String {
@@ -2283,6 +2319,7 @@ class signaturePart.new(*values) {
         n.params := listMap(params, blk) parent(n)
         n.vararg := maybeMap(vararg, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
@@ -2334,6 +2371,7 @@ class callWithPart.new(*values) {
         var n := shallowCopyWithParent(p)
         n.args := listMap(args, blk) parent(n)
         n := blk.apply(n)
+        n.parent := p
         n
     }
     method pretty(depth) {
