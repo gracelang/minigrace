@@ -2590,7 +2590,7 @@ function GraceExceptionPacket(exception, message, data) {
     this.callStack = [];
     this.stackFrames = [];
     for (var i=0; i<callStack.length; i++)
-        this.callStack.push(callStack[i]);
+        this.callStack.push(callStack[i].toString());
     for (var i=0; i<stackFrames.length; i++)
         this.stackFrames.push(stackFrames[i]);
     this.superobj = new GraceObject();
@@ -2619,7 +2619,7 @@ GraceExceptionPacket.prototype = {
         "backtrace": function(argcv) {
             var bt = new GraceList([]);
             for (var i=0; i<this.callStack.length; i++)
-                callmethod(bt, "push", [1], new GraceString(this.callStack[i]));
+                callmethod(bt, "push", [1], new GraceString(this.callStack[i].toString()));
             return bt;
         },
         "printBacktrace": function(argcv) {
