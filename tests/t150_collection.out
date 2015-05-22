@@ -1,12 +1,1 @@
-binding
-6 run, 0 failed, 0 errors
-sequence
-47 run, 0 failed, 0 errors
-list
-78 run, 0 failed, 0 errors
-set
-36 run, 0 failed, 0 errors
-range
-46 run, 0 failed, 0 errors
-dictionary
-49 run, 0 failed, 0 errors
+../js/tests/t150_collection.out
