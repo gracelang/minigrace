@@ -1,37 +1,12 @@
 import "gUnit" as gU
-//import "newCollections" as collections
-//
-//type Block0<R> = collections.Block0<R>
-//type Block1<T,R> = collections.Block1<T,R>
-//type Block2<S,T,R> = collections.Block1<T,R>
-//
-//type Collection<T> = collections.Collection<T>
-//type Binding<K,T> = collections.Binding<K,T>
-//type Iterator<T> = collections.Iterator<T>
-//type CollectionFactory<T> = collections.CollectionFactory<T>
-//type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
-//type Enumerable<T> = collections.Enumerable<T>
-//type Sequence<T> = collections.Sequence<T>
-//type List<T> = collections.List<T>
-//type Set<T> = collections.Set<T>
-//type Dictionary<K, T> = collections.Dictionary<K, T>
-//
-//def BoundsError is public = collections.BoundsError
-//def Exhausted is public = collections.Exhausted
-//def NoSuchObject is public = collections.NoSuchObject
-//def RequestError is public = collections.RequestError
-//def SubobjectResponsibility is public = collections.SubobjectResponsibility
-//
-//def collectionFactory is public = collections.collectionFactory
-//def lazySequence is public = collections.lazySequence
-//def collection is public = collections.collection
-//def sequence is public = collections.sequence
-//def list is public = collections.list
-//def set is public = collections.set
-//def dictionary is public = collections.dictionary
-//def binding is public = collections.binding
-//def range is public = collections.range
+import "newCollections" as collections
 
+def sequence is public = collections.sequence
+def list is public = collections.list
+def set is public = collections.set
+def dictionary is public = collections.dictionary
+def binding is public = collections.binding
+def range is public = collections.range
 
 def bindingTest = object {
     factory method forMethod(m) {
@@ -523,6 +498,7 @@ def sequenceTest = object {
         }
         method testSequenceToSetDuplicates {
             def theSet = sequence.with(1,1,2,2,4).asSet
+            assert (theSet.size) shouldBe 3
             assert (theSet) shouldBe (set.with(1, 2, 4))
             assert (theSet) hasType (Set)
         }
@@ -534,6 +510,7 @@ def sequenceTest = object {
             def accum = set.empty
             def iter = oneToFive.iterator
             while {iter.hasNext} do { accum.add(iter.next) }
+            assert (accum.size) shouldBe 5
             assert (accum) shouldBe (set.with(1, 2, 3, 4, 5))
         }
         method testSequenceIteratorToSetDuplicates {
@@ -700,6 +677,20 @@ def listTest = object {
         }
         method testListRemoveAbsentExcpetion {
             assert {oneToFive.remove(1, 7, 5)} shouldRaise (NoSuchObject)
+        }
+        method testListRemoveLast {
+            assert (oneToFive.removeLast) shouldBe 5
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
+        }
+        method testListRemoveLastEmpty {
+            assert {empty.removeLast} shouldRaise (BoundsError)
+        }
+        method testListPop {
+            assert (oneToFive.pop) shouldBe 5
+            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
+        }
+        method testListPopEmpty {
+            assert {empty.pop} shouldRaise (BoundsError)
         }
         method testListRemoveAbsentActionBlock {
             assert (oneToFive.remove 9 ifAbsent {99}) shouldBe 99
@@ -1005,6 +996,18 @@ def setTest = object {
         def evens = set.with(2, 4, 6, 8)
         def empty = set.empty
 
+        method testSetTypeCollection {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testSetTypeSet {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Set<Number>)
+        }
+        method testSetTypeNotSequence {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            deny (witness) hasType (Sequence<Number>)
+        }
 
         method testSetSize {
             assert(oneToFive.size) shouldBe 5

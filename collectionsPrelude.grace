@@ -41,8 +41,6 @@ type Collection<T> = Object & type {
 }
 
 type Enumerable<T> = Collection<T> & type {
-    size -> Number  
-        // may raise SizeUnknow if size is expensive to computer
     values -> Collection<T>
     asDictionary -> Dictionary<Number,T>
     keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
@@ -53,6 +51,7 @@ type Enumerable<T> = Collection<T> & type {
 }
 
 type Sequence<T> = Enumerable<T> & type {
+    size -> Number
     at(n:Number) -> T
     [](n:Number) -> T
     indices -> Sequence<Number>
@@ -177,6 +176,7 @@ factory method lazySequenceOver<T,R>(source:Collection<T>)
         method next { function.apply(sourceIterator.next) }
     }
     method size { source.size }
+    method isEmpty { source.isEmpty }
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
@@ -213,9 +213,7 @@ factory method lazySequenceOver<T>(source:Collection<T>)
             }
         }
     }
-    method size { SizeUnknown.raise "size requested on {asDebugString}" }
     method asDebugString { "a lazy sequence filtering {source}" }
-    method asString { super.asString }  // fix code generator bug
 }
 factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method next {
@@ -245,10 +243,9 @@ factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
 class collection.trait<T> {
     method do { abstract }
     method iterator { abstract }
-    method size { abstract }
     method isEmpty {
-        try { size == 0 }
-            catch { _:SizeUnknown -> iterator.hasNext.not }
+        // override if size is known
+        iterator.hasNext.not
     }
     method do(block1) separatedBy(block0) {
         var firstTime := true
@@ -387,6 +384,7 @@ class indexable.trait<T> {
     inherits collection.trait<T>
     method at { abstract }
     method size { abstract }
+    method isEmpty { size == 0 }
     method keysAndValuesDo(action:Block2<Number,T,Done>) -> Done {
         def curSize = size
         var i := 1
@@ -879,7 +877,7 @@ factory method list<T> {
             try { initialSize := a.size * 2 + 1 } 
                 catch { _ex:SizeUnknown -> initialSize := 9 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
-            var size is public := 0
+            var size is readable := 0
             for (a) do {x->
                 inner.at(size)put(x)
                 size := size + 1
@@ -1112,7 +1110,8 @@ factory method set<T> {
                 var removed := true 
                 method asString { "removed" }
             }
-            var size is public := 0
+            var numElements := 0
+            method size { numElements }
             for (0..(initialSize - 1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -1123,8 +1122,8 @@ factory method set<T> {
                     if (! contains(x)) then {
                         def t = findPositionForAdd(x)
                         inner.at(t)put(x)
-                        size := size + 1
-                        if (size > (inner.size / 2)) then {
+                        numElements := numElements + 1
+                        if (numElements > (inner.size / 2)) then {
                             expand
                         }
                     }
@@ -1147,7 +1146,7 @@ factory method set<T> {
                     var t := findPosition(x)
                     if (inner.at(t) == x) then {
                         inner.at(t) put (removed)
-                        size := size - 1
+                        numElements := numElements - 1
                     } else { 
                         block.apply
                     }
@@ -1277,7 +1276,7 @@ factory method set<T> {
                 def c = inner.size
                 def n = c * 2
                 def oldInner = inner
-                size := 0
+                numElements := 0
                 inner := _prelude.PrimitiveArray.new(n)
                 for (0..(inner.size-1)) do {i->
                     inner.at(i)put(unused)
@@ -1383,6 +1382,7 @@ factory method dictionary<K,T> {
             }
             for (initialBindings) do { b -> at(b.key)put(b.value) }
             method size { numBindings }
+            method isEmpty { numBindings == 0 }
             method at(key')put(value') {
                 var t := findPositionForAdd(key')
                 if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {

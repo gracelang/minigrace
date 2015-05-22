@@ -1,4 +1,3 @@
-#pragma NativePrelude
 
 def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
@@ -41,8 +40,6 @@ type Collection<T> = Object & type {
 }
 
 type Enumerable<T> = Collection<T> & type {
-    size -> Number  
-        // may raise SizeUnknow if size is expensive to computer
     values -> Collection<T>
     asDictionary -> Dictionary<Number,T>
     keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
@@ -53,6 +50,7 @@ type Enumerable<T> = Collection<T> & type {
 }
 
 type Sequence<T> = Enumerable<T> & type {
+    size -> Number
     at(n:Number) -> T
     [](n:Number) -> T
     indices -> Sequence<Number>
@@ -70,6 +68,7 @@ type Sequence<T> = Enumerable<T> & type {
 }
 
 type List<T> = Sequence<T> & type {
+    size -> Number
     add(*x: T) -> List<T>
     addFirst(*x: T) -> List<T>
     addAllFirst(xs:Collection<T>) -> List<T>
@@ -169,7 +168,7 @@ class collectionFactory.trait<T> {
 
 factory method lazySequenceOver<T,R>(source:Collection<T>)
         mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
-    inherits lazySequence.trait<T>
+    inherits enumerable.trait<T>
     factory method iterator {
         def sourceIterator = source.iterator
         method asString { "an iterator over a lazy map sequence" }
@@ -177,12 +176,13 @@ factory method lazySequenceOver<T,R>(source:Collection<T>)
         method next { function.apply(sourceIterator.next) }
     }
     method size { source.size }
+    method isEmpty { source.isEmpty }
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
 factory method lazySequenceOver<T>(source:Collection<T>) 
         filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
-    inherits lazySequence.trait<T>
+    inherits enumerable.trait<T>
     factory method iterator {
         var cache
         var cacheLoaded := false
@@ -213,9 +213,7 @@ factory method lazySequenceOver<T>(source:Collection<T>)
             }
         }
     }
-    method size { SizeUnknown.raise "size requested on {asDebugString}" }
     method asDebugString { "a lazy sequence filtering {source}" }
-    method asString { super.asString }  // fix code generator bug
 }
 factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method next {
@@ -233,7 +231,7 @@ factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method asString { "an iterator over a concatenation" }
 }
 factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
-    inherits lazySequence.trait<T>
+    inherits enumerable.trait<T>
     method iterator {
         iteratorConcat(left.iterator, right.iterator)
     }
@@ -245,10 +243,9 @@ factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
 class collection.trait<T> {
     method do { abstract }
     method iterator { abstract }
-    method size { abstract }
     method isEmpty {
-        try { return size == 0 } 
-            catch { _:SizeUnknown -> return iterator.hasNext.not }
+        // override if size is known
+        iterator.hasNext.not
     }
     method do(block1) separatedBy(block0) {
         var firstTime := true
@@ -294,7 +291,7 @@ class collection.trait<T> {
     }
 }
 
-class lazySequence.trait<T> {
+class enumerable.trait<T> {
     inherits collection.trait<T>
     method iterator { abstract }
     method size { 
@@ -328,7 +325,7 @@ class lazySequence.trait<T> {
         existing
     }
     method ==(other) {
-        // TODO: fix inheritance!  There are now 4 copies of this method!
+        // there are 6 copies of this method!  Do we need traits!
         match (other)
             case {o:Collection ->
                 def selfIter = self.iterator
@@ -387,6 +384,7 @@ class indexable.trait<T> {
     inherits collection.trait<T>
     method at { abstract }
     method size { abstract }
+    method isEmpty { size == 0 }
     method keysAndValuesDo(action:Block2<Number,T,Done>) -> Done {
         def curSize = size
         var i := 1
@@ -544,7 +542,7 @@ factory method sequence<T> {
                 }
             }
             method ==(other) {
-                // there are 4 copies of this method!  Do we need traits!
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -680,12 +678,12 @@ factory method list<T> {
                 }
 
                 method removeLast {
-                    def result = self.at(size)
-                    native "js" code ‹if (this.data.jsArray.length = 0) {
-                                var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                                var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                                callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                            } else return this.data.jsArray.pop();›
+                    native "js" code ‹if (this.data.jsArray.length === 0) {
+                        var msg = "you can't remove an element from an empty list";
+                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
+                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
+                    } else 
+                        return this.data.jsArray.pop();›
                 }
 
                 method addAllFirst(l) {
@@ -792,6 +790,9 @@ factory method list<T> {
                 }
                 
 
+                method extend(l) { addAll(l); done }    // compatibility
+                
+
                 method contains(element) {
                     do { each -> if (each == element) then { return true } }
                     return false
@@ -808,6 +809,7 @@ factory method list<T> {
                 }
                 
                 method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                     match (other)
                         case {o:Collection ->
                             def selfIter = self.iterator
@@ -875,7 +877,7 @@ factory method list<T> {
             try { initialSize := a.size * 2 + 1 } 
                 catch { _ex:SizeUnknown -> initialSize := 9 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
-            var size is public := 0
+            var size is readable := 0
             for (a) do {x->
                 inner.at(size)put(x)
                 size := size + 1
@@ -1011,7 +1013,6 @@ factory method list<T> {
                 }
                 s ++ "]"
             }
-
             method contains(element) {
                 do { each -> if (each == element) then { return true } }
                 return false
@@ -1025,6 +1026,7 @@ factory method list<T> {
             }
             
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -1108,7 +1110,8 @@ factory method set<T> {
                 var removed := true 
                 method asString { "removed" }
             }
-            var size is public := 0
+            var numElements := 0
+            method size { numElements }
             for (0..(initialSize - 1)) do {i->
                 inner.at(i)put(unused)
             }
@@ -1119,8 +1122,8 @@ factory method set<T> {
                     if (! contains(x)) then {
                         def t = findPositionForAdd(x)
                         inner.at(t)put(x)
-                        size := size + 1
-                        if (size > (inner.size / 2)) then {
+                        numElements := numElements + 1
+                        if (numElements > (inner.size / 2)) then {
                             expand
                         }
                     }
@@ -1143,7 +1146,7 @@ factory method set<T> {
                     var t := findPosition(x)
                     if (inner.at(t) == x) then {
                         inner.at(t) put (removed)
-                        size := size - 1
+                        numElements := numElements - 1
                     } else { 
                         block.apply
                     }
@@ -1273,7 +1276,7 @@ factory method set<T> {
                 def c = inner.size
                 def n = c * 2
                 def oldInner = inner
-                size := 0
+                numElements := 0
                 inner := _prelude.PrimitiveArray.new(n)
                 for (0..(inner.size-1)) do {i->
                     inner.at(i)put(unused)
@@ -1379,6 +1382,7 @@ factory method dictionary<K,T> {
             }
             for (initialBindings) do { b -> at(b.key)put(b.value) }
             method size { numBindings }
+            method isEmpty { numBindings == 0 }
             method at(key')put(value') {
                 var t := findPositionForAdd(key')
                 if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
@@ -1519,7 +1523,7 @@ factory method dictionary<K,T> {
             method keys -> Enumerable<K> {
                 def sourceDictionary = self
                 object {
-                    inherits lazySequence.trait<K>
+                    inherits enumerable.trait<K>
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
@@ -1537,7 +1541,7 @@ factory method dictionary<K,T> {
             method values -> Enumerable<T> {
                 def sourceDictionary = self
                 object {
-                    inherits lazySequence.trait<T>
+                    inherits enumerable.trait<T>
                     factory method iterator {
                         def sourceIterator = sourceDictionary.bindingsIterator
                         // should be request on outer
@@ -1556,7 +1560,7 @@ factory method dictionary<K,T> {
             method bindings -> Enumerable<T> {
                 def sourceDictionary = self
                 object {
-                    inherits lazySequence.trait<T>
+                    inherits enumerable.trait<T>
                     method iterator { sourceDictionary.bindingsIterator }
                     // should be request on outer
                     def size is public = sourceDictionary.size
@@ -1761,6 +1765,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
@@ -1875,6 +1880,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
+                // there are 6 copies of this method!  Do we need traits!
                 match (other)
                     case {o:Collection ->
                         def selfIter = self.iterator
