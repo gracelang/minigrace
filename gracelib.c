@@ -995,8 +995,11 @@ Object String_Contains(Object self, int nparts, int *argcv,
                              Object *args, int flags) {
     struct StringObject *sself = (struct StringObject*)self;
     struct StringObject *needle = (struct StringObject*)args[0];
-    if (needle->class != String && needle->class != ConcatString)
-        graceRaise(TypeErrorObject, "argument to string.contains must be a String");
+    if ((needle->class != String) && (needle->class != ConcatString)) {
+        Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
+        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+                   grcstring(nStr));
+    }
     if (sself->size <= needle->size)
         return alloc_Boolean(0);
     char *a = grcstring(self);
@@ -1619,8 +1622,11 @@ Object ConcatString_Contains(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     struct ConcatStringObject *needle = (struct ConcatStringObject*)args[0];
-    if (needle->class != String && needle->class != ConcatString)
-        graceRaise(TypeErrorObject, "argument to contains must be a String");
+    if ((needle->class != String) && (needle->class != ConcatString)) {
+        Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
+        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+                   grcstring(nStr));
+    }
     if (sself->size <= needle->size)
         return alloc_Boolean(0);
     char *a = grcstring(self);
