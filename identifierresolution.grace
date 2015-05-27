@@ -51,7 +51,7 @@ factory method newScopeIn(parent') kind(variety') {
     def parent = parent'
     var hasParent := true
     def variety = variety'
-    var node := ast.nullNode        // the ast node that I'm in
+    var node := ast.nullNode        // the outermost ast node that I'm in
     var inheritedNames := undiscovered
     stSerial := stSerial + 1
     def serialNumber is public = stSerial
@@ -329,7 +329,7 @@ factory method newScopeIn(parent') kind(variety') {
 }
 
 def emptyScope = newScopeKind("empty")
-ast.nullNode.symbolTable := emptyScope      // TODO: eliminate!
+ast.nullNode.scope := emptyScope      // TODO: eliminate!
 def builtInsScope = newScopeIn(emptyScope) kind("built-in")
 def preludeScope = newScopeIn(builtInsScope) kind("dialect")
 def moduleScope = newScopeIn(preludeScope) kind("module")
@@ -524,10 +524,10 @@ method rewritematchblock(blk) {
     def newblk = ast.blockNode.new(newparams, blk.body)
     newblk.matchingPattern := pattern
     newblk.line := blk.line
-    return newblk.withParentRefs
+    return newblk
 }
 
-method rewriteIdentifier(node) {
+method rewriteIdentifier(node) ancestors(as) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
     // This method may or may not transform node into another ast.
@@ -565,7 +565,7 @@ method rewriteIdentifier(node) {
             if (nodeScope.kindInNest(nmGets) == "method") then {
                 def meth = nodeScope.findDeepMethod(nmGets)
                 def meth2 = ast.memberNode.new(nm, meth.in)
-                return meth2.withParentRefs
+                return meth2
             }
         } elseif { isAssignable(nodeKind).not } then {
             reportAssignmentTo(node) declaredInScope(definingScope)
@@ -593,7 +593,7 @@ method rewriteIdentifier(node) {
     if (nodeKind == "typedec") then { return node }
 
     // TODO Compatability Kludge — remove when possible
-    if (node.inTypePosition) then { return node }
+    if (node.inTypePositionWithAncestors(as)) then { return node }
     // the latter is necessary until .gct files distinguish types
 
     if (definingScope == moduleScope) then {
@@ -618,7 +618,7 @@ method rewriteIdentifier(node) {
         // In that case, leaving the id untouched may be wrong
     if (v == "block") then { return node }
     def deepMeth = nodeScope.findDeepMethod(nm)
-    return deepMeth.withParentRefs
+    return deepMeth
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
     def currentScope = node.scope
@@ -748,12 +748,12 @@ method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
     // equivalents.
     // This creates a new AST
-    topNode.map { node ->
+    topNode.map { node, as ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
-            rewriteIdentifier(node)
+            rewriteIdentifier(node) ancestors(as)
             // TODO — opNodes don't contain identifiers!
         } elseif { node.isInherits } then {
-            transformInherits(node)
+            transformInherits(node) ancestors(as)
         } elseif { node.isObject.orElse{ node.isClass }} then {
             // TODO Compatability Kludge — remove when possible
             node.superclass := false
@@ -761,7 +761,7 @@ method resolveIdentifiers(topNode) {
         } else {
             node
         } 
-    } parent (ast.nullNode)
+    } ancestors (ast.ancestorChain.empty)
 }
 
 method processGCT(gct, importedModuleScope) {
@@ -903,41 +903,37 @@ method setupContext(values) {
         }
     }
 }
-method buildSymbolTableFor(topLevelNodes) in(parentNode) {
+method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
-        inherits ast.addParentVisitor
+        inherits ast.baseVisitor
 
-        method visitBind(o) up(pNode) { 
-            o.parent := pNode
+        method visitBind(o) up(as) {
             def lValue = o.dest
             if (lValue.kind == "identifier") then {
                 lValue.isAssigned := true
             }
             return true
         }
-        method visitCall(o) up(pNode) { 
-            o.parent := pNode
+        method visitCall(o) up(as) {
             def callee = o.value
             if (callee.kind == "identifier") then {
                 callee.inRequest := true
             }
             return true
         }
-        method visitBlock(o) up(pNode) { 
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind "block"
+        method visitBlock(o) up(as) {
+            o.scope := newScopeIn(as.parent.scope) kind "block"
             true
         }
-        method visitClass(o) up(pNode) { 
-            o.parent := pNode
+        method visitClass(o) up(as) {
             def classNameNode = o.name
             def factoryMeth = o.constructor
-            def pScope = pNode.scope
+            def surroundingScope = as.parent.scope
             checkForReservedName(classNameNode)
-            pScope.addNode(classNameNode) as "defdec"
+            surroundingScope.addNode(classNameNode) as "defdec"
             classNameNode.isDeclaredByParent := true
-            def outerObjectScope = newScopeIn(pScope) kind "object"
-            pScope.at(classNameNode.nameString) putScope(outerObjectScope)
+            def outerObjectScope = newScopeIn(surroundingScope) kind "object"
+            surroundingScope.at(classNameNode.nameString) putScope(outerObjectScope)
             checkForReservedName(factoryMeth)
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
@@ -948,23 +944,25 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
             outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
-            o.symbolTable := innerObjectScope
+            o.scope := innerObjectScope
             true
         }
-        method visitDefDec(o) up(pNode) {
-            o.parent := pNode
+        method visitDefDec(o) up(as) {
             if (false != o.startToken) then {
-                pNode.scope.elementTokens.put(o.name.nameString, o.startToken)
+                as.parent.scope.elementTokens.put(o.name.nameString, o.startToken)
             }
             true
         }
-        method visitIdentifier(o) up(pNode) {
-            o.parent := pNode
+        method visitIdentifier(o) up(as) {
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
                     checkForReservedName(o)
-                    def kind = o.declarationKind
-                    var scope := pNode.scope
+                    def kind = o.declarationKindWithAncestors(as)
+                    var scope := as.parent.scope
+                    if (scope == false) then {
+                        print "identifier {o} (line {o.line}) has parent {as.parent.pretty(0)}"
+                        print "identifier {o} (line {o.line}) has parent scope false"
+                    }
                     if (isParameter(kind).andAlso {scope.variety == "object"}) then {
                         // this is a hack for declaring the parameters of the factory 
                         // method of a class.  The class's symbol table is that of the
@@ -983,62 +981,64 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             }
             true
         }
-        method visitImport(o) up(pNode) {
-            o.parent := pNode
+        method visitImport(o) up(as) {
             xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
-            def otherModule = newScopeIn(pNode.scope) kind "module"
+            def otherModule = newScopeIn(as.parent.scope) kind "module"
             processGCT(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
             true
         }
-        method visitInherits(o) up(pNode) {
-            o.parent := pNode
-            if (pNode.definesObject.not) then {
+        method visitInherits(o) up(as) {
+            if (as.parent.canInherit.not) then {
                 errormessages.syntaxError "inherits statements must be inside an object"
                     atRange(o.line, o.linePos, o.linePos + 7)
             }
-            if (pNode.superclass != false) then {
+            if (as.parent.superclass != false) then {
                 errormessages.syntaxError ("there can be no more than one inherits " ++
                     "statement in an object; there was a prior inherits statement " ++
-                    "on line {pNode.superclass.line}")
+                    "on line {as.parent.superclass.line}")
                     atRange(o.line, o.linePos, o.linePos + 7)
             }
-            pNode.superclass := o.value    // value = the expression from inheritsNode
+            as.parent.superclass := o.value    // value = the expression from inheritsNode
             // cache the inherits expression in the object or class that contains it
             true
         }
-        method visitMethod(o) up(pNode) { 
-            o.parent := pNode
+        method visitMethod(o) up(as) {
+            def surroundingScope = as.parent.scope
             def ident = o.value
             checkForReservedName(ident)
-            pNode.scope.addNode(ident) as "method"
+            surroundingScope.addNode(ident) as "method"
             ident.isDeclaredByParent := true
-            o.symbolTable := newScopeIn(pNode.scope) kind "method"
-            if (o.definesScope) then { o.isFresh := true }
+            o.scope := newScopeIn(surroundingScope) kind "method"
+            if (o.returnsObject) then { o.isFresh := true }
             true
         }
-        method visitMethodType(o) up(pNode) {
-            o.parent := pNode
-            o.symbolTable := newScopeIn(pNode.scope) kind "methodtype"
+        method visitMethodType(o) up(as) {
+            o.scope := newScopeIn(as.parent.scope) kind "methodtype"
+            // the scope for the parameters (including the type parameters,
+            // if any) of this method.
             true
         }
-        method visitObject(o) up(pNode) { 
-            o.parent := pNode
-            def pScope = pNode.scope
-            o.symbolTable := newScopeIn(pScope) kind "object"
-            if (o.parent.definesScope) then {
-                o.parent.objectScope.at(o.parent.nameString) putScope(o.symbolTable)
+        method visitObject(o) up(as) {
+            def myParent = as.parent
+            def surroundingScope = myParent.scope
+            o.scope := newScopeIn(surroundingScope) kind "object"
+            if (myParent.returnsObject) then {
+                if (myParent.isObject) then {
+                    util.log_verbose "object {o} in object {myParent}!"
+                }
+                myParent.scope.at(myParent.nameString) putScope(o.scope)
             }
             true
         }
-        method visitTypeDec(o) up(pNode) { 
-            o.parent := pNode
-            pNode.scope.addNode(o.name) as "typedec"
+        method visitTypeDec(o) up(as) {
+            def enclosingScope = as.parent.scope
+            enclosingScope.addNode(o.name) as "typedec"
             o.name.isDeclaredByParent := true
             if (o.generics.isEmpty) then { return true }
-            o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
-                // for now we don't distinguish between type decs and type params
+            o.scope := newScopeIn(enclosingScope) kind "typedec"
+            // for now we don't distinguish between type decs and type params
             true
         }
     }   // end of symbolTableVis
@@ -1046,36 +1046,36 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
 
     def inheritanceVis = object {
         inherits ast.baseVisitor
-        method visitClass(o) up (pNode) {
+        method visitClass(o) up (as) {
             collectInheritedNames(o)
             // TODO: while the `data` attribute is still used by the code generators,
             // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            o.data := o.symbolTable
+            o.data := o.scope
             true
         }
-        method visitObject(o) up (pNode) {
+        method visitObject(o) up (as) {
             collectInheritedNames(o)
             // TODO: while the `data` attribute is still used by the code generators,
             // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            o.data := o.symbolTable
+            o.data := o.scope
             true
         }
-        method visitDefDec(o) up (pNode) {
+        method visitDefDec(o) up (as) {
             // TODO: while the `data` attribute is still used by the code generators,
             // put there a redundant reference to the symbolTable.  Remove when this is fixed.
             if (o.value.isObject) then {
-                o.data := o.value.symbolTable
+                o.data := o.value.scope
             }
             true
         }
     }
-    for (topLevelNodes) do { each -> each.accept(symbolTableVis) from(parentNode) }
-    for (topLevelNodes) do { each -> each.accept(inheritanceVis) from(parentNode) }
+    topNode.accept(symbolTableVis) from(topChain)
+    topNode.accept(inheritanceVis) from(topChain)
 }
 
 method collectInheritedNames(node) {
     // node is an object or class node.
-    def nodeScope = node.symbolTable
+    def nodeScope = node.scope
     if (nodeScope.inheritedNames == completed) then { 
         return
     }
@@ -1108,7 +1108,7 @@ method collectInheritedNames(node) {
 }
 
 
-method transformInherits(inhNode) {
+method transformInherits(inhNode) ancestors(as) {
     // inhNode is an inheritsNode.  Transform it to deal with 
     // superobject initialization and inherited names
     def superObject = inhNode.value
@@ -1127,7 +1127,7 @@ method transformInherits(inhNode) {
     if (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
         if (superCall.isAppliedOccurenceOfIdentifier) then {
-            superCall := rewriteIdentifier(superCall)
+            superCall := rewriteIdentifier(superCall) ancestors(as)
         }
         // TODO: try removing the above — it may not be necessary
         superCall.with.push(ast.callWithPart.new("object",
@@ -1168,27 +1168,30 @@ method transformInherits(inhNode) {
             currentScope.addName(each) as "inherited"
         }
     }
-    newInhNode.withParentRefs
+    newInhNode
 }
 
 method rewriteMatches(topNode) {
-    topNode.map { node ->
+    topNode.map { node, as ->
         if (node.isMatchingBlock) then {
             rewritematchblock(node)
         } else {
             node
         }
-    } parent (ast.nullNode)
+    } ancestors (ast.ancestorChain.empty)
 }
 
 method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
-    var superObject := false
-    def module = ast.objectNode.new(values, superObject)
-    module.symbolTable := moduleScope
+    def moduleObject = ast.objectNode.body(values) named "module"
+    def preludeObject = ast.objectNode.body([moduleObject]) named "prelude"
+    def preludeChain = ast.ancestorChain.with(preludeObject)
+    moduleObject.scope := moduleScope
+    preludeObject.scope := preludeScope
 
-    def patternMatchModule = rewriteMatches(module)
+    def patternMatchModule = rewriteMatches(moduleObject)
+
     if (util.target == "patterns") then {
         util.outprint "====================================="
         util.outprint "module after pattern-match re-writing"
@@ -1198,7 +1201,7 @@ method resolve(values) {
         sys.exit(0)
     }
 
-    buildSymbolTableFor(patternMatchModule.value) in(module)
+    buildSymbolTableFor(patternMatchModule) ancestors(preludeChain)
 
     if (util.target == "symbols") then {
         util.outprint "====================================="
