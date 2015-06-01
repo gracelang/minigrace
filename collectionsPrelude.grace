@@ -151,13 +151,13 @@ type Iterator<T> = type {
 }
 
 type CollectionFactory<T> = type {
-    withAll<T> (elts:Collection<T>) -> Collection<T>
-    with<T> (*elts:Object) -> Collection<T>
-    empty<T> -> Collection<T>
+    withAll (elts:Collection<T>) -> Collection<T>
+    with (*elts:Object) -> Collection<T>
+    empty -> Collection<T>
 }
 
 type EmptyCollectionFactory<T> = type {
-    empty<T> -> Collection<T>
+    empty -> Collection<T>
 }
 
 class collectionFactory.trait<T> {
