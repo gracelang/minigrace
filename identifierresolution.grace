@@ -142,11 +142,14 @@ factory method newScopeIn(parent') kind(variety') {
     }
     method asString {
         var result := "(ST {serialNumber}) variety: {variety}:\n"
-        for (elements) do { each ->
-            result := result ++ each.asString ++ "({kind(each)}) "
+        elements.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
+            result := result ++ each.key.asString ++ "({kind(each.key)}) "
         }
         result ++ "\n"
     }
+    
+    method asDebugString { "(ST {serialNumber})" }
+
     method elementScopesAsString {
         var result := "\n    [elementScopes: "
         for (elementScopes) do { each ->
@@ -542,14 +545,14 @@ method rewriteIdentifier(node) ancestors(as) {
     //          replace node by a method request
     // - id is in the lexical scope: store binding occurence of id in node
     // - id is a method in an outer object scope: transform into member nodes.
-    //  TODO: make references to fields direct
+    //  TODO: can't make references to fields direct because they might be overridden
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
     
     // Some clauses are flagged "TODO Compatability Kludge — remove when possible"
     // This means that APB put them there to produce an AST close enough to the
     // former identifier resolution pass to keep the C code generator (genc) happy.
-    // They may represent a thing that APB doesn't understand, or bugs in genc
+    // They may represent things that APB doesn't understand, or bugs in genc
 
     var nm := node.value
     def nodeScope = node.scope
@@ -574,7 +577,6 @@ method rewriteIdentifier(node) ancestors(as) {
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false)
         def memb = ast.memberNode.new("outer", selfId)
-        selfId.parent := memb
         return memb
         // TODO: represent outer statically
     }
@@ -586,7 +588,6 @@ method rewriteIdentifier(node) ancestors(as) {
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false)
         def m = ast.memberNode.new(nm, p)
-        p.parent := m
         return m
     }
     if (isParameter(nodeKind)) then { return node }
@@ -744,10 +745,11 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             atLine(node.line)
     }
 }
+
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
-    // equivalents.
-    // This creates a new AST
+    // equivalents.  Creates and returns a new AST
+
     topNode.map { node, as ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
             rewriteIdentifier(node) ancestors(as)
@@ -838,7 +840,6 @@ method setupContext(values) {
     preludeScope.addName "TypeError" as "defdec"
     preludeScope.addName "ResourceException" as "defdec"
     preludeScope.addName "EnvironmentException" as "defdec"
-    preludeScope.addName "octets"
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
     preludeScope.addName "PrimitiveArray" as "defdec"
@@ -905,9 +906,9 @@ method setupContext(values) {
 }
 method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
-        inherits ast.baseVisitor
 
         method visitBind(o) up(as) {
+            o.scope := as.parent.scope
             def lValue = o.dest
             if (lValue.kind == "identifier") then {
                 lValue.isAssigned := true
@@ -915,6 +916,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             return true
         }
         method visitCall(o) up(as) {
+            o.scope := as.parent.scope
             def callee = o.value
             if (callee.kind == "identifier") then {
                 callee.inRequest := true
@@ -948,21 +950,19 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitDefDec(o) up(as) {
+            o.scope := as.parent.scope
             if (false != o.startToken) then {
                 as.parent.scope.elementTokens.put(o.name.nameString, o.startToken)
             }
             true
         }
         method visitIdentifier(o) up(as) {
+            var scope := as.parent.scope
+            o.scope := scope
             if (o.isBindingOccurrence) then {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
                     checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(as)
-                    var scope := as.parent.scope
-                    if (scope == false) then {
-                        print "identifier {o} (line {o.line}) has parent {as.parent.pretty(0)}"
-                        print "identifier {o} (line {o.line}) has parent scope false"
-                    }
                     if (isParameter(kind).andAlso {scope.variety == "object"}) then {
                         // this is a hack for declaring the parameters of the factory 
                         // method of a class.  The class's symbol table is that of the
@@ -982,6 +982,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitImport(o) up(as) {
+            o.scope := as.parent.scope
             xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
             def otherModule = newScopeIn(as.parent.scope) kind "module"
@@ -990,6 +991,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitInherits(o) up(as) {
+            o.scope := as.parent.scope
             if (as.parent.canInherit.not) then {
                 errormessages.syntaxError "inherits statements must be inside an object"
                     atRange(o.line, o.linePos, o.linePos + 7)
@@ -1025,9 +1027,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def surroundingScope = myParent.scope
             o.scope := newScopeIn(surroundingScope) kind "object"
             if (myParent.returnsObject) then {
-                if (myParent.isObject) then {
-                    util.log_verbose "object {o} in object {myParent}!"
-                }
                 myParent.scope.at(myParent.nameString) putScope(o.scope)
             }
             true
@@ -1036,11 +1035,33 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def enclosingScope = as.parent.scope
             enclosingScope.addNode(o.name) as "typedec"
             o.name.isDeclaredByParent := true
-            if (o.generics.isEmpty) then { return true }
-            o.scope := newScopeIn(enclosingScope) kind "typedec"
-            // for now we don't distinguish between type decs and type params
+            if (o.generics.isEmpty) then { 
+                o.scope := as.parent.scope
+            } else {
+                o.scope := newScopeIn(enclosingScope) kind "typedec"
+                // for now we don't distinguish between type decs and type params
+            }
             true
         }
+        method visitTypeLiteral(o) up (as) {
+            o.scope := newScopeIn(as.parent.scope) kind "type"
+            true
+        }
+        method visitIf(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitMatchCase(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitCatchCase(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitSignaturePart(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitArray(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitMember(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitGeneric(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitString(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitNum(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitOp(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitIndex(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitVarDec(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitReturn(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitDialect(o) up(as) { o.scope := as.parent.scope ; true }
+
     }   // end of symbolTableVis
     
 

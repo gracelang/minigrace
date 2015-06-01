@@ -73,9 +73,13 @@ type SymbolTable = Unknown
 def fakeSymbolTable = object {
     var node is public
     method asString { "fake Symbol Table" }
-    method addNode(n)as(kind) {
+    method addNode (n) as (kind) {
         ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
     }
+    method thatDefines (name) ifNone (action) {
+        ProgrammingError.raise "fakeSymbolTable.thatDefines({name})."
+    }
+    method variety { "fake" }
 }
 
 class baseNode.new {
@@ -112,13 +116,11 @@ class baseNode.new {
         }
         return self.dtype
     }
-    method accept(visitor) {
-        self.accept(visitor) from (nullNode)
-    }
     method scope { symbolTable }
     method scope:=(st) {
-        // override to set up the 2-way conection between this node and
-        // the symbol table that defines the scope that my subobject opens.
+        // override this method in subobjects that open a new scope. In such
+        // subobjects, and only in such subobjects, there should be a 2-way
+        // conection between the node and the symbol table that defines its scope.
         symbolTable := st
     }
     method declarationKindWithAncestors(as) { self.kind }     
@@ -138,7 +140,7 @@ class baseNode.new {
         if ((scope.node == self).andAlso{util.target == "symbols"}) then {
             "{line}:{linePos} {self.kind}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } else {
-            "{line}:{linePos} {self.kind}"
+            "{line}:{linePos} {self.kind} {scope.asDebugString}"
         }
     }
     method deepCopy {
@@ -179,10 +181,10 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.thenblock := thenblock.map(blk) ancestors(as)
-        n.elseblock := elseblock.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.thenblock := thenblock.map(blk) ancestors(newChain)
+        n.elseblock := elseblock.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -280,10 +282,10 @@ class blockNode.new(params', body') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.params := listMap(params, blk) ancestors(as)
-        n.body := listMap(body, blk) ancestors(as)
-        n.matchingPattern := maybeMap(matchingPattern, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.params := listMap(params, blk) ancestors(newChain)
+        n.body := listMap(body, blk) ancestors(newChain)
+        n.matchingPattern := maybeMap(matchingPattern, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -367,10 +369,10 @@ class catchCaseNode.new(block, cases', finally') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.cases := listMap(cases, blk) ancestors(as)
-        n.finally := maybeMap(finally, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.cases := listMap(cases, blk) ancestors(newChain)
+        n.finally := maybeMap(finally, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -427,10 +429,10 @@ class matchCaseNode.new(matchee', cases', elsecase') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.cases := listMap(cases, blk) ancestors(as)
-        n.elsecase := maybeMap(elsecase, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.cases := listMap(cases, blk) ancestors(newChain)
+        n.elsecase := maybeMap(elsecase, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -512,11 +514,11 @@ class methodTypeNode.new(name', signature', rtype') {
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitMethodType(self) up(as)) then {
             def newChain = as.extend(self)
-            if (rtype != false) then {
-                rtype.accept(visitor) from(newChain)
-            }
             for (generics) do { each ->
                 each.accept(visitor) from(newChain)
+            }
+            if (rtype != false) then {
+                rtype.accept(visitor) from(newChain)
             }
             for (signature) do { part ->
                 part.accept(visitor) from(newChain)
@@ -525,10 +527,10 @@ class methodTypeNode.new(name', signature', rtype') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.rtype := maybeMap(rtype, blk) ancestors(as)
-        n.signature := listMap(signature, blk) ancestors(as)
-        n.generics := listMap(generics, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.rtype := maybeMap(rtype, blk) ancestors(newChain)
+        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -611,7 +613,7 @@ class typeLiteralNode.new(methods', types') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
+        def newChain = as.extend(n)
         n.methods := listMap(methods, blk) ancestors (as)
         n.types := listMap(types, blk) ancestors (as)
         blk.apply(n, as)
@@ -699,18 +701,19 @@ class typeDecNode.new(name', typeValue) {
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitTypeDec(self) up(as)) then {
             def newChain = as.extend(self)
-            value.accept(visitor) from(newChain)
+            name.accept(visitor) from(newChain)
             generics.do { each -> each.accept(visitor) from(newChain) }
             annotations.do { each -> each.accept(visitor) from(newChain) }
+            value.accept(visitor) from(newChain)
         }
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.name := name.map(blk) ancestors(as)
-        n.value := value.map(blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
-        n.generics := listMap(generics, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        n.value := value.map(blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -837,6 +840,9 @@ class methodNode.new(name', signature', body', dtype') {
                     part.vararg.accept(visitor) from(newChain)
                 }
             }
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
             for (self.body) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
@@ -844,12 +850,12 @@ class methodNode.new(name', signature', body', dtype') {
     }
     method map(blk) ancestors(as){
         var n := shallowCopy
-        as.extend(n)
-        n.body := listMap(body, blk) ancestors(as)
-        n.signature := listMap(signature, blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
-        n.generics := listMap(generics, blk) ancestors(as)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.body := listMap(body, blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1002,11 +1008,11 @@ class callNode.new(what, with') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.with := listMap(with, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.with := listMap(with, blk) ancestors(newChain)
         if (generics != false) then {
-            n.generics := listMap(generics, blk) ancestors(as)
+            n.generics := listMap(generics, blk) ancestors(newChain)
         }
         blk.apply(n, as)
     }
@@ -1157,6 +1163,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             for (self.signature) do { partNode ->
                 partNode.accept(visitor) from(newChain)
             }
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
             for (self.value) do { each ->
                 each.accept(visitor) from(newChain)
             }
@@ -1164,15 +1173,15 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := listMap(value, blk) ancestors(as)
-        n.name := name.map(blk) ancestors(as)
-        n.signature := listMap(signature, blk) ancestors(as)
-        n.generics := listMap(generics, blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
-        n.superclass := maybeMap(superclass, blk) ancestors(as)
-        n.constructor := constructor.map(blk) ancestors(as)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := listMap(value, blk) ancestors(newChain)
+        n.name := name.map(blk) ancestors(newChain)
+        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+        n.constructor := constructor.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1291,7 +1300,6 @@ def objectNode = object {
             // and the synmol table that defines the scope that I open.
             symbolTable := st
             st.node := self
-            util.log_verbose "set ST for {self} to be {st}"
         }
         method returnsObject { true }
         method canInherit {true }
@@ -1310,9 +1318,9 @@ def objectNode = object {
         method nameString { "{classname}_{line}" }
         method map(blk) ancestors(as) {
             var n := shallowCopy
-            as.extend(n)
-            n.value := listMap(value, blk) ancestors(as)
-            n.superclass := maybeMap(superclass, blk) ancestors(as)
+            def newChain = as.extend(n)
+            n.value := listMap(value, blk) ancestors(newChain)
+            n.superclass := maybeMap(superclass, blk) ancestors(newChain)
             blk.apply(n, as)
         }
         method pretty(depth') {
@@ -1373,8 +1381,8 @@ class arrayNode.new(values) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := listMap(value, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := listMap(value, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1417,15 +1425,18 @@ class memberNode.new(what, in') {
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitMember(self) up(as)) then {
             def newChain = as.extend(self)
-            self.in.accept(visitor) from(newChain)
+            if (generics != false) then {
+                generics.do { each -> each.accept(visitor) from(newChain) }
+            }
+            in.accept(visitor) from(newChain)
         }
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.in := in.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.in := in.map(blk) ancestors(newChain)
         if (generics != false) then {
-            n.generics := listMap(generics, blk) ancestors(as)
+            n.generics := listMap(generics, blk) ancestors(newChain)
         }
         blk.apply(n, as)
     }
@@ -1497,9 +1508,9 @@ class genericNode.new(base, params') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.params := listMap(params, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.params := listMap(params, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1559,6 +1570,7 @@ class identifierNode.new(name, dtype') {
         // am I used by my parent node as a type?
         // This is a hack, used as a subsitute for having information in the .gct
         // telling us which identifiers represent types
+        if (as.isEmpty) then { return false }
         as.parent.usesAsType(self)
     }
     method usesAsType(aNode) {
@@ -1574,8 +1586,8 @@ class identifierNode.new(name, dtype') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1647,28 +1659,6 @@ class identifierNode.new(name, dtype') {
 def typeType is public = identifierNode.new("Type", false)
 def unknownType is public = identifierNode.new("Unknown", typeType)
 
-class octetsNode.new(num) {
-    inherits baseNode.new
-    def kind is public = "octets"
-    var value is public := num
-    method accept(visitor : ASTVisitor) from(as) {
-        visitor.visitOctets(self) up(as)
-    }
-    method pretty(depth) {
-        "{super.pretty(depth)}({self.value})"
-    }
-    method toGrace(depth : Number) -> String {
-        self.value
-    }
-    method map(blk) ancestors(as) {
-        var n := shallowCopy
-        as.extend(n)
-        blk.apply(n, as)
-    }
-    method shallowCopy {
-        octetsNode.new(value).shallowCopyFieldsFrom(self)
-    }
-}
 class stringNode.new(v) {
     inherits baseNode.new
     def kind is public = "string"
@@ -1678,7 +1668,7 @@ class stringNode.new(v) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
+        def newChain = as.extend(n)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1716,7 +1706,7 @@ class numNode.new(val) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
+        def newChain = as.extend(n)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1746,9 +1736,9 @@ class opNode.new(op, l, r) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.left := left.map(blk) ancestors(as)
-        n.right := right.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.left := left.map(blk) ancestors(newChain)
+        n.right := right.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1810,9 +1800,9 @@ class indexNode.new(expr, index') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.index := index.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.index := index.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1857,9 +1847,9 @@ class bindNode.new(dest', val') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.dest := dest.map(blk) ancestors(as)
-        n.value := value.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.dest := dest.map(blk) ancestors(newChain)
+        n.value := value.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -1923,6 +1913,9 @@ class defDecNode.new(name', val, dtype') {
             if (self.dtype != false) then {
                 self.dtype.accept(visitor) from(newChain)
             }
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
             if (self.value != false) then {
                 self.value.accept(visitor) from(newChain)
             }
@@ -1930,11 +1923,11 @@ class defDecNode.new(name', val, dtype') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.name := name.map(blk) ancestors(as)
-        n.value := value.map(blk) ancestors(as)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        n.value := value.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2029,6 +2022,9 @@ class varDecNode.new(name', val', dtype') {
             if (self.dtype != false) then {
                 self.dtype.accept(visitor) from(newChain)
             }
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
             if (self.value != false) then {
                 self.value.accept(visitor) from(newChain)
             }
@@ -2036,11 +2032,11 @@ class varDecNode.new(name', val', dtype') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.name := name.map(blk) ancestors(as)
-        n.value := maybeMap(value, blk) ancestors(as)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        n.value := maybeMap(value, blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2119,6 +2115,9 @@ class importNode.new(path', name', dtype') {
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitImport(self) up(as)) then {
             def newChain = as.extend(self)
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
             self.value.accept(visitor) from(newChain)
             if (self.dtype != false) then {
                 self.dtype.accept(visitor) from(newChain)
@@ -2127,10 +2126,10 @@ class importNode.new(path', name', dtype') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
-        n.dtype := maybeMap(dtype, blk) ancestors(as)
-        n.annotations := listMap(annotations, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2178,7 +2177,7 @@ class dialectNode.new(path') {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
+        def newChain = as.extend(n)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2210,8 +2209,8 @@ class returnNode.new(expr) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2247,8 +2246,8 @@ class inheritsNode.new(expr) {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.value := value.map(blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2286,7 +2285,7 @@ class blankNode.new {
     }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
+        def newChain = as.extend(n)
         blk.apply(n, as)
     }
     method toGrace(depth : Number) -> String {
@@ -2325,9 +2324,9 @@ class signaturePart.new(*values) {
     method declarationKindWithAncestors(as) { "parameter" }
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.params := listMap(params, blk) ancestors(as)
-        n.vararg := maybeMap(vararg, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.params := listMap(params, blk) ancestors(newChain)
+        n.vararg := maybeMap(vararg, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2377,8 +2376,8 @@ class callWithPart.new(*values) {
 
     method map(blk) ancestors(as) {
         var n := shallowCopy
-        as.extend(n)
-        n.args := listMap(args, blk) ancestors(as)
+        def newChain = as.extend(n)
+        n.args := listMap(args, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -2420,7 +2419,6 @@ type ASTVisitor = {
      visitMember(o) up(as) -> Boolean
      visitGeneric(o) up(as) -> Boolean
      visitIdentifier(o) up(as) -> Boolean
-     visitOctets(o) up(as) -> Boolean
      visitString(o) up(as) -> Boolean
      visitNum(o) up(as) -> Boolean
      visitOp(o) up(as) -> Boolean
@@ -2433,6 +2431,7 @@ type ASTVisitor = {
      visitInherits(o) up(as) -> Boolean
      visitDialect(o) up(as) -> Boolean
 }
+
 factory method baseVisitor -> ASTVisitor {
     method visitIf(o) up(as) { visitIf(o) }
     method visitBlock(o) up(as) { visitBlock(o) }
@@ -2450,7 +2449,6 @@ factory method baseVisitor -> ASTVisitor {
     method visitMember(o) up(as) { visitMember(o) }
     method visitGeneric(o) up(as) { visitGeneric(o) }
     method visitIdentifier(o) up(as) { visitIdentifier(o) }
-    method visitOctets(o) up(as) { visitOctets(o) }
     method visitString(o) up(as) { visitString(o) }
     method visitNum(o) up(as) { visitNum(o) }
     method visitOp(o) up(as) { visitOp(o) }
@@ -2479,7 +2477,6 @@ factory method baseVisitor -> ASTVisitor {
     method visitMember(o) -> Boolean { true }
     method visitGeneric(o) -> Boolean { true }
     method visitIdentifier(o) -> Boolean { true }
-    method visitOctets(o) -> Boolean { true }
     method visitString(o) -> Boolean { true }
     method visitNum(o) -> Boolean { true }
     method visitOp(o) -> Boolean { true }
