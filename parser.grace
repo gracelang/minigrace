@@ -2912,7 +2912,7 @@ method methodsignature(sameline) {
     if((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
-        errormessages.syntaxError("A method name must start with an identifier, an operator, or '[]'.")atPosition(
+        errormessages.syntaxError("A method name must start with an identifier, or be an operator or '[]'.")atPosition(
             lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
     }
     pushidentifier
