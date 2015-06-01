@@ -252,7 +252,6 @@ method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
         }
     }
     def newAnn = ast.identifierNode.new(sd, false)
-    newAnn.parent := node
     node.annotations.push(newAnn)
 }
 method checkAnnotation(ann) {
