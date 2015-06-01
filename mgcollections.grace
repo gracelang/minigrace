@@ -374,4 +374,18 @@ class map.new {
             }
         }
     }
+    method asList {
+        def result = collections.list.empty
+        var count := 1
+        var idx := 0
+        while {count <= size} do {
+            while {inner.at(idx) == unused} do {
+                idx := idx + 1
+            }
+            result.add (inner.at(idx))
+            count := count + 1
+            idx := idx + 1
+        }
+        result
+    }
 }
