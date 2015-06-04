@@ -1,3 +1,4 @@
+#pragma NativePrelude
 
 def BoundsError = ProgrammingError.refine "BoundsError"
 def Exhausted = ProgrammingError.refine "iterator Exhausted"
@@ -1397,7 +1398,7 @@ factory method dictionary<K,T> {
             inherits collection.trait<T>
             var mods:Number is readable := 0
             var numBindings := 0
-            var inner := _prelude.PrimitiveArray.new(128)
+            var inner := _prelude.PrimitiveArray.new(8)
             def unused = object { 
                 var unused := true
                 def key is public = self

@@ -5,6 +5,7 @@ def Exhausted = ProgrammingError.refine "iterator Exhausted"
 def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
 def NoSuchObject = ProgrammingError.refine "no such object"
 def RequestError = ProgrammingError.refine "inapproriate argument in method request"
+def ConcurrentModification = ProgrammingError.refine "object modified while iterating"
 def SizeUnknown = Exception.refine "the size is unknown"
 
 method abstract {
@@ -383,6 +384,8 @@ class enumerable.trait<T> {
     }
 }
 
+
+
 class indexable.trait<T> {
     inherits collection.trait<T>
     method at { abstract }
@@ -424,7 +427,7 @@ class indexable.trait<T> {
     }
     method into(existing: Collection<T>) -> Collection<T> {
         def selfIterator = self.iterator
-        while {selfIterator.hasNext} do { 
+        while {selfIterator.hasNext} do {
             existing.add(selfIterator.next)
         }
         existing
@@ -483,6 +486,7 @@ factory method sequence<T> {
     method fromPrimitiveArray(pArray, sz) is confidential {
         object {
             inherits indexable.trait
+            var mods:Number is readable := 0
             def size is public = sz
             def inner = pArray
 
@@ -562,11 +566,13 @@ factory method sequence<T> {
             }
             method iterator {
                 object {
+                    var imods:Number := mods
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aSequenceIterator" }
                     method hasNext { idx <= sz }
                     method next {
+                        if (imods != mods) then { ConcurrentModification.raise "{asDebugString}" }
                         if (idx > sz) then { Exhausted.raise "on sequence {outer}⟪{idx}⟫" }
                         def ret = at(idx)
                         idx := idx + 1
@@ -592,15 +598,17 @@ factory method list<T> {
     inherits collectionFactory.trait<T>
 
     method withAll(a:Collection<T>) -> List<T> {
+      
         if (engine == "js") then {
             return object {
                 inherits indexable.trait<T>
+
+                var mods:Number is readable := 0
                 var sz := 0
                 var jsArray := native "js" code ‹var result = [];›
                 a.do { each ->
                     native "js" code ‹this.data.jsArray.push(var_each);›
                 }
-
 
                 method boundsCheck(n) is confidential {
                     native "js" code ‹var ix = var_n._value;
@@ -614,13 +622,15 @@ factory method list<T> {
                     }
                 }
                 
+                method getMods {
+                    mods
+                }
 
                 method size {
                     native "js" code ‹return new GraceNum(this.data.jsArray.length)›
                     sz
                 }
                 
-
                 method at(n) {
                     native "js" code ‹var ix = var_n._value;
                             if ((ix < 1) || (ix > this.data.jsArray.length)) {
@@ -631,7 +641,6 @@ factory method list<T> {
                             return this.data.jsArray[ix - 1];›
                 }
                 
-
                 method [](n) {
                     native "js" code ‹var ix = var_n._value;
                             if ((ix < 1) || (ix > this.data.jsArray.length)) {
@@ -642,8 +651,8 @@ factory method list<T> {
                             return this.data.jsArray[ix - 1];›
                 }
                 
-
                 method at(n)put(x) {
+                    mods := mods + 1
                     native "js" code ‹var  ix = var_n._value;
                             if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
@@ -655,6 +664,7 @@ factory method list<T> {
                 }
 
                 method []:=(n, x) {
+                    mods := mods + 1
                     native "js" code ‹var ix = var_n._value;
                             if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
@@ -666,6 +676,7 @@ factory method list<T> {
                 }
 
                 method add(*x) {
+                    mods := mods + 1
                     if (x.size == 1) then {
                         native "js" code ‹var v = callmethod(var_x, "first", [0]);
                             this.data.jsArray.push(v);
@@ -675,11 +686,13 @@ factory method list<T> {
                 }
 
                 method push(x) {
+                    mods := mods + 1
                     native "js" code ‹this.data.jsArray.push(var_x);
                             return this;›
                 }
 
                 method removeLast {
+                    mods := mods + 1
                     native "js" code ‹if (this.data.jsArray.length === 0) {
                         var msg = "you can't remove an element from an empty list";
                         var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
@@ -689,6 +702,7 @@ factory method list<T> {
                 }
 
                 method addAllFirst(l) {
+                    mods := mods + 1
                     var ix := l.size;
                     while {ix > 0} do {
                         def each = l.at(ix)
@@ -699,12 +713,14 @@ factory method list<T> {
                 }
 
                 method removeAt(n) {
+                    mods := mods + 1
                     def removed = self.at(n)    // does the bounds check
                     native "js" code ‹this.data.jsArray.splice(var_n._value - 1, 1);›
                     return removed
                 }
                 
                 method sortBy(sortBlock:Block2) {
+                    mods := mods + 1
                     native "js" code ‹var compareFun = function compareFun(a, b) {
                               var res = callmethod(var_sortBlock, "apply", [2], a, b);
                               if (res.className == "number") return res._value;
@@ -719,34 +735,31 @@ factory method list<T> {
                 
                 method addLast(*x) { addAll(x) }    // compatibility
                 method addAll(l) {
+                    mods := mods + 1
                     for (l) do { each -> push(each) }
                     self
                 }
 
                 method addFirst(*l) { addAllFirst(l) }
                 
-
                 method removeFirst {
                     removeAt(1)
                 }
                 
-
                 method remove(*v:T) {
                     removeAll(v)
                 }
                 
-
                 method remove(*v:T) ifAbsent(action:Block0<Done>) {
                     removeAll(v) ifAbsent (action)
                 }
                 
-
                 method removeAll(vs: Collection<T>) {
                     removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
                 }
-                
 
                 method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+                    mods := mods + 1
                     for (vs) do { each -> 
                         def ix = self.indexOf(each) ifAbsent {return action.apply}
                         removeAt(ix)
@@ -754,7 +767,6 @@ factory method list<T> {
                     self
                 }
                 
-
                 method pop { removeLast }
 
                 method reversed {
@@ -763,6 +775,7 @@ factory method list<T> {
                     result
                 }
                 method reverse {
+                    mods := mods + 1
                     var hiIx := size
                     var loIx := 1
                     while {loIx < hiIx} do {
@@ -791,16 +804,13 @@ factory method list<T> {
                     s ++ "]"
                 }
                 
-
                 method extend(l) { addAll(l); done }    // compatibility
                 
-
                 method contains(element) {
                     do { each -> if (each == element) then { return true } }
                     return false
                 }
                 
-
                 method do(block1) {
                     var i := 1
                     def curSize = self.size
@@ -830,11 +840,13 @@ factory method list<T> {
 
                 method iterator {
                     object {
+                        var imods := mods
                         var idx := 1
                         method asDebugString { "{asString}⟪{idx}⟫" }
                         method asString { "aListIterator" }
                         method hasNext { idx <= size }
                         method next {
+                            if (imods != mods) then { ConcurrentModification.raise "{asDebugString}" }
                             if (idx > size) then { Exhausted.raise "on list" }
                             def ret = at(idx)
                             idx := idx + 1
@@ -843,17 +855,16 @@ factory method list<T> {
                     }
                 }
                 
-
                 method values {
                     self
                 }
                 
-
                 method keys {
                     self.indices
                 }
-
+                
                 method sort {
+                    mods := mods + 1
                     sortBy { l, r ->
                         if (l == r) then {0} 
                             elseif (l < r) then {-1} 
@@ -875,6 +886,8 @@ factory method list<T> {
         object {
             // the new list object without native code
             inherits indexable.trait<T>
+            
+            var mods:Number is readable := 0
             var initialSize
             try { initialSize := a.size * 2 + 1 } 
                 catch { _ex:SizeUnknown -> initialSize := 9 }
@@ -898,6 +911,7 @@ factory method list<T> {
                 inner.at(n-1)
             }
             method at(n)put(x) {
+                mods := mods + 1
                 if (n == (size+1)) then {
                     addLast(x)
                 } else {
@@ -907,6 +921,7 @@ factory method list<T> {
                 self
             }
             method []:=(n,x) {
+                mods := mods + 1
                 if (n == (size+1)) then {
                     addLast(x)
                 } else {
@@ -919,6 +934,7 @@ factory method list<T> {
                 addAll(x)
             }
             method addAll(l) {
+                mods := mods + 1
                 if ((size + l.size) > inner.size) then {
                     expandTo(max(size + l.size, size * 2))
                 }
@@ -929,6 +945,7 @@ factory method list<T> {
                 self
             }
             method push(x) {
+                mods := mods + 1
                 if (size == inner.size) then { expandTo(inner.size * 2) }
                 inner.at(size)put(x)
                 size := size + 1
@@ -936,11 +953,13 @@ factory method list<T> {
             }
             method addLast(*x) { addAll(x) }    // compatibility
             method removeLast {
+                mods := mods + 1
                 def result = inner.at(size - 1)
                 size := size - 1
                 result
             }
             method addAllFirst(l) {
+                mods := mods + 1
                 def increase = l.size
                 if ((size + increase) > inner.size) then {
                     expandTo(max(size + increase, size * 2))
@@ -961,6 +980,7 @@ factory method list<T> {
                 removeAt(1)
             }
             method removeAt(n) {
+                mods := mods + 1
                 boundsCheck(n)
                 def removed = inner.at(n-1)
                 for (n..(size-1)) do {i->
@@ -979,6 +999,7 @@ factory method list<T> {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
             }
             method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+                mods := mods + 1
                 for (vs) do { each -> 
                     def ix = indexOf(each) ifAbsent {return action.apply}
                     removeAt(ix)
@@ -992,6 +1013,7 @@ factory method list<T> {
                 result
             }
             method reverse {
+                mods := mods + 1
                 var hiIx := size
                 var loIx := 1
                 while {loIx < hiIx} do {
@@ -1046,11 +1068,13 @@ factory method list<T> {
             }
             method iterator {
                 object {
+                    var imods := mods
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aListIterator" }
                     method hasNext { idx <= size }
                     method next {
+                        if (imods != mods) then { ConcurrentModification.raise "{asDebugString}" }
                         if (idx > size) then { Exhausted.raise "on list" }
                         def ret = at(idx)
                         idx := idx + 1
@@ -1072,6 +1096,7 @@ factory method list<T> {
                 inner := newInner
             }
             method sortBy(sortBlock:Block2) {
+                mods := mods + 1
                 inner.sortInitial(size) by(sortBlock)
                 self
             }
@@ -1100,6 +1125,7 @@ factory method set<T> {
     method withAll(a:Collection<T>) -> Set<T> {
         object {
             inherits collection.trait
+            var mods:Number is readable := 0
             var initialSize
             try { initialSize := max(a.size * 3 + 1, 8) } 
                 catch { _:SizeUnknown -> initialSize := 8 }
@@ -1119,6 +1145,7 @@ factory method set<T> {
             for (a) do { x-> add(x) }
 
             method addAll(elements) {
+                mods := mods + 1
                 for (elements) do { x ->
                     if (! contains(x)) then {
                         def t = findPositionForAdd(x)
@@ -1143,6 +1170,7 @@ factory method set<T> {
                 self    // for chaining
             }
             method removeAll(elements)ifAbsent(block) {
+                mods := mods + 1
                 for (elements) do { x ->
                     var t := findPosition(x)
                     if (inner.at(t) == x) then {
@@ -1253,6 +1281,7 @@ factory method set<T> {
             }
             method iterator {
                 object {
+                    var imods:Number := mods
                     var count := 1
                     var idx := -1
                     method hasNext { size >= count }
@@ -1261,6 +1290,9 @@ factory method set<T> {
                         def innerSize = inner.size
                         while {
                             idx := idx + 1
+                            if (imods != mods) then {
+                                ConcurrentModification.raise "{outer.asString}"
+                            }
                             if (idx >= innerSize) then {
                                 Exhausted.raise "iterator over {outer.asString}"
                             }
@@ -1364,8 +1396,9 @@ factory method dictionary<K,T> {
     method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits collection.trait<T>
+            var mods:Number is readable := 0
             var numBindings := 0
-            var inner := _prelude.PrimitiveArray.new(8)
+            var inner := _prelude.PrimitiveArray.new(128)
             def unused = object { 
                 var unused := true
                 def key is public = self
@@ -1384,6 +1417,7 @@ factory method dictionary<K,T> {
             for (initialBindings) do { b -> at(b.key)put(b.value) }
             method size { numBindings }
             method at(key')put(value') {
+                mods := mods + 1
                 var t := findPositionForAdd(key')
                 if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
                     numBindings := numBindings + 1
@@ -1419,6 +1453,7 @@ factory method dictionary<K,T> {
                 return false
             }
             method removeAllKeys(keys) {
+                mods := mods + 1
                 for (keys) do { k ->
                     var t := findPosition(k)
                     if (inner.at(t).key == k) then {
@@ -1434,6 +1469,7 @@ factory method dictionary<K,T> {
                 removeAllKeys(keys)
             }
             method removeAllValues(removals) {
+                mods := mods + 1
                 for (0..(inner.size-1)) do {i->
                     def a = inner.at(i)
                     if (removals.contains(a.value)) then {
@@ -1525,9 +1561,13 @@ factory method dictionary<K,T> {
                 object {
                     inherits enumerable.trait<K>
                     factory method iterator {
+                        def imods:Number = sourceDictionary.mods
                         def sourceIterator = sourceDictionary.bindingsIterator
                         method hasNext { sourceIterator.hasNext }
-                        method next { sourceIterator.next.key }
+                        method next {
+                            if (imods != sourceDictionary.mods) then { ConcurrentModification.raise "{sourceDictionary.asDebugString}"}
+                            sourceIterator.next.key
+                        }
                         method asString { 
                             "an iterator over keys of {sourceDictionary}"
                         }
@@ -1543,10 +1583,14 @@ factory method dictionary<K,T> {
                 object {
                     inherits enumerable.trait<T>
                     factory method iterator {
+                        var imods:Number := sourceDictionary.mods
                         def sourceIterator = sourceDictionary.bindingsIterator
                         // should be request on outer
                         method hasNext { sourceIterator.hasNext }
-                        method next { sourceIterator.next.value }
+                        method next {
+                          if (imods != sourceDictionary.mods) then { ConcurrentModification.raise "{sourceDictionary.asDebugString}"}
+                          sourceIterator.next.value
+                        }
                         method asString { 
                             "an iterator over values of {sourceDictionary}"
                         }
@@ -1572,14 +1616,14 @@ factory method dictionary<K,T> {
             method iterator -> Iterator<T> { values.iterator }
             factory method bindingsIterator -> Iterator<Binding<K, T>> {
                 // this should be confidential, but can't be until `outer` is fixed.
+                def imods:Number = mods
                 var count := 1
                 var idx := 0
                 var elt
                 method hasNext { size >= count }
                 method next {
-                    if (size < count) then {
-                        Exhausted.raise "over {outer.asString}"
-                    }
+                    if (imods != mods) then { ConcurrentModification.raise "{outer.asString}" }
+                    if (size < count) then { Exhausted.raise "over {outer.asString}" }
                     while {
                         elt := inner.at(idx)
                         (elt == unused) || (elt == removed)
@@ -1913,4 +1957,3 @@ factory method range {
         }
     }
 }
-

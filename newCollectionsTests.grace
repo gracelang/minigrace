@@ -1,38 +1,4 @@
 import "gUnit" as gU
-import "newCollections" as collections
-
-type Block0<R> = collections.Block0<R>
-type Block1<T,R> = collections.Block1<T,R>
-type Block2<S,T,R> = collections.Block1<T,R>
-
-type Collection<T> = collections.Collection<T>
-type Binding<K,T> = collections.Binding<K,T>
-type Iterator<T> = collections.Iterator<T>
-type CollectionFactory<T> = collections.CollectionFactory<T>
-type EmptyCollectionFactory<T> = collections.EmptyCollectionFactory<T>
-type Enumerable<T> = collections.Enumerable<T>
-type Sequence<T> = collections.Sequence<T>
-type List<T> = collections.List<T>
-type Set<T> = collections.Set<T>
-type Dictionary<K, T> = collections.Dictionary<K, T>
-
-def BoundsError is public = collections.BoundsError
-def Exhausted is public = collections.Exhausted
-def NoSuchObject is public = collections.NoSuchObject
-def RequestError is public = collections.RequestError
-def SubobjectResponsibility is public = collections.SubobjectResponsibility
-def ConcurrentModification is public = collections.ConcurrentModification
-
-def collectionFactory is public = collections.collectionFactory
-//def lazySequence is public = collections.lazySequence
-def collection is public = collections.collection
-def sequence is public = collections.sequence
-def list is public = collections.list
-def set is public = collections.set
-def dictionary is public = collections.dictionary
-def binding is public = collections.binding
-def range is public = collections.range
-
 
 def bindingTest = object {
     factory method forMethod(m) {

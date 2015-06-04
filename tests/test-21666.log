@@ -1,0 +1,5 @@
+minigrace: t013_method_test: 0.03/0.03 (+0.03/0.03): starting compilation
+minigrace: t013_method_test: 0.03/0.03 (+0/0): reading source.
+minigrace: t013_method_test: 0.03/0.03 (+0/0): lexing.
+minigrace: t013_method_test: 0.04/0.04 (+0.01/0.01): processing tokens.
+minigrace: t013_method_test: 0.04/0.04 (+0/0): parsing.

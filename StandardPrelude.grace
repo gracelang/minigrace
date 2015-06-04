@@ -348,6 +348,7 @@ def Exhausted is public = collections.Exhausted
 def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility
+def ConcurrentModification is public = collections.ConcurrentModification
 
 def collectionFactory is public = collections.collectionFactory
 def collection is public = collections.collection

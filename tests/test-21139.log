@@ -1,0 +1,5 @@
+minigrace: t038_stringarg_test: 0.03/0.03 (+0.03/0.03): starting compilation
+minigrace: t038_stringarg_test: 0.03/0.03 (+0/0): reading source.
+minigrace: t038_stringarg_test: 0.03/0.03 (+0/0): lexing.
+minigrace: t038_stringarg_test: 0.03/0.03 (+0/0): processing tokens.
+minigrace: t038_stringarg_test: 0.03/0.03 (+0/0): parsing.

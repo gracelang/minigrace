@@ -668,20 +668,6 @@ def listTest = object {
         method testListRemoveAbsentExcpetion {
             assert {oneToFive.remove(1, 7, 5)} shouldRaise (NoSuchObject)
         }
-        method testListRemoveLast {
-            assert (oneToFive.removeLast) shouldBe 5
-            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
-        }
-        method testListRemoveLastEmpty {
-            assert {empty.removeLast} shouldRaise (BoundsError)
-        }
-        method testListPop {
-            assert (oneToFive.pop) shouldBe 5
-            assert (oneToFive) shouldBe (list.with(1, 2, 3, 4))
-        }
-        method testListPopEmpty {
-            assert {empty.pop} shouldRaise (BoundsError)
-        }
         method testListRemoveAbsentActionBlock {
             assert (oneToFive.remove 9 ifAbsent {99}) shouldBe 99
         }
@@ -975,6 +961,20 @@ def listTest = object {
             assert(evens.asDictionary) shouldBe
                 (dictionary.with(1::2, 2::4, 3::6, 4::8))
         }
+        method testListFailFastIterator {
+          def input = list.with(1, 2, 3, 4, 5)
+          def iter = input.iterator
+          input.at(3)put(6)
+          assert {iter.next} shouldRaise (ConcurrentModification)
+          def iter2 = input.iterator
+          assert {iter2.next} shouldntRaise (ConcurrentModification)
+          def iter3 = input.iterator
+          input.remove(2)
+          assert {iter3.next} shouldRaise (ConcurrentModification)
+          def iter4 = input.iterator
+          input.removeAt(1)
+          assert {iter4.next} shouldRaise (ConcurrentModification)
+        }
     }
 }
 
@@ -1172,6 +1172,17 @@ def setTest = object {
         }
         method testSetIntersection {
             assert (oneToFive ** evens) shouldBe (set.with(2, 4))
+        }
+        method testSetFailFastIterator {
+            def input = set.with(1, 5, 3, 2, 4)
+            def iter = input.iterator
+            input.add(6)
+            assert {iter.next} shouldRaise (ConcurrentModification)
+            def iter2 = input.iterator
+            assert {iter2.next} shouldntRaise (ConcurrentModification)
+            def iter3 = input.iterator
+            input.remove(2)
+            assert {iter3.next} shouldRaise (ConcurrentModification)
         }
     }
 }
@@ -1452,6 +1463,51 @@ def dictionaryTest = object {
         method testDictionarySortedOnKeys {
             assert(evens.bindings.sortedBy{b1, b2 -> b1.key.compare(b2.key)})
                 shouldBe (sequence.with("eight"::8, "four"::4, "six"::6, "two"::2))
+        }
+        method testDictionaryFailFastIteratorValues {
+            def input = dictionary.with("one"::1, "five"::5, "three"::3, "two"::2, "four"::4)
+            def iter = input.iterator
+            input.at "three" put(100)
+            assert {iter.next} shouldRaise (ConcurrentModification)
+            def iter2 = input.iterator
+            input.at "three"
+            assert {iter2.next} shouldntRaise (ConcurrentModification)
+            def iter3 = input.iterator
+            input.removeValue(2)
+            assert {iter3.next} shouldRaise (ConcurrentModification)
+            def iter4 = input.iterator
+            input.removeKey("four")
+            assert {iter4.next} shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastIteratorKeys {
+            def input = dictionary.with("one"::1, "five"::5, "three"::3, "two"::2, "four"::4)
+            def iter = input.keys.iterator
+            input.at "three" put(100)
+            assert {iter.next} shouldRaise (ConcurrentModification)
+            def iter2 = input.keys.iterator
+            input.at "three"
+            assert {iter2.next} shouldntRaise (ConcurrentModification)
+            def iter3 = input.keys.iterator
+            input.removeValue(2)
+            assert {iter3.next} shouldRaise (ConcurrentModification)
+            def iter4 = input.keys.iterator
+            input.removeKey("four")
+            assert {iter4.next} shouldRaise (ConcurrentModification)
+        }
+        method testDictionaryFailFastIteratorBindings {
+            def input = dictionary.with("one"::1, "five"::5, "three"::3, "two"::2, "four"::4)
+            def iter = input.bindings.iterator
+            input.at "three" put(100)
+            assert {iter.next} shouldRaise (ConcurrentModification)
+            def iter2 = input.bindings.iterator
+            input.at "three"
+            assert {iter2.next} shouldntRaise (ConcurrentModification)
+            def iter3 = input.bindings.iterator
+            input.removeValue(2)
+            assert {iter3.next} shouldRaise (ConcurrentModification)
+            def iter4 = input.bindings.iterator
+            input.removeKey("four")
+            assert {iter4.next} shouldRaise (ConcurrentModification)
         }
     }
 }
