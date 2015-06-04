@@ -2637,6 +2637,47 @@ factory method baseVisitor -> ASTVisitor {
     method asString { "an AST visitor" }
 }
 
+factory method pluggableVisitor(visitation:Block2) -> ASTVisitor {
+    // Manufactures a default visitor, given a 2-parameter block.
+    // Typically, some of the methods will be overridden.
+    // The block will be applied with the AST node as the first argument
+    // and the ancestor chain as the second, and should answer true if
+    // the visitation is to continue and false if it is to go no deeper.
+
+    method visitIf(o) up(as) { visitation.apply (o, as) }
+    method visitBlock(o) up(as) { visitation.apply (o, as) }
+    method visitMatchCase(o) up(as) { visitation.apply (o, as) }
+    method visitCatchCase(o) up(as) { visitation.apply (o, as) }
+    method visitMethodType(o) up(as) { visitation.apply (o, as) }
+    method visitSignaturePart(o) up(as) { visitation.apply (o, as) }
+    method visitTypeDec(o) up(as) { visitation.apply (o, as) }
+    method visitTypeLiteral(o) up(as) { visitation.apply (o, as) }
+    method visitMethod(o) up(as) { visitation.apply (o, as) }
+    method visitCall(o) up(as) { visitation.apply (o, as) }
+    method visitClass(o) up(as) { visitation.apply (o, as) }
+    method visitObject(o) up(as) { visitation.apply (o, as) }
+    method visitModule(o) up(as) { visitation.apply (o, as) }
+    method visitArray(o) up(as) { visitation.apply (o, as) }
+    method visitMember(o) up(as) { visitation.apply (o, as) }
+    method visitGeneric(o) up(as) { visitation.apply (o, as) }
+    method visitIdentifier(o) up(as) { visitation.apply (o, as) }
+    method visitString(o) up(as) { visitation.apply (o, as) }
+    method visitNum(o) up(as) { visitation.apply (o, as) }
+    method visitOp(o) up(as) { visitation.apply (o, as) }
+    method visitIndex(o) up(as) { visitation.apply (o, as) }
+    method visitBind(o) up(as) { visitation.apply (o, as) }
+    method visitDefDec(o) up(as) { visitation.apply (o, as) }
+    method visitVarDec(o) up(as) { visitation.apply (o, as) }
+    method visitImport(o) up(as) { visitation.apply (o, as) }
+    method visitReturn(o) up(as) { visitation.apply (o, as) }
+    method visitInherits(o) up(as) { visitation.apply (o, as) }
+    method visitDialect(o) up(as) { visitation.apply (o, as) }
+    method visitBlank(o) up(as) { visitation.apply (o, as) }
+    
+    method asString { "a pluggable AST visitor" }
+}
+
+
 def patternMarkVisitor = object {
     inherits baseVisitor
     method visitCall(c) up(as) {
