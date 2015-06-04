@@ -153,9 +153,6 @@ class baseNode.new {
     }
     method enclosingObject {
         def obj = scope.enclosingObjectScope.node
-        if (obj == nullNode) then {
-            ProgrammingError.raise "no object enclosing {self}!"
-        }
         util.log_verbose "object enclosing {self} is {obj}"
         obj
     }
@@ -778,21 +775,11 @@ def methodNode = object {
     
     factory method new(name', signature', body', dtype') {
         // Represents a method declaration
-        // [signature]
-        //     object {
-        //         name := ""
-        //         params := sequence.empty
-        //         vararg := false/identifier
-        //     }
-        //     object {
-        //         name := ""
-        //         params := sequence.empty
-        //         vararg := false/identifier
-        //     }
-        //     ...
-        //     object {
-        //         ...
-        //     }
+        // name' is the name of the method (an identifierNode),
+        // signature is a sequence of signatureParts,
+        // body is a sequence of statements and declarations,
+        // dtype is the declared return type of the method, or false.
+
         inherits baseNode.new
         def kind is public = "method"
         var value is public := name'
@@ -846,9 +833,6 @@ def methodNode = object {
             if (visitor.visitMethod(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.value.accept(visitor) from(newChain)
-                if (dtype != false) then {
-                    dtype.accept(visitor) from(newChain)
-                }
                 for (generics) do { each ->
                     each.accept(visitor) from(newChain)
                 }
@@ -859,6 +843,9 @@ def methodNode = object {
                     if (part.vararg != false) then {
                         part.vararg.accept(visitor) from(newChain)
                     }
+                }
+                if (dtype != false) then {
+                    dtype.accept(visitor) from(newChain)
                 }
                 for (self.annotations) do { ann ->
                     ann.accept(visitor) from(newChain)
@@ -1156,8 +1143,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         "method"
     }
     method scope:=(st) {
-        // sets up the 2-way conection between this node
-        // and the synmol table that defines the scope that I open.
+        // sets up the 2-way conection between this node and the
+        // symbol table that defines the scope that it opens.
         symbolTable := st
         st.node := self
     }
@@ -1191,16 +1178,22 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             def newChain = as.extend(self)
             self.name.accept(visitor) from(newChain)
             self.constructor.accept(visitor) from(newChain)
-            if (self.superclass != false) then {
-                self.superclass.accept(visitor) from(newChain)
+            for (generics) do { each ->
+                each.accept(visitor) from(newChain)
             }
-            for (self.signature) do { partNode ->
+            if (superclass != false) then {
+                superclass.accept(visitor) from(newChain)
+            }
+            for (signature) do { partNode ->
                 partNode.accept(visitor) from(newChain)
             }
-            for (self.annotations) do { ann ->
+            if (dtype != false) then {
+                dtype.accept(visitor) from(newChain)
+            }
+            for (annotations) do { ann ->
                 ann.accept(visitor) from(newChain)
             }
-            for (self.value) do { each ->
+            for (value) do { each ->
                 each.accept(visitor) from(newChain)
             }
         }
@@ -1226,8 +1219,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {self.name.pretty(0)}"
         if (util.target == "symbols") then {
-            s := s ++ "\n{spc}Parent Symbols({scope.parent.variety}): {scope.parent.keysAndValuesAsList}"
-            s := s ++ "\n{spc}Parent^2 Symbols({scope.parent.parent.variety}): {scope.parent.parent.keysAndValuesAsList}"
+            s := s ++ "\n{spc}Inner object symbols({scope.variety}): {scope.asString}"
+            s := s ++ "\n{spc}Factory method symbols({scope.parent.variety}): {scope.parent.asString}"
+            s := s ++ "\n{spc}Outer object symbols({scope.parent.parent.variety}): {scope.parent.parent.asString}"
+            s := s ++ "\n{spc}enclosing symbols({scope.parent.parent.parent.variety}): {scope.parent.parent.parent.asDebugString}"
         }
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
@@ -2427,6 +2422,12 @@ def signaturePart = object {
         result
     }
     factory method new(*values) {
+        //  all parameters are optional
+        //     values[1]: this part of the method-name
+        //     values[2]: the sequence of paremeters
+        //     values[3]: false if there is no variable arity parameter,
+        //          otherwise the identifier representing it.
+
         inherits baseNode.new
         def kind is public = "signaturepart"
         var name is public := ""
