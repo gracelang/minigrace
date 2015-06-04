@@ -183,7 +183,10 @@ method parseargs {
             case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".processed", "w") }
             case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".processed-ast", "w") }
             case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
-            case { _ -> io.output }
+            case { _ -> 
+                io.error.write("minigrace: unrecognized target '{targetv}'.\n")
+                sys.exit(1)
+            }
     }
     if (gracelibPathv == false) then {
         if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {

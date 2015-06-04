@@ -186,7 +186,7 @@ factory method newScopeIn(parent') kind(variety') {
             if (s.contains(name)) then { return s }
         }
         print(self.asStringWithParents)
-        ProgrammingError.refine "no scope defines {name}"
+        ProgrammingError.raise "no scope defines {name}"
     }
     method isInSameObjectAs (enclosingScope) {
         if (self == enclosingScope) then { return true }
@@ -1038,7 +1038,7 @@ method buildSymbolTableFor(topLevelNodes) in(parentNode) {
             o.name.isDeclaredByParent := true
             if (o.generics.isEmpty) then { return true }
             o.symbolTable := newScopeIn(pNode.scope) kind "typedec"
-            // for now we don't distinguish between type decs and type params
+                // for now we don't distinguish between type decs and type params
             true
         }
     }   // end of symbolTableVis
@@ -1190,10 +1190,10 @@ method resolve(values) {
 
     def patternMatchModule = rewriteMatches(module)
     if (util.target == "patterns") then {
-        print "====================================="
-        print "module after pattern match re-writing"
-        print "====================================="
-        print(patternMatchModule.pretty(0))
+        util.outprint "====================================="
+        util.outprint "module after pattern-match re-writing"
+        util.outprint "====================================="
+        util.outprint(patternMatchModule.pretty(0))
         util.log_verbose "done"
         sys.exit(0)
     }
@@ -1201,16 +1201,16 @@ method resolve(values) {
     buildSymbolTableFor(patternMatchModule.value) in(module)
 
     if (util.target == "symbols") then {
-        print "====================================="
-        print "module with symbol tables"
-        print "====================================="
-        print "top-level"
-        patternMatchModule.symbolTable.do { each ->
-            print (each)
-            print (each.elementScopesAsString)
-            print "----------------"
+        util.outprint "====================================="
+        util.outprint "module with symbol tables"
+        util.outprint "====================================="
+        util.outprint "top-level"
+        patternMatchModule.scope.do { each ->
+            util.outprint (each)
+            util.outprint (each.elementScopesAsString)
+            util.outprint "----------------"
         }
-        print(patternMatchModule.pretty(0))
+        util.outprint(patternMatchModule.pretty(0))
         util.log_verbose "done"
         sys.exit(0)
     }
