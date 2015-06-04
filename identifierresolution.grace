@@ -141,7 +141,9 @@ factory method newScopeIn(parent') kind(variety') {
         result ++ "\n"
     }
     method asString {
-        var result := "(ST {serialNumber}) variety: {variety}:\n"
+        var result := "(ST variety:{variety} "
+        self.do { each -> result := result ++ each.serialNumber ++ "➞" }
+        result := result ++  "):\n"
         elements.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
             result := result ++ each.key.asString ++ "({kind(each.key)}) "
         }
@@ -151,9 +153,9 @@ factory method newScopeIn(parent') kind(variety') {
     method asDebugString { "(ST {serialNumber})" }
 
     method elementScopesAsString {
-        var result := "\n    [elementScopes: "
+        var result := "\n    [elementScopes:"
         for (elementScopes) do { each ->
-            result := result ++ each ++ " "
+            result := "{result} {each}➞{elementScopes.get(each).asDebugString}"
         }
         result ++ "]"
     }
@@ -213,25 +215,25 @@ factory method newScopeIn(parent') kind(variety') {
         // on the now-defunct 'scope' module variable) to this class.
         //
         // TODO: figure out what the purpose of this method is, and make it work!
-        var mem := ast.identifierNode.new("self", false)
+        var mem := ast.identifierNode.new("self", false) scope(self)
         self.do { s->
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
-                        ast.identifierNode.new("prelude", false))
+                        ast.identifierNode.new("prelude", false) scope(self)) scope(self)
                 }
-                return ast.memberNode.new(name, mem)
+                return ast.memberNode.new(name, mem) scope(self)
             }
-            match(s.variety)
-                case { "object" -> mem := ast.memberNode.new("outer", mem) }
-                case { "class" ->
-                    mem := ast.memberNode.new("outer", mem)
-                    mem := ast.memberNode.new("outer", mem)
-                    }
-                case { _ -> }
+            match ( s.variety
+            ) case { "object" ->
+                mem := ast.memberNode.new("outer", mem) scope(self)
+            } case { "class" ->
+                mem := ast.memberNode.new("outer", mem) scope(self)
+                mem := ast.memberNode.new("outer", mem) scope(self)
+            } case { _ -> }
         }
         // Not found - leave it alone
-        return ast.identifierNode.new(name, false)
+        return ast.identifierNode.new(name, false) scope(self)
     }
     method scopeReferencedBy(nd) {
         // Finds the scope referenced by astNode nd.
@@ -575,8 +577,8 @@ method rewriteIdentifier(node) ancestors(as) {
         } // vars fall through
     }
     if (nm == "outer") then {
-        def selfId = ast.identifierNode.new("self", false)
-        def memb = ast.memberNode.new("outer", selfId)
+        def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
+        def memb = ast.memberNode.new("outer", selfId) scope(nodeScope)
         return memb
         // TODO: represent outer statically
     }
@@ -586,8 +588,8 @@ method rewriteIdentifier(node) ancestors(as) {
     checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
-        def p = ast.identifierNode.new("prelude", false)
-        def m = ast.memberNode.new(nm, p)
+        def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
+        def m = ast.memberNode.new(nm, p) scope(nodeScope)
         return m
     }
     if (isParameter(nodeKind)) then { return node }
@@ -603,7 +605,9 @@ method rewriteIdentifier(node) ancestors(as) {
         if (nodeKind == "vardec") then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
-        return ast.memberNode.new(nm, ast.identifierNode.new("self", false))
+        return ast.memberNode.new(nm, 
+            ast.identifierNode.new("self", false) scope(nodeScope)
+        ) scope(nodeScope)
     }
     if (nodeScope.isObjectScope.not
             .andAlso{nodeScope.isInSameObjectAs(definingScope)}) then {
@@ -936,6 +940,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             classNameNode.isDeclaredByParent := true
             def outerObjectScope = newScopeIn(surroundingScope) kind "object"
             surroundingScope.at(classNameNode.nameString) putScope(outerObjectScope)
+            util.log_verbose "vc1: at {classNameNode.nameString} putScope {outerObjectScope.asDebugString}"
             checkForReservedName(factoryMeth)
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
@@ -946,6 +951,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
             outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
+            util.log_verbose "vc2: at {factoryMeth.nameString} putScope {innerObjectScope.asDebugString}"
             o.scope := innerObjectScope
             true
         }
@@ -1013,7 +1019,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             surroundingScope.addNode(ident) as "method"
             ident.isDeclaredByParent := true
             o.scope := newScopeIn(surroundingScope) kind "method"
-            if (o.returnsObject) then { o.isFresh := true }
+            if (o.returnsObject) then { 
+                o.isFresh := true
+            }
             true
         }
         method visitMethodType(o) up(as) {
@@ -1027,9 +1035,15 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def surroundingScope = myParent.scope
             o.scope := newScopeIn(surroundingScope) kind "object"
             if (myParent.returnsObject) then {
-                myParent.scope.at(myParent.nameString) putScope(o.scope)
+                // TODO this is right for methods, wrong for defs
+                // add method in node
+                as.grandparent.scope.at(myParent.nameString) putScope(o.scope)
             }
             true
+        }
+        method visitModule(o) up(as) { 
+            // the module scope was set before the traversal started
+            true 
         }
         method visitTypeDec(o) up(as) {
             def enclosingScope = as.parent.scope
@@ -1061,7 +1075,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitVarDec(o) up(as) { o.scope := as.parent.scope ; true }
         method visitReturn(o) up(as) { o.scope := as.parent.scope ; true }
         method visitDialect(o) up(as) { o.scope := as.parent.scope ; true }
-
+        method visitBlank(o) up(as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
     
 
@@ -1075,6 +1089,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitObject(o) up (as) {
+            collectInheritedNames(o)
+            // TODO: while the `data` attribute is still used by the code generators,
+            // put there a redundant reference to the symbolTable.  Remove when this is fixed.
+            o.data := o.scope
+            true
+        }
+        method visitModule(o) up (as) {
             collectInheritedNames(o)
             // TODO: while the `data` attribute is still used by the code generators,
             // put there a redundant reference to the symbolTable.  Remove when this is fixed.
@@ -1095,8 +1116,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 }
 
 method collectInheritedNames(node) {
-    // node is an object or class node.
+    // node is an object or class.
     def nodeScope = node.scope
+    util.log_verbose "collecting inherited names for {node.nameString}:"
+    util.log_verbose "    inheritedNames = {nodeScope.inheritedNames}"
     if (nodeScope.inheritedNames == completed) then { 
         return
     }
@@ -1110,6 +1133,9 @@ method collectInheritedNames(node) {
         superScope := graceObjectScope
     } else {
         superScope := nodeScope.scopeReferencedBy(node.superclass)
+        util.log_verbose "    node.superclass = {node.superclass}"
+        util.log_verbose "    superScope = {superScope}"
+        util.log_verbose "    superScope.node = {superScope.node}"
         // If superScope == universalScope then we have no information
         // about the inherited attributes
         if (superScope != universalScope) then {
@@ -1152,27 +1178,27 @@ method transformInherits(inhNode) ancestors(as) {
         }
         // TODO: try removing the above — it may not be necessary
         superCall.with.push(ast.callWithPart.new("object",
-            [ast.identifierNode.new("self", false)]))
+            [ast.identifierNode.new("self", false) scope(currentScope)]))
         def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
             superCall.value.target
-        )
-        def newcall = ast.callNode.new(newmem, superCall.with)
-        newInhNode := ast.inheritsNode.new(newcall)
+        ) scope(currentScope)
+        def newcall = ast.callNode.new(newmem, superCall.with) scope(currentScope)
+        newInhNode := ast.inheritsNode.new(newcall) scope(currentScope)
     } elseif {inhNode.inheritsFromMember} then {
         def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
             inhNode.value.in
         )
         def newcall = ast.callNode.new(newmem, collections.list.new(
-            ast.callWithPart.new(inhNode.value.value, []),
+            ast.callWithPart.new(inhNode.value.value, []) scope(currentScope),
             ast.callWithPart.new("object",
-                [ast.identifierNode.new("self", false)])
+                [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             )
-        )
+        ) scope(currentScope)
         if (inhNode.value.in.value == "StandardPrelude") then {
             return inhNode
         }
         // TODO — eliminate the above; it can't ever apply!
-        newInhNode := ast.inheritsNode.new(newcall)
+        newInhNode := ast.inheritsNode.new(newcall) scope(currentScope)
     } else {
         if (util.extensions.contains "ObjectInheritance") then {
             newInhNode := inhNode
@@ -1205,11 +1231,11 @@ method rewriteMatches(topNode) {
 method resolve(values) {
     setupContext(values)
     util.setPosition(0, 0)
-    def moduleObject = ast.objectNode.body(values) named "module"
-    def preludeObject = ast.objectNode.body([moduleObject]) named "prelude"
+    def moduleObject = ast.moduleNode.body(values) 
+        named "module" scope (moduleScope)
+    def preludeObject = ast.moduleNode.body([moduleObject]) 
+        named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
-    moduleObject.scope := moduleScope
-    preludeObject.scope := preludeScope
 
     def patternMatchModule = rewriteMatches(moduleObject)
 

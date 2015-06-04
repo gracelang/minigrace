@@ -175,7 +175,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)])
+    var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)]) scope(o.scope)
     var r := compilenode(c)
     o.register := r
 }
@@ -301,30 +301,38 @@ method compileobjvardec(o, selfr, pos) {
     }
 }
 method compileclass(o) {
+    // TODO: move this re-writing to identifier resolution
     util.setline(o.line)
+    def innerObjectScope = o.scope
+    def factoryScope = innerObjectScope.parent
+    def outerObjectScope = factoryScope.parent
     var signature := o.signature
-    var mbody := [ast.objectNode.new(o.value, o.superclass)]
-    var newmeth := ast.methodNode.new(o.constructor, signature, mbody,
-        false)
+    var mbody := [ast.objectNode.body(o.value) 
+            named "{o.nameString}.{o.constructor}" 
+            scope(innerObjectScope)]
+    var factorytMeth := ast.methodNode.new(o.constructor, signature, mbody,
+        false) scope(factoryScope)
     if (false != o.generics) then {
-        newmeth.generics := o.generics
+        factorytMeth.generics := o.generics
     }
-    newmeth.isFresh := true
-    def dbBody = [ast.stringNode.new("class {o.nameString}")]
-    def dbMeth = ast.methodNode.new(
-        ast.identifierNode.new("asString", false), [], dbBody, false)
-    var obody := [newmeth, dbMeth]
-    var cobj := ast.objectNode.new(obody, false)
+    factorytMeth.isFresh := true
+    def asStringBody = [ast.stringNode.new("class {o.nameString}") scope(innerObjectScope)]
+    // TODO: should be a new scope
+    def asStringMeth = ast.methodNode.new(
+        ast.identifierNode.new("asString", false), [], asStringBody, false) scope(innerObjectScope)
+    var obody := [factorytMeth, asStringMeth]
+    var cobj := ast.objectNode.body(obody) named "metaclass {o.nameString}" scope(outerObjectScope)
     var con := ast.defDecNode.new(o.name, cobj, false)
+        scope(outerObjectScope.parent)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString)],
-            [o.name], false)
+        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString) scope(outerObjectScope.parent)],
+            [o.name], false) scope(outerObjectScope.parent)
         compilenode(meth)
     }
     for (o.annotations) do {a->
         con.annotations.push(a)
     }
-    o.register := compilenode(con.withParentRefs)
+    o.register := compilenode(con)
 }
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
@@ -426,29 +434,33 @@ method compileblock(o) {
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
-method compiletype(o) {
-    log_verbose "genJS: compiletype({o}) called!"
-    def myc = auto_count
-    auto_count := auto_count + 1
-    def escName = escapestring(o.value)
-    def idName = escapeident(o.value)
-    out("var type{myc} = new GraceType(\"{escName}\");")
-    if (!o.anonymous) then {
-        out "var var_{idName} = type{myc};"
-    }
-    for (o.methods) do {meth->
-        def mnm = escapestring(meth.value)
-        out("type{myc}.typeMethods.push(\"{mnm}\");")
-    }
-    if (compilationDepth == 1) then {
-        def idd = ast.identifierNode.new(o.value, false)
-        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value)],
-            [idd], false))
-    }
-    o.register := "type{myc}"
-}
+//method compiletype(o) {
+//    //
+//    log_verbose "genJS: compiletype({o}) called!"
+//    def myc = auto_count
+//    auto_count := auto_count + 1
+//    def escName = escapestring(o.value)
+//    def idName = escapeident(o.value)
+//    out("var type{myc} = new GraceType(\"{escName}\");")
+//    if (!o.anonymous) then {
+//        out "var var_{idName} = type{myc};"
+//    }
+//    for (o.methods) do {meth->
+//        def mnm = escapestring(meth.value)
+//        out("type{myc}.typeMethods.push(\"{mnm}\");")
+//    }
+//    def enclosing = o.scope.parent
+//    if (compilationDepth == 1) then {
+//        def idd = ast.identifierNode.new(o.value, false) scope(enclosing)
+//        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value) scope(enclosing)],
+//            [idd], false) scope(enclosing))
+//    }
+//
+//    o.register := "type{myc}"
+//}
 method compiletypedec(o) {
     def myc = auto_count
+    def enclosing = o.scope.parent
     auto_count := auto_count + 1
     def tName = if (o.name.kind == "generic") then {
                         o.name.value.value
@@ -462,8 +474,8 @@ method compiletypedec(o) {
     out "var {varf(tName)} = {val};"
     o.register := "type{myc}"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
-            [o.name], false))  // TODO: should be TypeType
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(enclosing)],
+            [o.name], ast.typeType) scope(enclosing))
     }
 }
 method compiletypeliteral(o) {
@@ -955,6 +967,7 @@ method compilebind(o) {
     var val := ""
     var c := ""
     var r := ""
+    def currentScope = o.scope
     if (dest.kind == "identifier") then {
         val := o.value
         val := compilenode(val)
@@ -969,12 +982,12 @@ method compilebind(o) {
             != ":="}) then {
             dest.value := nm ++ ":="
         }
-        c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
+        c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])]) scope(currentScope)
         r := compilenode(c)
         o.register := r
     } elseif (dest.kind == "index") then {
-        var imem := ast.memberNode.new("[]:=", dest.value)
-        c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
+        var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
+        c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])  scope(currentScope)]) scope(currentScope)
         r := compilenode(c)
         o.register := r
     }
@@ -982,6 +995,7 @@ method compilebind(o) {
 method compiledefdec(o) {
     var nm
     var snm
+    def currentScope = o.scope
     if (o.name.kind == "generic") then {
         snm := o.name.value.value
     } else {
@@ -995,8 +1009,8 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
-            [o.name], false))
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(currentScope)],
+            [o.name], false) scope(currentScope))
         if (ast.findAnnotation(o, "parent")) then {
             out("this.superobj = {val};")
         }
@@ -1019,6 +1033,7 @@ method compiledefdec(o) {
 }
 method compilevardec(o) {
     var nm := o.name.value
+    def currentScope = o.scope
     declaredvars.push(nm)
     var val := o.value
     if (false != val) then {
@@ -1032,13 +1047,13 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)],
-            [o.name], false))
-        def assignID = ast.identifierNode.new(o.name.value ++ ":=", false)
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(currentScope)],
+            [o.name], false) scope(currentScope))
+        def assignID = ast.identifierNode.new(o.name.value ++ ":=", false) scope(currentScope)
         def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
         compilenode(ast.methodNode.new(assignID,
-            [ast.signaturePart.new(assignID.value, [tmpID])],
-            [ast.bindNode.new(o.name, tmpID)], false))
+            [ast.signaturePart.new(assignID.value, [tmpID])  scope(currentScope)],
+            [ast.bindNode.new(o.name, tmpID)], false)  scope(currentScope))
         out("this.methods[\"{nm}\"].debug = \"var\";")
     }
     if (emitTypeChecks) then {
@@ -1288,6 +1303,7 @@ method compiledialect(o) {
 }
 method compileimport(o) {
     out("// Import of {o.path} as {o.nameString}")
+    def currentScope = o.scope
     var nm := escapestring(o.nameString)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
@@ -1295,8 +1311,8 @@ method compileimport(o) {
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     def methodIdent = o.value
-    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.nameString)],
-        [methodIdent], o.dtype))
+    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.nameString) scope(currentScope)],
+        [methodIdent], o.dtype) scope(currentScope))
     accessor.line := o.line
     accessor.linePos := o.linePos
     accessor.annotations.addAll(o.annotations)

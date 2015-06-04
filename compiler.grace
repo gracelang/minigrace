@@ -121,7 +121,7 @@ values := identifierresolution.resolve(values)
 if (util.target == "processed-ast") then {
     util.outprint "====================================="
     util.outprint "module-level symbol table"
-    util.outprint (values.first.parent.symbolTable.asStringWithParents)
+    util.outprint (values.first.scope.asStringWithParents)
     util.outprint "====================================="
     for (values) do { v ->
         util.outprint(v.pretty(0))
