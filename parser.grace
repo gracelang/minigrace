@@ -3286,6 +3286,8 @@ method typedec {
             expression(noBlocks)
         }
         def nt = ast.typeDecNode.new(p, values.pop)
+        nt.line := line
+        nt.linePos := pos
         nt.generics := gens
         if (false != anns) then {
             nt.annotations.addAll(anns)
