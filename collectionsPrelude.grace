@@ -361,7 +361,8 @@ class enumerable.trait<T> {
     }
     method fold<R>(block2)startingWith(initial) -> R {
         var res := initial
-        while { self.hasNext } do { res := block2.apply(res, self.next) }
+        def selfIterator = self.iterator
+        while { selfIterator.hasNext } do { res := block2.apply(res, selfIterator.next) }
         return res
     }
     method ++ (other) -> Enumerable<T> {
