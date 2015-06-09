@@ -1206,7 +1206,8 @@ method compilecall(o) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
-        out "var call{auto_count} = {o.enclosingObject.register}.outer"
+        out("var call{auto_count} = callmethod(superDepth, "
+            ++ "\"outer\", [0]);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
         var call := "var call" ++ auto_count ++ " = callmethod(this"
