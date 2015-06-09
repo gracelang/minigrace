@@ -107,7 +107,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
-    } else {  // target == "js"
+    } elseif { util.target == "js" } then {
         if (io.exists(moduleFileJs).andAlso {
             io.exists(moduleFileGct) }.andAlso {
                 noSource.orElse {
