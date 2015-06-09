@@ -271,7 +271,8 @@ factory method newScopeIn(parent') kind(variety') {
             if (s.isObjectScope) then { return s }
         }
         ProgrammingError "no object scope found!"
-        // the outermost scope should always be a module scope.
+        // the outermost scope should always be a module scope,
+        // which is an object scope.
     }
     method inSameContextAs(encScope) {
         // Is this scope within the same context as encScope?
@@ -940,7 +941,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             classNameNode.isDeclaredByParent := true
             def outerObjectScope = newScopeIn(surroundingScope) kind "object"
             surroundingScope.at(classNameNode.nameString) putScope(outerObjectScope)
-            util.log_verbose "vc1: at {classNameNode.nameString} putScope {outerObjectScope.asDebugString}"
             checkForReservedName(factoryMeth)
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
@@ -951,7 +951,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
             outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
-            util.log_verbose "vc2: at {factoryMeth.nameString} putScope {innerObjectScope.asDebugString}"
             o.scope := innerObjectScope
             true
         }
@@ -1032,13 +1031,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitObject(o) up(as) {
             def myParent = as.parent
-            def surroundingScope = myParent.scope
-            o.scope := newScopeIn(surroundingScope) kind "object"
-            if (myParent.returnsObject) then {
-                // TODO this is right for methods, wrong for defs
-                // add method in node
-                as.grandparent.scope.at(myParent.nameString) putScope(o.scope)
-            }
+            o.scope := newScopeIn(myParent.scope) kind "object"
             true
         }
         method visitModule(o) up(as) { 
@@ -1049,12 +1042,10 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def enclosingScope = as.parent.scope
             enclosingScope.addNode(o.name) as "typedec"
             o.name.isDeclaredByParent := true
-            if (o.generics.isEmpty) then { 
-                o.scope := as.parent.scope
-            } else {
-                o.scope := newScopeIn(enclosingScope) kind "typedec"
-                // for now we don't distinguish between type decs and type params
-            }
+            o.scope := newScopeIn(enclosingScope) kind "typedec"
+            // this scope will be the home for any <generic parameters>.
+            // If there are no parameters, it won't be used.
+            // For now we don't distinguish between type decs and type params
             true
         }
         method visitTypeLiteral(o) up (as) {
@@ -1111,15 +1102,33 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
     }
+    
+    def returnedObjectVis = object {
+        inherits ast.baseVisitor
+        method visitDefDec(o) up (as) {
+            if (o.returnsObject) then {
+                o.scope.at(o.nameString)
+                    putScope(o.returnedObjectScope)
+            }
+            true
+        }
+        method visitMethod(o) up (as) {
+            if (o.returnsObject) then {
+                as.parent.scope.at(o.nameString)
+                    putScope(o.returnedObjectScope)
+            }
+            true
+        }
+    }
+
     topNode.accept(symbolTableVis) from(topChain)
+    topNode.accept(returnedObjectVis) from(topChain)
     topNode.accept(inheritanceVis) from(topChain)
 }
 
 method collectInheritedNames(node) {
     // node is an object or class.
     def nodeScope = node.scope
-    util.log_verbose "collecting inherited names for {node.nameString}:"
-    util.log_verbose "    inheritedNames = {nodeScope.inheritedNames}"
     if (nodeScope.inheritedNames == completed) then { 
         return
     }
@@ -1133,9 +1142,6 @@ method collectInheritedNames(node) {
         superScope := graceObjectScope
     } else {
         superScope := nodeScope.scopeReferencedBy(node.superclass)
-        util.log_verbose "    node.superclass = {node.superclass}"
-        util.log_verbose "    superScope = {superScope}"
-        util.log_verbose "    superScope.node = {superScope.node}"
         // If superScope == universalScope then we have no information
         // about the inherited attributes
         if (superScope != universalScope) then {
