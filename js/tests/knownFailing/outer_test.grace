@@ -7,7 +7,8 @@ method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
-def collFact' = object {
+def collFact = object {
+    method asString { "object collFact" }
     method trait<T> {
         object {
             method withAll'(elts) -> Unknown { abstract }
@@ -24,6 +25,6 @@ class collectionFactory.trait<T> {
     method empty -> Unknown { self.with() }
 }
 
-collFact'.trait.with'(1, 2, 3)
+collFact.trait.with'(1, 2, 3)
 
 collectionFactory.trait.with(1, 2, 3)
