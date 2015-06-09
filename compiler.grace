@@ -17,17 +17,6 @@ import "mirrors" as mirrors
 
 util.parseargs
 
-def targets = ["lex", "parse", "grace", "processed-ast", "patterns", "symbols",
-    "imports", "c", "js"]
-
-if (util.target == "help") then {
-    print("Valid targets:")
-    for (targets) do {t->
-        print("  {t}")
-    }
-    sys.exit(0)
-}
-
 if (util.interactive) then {
     interactive.startRepl
     sys.exit(0)
@@ -106,6 +95,7 @@ if (util.target == "imports") then {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {
             imps.add(o.path)
+            false
         }
     }
     for (values) do {v->
