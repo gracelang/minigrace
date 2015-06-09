@@ -121,6 +121,9 @@ class baseNode.new {
         }
         return self.dtype
     }
+    method accept(visitor) {
+        self.accept(visitor) from (ancestorChain.empty)
+    }
     method scope { symbolTable }
     method scope:=(st) {
         // override this method in subobjects that open a new scope. In such
