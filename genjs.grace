@@ -305,7 +305,12 @@ method compileclass(o) {
     util.setline(o.line)
     def innerObjectScope = o.scope
     def factoryScope = innerObjectScope.parent
-    def outerObjectScope = factoryScope.parent
+    def metaObjectScope = factoryScope.parent
+
+    def selfr = "obj" ++ auto_count
+    auto_count := auto_count + 1
+    o.register := selfr
+
     var signature := o.signature
     var mbody := [ast.objectNode.body(o.value) 
             named "{o.nameString}.{o.constructor}" 
@@ -320,19 +325,20 @@ method compileclass(o) {
     // TODO: should be a new scope
     def asStringMeth = ast.methodNode.new(
         ast.identifierNode.new("asString", false), [], asStringBody, false) scope(innerObjectScope)
-    var obody := [factorytMeth, asStringMeth]
-    var cobj := ast.objectNode.body(obody) named "metaclass {o.nameString}" scope(outerObjectScope)
-    var con := ast.defDecNode.new(o.name, cobj, false)
-        scope(outerObjectScope.parent)
+    def metaBody = [factorytMeth, asStringMeth]
+    def metaObj = ast.objectNode.body(metaBody) named "metaclass {o.nameString}" scope(metaObjectScope)
+    def defDec = ast.defDecNode.new(o.name, metaObj, false)
+        scope(metaObjectScope.parent)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString) scope(outerObjectScope.parent)],
-            [o.name], false) scope(outerObjectScope.parent)
+        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString) scope(metaObjectScope.parent)],
+            [o.name], false) scope(metaObjectScope.parent)
         compilenode(meth)
     }
     for (o.annotations) do {a->
-        con.annotations.push(a)
+        defDec.annotations.push(a)
     }
-    o.register := compilenode(con)
+    compilenode(defDec)
+    out "var {selfr} = {metaObj.register}  // end of compling class"
 }
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
