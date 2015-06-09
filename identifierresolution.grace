@@ -154,8 +154,8 @@ factory method newScopeIn(parent') kind(variety') {
 
     method elementScopesAsString {
         var result := "\n    [elementScopes:"
-        for (elementScopes) do { each ->
-            result := "{result} {each}➞{elementScopes.get(each).asDebugString}"
+        elementScopes.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
+            result := "{result} {each.key}➞{each.value.asDebugString}"
         }
         result ++ "]"
     }
