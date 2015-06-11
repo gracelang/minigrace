@@ -252,7 +252,6 @@ method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
         }
     }
     def newAnn = ast.identifierNode.new(sd, false)
-    newAnn.parent := node
     node.annotations.push(newAnn)
 }
 method checkAnnotation(ann) {
@@ -2912,7 +2911,7 @@ method methodsignature(sameline) {
     if((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
-        errormessages.syntaxError("A method name must start with an identifier, an operator, or '[]'.")atPosition(
+        errormessages.syntaxError("A method name must start with an identifier, or be an operator or '[]'.")atPosition(
             lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
     }
     pushidentifier
@@ -3287,6 +3286,8 @@ method typedec {
             expression(noBlocks)
         }
         def nt = ast.typeDecNode.new(p, values.pop)
+        nt.line := line
+        nt.linePos := pos
         nt.generics := gens
         if (false != anns) then {
             nt.annotations.addAll(anns)

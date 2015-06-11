@@ -51,9 +51,9 @@ method do(action)while(condition) {
 
 method repeat(n)times(action) {
     var ix := n
-    while {ix > 0} do { 
+    while {ix > 0} do {
         ix := ix - 1
-        action.apply 
+        action.apply
     }
 }
 
@@ -212,7 +212,7 @@ class TypeIntersection.new(t1, t2) {
     method -(o) {
         TypeSubtraction.new(self, o)
     }
-    method methodNames { 
+    method methodNames {
         t1.methodNames.addAll(t2.methodNames)
     }
     method asString { "({t1} & {t2})" }
@@ -233,7 +233,7 @@ class TypeVariant.new(t1, t2) {
     method -(o) {
         TypeSubtraction.new(self, o)
     }
-    method methodNames { 
+    method methodNames {
         self.TypeVariantsCannotBeCharacterizedByASetOfMethods
     }
     method asString { "({t1} | {t2})" }
@@ -254,12 +254,12 @@ class TypeUnion.new(t1, t2) {
     method -(o) {
         TypeSubtraction.new(self, o)
     }
-    method methodNames { 
+    method methodNames {
         t1.methodNames ** t2.methodNames
     }
     method match(o) {
         ResourceException.raise "matching against a TypeUnion not yet implemented"
-        // Why not?  Becuase it requires reflection, which 
+        // Why not?  Becuase it requires reflection, which
         // requires the mirror module, which requires this module.
         def mirror = ...
         def oMethodNames = mirror.reflect(o).methodNames
@@ -287,13 +287,13 @@ class TypeSubtraction.new(t1, t2) {
     method -(o) {
         TypeSubtraction.new(self, o)
     }
-    method methodNames { 
+    method methodNames {
         t1.methodNames.removeAll(t2.methodNames)
     }
     method asString { "({t1} - {t2})" }
 }
 
-type Point = type { 
+type Point = type {
     x -> Number
     y -> Number
     asString -> String
@@ -324,7 +324,7 @@ import "collectionsPrelude" as coll
 // collectionsPrelude defines types using &, so it can't be imported until
 // the above definition of TypeIntersection has been executed.
 
-// We should just be able to put "is public" on the above import, but this is 
+// We should just be able to put "is public" on the above import, but this is
 // not fully implemented.  So intead we create an alias:
 def collections is public = coll
 
@@ -348,6 +348,7 @@ def Exhausted is public = collections.Exhausted
 def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility
+def ConcurrentModification is public = collections.ConcurrentModification
 
 def collectionFactory is public = collections.collectionFactory
 def collection is public = collections.collection

@@ -25,6 +25,10 @@ var cLines := list.empty
 var lines := list.empty
 var filename is readable := "standardInput.grace"
 
+
+def targets = set.with("lex", "parse", "grace", "ast", "processed-ast",
+    "patterns", "symbols", "imports", "c", "js")
+
 def requiredModules is public = object {
     def static is public = set.empty
     def linkfiles is public = list.empty
@@ -119,10 +123,18 @@ method parseargs {
                     } case { "--target" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --target requires argument.\n")
+                            io.error.write "minigrace: --target requires argument.\n"
                             sys.exit(1)
                         }
                         targetv := argv.at(ai + 1)
+
+                        if (targetv == "help") then {
+                            io.error.write "Valid targets:\n"
+                            targets.asList.sort.do { t ->
+                                io.error.write "  {t}\n"
+                            }
+                            sys.exit(0)
+                        }
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
@@ -180,10 +192,14 @@ method parseargs {
             case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
             case { "parse" -> io.open(sourceDir ++ modnamev ++ ".parse", "w") }
             case { "lex" -> io.open(sourceDir ++ modnamev ++ ".lex", "w") }
-            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".processed", "w") }
-            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".processed-ast", "w") }
+            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
+            case { "ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
+            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".symbols", "w") }
             case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
-            case { _ -> io.output }
+            case { _ -> 
+                io.error.write("minigrace: unrecognized target '{targetv}'.\n")
+                sys.exit(1)
+            }
     }
     if (gracelibPathv == false) then {
         if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {

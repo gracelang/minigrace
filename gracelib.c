@@ -3736,7 +3736,9 @@ start:
     fprintf(stderr, "\n");
 //    gracedie("No method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
-    gracedie("No method %s in %s.", name, self->class->name);
+//    The above would identify the receiver, but if it fails, we learn less, not more
+    graceRaise(NoSuchMethodErrorObject,
+               "no method %s in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
