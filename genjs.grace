@@ -1080,12 +1080,11 @@ method compilevardec(o) {
     o.register := val
 }
 method compileindex(o) {
-    var of := compilenode(o.value)
-    var index := compilenode(o.index)
-    out("var idxres" ++ auto_count ++ " = " ++ of ++ ".methods[\"[]\"]"
-        ++ ".call(" ++ of ++ ", [1], " ++ index ++ ");")
+    def of = compilenode(o.value)
+    def index = compilenode(o.index)
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
+    out "var {o.register} = callmethod({of}, \"[]\", [1], {index})"
 }
 method compilecatchcase(o) {
     def myc = auto_count
