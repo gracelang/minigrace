@@ -204,6 +204,10 @@ function graceModuleName(fileName) {
 };
 
 function findOnPath(fn, pathArray) {
+    if (fn[0] === "/") {
+        if (fs.existsSync(fn)) { return fn };
+        throw new Error('file "' + fn + '" does not exist.');
+    }
     for (var ix = 0; ix < pathArray.length ; ix++) {
         var candidate = path.resolve(pathArray[ix], fn);  
             // path.resolve joins, normalizes, & makes absolute
