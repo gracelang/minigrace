@@ -1649,8 +1649,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
     outfile.close
     log_verbose("done.")
     if (buildtype == "run") then {
-        def cmd = "grace {of}"
-        def runExitCode = io.spawn(cmd).wait
+        def runExitCode = io.spawn("grace", of.pathname).wait
         if (runExitCode < 0) then {
             io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
             sys.exit(4)
