@@ -121,7 +121,8 @@ ClassData Exception;
 Object Dynamic;
 Object ObjectType = NULL;
 Object Unknown;
-Object prelude = NULL;
+Object prelude = NULL;          // the current prelude, i.e., the dialect
+Object _prelude = NULL;         // the standard prelude
 
 struct StringObject {
     OBJECT_HEADER;
@@ -459,21 +460,21 @@ int integerfromAny(Object p) {
 Object _rangeClass = NULL;
 Object grace_rangeClass() {
     if (_rangeClass == NULL)
-        _rangeClass = callmethod(prelude, "range", 0, NULL, NULL);
+        _rangeClass = callmethod(_prelude, "range", 0, NULL, NULL);
     return _rangeClass;
 }
 
 Object _bindingClass = NULL;
 Object grace_bindingClass() {
     if (_bindingClass == NULL)
-        _bindingClass = callmethod(prelude, "binding", 0, NULL, NULL);
+        _bindingClass = callmethod(_prelude, "binding", 0, NULL, NULL);
     return _bindingClass;
 }
 
 Object _point2DClass = NULL;
 Object grace_point2DClass() {
     if (_point2DClass == NULL)
-        _point2DClass = callmethod(prelude, "point2D", 0, NULL, NULL);
+        _point2DClass = callmethod(_prelude, "point2D", 0, NULL, NULL);
     return _point2DClass;
 }
 
@@ -538,7 +539,7 @@ Object identity_function(Object receiver, int nparts, int *argcv,
 }
 Object Object_asString(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
-    char buf[40];
+    char buf[255];
     sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
     return alloc_String(buf);
 }
@@ -577,6 +578,12 @@ Object Object_NotEquals(Object receiver, int nparts, int *argcv,
 Object Object_Equals(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     return alloc_Boolean(receiver == params[0]);
+}
+Object Module_asString(Object receiver, int nparts, int *argcv,
+                       Object* params, int flags) {
+    char buf[255];
+    sprintf(buf, "the %s module", receiver->class->name);
+    return alloc_String(buf);
 }
 Object MatchResult_result(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
@@ -995,8 +1002,11 @@ Object String_Contains(Object self, int nparts, int *argcv,
                              Object *args, int flags) {
     struct StringObject *sself = (struct StringObject*)self;
     struct StringObject *needle = (struct StringObject*)args[0];
-    if (needle->class != String && needle->class != ConcatString)
-        graceRaise(TypeErrorObject, "argument to string.contains must be a String");
+    if ((needle->class != String) && (needle->class != ConcatString)) {
+        Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
+        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+                   grcstring(nStr));
+    }
     if (sself->size <= needle->size)
         return alloc_Boolean(0);
     char *a = grcstring(self);
@@ -1619,8 +1629,11 @@ Object ConcatString_Contains(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     struct ConcatStringObject *needle = (struct ConcatStringObject*)args[0];
-    if (needle->class != String && needle->class != ConcatString)
-        graceRaise(TypeErrorObject, "argument to contains must be a String");
+    if ((needle->class != String) && (needle->class != ConcatString)) {
+        Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
+        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+                   grcstring(nStr));
+    }
     if (sself->size <= needle->size)
         return alloc_Boolean(0);
     char *a = grcstring(self);
@@ -3122,7 +3135,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("Module<io>", 11, (void*)&io__mark);
+    IOModule = alloc_class2("io", 13, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -3134,6 +3147,9 @@ Object module_io_init() {
     add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
+    add_Method(IOModule, "asString", &Module_asString);
+    add_Method(IOModule, "asDebugString", &Object_asString);
+
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
@@ -3262,13 +3278,15 @@ void sys__mark(struct SysModule *o) {
 Object module_sys_init() {
     if (sysmodule != NULL)
         return sysmodule;
-    SysModule = alloc_class2("Module<sys>", 6, (void*)*sys__mark);
+    SysModule = alloc_class2("sys", 8, (void*)*sys__mark);
     add_Method(SysModule, "argv", &sys_argv);
     add_Method(SysModule, "cputime", &sys_cputime);
     add_Method(SysModule, "elapsed", &sys_elapsed);
     add_Method(SysModule, "exit", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
     add_Method(SysModule, "environ", &sys_environ);
+    add_Method(SysModule, "asString", &Module_asString);
+    add_Method(SysModule, "asDebugString", &Object_asString);
     Object o = alloc_obj(sizeof(Object), SysModule);
     struct SysModule *so = (struct SysModule*)o;
     so->argv = argv_List;
@@ -3361,9 +3379,11 @@ Object module_imports_init() {
         return importsmodule;
     stringResourceHandler = alloc_userobj(1, 0);
     add_Method(stringResourceHandler->class, "loadResource", &StringResourceHandler_loadResource);
-    ImportsModule = alloc_class2("Module<imports>", 2, (void*)&imports__mark);
+    ImportsModule = alloc_class2("imports", 4, (void*)&imports__mark);
     add_Method(ImportsModule, "registerExtension", &imports_registerExtension);
     add_Method(ImportsModule, "loadResource", &imports_loadResource);
+    add_Method(ImportsModule, "asString", &Module_asString);
+    add_Method(ImportsModule, "asDebugString", &Object_asString);
     Object o = alloc_obj(sizeof(struct imports_extension_pair*), ImportsModule);
     struct ImportsModule *im = (struct ImportsModule *)o;
     im->extensions = alloc_imports_extension("txt", stringResourceHandler);
@@ -3716,7 +3736,9 @@ start:
     fprintf(stderr, "\n");
 //    gracedie("No method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
-    gracedie("No method %s in %s.", name, self->class->name);
+//    The above would identify the receiver, but if it fails, we learn less, not more
+    graceRaise(NoSuchMethodErrorObject,
+               "no method %s in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
@@ -4057,7 +4079,7 @@ Object Type_and(Object self, int nparts, int *argcv,
                    Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
     gracedie("& requires an argument");
-    Object ti = callmethod(prelude, "TypeIntersection", 0, NULL, NULL);
+    Object ti = callmethod(_prelude, "TypeIntersection", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
     Object res = callmethod(ti, "new", 1, partcv, args);
@@ -4067,7 +4089,7 @@ Object Type_or(Object self, int nparts, int *argcv,
                 Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
     gracedie("| requires an argument");
-    Object ti = callmethod(prelude, "TypeVariant", 0, NULL, NULL);
+    Object ti = callmethod(_prelude, "TypeVariant", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
     Object res = callmethod(ti, "new", 1, partcv, args);
@@ -4077,7 +4099,7 @@ Object Type_plus(Object self, int nparts, int *argcv,
                 Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
     gracedie("+ requires an argument");
-    Object ti = callmethod(prelude, "TypeUnion", 0, NULL, NULL);
+    Object ti = callmethod(_prelude, "TypeUnion", 0, NULL, NULL);
     int partcv[] = {2};
     Object args[] = {self, argv[0]};
     Object res = callmethod(ti, "new", 1, partcv, args);
@@ -4906,7 +4928,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
         gracedie("while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
         gracedie("Type error: expected Block for argument condition (1) of "
-                "while()do (defined at NativePrelude:0), got %s",
+                "while()do (defined in standardPrelude), got %s",
                 argv[0]->class->name);
     }
     while (istrue(callmethod(argv[0], "apply", 0, NULL, NULL))) {
@@ -5110,12 +5132,11 @@ Object prelude_false_object(Object self, int argc, int *argcv, Object *argv,
     return alloc_Boolean(0);
 }
 
-Object _prelude = NULL;
 Object grace_prelude() {
-    if (prelude != NULL)
-        return prelude;
-    ClassData c = alloc_class2("NativePrelude", 31, (void*)&UserObj__mark);
-    add_Method(c, "asString", &Object_asString);
+    if (_prelude != NULL)
+        return _prelude;
+    ClassData c = alloc_class2("StandardPrelude", 31, (void*)&UserObj__mark);
+    add_Method(c, "asString", &Module_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
@@ -5149,6 +5170,5 @@ Object grace_prelude() {
     _prelude = alloc_userobj2(0, 0, c);
     struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);
-    prelude = _prelude;
     return _prelude;
 }

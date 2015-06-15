@@ -56,7 +56,7 @@ then
     exit 0
 fi
 
-tar xjvf "$TARBALL" || die "Failed to extract tarball"
+tar xjf "$TARBALL" || die "Failed to extract tarball"
 dir=$(sed 's/.tar.bz2//' < <(basename "$TARBALL"))
 pushd "$dir"
 ./configure || die "Failed to configure tarball"

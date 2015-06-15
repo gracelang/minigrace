@@ -1,53 +1,90 @@
 // #pragma noTypeChecks
 import "util" as util
 
-// This module contains pseudo-classes for all the AST nodes used
-// in the parser. The module predates the existence of classes in the
-// implementation, so they are written as object literals inside methods.
+// This module contains classes and pseudo-classes for all the AST nodes used
+// in the parser. Because of the limitations of the class syntax, classes that
+// need more than one method are written as object literals containing methods.
 // Each node has a different signature according to its function, but the
-// common interface is:
-// dtype ASTNode {
-//   kind -> String // Used for pseudo-instanceof tests.
-//   register -> String // Used later on to hold the LLVM register of
-//                      // the resulting object.
-//   line -> Number // The source line the node came from.
-//   pretty(n:Number) -> String // Pretty-print of node at depth n,
-// }
-// Most also contain "value", with varied dtypes, holding the main value
-// in the node. Some contain other fields for their specific use: while has
-// both a value (the condition) and a "body", for example. None of the nodes
-// are particularly notable in any way.
+// common interface is given by type ASTNode 
+//
+// Most nodes also contain "value", with varied types, holding the `main value`
+// in the node.  This is confusing and schould be appropriately re-named in 
+// each case. Some contain other fields for their specific use: while has
+// both a value (the condition) and a body, for example.
 
-method listMap(l, b) parent(p) {
+
+method listMap(l, b) ancestors(as) is confidential {
     def newList = list.empty
-    for (l) do { nd -> newList.addLast(nd.map(b) parent(p)) }
-    if (newList.contains(done)) then {
-        print "node list contains done!"
-        print "    original list = {l}"
-        print "    mapped list = {newList}"
-    }
+    for (l) do { nd -> newList.addLast(nd.map(b) ancestors(as)) }
     newList
 }
-method maybeMap(n, b) parent(p) {
+method maybeMap(n, b) ancestors(as) is confidential {
     if (n != false) then {
-        n.map(b) parent(p)
+        n.map(b) ancestors(as)
     } else {
         n
+    }
+}
+
+def ancestorChain = object {
+    factory method empty {
+        method isEmpty { true }
+        method asString { "ancestorChain ▫" }
+        method extend(n) { cons(n) onto(self) }
+    }
+    method with(n) { empty.extend(n) }
+    factory method cons(p) onto(as) is confidential {
+        method forebears { as }
+        method isEmpty { false }
+        method parent { p }
+        method grandparent { forebears.parent }
+        
+        method asString {
+            var a := self
+            var s := "ancestorChain "
+            while { a.isEmpty.not } do {
+                s := s ++ a.parent ++ "➤"
+                a := a.forebears
+            }
+            s ++ "▫"
+        }
+        method extend(n) { cons(n) onto(self) }
     }
 }
 
 def emptySeq = sequence.empty
 
 type AstNode = type {
+    kind -> String 
+        // Used for pseudo-instanceof tests.
     register -> String
+        // Used in the code generator on to name the resulting object
     line -> Number
+        // The source line the node came from
     line:=(ln:Number)
     linePos -> Number
     linePos:=(lp:Number)
-    hasSymbolTable -> Boolean
-    hasSymbolTable:=(st:Boolean)
-    parent -> AstNode
-    parent:=(p:AstNode)
+    scope -> SymbolTable
+        // The symbolTable for names defined in this node and its sub-nodes
+    pretty(n:Number) -> String 
+        // Pretty-print-string of node at depth n
+}
+
+type SymbolTable = Unknown
+
+def fakeSymbolTable = object {
+    var node is public
+    method asString { "fake Symbol Table" }
+    method addNode (n) as (kind) {
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
+    }
+    method thatDefines (name) ifNone (action) {
+        ProgrammingError.raise "fakeSymbolTable.thatDefines({name})."
+    }
+    method enclosingObjectScope {
+        ProgrammingError.raise "fakeSymbolTable.enclosingObjectScope on node {node}"
+    }
+    method variety { "fake" }
 }
 
 class baseNode.new {
@@ -55,8 +92,7 @@ class baseNode.new {
     var register is public := ""
     var line is public := util.linenum
     var linePos is public := util.linepos
-    var parent is public := nullNode
-    var hasSymbolTable is public := false
+    var symbolTable := fakeSymbolTable
 
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
@@ -70,9 +106,8 @@ class baseNode.new {
     method isIdentifier { false }
     method isDialect { false }
     method isImport { false }
-
-    method definesObject { false }
-    method definesScope { false }
+    method canInherit {true }
+    method returnsObject { false }
     method usesAsType(aNode) { false }
     method hash { line.hash * linePos.hash }
     method asString { "astNode {self.kind}" }
@@ -87,67 +122,22 @@ class baseNode.new {
         return self.dtype
     }
     method accept(visitor) {
-        self.accept(visitor) from (nullNode)
+        self.accept(visitor) from (ancestorChain.empty)
     }
-    method withParentRefs {
-        self.accept(addParentVisitor)
-        self
+    method scope { symbolTable }
+    method scope:=(st) {
+        // override this method in subobjects that open a new scope. In such
+        // subobjects, and only in such subobjects, there should be a 2-way
+        // conection between the node and the symbol table that defines its scope.
+        symbolTable := st
     }
-    method declarationKind { self.kind }     // the kind of identifiers defined within me
-    method scope {
-        var node := self
-        while { node.hasSymbolTable.not } do { node := node.parent }
-        node.symbolTable
-        // TODO: add cache of this value, look at symboltable module
-    }
-    method shallowCopyFieldsFrom(other) parent(p:AstNode){
+    method declarationKindWithAncestors(as) { self.kind }     
+        // the kind of identifiers defined within me
+    method shallowCopyFieldsFrom(other) {
         register := other.register
         line := other.line
         linePos := other.linePos
-        parent := p
-        hasSymbolTable := other.hasSymbolTable
-        self
-    }
-    method pretty(depth) { 
-        "{line}:{linePos} {self.kind}"
-    }
-    method deepCopy {
-        self.map { each -> each } parent (nullNode)
-    }
-    method isUnder(lns) {
-        // lns is a list of strings representing kinds of AST node,
-        // from the bottom up.  Is this node a subtree of such a structure?
-        var nd := self
-        for (lns) do { each ->
-            nd := nd.parent
-            if (nd == nullNode) then { return false }
-            if (nd.kind != each) then { return false }
-        }
-        return true
-    }
-}
-
-class symbolTableNode.new {
-    // The superclass of all AST nodes that open a new scope,
-    // and thus may have a symbolTable.
-    inherits baseNode.new
-
-    var symbolTable'
-    method symbolTable { 
-        if (hasSymbolTable) then { symbolTable' } else {
-            ProgrammingError.raise "Trying to get a non-existant symbolTable "
-        }
-    }
-    method symbolTable:=(s) {
-        symbolTable' := s
-        s.node := self
-        hasSymbolTable := true
-    }
-    method shallowCopyFieldsFrom(other) parent(p){
-        super.shallowCopyFieldsFrom(other) parent(p)
-        if (other.hasSymbolTable) then {
-            symbolTable' := other.symbolTable
-        }
+        scope := other.scope
         self
     }
     method pretty(depth) {
@@ -155,16 +145,24 @@ class symbolTableNode.new {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        if ((hasSymbolTable).andAlso{util.target == "symbols"}) then {
-            "{super.pretty(depth)}\n{spc}Symbols({symbolTable.variety}): {symbolTable'}{symbolTable'.elementScopesAsString}"
+        if ((scope.node == self).andAlso{util.target == "symbols"}) then {
+            "{line}:{linePos} {self.kind}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } else {
-            super.pretty(depth)
+            "{line}:{linePos} {self.kind} {scope.asDebugString}"
         }
+    }
+    method deepCopy {
+        self.map { each -> each } ancestors(ancestorChain.empty)
+    }
+    method enclosingObject {
+        def obj = scope.enclosingObjectScope.node
+        util.log_verbose "object enclosing {self} is {obj}"
+        obj
     }
 }
 
 def nullNode is public = object {
-    inherits symbolTableNode.new
+    inherits baseNode.new
     def kind is public = "null"
     method toGrace(depth) {
         "// null"
@@ -178,20 +176,21 @@ class ifNode.new(cond, thenblock', elseblock') {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitIf(self) up(pNode)) then {
-            value.accept(visitor) from(self)
-            thenblock.accept(visitor) from(self)
-            elseblock.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitIf(self) up(as)) then {
+            def newChain = as.extend(self)
+            value.accept(visitor) from(newChain)
+            thenblock.accept(visitor) from(newChain)
+            elseblock.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.thenblock := thenblock.map(blk) parent(n)
-        n.elseblock := elseblock.map(blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.thenblock := thenblock.map(blk) ancestors(newChain)
+        n.elseblock := elseblock.map(blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -235,17 +234,17 @@ class ifNode.new(cond, thenblock', elseblock') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
-    method shallowCopyWithParent(p) {
-        ifNode.new(nullNode, nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        ifNode.new(nullNode, nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
+    method shallowCopyFieldsFrom(other) {
+        super.shallowCopyFieldsFrom(other)
         handledIdentifiers := other.handledIdentifiers
         self
     }
 }
 class blockNode.new(params', body') {
-    inherits symbolTableNode.new
+    inherits baseNode.new
     def kind is public = "block"
     def value is public = "block"
     var params is public := params'
@@ -254,38 +253,49 @@ class blockNode.new(params', body') {
     var matchingPattern is public := false
     var extraRuntimeData is public := false
     for (params') do {p->
-        p.accept(patternMarkVisitor) from(self)
+        p.accept(patternMarkVisitor) from(ancestorChain.with(self))
     }
-    method declarationKind {
+    method scope:=(st) {
+        // sets up the 2-way conection between this node
+        // and the synmol table that defines the scope that I open.
+        symbolTable := st
+        st.node := self
+    }
+    method declarationKindWithAncestors(as) {
         "parameter"
     }
     method isMatchingBlock { params.size == 1 }
-    method definesObject {
-        body.isEmpty.not.andAlso { body.last.definesObject }
+    method returnsObject {
+        body.isEmpty.not.andAlso { body.last.returnsObject }
+    }
+    method returnedObjectScope {
+        // precondition: returnsObject
+        body.last.returnedObjectScope
     }
     method parametersDo(b) {
         params.do(b)
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitBlock(self) up(pNode)) then {
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitBlock(self) up(as)) then {
+            def newChain = as.extend(self)
             for (self.params) do { mx ->
-                mx.accept(visitor) from(self)
+                mx.accept(visitor) from(newChain)
             }
             for (self.body) do { mx ->
-                mx.accept(visitor) from(self)
+                mx.accept(visitor) from(newChain)
             }
             if (self.matchingPattern != false) then {
-                self.matchingPattern.accept(visitor) from(self)
+                self.matchingPattern.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.params := listMap(params, blk) parent(n)
-        n.body := listMap(body, blk) parent(n)
-        n.matchingPattern := maybeMap(matchingPattern, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.params := listMap(params, blk) ancestors(newChain)
+        n.body := listMap(body, blk) ancestors(newChain)
+        n.matchingPattern := maybeMap(matchingPattern, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -337,11 +347,11 @@ class blockNode.new(params', body') {
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
-    method shallowCopyWithParent(p) {
-        blockNode.new(params, body).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        blockNode.new(params, body).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
+    method shallowCopyFieldsFrom(other) {
+        super.shallowCopyFieldsFrom(other)
         matchingPattern := other.matchingPattern
         extraRuntimeData := other.extraRuntimeData
         self
@@ -354,23 +364,25 @@ class catchCaseNode.new(block, cases', finally') {
     var cases is public := cases'
     var finally is public := finally'
 
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitCatchCase(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitCatchCase(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.value.accept(visitor) from(newChain)
             for (self.cases) do { mx ->
-                mx.accept(visitor) from(self)
+                mx.accept(visitor) from(newChain)
             }
             if (self.finally != false) then {
-                self.finally.accept(visitor) from(self)
+                self.finally.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.cases := listMap(cases, blk) parent(n)
-        n.finally := maybeMap(finally, blk) parent(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.cases := listMap(cases, blk) ancestors(newChain)
+        n.finally := maybeMap(finally, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -401,8 +413,8 @@ class catchCaseNode.new(block, cases', finally') {
         }
         s
     }
-    method shallowCopyWithParent(p) {
-        catchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        catchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
 }
 class matchCaseNode.new(matchee', cases', elsecase') {
@@ -412,24 +424,25 @@ class matchCaseNode.new(matchee', cases', elsecase') {
     var cases is public := cases'
     var elsecase is public := elsecase'
     method matchee { value }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitMatchCase(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitMatchCase(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.value.accept(visitor) from(newChain)
             for (self.cases) do { mx ->
-                mx.accept(visitor) from(self)
+                mx.accept(visitor) from(newChain)
             }
             if (self.elsecase != false) then {
-                self.elsecase.accept(visitor) from(self)
+                self.elsecase.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.cases := listMap(cases, blk) parent(n)
-        n.elsecase := maybeMap(elsecase, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.cases := listMap(cases, blk) ancestors(newChain)
+        n.elsecase := maybeMap(elsecase, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -460,8 +473,8 @@ class matchCaseNode.new(matchee', cases', elsecase') {
         }
         s
     }
-    method shallowCopyWithParent(p) {
-        matchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        matchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
 }
 class methodTypeNode.new(name', signature', rtype') {
@@ -481,7 +494,7 @@ class methodTypeNode.new(name', signature', rtype') {
     //     object {
     //         ...
     //     }
-    inherits symbolTableNode.new
+    inherits baseNode.new
     def kind is public = "methodtype"
     var value is public := name'
     var signature is public := signature'
@@ -495,32 +508,39 @@ class methodTypeNode.new(name', signature', rtype') {
             part.params.do { each -> b.apply(each) }
         }
     }
-    method declarationKind { "typedec" }
+    method scope:=(st) {
+        // sets up the 2-way conection between this node
+        // and the synmol table that defines the scope that I open.
+        symbolTable := st
+        st.node := self
+    }
+    method declarationKindWithAncestors(as) { "typedec" }
     method typeParametersDo(b) {
         if (false != generics) then {
             generics.do { each -> b.apply(each) }
         }
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitMethodType(self) up(pNode)) then {
-            if (rtype != false) then {
-                rtype.accept(visitor) from(self)
-            }
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitMethodType(self) up(as)) then {
+            def newChain = as.extend(self)
             for (generics) do { each ->
-                each.accept(visitor) from(self)
+                each.accept(visitor) from(newChain)
+            }
+            if (rtype != false) then {
+                rtype.accept(visitor) from(newChain)
             }
             for (signature) do { part ->
-                part.accept(visitor) from(self)
+                part.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.rtype := maybeMap(rtype, blk) parent(n)
-        n.signature := listMap(signature, blk) parent(n)
-        n.generics := listMap(generics, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.rtype := maybeMap(rtype, blk) ancestors(newChain)
+        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -568,8 +588,8 @@ class methodTypeNode.new(name', signature', rtype') {
         }
         s
     }
-    method shallowCopyWithParent(p) {
-        methodTypeNode.new(value, emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        methodTypeNode.new(value, emptySeq, false).shallowCopyFieldsFrom(self)
     }
 }
 class typeLiteralNode.new(methods', types') {
@@ -589,22 +609,23 @@ class typeLiteralNode.new(methods', types') {
     method asString {
         "TypeLiteral: methods = {methods}, types = {types}"
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitTypeLiteral(self) up(pNode)) then {
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitTypeLiteral(self) up(as)) then {
+            def newChain = as.extend(self)
             for (self.methods) do { each ->
-                each.accept(visitor) from(self)
+                each.accept(visitor) from(newChain)
             }
             for (self.types) do { each ->
-                each.accept(visitor) from(self)
+                each.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.methods := listMap(methods, blk) parent (n)
-        n.types := listMap(types, blk) parent (n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.methods := listMap(methods, blk) ancestors (as)
+        n.types := listMap(types, blk) ancestors (as)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -648,11 +669,11 @@ class typeLiteralNode.new(methods', types') {
         }
         s ++ "\}"
     }
-    method shallowCopyWithParent(p) {
-        typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        typeLiteralNode.new(emptySeq, emptySeq).shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
+    method shallowCopyFieldsFrom(other) {
+        super.shallowCopyFieldsFrom(other)
         nominal := other.nominal
         anonymous := other.anonymous
         value := other.value
@@ -661,7 +682,7 @@ class typeLiteralNode.new(methods', types') {
 }
 
 class typeDecNode.new(name', typeValue) {
-    inherits symbolTableNode.new
+    inherits baseNode.new
     def kind is public = "typedec"
     var name is public := name'
     var value is public := typeValue
@@ -669,7 +690,13 @@ class typeDecNode.new(name', typeValue) {
     var annotations is public := list.empty
     var generics is public := list.empty
 
-    method declarationKind {
+    method scope:=(st) {
+        // sets up the 2-way conection between this node
+        // and the synmol table that defines the scope that I open.
+        symbolTable := st
+        st.node := self
+    }
+    method declarationKindWithAncestors(as) {
         "parameter"
     }
     method isConfidential {
@@ -680,24 +707,23 @@ class typeDecNode.new(name', typeValue) {
     method isWritable { false }
     method isReadable { isPublic }
 
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitTypeDec(self) up(pNode)) then {
-            value.accept(visitor) from(self)
-            generics.do { each -> each.accept(visitor) from(self) }
-            annotations.do { each -> each.accept(visitor) from(self) }
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitTypeDec(self) up(as)) then {
+            def newChain = as.extend(self)
+            name.accept(visitor) from(newChain)
+            generics.do { each -> each.accept(visitor) from(newChain) }
+            annotations.do { each -> each.accept(visitor) from(newChain) }
+            value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        if (name.kind != "identifier") then { 
-            print "typeDecNode {nameString} does not contain an identifier" 
-        }
-        n.name := name.map(blk) parent(n)
-        n.value := value.map(blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n.generics := listMap(generics, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        n.value := value.map(blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -738,327 +764,351 @@ class typeDecNode.new(name', typeValue) {
         s
     }
     method asString { "TypeDec {nameString}" }
-    method shallowCopyWithParent(p) {
-        typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
     }
 }
 
-class methodNode.new(name', signature', body', dtype') {
-    // Represents a method declaration
-    // [signature]
-    //     object {
-    //         name := ""
-    //         params := sequence.empty
-    //         vararg := false/identifier
-    //     }
-    //     object {
-    //         name := ""
-    //         params := sequence.empty
-    //         vararg := false/identifier
-    //     }
-    //     ...
-    //     object {
-    //         ...
-    //     }
-    inherits symbolTableNode.new
-    def kind is public = "method"
-    var value is public := name'
-    var signature is public := signature'
-    var body is public := body'
-    var dtype is public := dtype'
-    var varargs is public := false
-    var generics is public := sequence.empty
-    var selfclosure is public := false
-    def nameString:String is public = value.value
-    var annotations is public := list.empty
-    var isFresh is public := false      // a method is 'fresh' if it answers a new object
-
-    method declarationKind {
-        "parameter"
+def methodNode = object {
+    method new(name, signature, body, dtype) scope(s) {
+        def result = new(name, signature, body, dtype)
+        result.scope := s
+        result
     }
-    method isConfidential {
-        if (annotations.size == 0) then { return false }
-        findAnnotation(self, "confidential")
-    }
-    method isPublic { isConfidential.not }
-    method isWritable { false }
-    method isReadable { isPublic }
-    method usesAsType(aNode) {
-        aNode == dtype
-    }
-    method definesScope { 
-        body.isEmpty.not.andAlso {body.last.definesObject}
-    }
-    method objectScope {
-        scope.parent
-    }
-    method parametersDo(b) {
-        signature.do { part -> 
-            part.params.do { each -> b.apply(each) }
-        }
-    }
-    method typeParametersDo(b) {
-        if (false != generics) then {
-            generics.do { each -> b.apply(each) }
-        }
-    }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitMethod(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            if (self.dtype != false) then {
-                self.dtype.accept(visitor) from(self)
-            }
-            for (generics) do { each ->
-                each.accept(visitor) from(self)
-            }
-            for (self.signature) do { part ->
-                for (part.params) do { p ->
-                    p.accept(visitor) from(self)
-                }
-                if (part.vararg != false) then {
-                    part.vararg.accept(visitor) from(self)
-                }
-            }
-            for (self.body) do { mx ->
-                mx.accept(visitor) from(self)
-            }
-        }
-    }
-    method map(blk) parent(p){
-        var n := shallowCopyWithParent(p)
-        n.body := listMap(body, blk) parent(n)
-        n.signature := listMap(signature, blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n.generics := listMap(generics, blk) parent(n)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := super.pretty(depth) ++ "\n"
-        s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
-        s := s ++ "\n"
-        if (false != self.dtype) then {
-            s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
-            s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
-        }
-        if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
-        s := "{s}{spc}Signature:"
-        for (signature) do { part ->
-            s := "{s}\n  {spc}Part: {part.name}"
-            s := "{s}\n    {spc}Parameters:"
-            for (part.params) do { p ->
-                s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-            }
-            if (part.vararg != false) then {
-                s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
-            }
-        }
-        s := s ++ "\n"
-        if (false != generics) then {
-            s := "{s}{spc}Generics:"
-            for (generics) do {g->
-                s := "{s}\n{spc}  {g.pretty(0)}"
-            }
-            s := s ++ "\n"
-        }
-        if (annotations.size > 0) then {
-            s := "{s}{spc}Annotations:"
-            for (annotations) do {an->
-                s := "{s}\n{spc}  {an.pretty(depth + 2)}"
-            }
-            s := s ++ "\n"
-        }
-        s := s ++ spc ++ "Body:"
-        for (self.body) do { mx ->
-            s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
-        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := "method "
-        var firstPart := true
-        for (self.signature) do { part ->
-            s := s ++ part.name
-            if (firstPart.andAlso{generics.size != 0}) then {
-                s := s ++ "<"
-                for (1..(generics.size - 1)) do {ix ->
-                    s := s ++ generics.at(ix).toGrace(depth + 1)
-                }
-                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
-            }
-            firstPart := false
-            if ((part.params.size > 0) || (part.vararg != false)) then {
-                s := s ++ "("
-                for (part.params.indices) do { pnr ->
-                    var p := part.params[pnr]
-                    s := s ++ p.toGrace(depth + 1)
-                    if ((pnr < part.params.size) || (part.vararg != false)) then {
-                        s := s ++ ", "
-                    }
-                }
-                if (part.vararg != false) then {
-                    s := s ++ "*" ++ part.vararg.value
-                }
-                s := s ++ ")"
-            }
-        }
-        if (self.dtype != false) then {
-            s := s ++ " -> {self.dtype.toGrace(0)}"
-        }
-        if (self.annotations.size > 0) then {
-            s := s ++ " is "
-            s := s ++ self.annotations.reduce("", { a,b ->
-                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
-        }
-        s := s ++ " \{"
-        for (self.body) do { mx ->
-            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
-        }
-        s := s ++ "\n" ++ spc ++ "\}"
-        s
-    }
-    method asString { "Method {nameString}" }
-    method shallowCopyWithParent(p) {
-        methodNode.new(value, signature, body, dtype).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        isFresh := other.isFresh
-        selfclosure := other.selfclosure
-        self
-    }
-}
-class callNode.new(what, with') {
-    // requested as callNode.new(target:AstNode, parts:List)
-    // Represents a method request with arguments.
-    // The ‹target›.‹methodName› part is in `value`
-    // The argument list is in `with`, as a sequence of `callWithPart`s.
-    // [with]
-    //     object {
-    //         name := ""
-    //         args := sequence.empty
-    //     }
-    //     object {
-    //         name := ""
-    //         args := sequence.empty
-    //     }
-    //     ...
-    //     object {
-    //         ...
-    //     }
-    inherits baseNode.new
-    def kind is public = "call"
-    var value is public := what        // method being requested
-    var with is public := with'        // arguments
-    var generics is public := false
-    var isPattern is public := false
-    def nameString:String is public = value.nameString
     
-    method target { value }
-    method isCall { true }
-    method definesObject {
-        value.isMember.andAlso { value.nameString == "clone" }
-    }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitCall(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            for (self.with) do { part ->
-                for (part.args) do { arg ->
-                    arg.accept(visitor) from(self)
+    factory method new(name', signature', body', dtype') {
+        // Represents a method declaration
+        // name' is the name of the method (an identifierNode),
+        // signature is a sequence of signatureParts,
+        // body is a sequence of statements and declarations,
+        // dtype is the declared return type of the method, or false.
+
+        inherits baseNode.new
+        def kind is public = "method"
+        var value is public := name'
+        var signature is public := signature'
+        var body is public := body'
+        var dtype is public := dtype'
+        var varargs is public := false
+        var generics is public := sequence.empty
+        var selfclosure is public := false
+        def nameString:String is public = value.value
+        var annotations is public := list.empty
+        var isFresh is public := false      // a method is 'fresh' if it answers a new object
+
+        method scope:=(st) {
+            // sets up the 2-way conection between this node
+            // and the synmol table that defines the scope that I open.
+            symbolTable := st
+            st.node := self
+        }
+        method declarationKindWithAncestors(as) {
+            "parameter"
+        }
+        method isConfidential {
+            if (annotations.size == 0) then { return false }
+            findAnnotation(self, "confidential")
+        }
+        method isPublic { isConfidential.not }
+        method isWritable { false }
+        method isReadable { isPublic }
+        method usesAsType(aNode) {
+            aNode == dtype
+        }
+        method returnsObject {
+            body.isEmpty.not.andAlso {body.last.returnsObject}
+        }
+        method returnedObjectScope {
+            // precondition: returnsObject
+            body.last.returnedObjectScope
+        }
+        method parametersDo(b) {
+            signature.do { part -> 
+                part.params.do { each -> b.apply(each) }
+            }
+        }
+        method typeParametersDo(b) {
+            if (false != generics) then {
+                generics.do { each -> b.apply(each) }
+            }
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitMethod(self) up(as)) then {
+                def newChain = as.extend(self)
+                self.value.accept(visitor) from(newChain)
+                for (generics) do { each ->
+                    each.accept(visitor) from(newChain)
                 }
-            }
-        }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.with := listMap(with, blk) parent(n)
-        if (generics != false) then {
-            n.generics := listMap(generics, blk) parent(n)
-        }
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := super.pretty(depth) ++ "\n"
-        s := s ++ spc ++ "Method Name: {self.value.pretty(depth + 1)}"
-        s := s ++ "\n"
-        if (false != generics) then {
-            s := s ++ spc ++ "  Generics:\n"
-            for (generics) do {g->
-                s := s ++ spc ++ "    " ++ g.pretty(depth + 2) ++ "\n"
-            }
-        }
-        s := s ++ spc ++ "Arguments:"
-        for (self.with) do { part ->
-            s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name
-            for (part.args) do { arg ->
-                s := s ++ "\n      " ++ spc ++ arg.pretty(depth + 2)
-            }
-        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := ""
-        // only the last member is the method call we need to handle
-        if (self.value.kind == "member") then {
-            var member := self.value
-            if (member.value.substringFrom(1)to(6) == "prefix") then {
-                s := member.value.substringFrom(7)to(member.value.size)
-                return s ++ member.in.toGrace(0)
-            }
-            s := member.in.toGrace(0) ++ "."
-        }
-        var firstPart := true
-        for (self.with) do { part ->
-            s := s ++ part.name
-            if (firstPart.andAlso{generics != false}) then {
-                s := s ++ "<"
-                for (1..(generics.size - 1)) do {ix ->
-                    s := s ++ generics.at(ix).toGrace(depth + 1)
-                }
-                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
-            }
-            firstPart := false
-            if (part.args.size > 0) then {
-                s := s ++ "("
-                for (part.args.indices) do { anr ->
-                    var arg := part.args[anr]
-                    s := s ++ arg.toGrace(depth + 1)
-                    if (anr < part.args.size) then {
-                        s := s ++ ", "
+                for (self.signature) do { part ->
+                    for (part.params) do { p ->
+                        p.accept(visitor) from(newChain)
+                    }
+                    if (part.vararg != false) then {
+                        part.vararg.accept(visitor) from(newChain)
                     }
                 }
-                s := s ++ ")"
+                if (dtype != false) then {
+                    dtype.accept(visitor) from(newChain)
+                }
+                for (self.annotations) do { ann ->
+                    ann.accept(visitor) from(newChain)
+                }
+                for (self.body) do { mx ->
+                    mx.accept(visitor) from(newChain)
+                }
             }
         }
-        s
+        method map(blk) ancestors(as){
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.body := listMap(body, blk) ancestors(newChain)
+            n.generics := listMap(generics, blk) ancestors(newChain)
+            n.signature := listMap(signature, blk) ancestors(newChain)
+            n.annotations := listMap(annotations, blk) ancestors(newChain)
+            n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth) ++ "\n"
+            s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
+            s := s ++ "\n"
+            if (false != self.dtype) then {
+                s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
+                s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
+            }
+            if (isFresh) then { s := s ++ spc ++ "Fresh\n" }
+            s := "{s}{spc}Signature:"
+            for (signature) do { part ->
+                s := "{s}\n  {spc}Part: {part.name}"
+                s := "{s}\n    {spc}Parameters:"
+                for (part.params) do { p ->
+                    s := "{s}\n      {spc}{p.pretty(depth + 4)}"
+                }
+                if (part.vararg != false) then {
+                    s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
+                }
+            }
+            s := s ++ "\n"
+            if (false != generics) then {
+                s := "{s}{spc}Generics:"
+                for (generics) do {g->
+                    s := "{s}\n{spc}  {g.pretty(0)}"
+                }
+                s := s ++ "\n"
+            }
+            if (annotations.size > 0) then {
+                s := "{s}{spc}Annotations:"
+                for (annotations) do {an->
+                    s := "{s}\n{spc}  {an.pretty(depth + 2)}"
+                }
+                s := s ++ "\n"
+            }
+            s := s ++ spc ++ "Body:"
+            for (self.body) do { mx ->
+                s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            }
+            s
+        }
+        method toGrace(depth : Number) -> String {
+            var spc := ""
+            for (0..(depth - 1)) do { i ->
+                spc := spc ++ "    "
+            }
+            var s := "method "
+            var firstPart := true
+            for (self.signature) do { part ->
+                s := s ++ part.name
+                if (firstPart.andAlso{generics.size != 0}) then {
+                    s := s ++ "<"
+                    for (1..(generics.size - 1)) do {ix ->
+                        s := s ++ generics.at(ix).toGrace(depth + 1)
+                    }
+                    s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+                }
+                firstPart := false
+                if ((part.params.size > 0) || (part.vararg != false)) then {
+                    s := s ++ "("
+                    for (part.params.indices) do { pnr ->
+                        var p := part.params[pnr]
+                        s := s ++ p.toGrace(depth + 1)
+                        if ((pnr < part.params.size) || (part.vararg != false)) then {
+                            s := s ++ ", "
+                        }
+                    }
+                    if (part.vararg != false) then {
+                        s := s ++ "*" ++ part.vararg.value
+                    }
+                    s := s ++ ")"
+                }
+            }
+            if (self.dtype != false) then {
+                s := s ++ " -> {self.dtype.toGrace(0)}"
+            }
+            if (self.annotations.size > 0) then {
+                s := s ++ " is "
+                s := s ++ self.annotations.reduce("", { a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
+            }
+            s := s ++ " \{"
+            for (self.body) do { mx ->
+                s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
+            }
+            s := s ++ "\n" ++ spc ++ "\}"
+            s
+        }
+        method asString { "Method {nameString}" }
+        method shallowCopy {
+            methodNode.new(value, signature, body, dtype).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            isFresh := other.isFresh
+            selfclosure := other.selfclosure
+            self
+        }
     }
-    method asString { "Call {what.pretty(0)}" }
-    method shallowCopyWithParent(p) {
-        callNode.new(value, with).shallowCopyFieldsFrom(self) parent(p)
+}
+def callNode = object {
+    method new(what, with) scope(s) {
+        def result = new(what, with)
+        result.scope := s
+        result
     }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        isPattern := other.isPattern
-        self
+    factory method new(what, with') {
+        // requested as callNode.new(target:AstNode, parts:List)
+        // Represents a method request with arguments.
+        // The ‹target›.‹methodName› part is in `value`
+        // The argument list is in `with`, as a sequence of `callWithPart`s.
+        // [with]
+        //     object {
+        //         name := ""
+        //         args := sequence.empty
+        //     }
+        //     object {
+        //         name := ""
+        //         args := sequence.empty
+        //     }
+        //     ...
+        //     object {
+        //         ...
+        //     }
+        inherits baseNode.new
+        def kind is public = "call"
+        var value is public := what        // method being requested
+        var with is public := with'        // arguments
+        var generics is public := false
+        var isPattern is public := false
+        def nameString:String is public = value.nameString
+        
+        method target { value }
+        method isCall { true }
+        method returnsObject {
+            if (value.isMember.not) then { return false }
+            if (value.nameString == "clone") then { return true }
+            if (value.nameString == "copy") then { return true }
+            return false
+        }
+        method returnedObjectScope {
+            // precondition: returnsObject
+            self.scope
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitCall(self) up(as)) then {
+                def newChain = as.extend(self)
+                self.value.accept(visitor) from(newChain)
+                for (self.with) do { part ->
+                    for (part.args) do { arg ->
+                        arg.accept(visitor) from(newChain)
+                    }
+                }
+            }
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.value := value.map(blk) ancestors(newChain)
+            n.with := listMap(with, blk) ancestors(newChain)
+            if (generics != false) then {
+                n.generics := listMap(generics, blk) ancestors(newChain)
+            }
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth) ++ "\n"
+            s := s ++ spc ++ "Method Name: {self.value.pretty(depth + 1)}"
+            s := s ++ "\n"
+            if (false != generics) then {
+                s := s ++ spc ++ "  Generics:\n"
+                for (generics) do {g->
+                    s := s ++ spc ++ "    " ++ g.pretty(depth + 2) ++ "\n"
+                }
+            }
+            s := s ++ spc ++ "Arguments:"
+            for (self.with) do { part ->
+                s := s ++ "\n  " ++ spc ++ "Part: " ++ part.name
+                for (part.args) do { arg ->
+                    s := s ++ "\n      " ++ spc ++ arg.pretty(depth + 2)
+                }
+            }
+            s
+        }
+        method toGrace(depth : Number) -> String {
+            var spc := ""
+            for (0..(depth - 1)) do { i ->
+                spc := spc ++ "    "
+            }
+            var s := ""
+            // only the last member is the method call we need to handle
+            if (self.value.kind == "member") then {
+                var member := self.value
+                if (member.value.substringFrom(1)to(6) == "prefix") then {
+                    s := member.value.substringFrom(7)to(member.value.size)
+                    return s ++ member.in.toGrace(0)
+                }
+                s := member.in.toGrace(0) ++ "."
+            }
+            var firstPart := true
+            for (self.with) do { part ->
+                s := s ++ part.name
+                if (firstPart.andAlso{generics != false}) then {
+                    s := s ++ "<"
+                    for (1..(generics.size - 1)) do {ix ->
+                        s := s ++ generics.at(ix).toGrace(depth + 1)
+                    }
+                    s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+                }
+                firstPart := false
+                if (part.args.size > 0) then {
+                    s := s ++ "("
+                    for (part.args.indices) do { anr ->
+                        var arg := part.args[anr]
+                        s := s ++ arg.toGrace(depth + 1)
+                        if (anr < part.args.size) then {
+                            s := s ++ ", "
+                        }
+                    }
+                    s := s ++ ")"
+                }
+            }
+            s
+        }
+        method asString { "Call {what.pretty(0)}" }
+        method shallowCopy {
+            callNode.new(value, with).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            isPattern := other.isPattern
+            self
+        }
     }
 }
 class classNode.new(name', signature', body', superclass', constructor', dtype') {
@@ -1078,7 +1128,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     //     object {
     //         ...
     //     }
-    inherits symbolTableNode.new
+    inherits baseNode.new
     def kind is public = "class"
     var value is public := body'
     var name is public := name'
@@ -1091,12 +1141,20 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     def nameString:String is public = name.value
 
     var data is public := false
-    
-    method fullName { "{nameString}.{constructor.nameString}" }
-    method declarationKind {
+
+    method declarationKindWithAncestors(as) {
         "method"
     }
-    method definesObject { true }
+    method scope:=(st) {
+        // sets up the 2-way conection between this node and the
+        // symbol table that defines the scope that it opens.
+        symbolTable := st
+        st.node := self
+    }
+    method canInherit {true }
+    method returnsObject { true }
+    method returnedObjectScope { scope }
+
     method isClass { true }
     method isPublic {
         // assume that classes are public by default
@@ -1118,33 +1176,43 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             generics.do { each -> b.apply(each) }
         }
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitClass(self) up(pNode)) then {
-            self.name.accept(visitor) from(self)
-            self.constructor.accept(visitor) from(self)
-            if (self.superclass != false) then {
-                self.superclass.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitClass(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.name.accept(visitor) from(newChain)
+            self.constructor.accept(visitor) from(newChain)
+            for (generics) do { each ->
+                each.accept(visitor) from(newChain)
             }
-            for (self.signature) do { partNode ->
-                partNode.accept(visitor) from(self)
+            if (superclass != false) then {
+                superclass.accept(visitor) from(newChain)
             }
-            for (self.value) do { each ->
-                each.accept(visitor) from(self)
+            for (signature) do { partNode ->
+                partNode.accept(visitor) from(newChain)
+            }
+            if (dtype != false) then {
+                dtype.accept(visitor) from(newChain)
+            }
+            for (annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
+            for (value) do { each ->
+                each.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := listMap(value, blk) parent(n)
-        n.name := name.map(blk) parent(n)
-        n.signature := listMap(signature, blk) parent(n)
-        n.generics := listMap(generics, blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n.superclass := maybeMap(superclass, blk) parent(n)
-        n.constructor := constructor.map(blk) parent(n)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := listMap(value, blk) ancestors(newChain)
+        n.name := name.map(blk) ancestors(newChain)
+        n.signature := listMap(signature, blk) ancestors(newChain)
+        n.generics := listMap(generics, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+        n.constructor := constructor.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -1154,8 +1222,10 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {self.name.pretty(0)}"
         if (util.target == "symbols") then {
-            s := s ++ "\n{spc}Parent Symbols({symbolTable'.parent.variety}): {symbolTable'.parent.keysAndValuesAsList}"
-            s := s ++ "\n{spc}Parent^2 Symbols({symbolTable'.parent.parent.variety}): {symbolTable'.parent.parent.keysAndValuesAsList}"
+            s := s ++ "\n{spc}Inner object symbols({scope.variety}): {scope.asString}"
+            s := s ++ "\n{spc}Factory method symbols({scope.parent.variety}): {scope.parent.asString}"
+            s := s ++ "\n{spc}Outer object symbols({scope.parent.parent.variety}): {scope.parent.parent.asString}"
+            s := s ++ "\n{spc}enclosing symbols({scope.parent.parent.parent.variety}): {scope.parent.parent.parent.asDebugString}"
         }
         if (self.superclass != false) then {
             s := s ++ "\n" ++ spc ++ "Superclass:"
@@ -1232,108 +1302,160 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         s := s ++ "\n" ++ spc ++ "\}"
         s
     }
-    method shallowCopyWithParent(p) {
+    method shallowCopy {
         classNode.new(name, emptySeq, emptySeq, false, nullNode, false)
-            .shallowCopyFieldsFrom(self) parent(p)
+            .shallowCopyFieldsFrom(self)
     }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
+    method shallowCopyFieldsFrom(other) {
+        super.shallowCopyFieldsFrom(other)
         data := other.data
         self
     }
 }
-class objectNode.new(body, superclass') {
-    // TODO  remove superclass as a parameter
-    inherits symbolTableNode.new
-    def kind is public = "object"
-    var value is public := body
-    var superclass is public := superclass'
-    var classname is public := "object"
-    var data is public := false
-    
-    method fullName { 
-        if (classname != "object") then { return classname }
-        if (parent.kind == "defdec") then { return parent.nameString }
-        return classname
+def moduleNode = object {
+    method body(b) named(n) scope(s) {
+        def result = new(b)
+        result.classname := n
+        result.scope := s
+        result
     }
-    method definesObject { true }
-    method isObject { true }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitObject(self) up(pNode)) then {
+    factory method new(body) {
+        inherits objectNode.new(body, false)
+        def kind is public = "module"
+        method classname { "module" }
+        method isModule { true }
+        method returnsObject { false }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitModule(self) up(as)) then {
+                def newChain = as.extend(self)
+                if (self.superclass != false) then {
+                    self.superclass.accept(visitor) from(newChain)
+                }
+                for (self.value) do { x ->
+                    x.accept(visitor) from(newChain)
+                }
+            }
+        }
+        method shallowCopy {
+            moduleNode.new(emptySeq).shallowCopyFieldsFrom(self)
+        }
+    }
+}
+def objectNode = object {
+    method body(b) named(n) scope(s) {
+        def result = new(b, false)
+        result.classname := n
+        result.scope := s
+        result
+    }
+    method body(b) named(n) {
+        body(b) named(n) scope(fakeSymbolTable)
+    }
+    factory method new(body, superclass') {
+        // TODO  remove superclass as a parameter
+        inherits baseNode.new
+        def kind is public = "object"
+        var value is public := body
+        var superclass is public := superclass'
+        var classname is public := "object"
+        var data is public := false
+
+        method scope:=(st) {
+            // sets up the 2-way conection between this node
+            // and the symbol table that defines the scope that I open.
+            symbolTable := st
+            st.node := self
+        }
+        method returnsObject { true }
+        method returnedObjectScope { scope }
+        method canInherit {true }
+        method isObject { true }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitObject(self) up(as)) then {
+                def newChain = as.extend(self)
+                if (self.superclass != false) then {
+                    self.superclass.accept(visitor) from(newChain)
+                }
+                for (self.value) do { x ->
+                    x.accept(visitor) from(newChain)
+                }
+            }
+        }
+        method nameString { 
+            if (classname == "object") then {
+                "object_on_line_{line}"
+            } else {
+                classname
+            }
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.value := listMap(value, blk) ancestors(newChain)
+            n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+            blk.apply(n, as)
+        }
+        method pretty(depth') {
+            var depth := depth'
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth)
             if (self.superclass != false) then {
-                self.superclass.accept(visitor) from(self)
+                s := s ++ "\n" ++ spc ++ "Superclass:"
+                s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
+                s := s ++ "\n" ++ spc ++ "Body:"
+                depth := depth + 1
             }
             for (self.value) do { x ->
-                x.accept(visitor) from(self)
+                s := s ++ "\n"++ spc ++ x.pretty(depth+1)
             }
+            s
         }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := listMap(value, blk) parent(n)
-        n.superclass := maybeMap(superclass, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth') {
-        var depth := depth'
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
+        method toGrace(depth : Number) -> String {
+            var spc := ""
+            for (0..(depth - 1)) do { i ->
+                spc := spc ++ "    "
+            }
+            var s := "object \{"
+            for (self.value) do { x ->
+                s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
+            }
+            s := s ++ "\n" ++ spc ++ "\}"
+            s
         }
-        var s := super.pretty(depth)
-        if (self.superclass != false) then {
-            s := s ++ "\n" ++ spc ++ "Superclass:"
-            s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
-            s := s ++ "\n" ++ spc ++ "Body:"
-            depth := depth + 1
+        method shallowCopy {
+            objectNode.new(emptySeq, false).shallowCopyFieldsFrom(self)
         }
-        for (self.value) do { x ->
-            s := s ++ "\n"++ spc ++ x.pretty(depth+1)
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            data := other.data
+            classname := other.classname
+            self
         }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
+        method asString {
+            "object {nameString}"
         }
-        var s := "object \{"
-        for (self.value) do { x ->
-            s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
-        }
-        s := s ++ "\n" ++ spc ++ "\}"
-        s
-    }
-    method shallowCopyWithParent(p) {
-        objectNode.new(emptySeq, false).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        data := other.data
-        classname := other.classname
-        self
-    }
-    method asString {
-        "object \{{classname} inherits {superclass}\}"
     }
 }
 class arrayNode.new(values) {
     inherits baseNode.new
     def kind is public = "array"
     var value is public := values
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitArray(self) up(pNode)) then {
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitArray(self) up(as)) then {
+            def newChain = as.extend(self)
             for (self.value) do { ax ->
-                ax.accept(visitor) from(self)
+                ax.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := listMap(value, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := listMap(value, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -1357,79 +1479,89 @@ class arrayNode.new(values) {
         s := s ++ "]"
         s
     }
-    method shallowCopyWithParent(p) {
-        arrayNode.new(emptySeq).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        arrayNode.new(emptySeq).shallowCopyFieldsFrom(self)
     }
 }
-class memberNode.new(what, in') {
-    // Represents a dotted request ‹in›.‹value›
-    inherits baseNode.new
-    def kind is public = "member"
-    var value is public := what  // NB: value is a String, not an Identifier
-    var in is public := in'
-    var generics is public := false
+def memberNode = object {
+    method new(what, in') scope(s) {
+        def result = new(what, in')
+        result.scope := s
+        result
+    }
+    factory method new(what, in') {
+        // Represents a dotted request ‹in›.‹value›
+        inherits baseNode.new
+        def kind is public = "member"
+        var value is public := what  // NB: value is a String, not an Identifier
+        var in is public := in'
+        var generics is public := false
 
-    method target { in }
-    method nameString { value }
-    method isMember { true }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitMember(self) up(pNode)) then {
-            self.in.accept(visitor) from(self)
-        }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.in := in.map(blk) parent(n)
-        if (generics != false) then {
-            n.generics := listMap(generics, blk) parent(n)
-        }
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
-        s := s ++ spc ++ in.pretty(depth)
-        if (generics != false) then {
-            s := s ++ "\n" ++ spc ++ "  Generics:"
-            for (generics) do {g->
-                s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
+        method target { in }
+        method nameString { value }
+        method isMember { true }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitMember(self) up(as)) then {
+                def newChain = as.extend(self)
+                if (generics != false) then {
+                    generics.do { each -> each.accept(visitor) from(newChain) }
+                }
+                in.accept(visitor) from(newChain)
             }
         }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var s := ""
-        if (self.value.substringFrom(1)to(6) == "prefix") then {
-            s := self.value.substringFrom(7)to(value.size)
-            s := s ++ " " ++ self.in.toGrace(0)
-        } else {
-            s := self.in.toGrace(depth) ++ "." ++ self.value
-        }
-        if (generics != false) then {
-            s := s ++ "<"
-            for (1..(generics.size - 1)) do {ix ->
-                s := s ++ generics.at(ix).toGrace(depth + 1)
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.in := in.map(blk) ancestors(newChain)
+            if (generics != false) then {
+                n.generics := listMap(generics, blk) ancestors(newChain)
             }
-            s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            blk.apply(n, as)
         }
-        s
-    }
-    method asString { "{in}.{value}" }
-    method asIdentifier {
-        // make an identifiderNode with the same properties as me
-        def resultNode = identifierNode.new(value, false)
-        resultNode.inRequest := true
-        resultNode.line := line
-        resultNode.linePos := linePos
-        parent := self
-        return resultNode
-    }
-    method shallowCopyWithParent(p) {
-        memberNode.new(value, nullNode).shallowCopyFieldsFrom(self) parent(p)
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
+            s := s ++ spc ++ in.pretty(depth)
+            if (generics != false) then {
+                s := s ++ "\n" ++ spc ++ "  Generics:"
+                for (generics) do {g->
+                    s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
+                }
+            }
+            s
+        }
+        method toGrace(depth : Number) -> String {
+            var s := ""
+            if (self.value.substringFrom(1)to(6) == "prefix") then {
+                s := self.value.substringFrom(7)to(value.size)
+                s := s ++ " " ++ self.in.toGrace(0)
+            } else {
+                s := self.in.toGrace(depth) ++ "." ++ self.value
+            }
+            if (generics != false) then {
+                s := s ++ "<"
+                for (1..(generics.size - 1)) do {ix ->
+                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                }
+                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            }
+            s
+        }
+        method asString { "{in}.{value}" }
+        method asIdentifier {
+            // make an identifiderNode with the same properties as me
+            def resultNode = identifierNode.new(value, false)
+            resultNode.inRequest := true
+            resultNode.line := line
+            resultNode.linePos := linePos
+            return resultNode
+        }
+        method shallowCopy {
+            memberNode.new(value, nullNode).shallowCopyFieldsFrom(self)
+        }
     }
 }
 class genericNode.new(base, params') {
@@ -1444,20 +1576,21 @@ class genericNode.new(base, params') {
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
         s ++ ">"
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitGeneric(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitGeneric(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.value.accept(visitor) from(newChain)
             for (self.params) do { p ->
-                p.accept(visitor) from(self)
+                p.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.params := listMap(params, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.params := listMap(params, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var s := "{super.pretty(depth)}‹{self.value.value}›<"
@@ -1482,198 +1615,195 @@ class genericNode.new(base, params') {
         s := s ++ ">"
         s
     }
-    method shallowCopyWithParent(p) {
-        genericNode.new(value, emptySeq).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        genericNode.new(value, emptySeq).shallowCopyFieldsFrom(self)
     }
 }
-class identifierNode.new(name, dtype') {
-    inherits baseNode.new
-    def kind is public = "identifier"
-    var value is public := name
-    var wildcard is public := false
-    var dtype is public := dtype'
-    var isBindingOccurrence is public := false
-    var isAssigned is public := false
-    var inRequest is public := false
-    var generics is public := false
-    var isDeclaredByParent is public := false
+def identifierNode = object {
 
-    method nameString { value }     //  value changes when parsing "[]"
-    
-    method isIdentifier { true }
+    method new(name, dtype) scope(s) {
+        def result = new(name, dtype)
+        result.scope := s
+        result
+    }
 
-    method isAppliedOccurenceOfIdentifier {
-        if (wildcard) then { 
-            false 
-        } else {
-            isBindingOccurrence.not
+    factory method new(name, dtype') {
+        inherits baseNode.new
+        def kind is public = "identifier"
+        var value is public := name
+        var wildcard is public := false
+        var dtype is public := dtype'
+        var isBindingOccurrence is public := false
+        var isAssigned is public := false
+        var inRequest is public := false
+        var generics is public := false
+        var isDeclaredByParent is public := false
+
+        method nameString { value }     //  value changes when parsing "[]"
+        
+        method isIdentifier { true }
+
+        method isAppliedOccurenceOfIdentifier {
+            if (wildcard) then { 
+                false 
+            } else {
+                isBindingOccurrence.not
+            }
         }
-    }
-    method declarationKind {
-        parent.declarationKind
-    }
-    method inTypePosition {
-        // am I used by my parent node as a type?
-        // This is a hack, uses as a subsitute for having information in the .gct
-        // telling us which identifiers represent types
-        parent.usesAsType(self)
-    }
-    method usesAsType(aNode) {
-        aNode == dtype
-    }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitIdentifier(self) up(pNode)) then {
+        method declarationKindWithAncestors(as) {
+            as.parent.declarationKindWithAncestors(as)
+        }
+        method inTypePositionWithAncestors(as) {
+            // am I used by my parent node as a type?
+            // This is a hack, used as a subsitute for having information in the .gct
+            // telling us which identifiers represent types
+            if (as.isEmpty) then { return false }
+            as.parent.usesAsType(self)
+        }
+        method usesAsType(aNode) {
+            aNode == dtype
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitIdentifier(self) up(as)) then {
+                def newChain = as.extend(self)
+                if (self.dtype != false) then {
+                    self.dtype.accept(visitor) from(newChain)
+                }
+            }
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth)
+            if ( wildcard ) then {
+                s := s ++ " Wildcard"
+            } elseif { isBindingOccurrence } then {
+                s := s ++ "Binding‹{value}›"
+            } else {
+                s := s ++ "‹{value}›"
+            }
             if (self.dtype != false) then {
-                self.dtype.accept(visitor) from(self)
+                s := s ++ "\n" ++ spc ++ "  Type: "
+                s := s ++ self.dtype.pretty(depth + 2)
             }
-        }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := super.pretty(depth)
-        if ( wildcard ) then {
-            s := s ++ " Wildcard"
-        } elseif { isBindingOccurrence } then {
-            s := s ++ "Binding‹{value}›"
-        } else {
-            s := s ++ "‹{value}›"
-        }
-        if (self.dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "  Type: "
-            s := s ++ self.dtype.pretty(depth + 2)
-        }
-        if (false != generics) then {
-            s := s ++ "\n" ++ spc ++ "Generics:"
-            for (generics) do {g->
-                s := s ++ spc ++ "  " ++ g.pretty(depth + 2)
+            if (false != generics) then {
+                s := s ++ "\n" ++ spc ++ "Generics:"
+                for (generics) do {g->
+                    s := s ++ spc ++ "  " ++ g.pretty(depth + 2)
+                }
             }
+            s
         }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var s
-        if(self.wildcard) then {
-            s := "_"
-        } else {
-            s := self.value
-        }
-        if (self.dtype != false) then {
-            s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
-        }
-        if (false != generics) then {
-            s := s ++ "<"
-            for (1..(generics.size - 1)) do {ix ->
-                s := s ++ generics.at(ix).toGrace(depth + 1)
+        method toGrace(depth : Number) -> String {
+            var s
+            if(self.wildcard) then {
+                s := "_"
+            } else {
+                s := self.value
             }
-            s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            if (self.dtype != false) then {
+                s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
+            }
+            if (false != generics) then {
+                s := s ++ "<"
+                for (1..(generics.size - 1)) do {ix ->
+                    s := s ++ generics.at(ix).toGrace(depth + 1)
+                }
+                s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+            }
+            s
         }
-        s
-    }
 
-    method asString { 
-        if (isBindingOccurrence) then {
-            "IdentifierBinding‹{value}›"
-        } else { 
-            "Identifier‹{value}›"
+        method asString { 
+            if (isBindingOccurrence) then {
+                "IdentifierBinding‹{value}›"
+            } else { 
+                "Identifier‹{value}›"
+            }
         }
-    }
-    method shallowCopyWithParent(p) {
-        identifierNode.new(value, false).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        wildcard := other.wildcard
-        isBindingOccurrence := other.isBindingOccurrence
-        isDeclaredByParent := other.isDeclaredByParent
-        isAssigned := other.isAssigned
-        inRequest := other.inRequest
-        self
+        method shallowCopy {
+            identifierNode.new(value, false).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            wildcard := other.wildcard
+            isBindingOccurrence := other.isBindingOccurrence
+            isDeclaredByParent := other.isDeclaredByParent
+            isAssigned := other.isAssigned
+            inRequest := other.inRequest
+            self
+        }
     }
 }
 
 def typeType is public = identifierNode.new("Type", false)
 def unknownType is public = identifierNode.new("Unknown", typeType)
 
-class octetsNode.new(num) {
-    inherits baseNode.new
-    def kind is public = "octets"
-    var value is public := num
-    method accept(visitor : ASTVisitor) from(pNode) {
-        visitor.visitOctets(self) up(pNode)
+def stringNode = object {
+    method new(v) scope(s) {
+        def result = new(v)
+        result.scope := s
+        result
     }
-    method pretty(depth) {
-        "{super.pretty(depth)}({self.value})"
-    }
-    method toGrace(depth : Number) -> String {
-        self.value
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n := blk.apply(n)
-        n
-    }
-    method shallowCopyWithParent(p) {
-        octetsNode.new(value).shallowCopyFieldsFrom(self) parent(p)
-    }
-}
-class stringNode.new(v) {
-    inherits baseNode.new
-    def kind is public = "string"
-    var value is public := v
-    method accept(visitor : ASTVisitor) from(pNode) {
-        visitor.visitString(self) up(pNode)
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        "{super.pretty(depth)}({self.value})"
-    }
-    method toGrace(depth : Number) -> String {
-        var s := "\""
-        for (self.value) do { c ->
-            // TODO: what escapes are missing?
-            if (c == "\n") then {
-                s := s ++ "\\n"
-            } elseif (c == "\t") then {
-                s := s ++ "\\t"
-            } elseif (c == "\"") then {
-                s := s ++ "\\\""
-            } elseif (c == "\\") then {
-                s := s ++ "\\\\"
-            } else {
-                s := s ++ c
-            }
+
+    factory method new(v) {
+        inherits baseNode.new
+        def kind is public = "string"
+        var value is public := v
+        method accept(visitor : ASTVisitor) from(as) {
+            visitor.visitString(self) up(as)
         }
-        s := s ++ "\""
-        s
-    }
-    method shallowCopyWithParent(p) {
-        stringNode.new(value).shallowCopyFieldsFrom(self) parent(p)
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            "{super.pretty(depth)}({self.value})"
+        }
+        method toGrace(depth : Number) -> String {
+            var s := "\""
+            for (self.value) do { c ->
+                // TODO: what escapes are missing?
+                if (c == "\n") then {
+                    s := s ++ "\\n"
+                } elseif (c == "\t") then {
+                    s := s ++ "\\t"
+                } elseif (c == "\"") then {
+                    s := s ++ "\\\""
+                } elseif (c == "\\") then {
+                    s := s ++ "\\\\"
+                } else {
+                    s := s ++ c
+                }
+            }
+            s := s ++ "\""
+            s
+        }
+        method shallowCopy {
+            stringNode.new(value).shallowCopyFieldsFrom(self)
+        }
     }
 }
 class numNode.new(val) {
     inherits baseNode.new
     def kind is public = "num"
     var value is public := val
-    method accept(visitor : ASTVisitor) from(pNode) {
-        visitor.visitNum(self) up(pNode)
+    method accept(visitor : ASTVisitor) from(as) {
+        visitor.visitNum(self) up(as)
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         "{super.pretty(depth)}({self.value})"
@@ -1682,8 +1812,8 @@ class numNode.new(val) {
         self.value.asString
     }
     method asString { "Number {value}" }
-    method shallowCopyWithParent(p) {
-        numNode.new(value).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        numNode.new(value).shallowCopyFieldsFrom(self)
     }
 }
 class opNode.new(op, l, r) {
@@ -1693,18 +1823,19 @@ class opNode.new(op, l, r) {
     var left is public := l
     var right is public := r
     method nameString { value }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitOp(self) up(pNode)) then {
-            self.left.accept(visitor) from(self)
-            self.right.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitOp(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.left.accept(visitor) from(newChain)
+            self.right.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.left := left.map(blk) parent(n)
-        n.right := right.map(blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.left := left.map(blk) ancestors(newChain)
+        n.right := right.map(blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -1743,11 +1874,10 @@ class opNode.new(op, l, r) {
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
-        parent := self
         return resultNode
     }
-    method shallowCopyWithParent(p) {
-        opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
 }
 class indexNode.new(expr, index') {
@@ -1757,18 +1887,19 @@ class indexNode.new(expr, index') {
     var value is public := expr
     var index is public := index'
     
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitIndex(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
-            self.index.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitIndex(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.value.accept(visitor) from(newChain)
+            self.index.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.index := index.map(blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.index := index.map(blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -1790,8 +1921,8 @@ class indexNode.new(expr, index') {
         s := s ++ "[" ++ self.index.toGrace(depth + 1) ++ "]"
         s
     }
-    method shallowCopyWithParent(p) {
-        indexNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        indexNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
 }
 class bindNode.new(dest', val') {
@@ -1803,18 +1934,19 @@ class bindNode.new(dest', val') {
     
     method isBind { true }
     method asString { "Bind {value}" }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitBind(self) up(pNode)) then {
-            self.dest.accept(visitor) from(self)
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitBind(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.dest.accept(visitor) from(newChain)
+            self.value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.dest := dest.map(blk) parent(n)
-        n.value := value.map(blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.dest := dest.map(blk) ancestors(newChain)
+        n.value := value.map(blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -1836,115 +1968,124 @@ class bindNode.new(dest', val') {
         s := s ++ " := " ++ self.value.toGrace(depth + 1)
         s
     }
-    method shallowCopyWithParent(p) {
-        bindNode.new(dest, value).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        bindNode.new(dest, value).shallowCopyFieldsFrom(self)
     }
 }
-class defDecNode.new(name', val, dtype') {
-    inherits baseNode.new
-    def kind is public = "defdec"
-    var name is public := name'
-    var value is public := val
-    var dtype is public := dtype'
-    def nameString:String is public = name.value
-    var annotations is public := list.empty
-    var data is public := false
-    var startToken is public := false
+def defDecNode = object {
+    method new(name', val, dtype') scope(s) {
+        def result = new(name', val, dtype')
+        result.scope := s
+        result
+    }
 
-    method isPublic {
-        // defs are confidential by default
-        if (annotations.size == 0) then { return false }
-        if (findAnnotation(self, "public")) then { return true }
-        def res = findAnnotation(self, "readable")
-        if (nameString == "bindings") then {
-            print "bindings is public"
+    factory method new(name', val, dtype') {
+        inherits baseNode.new
+        def kind is public = "defdec"
+        var name is public := name'
+        var value is public := val
+        var dtype is public := dtype'
+        def nameString:String is public = name.value
+        var annotations is public := list.empty
+        var data is public := false
+        var startToken is public := false
+
+        method isPublic {
+            // defs are confidential by default
+            if (annotations.size == 0) then { return false }
+            if (findAnnotation(self, "public")) then { return true }
+            findAnnotation(self, "readable")
         }
-        res
-    }
-    method isWritable { false }
-    method isReadable { isPublic }
-    method isFieldDec { 
-        if (parent.kind == "object") then { true }
-            elseif {parent.kind == "class"} then { true }
-            else { false }
-    }
-    method definesScope {
-        value.definesObject
-    }
-    method objectScope {
-        scope
-    }
-    method usesAsType(aNode) {
-        aNode == dtype
-    }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitDefDec(self) up(pNode)) then {
-            self.name.accept(visitor) from(self)
-            if (self.dtype != false) then {
-                self.dtype.accept(visitor) from(self)
+        method isWritable { false }
+        method isReadable { isPublic }
+    //    method isFieldDec { 
+    //        if (parent.kind == "object") then { true }
+    //            elseif {parent.kind == "class"} then { true }
+    //            else { false }
+    //    }
+        method returnsObject {
+            value.returnsObject
+        }
+        method returnedObjectScope {
+            // precondition: returnsObject
+            value.returnedObjectScope
+        }
+        method usesAsType(aNode) {
+            aNode == dtype
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitDefDec(self) up(as)) then {
+                def newChain = as.extend(self)
+                self.name.accept(visitor) from(newChain)
+                if (self.dtype != false) then {
+                    self.dtype.accept(visitor) from(newChain)
+                }
+                for (self.annotations) do { ann ->
+                    ann.accept(visitor) from(newChain)
+                }
+                if (self.value != false) then {
+                    self.value.accept(visitor) from(newChain)
+                }
+            }
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.name := name.map(blk) ancestors(newChain)
+            n.value := value.map(blk) ancestors(newChain)
+            n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+            n.annotations := listMap(annotations, blk) ancestors(newChain)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth) ++ "\n"
+            s := s ++ spc ++ self.name.pretty(depth)
+            if (dtype != false) then {
+                s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
+            }
+            if (false != value) then {
+                s := s ++ "\n" ++ spc ++ "Value: " ++ value.pretty(depth + 2)
+            }
+            if (annotations.isEmpty.not) then {
+                s := s ++ "\n{spc}Annotations:"
+                annotations.do { ann ->
+                    s := "{s} {ann.pretty(depth + 2)}"
+                }
+            }
+            s
+        }
+        method toGrace(depth : Number) -> String {
+            var spc := ""
+            for (0..(depth - 1)) do { i ->
+                spc := spc ++ "    "
+            }
+            var s := "def {self.name.toGrace(0)}"
+            if (self.dtype.value != "Unknown") then {
+                s := s ++ " : " ++ self.dtype.toGrace(0)
+            }
+            if (self.annotations.size > 0) then {
+                s := s ++ " is "
+                s := s ++ self.annotations.reduce("", { a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
             }
             if (self.value != false) then {
-                self.value.accept(visitor) from(self)
+                s := s ++ " = " ++ self.value.toGrace(depth)
             }
+            s
         }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.name := name.map(blk) parent(n)
-        n.value := value.map(blk) parent(n)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
+        method shallowCopy {
+            defDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
         }
-        var s := super.pretty(depth) ++ "\n"
-        s := s ++ spc ++ self.name.pretty(depth)
-        if (dtype != false) then {
-            s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            data := other.data
+            startToken := other.startToken
+            self
         }
-        if (false != value) then {
-            s := s ++ "\n" ++ spc ++ "Value: " ++ value.pretty(depth + 2)
-        }
-//        if (annotations.isEmpty.not) then {
-//            s := s ++ "\n{spc}Annotations:"
-//            annotations.do { ann ->
-//                s := "{s} {ann.pretty(depth + 2)}"
-//            }
-//        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := "def {self.name.toGrace(0)}"
-        if (self.dtype.value != "Unknown") then {
-            s := s ++ " : " ++ self.dtype.toGrace(0)
-        }
-        if (self.annotations.size > 0) then {
-            s := s ++ " is "
-            s := s ++ self.annotations.reduce("", { a,b ->
-                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
-        }
-        if (self.value != false) then {
-            s := s ++ " = " ++ self.value.toGrace(depth)
-        }
-        s
-    }
-    method shallowCopyWithParent(p) {
-        defDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        data := other.data
-        startToken := other.startToken
-        self
     }
 }
 class varDecNode.new(name', val', dtype') {
@@ -1974,33 +2115,37 @@ class varDecNode.new(name', val', dtype') {
         if (findAnnotation(self, "readable")) then { return true }
         false
     }
-    method isFieldDec { 
-        if (parent.kind == "object") then { true }
-            elseif {parent.kind == "class"} then { true }
-            else { false }
-    }
+//    method isFieldDec { 
+//        if (parent.kind == "object") then { true }
+//            elseif {parent.kind == "class"} then { true }
+//            else { false }
+//    }
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitVarDec(self) up(pNode)) then {
-            self.name.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitVarDec(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.name.accept(visitor) from(newChain)
             if (self.dtype != false) then {
-                self.dtype.accept(visitor) from(self)
+                self.dtype.accept(visitor) from(newChain)
+            }
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
             }
             if (self.value != false) then {
-                self.value.accept(visitor) from(self)
+                self.value.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.name := name.map(blk) parent(n)
-        n.value := maybeMap(value, blk) parent(n)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.name := name.map(blk) ancestors(newChain)
+        n.value := maybeMap(value, blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -2038,8 +2183,8 @@ class varDecNode.new(name', val', dtype') {
         }
         s
     }
-    method shallowCopyWithParent(p) {
-        varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
     }
 }
 class importNode.new(path', name', dtype') {
@@ -2071,25 +2216,29 @@ class importNode.new(path', name', dtype') {
     }
     method isWritable { false }
     method isReadable { isPublic }
-    method declarationKind { "defdec" }
+    method declarationKindWithAncestors(as) { "defdec" }
     method usesAsType(aNode) {
         aNode == dtype
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitImport(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitImport(self) up(as)) then {
+            def newChain = as.extend(self)
+            for (self.annotations) do { ann ->
+                ann.accept(visitor) from(newChain)
+            }
+            self.value.accept(visitor) from(newChain)
             if (self.dtype != false) then {
-                self.dtype.accept(visitor) from(self)
+                self.dtype.accept(visitor) from(newChain)
             }
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n.dtype := maybeMap(dtype, blk) parent(n)
-        n.annotations := listMap(annotations, blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
+        n.annotations := listMap(annotations, blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -2107,8 +2256,8 @@ class importNode.new(path', name', dtype') {
     method toGrace(depth : Number) -> String {
         "import \"{self.path}\" as {nameString}"
     }
-    method shallowCopyWithParent(p) {
-        importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self)
     }
 }
 class dialectNode.new(path') {
@@ -2131,13 +2280,13 @@ class dialectNode.new(path') {
     method path {
         value
     }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        visitor.visitDialect(self) up(pNode)
+    method accept(visitor : ASTVisitor) from(as) {
+        visitor.visitDialect(self) up(as)
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -2151,8 +2300,8 @@ class dialectNode.new(path') {
     method toGrace(depth : Number) -> String {
         "dialect \"{self.value}\""
     }
-    method shallowCopyWithParent(p) {
-        dialectNode.new(value).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        dialectNode.new(value).shallowCopyFieldsFrom(self)
     }
 }
 class returnNode.new(expr) {
@@ -2160,16 +2309,17 @@ class returnNode.new(expr) {
     def kind is public = "return"
     var value is public := expr
 
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitReturn(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+    method accept(visitor : ASTVisitor) from(as) {
+        if (visitor.visitReturn(self) up(as)) then {
+            def newChain = as.extend(self)
+            self.value.accept(visitor) from(newChain)
         }
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        n.value := value.map(blk) ancestors(newChain)
+        blk.apply(n, as)
     }
     method pretty(depth) {
         var spc := ""
@@ -2183,54 +2333,62 @@ class returnNode.new(expr) {
     method toGrace(depth : Number) -> String {
         "return " ++ self.value.toGrace(depth)
     }
-    method shallowCopyWithParent(p) {
-        returnNode.new(nullNode).shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        returnNode.new(nullNode).shallowCopyFieldsFrom(self)
     }
 }
-class inheritsNode.new(expr) {
-    inherits baseNode.new
-    def kind is public = "inherits"
-    var value is public := expr
-    var providedNames is public := list.empty
-    
-    method isInherits { true }
-    method inheritsFromMember { value.isMember }
-    method inheritsFromCall { value.isCall }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitInherits(self) up(pNode)) then {
-            self.value.accept(visitor) from(self)
+def inheritsNode = object {
+    method new(expr) scope(s) {
+        def result = new(expr)
+        result.scope := s
+        result
+    }
+    factory method new(expr) {
+        inherits baseNode.new
+        def kind is public = "inherits"
+        var value is public := expr
+        var providedNames is public := list.empty
+        
+        method isInherits { true }
+        method inheritsFromMember { value.isMember }
+        method inheritsFromCall { value.isCall }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitInherits(self) up(as)) then {
+                def newChain = as.extend(self)
+                self.value.accept(visitor) from(newChain)
+            }
         }
-    }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.value := value.map(blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.value := value.map(blk) ancestors(newChain)
+            blk.apply(n, as)
         }
-        var s := super.pretty(depth) ++ "\n"
-        s := s ++ spc ++ self.value.pretty(depth + 1)
-        if (providedNames.isEmpty.not) then {
-            s := s ++ "\n{spc}Provided names: {providedNames}"
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := super.pretty(depth) ++ "\n"
+            s := s ++ spc ++ self.value.pretty(depth + 1)
+            if (providedNames.isEmpty.not) then {
+                s := s ++ "\n{spc}Provided names: {providedNames}"
+            }
+            s
         }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        "inherits {self.value.toGrace(0)}"
-    }
-    method nameString { value.toGrace(0) }
-    method asString { "Inherits {nameString}" }
-    method shallowCopyWithParent(p) {
-        inheritsNode.new(nullNode).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        providedNames := other.providedNames
-        self
+        method toGrace(depth : Number) -> String {
+            "inherits {self.value.toGrace(0)}"
+        }
+        method nameString { value.toGrace(0) }
+        method asString { "Inherits {nameString}" }
+        method shallowCopy {
+            inheritsNode.new(nullNode).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            providedNames := other.providedNames
+            self
+        }
     }
 }
 class blankNode.new {
@@ -2238,185 +2396,216 @@ class blankNode.new {
     def kind is public = "blank"
     def value is public = "blank"
     
-    method accept(visitor : ASTVisitor) from(pNode) {
+    method accept(visitor : ASTVisitor) from(as) {
+        visitor.visitBlank(self) up(as)
     }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n := blk.apply(n)
-        n
+    method map(blk) ancestors(as) {
+        var n := shallowCopy
+        def newChain = as.extend(n)
+        blk.apply(n, as)
     }
     method toGrace(depth : Number) -> String {
         ""
     }
-    method shallowCopyWithParent(p) {
-        blankNode.new.shallowCopyFieldsFrom(self) parent(p)
+    method shallowCopy {
+        blankNode.new.shallowCopyFieldsFrom(self)
+    }
+}
+def signaturePart = object {
+    method new(*values) scope(s) {
+        var result
+        if (values.size == 1) then {
+            result := new(values[1])
+        } elseif { values.size == 2 } then {
+            result := new(values[1], values[2])
+        } else {
+            ProgrammingError.raise "wrong number of arguments for signaturePart()scope()"
+        }
+        result.scope := s
+        result
+    }
+    factory method new(*values) {
+        //  all parameters are optional
+        //     values[1]: this part of the method-name
+        //     values[2]: the sequence of paremeters
+        //     values[3]: false if there is no variable arity parameter,
+        //          otherwise the identifier representing it.
+
+        inherits baseNode.new
+        def kind is public = "signaturepart"
+        var name is public := ""
+        var params is public := list.empty
+        var vararg is public := false
+        var generics is public := list.empty
+        var lineLength is public := 0
+        if (values.size > 0) then {
+            name := values[1]
+        }
+        if (values.size > 1) then {
+            params := values[2]
+        }
+        if (values.size > 2) then {
+            vararg := values[3]
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            if (visitor.visitSignaturePart(self) up(as)) then {
+                def newChain = as.extend(self)
+                params.do { p -> p.accept(visitor) from(newChain) }
+                if (false != vararg) then { vararg.accept(visitor) from(newChain) }
+                generics.do { g -> g.accept(visitor) from(newChain) }
+            }
+        }
+        method declarationKindWithAncestors(as) { "parameter" }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.params := listMap(params, blk) ancestors(newChain)
+            n.vararg := maybeMap(vararg, blk) ancestors(newChain)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "{super.pretty(depth)}: {name}"
+            s := "{s}\n{spc}Parameters:"
+            for (params) do { p ->
+                s := "{s}\n  {spc}{p.pretty(depth + 2)}"
+            }
+            if (vararg != false) then {
+                s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
+            }
+            s
+        }
+        method shallowCopy {
+            signaturePart.new(name).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            lineLength := other.lineLength
+            self
+        }
+        method asString {
+            "Part: {name}"
+        }
     }
 }
 
-class signaturePart.new(*values) {
-    inherits baseNode.new
-    def kind is public = "signaturepart"
-    var name is public := ""
-    var params is public := list.empty
-    var vararg is public := false
-    var generics is public := list.empty
-    var lineLength is public := 0
-    if (values.size > 0) then {
-        name := values[1]
+def callWithPart = object {
+    method new(name, argList) scope (s) {
+        def result = new(name, argList)
+        result.scope := s
+        result
     }
-    if (values.size > 1) then {
-        params := values[2]
-    }
-    if (values.size > 2) then {
-        vararg := values[3]
-    }
-    method accept(visitor : ASTVisitor) from(pNode) {
-        if (visitor.visitSignaturePart(self) up(pNode)) then {
-            params.do { p -> p.accept(visitor) from(self) }
-            if (false != vararg) then { vararg.accept(visitor) from(self) }
-            generics.do { g -> g.accept(visitor) from(self) }
+    factory method new(*values) {
+        // requested as
+        // - callWithPart.new(request:String), or
+        // - callWithPart.new(request:String, arguments:List)
+        // The first is equivalent to the second with an empty list of arguments
+        inherits baseNode.new
+        def kind is public = "callwithpart"
+        var name is public := ""
+        var args is public := list.empty
+        var lineLength is public := 0
+        if (values.size > 0) then {
+            name := values[1]
         }
-    }
-    method declarationKind { "parameter" }
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.params := listMap(params, blk) parent(n)
-        n.vararg := maybeMap(vararg, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
+        if (values.size > 1) then {
+            args := values[2]
         }
-        var s := "{super.pretty(depth)}: {name}"
-        s := "{s}\n{spc}Parameters:"
-        for (params) do { p ->
-            s := "{s}\n  {spc}{p.pretty(depth + 2)}"
-        }
-        if (vararg != false) then {
-            s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
-        }
-        s
-    }
-    method shallowCopyWithParent(p) {
-        signaturePart.new(name).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        lineLength := other.lineLength
-        self
-    }
-    method asString {
-        "Part: {name}"
-    }
-}
 
-class callWithPart.new(*values) {
-    // requested as
-    // - callWithPart.new(request:String), or
-    // - callWithPart.new(request:String, arguments:List)
-    // The first is equivalent to the second with an empty list of arguments
-    inherits baseNode.new
-    def kind is public = "callwithpart"
-    var name is public := ""
-    var args is public := list.empty
-    var lineLength is public := 0
-    if (values.size > 0) then {
-        name := values[1]
-    }
-    if (values.size > 1) then {
-        args := values[2]
-    }
-
-    method map(blk) parent(p) {
-        var n := shallowCopyWithParent(p)
-        n.args := listMap(args, blk) parent(n)
-        n := blk.apply(n)
-        n
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            n.args := listMap(args, blk) ancestors(newChain)
+            blk.apply(n, as)
         }
-        var s := "{super.pretty(depth)}: {name}"
-        s := "{s}\n    {spc}Args:"
-        for (args) do { a ->
-            s := "{s}\n    {spc}{a.pretty(depth + 4)}"
+        method pretty(depth) {
+            var spc := ""
+            for (0..depth) do { i ->
+                spc := spc ++ "  "
+            }
+            var s := "{super.pretty(depth)}: {name}"
+            s := "{s}\n    {spc}Args:"
+            for (args) do { a ->
+                s := "{s}\n    {spc}{a.pretty(depth + 4)}"
+            }
+            s
         }
-        s
-    }
-    method shallowCopyWithParent(p) {
-        callWithPart.new(name).shallowCopyFieldsFrom(self) parent(p)
-    }
-    method shallowCopyFieldsFrom(other) parent(p) {
-        super.shallowCopyFieldsFrom(other) parent(p)
-        lineLength := other.lineLength
-        self
+        method shallowCopy {
+            callWithPart.new(name).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            lineLength := other.lineLength
+            self
+        }
     }
 }
 
 type ASTVisitor = {
-     visitIf(o) up(pNode) -> Boolean
-     visitBlock(o) up(pNode) -> Boolean
-     visitMatchCase(o) up(pNode) -> Boolean
-     visitCatchCase(o) up(pNode) -> Boolean
-     visitMethodType(o) up(pNode) -> Boolean
-     visitSignaturePart(o) up(pNode) -> Boolean
-     visitTypeLiteral(o) up(pNode) -> Boolean
-     visitTypeDec(o) up(pNode) -> Boolean
-     visitMethod(o) up(pNode) -> Boolean
-     visitCall(o) up(pNode) -> Boolean
-     visitClass(o) up(pNode) -> Boolean
-     visitObject(o) up(pNode) -> Boolean
-     visitArray(o) up(pNode) -> Boolean
-     visitMember(o) up(pNode) -> Boolean
-     visitGeneric(o) up(pNode) -> Boolean
-     visitIdentifier(o) up(pNode) -> Boolean
-     visitOctets(o) up(pNode) -> Boolean
-     visitString(o) up(pNode) -> Boolean
-     visitNum(o) up(pNode) -> Boolean
-     visitOp(o) up(pNode) -> Boolean
-     visitIndex(o) up(pNode) -> Boolean 
-     visitBind(o) up(pNode) -> Boolean
-     visitDefDec(o) up(pNode) -> Boolean
-     visitVarDec(o) up(pNode) -> Boolean
-     visitImport(o) up(pNode) -> Boolean
-     visitReturn(o) up(pNode) -> Boolean
-     visitInherits(o) up(pNode) -> Boolean
-     visitDialect(o) up(pNode) -> Boolean
+     visitIf(o) up(as) -> Boolean
+     visitBlock(o) up(as) -> Boolean
+     visitMatchCase(o) up(as) -> Boolean
+     visitCatchCase(o) up(as) -> Boolean
+     visitMethodType(o) up(as) -> Boolean
+     visitSignaturePart(o) up(as) -> Boolean
+     visitTypeLiteral(o) up(as) -> Boolean
+     visitTypeDec(o) up(as) -> Boolean
+     visitMethod(o) up(as) -> Boolean
+     visitCall(o) up(as) -> Boolean
+     visitClass(o) up(as) -> Boolean
+     visitObject(o) up(as) -> Boolean
+     visitModule(o) up(as) -> Boolean
+     visitArray(o) up(as) -> Boolean
+     visitMember(o) up(as) -> Boolean
+     visitGeneric(o) up(as) -> Boolean
+     visitIdentifier(o) up(as) -> Boolean
+     visitString(o) up(as) -> Boolean
+     visitNum(o) up(as) -> Boolean
+     visitOp(o) up(as) -> Boolean
+     visitIndex(o) up(as) -> Boolean 
+     visitBind(o) up(as) -> Boolean
+     visitDefDec(o) up(as) -> Boolean
+     visitVarDec(o) up(as) -> Boolean
+     visitImport(o) up(as) -> Boolean
+     visitReturn(o) up(as) -> Boolean
+     visitInherits(o) up(as) -> Boolean
+     visitDialect(o) up(as) -> Boolean
+     visitBlank(o) up(as) -> Boolean
 }
+
 factory method baseVisitor -> ASTVisitor {
-    method visitIf(o) up(pNode) { visitIf(o) }
-    method visitBlock(o) up(pNode) { visitBlock(o) }
-    method visitMatchCase(o) up(pNode) { visitMatchCase(o) }
-    method visitCatchCase(o) up(pNode) { visitCatchCase(o) }
-    method visitMethodType(o) up(pNode) { visitMethodType(o) }
-    method visitSignaturePart(o) up(pNode) { visitSignaturePart(o) }
-    method visitTypeDec(o) up(pNode) { visitTypeDec(o) }
-    method visitTypeLiteral(o) up(pNode) { visitTypeLiteral(o) }
-    method visitMethod(o) up(pNode) { visitMethod(o) }
-    method visitCall(o) up(pNode) { visitCall(o) }
-    method visitClass(o) up(pNode) { visitClass(o) }
-    method visitObject(o) up(pNode) { visitObject(o) }
-    method visitArray(o) up(pNode) { visitArray(o) }
-    method visitMember(o) up(pNode) { visitMember(o) }
-    method visitGeneric(o) up(pNode) { visitGeneric(o) }
-    method visitIdentifier(o) up(pNode) { visitIdentifier(o) }
-    method visitOctets(o) up(pNode) { visitOctets(o) }
-    method visitString(o) up(pNode) { visitString(o) }
-    method visitNum(o) up(pNode) { visitNum(o) }
-    method visitOp(o) up(pNode) { visitOp(o) }
-    method visitIndex(o) up(pNode) { visitIndex(o) }
-    method visitBind(o) up(pNode) { visitBind(o) }
-    method visitDefDec(o) up(pNode) { visitDefDec(o) }
-    method visitVarDec(o) up(pNode) { visitVarDec(o) }
-    method visitImport(o) up(pNode) { visitImport(o) }
-    method visitReturn(o) up(pNode) { visitReturn(o) }
-    method visitInherits(o) up(pNode) { visitInherits(o) }
-    method visitDialect(o) up(pNode) { visitDialect(o) }
+    method visitIf(o) up(as) { visitIf(o) }
+    method visitBlock(o) up(as) { visitBlock(o) }
+    method visitMatchCase(o) up(as) { visitMatchCase(o) }
+    method visitCatchCase(o) up(as) { visitCatchCase(o) }
+    method visitMethodType(o) up(as) { visitMethodType(o) }
+    method visitSignaturePart(o) up(as) { visitSignaturePart(o) }
+    method visitTypeDec(o) up(as) { visitTypeDec(o) }
+    method visitTypeLiteral(o) up(as) { visitTypeLiteral(o) }
+    method visitMethod(o) up(as) { visitMethod(o) }
+    method visitCall(o) up(as) { visitCall(o) }
+    method visitClass(o) up(as) { visitClass(o) }
+    method visitObject(o) up(as) { visitObject(o) }
+    method visitModule(o) up(as) { visitObject(o) }
+    method visitArray(o) up(as) { visitArray(o) }
+    method visitMember(o) up(as) { visitMember(o) }
+    method visitGeneric(o) up(as) { visitGeneric(o) }
+    method visitIdentifier(o) up(as) { visitIdentifier(o) }
+    method visitString(o) up(as) { visitString(o) }
+    method visitNum(o) up(as) { visitNum(o) }
+    method visitOp(o) up(as) { visitOp(o) }
+    method visitIndex(o) up(as) { visitIndex(o) }
+    method visitBind(o) up(as) { visitBind(o) }
+    method visitDefDec(o) up(as) { visitDefDec(o) }
+    method visitVarDec(o) up(as) { visitVarDec(o) }
+    method visitImport(o) up(as) { visitImport(o) }
+    method visitReturn(o) up(as) { visitReturn(o) }
+    method visitInherits(o) up(as) { visitInherits(o) }
+    method visitDialect(o) up(as) { visitDialect(o) }
+    method visitBlank(o) up(as) { visitBlank(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -2430,11 +2619,11 @@ factory method baseVisitor -> ASTVisitor {
     method visitCall(o) -> Boolean { true }
     method visitClass(o) -> Boolean { true }
     method visitObject(o) -> Boolean { true }
+    method visitModule(o) -> Boolean { true }
     method visitArray(o) -> Boolean { true }
     method visitMember(o) -> Boolean { true }
     method visitGeneric(o) -> Boolean { true }
     method visitIdentifier(o) -> Boolean { true }
-    method visitOctets(o) -> Boolean { true }
     method visitString(o) -> Boolean { true }
     method visitNum(o) -> Boolean { true }
     method visitOp(o) -> Boolean { true }
@@ -2446,42 +2635,55 @@ factory method baseVisitor -> ASTVisitor {
     method visitReturn(o) -> Boolean { true }
     method visitInherits(o) -> Boolean { true }
     method visitDialect(o) -> Boolean { true }
+    method visitBlank(o) -> Boolean { true }
+    
+    method asString { "an AST visitor" }
 }
 
-factory method addParentVisitor -> ASTVisitor {
-    method visitIdentifier(o) up(pNode) { o.parent := pNode; true }
-    method visitMethod(o) up(pNode) { o.parent := pNode; true }
-    method visitBlock(o) up(pNode) { o.parent := pNode; true }
-    method visitClass(o) up(pNode) { o.parent := pNode; true }
-    method visitObject(o) up(pNode) { o.parent := pNode; true }
-    method visitIf(o) up(pNode) { o.parent := pNode; true }
-    method visitMatchCase(o) up(pNode) { o.parent := pNode; true }
-    method visitCatchCase(o) up(pNode) { o.parent := pNode; true }
-    method visitMethodType(o) up(pNode) { o.parent := pNode; true }
-    method visitSignaturePart(o) up(pNode) { o.parent := pNode; true }
-    method visitTypeDec(o) up(pNode) { o.parent := pNode; true }
-    method visitTypeLiteral(o) up(pNode) { o.parent := pNode; true }
-    method visitCall(o) up(pNode) { o.parent := pNode; true }
-    method visitArray(o) up(pNode) { o.parent := pNode; true }
-    method visitMember(o) up(pNode) { o.parent := pNode; true }
-    method visitGeneric(o) up(pNode) { o.parent := pNode; true }
-    method visitOctets(o) up(pNode) { o.parent := pNode; true }
-    method visitString(o) up(pNode) { o.parent := pNode; true }
-    method visitNum(o) up(pNode) { o.parent := pNode; true }
-    method visitOp(o) up(pNode) { o.parent := pNode; true }
-    method visitIndex(o) up(pNode) { o.parent := pNode; true }
-    method visitBind(o) up(pNode) { o.parent := pNode; true }
-    method visitDefDec(o) up(pNode) { o.parent := pNode; true }
-    method visitVarDec(o) up(pNode) { o.parent := pNode; true }
-    method visitImport(o) up(pNode) { o.parent := pNode; true }
-    method visitReturn(o) up(pNode) { o.parent := pNode; true }
-    method visitInherits(o) up(pNode) { o.parent := pNode; true }
-    method visitDialect(o) up(pNode) { o.parent := pNode; true }
+factory method pluggableVisitor(visitation:Block2) -> ASTVisitor {
+    // Manufactures a default visitor, given a 2-parameter block.
+    // Typically, some of the methods will be overridden.
+    // The block will be applied with the AST node as the first argument
+    // and the ancestor chain as the second, and should answer true if
+    // the visitation is to continue and false if it is to go no deeper.
+
+    method visitIf(o) up(as) { visitation.apply (o, as) }
+    method visitBlock(o) up(as) { visitation.apply (o, as) }
+    method visitMatchCase(o) up(as) { visitation.apply (o, as) }
+    method visitCatchCase(o) up(as) { visitation.apply (o, as) }
+    method visitMethodType(o) up(as) { visitation.apply (o, as) }
+    method visitSignaturePart(o) up(as) { visitation.apply (o, as) }
+    method visitTypeDec(o) up(as) { visitation.apply (o, as) }
+    method visitTypeLiteral(o) up(as) { visitation.apply (o, as) }
+    method visitMethod(o) up(as) { visitation.apply (o, as) }
+    method visitCall(o) up(as) { visitation.apply (o, as) }
+    method visitClass(o) up(as) { visitation.apply (o, as) }
+    method visitObject(o) up(as) { visitation.apply (o, as) }
+    method visitModule(o) up(as) { visitation.apply (o, as) }
+    method visitArray(o) up(as) { visitation.apply (o, as) }
+    method visitMember(o) up(as) { visitation.apply (o, as) }
+    method visitGeneric(o) up(as) { visitation.apply (o, as) }
+    method visitIdentifier(o) up(as) { visitation.apply (o, as) }
+    method visitString(o) up(as) { visitation.apply (o, as) }
+    method visitNum(o) up(as) { visitation.apply (o, as) }
+    method visitOp(o) up(as) { visitation.apply (o, as) }
+    method visitIndex(o) up(as) { visitation.apply (o, as) }
+    method visitBind(o) up(as) { visitation.apply (o, as) }
+    method visitDefDec(o) up(as) { visitation.apply (o, as) }
+    method visitVarDec(o) up(as) { visitation.apply (o, as) }
+    method visitImport(o) up(as) { visitation.apply (o, as) }
+    method visitReturn(o) up(as) { visitation.apply (o, as) }
+    method visitInherits(o) up(as) { visitation.apply (o, as) }
+    method visitDialect(o) up(as) { visitation.apply (o, as) }
+    method visitBlank(o) up(as) { visitation.apply (o, as) }
+    
+    method asString { "a pluggable AST visitor" }
 }
+
 
 def patternMarkVisitor = object {
     inherits baseVisitor
-    method visitCall(c) up(pNode) {
+    method visitCall(c) up(as) {
         c.isPattern := true
         true
     }

@@ -1000,6 +1000,18 @@ def setTest = object {
         def evens = set.with(2, 4, 6, 8)
         def empty = set.empty
 
+        method testSetTypeCollection {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testSetTypeSet {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            assert (witness) hasType (Set<Number>)
+        }
+        method testSetTypeNotSequence {
+            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            deny (witness) hasType (Sequence<Number>)
+        }
 
         method testSetSize {
             assert(oneToFive.size) shouldBe 5

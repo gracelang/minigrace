@@ -10,11 +10,13 @@ var currentCountOfAssertions := 0
 
 method test(name:String) by(block:Block) {
     if(currentTestSuiteForDialect == done) then {
-        Exception.raise("a test can only be created within a testSuite")
+        Exception.raise("a test can be created only within a testSuite")
     }
     currentTestInThisEvaluation := currentTestInThisEvaluation + 1
     if(currentSetupBlockForTesting != done) then {
-        currentTestSuiteForDialect.add(testCaseNamed(name)setupIn(currentSetupBlockForTesting)asTestNumber(currentTestInThisEvaluation))
+        currentTestSuiteForDialect.add(testCaseNamed(name)
+            setupIn(currentSetupBlockForTesting)
+            asTestNumber(currentTestInThisEvaluation))
     } else {
         if(currentTestInThisEvaluation == currentTestBlockForTesting) then {
             currentCountOfAssertions := 0
@@ -114,10 +116,10 @@ method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestC
                 } finally { teardown }
             } catch {e: self.AssertionFailure ->
                 result.testFailed(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(8)
+                printBackTrace(e) limitedTo(name)
             } catch {e: Exception ->
                 result.testErrored(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(8)
+                printBackTrace(e) limitedTo(name)
             }
         }
     }

@@ -107,7 +107,7 @@ method definebindings(l, slot') {
             n.handledIdentifiers := true
         } elseif {n.kind == "import"} then {
             var tnm := escapeident(n.nameString)
-            out "Object *var_{tnm} = alloc_var();"
+            out "  Object *var_{tnm} = alloc_var();"
             // TODO: why is this different from a def?  Handle annotations!
         }
     }
