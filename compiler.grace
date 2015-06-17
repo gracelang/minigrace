@@ -46,27 +46,14 @@ if (util.target == "json") then {
 }
 
 var values := parser.parse(tokens)
-if (util.extensions.contains("ClassWrap")) then {
-    def vl = values
-    values := []
-    def inner = []
-    for (vl) do { v->
-        if ((v.kind == "import") || (v.kind == "dialect")) then {
-            values.push(v)
-        } else {
-            inner.push(v)
-        }
-    }
-    values.push(ast.methodNode.new(ast.identifierNode.new("new", false),
-        [ast.signaturePart.new("new")],
-        [ast.objectNode.new(inner, false)], false))
-}
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
+    util.log_verbose "target = parse, outfile = {util.outfile}"
     for (values) do { v ->
         util.outprint(v.pretty(0))
     }
+    util.log_verbose "closing {util.outfile}"
     util.outfile.close
     sys.exit(0)
 }
@@ -108,7 +95,7 @@ if (util.target == "imports") then {
     sys.exit(0)
 }
 values := identifierresolution.resolve(values)
-if (util.target == "processed-ast") then {
+if ((util.target == "processed-ast") || (util.target == "ast")) then {
     util.outprint "====================================="
     util.outprint "module-level symbol table"
     util.outprint (values.first.scope.asStringWithParents)
