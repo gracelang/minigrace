@@ -72,21 +72,6 @@ type AstNode = type {
 
 type SymbolTable = Unknown
 
-def fakeSymbolTable = object {
-    var node is public
-    method asString { "fake Symbol Table" }
-    method addNode (n) as (kind) {
-        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
-    }
-    method thatDefines (name) ifNone (action) {
-        ProgrammingError.raise "fakeSymbolTable.thatDefines({name})."
-    }
-    method enclosingObjectScope {
-        ProgrammingError.raise "fakeSymbolTable.enclosingObjectScope on node {node}"
-    }
-    method variety { "fake" }
-}
-
 class baseNode.new {
     // the superclass of all AST nodes
     var register is public := ""
@@ -125,6 +110,7 @@ class baseNode.new {
         self.accept(visitor) from (ancestorChain.empty)
     }
     method scope { symbolTable }
+
     method scope:=(st) {
         // override this method in subobjects that open a new scope. In such
         // subobjects, and only in such subobjects, there should be a 2-way
@@ -167,6 +153,21 @@ def nullNode is public = object {
     method toGrace(depth) {
         "// null"
     }
+}
+
+def fakeSymbolTable = object {
+    var node is public := nullNode
+    method asString { "fake Symbol Table" }
+    method addNode (n) as (kind) {
+        ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
+    }
+    method thatDefines (name) ifNone (action) {
+        ProgrammingError.raise "fakeSymbolTable.thatDefines({name})."
+    }
+    method enclosingObjectScope {
+        ProgrammingError.raise "fakeSymbolTable.enclosingObjectScope on node {node}"
+    }
+    method variety { "fake" }
 }
 
 class ifNode.new(cond, thenblock', elseblock') {
