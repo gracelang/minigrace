@@ -71,13 +71,23 @@ class stringTest.forMethod(m) {
             shouldRaise (NoSuchObject)
         assert (vowels2.indexOf("w") ifAbsent {"absent"}) shouldBe("absent")
     }
-    method testIndexOfStartingAt {
+    method testIndexOfStartingAtIfAbsent {
         def vowels4 = vowels * 4
         assert (vowels4.indexOf "iou" startingAt 0 ifAbsent { 0 }) shouldBe 3
         assert (vowels4.indexOf "iou" startingAt 4 ifAbsent { 0 }) shouldBe 9
         assert (vowels4.indexOf "iou" startingAt 10 ifAbsent { 0 }) shouldBe 15
         assert (vowels4.indexOf "iou" startingAt 16 ifAbsent { 0 }) shouldBe 21
-        assert (vowels4.indexOf "iou" startingAt 22 ifAbsent { 0 }) shouldBe 0
+        assert {vowels4.indexOf "iou" startingAt 22 ifAbsent {
+            ProgrammingError.raise "not found" 
+        }} shouldRaise (ProgrammingError)
+    }
+    method testIndexOfStartingAt {
+        def vowels4 = vowels * 4
+        assert (vowels4.indexOf "iou" startingAt 0) shouldBe 3
+        assert (vowels4.indexOf "iou" startingAt 4) shouldBe 9
+        assert (vowels4.indexOf "iou" startingAt 10) shouldBe 15
+        assert (vowels4.indexOf "iou" startingAt 16) shouldBe 21
+        assert (vowels4.indexOf "iou" startingAt 22) shouldBe 0
     }
     method testLastIndexOfStartingAt {
         def vowels4 = vowels * 4

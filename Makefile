@@ -186,7 +186,7 @@ js/collectionsPrelude.js: js/collectionsPrelude.gct
 	@echo "$@ was built with the gct"
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
+	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --make --target js --make $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -211,7 +211,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 $(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace
-	cd js && cp -f ../$< . && ../minigrace --target js --make $(VERBOSITY) $<
+	cd js && cp -f ../$< . && ../minigrace --make --target js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -224,7 +224,7 @@ js/StandardPrelude.js: js/StandardPrelude.gct
 	@echo "$@ was built with the gct"
 
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
-	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --target js --make $(<F)
+	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --make --target js --make $(<F)
 
 js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
@@ -348,7 +348,7 @@ gUnit.gso $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace %.gcn StandardPrelude.g
 	if [ -e $*.gcn.save ] ; then mv $*.gcn.save $*.gcn ; fi
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
-	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --target js -o $(@F) $(<F)
+	cd js && cp -f ../$(<F) . && ../minigrace $(VERBOSITY) --make --target js -o $(@F) $(<F)
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)
