@@ -196,6 +196,7 @@ method parseargs {
             case { "ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
             case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".symbols", "w") }
             case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
+            case { "grace" -> io.open(sourceDir ++ modnamev ++ "_new.grace", "w") }
             case { _ -> 
                 io.error.write("minigrace: unrecognized target '{targetv}'.\n")
                 sys.exit(1)
