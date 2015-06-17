@@ -560,11 +560,6 @@ method rewriteIdentifier(node) ancestors(as) {
     var nm := node.value
     def nodeScope = node.scope
     def nmGets = nm ++ ":="
-    def definingScope = nodeScope.thatDefines(nm) ifNone {
-        reportUndeclaredIdentifier(node)
-    }
-    def v = definingScope.variety
-    def nodeKind = definingScope.kind(nm)
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
@@ -573,9 +568,16 @@ method rewriteIdentifier(node) ancestors(as) {
                 def meth2 = ast.memberNode.new(nm, meth.in)
                 return meth2
             }
-        } elseif { isAssignable(nodeKind).not } then {
+        }
+    }
+    def definingScope = nodeScope.thatDefines(nm) ifNone {
+        reportUndeclaredIdentifier(node)
+    }
+    def nodeKind = definingScope.kind(nm)
+    if (node.isAssigned) then {
+        if (isAssignable(nodeKind).not) then {
             reportAssignmentTo(node) declaredInScope(definingScope)
-        } // vars fall through
+        }
     }
     if (nm == "outer") then {
         def selfId = ast.identifierNode.new("self", false) scope(nodeScope)
@@ -587,6 +589,7 @@ method rewriteIdentifier(node) ancestors(as) {
         return node
     }
     checkForAmbiguityOf (node) definedIn (definingScope) as (nodeKind)
+    def v = definingScope.variety
     if (v == "built-in") then { return node }
     if (v == "dialect") then {
         def p = ast.identifierNode.new("prelude", false) scope(nodeScope)
