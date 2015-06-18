@@ -9,7 +9,6 @@ var infilev := io.input
 var modnamev := "standardInput"
 var runmodev := "make"
 var buildtypev := "run"
-var interactivev := false
 var gracelibPathv := false
 var linenumv := 1
 var lineposv := 1
@@ -95,8 +94,6 @@ method parseargs {
                         runmodev := "build"
                     } case { "--native" ->
                         buildtypev := "native"
-                    } case { "--interactive" ->
-                        interactivev := true
                     } case { "--noexec" ->
                         noexecv := true
                         buildtypev := "bc"
@@ -217,10 +214,8 @@ method parseargs {
             print("This is free software with absolutely no warranty. "
                 ++ "Say minigrace.w for details.")
             print ""
-            if (interactivev.not) then {
-                print "Enter a program and press Ctrl-D to execute it."
-                print ""
-            }
+            print "Enter a program and press Ctrl-D to execute it."
+            print ""
         }
     }
 }
@@ -284,11 +279,7 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
             s.print
         }
     }
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 
 method type_error(s) {
@@ -301,11 +292,7 @@ method type_error(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 method semantic_error(s) {
     if (vtagv) then {
@@ -314,9 +301,7 @@ method semantic_error(s) {
     io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
     if (s == "") then {
         io.error.write "\n"
-        if (!interactivev) then {
-            sys.exit(2)
-        }
+        sys.exit(2)
     }
     io.error.write ": {s}\n"
     if (linenumv > 1) then {
@@ -334,11 +319,7 @@ method semantic_error(s) {
     if (linenumv < lines.size) then {
         io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 method warning(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
@@ -362,9 +343,6 @@ method runmode {
 }
 method buildtype {
     buildtypev
-}
-method interactive {
-    interactivev
 }
 method gracelibPath {
     gracelibPathv
@@ -483,7 +461,6 @@ method printhelp {
     print "  --source         Compile FILE to C source, but no further"
     print "  --noexec         Compile FILE to native object code, but don't create executable"
     print "  --dynamic-module Compile FILE as a dynamic module"
-    print "  --interactive    Launch interactive read-eval-print interpreter"
     print ""
     print "Options:"
     print "  --verbose        Give more detailed output"

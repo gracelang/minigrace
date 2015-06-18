@@ -6,10 +6,9 @@ l1/genc.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/buildinfo.gct l1/mgc
 l1/genjs.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/mgcollections.gct l1/xmodule.gct l1/mirrors.gct l1/genc.gct l1/errormessages.gct
 l1/genjson.gct: l1/mgcollections.gct l1/util.gct l1/io.gct l1/ast.gct
 l1/identifierresolution.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/mgcollections.gct l1/mirrors.gct l1/errormessages.gct
-l1/interactive.gct: l1/mgcollections.gct l1/mirrors.gct l1/repl.gct l1/ast.gct l1/sys.gct l1/io.gct l1/util.gct l1/lexer.gct l1/parser.gct l1/identifierresolution.gct
 l1/lexer.gct: l1/io.gct l1/sys.gct l1/util.gct l1/unicode.gct l1/mgcollections.gct l1/errormessages.gct
 l1/mgcollections_stub.gct: l1/collections.gct
-l1/minigrace: l1/io.gct l1/sys.gct l1/unicode.gct l1/util.gct l1/lexer.gct l1/ast.gct l1/parser.gct l1/genc.gct l1/genjs.gct l1/genjson.gct l1/buildinfo.gct l1/mgcollections.gct l1/interactive.gct l1/identifierresolution.gct l1/mirrors.gct
+l1/minigrace: l1/io.gct l1/sys.gct l1/unicode.gct l1/util.gct l1/lexer.gct l1/ast.gct l1/parser.gct l1/genc.gct l1/genjs.gct l1/genjson.gct l1/buildinfo.gct l1/mgcollections.gct l1/identifierresolution.gct l1/mirrors.gct
 l1/parser.gct: l1/io.gct l1/ast.gct l1/util.gct l1/mgcollections.gct l1/errormessages.gct
 l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
 l1/util.gct: l1/io.gct l1/sys.gct l1/buildinfo.gct l1/mgcollections.gct
@@ -23,16 +22,15 @@ l2/genc.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/buildinfo.gct l2/mgc
 l2/genjs.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/xmodule.gct l2/mirrors.gct l2/genc.gct l2/errormessages.gct
 l2/genjson.gct: l2/mgcollections.gct l2/util.gct l2/io.gct l2/ast.gct
 l2/identifierresolution.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/xmodule.gct l2/mgcollections.gct l2/mirrors.gct l2/errormessages.gct
-l2/interactive.gct: l2/mgcollections.gct l2/mirrors.gct l2/repl.gct l2/ast.gct l2/sys.gct l2/io.gct l2/util.gct l2/lexer.gct l2/parser.gct l2/identifierresolution.gct
 l2/lexer.gct: l2/io.gct l2/sys.gct l2/util.gct l2/unicode.gct l2/mgcollections.gct l2/errormessages.gct
 l2/mgcollections_stub.gct: l2/collections.gct
-l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/genjson.gct l2/buildinfo.gct l2/mgcollections.gct l2/interactive.gct l2/identifierresolution.gct l2/mirrors.gct
+l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/genjson.gct l2/buildinfo.gct l2/mgcollections.gct l2/identifierresolution.gct l2/mirrors.gct
 l2/parser.gct: l2/io.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/errormessages.gct
 l2/symbolTable.gct: l2/ast.gct l2/errormessages.gct
 l2/util.gct: l2/io.gct l2/sys.gct l2/buildinfo.gct l2/mgcollections.gct
 l2/xmodule.gct: l2/io.gct l2/sys.gct l2/mgcollections.gct l2/util.gct l2/ast.gct l2/mirrors.gct l2/errormessages.gct
 
-# had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js js/interactive.js and s/minigrace/compiler.js/ !
+# had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and s/minigrace/compiler.js/ !
 js/StandardPrelude.gct: js/collectionsPrelude.gct
 js/ast.gct: js/util.gct
 js/errormessages.gct: js/util.gct
@@ -40,7 +38,6 @@ js/genc.gct: js/ast.gct js/util.gct js/buildinfo.gct js/mgcollections.gct js/xmo
 js/genjs.gct: js/ast.gct js/util.gct js/mgcollections.gct js/xmodule.gct js/genc.gct js/errormessages.gct
 js/genjson.gct: js/mgcollections.gct js/util.gct js/ast.gct
 js/identifierresolution.gct: js/ast.gct js/util.gct js/xmodule.gct js/mgcollections.gct js/errormessages.gct
-js/interactive.gct: js/mgcollections.gct js/repl.gct js/ast.gct js/util.gct js/lexer.gct js/parser.gct js/identifierresolution.gct
 js/lexer.gct: js/util.gct js/mgcollections.gct js/errormessages.gct
 js/mgcollections_stub.gct: js/collections.gct
 js/compiler.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genc.gct js/genjs.gct js/genjson.gct js/buildinfo.gct js/mgcollections.gct js/identifierresolution.gct
@@ -57,16 +54,15 @@ genc.gct: io.gct sys.gct ast.gct util.gct buildinfo.gct mgcollections.gct xmodul
 genjs.gct: io.gct sys.gct ast.gct util.gct mgcollections.gct xmodule.gct mirrors.gct genc.gct errormessages.gct
 genjson.gct: mgcollections.gct util.gct io.gct ast.gct
 identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mgcollections.gct mirrors.gct errormessages.gct
-interactive.gct: mgcollections.gct mirrors.gct repl.gct ast.gct sys.gct io.gct util.gct lexer.gct parser.gct identifierresolution.gct
 lexer.gct: io.gct sys.gct util.gct unicode.gct mgcollections.gct errormessages.gct
 mgcollections_stub.gct: collections.gct
-minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct genjson.gct buildinfo.gct mgcollections.gct interactive.gct identifierresolution.gct mirrors.gct
+minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct genjson.gct buildinfo.gct mgcollections.gct identifierresolution.gct mirrors.gct
 parser.gct: io.gct ast.gct util.gct mgcollections.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
 util.gct: io.gct sys.gct buildinfo.gct mgcollections.gct
 xmodule.gct: io.gct sys.gct mgcollections.gct util.gct ast.gct mirrors.gct errormessages.gct
 
-# had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js js/interactive.js and s/minigrace/compiler.js/ !
+# had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and s/minigrace/compiler.js/ !
 ## TODO: add --js to make-depend that does the above!
 js/StandardPrelude.js: js/collectionsPrelude.js
 js/ast.js: js/util.js

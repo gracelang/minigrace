@@ -11,16 +11,10 @@ import "genjs" as genjs
 import "genjson" as genjson
 import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
-import "interactive" as interactive
 import "identifierresolution" as identifierresolution
 import "mirrors" as mirrors
 
 util.parseargs
-
-if (util.interactive) then {
-    interactive.startRepl
-    sys.exit(0)
-}
 
 util.log_verbose "starting compilation"
 

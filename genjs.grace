@@ -32,7 +32,6 @@ def importedModules = set.empty
 def topLevelTypes = mgcollections.map.new
 def builtInModules = list.with(
     "imports", 
-    "interactive", 
     "io", 
     "math", 
     "mirrors", 

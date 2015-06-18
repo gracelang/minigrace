@@ -14,7 +14,7 @@ EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(J
 # override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
 C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
-CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
+CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c xmodule.c identifierresolution.c genjson.c errormessages.c
 # The next rule is here for its side effect: updating buildinfo.grace if necessary
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 DIALECT_DEPENDENCIES = minigrace errormessages.gso ast.gso util.gso mgcollections.gso buildinfo.gso gUnit.gso
@@ -25,11 +25,11 @@ GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animatio
 GRACE_DIALECTS_GSO = $(patsubst %.grace, %.gso, $(filter-out $(OBJECTDRAW_BITS), $(GRACE_DIALECTS)))
 GRACE_MODULES = gUnit.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
-JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out js/interactive.js,$(SOURCEFILES:%.grace=js/%.js)))
+JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out ,$(SOURCEFILES:%.grace=js/%.js)))
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
-REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace interactive.grace xmodule.grace identifierresolution.grace genjson.grace
+REALSOURCEFILES = compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace xmodule.grace identifierresolution.grace genjson.grace
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
