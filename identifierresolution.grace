@@ -141,11 +141,14 @@ factory method newScopeIn(parent') kind(variety') {
         result ++ "\n"
     }
     method asString {
-        var result := "(ST variety:{variety} "
-        self.do { each -> result := result ++ each.serialNumber ++ "➞" }
+        var result := "({variety} ST: "
+        self.do { each -> 
+            result := result ++ each.serialNumber
+            if (each.hasParent) then { result := result ++ "➞" }
+        }
         result := result ++  "):\n"
         elements.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
-            result := result ++ each.key.asString ++ "({kind(each.key)}) "
+            result := "{result} {each.key}({kind(each.key)}) "
         }
         result ++ "\n"
     }
@@ -1265,7 +1268,7 @@ method resolve(values) {
         util.outprint "====================================="
         util.outprint "top-level"
         patternMatchModule.scope.do { each ->
-            util.outprint (each)
+            util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
         }
