@@ -133,6 +133,8 @@ class baseNode.new {
         }
         if ((scope.node == self).andAlso{util.target == "symbols"}) then {
             "{line}:{linePos} {self.kind}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
+        } elseif {scope.variety == "fake"} then {
+            "{line}:{linePos} {self.kind}"
         } else {
             "{line}:{linePos} {self.kind} {scope.asDebugString}"
         }
@@ -1485,17 +1487,17 @@ class arrayNode.new(values) {
     }
 }
 def memberNode = object {
-    method new(what, in') scope(s) {
-        def result = new(what, in')
+    method new(request, receiver) scope(s) {
+        def result = new(request, receiver)
         result.scope := s
         result
     }
-    factory method new(what, in') {
-        // Represents a dotted request ‹in›.‹value›
+    factory method new(request, receiver) {
+        // Represents a dotted request ‹receiver›.‹request›
         inherits baseNode.new
         def kind is public = "member"
-        var value is public := what  // NB: value is a String, not an Identifier
-        var in is public := in'
+        var value is public := request  // NB: value is a String, not an Identifier
+        var in is public := receiver
         var generics is public := false
 
         method target { in }
@@ -1553,7 +1555,7 @@ def memberNode = object {
         }
         method asString { "{in}.{value}" }
         method asIdentifier {
-            // make an identifiderNode with the same properties as me
+            // make and return an identifiderNode for my request
             def resultNode = identifierNode.new(value, false)
             resultNode.inRequest := true
             resultNode.line := line
