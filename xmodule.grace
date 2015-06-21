@@ -1,12 +1,12 @@
 import "io" as io
 import "sys" as sys
-import "mgcollections" as collections
 import "util" as util
 import "ast" as ast
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
-def gctCache = collections.map.new
+def gctCache = dictionary.empty
+def keyCompare = { a, b -> a.key.compare(b.key) }
 
 method builtInModules {
     if (util.target == "c") then {
@@ -15,7 +15,6 @@ method builtInModules {
                 "imports")
     } else {
         list.with("imports",
-                "interactive",
                 "io", 
                 "math", 
                 "mirrors", 
@@ -26,8 +25,8 @@ method builtInModules {
 }
 
 def dynamicCModules = set.with("repl", "mirrors", "curl", "math", "unicode")
-
 def imports = util.requiredModules
+def emptySequence = sequence.empty
 
 method dirName (filePath) is confidential {
     // the directory part of filePath, including the trailing /
@@ -53,11 +52,10 @@ method checkExternalModule(node) {
 
 method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (builtInModules.contains(nm)) then {
-        return true
+        imports.other.add(nm)
+        return
     }
-    if (imports.isAlready(nm)) then {
-        return true
-    }
+    if (imports.isAlready(nm)) then { return }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
 
@@ -127,19 +125,21 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
-    def data = parseGCT(moduleName) sourceDir(directory)
-    if (data.contains "dialect") then {
-        def dData = data.get("dialect").first
-        checkimport(dData, dData, line, linePos, true)
+    def gctData = gctCache.at(moduleName) ifAbsent { 
+        parseGCT(moduleName) sourceDir(directory)
     }
-    if (data.contains("modules")) then {
-        for (data.get("modules")) do {m->
-            if (m == util.modname) then {
-                errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-                    ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atRange(line, linePos, linePos + moduleName.size)
-            }
-            checkimport(m, m, line, linePos, isDialect)
-        }
+    if (gctData.containsKey "dialect") then {
+        def dName = gctData.at "dialect" .first
+        checkimport(dName, dName, line, linePos, true)
+    }
+    def importedModules = gctData.at "modules" ifAbsent { emptySequence }
+    def m = util.modname
+    if (importedModules.contains(m)) then {
+        errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
+            ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atRange(line, linePos, linePos + moduleName.size)
+    }
+    importedModules.do { each ->
+        checkimport(each, each, line, linePos, isDialect)
     }
 }
 
@@ -185,14 +185,13 @@ method compileModule (nm) inFile (sourceFile)
 }
 
 method parseGCT(moduleName) {
-    parseGCT(moduleName) sourceDir(util.sourceDir)
+    gctCache.at(moduleName) ifAbsent {
+        parseGCT(moduleName) sourceDir(util.outDir)
+    }
 }
 
 method parseGCT(moduleName) sourceDir(dir) is confidential {
-    if (gctCache.contains(moduleName)) then {
-        return gctCache.get(moduleName)
-    }
-    def data = collections.map.new
+    def gctData = dictionary.empty
     def sz = moduleName.size
     def sought = 
         if ((sz >= 4).andAlso{moduleName.substringFrom(sz - 3) to(sz) == ".gct"}) then {
@@ -203,8 +202,8 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
         util.log_verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
-        gctCache.put(moduleName, data)
-        return data
+        gctCache.at(moduleName) put(gctData)
+        return gctData
     }
     def tfp = io.open(filename, "r")
     var key := ""
@@ -212,47 +211,52 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         def line = tfp.getline
         if (line.size > 0) then {
             if (line.at(1) != " ") then {
-                key := line.substringFrom(1)to(line.size-1)
-                data.put(key, collections.list.new)
+                key := line.substringFrom 1 to(line.size-1)
+                gctData.at(key) put(list.empty)
             } else {
-                data.get(key).push(line.substringFrom(2)to(line.size))
+                gctData.at(key).addLast(line.substringFrom 2 to(line.size))
             }
         }
     }
     tfp.close
-    gctCache.put(moduleName, data)
-    return data
+    gctCache.at(moduleName) put(gctData)
+    return gctData
 }
 
-method writeGCT(modname, data) is confidential {
-    def fp = io.open("{util.sourceDir}{modname}.gct", "w")
-    for (data) do {key->
-        fp.write "{key}:\n"
-        for (data.get(key)) do {v->
+method writeGCT(modname, dict) is confidential {
+    def fp = io.open("{util.outDir}{modname}.gct", "w")
+    dict.bindings.asList.sortBy(keyCompare).do { b ->
+        fp.write "{b.key}:\n"
+        try {
+            if (Binding.match(b.value.first)) then {
+                util.log_verbose "key = {b.key}, value = {b.value}"
+            }
+        } catch { _ -> }
+        b.value.asList.sort.do { v ->
             fp.write " {v}\n"
         }
     }
     fp.close
-    gctCache.put(modname, data)
+    gctCache.at(modname) put(dict)
 }
 
-method writeGCT(modname)fromValues(values)modules(modules) {
+method writeGCT(modname) fromValues(values) modules(modules) {
     writeGCT(modname,
-        generateGCT(modname)fromValues(values)modules(modules))
+        generateGCT(modname) fromValues(values) modules(modules))
 }
-method gctAsString(data) {
+method gctAsString(gctDict) {
     var ret := ""
-    for (data) do {key->
-        ret := ret ++ "{key}:\n"
-        for (data.get(key)) do {v->
+    gctDict.bindings.asList.sortBy(keyCompare).do { b ->
+        ret := ret ++ "{b.key}:\n"
+        b.value.asList.sort.do { v ->
             ret := ret ++ " {v}\n"
         }
     }
     return ret
 }
-method generateGCT(path)fromValues(values)modules(modules) {
-    def meths = collections.list.new
-    def confidentials = collections.list.new
+method generateGCT(path) fromValues(values) modules(modules) is confidential {
+    def meths = list.empty
+    def confidentials = list.empty
     var theDialect := false
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -287,68 +291,68 @@ method generateGCT(path)fromValues(values)modules(modules) {
             v.providedNames.do { each -> meths.push(each) }
         }
     }
-    def gct = collections.map.new
-    gct.put("modules", modules)
-    gct.put("path", collections.list.new(path))
-    gct.put("public", meths)
-    gct.put("confidential", confidentials)
+    def gct = dictionary.empty
+    gct.at "modules" put(modules.asList.sort)
+    gct.at "path" put(list.with(path))
+    gct.at "public" put(meths.sort)
+    gct.at "confidential" put(confidentials.sort)
     if (false != theDialect) then {
-        gct.put("dialect", collections.list.new(theDialect))
+        gct.at "dialect" put(list.with(theDialect))
     }
-    def classes = collections.list.new
+    def classes = list.empty
     for (values) do {val->
         if (val.kind == "class") then {
-            gct.put("constructors-of:{val.name.value}",
-                collections.list.new(val.constructor.value))
-            gct.put("methods-of:{val.name.value}.{val.constructor.value}",
-                val.data.elements)
+            gct.at "constructors-of:{val.name.value}"
+                put(list.with(val.constructor.value))
+            gct.at "methods-of:{val.name.value}.{val.constructor.value}"
+                put(val.scope.keysAsList.sort)
             classes.push(val.name.value)
-        }
-        if (val.kind == "defdec") then {
-            if (val.value.kind == "object") then {
-                def ob = val.value
-                var isClass := false
-                def obConstructors = collections.list.new
-                for (ob.value) do {nd->
-                    if (nd.kind == "method") then {
-                        if (nd.isFresh) then {
-                            isClass := true
-                            obConstructors.push(nd.value.value)
-                            gct.put("methods-of:{val.name.value}.{nd.value.value}",
-                                ob.data.getScope(nd.value.value).elements)
-                        }
+        } elseif { (val.kind == "defdec").andAlso {
+                val.value.kind == "object" } } then {
+            // TODO: try "val.returnsObject" in above condition?
+            def ob = val.value
+            var isClass := false
+            def obConstructors = list.empty
+            for (ob.value) do {nd->
+                if (nd.kind == "method") then {
+                    if (nd.isFresh) then {
+                        isClass := true
+                        def factMethNm = nd.nameString
+                        obConstructors.push(factMethNm)
+                        gct.at "methods-of:{val.name.value}.{factMethNm}"
+                            put(ob.scope.getScope(factMethNm).keysAsList.sort)
                     }
                 }
-                if (obConstructors.size > 0) then {
-                    gct.put("constructors-of:{val.name.value}",
-                        obConstructors)
-                    classes.push(val.name.value)
-                }
+            }
+            if (obConstructors.size > 0) then {
+                gct.at "constructors-of:{val.name.value}"
+                    put(obConstructors)
+                classes.push(val.name.value)
             }
         }
     }
-    gct.put("classes", classes)
+    gct.at "classes" put(classes)
 
-    def freshmeths = collections.list.new
-    gct.put("fresh-methods", freshmeths)
+    def freshmeths = list.empty
+    gct.at "fresh-methods" put(freshmeths)
     for (values) do {val->
         if (val.kind == "method") then {
             if (val.isFresh) then {
                 freshmeths.push(val.nameString)
                 def freshMethResult = val.body.last
                 if (freshMethResult.isObject) then {
-                    gct.put("fresh:{val.nameString}",
-                        freshMethResult.scope.keysAsList)
+                    gct.at "fresh:{val.nameString}"
+                        put(freshMethResult.scope.keysAsList)
                 } elseif {freshMethResult.isCall} then {
                     // we know that freshMethResult.value.isMember and 
                     // freshMethResult.value.nameString == "clone"
                     def receiver = freshMethResult.value.in
                     if ((receiver.nameString == "prelude").andAlso{
                       freshMethResult.with.first.args.first.nameString == "self"}) then {
-                        gct.put("fresh:{val.nameString}", meths)
+                        gct.at "fresh:{val.nameString}" put(meths)
                         def key = "fresh:{val.nameString}"
                     } elseif {(receiver.nameString == "self")} then {
-                        gct.put("fresh:{val.nameString}", meths)
+                        gct.at "fresh:{val.nameString}" put(meths)
                     } else {
                         ProgrammingError.raise 
                             "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
