@@ -13,7 +13,6 @@ OBJECT_PATH='$(PREFIX)/lib/grace'
 other_modules=(
     mirrors
     math
-    repl
 )
 
 ADVISE_END=

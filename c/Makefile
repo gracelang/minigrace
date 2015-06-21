@@ -55,9 +55,6 @@ minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct
 mirrors.gcn: mirrors.c gracelib.h
 	gcc -std=c99 -g -c -o mirrors.gcn mirrors.c
 
-repl.gcn: repl.c gracelib.h
-	gcc -std=c99 -g -c -o repl.gcn repl.c
-
 selfhost: minigrace $(CFILES:.c=.grace) $(STUBS:%.grace=%.gct)
 	rm -f $(CFILES:.c=.gcn)
 	./minigrace --make $(VERBOSITY) --target c --module minigrace compiler.grace

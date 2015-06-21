@@ -10,6 +10,8 @@ INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c 
 DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
 EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
+JUNK1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
+JUNK2 := $(shell if [ ! -e l2 ] ; then mkdir -p l2 ; fi)
 
 # override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
@@ -25,7 +27,7 @@ GRACE_DIALECTS = $(SAMPLE_DIALECTS) rtobjectdraw.grace objectdraw.grace animatio
 GRACE_DIALECTS_GSO = $(patsubst %.grace, %.gso, $(filter-out $(OBJECTDRAW_BITS), $(GRACE_DIALECTS)))
 GRACE_MODULES = gUnit.grace StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
-JSSOURCEFILES = $(filter-out js/repl.js,$(filter-out ,$(SOURCEFILES:%.grace=js/%.js)))
+JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
@@ -56,8 +58,8 @@ blackWeb:
 bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.c math.gct
-	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} repl.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c math.c math.gct
+	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
     do cp -fp $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
@@ -103,18 +105,18 @@ collectionsPrelude.gcn:
 	@echo "gcn file created with gct: $@"
 
 collectionsPrelude.gct: collectionsPrelude.grace l2/minigrace
-	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l2 $<
+	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
 
 dialects: js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/sample/dialects/minitest.js gUnit.js gUnit.gso
 
-$(DYNAMIC_STUBS:%.grace=l1/%.gso): l1/%.gso: %.gso l1/exists
-	@cd l1 && cp -fp ../$< .
+$(DYNAMIC_STUBS:%.grace=l1/%.gso): l1/%.gso: %.gso l1
+	@cd l1 && ln -sf ../$< .
 
-$(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso l2/exists
-	@cd l2 && cp -fp ../$< .
+$(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso l2
+	@cd l2 && ln -sf ../$< .
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -233,131 +235,116 @@ js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFIL
 	ln -f minigrace js/minigrace
 
 just-minigrace:
-	./l2/minigrace --vtag l2 --make --native --module minigrace $(VERBOSITY) compiler.grace
+	./l2/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 known-good/%:
 	@echo "making $@"
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
+    
+l1/%.grace: l1
+	cd l1 && ln -sf ../$(@F) .
 
 l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg $(<F)
+	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F)
 
 l1/collectionsPrelude.gcn: l1/collectionsPrelude.gct
 	@echo "gcn file created with gct: $@"
 
-l1/collectionsPrelude.gct: l1/exists l1/collectionsPrelude.grace $(KG)/minigrace
-	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg collectionsPrelude.grace
-
-l1/collectionsPrelude.grace: l1/exists collectionsPrelude.grace
-	@cd l1 && cp -fp ../collectionsPrelude.grace .
-
-l2/collectionsPrelude.grace: l2/exists collectionsPrelude.grace
-	@cd l2 && cp -fp ../collectionsPrelude.grace .
-
-l2/%.grace: l2/exists
-	@echo "$@ was created with l2/exists"
-
-l1/%.grace: l1/exists
-	@echo "$@ was created with l1/exists"
-
-l1/exists: $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o
-	@if [ ! -e l1/exists ] ; then mkdir -p l1 ; fi
-	touch l1/exists
-	@cd l1 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do cp -fp ../$$f . ; done ;
+l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
+	cd l1 && ln ../$< .
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
-l1/minigrace: l1/exists $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
-	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib ./ --vtag kg compiler.grace
+l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
+	cd l1 && ln -sf ../compiler.grace . && \
+    ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
 l1/StandardPrelude.gcn: l1/StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
 
-l1/StandardPrelude.gct: l1/StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
-	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag kg StandardPrelude.grace
-
-l1/StandardPrelude.grace: l1/exists StandardPrelude.grace
-	@cd l1 && cp -fp ../StandardPrelude.grace .
-
-l2/StandardPrelude.grace: l2/exists StandardPrelude.grace
-	@cd l2 && cp -fp ../StandardPrelude.grace .
-
-l1/unicode.gcn: unicode.c unicodedata.h gracelib.h l1/exists
-	gcc -g -std=c99 -c -o $@ -fPIC $<
-
-l2/%.gso: %.c unicodedata.h gracelib.h l2/exists
+l1/StandardPrelude.gct: stubs/StandardPrelude.gct
+	cd l1 && ln -sf ../$<
+    
+l1/mirrors.gso: mirrors.c gracelib.h l1
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-l2/unicode.gcn: unicode.c unicodedata.h gracelib.h l2/exists
+l1/unicode.gcn: unicode.c unicodedata.h gracelib.h l1
 	gcc -g -std=c99 -c -o $@ -fPIC $<
 
-$(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn l1/exists
-	cd l1 && cp -fp ../$< .
+l1/unicode.gso: unicode.c unicodedata.h gracelib.h l1
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+    
+l1/mirrors.gso: mirrors.c gracelib.h l1
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+
+l2/%.gso: %.c unicodedata.h gracelib.h l2
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+
+l2/unicode.gcn: unicode.c unicodedata.h gracelib.h l2
+	gcc -g -std=c99 -c -o $@ -fPIC $<
+
+$(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn l1
+	cd l1 && ln -sf ../$< .
 
 l2/%.gct: l2/%.grace l1/minigrace
-	(cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F))
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $(<F))
 
 l2/collectionsPrelude.gcn: l2/collectionsPrelude.gct
 	@echo "gcn file created with gct: $@"
 
-l2/collectionsPrelude.gct: l2/exists l2/collectionsPrelude.grace l1/minigrace
-	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 collectionsPrelude.grace
-
-l2/exists: $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o
-	if [ ! -e l2/exists ] ; then mkdir -p l2 ; fi
-	touch l2/exists
-	cd l2 && for f in $(SOURCEFILES) $(C_MODULES_BIN) $(STUB_GCTS) gracelib.h gracelib-basic.o ; do cp -fp ../$$f . ; done ;
+l2/collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 collectionsPrelude.grace
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
 	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
 
-l2/minigrace: l2/exists l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
-	cd l2; ../l1/minigrace $(VERBOSITY) --make --native --module minigrace --vtag l1 compiler.grace
+l2/minigrace: l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
+	l1/minigrace $(VERBOSITY) --make --native --module minigrace compiler.grace
 
 l2/StandardPrelude.gcn: l2/StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
 
-l2/StandardPrelude.gct: l2/exists l2/StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
-	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 StandardPrelude.grace
+l2/StandardPrelude.gct: StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 StandardPrelude.grace
 
 Makefile.conf: configure
 	./configure
 
-$(C_MODULES_GCN:%=l2/%): l2/%.gcn: %.gcn l2/exists
+$(C_MODULES_GCN:%=l2/%): l2/%.gcn: %.gcn l2
 	@cd l2 && cp -fp ../$< .
 
-$(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/exists l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
+$(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
-$(MGSOURCEFILES:%.grace=l2/%.gct): l2/%.gct: l2/%.grace l2/exists l2/StandardPrelude.gct l1/minigrace
-	cd l2 && ../l1/minigrace $(VERBOSITY) --make --noexec --vtag l1 $(<F)
+$(MGSOURCEFILES:%.grace=l2/%.gct): l2/%.gct: %.grace l2/StandardPrelude.gct l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec --dir l2 $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.gct
 	@echo "gcn file created with gct: $@"
 
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l2/minigrace
-	l2/minigrace $(VERBOSITY) --make --noexec --vtag l2 $<
+	l2/minigrace $(VERBOSITY) --make --noexec $<
 
 gUnit.gso $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace %.gcn StandardPrelude.gct l2/minigrace
 	if ! [ $*.gct -ot $*.grace ] ; then cp $*.gct $*.gct.save ; fi
 	if ! [ $*.gcn -ot $*.grace ] ; then cp $*.gcn $*.gcn.save ; fi
-	l2/minigrace $(VERBOSITY) --make --dynamic-module --vtag l2 $<
+	l2/minigrace $(VERBOSITY) --make --dynamic-module $<
 	if [ -e $*.gct.save ] ; then mv $*.gct.save $*.gct ; fi
 	if [ -e $*.gcn.save ] ; then mv $*.gcn.save $*.gcn ; fi
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
-	cd js && cp -fp ../$(<F) . && ../minigrace $(VERBOSITY) --make --target js -o $(@F) $(<F)
+	minigrace $(VERBOSITY) --make --target js --dir js -o $(@F) $(<F)
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l2/minigrace $(SOURCEFILES)
-	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude --vtag l1 StandardPrelude.grace
+	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude --dir l2 StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
-	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic --vtag l2 compiler.grace
+	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
 minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l2/gracelib.o
-	./l2/minigrace --vtag l2 --make --native --module minigrace $(VERBOSITY) compiler.grace
+	./l2/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -386,9 +373,6 @@ pull-objectdraw:
 	if [ -e objectdraw ] ; \
     then cd objectdraw; git pull ; \
     else git clone https://github.com/gracelang/objectdraw/ ; fi
-
-repltest: minigrace
-	./tests/harness "../minigrace" tests repl
 
 rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
 	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
@@ -423,21 +407,21 @@ selftest: minigrace
 	rm -rf selftest
 	mkdir -p selftest
 	for f in $(SOURCEFILES) unicode.gso gracelib.o gracelib.h ; do cp -fp ../$$f selftest ; done
-	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --vtag selftest compiler.grace )
+	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest compiler.grace )
 	rm -rf selftest
 
 StandardPrelude.gcn: StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
 
 StandardPrelude.gct: StandardPrelude.grace collectionsPrelude.gct l2/minigrace
-	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l2 $<
+	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 stubs/collectionsPrelude.gct: collectionsPrelude.grace
-	cd stubs && cp -fp ../collectionsPrelude.grace . && \
+	cd stubs && ln -sf ../collectionsPrelude.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
 
 stubs/StandardPrelude.gct: StandardPrelude.grace stubs/collectionsPrelude.gct
-	cd stubs && cp -fp ../StandardPrelude.grace . && \
+	cd stubs && ln -sf ../StandardPrelude.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
@@ -451,16 +435,14 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.g
 	../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
 	rm -f $(@F:%.gct=%{.c,.gcn});
 
-# The next 3 rules copy rather than link, so that the target has a new timestamp.
-
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
-	rm -f $@ && cp -fp $< .
+	ln -sf $< .
 
-$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct l1/exists
-	rm -f $@ && cp -fp $< l1
+$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct l1
+	cd l1 && ln -sf ../$< .
 
-$(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.gct l2/exists
-	rm -f $@ && cp -fp $< l2
+$(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.gct l2
+	cd l2 && ln -sf ../$< .
 
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample

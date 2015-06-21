@@ -24,7 +24,7 @@ method builtInModules {
     }
 }
 
-def dynamicCModules = set.with("repl", "mirrors", "curl", "math", "unicode")
+def dynamicCModules = set.with("mirrors", "curl", "math", "unicode")
 def imports = util.requiredModules
 def emptySequence = sequence.empty
 
