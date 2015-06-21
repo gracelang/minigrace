@@ -30,7 +30,7 @@ def targets = set.with("lex", "parse", "grace", "ast", "processed-ast",
 
 def requiredModules is public = object {
     def static is public = set.empty
-    def linkfiles is public = list.empty
+    def linkfiles is public = set.empty
     def other is public = set.empty
     method isAlready ( moduleName ) -> Boolean {
         if ( static.contains(moduleName) ) then {
@@ -58,7 +58,7 @@ method parseargs {
                 match(arg)
                     case { "-o" ->
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -o requires argument.\n")
+                            io.error.write("minigrace: -o requires an argument.\n")
                             sys.exit(1)
                         }
                         outfilev := io.open(argv.at(ai + 1), "w")
@@ -70,7 +70,7 @@ method parseargs {
                     } case { "--vtag" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --vtag requires argument.\n")
+                            io.error.write("minigrace: --vtag requires an argument.\n")
                             sys.exit(1)
                         }
                         vtagv := argv.at(ai + 1)
@@ -97,8 +97,17 @@ method parseargs {
                     } case { "--noexec" ->
                         noexecv := true
                         buildtypev := "bc"
-                    } case { "--yesexec" ->
-                        noexecv := false
+                    } case { "--dir" ->
+                        skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write "minigrace: --dir requires an argument.\n"
+                            sys.exit(1)
+                        }
+                        outDirCache := argv.at(ai + 1)
+                        if (outDirCache.at(outDirCache.size) != "/") then {
+                            outDirCache := outDirCache ++ "/"
+                        }
+                        createDirectoryIfNecessary(outDirCache)
                     } case { "--stdout" ->
                         toStdout := true
                     } case { "-" ->
@@ -106,21 +115,21 @@ method parseargs {
                     } case { "--module" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --module requires argument.\n")
+                            io.error.write("minigrace: --module requires an argument.\n")
                             sys.exit(1)
                         }
                         modnamev := argv.at(ai + 1)
                     } case { "--gracelib" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --gracelib requires argument.\n")
+                            io.error.write("minigrace: --gracelib requires an argument.\n")
                             sys.exit(1)
                         }
                         gracelibPathv := argv.at(ai + 1)
                     } case { "--target" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write "minigrace: --target requires argument.\n"
+                            io.error.write "minigrace: --target requires an argument.\n"
                             sys.exit(1)
                         }
                         targetv := argv.at(ai + 1)
@@ -135,7 +144,7 @@ method parseargs {
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -j requires argument.\n")
+                            io.error.write("minigrace: -j requires an argument.\n")
                             sys.exit(1)
                         }
                         jobs := argv.at(ai + 1).asNumber
@@ -183,17 +192,20 @@ method parseargs {
             }
         }
     }
+    if ((vtagv == "").andAlso{outDirCache != ""}) then {
+        vtagv := outDirCache
+    }
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
-            case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
-            case { "parse" -> io.open(sourceDir ++ modnamev ++ ".parse", "w") }
-            case { "lex" -> io.open(sourceDir ++ modnamev ++ ".lex", "w") }
-            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
-            case { "ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
-            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".symbols", "w") }
-            case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
-            case { "grace" -> io.open(sourceDir ++ modnamev ++ "_new.grace", "w") }
+            case { "c" -> io.open(outDir ++ modnamev ++ ".c", "w") }
+            case { "js" -> io.open(outDir ++ modnamev ++ ".js", "w") }
+            case { "parse" -> io.open(outDir ++ modnamev ++ ".parse", "w") }
+            case { "lex" -> io.open(outDir ++ modnamev ++ ".lex", "w") }
+            case { "processed-ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { "ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
+            case { "patterns" -> io.open(outDir ++ modnamev ++ ".patterns", "w") }
+            case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
             case { _ -> 
                 io.error.write("minigrace: unrecognized target '{targetv}'.\n")
                 sys.exit(1)
@@ -218,6 +230,12 @@ method parseargs {
             print ""
         }
     }
+}
+
+method createDirectoryIfNecessary(d) is confidential {
+    if (io.exists(d)) then { return }
+    if (io.system "mkdir \"{d}\"") then { return }
+    EnvironmentException.raise "Unable to create directory \"{d}\"."
 }
 
 var previousElapsed := 0
@@ -388,6 +406,15 @@ method sourceDir {
     if (sourceDirCache == "") then { sourceDirCache := "./" }
     sourceDirCache
 }
+
+var outDirCache := ""
+method outDir {
+    if (outDirCache == "") then {
+        outDirCache := sourceDir
+    }
+    outDirCache
+}
+
 var execDirCache := ""
 method execDir {
     if (execDirCache == "") then {
@@ -430,7 +457,7 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
     action.apply(locations)
 }
 method file(name) onPath(pathString) otherwise(action) {
-    file(name) on(sourceDir) orPath(pathString) otherwise(action)
+    file(name) on(outDir) orPath(pathString) otherwise(action)
 }
 
 method processExtension(ext) {
@@ -463,15 +490,16 @@ method printhelp {
     print "  --dynamic-module Compile FILE as a dynamic module"
     print ""
     print "Options:"
-    print "  --verbose        Give more detailed output"
-    print "  --target TGT     Choose a non-default compilation target TGT"
-    print "                   Use --target help to list supported targets."
-    print "  -o OFILE         Output to OFILE instead of default"
-    print "  -j N             Spawn at most N concurrent subprocesses"
+    print "  --dir DIR        Use the directory DIR for generated output files,"
+    print "                   and for .gct files of imported modules"
     print "  --help           This text"
     print "  --module         Override default module name (derived from FILE)"
     print "  --no-recurse     Do not compile imported modules"
+    print "  -o OFILE         Output to OFILE instead of default"
     print "  --stdout         Output to standard output rather than a file"
+    print "  --target TGT     Choose a non-default compilation target TGT"
+    print "                   Use --target help to list supported targets."
+    print "  --verbose        Give more detailed output"
     print "  --version        Print version information"
     print ""
     print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."
