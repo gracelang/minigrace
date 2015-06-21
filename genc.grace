@@ -1,13 +1,13 @@
 #pragma DefaultVisibility=public
-import "io" as io
-import "sys" as sys
 import "ast" as ast
-import "util" as util
 import "buildinfo" as buildinfo
-import "mgcollections" as collections
-import "xmodule" as xmodule
-import "mirrors" as mirrors
 import "errormessages" as errormessages
+import "io" as io
+import "mgcollections" as collections
+import "mirrors" as mirrors
+import "sys" as sys
+import "util" as util
+import "xmodule" as xmodule
 
 // genc produces C code from the AST, and optionally links and
 // compiles it to native code. Code that affects the way the compiler behaves
@@ -1583,12 +1583,12 @@ method compileimport(o) {
     declaredvars.push(nm)
     globals.push("Object {modg};")
     out("  if ({modg} == NULL)")
-    if (imports.other.contains(o.path)) then {
-        out("    {modg} = dlmodule(\"{fn}\");")
-        // for dynamic modules
+    if (imports.static.contains(o.path).orElse {
+            xmodule.builtInModules.contains(o.path) }) then {
+        out "    {modg} = {modg}_init();"
     } else {
-        out("    {modg} = {modg}_init();")
-        // for both static and built-in modules
+        out "    {modg} = dlmodule(\"{fn}\");"
+        // for dynamic modules
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
@@ -2100,8 +2100,8 @@ method compile(vl, of, mn, rm, bt) {
                 cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
             } elseif { io.exists "{buildinfo.objectpath}/gracelib.o" } then {
                 cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
-            } elseif { io.exists "{util.sourceDir}/gracelib.o" } then {
-                cmd := cmd ++ "\"{util.sourceDir}/gracelib.o\" "
+            } elseif { io.exists "{util.outDir}/gracelib.o" } then {
+                cmd := cmd ++ "\"{util.outDir}/gracelib.o\" "
             } elseif { io.exists "{util.execDir}/gracelib.o" } then {
                 cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
             } else {
