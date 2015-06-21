@@ -3629,11 +3629,11 @@ start:
         ||strcmp(originalself->class->definitionModule, "unknown") == 0;
     if (originalself->class->definitionLine
             && !unknownmodule)
-        sprintf(objDesc, " in object at %s:%i",
-            originalself->class->definitionModule,
-                originalself->class->definitionLine);
+        sprintf(objDesc, "in %s created at %s:%i",
+            originalself->class->name, originalself->class->definitionModule,
+            originalself->class->definitionLine);
     else if (!unknownmodule)
-        sprintf(objDesc, " in %s module",
+        sprintf(objDesc, "in %s module",
                 originalself->class->definitionModule);
     else
         objDesc[0] = 0;
@@ -3722,7 +3722,7 @@ start:
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "No method %s in %s; ", name, self->class->name);
+    fprintf(stderr, "No method %s %s; ", name, objDesc);
     fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
