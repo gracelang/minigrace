@@ -30,15 +30,6 @@ var inBlock := false
 var compilationDepth := 0
 def importedModules = set.empty
 def topLevelTypes = mgcollections.map.new
-def builtInModules = list.with(
-    "imports", 
-    "io", 
-    "math", 
-    "mirrors", 
-    "sys", 
-    "unicode", 
-    "util"
-)
 def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
