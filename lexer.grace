@@ -1,5 +1,3 @@
-import "io" as io
-import "sys" as sys
 import "util" as util
 import "unicode" as unicode
 import "mgcollections" as collections
