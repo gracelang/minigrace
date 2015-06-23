@@ -58,9 +58,9 @@ blackWeb:
 bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c math.c math.gct
-	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
-    do cp -fp $$f c ; done &&\
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.c math.gct
+	for f in gracelib.c gracelib.h unicode.{c,gct,gso} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct,gso} repl.{c,gct,gso} math.{c,gct,gcn} definitions.h debugger.c curl.c ;\
+    do cp -f $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude StandardPrelude.grace &&\
@@ -238,6 +238,9 @@ l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 
 l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
 	cd l1 && ln ../$< .
+    
+l1/collectionsPrelude.gcn: stubs/collectionsPrelude.gct
+	cd l1 && ln -sf ../stubs/$(@F)
 
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
@@ -248,6 +251,9 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/StandardPrelude.gct: stubs/StandardPrelude.gct
 	cd l1 && ln -sf ../$<
+    
+l1/StandardPrelude.gcn: stubs/StandardPrelude.gct
+	cd l1 && ln -sf ../stubs/$(@F)
     
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
@@ -460,9 +466,9 @@ test: minigrace-c-env sample/dialects/minitest.gso
 togracetest: minigrace
 	./tests/harness "../minigrace" tests tograce
 
-# The dependency on unicodedata.h isn't captured by the static pattern rule
-# unicode.gcn: unicode.c unicodedata.h gracelib.h
-#	gcc -g -std=c99 -fPIC -c -o unicode.gcn unicode.c
+# The dependency on unicodedata.h isn't captured by the pattern rule
+unicode.gso: unicode.c unicodedata.h gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 uninstall:
 	rm -f $(PREFIX)/bin/minigrace
