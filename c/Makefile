@@ -9,7 +9,7 @@ include Makefile.conf
 
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
 
-CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c interactive.c xmodule.c identifierresolution.c genjson.c errormessages.c
+CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c xmodule.c identifierresolution.c genjson.c errormessages.c
 
 minigrace: $(CFILES:.c=.gcn) minigrace.gcn $(STATIC_MODULES) $(UNICODE_MODULE) gracelib.o $(OTHER_MODULES)
 	gcc -o minigrace -fPIC gracelib.o minigrace.gcn $(CFILES:.c=.gcn) $(STATIC_MODULES) $(LDFLAGS)
