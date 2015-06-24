@@ -276,7 +276,7 @@ $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn
 l2/%.gct: l2/%.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $(<F))
 
-l2/collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
+l2/collections%.gct l2/collections%.gct: collectionsPrelude.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 collectionsPrelude.grace
 
 l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
@@ -285,7 +285,7 @@ l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collections
 l2/minigrace: l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
 	l1/minigrace $(VERBOSITY) --make --native --module minigrace compiler.grace
 
-l2/StandardPrelude.gct: StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
+l2/Standard%.gct l2/Standard%.gcn: StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 StandardPrelude.grace
 
 Makefile.conf: configure
@@ -384,14 +384,14 @@ selftest: minigrace
 	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest compiler.grace )
 	rm -rf selftest
 
-StandardPrelude.gct: StandardPrelude.grace collectionsPrelude.gct l2/minigrace
+Standard%.gcn Standard%.gct: StandardPrelude.grace collectionsPrelude.gct l2/minigrace
 	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-stubs/collectionsPrelude.gct: collectionsPrelude.grace
+stubs/collections%.gcn stubs/collections%.gct: collectionsPrelude.grace
 	cd stubs && ln -sf ../collectionsPrelude.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
 
-stubs/StandardPrelude.gct: StandardPrelude.grace stubs/collectionsPrelude.gct
+stubs/Standard%.gcn stubs/Standard%.gct: StandardPrelude.grace stubs/collectionsPrelude.gct
 	cd stubs && ln -sf ../StandardPrelude.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
 
