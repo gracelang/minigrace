@@ -24,7 +24,7 @@ l2/genjson.gct: l2/mgcollections.gct l2/util.gct l2/io.gct l2/ast.gct
 l2/identifierresolution.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/xmodule.gct l2/mgcollections.gct l2/mirrors.gct mirrors.gso l2/errormessages.gct
 l2/lexer.gct: l2/util.gct l2/unicode.gso l2/unicode.gct l2/mgcollections.gct l2/errormessages.gct
 l2/mgcollections_stub.gct: l2/collections.gct
-l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/genjson.gct l2/buildinfo.gct l2/mgcollections.gct l2/identifierresolution.gct l2/mirrors.gct mirrors.gso
+l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/genjson.gct l2/buildinfo.gct l2/mgcollections.gct l2/identifierresolution.gct l2/mirrors.gct l2/mirrors.gso
 l2/parser.gct: l2/io.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/errormessages.gct
 l2/symbolTable.gct: l2/ast.gct l2/errormessages.gct
 l2/util.gct: l2/io.gct l2/sys.gct l2/buildinfo.gct l2/mgcollections.gct
@@ -57,7 +57,7 @@ genjson.gct: mgcollections.gct util.gct io.gct ast.gct
 identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mgcollections.gct mirrors.gct mirrors.gso errormessages.gct
 lexer.gct: util.gct unicode.gso unicode.gct mgcollections.gct errormessages.gct
 mgcollections_stub.gct: collections.gct
-minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct genjson.gct buildinfo.gct mgcollections.gct identifierresolution.gct mirrors.gct mirrors.gso
+minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct genjson.gct buildinfo.gct mgcollections.gct identifierresolution.gct mirrors.gct mirrors.gso 
 parser.gct: io.gct ast.gct util.gct mgcollections.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
 util.gct: io.gct sys.gct buildinfo.gct mgcollections.gct

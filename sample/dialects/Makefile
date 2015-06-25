@@ -25,6 +25,15 @@ staticTypes.gso: staticTypes.grace dialect.gso
 requireTypes.gso: requireTypes.grace dialect.gso
 	../../minigrace $(VERBOSITY) --dynamic-module $<
 
+minitest.gso: minitest.grace gUnit.gso mirrors.gso ../../minigrace
+	../../minigrace $(VERBOSITY) --dynamic-module $<
+
+gUnit.gso: ../../gUnit.gso
+	ln -sf ../../gUnit.gso .
+
+mirrors.gso: ../../mirrors.gso
+	ln -sf ../../mirrors.gso .
+
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
 	../../minigrace $(VERBOSITY) $<
 
