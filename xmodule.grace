@@ -141,7 +141,7 @@ method compileModule (nm) inFile (sourceFile)
     if (util.verbosity > 30) then {
         cmd := cmd ++ " --verbose"
     }
-    if (util.outDir != "") then {
+    if (util.outDir != util.sourceDir) then {
         cmd := cmd ++ " --dir " ++ util.outDir
     }
     if (false != util.vtag) then {
