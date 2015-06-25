@@ -3633,7 +3633,7 @@ start:
             originalself->class->name, originalself->class->definitionModule,
             originalself->class->definitionLine);
     else if (!unknownmodule)
-        sprintf(objDesc, "in %s module",
+        sprintf(objDesc, " in %s module",
                 originalself->class->definitionModule);
     else
         objDesc[0] = 0;
