@@ -28,24 +28,6 @@ def dynamicCModules = set.with("mirrors", "curl", "math", "unicode")
 def imports = util.requiredModules
 def emptySequence = sequence.empty
 
-method dirName (filePath) is confidential {
-    // the directory part of filePath, including the trailing /
-    var slashPosn := 0
-    var ix := filePath.size
-    while { (slashPosn == 0) && (ix > 0) } do {
-        if (filePath.at(ix) == "/") then {
-            slashPosn := ix
-        } else { 
-            ix := ix - 1 
-        }
-    }
-    if (slashPosn == 0) then {
-        "./"
-    } else {
-        filePath.substringFrom 1 to (slashPosn)
-    }
-}
-
 method checkExternalModule(node) {
     checkimport(node.moduleName, node.path, node.line, node.linePos + 8, node.isDialect)
 }
@@ -60,21 +42,15 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     // noSource implies that the module is written in native code, like "unicode.c"
 
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-
-    def moduleFileGrace = util.file "{pathname}.grace" onPath (gmp) otherwise { _ ->
-        def moduleFileBinary = util.file "{pathname}.gct" onPath (gmp) otherwise { l ->
-                errormessages.syntaxError("Failed to find imported module '{pathname}'.\n" ++
-                    "Looked in {l}.") atRange(line, linePos, linePos + nm.size - 1)
-            }
+    def pn = util.pathNameFromString(pathname).setExtension "grace"
+    def moduleFileGrace = util.file(pn) onPath (gmp) otherwise { _ ->
         noSource := true
-        moduleFileBinary.substringFrom 1 to (moduleFileBinary.size - 4) ++ ".grace"
+        pn
     }
-    def moduleFileRoot = moduleFileGrace.substringFrom 1 to (moduleFileGrace.size - 6)
-    def moduleFileGso = moduleFileRoot ++ ".gso"
-    def moduleFileGct = moduleFileRoot ++ ".gct"
-    def moduleFileGcn = moduleFileRoot ++ ".gcn"
-    def moduleFileJs = moduleFileRoot ++ ".js"
-    def location = dirName(moduleFileRoot)
+    def moduleFileGso = pn.copy.setDirectory(util.outDir).setExtension ".gso"
+    def moduleFileGct = pn.copy.setDirectory(util.outDir).setExtension ".gct"
+    def moduleFileGcn = pn.copy.setDirectory(util.outDir).setExtension ".gcn"
+    def moduleFileJs = pn.copy.setDirectory(util.outDir).setExtension ".js"
 
     if (util.target == "c") then {
         def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
@@ -87,41 +63,41 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         } else {
             binaryFile := moduleFileGcn
             importsSet := imports.static
-            imports.linkfiles.add(moduleFileGcn)
+            imports.linkfiles.add(moduleFileGcn.asString)
         }
         if (io.exists(binaryFile).andAlso {
             io.exists(moduleFileGct) }.andAlso {
                 noSource.orElse {
-                    io.newer(binaryFile, moduleFileGrace)
+                    io.newer(binaryFile.asString, moduleFileGrace.asString)
                 }
             }
         ) then {
         } else {
-            if (! io.exists(binaryFile)) then {
+            if ( binaryFile.exists.not ) then {
                 util.log_verbose "{binaryFile} does not exist"
-            } elseif { ! io.newer(binaryFile, moduleFileGrace) } then {
-                util.log_verbose "{binaryFile} older than {moduleFileGrace}"
+            } elseif { binaryFile.newer(moduleFileGrace).not } then {
+                util.log_verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
-        if (io.exists(moduleFileJs).andAlso {
-            io.exists(moduleFileGct) }.andAlso {
+        if (moduleFileJs.exists.andAlso {
+            moduleFileGct.exists }.andAlso {
                 noSource.orElse {
-                    io.newer(moduleFileJs, moduleFileGrace)
+                    moduleFileJs.newer(moduleFileGrace)
                 }
             }
         ) then {
         } else {
-            if (! io.newer(moduleFileJs, moduleFileGrace)) then {
-                util.log_verbose "{moduleFileJs} older than {moduleFileGrace}"
+            if (moduleFileJs.newer(moduleFileGrace).not) then {
+                util.log_verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace) forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(location, isDialect, nm, line, linePos)
+    addTransitiveImports(moduleFileGrace.directory, isDialect, nm, line, linePos)
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
@@ -196,12 +172,7 @@ method parseGCT(moduleName) {
 method parseGCT(moduleName) sourceDir(dir) is confidential {
     def gctData = dictionary.empty
     def sz = moduleName.size
-    def sought = 
-        if ((sz >= 4).andAlso{moduleName.substringFrom(sz - 3) to(sz) == ".gct"}) then {
-        moduleName
-    } else {
-        moduleName ++ ".gct"
-    }
+    def sought = util.pathNameFromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
         util.log_verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
