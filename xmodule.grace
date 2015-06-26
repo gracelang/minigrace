@@ -43,7 +43,8 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
 
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pn = util.pathNameFromString(pathname).setExtension "grace"
-    def moduleFileGrace = util.file(pn) onPath (gmp) otherwise { _ ->
+    def moduleFileGrace = util.file(pn) on(util.sourceDir) 
+                                orPath (gmp) otherwise { _ ->
         noSource := true
         pn
     }
@@ -63,13 +64,22 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         } else {
             binaryFile := moduleFileGcn
             importsSet := imports.static
+        }
+        if (noSource && binaryFile.exists.not) then {
+            binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
+                    util.log_verbose "Can't find {binaryFile.shortName} in {l}"
+                }
+            moduleFileGct.setDirectory(binaryFile.directory)
+            if (moduleFileGct.exists.not) then {
+                util.log_verbose "Found {binaryFile} but neither {moduleFileGct} nor source."
+            }
+        }
+        if (needsDynamic.not) then {
             imports.linkfiles.add(moduleFileGcn.asString)
         }
-        if (io.exists(binaryFile).andAlso {
-            io.exists(moduleFileGct) }.andAlso {
-                noSource.orElse {
-                    io.newer(binaryFile.asString, moduleFileGrace.asString)
-                }
+        if (binaryFile.exists.andAlso {
+            moduleFileGct.exists }.andAlso {
+                noSource.orElse { binaryFile.newer(moduleFileGrace) }
             }
         ) then {
         } else {
