@@ -11,6 +11,7 @@ DYNAMIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS
 STATIC_STUBS := $(shell tools/set-difference "$(STUBS)" "$(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS)")
 EXTERNAL_STUBS := $(shell tools/set-difference "$(STUBS)" "$(INTERNAL_STUBS) $(JS_STUBS)")
 JUNK1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
+JUNK2 := $(shell if [ ! -e l2 ] ; then mkdir -p l2 ; fi)
 
 # override MAKEFLAGS := $(MAKEFLAGS) --debug=b
 
@@ -103,8 +104,8 @@ clean:
 collectionsPrelude.gcn:
 	@echo "gcn file created with gct: $@"
 
-collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+collectionsPrelude.gct: collectionsPrelude.grace l2/minigrace
+	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o curl.gso -shared -fPIC curl.c -lcurl
@@ -113,6 +114,9 @@ dialects: js js/sample/dialects/requireTypes.js mgcollections.gso buildinfo.gso 
 
 $(DYNAMIC_STUBS:%.grace=l1/%.gso): l1/%.gso: %.gso
 	@cd l1 && ln -sf ../$< .
+
+$(DYNAMIC_STUBS:%.grace=l2/%.gso): l2/%.gso: %.gso
+	@cd l2 && ln -sf ../$< .
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -186,7 +190,7 @@ js/collectionsPrelude.js: js/collectionsPrelude.gct
 	@echo "$@ was built with the gct"
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
+	./minigrace $(VERBOSITY) --make --target js --dir js $<F
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -202,7 +206,7 @@ js/gUnit.js: js/gUnit.gct
 	echo "$@ made with the gct"
 
 js/gUnit.gct: gUnit.grace minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	cd js; cp -fp ../$< .; ../minigrace --target js --make $(VERBOSITY) $<
 
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo Generating minigrace.js from minigrace.in.js...
@@ -211,7 +215,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 $(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	cd js && cp -fp ../$< . && ../minigrace --make --target js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -220,11 +224,8 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.js: js/StandardPrelude.gct
-	@echo "$@ was built with the gct"
-
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
@@ -233,7 +234,7 @@ js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(WEBFIL
 	ln -f minigrace js/minigrace
 
 just-minigrace:
-	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
+	l2/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 known-good/%:
 	@echo "making $@"
@@ -274,37 +275,70 @@ l1/unicode.gcn: unicode.c unicodedata.h gracelib.h
 l1/unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
+l2/%.gso: %.c unicodedata.h gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
+
+l2/unicode.gcn: unicode.c unicodedata.h gracelib.h
+	gcc -g -std=c99 -c -o $@ -fPIC $<
+
 $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn
 	cd l1 && ln -sf ../$< .
+
+l2/%.gct: l2/%.grace l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $(<F))
+
+l2/collectionsPrelude.gcn: l2/collectionsPrelude.gct
+	@echo "gcn file created with gct: $@"
+
+l2/collections%.gct l2/collections%.gct: collectionsPrelude.grace l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 collectionsPrelude.grace
+
+l2/gracelib.o: gracelib-basic.o debugger.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn
+	ld -o l2/gracelib.o -r gracelib-basic.o l2/StandardPrelude.gcn l2/collectionsPrelude.gcn debugger.o
+
+l2/minigrace: l1/minigrace $(STUBS:%.grace=l2/%.gct) $(PRELUDESOURCEFILES:%.grace=l2/%.gct) $(MGSOURCEFILES) $(C_MODULES_BIN:%=l2/%) l2/gracelib.o
+	l1/minigrace $(VERBOSITY) --make --native --module minigrace --dir l2 compiler.grace
+
+l2/StandardPrelude.gcn: l2/StandardPrelude.gct
+	@echo "gcn file created with gct: $@"
+
+l2/Standard%.gct l2/Standard%.gcn: StandardPrelude.grace l2/collectionsPrelude.gct l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l2 StandardPrelude.grace
 
 Makefile.conf: configure
 	./configure
 
+$(C_MODULES_GCN:%=l2/%): l2/%.gcn: %.gcn
+	@cd l2 && cp -fp ../$< .
+
 $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag l1 $(<F)
+
+$(MGSOURCEFILES:%.grace=l2/%.gct): l2/%.gct: %.grace l2/StandardPrelude.gct l1/minigrace
+	l1/minigrace $(VERBOSITY) --make --noexec --dir l2 $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.gct
 	@echo "gcn file created with gct: $@"
 
-$(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec $<
+$(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l2/minigrace
+	l2/minigrace $(VERBOSITY) --make --noexec $<
 
-$(MGSOURCEFILES:%.grace=%.gso) gUnit.gso: %.gso: %.grace StandardPrelude.gct l1/minigrace
+$(MGSOURCEFILES:%.grace=%.gso) gUnit.gso: %.gso: %.grace StandardPrelude.gct l2/minigrace
 	if [ ! $*.gct -ot $*.grace ] ; then cp -p $*.gct $*.gct.save ; fi
-	l1/minigrace $(VERBOSITY) --make --dynamic-module $<
+	l2/minigrace $(VERBOSITY) --make --dynamic-module $<
 	if [ -e $*.gct.save ] ; then mv $*.gct.save $*.gct ; fi
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
 	./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 # Giant hack! Not suitable for use.
-minigrace-dynamic: l1/minigrace $(SOURCEFILES)
-	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude StandardPrelude.grace
+minigrace-dynamic: l2/minigrace $(SOURCEFILES)
+	l1/minigrace $(VERBOSITY) --make --noexec --import-dynamic -XNoMain -XNativePrelude --dir l2 StandardPrelude.grace
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
-	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
+	l2/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l1/gracelib.o
-	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
+minigrace: l2/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l2/gracelib.o
+	l2/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -373,8 +407,8 @@ selftest: minigrace
 StandardPrelude.gcn: StandardPrelude.gct
 	@echo "gcn file created with gct: $@"
 
-StandardPrelude.gct: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+StandardPrelude.gct: StandardPrelude.grace collectionsPrelude.gct l2/minigrace
+	l2/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 stubs/collectionsPrelude.gct: collectionsPrelude.grace
 	cd stubs && ln -sf ../collectionsPrelude.grace . && \
@@ -401,6 +435,9 @@ $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct
 	cd l1 && ln -sf ../$< .
 
+$(STUBS:%.grace=l2/%.gct): l2/%.gct: stubs/%.gct
+	cd l2 && ln -sf ../$< .
+
 tarWeb: js samples
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	Untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
@@ -424,10 +461,7 @@ tarball: minigrace
 
 test.js.compile: minigrace
 	@echo "compiling tests to JavaScript"
-	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/'\
-    | while read -r fileName num; \
-    do echo "$$num \c"; ../../minigrace --target js $${fileName}; \
-    done && echo "tests compiled."
+	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js: minigrace-js-env sample/dialects/requireTypes.gso sample/dialects/minitest.gso util.gso ast.gso gUnit.gso
 	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
@@ -476,6 +510,10 @@ uninstall:
 ast.gso: util.gso
 errormessages.gso: util.gso
 util.gso: buildinfo.gso mgcollections.gso
+
+l2/ast.gso: l2/util.gso
+l2/errormessages.gso: l2/util.gso
+l2/util.gso: l2/buildinfo.gso l2/mgcollections.gso
 
 l1/ast.gso: l1/util.gso
 l1/errormessages.gso: l1/util.gso
