@@ -431,6 +431,7 @@ factory method pathName {
     var base is public := ""
     var extension is public := ""
     method asString { directory ++ base ++ extension }
+    method shortName { base ++ extension }
     method asDebugString { "pathName {directory}|{base}|{extension} " }
     method setDirectory(d) {
         if (d.at(d.size) == "/") then {
