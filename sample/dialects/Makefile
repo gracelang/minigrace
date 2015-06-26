@@ -4,14 +4,17 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
 
-DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit
+DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit math mirrors
 
 c: $(DIALECT_MODULES) $(SAMPLES)
 
 %.gso %.gct: %.grace ../../minigrace
 	../../minigrace $(VERBOSITY) --dynamic-module $<
 
-$(DIALECT_DEPENDENCIES:%=../../%.gso): ../../%.gso: ../../%.grace
+$(DIALECT_DEPENDENCIES:%=../../%.gso): ../../%.gso:
+	cd ../../; $(MAKE) $(shell basename $@)
+
+$(DIALECT_DEPENDENCIES:%=../../%.gct): ../../%.gct:
 	cd ../../; $(MAKE) $(shell basename $@)
 
 dialect.gso: $(DIALECT_DEPENDENCIES:%=../../%.gso)
@@ -30,9 +33,11 @@ minitest.gso: minitest.grace gUnit.gso mirrors.gso ../../minigrace
 
 gUnit.gso: ../../gUnit.gso
 	ln -sf ../../gUnit.gso .
+	ln -sf ../../gUnit.gct .
 
 mirrors.gso: ../../mirrors.gso
 	ln -sf ../../mirrors.gso .
+	ln -sf ../../mirrors.gct .
 
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
 	../../minigrace $(VERBOSITY) $<
