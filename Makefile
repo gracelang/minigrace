@@ -164,12 +164,12 @@ gracelib-basic.o: gracelib.c gracelib.h
 gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
-gUnit.gcn: gUnit.gct mirrors.gso
+gUnit.gcn: gUnit.gct mirrors.gso math.gso
 	@echo "gcn file created with gct: $@"
 
-gUnit.gso: mirrors.gso
+gUnit.gso: mirrors.gso math.gso
 
-gUnit.gct: gUnit.grace StandardPrelude.gct mirrors.gso minigrace
+gUnit.gct: gUnit.grace StandardPrelude.gct mirrors.gso math.gso minigrace
 	./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace
