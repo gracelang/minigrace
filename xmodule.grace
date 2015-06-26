@@ -44,16 +44,18 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pn = util.pathNameFromString(pathname).setExtension "grace"
     def moduleFileGrace = util.file(pn) on(util.sourceDir) 
-                                orPath (gmp) otherwise { _ ->
+                                orPath (gmp) otherwise { l ->
+        util.log_verbose "no source file {pn} on {l}"
         noSource := true
         pn
     }
-    def moduleFileGso = pn.copy.setDirectory(util.outDir).setExtension ".gso"
-    def moduleFileGct = pn.copy.setDirectory(util.outDir).setExtension ".gct"
-    def moduleFileGcn = pn.copy.setDirectory(util.outDir).setExtension ".gcn"
-    def moduleFileJs = pn.copy.setDirectory(util.outDir).setExtension ".js"
-
+    var moduleFileGct := moduleFileGrace.copy.setExtension ".gct"
+    if (noSource.not && (util.sourceDir != util.outDir)) then {
+        moduleFileGct.setDirectory(util.outDir)
+    }
     if (util.target == "c") then {
+        def moduleFileGso = moduleFileGct.copy.setExtension ".gso"
+        def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
         def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
             .orElse { dynamicCModules.contains(nm) }
         var binaryFile
@@ -71,11 +73,13 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 }
             moduleFileGct.setDirectory(binaryFile.directory)
             if (moduleFileGct.exists.not) then {
-                util.log_verbose "Found {binaryFile} but neither {moduleFileGct} nor source."
+                util.log_verbose "found {binaryFile} but neither {moduleFileGct} nor source."
+            } else {
+                util.log_verbose "no source; found {moduleFileGct} and {binaryFile}"
             }
         }
         if (needsDynamic.not) then {
-            imports.linkfiles.add(moduleFileGcn.asString)
+            imports.linkfiles.add(binaryFile.asString)
         }
         if (binaryFile.exists.andAlso {
             moduleFileGct.exists }.andAlso {
@@ -92,6 +96,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
+        def moduleFileJs = moduleFileGct.copy.setExtension ".js"
         if (moduleFileJs.exists.andAlso {
             moduleFileGct.exists }.andAlso {
                 noSource.orElse {
