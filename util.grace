@@ -520,12 +520,19 @@ method splitPath(pathString) -> List<String> {
 method file(name) on(origin) orPath(pathString) otherwise(action) {
     def locations = splitPath(pathString)
     locations.addFirst(origin)
-    locations.addFirst "./"
-    locations.addLast(execDir)
+    if (origin != "./") then { locations.addFirst "./" }
+    if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
-
+    def originalDir = name.directory
+    if (originalDir.first == "/") then {
+        if (candidate.exists) then { 
+            return candidate 
+        } else { 
+            return action.apply "" 
+        }
+    }
     locations.do { each ->
-        candidate.setDirectory(each)
+        candidate.setDirectory(each ++ originalDir)
         if ( candidate.exists ) then {
             return candidate
         }
