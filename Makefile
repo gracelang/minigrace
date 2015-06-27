@@ -252,10 +252,13 @@ l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
 l1/collectionsPrelude.gcn: stubs/collectionsPrelude.gct
 	cd l1 && ln -sf ../stubs/$(@F)
 
+l1/gracelib.h:
+	cd l1 && ln -sf ../gracelib.h .
+
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
-l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o
+l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h repl.gso
 	cd l1 && ln -sf ../compiler.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
