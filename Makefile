@@ -311,7 +311,7 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
-minigrace-c-env: minigrace StandardPrelude.gct gracelib.o gUnit.gct gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
+minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modules/gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
 
 minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
 
