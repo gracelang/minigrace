@@ -69,11 +69,14 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         }
         if (noSource && binaryFile.exists.not) then {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
-                    util.log_verbose "Can't find {binaryFile.shortName} in {l}"
+                    errormessages.syntaxError(
+                        "Can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}."
+                        ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
                 }
             moduleFileGct.setDirectory(binaryFile.directory)
             if (moduleFileGct.exists.not) then {
-                util.log_verbose "found {binaryFile} but neither {moduleFileGct} nor source."
+                errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
+                    ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
                 util.log_verbose "no source; found {moduleFileGct} and {binaryFile}"
             }
