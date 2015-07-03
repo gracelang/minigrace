@@ -18,6 +18,7 @@ CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.
 #    buildinfo.grace if necessary, and creating the l1 directory
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
+CREATE_DM := $(shell if [ ! -e dynamic-modules ] ; then mkdir -p dynamic-modules ; fi)
 
 DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/buildinfo.gct dynamic-modules/buildinfo.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
