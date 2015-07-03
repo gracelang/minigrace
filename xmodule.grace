@@ -15,8 +15,7 @@ method builtInModules {
                 "imports")
     } else {
         list.with("imports",
-                "io", 
-                "math", 
+                "io",
                 "mirrors", 
                 "sys", 
                 "unicode", 

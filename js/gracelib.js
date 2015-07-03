@@ -2360,65 +2360,6 @@ if (typeof gctCache !== "undefined")
     gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
 
 
-function gracecode_math() {
-    this.methods['asString'] = function math_asString(argcv) {
-        return new GraceString('the "math" module');
-    };
-    this.methods['asDebugString'] = function math_asDebugString(argcv) {
-        return callmethod(this, "asString", [0]);
-    };
-    this.methods['sin'] = function math_sin(argcv, a) {
-        return new GraceNum(Math.sin(a._value));
-    };
-    this.methods['cos'] = function math_cos(argcv, a) {
-        return new GraceNum(Math.cos(a._value));
-    };
-    this.methods['tan'] = function math_tan(argcv, a) {
-        return new GraceNum(Math.tan(a._value));
-    };
-    this.methods['asin'] = function math_asin(argcv, a) {
-        return new GraceNum(Math.asin(a._value));
-    };
-    this.methods['acos'] = function math_acos(argcv, a) {
-        return new GraceNum(Math.acos(a._value));
-    };
-    this.methods['atan'] = function math_atan(argcv, a) {
-        return new GraceNum(Math.atan(a._value));
-    };
-    this.methods['random'] = function math_random(argcv) {
-        return new GraceNum(Math.random());
-    };
-    this.methods['pi'] = function math_pi(argcv) {
-        return new GraceNum(3.141592653589793)
-    };
-    this.methods['π'] = function math_π(argcv) {
-        return new GraceNum(3.141592653589793)
-    };
-    this.methods['sqrt'] = function math_sqrt(argcv, a) {
-        return new GraceNum(Math.sqrt(a._value));
-    };
-    this.methods['abs'] = function math_abs(argcv, a) {
-        return new GraceNum(Math.abs(a._value));
-    };
-    this.methods['lg'] = function math_lg(argcv, a) {
-        return new GraceNum(Math.log(a._value) / Math.LN2);
-    };
-    this.methods['ln'] = function math_ln(argcv, a) {
-        return new GraceNum(Math.log(a._value));  // JavaScript's log is base e!
-    };
-    this.methods['exp'] = function math_exp(argcv, a) {
-        return new GraceNum(Math.exp(a._value));
-    };
-    this.methods['log10'] = function math_log10(argcv, a) {
-        return new GraceNum(Math.log(a._value) / Math.LN10);
-    };
-    return this;
-}
-
-if (typeof gctCache !== "undefined")
-    gctCache['math'] = "modules:\nfresh-methods:\npath:\n math\nclasses:\npublic:\n  asString\n asDebugString\n sin\n cos\n tan\n asin\n acos\n atan\n random\n π\n pi\n sqrt\n abs\n lg\n ln\n exp\n log10\nconfidential:\n";
-
-
 function checkmethodcall(func, methname, obj, args) {
     var pt = func.paramTypes;
     for (var i=0; i<args.length, i<pt.length; i++) {
@@ -3024,7 +2965,6 @@ if (typeof global !== "undefined") {
     global.gracecode_imports = gracecode_imports;
     global.gracecode_interactive = gracecode_interactive;
     global.gracecode_io = gracecode_io;
-    global.gracecode_math = gracecode_math;
     global.gracecode_mirrors = gracecode_mirrors;
     global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;

@@ -12,7 +12,8 @@ type Assertion = {
     deny(bb:Boolean)description (str:String)  -> Done        
     assert(bb:Boolean) -> Done
     deny(bb:Boolean)-> Done
-    assert(s1:Object)shouldBe(s2:Object) -> Done
+    assert(s1:Object) shouldBe(s2:Object) -> Done
+    assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number)
     assert(b:Block)shouldRaise(de:Exception) -> Done
     assert(b:Block)shouldntRaise(ue:Exception) -> Done
     assert(s:Object) hasType (t:Type) -> Done
