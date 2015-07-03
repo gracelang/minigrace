@@ -59,8 +59,8 @@ blackWeb:
 bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c repl.c repl.gct math.gct dynamic-modules/math.gso dynamic-modules/unicode.gso dynamic-modules/mirrors.gso dynamic-modules/repl.gso math.gcn
-	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct} repl.{c,gct} math.{gct,gcn} definitions.h debugger.c curl.c dynamic-modules/*.gso modules/*.gct modules/*.gcn ;\
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c dynamic-modules/math.gso dynamic-modules/unicode.gso dynamic-modules/mirrors.gso modules/math.gct modules/math.gcn
+	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct} math.{gct,gcn} definitions.h debugger.c curl.c dynamic-modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
@@ -95,6 +95,7 @@ clean:
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js
 	rm -fr grace-web-editor
+	rm -f tests/test-*.log js/tests/test-*.log
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
@@ -245,7 +246,7 @@ l1/gracelib.h:
 l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
-l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h repl.gso
+l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h
 	cd l1 && ln -sf ../compiler.grace . && \
     ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
@@ -294,6 +295,9 @@ $(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.gct
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
 
+$(MGSOURCEFILES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: %.grace StandardPrelude.gct l1/minigrace
+	@echo $@ should have been made with $*.gct
+
 $(MGSOURCEFILES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
@@ -311,9 +315,9 @@ minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
-minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modules/gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
+minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modules/gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
 
-minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js gUnit.gct .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
+minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.gct js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
 
 $(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
@@ -336,9 +340,6 @@ pull-objectdraw:
 	if [ -e objectdraw ] ; \
     then cd objectdraw; git pull ; \
     else git clone https://github.com/gracelang/objectdraw/ ; fi
-
-repl.gso: repl.c
-	gcc -g -I. -std=c99 -Wl,-undefined -Wl,dynamic_lookup -o repl.gso -shared -fPIC repl.c
 
 rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
 	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace

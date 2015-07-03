@@ -106,7 +106,7 @@ do
                 cat $tcase | $GRACE --interactive > test-$$.out
             else
                 execname="${tcase%%.*}"
-                GRACE_MODULE_PATH=../modules/:../dynamic-modules/ $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+                GRACE_MODULE_PATH=../dynamic-modules/ $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
                 if [ ! -s test-$$.err ]
                 then
                 /bin/rm -f test-$$.err
