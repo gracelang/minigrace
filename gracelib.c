@@ -4623,21 +4623,20 @@ int find_resource(const char *name, char *buf) {
         }
     }
 
-    char *elem;
-    char *gmp = getenv("GRACE_MODULE_PATH");
-    char *context;
+    char gmp[PATH_MAX];
+    strncpy(gmp, getenv("GRACE_MODULE_PATH"), PATH_MAX);
+    // Must make copy, because strtok changes its argument.
+    // If we don't, future calls to getenv return the wrong value.
 
-    for ( elem = strtok_r(gmp, ":", &context);
-          elem;
-          elem = strtok_r(NULL, ":", &context)
-        )
-    {
+    char * elem = strtok(gmp, ":");
+    while (elem != NULL) {
         strncpy(buf, elem, PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
         if(stat(buf, &st) == 0){
             return 1;
         }
+        elem = strtok(NULL, ":");
     }
     return 0;
 }
