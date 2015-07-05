@@ -275,13 +275,19 @@ $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace ./minig
 	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct ./minigrace
-	@echo $@ made with $(@:%.gcn=%.gct)
+	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
-$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: modules/%.grace ./minigrace
+$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace ./minigrace
 	./minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
-$(LIBRARY_MODULES:%.grace=js/modules/%.js): js/%.js: modules/%.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --target js --dir js/modules $<
+$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct ./minigrace
+	@echo $@ should have been made with $(@:%.gcn=%.gct)
+
+$(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace ./minigrace
+	./minigrace $(VERBOSITY) --make --target js --dir js $<
+
+$(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct ./minigrace
+	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
 Makefile.conf: configure stubs modules
 	./configure
@@ -317,7 +323,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modules/gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
 
-minigrace-js-env: minigrace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.gct js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
+minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.gct js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
 
 $(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
