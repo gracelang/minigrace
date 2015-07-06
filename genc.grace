@@ -1,6 +1,5 @@
 #pragma DefaultVisibility=public
 import "ast" as ast
-import "buildinfo" as buildinfo
 import "errormessages" as errormessages
 import "io" as io
 import "mgcollections" as collections
@@ -1843,7 +1842,7 @@ method processImports(values') {
         }
     }
 }
-method compile(vl, of, mn, rm, bt) {
+method compile(vl, of, mn, rm, bt, buildinfo) {
     log_verbose "generating C code..."
     var argv := sys.argv
     var cmd

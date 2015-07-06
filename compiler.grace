@@ -14,7 +14,7 @@ import "mgcollections" as mgcollections
 import "identifierresolution" as identifierresolution
 import "mirrors" as mirrors
 
-util.parseargs
+util.parseargs(buildinfo)
 
 util.log_verbose "starting compilation"
 
@@ -105,7 +105,7 @@ if ((util.target == "processed-ast") || (util.target == "ast")) then {
 match(util.target)
     case { "c" ->
         genc.compile(values, util.outfile, util.modname, util.runmode,
-            util.buildtype)
+            util.buildtype, buildinfo)
     }
     case { "js" ->
         genjs.compile(values, util.outfile, util.modname, util.runmode,

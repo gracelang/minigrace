@@ -1,6 +1,5 @@
 import "io" as io
 import "sys" as sys
-import "buildinfo" as buildinfo
 import "mgcollections" as mgcollections
 
 var verbosityv := 30
@@ -45,7 +44,7 @@ def requiredModules is public = object {
 
 var errno is readable := 0
 
-method parseargs {
+method parseargs(buildinfo) {
     var argv := sys.argv
     var toStdout := false
     if (argv.size > 1) then {

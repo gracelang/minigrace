@@ -2,7 +2,7 @@ l1/StandardPrelude.gct: l1/collectionsPrelude.gct
 l1/ast.gct: l1/util.gct
 l1/errormessages.gct: l1/io.gct l1/sys.gct l1/util.gct
 l1/gUnit.gct: l1/mirrors.gct l1/mirrors.gso
-l1/genc.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/buildinfo.gct l1/mgcollections.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso  l1/errormessages.gct
+l1/genc.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/mgcollections.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso  l1/errormessages.gct
 l1/genjs.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/mgcollections.gct l1/xmodule.gct l1/mirrors.gct l1/mirrors.gso l1/genc.gct l1/errormessages.gct
 l1/genjson.gct: l1/mgcollections.gct l1/util.gct l1/io.gct l1/ast.gct
 l1/identifierresolution.gct: l1/io.gct l1/sys.gct l1/ast.gct l1/util.gct l1/xmodule.gct l1/mgcollections.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct
@@ -11,14 +11,14 @@ l1/mgcollections_stub.gct: l1/collections.gct
 l1/minigrace: l1/io.gct l1/sys.gct l1/unicode.gct l1/util.gct l1/lexer.gct l1/ast.gct l1/parser.gct l1/genc.gct l1/genjs.gct l1/genjson.gct l1/buildinfo.gct l1/mgcollections.gct l1/identifierresolution.gct l1/mirrors.gct l1/mirrors.gso
 l1/parser.gct: l1/io.gct l1/ast.gct l1/util.gct l1/mgcollections.gct l1/errormessages.gct
 l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
-l1/util.gct: l1/io.gct l1/sys.gct l1/buildinfo.gct l1/mgcollections.gct
+l1/util.gct: l1/io.gct l1/sys.gct l1/mgcollections.gct
 l1/xmodule.gct: l1/io.gct l1/sys.gct l1/mgcollections.gct l1/util.gct l1/ast.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct
 
 l2/StandardPrelude.gct: l2/collectionsPrelude.gct
 l2/ast.gct: l2/util.gct
 l2/errormessages.gct: l2/io.gct l2/sys.gct l2/util.gct
 l2/gUnit.gct: l2/mirrors.gct dynamic-modules/mirrors.gso
-l2/genc.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/buildinfo.gct l2/mgcollections.gct l2/xmodule.gct l2/mirrors.gct  dynamic-modules/mirrors.gso l2/errormessages.gct
+l2/genc.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/xmodule.gct l2/mirrors.gct  dynamic-modules/mirrors.gso l2/errormessages.gct
 l2/genjs.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/xmodule.gct l2/mirrors.gct dynamic-modules/mirrors.gso l2/genc.gct l2/errormessages.gct
 l2/genjson.gct: l2/mgcollections.gct l2/util.gct l2/io.gct l2/ast.gct
 l2/identifierresolution.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/xmodule.gct l2/mgcollections.gct l2/mirrors.gct mirrors.gso l2/errormessages.gct
@@ -27,7 +27,7 @@ l2/mgcollections_stub.gct: l2/collections.gct
 l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/genjson.gct l2/buildinfo.gct l2/mgcollections.gct l2/identifierresolution.gct l2/mirrors.gct l2/mirrors.gso
 l2/parser.gct: l2/io.gct l2/ast.gct l2/util.gct l2/mgcollections.gct l2/errormessages.gct
 l2/symbolTable.gct: l2/ast.gct l2/errormessages.gct
-l2/util.gct: l2/io.gct l2/sys.gct l2/buildinfo.gct l2/mgcollections.gct
+l2/util.gct: l2/io.gct l2/sys.gct l2/mgcollections.gct
 l2/xmodule.gct: l2/io.gct l2/sys.gct l2/mgcollections.gct l2/util.gct l2/ast.gct l2/mirrors.gct dynamic-modules/mirrors.gso l2/errormessages.gct
 
 # had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and js/minigrace/compiler.js/ !
@@ -35,23 +35,23 @@ l2/xmodule.gct: l2/io.gct l2/sys.gct l2/mgcollections.gct l2/util.gct l2/ast.gct
 js/StandardPrelude.gct: js/collectionsPrelude.gct
 js/ast.gct: js/util.gct
 js/errormessages.gct: js/util.gct
-js/genc.gct: js/ast.gct js/util.gct js/buildinfo.gct js/mgcollections.gct js/xmodule.gct js/errormessages.gct
+js/genc.gct: js/ast.gct js/util.gct js/mgcollections.gct js/xmodule.gct js/errormessages.gct
 js/genjs.gct: js/ast.gct js/util.gct js/mgcollections.gct js/xmodule.gct js/genc.gct js/errormessages.gct
 js/genjson.gct: js/mgcollections.gct js/util.gct js/ast.gct
 js/identifierresolution.gct: js/ast.gct js/util.gct js/xmodule.gct js/mgcollections.gct js/errormessages.gct
 js/lexer.gct: js/unicode.js js/unicode.gct js/util.gct js/mgcollections.gct js/errormessages.gct
 js/mgcollections_stub.gct: js/collections.gct
-js/compiler.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genc.gct js/genjs.gct js/genjson.gct js/buildinfo.gct js/mgcollections.gct js/identifierresolution.gct
+js/minigrace.gct: js/util.gct js/lexer.gct js/ast.gct js/parser.gct js/genc.gct js/genjs.gct js/genjson.gct js/buildinfo.gct js/mgcollections.gct js/identifierresolution.gct
 js/parser.gct: js/ast.gct js/util.gct js/mgcollections.gct js/errormessages.gct
 js/symbolTable.gct: js/ast.gct js/errormessages.gct
-js/util.gct: js/buildinfo.gct js/mgcollections.gct
+js/util.gct: js/mgcollections.gct
 js/xmodule.gct: js/mgcollections.gct js/util.gct js/ast.gct js/errormessages.gct
 
 StandardPrelude.gct: collectionsPrelude.gct
 ast.gct: util.gct
 errormessages.gct: io.gct sys.gct util.gct
 modules/gUnit.gct: dynamic-modules/mirrors.gct  dynamic-modules/mirrors.gso modules/math.gct modules/math.gcn
-genc.gct: io.gct sys.gct ast.gct util.gct buildinfo.gct mgcollections.gct xmodule.gct dynamic-modules/mirrors.gso errormessages.gct
+genc.gct: io.gct sys.gct ast.gct util.gct mgcollections.gct xmodule.gct dynamic-modules/mirrors.gso errormessages.gct
 genjs.gct: io.gct sys.gct ast.gct util.gct mgcollections.gct xmodule.gct dynamic-modules/mirrors.gso genc.gct errormessages.gct
 genjson.gct: mgcollections.gct util.gct io.gct ast.gct
 identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct mgcollections.gct dynamic-modules/mirrors.gso errormessages.gct
@@ -60,5 +60,5 @@ mgcollections_stub.gct: collections.gct
 minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct genjson.gct buildinfo.gct mgcollections.gct identifierresolution.gct dynamic-modules/mirrors.gso
 parser.gct: io.gct ast.gct util.gct mgcollections.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
-util.gct: io.gct sys.gct buildinfo.gct mgcollections.gct
+util.gct: io.gct sys.gct mgcollections.gct
 xmodule.gct: io.gct sys.gct mgcollections.gct util.gct ast.gct dynamic-modules/mirrors.gso errormessages.gct
