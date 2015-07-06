@@ -49,7 +49,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         pn
     }
     var moduleFileGct := moduleFileGrace.copy.setExtension ".gct"
-    if (noSource.not && (util.sourceDir != util.outDir)) then {
+    if (util.sourceDir != util.outDir) then {
         moduleFileGct.setDirectory(util.outDir)
     }
     if (util.target == "c") then {
