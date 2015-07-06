@@ -6,7 +6,6 @@ import "util" as util
 import "mgcollections" as mgcollections
 import "xmodule" as xmodule
 import "mirrors" as mirrors
-import "genc" as genc
 import "errormessages" as errormessages
 
 var indent := ""
