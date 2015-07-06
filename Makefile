@@ -170,7 +170,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRAC
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -m 644 $(LIBRARY_MODULES) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=%.gct) $(MODULE_PATH)
+	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=js/%.js) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gct) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gcn) $(MODULE_PATH)
 
 js/ace/ace.js:
@@ -199,7 +199,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 $(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH="dynamic-modules/:modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -278,13 +278,13 @@ $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct ./minigra
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
 $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
+	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
 $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct ./minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
 $(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --target js --dir js $<
+	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 $(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct ./minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
