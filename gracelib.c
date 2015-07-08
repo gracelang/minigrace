@@ -3666,7 +3666,9 @@ start:
     int searchdepth = (callflags >> 24) & 0xff;
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
-        gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
+        graceRaise(NoSuchMethodErrorObject,
+            "requested confidential method \"%s\" (defined at %s:%i) from outside.",
+            name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
@@ -3734,7 +3736,7 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-//    gracedie("No method %s in %s %s.", name, self->class->name,
+//    graceRaise(NoSuchMethodErrorObject, "no method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more
     graceRaise(NoSuchMethodErrorObject,
