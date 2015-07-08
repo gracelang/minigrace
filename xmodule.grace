@@ -42,7 +42,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     // noSource implies that the module is written in native code, like "unicode.c"
     
     if (prelude.inBrowser) then {
-        util.file(nm) onPath "" otherwise { _ ->
+        util.file(nm ++ ".js") onPath "" otherwise { _ ->
             errormessages.error "Please compile module {nm} before importing it."
                 atRange(line, linePos, linePos + nm.size - 1)
         }
