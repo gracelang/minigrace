@@ -98,7 +98,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE --verbose -XDefaultVisibility=public --make --native $tcase"
+            COMMAND="$GRACE --verbose --make --native $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then

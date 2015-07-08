@@ -74,9 +74,5 @@ class patternTest.forMethod(m) {
 }
 
 def patternTests = gU.testSuite.fromTestMethodsIn(patternTest)
-patternTests.debugAndPrintResults
-//def failingTests = gU.testSuite.empty
-//failingTests.add(patternTest.forMethod("testInCategorySpace"))
-//failingTests.add(patternTest.forMethod("testInCategoryNBS"))
-//failingTests.debugAndPrintResults
+patternTests.runAndPrintResults
 
