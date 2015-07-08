@@ -1,5 +1,6 @@
 import "io" as io
 import "sys" as sys
+import "unixFilePath" as filePath
 import "mgcollections" as mgcollections
 
 var verbosityv := 30
@@ -425,99 +426,8 @@ method execDir {
     execDirCache
 }
 
-factory method pathName {
-    var directory is public := ""
-    var base is public := ""
-    var extension is public := ""
-    method asString { directory ++ base ++ extension }
-    method shortName { base ++ extension }
-    method asDebugString { "pathName {directory}|{base}|{extension} " }
-    method setDirectory(d) {
-        if (d.at(d.size) == "/") then {
-            directory := d
-        } else {
-            directory := d ++ "/"
-        }
-        self
-    }
-    method setBase(b) {
-        base := b
-        self
-    }
-    method setExtension(e) {
-        if (e.first == ".") then {
-            extension := e
-        } else {
-            extension := "." ++ e
-        }
-        self
-    }
-    method exists -> Boolean {
-        io.exists(self.asString)
-    }
-    method newer(pn) -> Boolean {
-        io.newer(self.asString, pn.asString)
-    }
-
-    method copy {
-        def p = pathName
-        p.directory := directory
-        p.base := base
-        p.extension := extension
-        p
-    }
-}
-method directory(d) base(b) extension(e) {
-    pathName.setDirectory(d).setBase(b).setExtension(e)
-}
-method pathNameFromString(s) {
-    def p = pathName
-    var slashPosn := 0
-    def sSize = s.size
-    var ix := sSize
-    while { (slashPosn == 0) && (ix > 0) } do {
-        if (s.at(ix) == "/") then {
-            slashPosn := ix
-        } else { 
-            ix := ix - 1 
-        }
-    }
-    p.directory := s.substringFrom 1 to (slashPosn)
-    var dotPosn := sSize + 1
-    ix := sSize
-    while { (dotPosn > sSize) && (ix > slashPosn) } do {
-        if (s.at(ix) == ".") then {
-            dotPosn := ix
-        } else {
-            ix := ix - 1
-        }
-    }
-    if (dotPosn <= sSize) then {
-        p.extension := s.substringFrom (dotPosn) to (sSize)
-    }
-    p.base := s.substringFrom (slashPosn + 1) to (dotPosn - 1)
-    p
-}
-
-method splitPath(pathString) -> List<String> {
-    def locations = list.empty
-    var ix := 1
-    var ox := 1
-    def pss = pathString.size
-    while { ox <= pss } do {
-        while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
-            ox := ox + 1 
-        }
-        var item := pathString.substringFrom(ix) to(ox-1)
-        if (item.at(item.size) != "/") then { item := item ++ "/" }
-        locations.addLast (item)
-        ix := ox + 1
-        ox := ix
-    }
-    return locations
-}
 method file(name) on(origin) orPath(pathString) otherwise(action) {
-    def locations = splitPath(pathString)
+    def locations = filePath.split(pathString)
     locations.addFirst(origin)
     if (origin != "./") then { locations.addFirst "./" }
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }

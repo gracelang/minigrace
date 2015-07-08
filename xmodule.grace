@@ -4,6 +4,7 @@ import "util" as util
 import "ast" as ast
 import "mirrors" as mirrors
 import "errormessages" as errormessages
+import "unixFilePath" as filePath
 
 def gctCache = dictionary.empty
 def keyCompare = { a, b -> a.key.compare(b.key) }
@@ -39,9 +40,16 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (imports.isAlready(nm)) then { return }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
-
+    
+    if (prelude.inBrowser) then {
+        util.file(nm) onPath "" otherwise { _ ->
+            errormessages.error "Please compile module {nm} before importing it."
+                atRange(line, linePos, linePos + nm.size - 1)
+        }
+        return
+    }
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
-    def pn = util.pathNameFromString(pathname).setExtension "grace"
+    def pn = filePath.fromString(pathname).setExtension "grace"
     def moduleFileGrace = util.file(pn) on(util.sourceDir) 
                                 orPath (gmp) otherwise { l ->
         util.log_verbose "no source file {pn} on {l}"
@@ -189,7 +197,7 @@ method parseGCT(moduleName) {
 method parseGCT(moduleName) sourceDir(dir) is confidential {
     def gctData = dictionary.empty
     def sz = moduleName.size
-    def sought = util.pathNameFromString(moduleName).setExtension ".gct"
+    def sought = filePath.fromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
         util.log_verbose "Can't find file {sought} for module {moduleName}; looked in {l}."

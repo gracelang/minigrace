@@ -20,10 +20,10 @@ CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MOD
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 CREATE_DM := $(shell if [ ! -e dynamic-modules ] ; then mkdir -p dynamic-modules ; fi)
 
-DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/buildinfo.gct dynamic-modules/buildinfo.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso
+DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
-NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace buildinfo.grace
+NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) $(NON_SAMPLE_DIALECTS)
 GRACE_DIALECTS_GSO = $(patsubst %.grace, dynamic-modules/%.gso, $(filter-out $(OBJECTDRAW_BITS), $(NON_SAMPLE_DIALECTS)))
 GRACE_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
@@ -59,7 +59,7 @@ blackWeb:
 bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
-c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct Makefile c/Makefile mirrors.c mirrors.gct definitions.h curl.c dynamic-modules/math.gso dynamic-modules/unicode.gso dynamic-modules/mirrors.gso modules/math.gct modules/math.gcn
+c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c dynamic-modules/math.gso dynamic-modules/unicode.gso dynamic-modules/mirrors.gso modules/math.gct modules/math.gcn
 	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct} math.{gct,gcn} definitions.h debugger.c curl.c dynamic-modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
     cd c &&\
@@ -110,7 +110,7 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 dynamic-modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso dynamic-modules/buildinfo.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/sample/dialects/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
+dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/sample/dialects/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -233,7 +233,7 @@ l1/%.grace: %.grace
 	cd l1 && ln -sf ../$(@F) .
 
 l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1; ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F)
+	cd l1;  GRACE_MODULE_PATH=../modules/:../dynamic-modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F)
 
 l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
 	cd l1 && ln ../$< .
@@ -249,7 +249,7 @@ l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collections
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h
 	cd l1 && ln -sf ../compiler.grace . && \
-    ../$(KG)/minigrace $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
+    GRACE_MODULE_PATH=../modules/:../dynamic-modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
 l1/StandardPrelude.gct: stubs/StandardPrelude.gct
 	cd l1 && ln -sf ../$<
@@ -266,35 +266,39 @@ l1/mirrors.gso: mirrors.c gracelib.h
 l1/unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
+l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
+	cd l1 && ln -sf ../modules/unixFilePath.grace . && \
+    ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 unixFilePath.grace
+
 $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn
 	cd l1 && ln -sf ../$< .
     
 $(C_MODULES_GSO:%.gso=%.gct): dynamic-modules/%.gct: stubs/%.gct
 	cd dynamic-modules && ln -sf ../$< .
 
-$(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace ./minigrace
-	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+$(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace l1/minigrace
+	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-$(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct ./minigrace
+$(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct l1/minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
-$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace ./minigrace
-	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
+$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace l1/minigrace
+	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
-$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct ./minigrace
+$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct l1/minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
-$(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace ./minigrace
-	GRACE_MODULE_PATH="dynamic-modules/:modules/" ./minigrace $(VERBOSITY) --make --target js --dir js $<
+$(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace l1/minigrace
+	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --target js --dir js $<
 
-$(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct ./minigrace
+$(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct l1/minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
 Makefile.conf: configure stubs modules
 	./configure
     
 $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1 && ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag l1 $(<F)
+	cd l1 &&  GRACE_MODULE_PATH=../modules/:../dynamic-modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gcn): %.gcn: %.gct
 	@echo "gcn file created with gct: $@"
@@ -309,7 +313,7 @@ $(MGSOURCEFILES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: %.grace S
 	l1/minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
-	./minigrace $(VERBOSITY) --make --target js --dir js $<
+	GRACE_MODULE_PATH="modules/:dynamic-modules:" ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
@@ -445,22 +449,6 @@ test.js.compile: minigrace
 
 test.js: minigrace-js-env sample/dialects/requireTypes.gso sample/dialects/minitest.gso dynamic-modules/util.gso dynamic-modules/ast.gso dynamic-modules/gUnit.gso dynamic-modules/math.gso dynamic-modules/gUnit.gso
 	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
-	cd js/tests; cp -fp ../../sample/dialects/minitest.gct .
-	cd js/tests; cp -fp ../../sample/dialects/minitest.grace .
-	cd js/tests; cp -fp ../../sample/dialects/minitest.gso .
-	cd js/tests; cp -fp ../../sample/dialects/requireTypes.gct .
-	cd js/tests; cp -fp ../../sample/dialects/requireTypes.grace .
-	cd js/tests; cp -fp ../../sample/dialects/requireTypes.gso .
-	cd js/tests; cp -fp ../../ast.gct .
-	cd js/tests; cp -fp ../../ast.grace .
-	cd js/tests; cp -fp ../../ast.gso .
-	cp -fp modules/gUnit.gct js/tests
-	cp -fp modules/gUnit.grace js/tests
-	cp -fp modules/gUnit.gso js/tests
-	cd js/tests; cp -fp ../../util.gct .
-	cd js/tests; cp -fp ../../util.grace .
-	cd js/tests; cp -fp ../../util.gso .
-	cd js/tests; cp -fp ../util.js ../buildinfo.js ../mgcollections.js .
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
 test: minigrace-c-env sample/dialects/minitest.gso
@@ -493,7 +481,7 @@ util.gso: buildinfo.gso mgcollections.gso
 
 l1/ast.gso: l1/util.gso
 l1/errormessages.gso: l1/util.gso
-l1/util.gso: l1/buildinfo.gso l1/mgcollections.gso
+l1/util.gso: l1/mgcollections.gso
 
 dynamic-modules/%.gso: %.c gracelib.h
 	gcc -g -I. -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<

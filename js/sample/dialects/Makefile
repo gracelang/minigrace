@@ -6,7 +6,7 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
 VERBOSITY = --verbose
 MG := ../../../minigrace
-UPPATH := ../../../dynamic-modules/:../../:../../../:$(GRACE_MODULE_PATH)
+UPPATH := ../../../dynamic-modules/:../../../modules/:../../:../../../:
 # ../../ to get the js files for running, and ../../../ for the .gso for compiling
 
 DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit
