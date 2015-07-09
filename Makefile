@@ -353,7 +353,8 @@ pull-objectdraw:
     else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
-	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace
+	if [ objectdraw.grace -nt rtobjectdraw.grace ] ; \
+    then ./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace ; fi
 
 rtobjectdraw.gcn dynamic-modules/rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
