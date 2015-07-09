@@ -1521,16 +1521,17 @@ function gracecode_io() {
 	return GraceFalse;
     };
     this.methods.open = function(argcv, path, mode) {
-	if(typeof(process) != "undefined") {
+        path = callmethod(path, "asString", [0])._value;
+        if(typeof(process) != "undefined") {
             var p = safeJsString(path);
             var m = safeJsString(mode);
             var o = new Grace_allocObject();
-	    var f = fs.openSync(p, m);
+            var f = fs.openSync(p, m);
             if(fs.existsSync(p)) {
                 var c = fs.readFileSync(p);
-		var a = c.toString().split('\n');
-	    }
-	    var i = 0;
+                var a = c.toString().split('\n');
+            }
+            var i = 0;
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
@@ -1538,11 +1539,10 @@ function gracecode_io() {
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(p);};
             return o;
-	}
+        }
         var o = new Grace_allocObject();
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
-        path = path._value;
         var slash = path.lastIndexOf("/");
         if (slash >= 0) path = path.substring(slash+1);
         if (path.substr(path.length - 4) == ".gct") {
@@ -2008,7 +2008,7 @@ function gracecode_util() {
     };
     this.methods['file()on()orPath()otherwise'] =
         function util_file_on_orPath_otherwise (argcv, fn, origin, pth, blk) {
-        var jsFn = fn._value;
+        var jsFn = callmethod(fn, "asString", [0])._value;
         if (fileExists(jsFn)) return fn;
         return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
@@ -2018,6 +2018,9 @@ function gracecode_util() {
         return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
     this.methods.sourceDir = function util_sourceDir(argcv) {
+        return new GraceString("./");
+    };
+    this.methods.outDir = function util_outDir(argcv) {
         return new GraceString("./");
     };
     this.methods.execDir = function util_execDir(argcv) {
