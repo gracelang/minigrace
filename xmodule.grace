@@ -52,7 +52,6 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     def pn = filePath.fromString(pathname).setExtension "grace"
     def moduleFileGrace = util.file(pn) on(util.sourceDir) 
                                 orPath (gmp) otherwise { l ->
-        util.log_verbose "no source file {pn} on {l}"
         noSource := true
         pn
     }
@@ -85,7 +84,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
                     ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
-                util.log_verbose "no source; found {moduleFileGct} and {binaryFile}"
+                util.log_verbose "No source, but found {moduleFileGct} and {binaryFile}"
             }
         }
         if (needsDynamic.not) then {
