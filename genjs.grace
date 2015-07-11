@@ -306,9 +306,7 @@ method compileclass(o) {
             scope(innerObjectScope)]
     var factorytMeth := ast.methodNode.new(o.constructor, signature, mbody,
         false) scope(factoryScope)
-    if (false != o.generics) then {
-        factorytMeth.generics := o.generics
-    }
+    factorytMeth.generics := o.generics
     factorytMeth.isFresh := true
     def asStringBody = [ast.stringNode.new("class {o.nameString}") scope(innerObjectScope)]
     // TODO: should be a new scope
@@ -586,18 +584,18 @@ method compilemethod(o, selfobj) {
                 ++ msgSuffix ++ "\"));")
         }
     }
-    if (o.generics.size > 0) then {
+    if (o.generics != false) then {
         out("// Start generics")
         out("if (argcv.length == 1 + {o.signature.size}) \{")
         out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("  \}")
-        for (o.generics) do {g->
+        o.generics.do {g->
             out("  var {varf(g.value)} = arguments[curarg++];")
         }
         out("\} else \{")
-        for (o.generics) do {g->
+        o.generics.do {g->
             out("  {varf(g.value)} = var_Unknown;")
         }
         out("\}")
@@ -607,7 +605,7 @@ method compilemethod(o, selfobj) {
             var part := o.signature[partnr]
             for (part.params) do { p ->
                 if (emitTypeChecks && (p.dtype != false)) then {
-                    for (o.generics) do {g->
+                    o.generics.do {g->
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
                             noteLineNumber(o.line)comment("generic check in compilemethod")
@@ -771,18 +769,18 @@ method compilefreshmethod(o, selfobj) {
         }
     }
     out "var inheritingObject = arguments[curarg++];"
-    if (o.generics.size > 0) then {
+    if (o.generics != false) then {
         out("// Start generics")
         out("if (argcv.length == 1 + {o.signature.size}) \{")
         out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             ++ "new GraceString(\"insufficient generic parameters\"));")
         out("  \}")
-        for (o.generics) do {g->
+        o.generics.do {g->
             out("  var {varf(g.value)} = arguments[curarg++];")
         }
         out("\} else \{")
-        for (o.generics) do {g->
+        o.generics.do {g->
             out("  {varf(g.value)} = var_Unknown;")
         }
         out("\}")
@@ -792,7 +790,7 @@ method compilefreshmethod(o, selfobj) {
             var part := o.signature[partnr]
             for (part.params) do { p ->
                 if (emitTypeChecks && (p.dtype != false)) then {
-                    for (o.generics) do {g->
+                    o.generics.do {g->
                         if (p.dtype.value == g.value) then {
                             linenum := o.line
                             noteLineNumber(o.line)comment("generic check in compilefreshmethod")
@@ -1153,7 +1151,7 @@ method compilecall(o) {
         }
     }
     if (false != o.generics) then {
-        for (o.generics) do {g->
+        o.generics.do {g->
             args.push(compilenode(g))
         }
     }

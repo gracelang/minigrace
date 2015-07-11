@@ -2951,7 +2951,7 @@ method methodsignature(sameline) {
     if (accept("lgeneric")) then {
         // Generic!
         next
-        genericIdents := part.generics
+        genericIdents := list.empty
         while {accept("identifier")} do {
             identifier
             def id = values.pop
@@ -2961,6 +2961,7 @@ method methodsignature(sameline) {
                 next
             }
         }
+        part.generics := genericIdents
         if(sym.kind != "rgeneric") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert(">")afterToken(lastToken)
@@ -3506,7 +3507,7 @@ method checkUnexpectedTokenAfterStatement {
 // Parse the given list of tokens, returning a list of AST nodes
 // corresponding to it.
 method parse(toks) {
-    util.log_verbose "processing tokens."
+    util.log_verbose "parsing."
     if (util.extensions.contains("DefaultVisibility")) then {
         defaultDefVisibility := util.extensions.get("DefaultVisibility")
         defaultVarVisibility := util.extensions.get("DefaultVisibility")
@@ -3545,7 +3546,6 @@ method parse(toks) {
         var next := false
         var prev := false
     })
-    util.log_verbose "parsing."
     linenum := 1
     next
     var oldlength := tokens.size

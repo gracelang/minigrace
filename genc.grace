@@ -379,9 +379,7 @@ method compileclass(o, includeConstant) {
     obj.classname := o.name.value
     var mbody := [obj]
     var newmeth := ast.methodNode.new(o.constructor, signature, mbody, false)
-    if (false != o.generics) then {
-        newmeth.generics := o.generics
-    }
+    newmeth.generics := o.generics
     newmeth.isFresh := true
     var obody := [newmeth]
     var cobj := ast.objectNode.new(obody, false)
@@ -720,9 +718,9 @@ method compilemethod(o, selfobj, pos) {
     slot := slot + 1
     numslots := numslots + 1
     out "  if (methodInheritingObject) curarg++;"
-    if (o.generics.size > 0) then {
+    if (o.generics != false) then {
         out("// Start generics")
-        for (o.generics) do {g->
+        o.generics.do {g->
             var gn := escapeident(g.value)
             declaredvars.push(gn)
             out("  Object *var_{gn} = &(stackframe->slots[{slot}]);")
@@ -733,12 +731,12 @@ method compilemethod(o, selfobj, pos) {
         out("    if (argcv[nparts-1] < {o.generics.size}) \{")
         out("      gracedie(\"insufficient generic parameters\");")
         out("    \}")
-        for (o.generics) do {g->
+        o.generics.do {g->
             var gn := escapeident(g.value)
             out("    *var_{gn} = args[curarg++];")
         }
         out("  \} else \{")
-        for (o.generics) do {g->
+        o.generics.do {g->
             var gn := escapeident(g.value)
             out("    *var_{gn} = Unknown;")
         }
@@ -1411,7 +1409,7 @@ method compilecall(o, tailcall) {
         nparts := nparts + 1
         out("  partcv[{o.with.size}] = {o.generics.size};")
         i := args.size
-        for (o.generics) do {g->
+        o.generics.do {g->
             out("  params[{i}] = {compilenode(g)};")
             i := i + 1
         }
