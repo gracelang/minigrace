@@ -1000,7 +1000,9 @@ def callNode = object {
                     }
                 }
                 if (false != generics) then {
-                    generics.accept(visitor) from(newChain)
+                    generics.do { each ->
+                        each.accept(visitor) from(newChain)
+                    }
                 }
             }
         }
