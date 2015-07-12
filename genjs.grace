@@ -238,8 +238,7 @@ method compileobjdefdec(o, selfr, pos) {
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
                 out "  [1], {val})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"expected \""
-                out "          + \"initial value of def '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
+                out "          new GraceString(\"value of def '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }
@@ -283,8 +282,7 @@ method compileobjvardec(o, selfr, pos) {
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
                 out "  [1], {val})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"expected \""
-                out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
+                out "          new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }
@@ -585,11 +583,12 @@ method compilemethod(o, selfobj) {
         }
     }
     if (o.generics != false) then {
+        def sz = o.signature.size
         out("// Start generics")
-        out("if (argcv.length == 1 + {o.signature.size}) \{")
-        out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
+        out("if (argcv.length == {1 + sz}) \{")
+        out("  if (argcv[{sz}] != {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-            ++ "new GraceString(\"insufficient generic parameters\"));")
+            ++ "new GraceString(\"wrong number of type arguments\"));")
         out("  \}")
         o.generics.do {g->
             out("  var {varf(g.value)} = arguments[curarg++];")
@@ -605,18 +604,13 @@ method compilemethod(o, selfobj) {
             var part := o.signature[partnr]
             for (part.params) do { p ->
                 if (emitTypeChecks && (p.dtype != false)) then {
-                    o.generics.do {g->
-                        if (p.dtype.value == g.value) then {
-                            linenum := o.line
-                            noteLineNumber(o.line)comment("generic check in compilemethod")
-                            out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
-                            out "  [1], arguments[curarg2])))"
-                            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                            out "          new GraceString(\"expected \""
-                            out "           + \"parameter '{p.value}' \""
-                            out "           + \"to be of type {p.dtype.value}\"));"
-                        }
-                    }
+                    linenum := o.line
+                    noteLineNumber(o.line)comment("generic check in compilemethod")
+                    out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
+                    out "  [1], arguments[curarg2])))"
+                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                    out "          new GraceString(\"argument '{p.value}' does not have \" + "
+                    out "             callmethod({varf(p.dtype.nameString)}, \"asString\", [0])._value + \".\"));"
                 }
                 out("curarg2++;")
             }
@@ -770,11 +764,12 @@ method compilefreshmethod(o, selfobj) {
     }
     out "var inheritingObject = arguments[curarg++];"
     if (o.generics != false) then {
+        def sz = o.signature.size
         out("// Start generics")
-        out("if (argcv.length == 1 + {o.signature.size}) \{")
-        out("  if (argcv[argcv.length-1] < {o.generics.size}) \{")
+        out("if (argcv.length == {1 + sz}) \{")
+        out("  if (argcv[{sz}] != {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-            ++ "new GraceString(\"insufficient generic parameters\"));")
+            ++ "new GraceString(\"wrong number of type arguments\"));")
         out("  \}")
         o.generics.do {g->
             out("  var {varf(g.value)} = arguments[curarg++];")
@@ -790,18 +785,13 @@ method compilefreshmethod(o, selfobj) {
             var part := o.signature[partnr]
             for (part.params) do { p ->
                 if (emitTypeChecks && (p.dtype != false)) then {
-                    o.generics.do {g->
-                        if (p.dtype.value == g.value) then {
-                            linenum := o.line
-                            noteLineNumber(o.line)comment("generic check in compilefreshmethod")
-                            out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
-                            out "  [1], arguments[curarg2])))"
-                            out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                            out "          new GraceString(\"expected \""
-                            out "           + \"parameter '{p.value}' \""
-                            out "           + \"to be of type {p.dtype.value}\"));"
-                        }
-                    }
+                    linenum := o.line
+                    noteLineNumber(o.line)comment("generic check in compilefreshmethod")
+                    out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
+                    out "  [1], arguments[curarg2])))"
+                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
+                    out "          new GraceString(\"argument '{p.value}' does not have \" + "
+                    out "             callmethod({varf(p.dtype.nameString)}, \"asString\", [0])._value + \".\"));"
                 }
                 out("curarg2++;")
             }
@@ -820,6 +810,13 @@ method compilefreshmethod(o, selfobj) {
             }
         }
         out "// End checking generics"
+    }
+    // Setting the location is deliberately delayed to this point, so that
+    // argument checking errors are reported as errors at the request site
+    // --- which is where the error happens.
+    out("setModuleName(\"{modname}\");")
+    if (debugMode) then {
+        out "stackFrames.push(myframe);"
     }
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
@@ -1017,8 +1014,7 @@ method compiledefdec(o) {
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
                 out "  [1], {varf(nm)})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"expected \""
-                out "          + \"initial value of def '{snm}' to be of type {o.dtype.toGrace(0)}\"))"
+                out "          new GraceString(\"value of def '{snm}' is not of type {o.dtype.toGrace(0)}\"))"
             }
         }
     }
@@ -1058,8 +1054,7 @@ method compilevardec(o) {
                     out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
                     out "  [1], {varf(nm)})))"
                     out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "          new GraceString(\"expected \""
-                    out "          + \"initial value of var '{o.name.value}' to be of type {o.dtype.toGrace(0)}\"))";
+                    out "          new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
                 }
             }
         }
@@ -1320,8 +1315,7 @@ method compileimport(o) {
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
                 out "  [1], {varf(nm)})))"
                 out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"expected \""
-                out "          + \"module {o.nameString} to be of type {o.dtype.toGrace(0)}\"))";
+                out "          new GraceString(\"module {o.nameString} is not of type {o.dtype.toGrace(0)}\"))";
             }
         }
     }

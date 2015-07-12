@@ -1151,6 +1151,9 @@ GraceType.prototype = {
         "asString": function type_asString (argcv) {
             return new GraceString("type " + this.name);
         },
+        "asDebugString": function type_asDebugString (argcv) {
+            return new GraceString("built-in type " + this.name);
+        },
         "methodNames": function type_methodNames (argcv) {
             var result = callmethod(GraceSetClass(), "empty", [0]);
             for (var i=0; i<this.typeMethods.length; i++) {
@@ -2374,7 +2377,9 @@ function checkmethodcall(func, methname, obj, args) {
         var t = p[0];
         if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
             throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + "."));
+                    new GraceString("argument " + (i+1) + " (" + p[1] + ") of " +
+                            methname + " does not have " +
+                            callmethod(t, "asString", [0])._value + "."));
         }
     }
 }
