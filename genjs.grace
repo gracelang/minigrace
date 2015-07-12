@@ -505,8 +505,8 @@ method compilemethod(o, selfobj) {
     var isSequenceDefined := false
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
-    def paramCounts = mgcollections.list.new
-    def variableArities = mgcollections.list.new
+    def paramCounts = list.empty
+    def variableArities = list.empty
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)
@@ -713,8 +713,8 @@ method compilemethod(o, selfobj) {
 }
 method compilefreshmethod(o, selfobj) {
     var isSequenceDefined := false
-    def paramCounts = mgcollections.list.new
-    def variableArities = mgcollections.list.new
+    def paramCounts = list.empty
+    def variableArities = list.empty
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)
@@ -1580,7 +1580,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
             compilenode(o)
         }
     }
-    def imported = mgcollections.list.new
+    def imported = list.empty
     for (values) do { o ->
         if (o.kind == "inherits") then {
             def sup = compilenode(o.value)

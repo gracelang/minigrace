@@ -10,7 +10,6 @@ import "genc" as genc
 import "genjs" as genjs
 import "genjson" as genjson
 import "buildinfo" as buildinfo
-import "mgcollections" as mgcollections
 import "identifierresolution" as identifierresolution
 import "mirrors" as mirrors
 
@@ -71,7 +70,7 @@ if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
 if (util.target == "imports") then {
-    def imps = mgcollections.set.new
+    def imps = set.empty
     def vis = object {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {

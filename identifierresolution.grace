@@ -314,7 +314,7 @@ factory method newScopeIn(parent') kind(variety') {
             }
         }
         if (newKind == "vardec") then {
-            def suggs = collections.list.new
+            def suggs = list.empty
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
                     onLine(ident.line)
@@ -452,7 +452,7 @@ method rewritematchblockterm(arg) {
 method rewritematchblock(blk) {
     def arg = blk.params[1]
     var pattern := false
-    var newparams := collections.list.new
+    var newparams := list.empty
     for (blk.params) do { p ->
         newparams.push(p)
     }
@@ -941,9 +941,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
-            o.generics.do { each -> 
-                factoryScope.addNode(each) as "typeparam"
-                each.isDeclaredByParent := true
+            if (o.generics != false) then { 
+                o.generics.do { each ->
+                    factoryScope.addNode(each) as "typeparam"
+                    each.isDeclaredByParent := true
+                }
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
             outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
@@ -1048,6 +1050,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := newScopeIn(as.parent.scope) kind "type"
             true
         }
+        method visitTypeParameters(o) up(as) { o.scope := as.parent.scope ; true }
         method visitIf(o) up(as) { o.scope := as.parent.scope ; true }
         method visitMatchCase(o) up(as) { o.scope := as.parent.scope ; true }
         method visitCatchCase(o) up(as) { o.scope := as.parent.scope ; true }
@@ -1190,7 +1193,7 @@ method transformInherits(inhNode) ancestors(as) {
         def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
             inhNode.value.in
         )
-        def newcall = ast.callNode.new(newmem, collections.list.new(
+        def newcall = ast.callNode.new(newmem, list.with(
             ast.callWithPart.new(inhNode.value.value, []) scope(currentScope),
             ast.callWithPart.new("object",
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)

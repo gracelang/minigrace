@@ -26,7 +26,7 @@ class JSObj.new {
 }
 
 class JSArray.new {
-    def data = collections.list.new
+    def data = list.empty
     method push(val) {
         data.push(wrap(val))
     }
@@ -269,7 +269,7 @@ method saveToken(token) {
 
 method generate(values, outfile) {
     util.log_verbose "generating JSON."
-    def chunkLocations = collections.list.new
+    def chunkLocations = list.empty
     if (lastToken.kind == "comment") then {
         def cmt = lastToken.value
         if (cmt.substringFrom(1)to(9) == " chunks: ") then {

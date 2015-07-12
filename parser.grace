@@ -2,7 +2,6 @@
 import "io" as io
 import "ast" as ast
 import "util" as util
-import "mgcollections" as collections
 import "errormessages" as errormessages
 
 def don'tBreak = true
@@ -279,7 +278,7 @@ method doannotation {
         return false
     }
     next
-    def anns = collections.list.new
+    def anns = list.empty
     if(didConsume({expression(noBlocks)}).not) then {
         def suggestions = list.empty
         var suggestion := errormessages.suggestion.new
@@ -2703,7 +2702,7 @@ method dofactoryMethod {
         util.setline(btok.line)
         def obj = ast.objectNode.new(body, false)
         def meth = ast.methodNode.new(methodName, csig,
-            collections.list.new(obj), dtype)
+            list.with(obj), dtype)
         meth.generics := s.generics
         if (false != anns) then {
             meth.annotations.addAll(anns)
@@ -2920,8 +2919,7 @@ method methodsignature(sameline) {
     var meth := values.pop
     meth.isBindingOccurrence := true
     var signature := list.empty
-    var part := ast.signaturePart.new(meth.value)
-    var genericIdents := list.empty
+    def part = ast.signaturePart.new(meth.value)
     signature.push(part)
     if (meth.value == "[") then {
         if(sym.kind != "rsquare") then {
@@ -2948,28 +2946,7 @@ method methodsignature(sameline) {
         next
         meth.value := "[]"
     }
-    if (accept("lgeneric")) then {
-        // Generic!
-        next
-        genericIdents := list.empty
-        while {accept("identifier")} do {
-            identifier
-            def id = values.pop
-            id.isBindingOccurrence := true
-            genericIdents.push(id)
-            if (accept("comma")) then {
-                next
-            }
-        }
-        part.generics := genericIdents
-        if(sym.kind != "rgeneric") then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(">")afterToken(lastToken)
-            errormessages.syntaxError("A type containing a '<' must end with a '>'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-        }
-        next
-    }
+    if (accept("lgeneric")) then { typeparameters(part) }
     if (accept("bind")) then {
         next
         meth.value := meth.value ++ ":="
@@ -3083,13 +3060,36 @@ method methodsignature(sameline) {
         dtype := false
     }
     var o := object {
-        var m := meth
-        var sig := signature
-        var rtype := dtype
-        var v := varargs
-        var generics := genericIdents
+        var m is public := meth
+        var sig is public  := signature
+        var rtype is public  := dtype
+        var v is public := varargs
+        var generics is public := part.generics
     }
     o
+}
+
+method typeparameters(node) {
+    next
+    def typeIds = list.empty
+    while {accept("identifier")} do {
+        identifier
+        def id = values.pop
+        id.isBindingOccurrence := true
+        typeIds.push(id)
+        if (accept("comma")) then {
+            next
+        }
+    }
+    typeIds.do { each -> each.isBindingOccurrence := true }
+    node.generics := ast.typeParametersNode.new(typeIds)
+    if(sym.kind != "rgeneric") then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.insert(">")afterToken(lastToken)
+        errormessages.syntaxError("A list of type parameters starting with '<' must end with '>'.")atPosition(
+            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+    }
+    next
 }
 
 method doimport {
@@ -3250,8 +3250,6 @@ method dotypeLiteral {
 method typedec {
     // Accept a declaration: 'type = <type expression>'
     if (accept("keyword") && (sym.value == "type")) then {
-        def line = sym.line
-        def pos = sym.linePos
         next
         if(sym.kind != "identifier") then {
             def suggestion = errormessages.suggestion.new
@@ -3260,15 +3258,9 @@ method typedec {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         pushidentifier
-        generic
-        var p := values.pop
-        var gens := sequence.empty
-        if (p.kind == "generic") then {
-            gens := p.params
-            p := p.value
-        }
-        p.isBindingOccurrence := true
-        gens.do { each -> each.isBindingOccurrence := true }
+        def nt = ast.typeDecNode.new(values.pop, false)
+        if (accept("lgeneric")) then { typeparameters(nt) }
+        nt.name.isBindingOccurrence := true
         def anns = doannotation
         if((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
@@ -3288,10 +3280,7 @@ method typedec {
         } else {
             expression(noBlocks)
         }
-        def nt = ast.typeDecNode.new(p, values.pop)
-        nt.line := line
-        nt.linePos := pos
-        nt.generics := gens
+        nt.value := values.pop
         if (false != anns) then {
             nt.annotations.addAll(anns)
         }
