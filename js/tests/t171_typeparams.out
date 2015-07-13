@@ -1,8 +1,1 @@
-5 + 3 = 8
-8+1 = 9
-7 + 2 = 9
-TypeError at line 10 of Issue117: argument 'init' does not have type String.
-  called from module.new at line 10 of Issue117
-  called from execution environment
-   9: 
-  10: def s = new<String>(5)
+8 run, 0 failed, 0 errors

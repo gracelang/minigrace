@@ -1,10 +1,38 @@
+import "gUnit" as gU
+
 method noType(a1) { a1 + 1 }
 method numType(n1:Number) { n1 + 2 }
-method new<T>(init:T) { init + 3 }
+method paramType<T>(x:T) { x.asString }
 
-def t = new<Number>(5)
-print "5 + 3 = {t}"
-print "8+1 = {noType(8)}"
-print "7 + 2 = {numType(7)}"
+class typeTest.forMethod(m) {
+    inherits gU.testCaseNamed(m)
+    
+    method testMethodNoType {
+        assert (noType 8) shouldBe 9
+    }
+    method testMethodNumber {
+        assert (numType 7) shouldBe 9
+    }
+    method testMethodParametricNumber {
+        assert (paramType<Number> 5) shouldBe "5"
+    }
+    method testMethodParametricString {
+        assert (paramType<String> "foo") shouldBe "foo"
+    }
+    
+    method testMethodNoTypeFail {
+        assert {noType "foo"} shouldRaise (NoSuchMethod)
+    }
+    method testMethodNumberFail {
+        assert {numType "foo"} shouldRaise (TypeError)
+    }
+    method testMethodParametricNumberFail {
+        assert {paramType<Number> "foo"} shouldRaise (TypeError)
+    }
+    method testMethodParametricStringFail {
+        assert {paramType<String> 5} shouldRaise (TypeError)
+    }
+}
 
-def s = new<String>(5)
+def typeTests = gU.testSuite.fromTestMethodsIn(typeTest)
+typeTests.runAndPrintResults
