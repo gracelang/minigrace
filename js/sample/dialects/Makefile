@@ -17,24 +17,24 @@ js: $(DIALECTS_JS) run.js
 # These need the .gso to load at compile time, and the .js to load at runtime.
 
 staticTypes.js: staticTypes.grace dialect.gso dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js -o $@ staticTypes.grace
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ staticTypes.grace
 
 requireTypes.js: requireTypes.grace dialect.gso dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js -o $@ requireTypes.grace
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ requireTypes.grace
 
 whileLiteral.js: whileLiteral.grace dialect.gso dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js -o $@ whileLiteral.grace
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ whileLiteral.grace
 
 dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../dynamic-modules/%.gso)
 
 %Example.js: %Example.grace %.js %.gso
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js -o $@ $<
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
 $(addsuffix .js,$(DIALECTS)): %.js: %.grace
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js -o $@ $<
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
 %.gso %.gct: %.grace
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --dynamic-module $<
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --dynamic-module --dir . $<
 
 clean:
 	rm -fR *.gct *.gso *.c *.gcn $(DIALECTS) *.gso.dSYM *.js $(SAMPLES) $(DIALECTS_JS)

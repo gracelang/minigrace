@@ -20,7 +20,7 @@ CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MOD
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 CREATE_DM := $(shell if [ ! -e dynamic-modules ] ; then mkdir -p dynamic-modules ; fi)
 
-DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso
+DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso dynamic-modules/math.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
 NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace
@@ -173,6 +173,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRAC
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=js/%.js) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gct) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gcn) $(MODULE_PATH)
+	install -m 644 dynamic-modules/*.gso $(MODULE_PATH)
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
