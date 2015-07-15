@@ -10,36 +10,49 @@ class map.new {
     method put(k, v) {
         native "js" code ‹this.data.inner[var_k] = var_v;
                         return this;›
-        var t := findPosition(key')
+        var t := findPosition(k)
         if (inner.at(t) == unused) then {
             size := size + 1
         }
-        inner.at(t)put(key'::value')
+        inner.at(t)put(k::value')
         if (size > (inner.size / 2)) then {
             expand
         }
     }
-    method get(key') {
-        var t := findPosition(key')
+    method get(k) {
+        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined') 
+                return this.data.inner[var_k];
+            var nso = callmethod(var_prelude, "NoSuchObject", [0]);
+            var exceptionMsg = new GraceString("no value for key ");
+            var kDesc = callmethod(k, "asString", [0]);
+            exceptionMsg = callmethod(exceptionMsg, "++", [1], kDesc);
+            throw new GraceExceptionPacket(nso, exceptionMsg);›
+        var t := findPosition(k)
         var c := inner.at(t)
-        if (c == unused) then { NoSuchObject.raise "no value for key {key'}" }
+        if (c == unused) then { NoSuchObject.raise "no value for key {k}" }
         return c.value
     }
-    method get(key') ifAbsent (absentBlock) {
-        var t := findPosition(key')
+    method get(k) ifAbsent (absentBlock) {
+        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined')
+                return this.data.inner[var_k];
+            return callmethod(var_absentBlock, "apply", [0]);›
+        var t := findPosition(k)
         var c := inner.at(t)
         if (c == unused) 
             then { return absentBlock.apply }
             else { return c.value }
     }
-    method contains(key') {
-        var t := findPosition(key')
-        if (inner.at(t).key == key') then {
+    method contains(k) {
+        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined') 
+                return GraceTrue;
+            else return GraceFalse;›
+        var t := findPosition(k)
+        if (inner.at(t).key == k) then {
             return true
         }
         return false
     }
-    method findPosition(x) {
+    method findPosition(x) is confidential {
         def h = x.hashcode
         def s = inner.size
         var t := h % s
@@ -58,6 +71,16 @@ class map.new {
         return t
     }
     method asString {
+        native "js" code ‹var s = "map.new[";
+            var inner = this.data.inner;
+            for (var property in inner) {
+                if (inner.hasOwnProperty(property)) {
+                    s = s + callmethod(property, "asString", [0])._value + "::" +
+                        callmethid(inner[property], "asString", [0])._value;
+                }
+            }
+            s = s + "]"
+            return new GraceString(s);›
         var s := "map.new["
         for (0..(inner.size-1)) do {i->
             def a = inner.at(i)
