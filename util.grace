@@ -104,6 +104,7 @@ method parseargs(buildinfo) {
                             sys.exit(1)
                         }
                         outDirCache := argv.at(ai + 1)
+                        dirFlag := true
                         if (outDirCache.at(outDirCache.size) != "/") then {
                             outDirCache := outDirCache ++ "/"
                         }
@@ -408,6 +409,7 @@ method sourceDir {
 }
 
 var outDirCache := ""
+var dirFlag is readable := false
 method outDir {
     if (outDirCache == "") then {
         outDirCache := sourceDir
