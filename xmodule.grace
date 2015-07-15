@@ -121,7 +121,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         }
         imports.other.add(nm)
     }
-    addTransitiveImports(moduleFileGrace.directory, isDialect, nm, line, linePos)
+    addTransitiveImports(moduleFileGct.directory, isDialect, nm, line, linePos)
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
