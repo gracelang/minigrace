@@ -27,6 +27,7 @@ NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.gr
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) $(NON_SAMPLE_DIALECTS)
 GRACE_DIALECTS_GSO = $(patsubst %.grace, dynamic-modules/%.gso, $(filter-out $(OBJECTDRAW_BITS), $(NON_SAMPLE_DIALECTS)))
 GRACE_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
+GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
@@ -129,11 +130,11 @@ echo:
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 	@echo GRACE_DIALECTS_GSO = $(GRACE_DIALECTS_GSO)
 
-expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js) $(OBJECTDRAW_BITS:%.grace=js/%.js)
+expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js) $(OBJECTDRAW_BITS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js)
 	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
-	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) grace-web-editor/js
+	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
 	rsync -az --delete grace-web-editor/ $(WEB_SERVER):$(EXP_WEB_DIRECTORY)
 
 fullclean: clean
@@ -160,7 +161,7 @@ gracelib-basic.o: gracelib.c gracelib.h
 gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
-dynamic-modules/gUnit.gso: mirrors.gct modules/math.gct
+dynamic-modules/gUnit.gso: dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct modules/math.gct
 
 install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
@@ -287,13 +288,13 @@ $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules
 	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
 $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct l1/minigrace
-	@echo $@ should have been made with $(@:%.gcn=%.gct)
+	@echo $@ should have been made with $(@:%.gso=%.gct)
 
 $(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --target js --dir js $<
 
 $(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct l1/minigrace
-	@echo $@ should have been made with $(@:%.gcn=%.gct)
+	@echo $@ should have been made with $(@:%.js=%.gct)
 
 Makefile.conf: configure stubs modules
 	./configure
