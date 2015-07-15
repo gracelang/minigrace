@@ -695,7 +695,16 @@ factory method inputBox(mystage) {
       return new GraceString(input.value());
     ›
   }
-  
+ 
+  method value := (newval) {
+    native "js" code ‹
+      var newval = var_newval._value;
+      var input = this.data.input;
+      input.value(newval);
+      input.focus();
+    ›
+  }
+ 
   method draw {
     input := native "js" code ‹
       var stage = var_mystage;

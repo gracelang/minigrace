@@ -433,6 +433,10 @@ factory method create(canvasHeight, canvasWidth) {
             method value {
               jsInputObject.value
             }
+
+            method value := (val) {
+              jsInputObject.value := val
+            }
             
             method setWidth(w) {
                 width := w
