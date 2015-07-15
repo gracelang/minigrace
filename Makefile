@@ -130,11 +130,15 @@ echo:
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 	@echo GRACE_DIALECTS_GSO = $(GRACE_DIALECTS_GSO)
 
-expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js) $(OBJECTDRAW_BITS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js)
-	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
+expWeb: expWebDeploy
+
+expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js) $(OBJECTDRAW_BITS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
+
+expWebDeploy: expWebBuild
+	@[ -n "$(WEB_SERVER)" ] || { echo "Please set the WEB_SERVER variable to something like user@hostname" && false; }
 	rsync -az --delete grace-web-editor/ $(WEB_SERVER):$(EXP_WEB_DIRECTORY)
 
 fullclean: clean
