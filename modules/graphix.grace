@@ -492,7 +492,7 @@ factory method create(canvasHeight, canvasWidth) {
               jsInputObject.focus
             }
             
-            method onSubmit :=(block) {
+            method onSubmitDo(block) {
               if(jsInputObject != 0) then {
                 jsInputObject.onSubmit(jsInputObject, block)
               }
