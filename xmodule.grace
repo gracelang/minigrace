@@ -16,11 +16,11 @@ method builtInModules {
     } else {
         list.with("imports",
                 "interactive",
-                "io", 
-                "math", 
-                "mirrors", 
-                "sys", 
-                "unicode", 
+                "io",
+                "math",
+                "mirrors",
+                "sys",
+                "unicode",
                 "util")
     }
 }
@@ -36,8 +36,8 @@ method dirName (filePath) is confidential {
     while { (slashPosn == 0) && (ix > 0) } do {
         if (filePath.at(ix) == "/") then {
             slashPosn := ix
-        } else { 
-            ix := ix - 1 
+        } else {
+            ix := ix - 1
         }
     }
     if (slashPosn == 0) then {
@@ -194,7 +194,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     }
     def data = collections.map.new
     def sz = moduleName.size
-    def sought = 
+    def sought =
         if ((sz >= 4).andAlso{moduleName.substringFrom(sz - 3) to(sz) == ".gct"}) then {
         moduleName
     } else {
@@ -253,7 +253,9 @@ method gctAsString(data) {
 method generateGCT(path)fromValues(values)modules(modules) {
     def meths = collections.list.new
     def confidentials = collections.list.new
+    def types = collections.list.new
     var theDialect := false
+    def gct = collections.map.new
     for (values) do { v->
         if (v.kind == "vardec") then {
             if (v.isReadable) then {
@@ -265,6 +267,59 @@ method generateGCT(path)fromValues(values)modules(modules) {
         } elseif {(v.kind == "method").orElse {v.kind == "typedec"}} then {
             if (v.isPublic) then {
                 meths.push(v.nameString)
+                if (v.kind=="typedec") then {
+                    types.push(v.name.value)
+
+                    var typeliteralmethods := collections.list.new
+                    v.accept(object {
+                        inherits ast.baseVisitor
+                        method visitTypeLiteral(lit) {
+                            for (lit.methods) do { meth ->
+                                var mtstr := ""
+                                for (meth.signature) do { part ->
+                                    mtstr := mtstr ++ part.name
+                                    if ((part.params.size > 0) || (part.vararg != false)) then {
+                                        mtstr := mtstr ++ "("
+                                        for (part.params.indices) do { pnr ->
+                                            var p := part.params[pnr]
+                                            if (p.dtype != false) then {
+                                                mtstr := mtstr ++ p.toGrace(1)
+                                            } else {
+                                                // if parameter type not listed, give it type Unknown
+                                                if(p.wildcard) then {
+                                                    mtstr := "_"
+                                                } else {
+                                                    mtstr := p.value
+                                                }
+                                                mtstr := mtstr ++ " : " ++ ast.unknownType.value
+                                                if (false != p.generics) then {
+                                                    mtstr := mtstr ++ "<"
+                                                    for (1..(p.generics.size - 1)) do {ix ->
+                                                        mtstr := mtstr ++ p.generics.at(ix).toGrace(1)
+                                                    }
+                                                    mtstr := mtstr ++ p.generics.last.toGrace(1) ++ ">"
+                                                }
+                                            }
+                                            if ((pnr < part.params.size) || (part.vararg != false)) then {
+                                                mtstr := mtstr ++ ", "
+                                            }
+                                        }
+                                        if (part.vararg != false) then {
+                                            mtstr := mtstr ++ "*" ++ part.vararg.toGrace(1)
+                                        }
+                                        mtstr := mtstr ++ ")"
+                                    }
+                                }
+                                if (meth.rtype != false) then {
+                                    mtstr := mtstr ++ " -> " ++ meth.rtype.toGrace(1)
+                                }
+                                typeliteralmethods.push(mtstr)
+                            }
+                            return false
+                        }
+                    })
+                    gct.put("methodtypes-of:{v.name.value}", typeliteralmethods)
+                }
             } else {
                 confidentials.push(v.nameString)
             }
@@ -287,7 +342,6 @@ method generateGCT(path)fromValues(values)modules(modules) {
             v.providedNames.do { each -> meths.push(each) }
         }
     }
-    def gct = collections.map.new
     gct.put("modules", modules)
     gct.put("path", collections.list.new(path))
     gct.put("public", meths)
@@ -328,6 +382,7 @@ method generateGCT(path)fromValues(values)modules(modules) {
         }
     }
     gct.put("classes", classes)
+    gct.put("types", types)
 
     def freshmeths = collections.list.new
     gct.put("fresh-methods", freshmeths)
@@ -340,7 +395,7 @@ method generateGCT(path)fromValues(values)modules(modules) {
                     gct.put("fresh:{val.nameString}",
                         freshMethResult.scope.keysAsList)
                 } elseif {freshMethResult.isCall} then {
-                    // we know that freshMethResult.value.isMember and 
+                    // we know that freshMethResult.value.isMember and
                     // freshMethResult.value.nameString == "clone"
                     def receiver = freshMethResult.value.in
                     if ((receiver.nameString == "prelude").andAlso{
@@ -350,7 +405,7 @@ method generateGCT(path)fromValues(values)modules(modules) {
                     } elseif {(receiver.nameString == "self")} then {
                         gct.put("fresh:{val.nameString}", meths)
                     } else {
-                        ProgrammingError.raise 
+                        ProgrammingError.raise
                             "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
                     }
                 } else {
