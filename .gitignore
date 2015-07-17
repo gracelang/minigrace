@@ -78,4 +78,3 @@ grace-web-editor/
 *.xcworkspace
 *.xcworkspace/*
 .gitignore~
-reid/
