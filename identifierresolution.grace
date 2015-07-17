@@ -8,6 +8,8 @@ import "mgcollections" as collections
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
+def emptySequence = sequence.empty
+
 // TODO: eliminate these kind strings and make them objects.
 
 method isAssignable(kindString) {
@@ -141,11 +143,14 @@ factory method newScopeIn(parent') kind(variety') {
         result ++ "\n"
     }
     method asString {
-        var result := "(ST variety:{variety} "
-        self.do { each -> result := result ++ each.serialNumber ++ "➞" }
+        var result := "({variety} ST: "
+        self.do { each -> 
+            result := result ++ each.serialNumber
+            if (each.hasParent) then { result := result ++ "➞" }
+        }
         result := result ++  "):\n"
         elements.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
-            result := result ++ each.key.asString ++ "({kind(each.key)}) "
+            result := "{result} {each.key}({kind(each.key)}) "
         }
         result ++ "\n"
     }
@@ -250,16 +255,16 @@ factory method newScopeIn(parent') kind(variety') {
             errormessages.syntaxError "No method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif (nd.kind == "member") then {
-            def targetScope = self.scopeReferencedBy(nd.in)
+            def receiverScope = self.scopeReferencedBy(nd.in)
             if (nd.value == "outer") then {
-                return targetScope.parent
+                return receiverScope.parent
             }
-            return targetScope.scopeReferencedBy(nd.asIdentifier)
+            return receiverScope.scopeReferencedBy(nd.asIdentifier)
         } elseif (nd.kind == "call") then {
             return scopeReferencedBy(nd.value)
         } elseif (nd.kind == "op") then {
-            def targetScope = self.scopeReferencedBy(nd.left)
-            return targetScope.scopeReferencedBy(nd.asIdentifier)
+            def receiverScope = self.scopeReferencedBy(nd.left)
+            return receiverScope.scopeReferencedBy(nd.asIdentifier)
         }
         ProgrammingError.raise("{nd.value} is not a Call, Member or Identifier\n"
             ++ nd.pretty(0))
@@ -309,7 +314,7 @@ factory method newScopeIn(parent') kind(variety') {
             }
         }
         if (newKind == "vardec") then {
-            def suggs = collections.list.new
+            def suggs = list.empty
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
                     onLine(ident.line)
@@ -447,7 +452,7 @@ method rewritematchblockterm(arg) {
 method rewritematchblock(blk) {
     def arg = blk.params[1]
     var pattern := false
-    var newparams := collections.list.new
+    var newparams := list.empty
     for (blk.params) do { p ->
         newparams.push(p)
     }
@@ -776,32 +781,28 @@ method resolveIdentifiers(topNode) {
 
 method processGCT(gct, importedModuleScope) {
     def classes = collections.map.new
-    if (gct.contains("classes")) then {
-        for (gct.get("classes")) do {c->
-            def cmeths = []
-            def constrs = gct.get("constructors-of:{c}")
-            def classScope = newScopeIn(importedModuleScope) kind("class")
-            for (constrs) do {constr->
-                def ns = newScopeIn(importedModuleScope) kind("object")
-                classScope.addName(constr)
-                classScope.at(constr) putScope(ns)
-                for (gct.get("methods-of:{c}.{constr}")) do {mn->
-                    ns.addName(mn)
-                }
+    gct.at "classes" ifAbsent {emptySequence}.do { c ->
+        def cmeths = []
+        def constrs = gct.at "constructors-of:{c}"
+        def classScope = newScopeIn(importedModuleScope) kind "class"
+        for (constrs) do { constr ->
+            def ns = newScopeIn(importedModuleScope) kind("object")
+            classScope.addName(constr)
+            classScope.at(constr) putScope(ns)
+            gct.at "methods-of:{c}.{constr}".do { mn ->
+                ns.addName(mn)
             }
-            importedModuleScope.addName(c)
-            importedModuleScope.at(c) putScope(classScope)
         }
+        importedModuleScope.addName(c)
+        importedModuleScope.at(c) putScope(classScope)
     }
-    if (gct.contains("fresh-methods")) then {
-        for (gct.get("fresh-methods")) do {c->
-            def objScope = newScopeIn(importedModuleScope) kind("object")
-            for (gct.get("fresh:{c}")) do {mn->
-                objScope.addName(mn)
-            }
-            importedModuleScope.addName(c)
-            importedModuleScope.at(c) putScope(objScope)
+    gct.at "fresh-methods" ifAbsent {emptySequence}.do { c ->
+        def objScope = newScopeIn(importedModuleScope) kind "object"
+        gct.at "fresh:{c}".do { mn ->
+            objScope.addName(mn)
         }
+        importedModuleScope.addName(c)
+        importedModuleScope.at(c) putScope(objScope)
     }
 }
 
@@ -882,33 +883,25 @@ method setupContext(values) {
             if (val.kind == "dialect") then {
                 hadDialect := true
                 xmodule.checkExternalModule(val)
-                def data = xmodule.parseGCT(val.value)
-                if (data.contains("public")) then {
-                    for (data.get("public")) do {mn->
-                        preludeScope.addName(mn)
-                    }
+                def gctDict = xmodule.parseGCT(val.value)
+                gctDict.at "public" ifAbsent {emptySequence}.do { mn ->
+                    preludeScope.addName(mn)
                 }
-                if (data.contains("confidential")) then {
-                    for (data.get("confidential")) do {mn->
-                        preludeScope.addName(mn)
-                    }
+                gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
+                    preludeScope.addName(mn)
                 }
-                processGCT(data, preludeScope)
+                processGCT(gctDict, preludeScope)
             }
         }
         if (!hadDialect) then {
-            def data = xmodule.parseGCT "StandardPrelude"
-            if (data.contains "public") then {
-                for (data.get "public") do {mn->
-                    preludeScope.addName(mn)
-                }
+            def gctDict = xmodule.parseGCT "StandardPrelude"
+            gctDict.at "public" ifAbsent{emptySequence}.do { mn ->
+                preludeScope.addName(mn)
             }
-            if (data.contains "confidential") then {
-                for (data.get "confidential") do {mn->
-                    preludeScope.addName(mn)
-                }
+            gctDict.at "confidential" ifAbsent {emptySequence}.do { mn ->
+                preludeScope.addName(mn)
             }
-            processGCT(data, preludeScope)
+            processGCT(gctDict, preludeScope)
         }
     }
 }
@@ -948,9 +941,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             outerObjectScope.addNode(factoryMeth) as "method"
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
-            o.generics.do { each -> 
-                factoryScope.addNode(each) as "typeparam"
-                each.isDeclaredByParent := true
+            if (o.generics != false) then { 
+                o.generics.do { each ->
+                    factoryScope.addNode(each) as "typeparam"
+                    each.isDeclaredByParent := true
+                }
             }
             def innerObjectScope = newScopeIn(factoryScope) kind "object"
             outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
@@ -1055,6 +1050,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := newScopeIn(as.parent.scope) kind "type"
             true
         }
+        method visitTypeParameters(o) up(as) { o.scope := as.parent.scope ; true }
         method visitIf(o) up(as) { o.scope := as.parent.scope ; true }
         method visitMatchCase(o) up(as) { o.scope := as.parent.scope ; true }
         method visitCatchCase(o) up(as) { o.scope := as.parent.scope ; true }
@@ -1197,7 +1193,7 @@ method transformInherits(inhNode) ancestors(as) {
         def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
             inhNode.value.in
         )
-        def newcall = ast.callNode.new(newmem, collections.list.new(
+        def newcall = ast.callNode.new(newmem, list.with(
             ast.callWithPart.new(inhNode.value.value, []) scope(currentScope),
             ast.callWithPart.new("object",
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
@@ -1265,7 +1261,7 @@ method resolve(values) {
         util.outprint "====================================="
         util.outprint "top-level"
         patternMatchModule.scope.do { each ->
-            util.outprint (each)
+            util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
         }

@@ -274,10 +274,7 @@ class map.new {
         if (inner.at(t) == unused) then {
             size := size + 1
         }
-        inner.at(t)put(object {
-            def key = key'
-            var value := value'
-        })
+        inner.at(t)put(key'::value')
         if (size > (inner.size / 2)) then {
             expand
         }

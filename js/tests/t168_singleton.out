@@ -2,4 +2,4 @@ Number 6
 Number 7
 empty
 Number 9
-TypeError: expected initial value of def 'tx' to be of type OptionNumber
+TypeError: value of def 'tx' is not of type OptionNumber

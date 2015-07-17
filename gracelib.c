@@ -3629,9 +3629,9 @@ start:
         ||strcmp(originalself->class->definitionModule, "unknown") == 0;
     if (originalself->class->definitionLine
             && !unknownmodule)
-        sprintf(objDesc, " in object at %s:%i",
-            originalself->class->definitionModule,
-                originalself->class->definitionLine);
+        sprintf(objDesc, "in %s created at %s:%i",
+            originalself->class->name, originalself->class->definitionModule,
+            originalself->class->definitionLine);
     else if (!unknownmodule)
         sprintf(objDesc, " in %s module",
                 originalself->class->definitionModule);
@@ -3666,7 +3666,9 @@ start:
     int searchdepth = (callflags >> 24) & 0xff;
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
-        gracedie("requested confidential method \"%s\" (defined at %s:%i) from outside.", name, m->definitionModule, m->definitionLine);
+        graceRaise(NoSuchMethodErrorObject,
+            "requested confidential method \"%s\" (defined at %s:%i) from outside.",
+            name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
@@ -3722,7 +3724,7 @@ start:
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "No method %s in %s; ", name, self->class->name);
+    fprintf(stderr, "No method %s %s; ", name, objDesc);
     fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
@@ -3734,7 +3736,7 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-//    gracedie("No method %s in %s %s.", name, self->class->name,
+//    graceRaise(NoSuchMethodErrorObject, "no method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more
     graceRaise(NoSuchMethodErrorObject,
@@ -4623,21 +4625,20 @@ int find_resource(const char *name, char *buf) {
         }
     }
 
-    char *elem;
-    char *gmp = getenv("GRACE_MODULE_PATH");
-    char *context;
+    char gmp[PATH_MAX];
+    strncpy(gmp, getenv("GRACE_MODULE_PATH"), PATH_MAX);
+    // Must make copy, because strtok changes its argument.
+    // If we don't, future calls to getenv return the wrong value.
 
-    for ( elem = strtok_r(gmp, ":", &context);
-          elem;
-          elem = strtok_r(NULL, ":", &context)
-        )
-    {
+    char * elem = strtok(gmp, ":");
+    while (elem != NULL) {
         strncpy(buf, elem, PATH_MAX);
         strcat(buf, "/");
         strcat(buf, name);
         if(stat(buf, &st) == 0){
             return 1;
         }
+        elem = strtok(NULL, ":");
     }
     return 0;
 }

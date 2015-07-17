@@ -1151,6 +1151,9 @@ GraceType.prototype = {
         "asString": function type_asString (argcv) {
             return new GraceString("type " + this.name);
         },
+        "asDebugString": function type_asDebugString (argcv) {
+            return new GraceString("built-in type " + this.name);
+        },
         "methodNames": function type_methodNames (argcv) {
             var result = callmethod(GraceSetClass(), "empty", [0]);
             for (var i=0; i<this.typeMethods.length; i++) {
@@ -1521,16 +1524,17 @@ function gracecode_io() {
 	return GraceFalse;
     };
     this.methods.open = function(argcv, path, mode) {
-	if(typeof(process) != "undefined") {
+        path = callmethod(path, "asString", [0])._value;
+        if(typeof(process) != "undefined") {
             var p = safeJsString(path);
             var m = safeJsString(mode);
             var o = new Grace_allocObject();
-	    var f = fs.openSync(p, m);
+            var f = fs.openSync(p, m);
             if(fs.existsSync(p)) {
                 var c = fs.readFileSync(p);
-		var a = c.toString().split('\n');
-	    }
-	    var i = 0;
+                var a = c.toString().split('\n');
+            }
+            var i = 0;
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
@@ -1538,11 +1542,10 @@ function gracecode_io() {
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(p);};
             return o;
-	}
+        }
         var o = new Grace_allocObject();
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
-        path = path._value;
         var slash = path.lastIndexOf("/");
         if (slash >= 0) path = path.substring(slash+1);
         if (path.substr(path.length - 4) == ".gct") {
@@ -2008,7 +2011,7 @@ function gracecode_util() {
     };
     this.methods['file()on()orPath()otherwise'] =
         function util_file_on_orPath_otherwise (argcv, fn, origin, pth, blk) {
-        var jsFn = fn._value;
+        var jsFn = callmethod(fn, "asString", [0])._value;
         if (fileExists(jsFn)) return fn;
         return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
@@ -2018,6 +2021,9 @@ function gracecode_util() {
         return callmethod(blk, "apply", [1], new GraceString("gct cache"));
     };
     this.methods.sourceDir = function util_sourceDir(argcv) {
+        return new GraceString("./");
+    };
+    this.methods.outDir = function util_outDir(argcv) {
         return new GraceString("./");
     };
     this.methods.execDir = function util_execDir(argcv) {
@@ -2360,65 +2366,6 @@ if (typeof gctCache !== "undefined")
     gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
 
 
-function gracecode_math() {
-    this.methods['asString'] = function math_asString(argcv) {
-        return new GraceString('the "math" module');
-    };
-    this.methods['asDebugString'] = function math_asDebugString(argcv) {
-        return callmethod(this, "asString", [0]);
-    };
-    this.methods['sin'] = function math_sin(argcv, a) {
-        return new GraceNum(Math.sin(a._value));
-    };
-    this.methods['cos'] = function math_cos(argcv, a) {
-        return new GraceNum(Math.cos(a._value));
-    };
-    this.methods['tan'] = function math_tan(argcv, a) {
-        return new GraceNum(Math.tan(a._value));
-    };
-    this.methods['asin'] = function math_asin(argcv, a) {
-        return new GraceNum(Math.asin(a._value));
-    };
-    this.methods['acos'] = function math_acos(argcv, a) {
-        return new GraceNum(Math.acos(a._value));
-    };
-    this.methods['atan'] = function math_atan(argcv, a) {
-        return new GraceNum(Math.atan(a._value));
-    };
-    this.methods['random'] = function math_random(argcv) {
-        return new GraceNum(Math.random());
-    };
-    this.methods['pi'] = function math_pi(argcv) {
-        return new GraceNum(3.141592653589793)
-    };
-    this.methods['π'] = function math_π(argcv) {
-        return new GraceNum(3.141592653589793)
-    };
-    this.methods['sqrt'] = function math_sqrt(argcv, a) {
-        return new GraceNum(Math.sqrt(a._value));
-    };
-    this.methods['abs'] = function math_abs(argcv, a) {
-        return new GraceNum(Math.abs(a._value));
-    };
-    this.methods['lg'] = function math_lg(argcv, a) {
-        return new GraceNum(Math.log(a._value) / Math.LN2);
-    };
-    this.methods['ln'] = function math_ln(argcv, a) {
-        return new GraceNum(Math.log(a._value));  // JavaScript's log is base e!
-    };
-    this.methods['exp'] = function math_exp(argcv, a) {
-        return new GraceNum(Math.exp(a._value));
-    };
-    this.methods['log10'] = function math_log10(argcv, a) {
-        return new GraceNum(Math.log(a._value) / Math.LN10);
-    };
-    return this;
-}
-
-if (typeof gctCache !== "undefined")
-    gctCache['math'] = "modules:\nfresh-methods:\npath:\n math\nclasses:\npublic:\n  asString\n asDebugString\n sin\n cos\n tan\n asin\n acos\n atan\n random\n π\n pi\n sqrt\n abs\n lg\n ln\n exp\n log10\nconfidential:\n";
-
-
 function checkmethodcall(func, methname, obj, args) {
     var pt = func.paramTypes;
     for (var i=0; i<args.length, i<pt.length; i++) {
@@ -2430,7 +2377,9 @@ function checkmethodcall(func, methname, obj, args) {
         var t = p[0];
         if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
             throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("expected " + t.className + " for argument " + p[1] + " (" + (i+1) + ") of " + methname + "."));
+                    new GraceString("argument " + (i+1) + " (" + p[1] + ") of " +
+                            methname + " does not have " +
+                            callmethod(t, "asString", [0])._value + "."));
         }
     }
 }
@@ -3024,7 +2973,6 @@ if (typeof global !== "undefined") {
     global.gracecode_imports = gracecode_imports;
     global.gracecode_interactive = gracecode_interactive;
     global.gracecode_io = gracecode_io;
-    global.gracecode_math = gracecode_math;
     global.gracecode_mirrors = gracecode_mirrors;
     global.gracecode_sys = gracecode_sys;
     global.gracecode_unicode = gracecode_unicode;

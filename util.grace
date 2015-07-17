@@ -1,6 +1,6 @@
 import "io" as io
 import "sys" as sys
-import "buildinfo" as buildinfo
+import "unixFilePath" as filePath
 import "mgcollections" as mgcollections
 
 var verbosityv := 30
@@ -9,7 +9,6 @@ var infilev := io.input
 var modnamev := "standardInput"
 var runmodev := "make"
 var buildtypev := "run"
-var interactivev := false
 var gracelibPathv := false
 var linenumv := 1
 var lineposv := 1
@@ -31,7 +30,7 @@ def targets = set.with("lex", "parse", "grace", "ast", "processed-ast",
 
 def requiredModules is public = object {
     def static is public = set.empty
-    def linkfiles is public = list.empty
+    def linkfiles is public = set.empty
     def other is public = set.empty
     method isAlready ( moduleName ) -> Boolean {
         if ( static.contains(moduleName) ) then {
@@ -46,7 +45,7 @@ def requiredModules is public = object {
 
 var errno is readable := 0
 
-method parseargs {
+method parseargs(buildinfo) {
     var argv := sys.argv
     var toStdout := false
     if (argv.size > 1) then {
@@ -59,7 +58,7 @@ method parseargs {
                 match(arg)
                     case { "-o" ->
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -o requires argument.\n")
+                            io.error.write("minigrace: -o requires an argument.\n")
                             sys.exit(1)
                         }
                         outfilev := io.open(argv.at(ai + 1), "w")
@@ -71,7 +70,7 @@ method parseargs {
                     } case { "--vtag" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --vtag requires argument.\n")
+                            io.error.write("minigrace: --vtag requires an argument.\n")
                             sys.exit(1)
                         }
                         vtagv := argv.at(ai + 1)
@@ -95,13 +94,21 @@ method parseargs {
                         runmodev := "build"
                     } case { "--native" ->
                         buildtypev := "native"
-                    } case { "--interactive" ->
-                        interactivev := true
                     } case { "--noexec" ->
                         noexecv := true
                         buildtypev := "bc"
-                    } case { "--yesexec" ->
-                        noexecv := false
+                    } case { "--dir" ->
+                        skip := true
+                        if(argv.size < (ai + 1)) then {
+                            io.error.write "minigrace: --dir requires an argument.\n"
+                            sys.exit(1)
+                        }
+                        outDirCache := argv.at(ai + 1)
+                        dirFlag := true
+                        if (outDirCache.at(outDirCache.size) != "/") then {
+                            outDirCache := outDirCache ++ "/"
+                        }
+                        createDirectoryIfNecessary(outDirCache)
                     } case { "--stdout" ->
                         toStdout := true
                     } case { "-" ->
@@ -109,21 +116,21 @@ method parseargs {
                     } case { "--module" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --module requires argument.\n")
+                            io.error.write("minigrace: --module requires an argument.\n")
                             sys.exit(1)
                         }
                         modnamev := argv.at(ai + 1)
                     } case { "--gracelib" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --gracelib requires argument.\n")
+                            io.error.write("minigrace: --gracelib requires an argument.\n")
                             sys.exit(1)
                         }
                         gracelibPathv := argv.at(ai + 1)
                     } case { "--target" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write "minigrace: --target requires argument.\n"
+                            io.error.write "minigrace: --target requires an argument.\n"
                             sys.exit(1)
                         }
                         targetv := argv.at(ai + 1)
@@ -138,7 +145,7 @@ method parseargs {
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -j requires argument.\n")
+                            io.error.write("minigrace: -j requires an argument.\n")
                             sys.exit(1)
                         }
                         jobs := argv.at(ai + 1).asNumber
@@ -186,17 +193,20 @@ method parseargs {
             }
         }
     }
+    if ((false == vtagv).andAlso{outDirCache != ""}) then {
+        vtagv := outDirCache.substringFrom 1 to (outDirCache.size - 1)
+    }
     if ((outfilev == io.output) && {!toStdout}) then {
         outfilev := match(targetv)
-            case { "c" -> io.open(sourceDir ++ modnamev ++ ".c", "w") }
-            case { "js" -> io.open(sourceDir ++ modnamev ++ ".js", "w") }
-            case { "parse" -> io.open(sourceDir ++ modnamev ++ ".parse", "w") }
-            case { "lex" -> io.open(sourceDir ++ modnamev ++ ".lex", "w") }
-            case { "processed-ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
-            case { "ast" -> io.open(sourceDir ++ modnamev ++ ".ast", "w") }
-            case { "symbols" -> io.open(sourceDir ++ modnamev ++ ".symbols", "w") }
-            case { "patterns" -> io.open(sourceDir ++ modnamev ++ ".patterns", "w") }
-            case { "grace" -> io.open(sourceDir ++ modnamev ++ "_new.grace", "w") }
+            case { "c" -> io.open(outDir ++ modnamev ++ ".c", "w") }
+            case { "js" -> io.open(outDir ++ modnamev ++ ".js", "w") }
+            case { "parse" -> io.open(outDir ++ modnamev ++ ".parse", "w") }
+            case { "lex" -> io.open(outDir ++ modnamev ++ ".lex", "w") }
+            case { "processed-ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { "ast" -> io.open(outDir ++ modnamev ++ ".ast", "w") }
+            case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
+            case { "patterns" -> io.open(outDir ++ modnamev ++ ".patterns", "w") }
+            case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
             case { _ -> 
                 io.error.write("minigrace: unrecognized target '{targetv}'.\n")
                 sys.exit(1)
@@ -217,12 +227,16 @@ method parseargs {
             print("This is free software with absolutely no warranty. "
                 ++ "Say minigrace.w for details.")
             print ""
-            if (interactivev.not) then {
-                print "Enter a program and press Ctrl-D to execute it."
-                print ""
-            }
+            print "Enter a program and press Ctrl-D to execute it."
+            print ""
         }
     }
+}
+
+method createDirectoryIfNecessary(d) is confidential {
+    if (io.exists(d)) then { return }
+    if (io.system "mkdir \"{d}\"") then { return }
+    EnvironmentException.raise "Unable to create directory \"{d}\"."
 }
 
 var previousElapsed := 0
@@ -284,11 +298,7 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
             s.print
         }
     }
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 
 method type_error(s) {
@@ -301,11 +311,7 @@ method type_error(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: Type error: {s}")
     io.error.write("\n")
     io.error.write(lines.at(linenumv) ++ "\n")
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 method semantic_error(s) {
     if (vtagv) then {
@@ -314,9 +320,7 @@ method semantic_error(s) {
     io.error.write "{modnamev}.grace:{linenumv}:{lineposv}: Semantic error"
     if (s == "") then {
         io.error.write "\n"
-        if (!interactivev) then {
-            sys.exit(2)
-        }
+        sys.exit(2)
     }
     io.error.write ": {s}\n"
     if (linenumv > 1) then {
@@ -334,11 +338,7 @@ method semantic_error(s) {
     if (linenumv < lines.size) then {
         io.error.write("  {linenumv + 1}: {lines.at(linenumv + 1)}\n")
     }
-    if (interactivev.not) then {
-        sys.exit(2)
-    } else {
-        errno := 2
-    }
+    sys.exit(2)
 }
 method warning(s) {
     io.error.write("{modnamev}.grace:{linenumv}:{lineposv}: warning: {s}")
@@ -362,9 +362,6 @@ method runmode {
 }
 method buildtype {
     buildtypev
-}
-method interactive {
-    interactivev
 }
 method gracelibPath {
     gracelibPathv
@@ -410,6 +407,16 @@ method sourceDir {
     if (sourceDirCache == "") then { sourceDirCache := "./" }
     sourceDirCache
 }
+
+var outDirCache := ""
+var dirFlag is readable := false
+method outDir {
+    if (outDirCache == "") then {
+        outDirCache := sourceDir
+    }
+    outDirCache
+}
+
 var execDirCache := ""
 method execDir {
     if (execDirCache == "") then {
@@ -420,39 +427,31 @@ method execDir {
     }
     execDirCache
 }
-method splitPath(pathString) -> List<String> {
-    def locations = list.empty
-    var ix := 1
-    var ox := 1
-    def pss = pathString.size
-    while { ox <= pss } do {
-        while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
-            ox := ox + 1 
-        }
-        var item := pathString.substringFrom(ix) to(ox-1)
-        if (item.at(item.size) != "/") then { item := item ++ "/" }
-        locations.addLast (item)
-        ix := ox + 1
-        ox := ix
-    }
-    return locations
-}
-method file(name) on(origin) orPath(pathString) otherwise(action) {
-    def locations = splitPath(pathString)
-    locations.addFirst(origin)
-    locations.addFirst "./"
-    locations.addLast(execDir)
 
+method file(name) on(origin) orPath(pathString) otherwise(action) {
+    def locations = filePath.split(pathString)
+    locations.addFirst(origin)
+    if (origin != "./") then { locations.addFirst "./" }
+    if (locations.contains(execDir).not) then { locations.addLast(execDir) }
+    def candidate = name.copy
+    def originalDir = name.directory
+    if (originalDir.first == "/") then {
+        if (candidate.exists) then { 
+            return candidate 
+        } else { 
+            return action.apply "" 
+        }
+    }
     locations.do { each ->
-        def candidate = each ++ name
-        if ( io.exists(candidate) ) then {
+        candidate.setDirectory(each ++ originalDir)
+        if ( candidate.exists ) then {
             return candidate
         }
     }
     action.apply(locations)
 }
 method file(name) onPath(pathString) otherwise(action) {
-    file(name) on(sourceDir) orPath(pathString) otherwise(action)
+    file(name) on(outDir) orPath(pathString) otherwise(action)
 }
 
 method processExtension(ext) {
@@ -483,18 +482,18 @@ method printhelp {
     print "  --source         Compile FILE to C source, but no further"
     print "  --noexec         Compile FILE to native object code, but don't create executable"
     print "  --dynamic-module Compile FILE as a dynamic module"
-    print "  --interactive    Launch interactive read-eval-print interpreter"
     print ""
     print "Options:"
-    print "  --verbose        Give more detailed output"
-    print "  --target TGT     Choose a non-default compilation target TGT"
-    print "                   Use --target help to list supported targets."
-    print "  -o OFILE         Output to OFILE instead of default"
-    print "  -j N             Spawn at most N concurrent subprocesses"
+    print "  --dir DIR        Use the directory DIR for generated output files,"
+    print "                   and for .gct files of imported modules"
     print "  --help           This text"
     print "  --module         Override default module name (derived from FILE)"
     print "  --no-recurse     Do not compile imported modules"
+    print "  -o OFILE         Output to OFILE instead of default"
     print "  --stdout         Output to standard output rather than a file"
+    print "  --target TGT     Choose a non-default compilation target TGT"
+    print "                   Use --target help to list supported targets."
+    print "  --verbose        Give more detailed output"
     print "  --version        Print version information"
     print ""
     print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."

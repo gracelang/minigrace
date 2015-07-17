@@ -312,6 +312,8 @@ class point2D.x(x')y(y') {
     method distanceTo(other:Point) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
     method -(other:Point) { point2D.x (x - other.x) y (y - other.y) }
     method +(other:Point) { point2D.x (x + other.x) y (y + other.y) }
+    method /(other:Number) { point2D.x (x / other) y (y / other) }
+    method *(other:Number) { point2D.x (x * other) y (y * other) }
     method length {((x^2) + (y^2))^0.5}
     method ==(other) {
         match (other)

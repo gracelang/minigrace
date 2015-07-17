@@ -1,5 +1,4 @@
 import "dom" as dom
-import "mgcollections" as collections
 
 // These are vars to allow updating them only when "start" runs
 var document
@@ -26,9 +25,9 @@ var delay := 1
 var turtleAngle := 0
 
 // Each frame of the image is a step
-def steps = collections.list.new
+def steps = list.empty
 // Each discrete movement command is a stage
-def stages = collections.list.new
+def stages = list.empty
 
 def PI = 3.14159
 

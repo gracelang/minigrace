@@ -9,10 +9,10 @@ dialects: $(DIALECTS:%=%.js)
 samples:  $(SAMPLES:%=%.js)
 
 %.js: %.grace
-	../../minigrace --target js $(VERBOSITY) -o $@ $<
+	../../minigrace --target js --dir . $(VERBOSITY) -o $@ $<
 
 %.gso: %.grace
-	../../minigrace --dynamic-module $(VERBOSITY) -o $@ $<
+	../../minigrace --dynamic-module --dir . $(VERBOSITY) -o $@ $<
 
 logoExample: logo.gso logo.js
 

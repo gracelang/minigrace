@@ -1,5 +1,4 @@
 import "math" as math
-import "mgcollections" as collections
 
 type Vector = {
     data
@@ -94,7 +93,7 @@ class vector.new {
     method prefix⍋ {
         def ret = vector.new
         def indices = ret.data
-        def used = collections.set.new
+        def used = set.empty
         var min := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
@@ -117,7 +116,7 @@ class vector.new {
     method prefix⍒ {
         def ret = vector.new
         def indices = ret.data
-        def used = collections.set.new
+        def used = set.empty
         var max := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
@@ -239,7 +238,7 @@ method n(n') {
     object {
         method ?(o) {
             def ret = vector.new
-            def used = collections.set.new
+            def used = set.empty
             for (1..n') do {i->
                 var num := 1 + (math.random * o).truncated
                 while {used.contains(num)} do {

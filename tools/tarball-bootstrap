@@ -15,8 +15,7 @@ TARBALL=$1
 if [ "$TARBALL" = "-a" ]
 then
     pushd "$(git rev-parse --show-toplevel)" >/dev/null
-    rev=$(awk -F= '/STABLE=/ { print $2 }' Makefile)
-    ver=$(tools/calculate-version $rev)
+    ver=$(tools/calculate-version STABLE)
     url=http://web.cecs.pdx.edu/~grace/minigrace/dist/minigrace-$ver.tar.bz2
     echo Will fetch tarball from $url...
     if wget --version >/dev/null 2>&1
@@ -56,7 +55,7 @@ then
     exit 0
 fi
 
-tar xjf "$TARBALL" || die "Failed to extract tarball"
+tar xf "$TARBALL" || die "Failed to extract tarball"
 dir=$(sed 's/.tar.bz2//' < <(basename "$TARBALL"))
 pushd "$dir"
 ./configure || die "Failed to configure tarball"

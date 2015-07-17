@@ -299,15 +299,6 @@ class enumerable.trait<T> {
         // override if size is known
         SizeUnknown.raise "size requested on {asDebugString}"
     }
-    method asSet -> Set<T> {
-        set.withAll(self)
-    }
-    method asList -> List<T> {
-        list.withAll(self)
-    }
-    method asSequence -> Sequence<T> {
-        sequence.withAll(self)
-    }
     method asDictionary {
         def result = dictionary.empty
         keysAndValuesDo { k, v ->

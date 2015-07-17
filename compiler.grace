@@ -10,17 +10,10 @@ import "genc" as genc
 import "genjs" as genjs
 import "genjson" as genjson
 import "buildinfo" as buildinfo
-import "mgcollections" as mgcollections
-import "interactive" as interactive
 import "identifierresolution" as identifierresolution
 import "mirrors" as mirrors
 
-util.parseargs
-
-if (util.interactive) then {
-    interactive.startRepl
-    sys.exit(0)
-}
+util.parseargs(buildinfo)
 
 util.log_verbose "starting compilation"
 
@@ -77,7 +70,7 @@ if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
 if (util.target == "imports") then {
-    def imps = mgcollections.set.new
+    def imps = set.empty
     def vis = object {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {
@@ -111,7 +104,7 @@ if ((util.target == "processed-ast") || (util.target == "ast")) then {
 match(util.target)
     case { "c" ->
         genc.compile(values, util.outfile, util.modname, util.runmode,
-            util.buildtype)
+            util.buildtype, buildinfo)
     }
     case { "js" ->
         genjs.compile(values, util.outfile, util.modname, util.runmode,

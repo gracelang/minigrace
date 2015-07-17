@@ -4,29 +4,35 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
 
-DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit
+GM = ../../modules/
+GDM = ../../dynamic-modules/
+
+DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit math mirrors
 
 c: $(DIALECT_MODULES) $(SAMPLES)
 
-%.gso %.gct: %.grace ../../minigrace
-	../../minigrace $(VERBOSITY) --dynamic-module $<
-
-$(DIALECT_DEPENDENCIES:%=../../%.gso): ../../%.gso: ../../%.grace
-	cd ../../; $(MAKE) $(shell basename $@)
-
-dialect.gso: $(DIALECT_DEPENDENCIES:%=../../%.gso)
+dialect.gso: $(DIALECT_DEPENDENCIES:%=$(GDM)%.gso)
 
 whileLiteral.gso: whileLiteral.grace dialect.gso
-	../../minigrace $(VERBOSITY) --dynamic-module $<
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
 
 staticTypes.gso: staticTypes.grace dialect.gso
-	../../minigrace $(VERBOSITY) --dynamic-module $<
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
     
 requireTypes.gso: requireTypes.grace dialect.gso
-	../../minigrace $(VERBOSITY) --dynamic-module $<
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
+
+minitest.gso: minitest.grace $(GDM)gUnit.gso $(GDM)mirrors.gso $(GDM)math.gso ../../minigrace
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
+
+$(GDM)%.gso $(GDM)%.gct: ../../minigrace
+	make -C ../../ dynamic-modules/$*.gso
+
+%.gso %.gct: %.grace ../../minigrace
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
 
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
-	../../minigrace $(VERBOSITY) $<
+	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dir . $<
 
 clean:
 	rm -fR *.gso *.c *.gct *.gcn *.c *.gso.dSYM $(SAMPLES) $(DIALECTS)

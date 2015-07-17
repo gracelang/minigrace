@@ -1,8 +1,5 @@
-import "io" as io
-import "sys" as sys
 import "util" as util
 import "unicode" as unicode
-import "mgcollections" as collections
 import "errormessages" as errormessages
 
 method padl(s, l, w) {
