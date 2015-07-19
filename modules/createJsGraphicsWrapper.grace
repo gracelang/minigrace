@@ -406,10 +406,17 @@ factory method container {
     ›
   }
 
-  method add(anObject') {
-    var anObject := anObject'.createJsGraphics
+  method add(anObject) {
     native "js" code ‹
-      this.data.createJsGraphics.addChild(this.data.obj);
+      console.log("add");
+      this.data.createJsGraphics.addChild(var_anObject.data.createJsGraphics);
+    ›
+  }
+  
+  method setLocation(location) {
+    native "js" code ‹
+      this.data.createJsGraphics.x = var_location.data.x._value;
+      this.data.createJsGraphics.y = var_location.data.y._value;
     ›
   }
 }
@@ -549,6 +556,21 @@ factory method text {
   method draw(content', font', color') {
     self.createJsGraphics := innerDraw(content', font', color')
   }
+  
+  method getWidth {
+    native "js" code ‹ 
+      var b = this.data.createJsGraphics.getBounds();
+      return new GraceNum(b.width)
+    ›
+  }
+  
+  method getHeight {
+    native "js" code ‹ 
+      var b = this.data.createJsGraphics.getBounds();
+      return new GraceNum(b.height)
+    ›
+  }
+  
   method innerDraw(content', font', color') is confidential {
     self.color := color'
     self.content := content'
