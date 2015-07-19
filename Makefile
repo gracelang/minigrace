@@ -22,7 +22,7 @@ CREATE_DM := $(shell if [ ! -e dynamic-modules ] ; then mkdir -p dynamic-modules
 
 DIALECT_DEPENDENCIES = minigrace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso dynamic-modules/errormessages.gct dynamic-modules/errormessages.gso dynamic-modules/ast.gct dynamic-modules/ast.gso dynamic-modules/util.gct dynamic-modules/util.gso dynamic-modules/mgcollections.gct dynamic-modules/mgcollections.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso dynamic-modules/math.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
-SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace sample/dialects/minitest.grace
+SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace
 NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace
 GRACE_DIALECTS = $(SAMPLE_DIALECTS) $(NON_SAMPLE_DIALECTS)
 GRACE_DIALECTS_GSO = $(patsubst %.grace, dynamic-modules/%.gso, $(filter-out $(OBJECTDRAW_BITS), $(NON_SAMPLE_DIALECTS)))
@@ -39,7 +39,7 @@ STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
-WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js js/sample/dialects/minitest.js $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
+WEBFILES = js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js js/minitest.js $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))
 
 all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
 
@@ -111,7 +111,7 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 dynamic-modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/sample/dialects/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
+dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -163,7 +163,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 dynamic-modules/gUnit.gso: dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct modules/math.gct
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
@@ -175,6 +175,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRAC
 	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
 	install -m 644 $(GRACE_DIALECTS) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=js/%.js) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gct) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS_GSO:dynamic-modules/%.gso=%.gcn) $(MODULE_PATH)
 	install -m 644 dynamic-modules/*.gso $(MODULE_PATH)
+	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
@@ -226,11 +227,14 @@ js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRAR
 just-minigrace:
 	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
+$(KG)/:
+	./tools/tarball-bootstrap -a
+
 known-good/%:
 	@echo "making $@"
 	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
-    
+
 l1/%.grace: %.grace
 	cd l1 && ln -sf ../$(@F) .
 
@@ -239,7 +243,7 @@ l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 
 l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
 	cd l1 && ln ../$< .
-    
+
 l1/collectionsPrelude.gcn: stubs/collectionsPrelude.gct
 	cd l1 && ln -sf ../stubs/$(@F)
 
@@ -255,10 +259,10 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/StandardPrelude.gct: stubs/StandardPrelude.gct
 	cd l1 && ln -sf ../$<
-    
+
 l1/StandardPrelude.gcn: stubs/StandardPrelude.gct
 	cd l1 && ln -sf ../stubs/$(@F)
-    
+
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
@@ -274,7 +278,7 @@ l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
 
 $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn
 	cd l1 && ln -sf ../$< .
-    
+
 $(C_MODULES_GSO:%.gso=%.gct): dynamic-modules/%.gct: stubs/%.gct
 	cd dynamic-modules && ln -sf ../$< .
 
@@ -284,7 +288,7 @@ $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace l1/mini
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gct l1/minigrace
 	@echo $@ should have been made with $(@:%.gcn=%.gct)
 
-$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace l1/minigrace
+$(LIBRARY_MODULES:%.grace=dynamic-modules/%.gct): dynamic-modules/%.gct: modules/%.grace dynamic-modules/mirrors.gct dynamic-modules/mirrors.gso l1/minigrace
 	GRACE_MODULE_PATH="dynamic-modules/:modules/" l1/minigrace $(VERBOSITY) --make --dynamic-module --dir dynamic-modules $<
 
 $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso): dynamic-modules/%.gso: dynamic-modules/%.gct l1/minigrace
@@ -298,7 +302,7 @@ $(LIBRARY_MODULES:%.grace=js/%.js): js/%.js: js/%.gct l1/minigrace
 
 Makefile.conf: configure stubs modules
 	./configure
-    
+
 $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 	cd l1 &&  GRACE_MODULE_PATH=../modules/:../dynamic-modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
@@ -368,9 +372,6 @@ sample/dialects/%.gso: $(DIALECT_DEPENDENCIES) sample/dialects/%.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/requireTypes.gct sample/dialects/requireTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/requireTypes.grace
-	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
-
-sample/dialects/minitest.gct sample/dialects/minitest.gso: $(DIALECT_DEPENDENCIES) sample/dialects/minitest.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/staticTypes.grace
@@ -450,11 +451,11 @@ test.js.compile: minigrace
     do echo "$$num \c"; ../../minigrace --target js $${fileName}; \
     done && echo "tests compiled."
 
-test.js: minigrace-js-env sample/dialects/requireTypes.gso sample/dialects/minitest.gso dynamic-modules/util.gso dynamic-modules/ast.gso dynamic-modules/gUnit.gso dynamic-modules/math.gso dynamic-modules/gUnit.gso
+test.js: minigrace-js-env sample/dialects/requireTypes.gso dynamic-modules/minitest.gso dynamic-modules/util.gso dynamic-modules/ast.gso dynamic-modules/gUnit.gso dynamic-modules/math.gso dynamic-modules/gUnit.gso
 	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
-test: minigrace-c-env sample/dialects/minitest.gso
+test: minigrace-c-env dynamic-modules/minitest.gso
 	./tests/harness "../minigrace" tests "" $(TESTS)
 
 togracetest: minigrace

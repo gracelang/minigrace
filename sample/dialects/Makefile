@@ -1,4 +1,4 @@
-DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc minitest
+DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample minitestExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
@@ -18,11 +18,8 @@ whileLiteral.gso: whileLiteral.grace dialect.gso
 
 staticTypes.gso: staticTypes.grace dialect.gso
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
-    
-requireTypes.gso: requireTypes.grace dialect.gso
-	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
 
-minitest.gso: minitest.grace $(GDM)gUnit.gso $(GDM)mirrors.gso $(GDM)math.gso ../../minigrace
+requireTypes.gso: requireTypes.grace dialect.gso
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
 
 $(GDM)%.gso $(GDM)%.gct: ../../minigrace
@@ -30,6 +27,8 @@ $(GDM)%.gso $(GDM)%.gct: ../../minigrace
 
 %.gso %.gct: %.grace ../../minigrace
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
+
+minitestExample: minitestExample.grace ../../dynamic-modules/minitest.gso ../../dynamic-modules/minitest.gct
 
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dir . $<

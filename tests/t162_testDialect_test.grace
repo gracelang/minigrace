@@ -1,4 +1,4 @@
-dialect "../sample/dialects/minitest"
+dialect "minitest"
 
 method hook { abstract }
 

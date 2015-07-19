@@ -56,6 +56,15 @@ js/lexer.grace
 js/mgcollections.grace
 js/parser.grace
 js/xmodule.grace
+js/animation.js
+js/createJsGraphicsWrapper.js
+js/graphix.js
+js/math.js
+js/minitest.js
+js/requireTypes.js
+js/unixFilePath.js
+js/util.js
+objectdraw/
 stubs/StandardPrelude.grace
 stubs/collectionsPrelude.grace
 .git-generation-cache
