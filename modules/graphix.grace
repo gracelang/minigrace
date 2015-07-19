@@ -1,4 +1,4 @@
-import "createJsGraphicsWrapper2" as gr
+import "createJsGraphicsWrapper" as gr
 
 factory method shape {
   var color is public := "black"
