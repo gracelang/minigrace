@@ -111,6 +111,9 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 dynamic-modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
+dynamic-modules/requireTypes.gso: sample/dialects/requireTypes.grace
+	./minigrace $(VERBOSITY) --make --noexec --dir dynamic-modules --dynamic-module $<
+
 dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
 
 echo:
@@ -202,7 +205,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace
+$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace js/dom.gct
 	GRACE_MODULE_PATH="dynamic-modules/:modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
@@ -334,7 +337,7 @@ minigrace-environment: minigrace-c-env minigrace-js-env
 
 minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modules/gUnit.gcn dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct dynamic-modules/unicode.gso dynamic-modules/gUnit.gct dynamic-modules/gUnit.gso dynamic-modules/unicode.gct .git/hooks/commit-msg
 
-minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) js/gUnit.gct js/gUnit.js js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES)
+minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) dynamic-modules/requireTypes.gso
 
 $(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
@@ -359,8 +362,10 @@ pull-objectdraw:
     else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
-	if [ objectdraw.grace -nt rtobjectdraw.grace ] ; \
-    then ./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace ; fi
+	if [ \(objectdraw.grace -nt rtobjectdraw.grace\) -o \( ! -e rtobjectdraw.grace \) ] ; \
+    then echo "creating rtobjectdraw.grace" ; \
+    ./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace ; \
+    fi
 
 rtobjectdraw.gcn dynamic-modules/rtobjectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
