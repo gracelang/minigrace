@@ -227,7 +227,7 @@ js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRAR
 just-minigrace:
 	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
-$(KG)/:
+$(KG)/minigrace:
 	./tools/tarball-bootstrap -a
 
 known-good/%:
