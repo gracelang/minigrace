@@ -40,7 +40,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (imports.isAlready(nm)) then { return }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
-    
+
     if (prelude.inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
             errormessages.error "Please compile module {nm} before importing it."
@@ -271,7 +271,6 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
                 meths.push(v.nameString)
                 if (v.kind=="typedec") then {
                     types.push(v.name.value)
-
                     var typeliteralmethods := list.empty
                     v.accept(object {
                         inherits ast.baseVisitor
