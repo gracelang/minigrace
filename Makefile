@@ -73,22 +73,20 @@ $(C_MODULES_GCN): %.gcn: %.c gracelib.h
 	gcc -g -std=c99 -c -o $@ -fPIC $<
 
 clean:
-	rm -f gracelib.bc gracelib.o gracelib-basic.o
+	rm -f gracelib.o gracelib-basic.o
 	rm -fr unicode.gco unicode.gcn unicode.gso.dSYM
 	rm -fr dynamic-modules/*.gso dynamic-modules/*.gso.dSYM
-	rm -f debugger.o
+	rm -f debugger.o 
 	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
-	rm -f $(SOURCEFILES:.grace=.gco)
-	rm -f $(SOURCEFILES:.grace=.gcn) minigrace.gcn
-	rm -f $(SOURCEFILES:.grace=.gct) minigrace.gct
+	rm -f *.gcn *.gct
 	rm -f $(STUB_GCTS)
 	rm -rf *.gso *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM
 	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
-	rm -f objectdraw.* rtobjectdraw.*
+	rm -f $(OBJECTDRAW_BITS:%.grace=%.*)
 	( cd known-good && $(MAKE) clean )
 	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
@@ -98,6 +96,8 @@ clean:
 	rm -fr grace-web-editor
 	rm -f tests/test-*.log js/tests/test-*.log
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
+	rm Makefile.conf
+	rm -r dynamic-modules
 	cd sample/dialects && $(MAKE)  clean
 	cd js/sample/graphics && $(MAKE) clean
 	cd js/sample/dialects && $(MAKE) clean
@@ -141,7 +141,7 @@ expWeb: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.
 	rsync -az --delete grace-web-editor/ $(WEB_SERVER):$(EXP_WEB_DIRECTORY)
 
 fullclean: clean
-	rm -f Makefile.conf
+	rm -rf .git-generation-cache
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
 
 fulltest: gencheck clean selftest test
