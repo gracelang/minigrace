@@ -235,6 +235,8 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     var sourceDir = fsPath.dirname(fs.realpathSync(found));
     require(found);
     if (typeof global[graceModule] !== 'function') {
+        console.error("found module '" + found + "', but it does not define '"
+            + graceModule + "'.")
         throw new Error('loadModule(' + moduleName + ', ' + 
                             referencingDir + ') failed!');
     }
