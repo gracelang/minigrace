@@ -6,144 +6,144 @@ factory method eventListener {
   var mouseOverBlock := { }
   var mouseExitBlock := { }
   var mouseLocation' := 0@0
-  
+
   method onClick(x, y) {
     mouseLocation' := x@y
     clickBlock.apply
-  } 
-  
+  }
+
   method mouseLocation {
     mouseLocation'
   }
-  
+
   method onClick:=(block) {
     clickBlock := block
   }
-    
+
   method onMouseUp(x, y) {
     mouseLocation' := x@y
     mouseUpBlock.apply
   }
-  
+
   method onMouseUp:=(block) {
     mouseUpBlock := block
   }
-  
+
   method onMouseDown(x, y) {
     mouseLocation' := x@y
     mouseDownBlock.apply
   }
-  
+
   method onMouseDown:=(block) {
     mouseDownBlock := block
   }
-  
+
   method onMouseOver(x, y) {
     mouseLocation' := x@y
     mouseOverBlock.apply
   }
-  
+
   method onMouseOver:=(block) {
     mouseOverBlock := block
   }
-  
+
   method onPressMove(x, y) {
     mouseLocation' := x@y
     pressMoveBlock.apply
   }
-  
+
   method onPressMove := (block) {
     pressMoveBlock := block
   }
-  
+
   method onMouseExit {
     mouseExitBlock.apply
   }
-  
+
   method onMouseExit := (block) {
     mouseExitBlock := block
   }
-  
+
   method addMouseUpListener(obj, listener) {
     native "js" code ‹
       var obj = var_obj;
-      obj.on("pressup", function(event) { 
-        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX), 
+      obj.on("pressup", function(event) {
+        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addMouseDownListener(obj, listener) {
     native "js" code ‹
       var obj = var_obj;
-      obj.on("mousedown", function(event) { 
-        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX), 
+      obj.on("mousedown", function(event) {
+        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addMouseOverListener(obj, listener) {
     native "js" code ‹
       var obj = var_obj;
-      obj.on("mouseover", function(event) { 
-        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX), 
+      obj.on("mouseover", function(event) {
+        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addClickListener(obj, listener) {
     native "js" code ‹
       var shape = var_obj;
-      shape.on("click", function(event) { 
-        callmethod(var_listener, "onClick", [2], new GraceNum(event.stageX), 
+      shape.on("click", function(event) {
+        callmethod(var_listener, "onClick", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addPressMoveListener(obj, listener) {
     native "js" code ‹
       var shape = var_obj;
-      shape.on("pressmove", function(event) { 
-        callmethod(var_listener, "onPressMove", [2], new GraceNum(event.stageX), 
+      shape.on("pressmove", function(event) {
+        callmethod(var_listener, "onPressMove", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addStageDownListener(stage, listener) {
     native "js" code ‹
-      var_stage.on("stagemousedown", function(event) { 
-        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX), 
+      var_stage.on("stagemousedown", function(event) {
+        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addStageUpListener(stage, listener) {
     native "js" code ‹
-      var_stage.on("stagemouseup", function(event) { 
-        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX), 
+      var_stage.on("stagemouseup", function(event) {
+        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
   }
-  
+
   method addMouseExitListener(stage, listener) {
     native "js" code ‹
-      var_stage.on("mouseleave", function(event) { 
+      var_stage.on("mouseleave", function(event) {
         callmethod(var_listener, "onMouseExit", [0]);
       });
     ›
   }
-  
+
   method addStageMouseMoveListener(stage, listener) {
     native "js" code ‹
-      var_stage.on("stagemousemove", function(event) { 
-        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX), 
+      var_stage.on("stagemousemove", function(event) {
+        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
           new GraceNum(event.stageY));
       });
     ›
@@ -158,7 +158,7 @@ factory method stage(width', height') {
   var timedEventBlock := { }
   var jsTimeout
   var tickerBlock := { }
-  
+
   method new(width, height) {
     clearTimeout
     native "js" code ‹
@@ -172,10 +172,10 @@ factory method stage(width', height') {
       canvas.focus();
       canvas = stage.canvas;
       this.stage = stage
-      return stage; 
+      return stage;
     ›
   }
-  
+
   method createClearButton(myStage) {
       native "js" code ‹
           var stage = this.data.mystage;
@@ -188,7 +188,7 @@ factory method stage(width', height') {
           rect.graphics.beginFill("lightgrey").drawRect(0, 0, 35, 20);
           container.addChild(rect);
           container.addChild(text);
-          container.addEventListener("click", function(event) { 
+          container.addEventListener("click", function(event) {
             stage.removeAllEventListeners();
             stage.removeAllChildren();
             stage.enableDOMEvents(false);
@@ -200,11 +200,11 @@ factory method stage(width', height') {
           stage.update();
       ›
   }
-  
+
   method mouseLocation {
     stageListener.mouseLocation
   }
-  
+
   method add(shape) {
     self.createJsGraphics := shape.createJsGraphics
     native "js" code ‹
@@ -223,48 +223,48 @@ factory method stage(width', height') {
       this.data.mystage.update();
     ›
   }
-  
+
   method removeAllChildren {
     native "js" code ‹
       this.data.mystage.removeAllChildren();
     ›
   }
-  
+
   method addStageDownListener(block) {
     stageListener.onMouseDown := block
     stageListener.addStageDownListener(mystage, stageListener)
   }
-  
+
   method addStageUpListener(block) {
     stageListener.onMouseUp := block
     stageListener.addStageUpListener(mystage, stageListener)
   }
-  
+
   method addMouseExitListener(block) {
     stageListener.onMouseExit := block
     stageListener.addMouseExitListener(mystage, stageListener)
   }
-  
+
   method addStageMouseMoveListener(block) {
     stageListener.onMouseOver := block
     stageListener.addStageMouseMoveListener(mystage, stageListener)
   }
-  
+
   method enableMouseOver(frequency) {
     native "js" code ‹
       var freq = var_frequency._value
       this.data.mystage.enableMouseOver(freq);
     ›
   }
-  
+
   method timedEvent {
     timedEventBlock.apply
   }
-  
+
   method tickEvent {
     tickerBlock.apply
   }
-  
+
   method setTimeout(block, time, myStage) {
     timedEventBlock := block
     jsTimeout := native "js" code ‹
@@ -274,14 +274,14 @@ factory method stage(width', height') {
       var result = t
     ›
   }
-  
+
   method clearTimeout {
     native "js" code ‹
       var timeout = this.data.jsTimeout
       clearTimeout(timeout);
     ›
   }
-  
+
   method setTicker(block, fps, myStage) {
     tickerBlock := block
     native "js" code ‹
@@ -291,7 +291,7 @@ factory method stage(width', height') {
 			createjs.Ticker.setFPS(var_fps._value);
     ›
   }
-  
+
   method clearTicker {
     native "js" code ‹
       createjs.Ticker.removeAllEventListeners();
@@ -304,54 +304,54 @@ factory method commonGraphics{
   var color
   var location :=0@0
   var listener is public := eventListener
-  
+
   method mouseLocation {
     listener.mouseLocation
   }
-  
+
   method addMouseUpListener(graphicsTypeObject, block) {
     listener.onMouseUp := block
     listener.addMouseUpListener(createJsGraphics, listener)
   }
-  
+
   method addMouseDownListener(graphicsTypeObject, block) {
     listener.onMouseDown := block
     listener.addMouseDownListener(createJsGraphics, listener)
   }
-  
+
   method addMouseOverListener(graphicsTypeObject, block) {
     listener.onMouseOver := block
     listener.addMouseOverListener(createJsGraphics, listener)
   }
-  
+
   method addClickListener(graphicsTypeObject, block) {
     listener.onClick := block
     listener.addClickListener(createJsGraphics, listener)
   }
-  
+
   method addPressMoveListener(graphicsTypeObject, block) {
     listener.onPressMove := block
     listener.addPressMoveListener(createJsGraphics, listener)
   }
-  
+
   method setLocation(newLoc) {
     self.location := newLoc
   }
-  
+
   method move(newX,newY) {
     native "js" code ‹
       this.data.createJsGraphics.x = var_newX._value;
       this.data.createJsGraphics.y = var_newY._value;
     ›
   }
-  
+
   method setVisible(isVisible) {
     native "js" code ‹
       var isVisible = var_isVisible._value
       this.data.createJsGraphics.visible = isVisible;
     ›
   }
-  
+
   method hitTest(x, y) {
     native "js" code ‹
       var x = var_x._value;
@@ -368,7 +368,7 @@ factory method shape {
   inherits commonGraphics
 
   createJsGraphics := new
-  
+
   method new {
     native "js" code ‹
       return new createjs.Shape();
@@ -406,11 +406,18 @@ factory method container {
     ›
   }
 
-  method add(anObject') {
-    var anObject := anObject'.createJsGraphics
+  method add(anObject) {
     native "js" code ‹
-      this.data.createJsGraphics.addChild(this.data.obj);
+      this.data.createJsGraphics.addChild(var_anObject.data.createJsGraphics);
     ›
+  }
+
+  method setLocation(location) {
+    native "js" code ‹
+      this.data.createJsGraphics.x = var_location.data.x._value;
+      this.data.createJsGraphics.y = var_location.data.y._value;
+    ›
+    self
   }
 }
 
@@ -431,13 +438,13 @@ factory method circle {
   }
 }
 
-factory method rect {
+factory method rectangle {
   inherits shape
   var height
   var width
-  method draw(height', width') {
-    self.height := height'
-    self.width := width'
+  method draw(w, h) {
+    width := w
+    height := h
     native "js" code ‹
       var x = this.data.location.data.x._value;
       var y = this.data.location.data.y._value;
@@ -477,11 +484,11 @@ factory method roundRect {
   var width
   var radius is public := 15
   method draw(width', height', radius') {
-    self.height := height'
     self.width := width'
+    self.height := height'
     self.radius:= radius'
-   
-    native "js" code ‹ 
+
+    native "js" code ‹
       var x = this.data.location.data.x._value;
       var y = this.data.location.data.y._value;
       var height = this.data.height._value
@@ -499,7 +506,7 @@ factory method ellipse {
   method draw(width', height') {
     self.height := height'
     self.width := width'
-    native "js" code ‹ 
+    native "js" code ‹
       var x = this.data.location.data.x._value;
       var y = this.data.location.data.y._value;
       var height = this.data.height._value
@@ -515,7 +522,7 @@ factory method arc {
   var startAngle
   var endAngle
   var anticlockwise
-  
+
   method draw(radius', startAngle', endAngle', anticlockwise') {
     radius := radius'
     startAngle := startAngle'
@@ -530,7 +537,7 @@ factory method arc {
       startAngle = startAngle * Math.PI / 180;
       endAngle = endAngle * Math.PI / 180;
       var anticlockwise = this.data.anticlockwise._value
-      
+
       this.data.createJsGraphics.graphics.arc(x, y, radius, startAngle, endAngle, anticlockwise);
     ›
   }
@@ -549,11 +556,26 @@ factory method text {
   method draw(content', font', color') {
     self.createJsGraphics := innerDraw(content', font', color')
   }
+
+  method width {
+    native "js" code ‹
+      var b = this.data.createJsGraphics.getBounds();
+      return new GraceNum(b.width)
+    ›
+  }
+
+  method height {
+    native "js" code ‹
+      var b = this.data.createJsGraphics.getBounds();
+      return new GraceNum(b.height)
+    ›
+  }
+
   method innerDraw(content', font', color') is confidential {
     self.color := color'
     self.content := content'
     self.font := font'
-    
+
     native "js" code ‹
       var color = this.data.color._value;
       var x = this.data.location.data.x._value;
@@ -566,18 +588,18 @@ factory method text {
       return text;
     ›
   }
-} 
+}
 
 factory method line {
   inherits shape
   var start is public := 0@0
   var end is public := 50@50
-  
+
   method draw(start', end'){
     self.location := start'
     self.start := start'
     self.end := end'
-    native "js" code ‹ 
+    native "js" code ‹
       console.log("start");
       var startX = this.data.start.data.x._value;
       var startY = this.data.start.data.y._value;
@@ -597,11 +619,11 @@ factory method customShape {
   var rightMost;
   var topMost;
   var bottomMost;
-  
+
   method addPoint(p){
     calcBounds(p)
     points.add(p)
-  } 
+  }
   method calcBounds(p) is confidential {
     if(points.isEmpty) then {
       topMost := p.y
@@ -617,11 +639,11 @@ factory method customShape {
   }
   method draw(stroke', fill'){
     if(points.size < 2) then { print("Not enough points in custom shape"); return }
-    
+
     self.current := points.first
     self.stroke := stroke';
     self.color := fill';
-    
+
     native "js" code ‹
         var color = this.data.color._value;
         var stroke = this.data.stroke._value;
@@ -633,7 +655,7 @@ factory method customShape {
       ›
     for(points) do {x ->
       current := x
-      native "js" code ‹ 
+      native "js" code ‹
         var endX = this.data.current.data.x._value;
         var endY = this.data.current.data.y._value;
         this.data.createJsGraphics.graphics.lineTo(endX, endY);
@@ -643,7 +665,7 @@ factory method customShape {
       this.data.createJsGraphics.graphics.closePath()
     ›
   }
-  
+
   method setBounds {
     var bounds := leftMost@topMost
     super.setBounds(bounds, rightMost - leftMost, bottomMost - topMost)
@@ -657,9 +679,9 @@ factory method tween(jsGraphicsObj, myStage) {
     createjs.Ticker.addEventListener("tick", stage);
     var shape = var_jsGraphicsObj.data.createJsGraphics;
     var tween = createjs.Tween.get(shape, {override:true})
-    var result = tween; 
+    var result = tween;
   ›
-  
+
   method toX(x) {
     jsTween := native "js" code ‹
       var tween = this.data.jsTween;
@@ -667,7 +689,7 @@ factory method tween(jsGraphicsObj, myStage) {
       var result = tween;
     ›
   }
-  
+
   method wait(time) {
     jsTween := native "js" code ‹
       var tween = this.data.jsTween;
@@ -688,14 +710,14 @@ factory method inputBox(mystage) {
   var borderColor is public
   var submitBlock := {}
   var input
-  
+
   method value {
     native "js" code ‹
       var input = this.data.input;
       return new GraceString(input.value());
     ›
   }
- 
+
   method value := (newval) {
     native "js" code ‹
       var newval = var_newval._value;
@@ -704,7 +726,7 @@ factory method inputBox(mystage) {
       input.focus();
     ›
   }
- 
+
   method draw {
     input := native "js" code ‹
       var stage = var_mystage;
@@ -726,25 +748,25 @@ factory method inputBox(mystage) {
     ›
     onSubmit(self, submitBlock)
   }
-  
+
   method focus {
     native "js" code ‹
       var input = this.data.input;
       input.focus();
     ›
   }
-  
+
   method destroy {
     native "js" code ‹
       var input = this.data.input;
       input.destroy();
     ›
   }
-  
+
   method callSubmit {
     submitBlock.apply
   }
-  
+
   method onSubmit(inputObj, block) {
     submitBlock := block
     native "js" code ‹
