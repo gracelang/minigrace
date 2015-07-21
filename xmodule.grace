@@ -40,7 +40,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (imports.isAlready(nm)) then { return }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
-
+    
     if (prelude.inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
             errormessages.error "Please compile module {nm} before importing it."
@@ -252,12 +252,68 @@ method gctAsString(gctDict) {
     }
     return ret
 }
+
+var methodtypes := list.empty
+def typeVisitor = object {
+    inherits ast.baseVisitor
+    method visitTypeLiteral(lit) {
+        for (lit.methods) do { meth ->
+            var mtstr := ""
+            for (meth.signature) do { part ->
+                mtstr := mtstr ++ part.name
+                if ((part.params.size > 0) || (part.vararg != false)) then {
+                    mtstr := mtstr ++ "("
+                    for (part.params.indices) do { pnr ->
+                        var p := part.params[pnr]
+                        if (p.dtype != false) then {
+                            mtstr := mtstr ++ p.toGrace(1)
+                        } else {
+                            // if parameter type not listed, give it type Unknown
+                            if(p.wildcard) then {
+                                mtstr := mtstr ++ "_"
+                            } else {
+                                mtstr := mtstr ++ p.value
+                            }
+                            mtstr := mtstr ++ " : " ++ ast.unknownType.value
+                            if (false != p.generics) then {
+                                mtstr := mtstr ++ "<"
+                                for (1..(p.generics.size - 1)) do {ix ->
+                                    mtstr := mtstr ++ p.generics.at(ix).toGrace(1)
+                                }
+                                mtstr := mtstr ++ p.generics.last.toGrace(1) ++ ">"
+                            }
+                        }
+                        if ((pnr < part.params.size) || (part.vararg != false)) then {
+                            mtstr := mtstr ++ ", "
+                        }
+                    }
+                    if (part.vararg != false) then {
+                        mtstr := mtstr ++ "*" ++ part.vararg.toGrace(1)
+                    }
+                    mtstr := mtstr ++ ")"
+                }
+            }
+            if (meth.rtype != false) then {
+                mtstr := mtstr ++ " -> " ++ meth.rtype.toGrace(1)
+            }
+            methodtypes.push(mtstr)
+        }
+        return false
+    }
+    method visitOp(op) {
+        if ((op.value=="&") || (op.value=="|")) then {
+            if ((op.left.kind=="identifier") || (op.left.kind=="member")) then {
+                var typeIdent := op.left.toGrace(0)
+                methodtypes.addFirst(":& {typeIdent}")
+            }
+        }
+        return true
+    }
+}
 method generateGCT(path) fromValues(values) modules(modules) is confidential {
     def meths = list.empty
     def confidentials = list.empty
-    def types = list.empty
     var theDialect := false
-    def gct = dictionary.empty
     for (values) do { v->
         if (v.kind == "vardec") then {
             if (v.isReadable) then {
@@ -271,55 +327,17 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
                 meths.push(v.nameString)
                 if (v.kind=="typedec") then {
                     types.push(v.name.value)
-                    var typeliteralmethods := list.empty
-                    v.accept(object {
-                        inherits ast.baseVisitor
-                        method visitTypeLiteral(lit) {
-                            for (lit.methods) do { meth ->
-                                var mtstr := ""
-                                for (meth.signature) do { part ->
-                                    mtstr := mtstr ++ part.name
-                                    if ((part.params.size > 0) || (part.vararg != false)) then {
-                                        mtstr := mtstr ++ "("
-                                        for (part.params.indices) do { pnr ->
-                                            var p := part.params[pnr]
-                                            if (p.dtype != false) then {
-                                                mtstr := mtstr ++ p.toGrace(1)
-                                            } else {
-                                                // if parameter type not listed, give it type Unknown
-                                                if(p.wildcard) then {
-                                                    mtstr := mtstr ++ "_"
-                                                } else {
-                                                    mtstr := mtstr ++ p.value
-                                                }
-                                                mtstr := mtstr ++ " : " ++ ast.unknownType.value
-                                                if (false != p.generics) then {
-                                                    mtstr := mtstr ++ "<"
-                                                    for (1..(p.generics.size - 1)) do {ix ->
-                                                        mtstr := mtstr ++ p.generics.at(ix).toGrace(1)
-                                                    }
-                                                    mtstr := mtstr ++ p.generics.last.toGrace(1) ++ ">"
-                                                }
-                                            }
-                                            if ((pnr < part.params.size) || (part.vararg != false)) then {
-                                                mtstr := mtstr ++ ", "
-                                            }
-                                        }
-                                        if (part.vararg != false) then {
-                                            mtstr := mtstr ++ "*" ++ part.vararg.toGrace(1)
-                                        }
-                                        mtstr := mtstr ++ ")"
-                                    }
-                                }
-                                if (meth.rtype != false) then {
-                                    mtstr := mtstr ++ " -> " ++ meth.rtype.toGrace(1)
-                                }
-                                typeliteralmethods.push(mtstr)
-                            }
-                            return false
-                        }
-                    })
-                    gct.at "methodtypes-of:{v.name.value}" put(typeliteralmethods)
+                    methodtypes := list.empty
+                    v.accept(typeVisitor)
+                    var typename := v.name.toGrace(0)
+                    if(v.generics != false) then {
+                        typename := typename ++ "<"
+                        v.generics.params.do {
+                            each -> typename := "{typename}{each.value}"
+                        } separatedBy { typename := typename ++ ", " }
+                        typename := typename ++ ">"
+                    }
+                    gct.at "methodtypes-of:{typename}" put(methodtypes)
                 }
             } else {
                 confidentials.push(v.nameString)
@@ -343,6 +361,7 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
             v.providedNames.do { each -> meths.push(each) }
         }
     }
+    def gct = dictionary.empty
     gct.at "modules" put(modules.asList.sort)
     gct.at "path" put(list.with(path))
     gct.at "public" put(meths.sort)
@@ -383,7 +402,6 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
         }
     }
     gct.at "classes" put(classes)
-    gct.at "types" put(types)
 
     def freshmeths = list.empty
     gct.at "fresh-methods" put(freshmeths)
