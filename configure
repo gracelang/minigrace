@@ -254,7 +254,7 @@ STUBS=$(cd stubs; ls *.grace | tr \\n ' ')
 LIBRARY_MODULES=$(cd modules; ls *.grace | grep -v Test | tr \\n ' ')
 
 cat <<EOT > Makefile.conf
-PREFIX = $PREFIX
+PREFIX ?= $PREFIX
 LDFLAGS = $LDFLAGS -lm
 UNICODE_LDFLAGS = $UNICODE_LDFLAGS
 UNICODE_MODULE = $UNICODE_MODULE

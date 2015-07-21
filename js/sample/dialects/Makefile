@@ -1,5 +1,5 @@
 .PHONY: compile js run.js
-DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant minitest
+DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant
 DIALECT_DIALECTS = whileLiteral staticTypes requireTypes
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
@@ -41,3 +41,6 @@ clean:
 
 run.js: $(SAMPLES:%=%.js)
 	for f in $(SAMPLES:%=%.js) ; do GRACE_MODULE_PATH=$(UPPATH) ../../tests/grace-node $$f ; done
+
+$(DIALECT_DEPENDENCIES:%=../../../dynamic-modules/%.gso): ../../../dynamic-modules/%.gso:
+	$(MAKE) -C ../../.. dynamic-modules/$*.gso

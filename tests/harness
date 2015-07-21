@@ -61,7 +61,7 @@ NUM_PASS=0
 NUM_UNEXPECTED_SUCCESS=0
 NUM_WRONG_OUTPUT=0
 NUM_COMPILE_ERROR=0
-export GRACE_MODULE_PATH=../modules/:../dynamic-modules/:
+export GRACE_MODULE_PATH=../modules/:../dynamic-modules/:../
 echo "Beginning test run at $(date)" > test.log
 for tcase in "${tests[@]}"
 do
