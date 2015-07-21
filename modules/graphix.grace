@@ -103,11 +103,15 @@ factory method shape {
   }
 }
 
-factory method create(canvasHeight, canvasWidth) {
+factory method create(canvasWidth, canvasHeight) {
   var shapes := list.empty
   var inputs := list.empty
   var stage := gr.stage(canvasHeight, canvasWidth)
   var timeoutIsSet := false
+  
+  method asString {
+    "aGraphixCanvas({canvasWidth}×{canvasHeight})"
+  }
 
   method drawall {
     for (shapes) do {x -> x.draw}
@@ -165,6 +169,9 @@ factory method create(canvasHeight, canvasWidth) {
       var radius is public := 15
       jsShapeObject := gr.circle
       myStage:=stage
+      method asString {
+        "aCircle(radius={radius})"
+      }
 
       method setRadius(r) {
         radius := r
@@ -186,6 +193,10 @@ factory method create(canvasHeight, canvasWidth) {
       var height is public := 15
       var width is public := 15
       myStage:=stage
+
+      method asString {
+        "aRectangle({width}×{height})"
+      }
 
       method setHeight(h) {
         height := h
@@ -214,6 +225,11 @@ factory method create(canvasHeight, canvasWidth) {
 
       jsShapeObject := gr.polyStar
       myStage:=stage
+
+      method asString {
+        "aPolyStar(size={size}, sides={sides})"
+      }
+
       method setSize(s) {
         size := s
         self
@@ -241,11 +257,15 @@ factory method create(canvasHeight, canvasWidth) {
 
     def roundRect = object {
       inherits shape
-      var height is public := 15
       var width is public := 15
+      var height is public := 15
       var radius is public := 15
       jsShapeObject := gr.roundRect
       myStage:=stage
+
+      method asString {
+        "aRoundRect({width}×{height})"
+      }
       method setHeight(h) {
         height := h
         self
@@ -270,11 +290,15 @@ factory method create(canvasHeight, canvasWidth) {
 
     def ellipse = object {
       inherits shape
-      var height is public := 15
       var width is public := 15
+      var height is public := 15
 
       jsShapeObject := gr.ellipse
       myStage:=stage
+
+      method asString {
+        "anEllipse({width}×{height})"
+      }
       method setWidth(w) {
         width := w
         self
@@ -301,6 +325,11 @@ factory method create(canvasHeight, canvasWidth) {
 
       jsShapeObject := gr.arc
       myStage:=stage
+
+      method asString {
+        def clock = if (anticlockwise) then {"⤿"} else {"⤾"}
+        "anArc({clock} radius={radius}, start={startAngle}, end={endAngle})"
+      }
 
       method setRadius(r) {
         radius := r
@@ -336,6 +365,10 @@ factory method create(canvasHeight, canvasWidth) {
       var jsText is public := 0
       var content is public := "Did you forget to set text.content?"
       var font is public := "12px Arial"
+      
+      method asString {
+        "aText({content})"
+      }
       method at(l) {
         location := l
         self
@@ -387,6 +420,10 @@ factory method create(canvasHeight, canvasWidth) {
 
       jsShapeObject := gr.line
       myStage := stage
+      
+      method asString {
+        "aLine(start={start}, end={end})"
+      }
       method setStart(s) {
         start := s
         self
@@ -408,6 +445,10 @@ factory method create(canvasHeight, canvasWidth) {
       inherits shape
       jsShapeObject := gr.customShape
       myStage := stage
+      
+      method asString {
+        "aCustomShape({width}×{height})"
+      }
       var width is public := 10
       var height is public := 10
 
@@ -442,6 +483,10 @@ factory method create(canvasHeight, canvasWidth) {
       buttonShape.filled(true)
       jsShapeObject := gr.container
       stage.add(jsShapeObject)
+      
+      method asString {
+        "aButton({width}×{height})"
+      }
 
       method setShape(s) {
         shapeChanged := true
@@ -516,6 +561,9 @@ factory method create(canvasHeight, canvasWidth) {
       var jsInputObject := 0
       var submitBlock := {}
 
+      method asString {
+        "anInputBox({width}×{height})"
+      }
       method value {
         jsInputObject.value
       }
