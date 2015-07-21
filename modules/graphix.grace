@@ -108,7 +108,7 @@ factory method create(canvasWidth, canvasHeight) {
   var inputs := list.empty
   var stage := gr.stage(canvasHeight, canvasWidth)
   var timeoutIsSet := false
-  
+
   method asString {
     "aGraphixCanvas({canvasWidth}×{canvasHeight})"
   }
@@ -190,8 +190,8 @@ factory method create(canvasWidth, canvasHeight) {
     def rect = object {
       inherits shape
       jsShapeObject := gr.rectangle
-      var height is public := 15
       var width is public := 15
+      var height is public := 15
       myStage:=stage
 
       method asString {
@@ -202,10 +202,25 @@ factory method create(canvasWidth, canvasHeight) {
         height := h
         self
       }
+
       method setWidth(w) {
         width := w
         self
       }
+
+      method size { width@height }
+
+      method size:= (p) {
+        width := p.x
+        height := p.y
+      }
+
+      method setSize(p) {
+        width := p.x
+        height := p.y
+        self
+      }
+
       method shapeDraw is confidential {
         jsShapeObject.draw(width, height)
       }
@@ -218,7 +233,7 @@ factory method create(canvasWidth, canvasHeight) {
     def polyStar = object {
       inherits shape
 
-      var size is public := 20
+      var sz := 20
       var sides is public := 5
       var pointSize is public := 2
       var angle is public := -90
@@ -234,18 +249,31 @@ factory method create(canvasWidth, canvasHeight) {
         size := s
         self
       }
+      
+      method size:= (s) {
+        match (s)
+            case { scalar:Number -> sz := scalar }
+            case { point:Point -> sz := (point.x + point.y)/2 }
+            case { _ -> ProgrammingError.raise "argument to polyStar.setSize should be a Number or a Point." }
+      }
+      
+      method size { sz }
+
       method setSides(s) {
         sides := s
         self
       }
+
       method setPointSize(p) {
         pointSize := p
         self
       }
+
       method setAngle(a) {
         angle := a
         self
       }
+
       method shapeDraw is confidential {
         jsShapeObject.draw(size, sides, pointSize, angle)
       }
@@ -266,18 +294,35 @@ factory method create(canvasWidth, canvasHeight) {
       method asString {
         "aRoundRect({width}×{height})"
       }
+
       method setHeight(h) {
         height := h
         self
       }
+
       method setWidth(w) {
         width := w
         self
       }
+
+      method size { width@height }
+
+      method size:= (p) {
+        width := p.x
+        height := p.y
+      }
+
+      method setSize(p) {
+        width := p.x
+        height := p.y
+        self
+      }
+
       method setRadius(r) {
         radius := r
         self
       }
+
       method shapeDraw is confidential {
         jsShapeObject.draw(width, height, radius)
       }
@@ -299,14 +344,30 @@ factory method create(canvasWidth, canvasHeight) {
       method asString {
         "anEllipse({width}×{height})"
       }
+
       method setWidth(w) {
         width := w
         self
       }
+
       method setHeight(h) {
         height := h
         self
       }
+
+      method size { width@height }
+
+      method size:= (p) {
+        width := p.x
+        height := p.y
+      }
+
+      method setSize(p) {
+        width := p.x
+        height := p.y
+        self
+      }
+
       method shapeDraw is confidential {
         jsShapeObject.draw(width, height)
       }
@@ -365,7 +426,7 @@ factory method create(canvasWidth, canvasHeight) {
       var jsText is public := 0
       var content is public := "Did you forget to set text.content?"
       var font is public := "12px Arial"
-      
+
       method asString {
         "aText({content})"
       }
@@ -420,7 +481,7 @@ factory method create(canvasWidth, canvasHeight) {
 
       jsShapeObject := gr.line
       myStage := stage
-      
+
       method asString {
         "aLine(start={start}, end={end})"
       }
@@ -445,7 +506,7 @@ factory method create(canvasWidth, canvasHeight) {
       inherits shape
       jsShapeObject := gr.customShape
       myStage := stage
-      
+
       method asString {
         "aCustomShape({width}×{height})"
       }
@@ -483,7 +544,7 @@ factory method create(canvasWidth, canvasHeight) {
       buttonShape.filled(true)
       jsShapeObject := gr.container
       stage.add(jsShapeObject)
-      
+
       method asString {
         "aButton({width}×{height})"
       }
@@ -512,6 +573,19 @@ factory method create(canvasWidth, canvasHeight) {
 
       method setHeight(h) {
         height := h
+        self
+      }
+
+      method size { width@height }
+
+      method size:= (p) {
+        width := p.x
+        height := p.y
+      }
+
+      method setSize(p) {
+        width := p.x
+        height := p.y
         self
       }
 
@@ -580,6 +654,19 @@ factory method create(canvasWidth, canvasHeight) {
       method setHeight(h) {
           height := h
           self
+      }
+
+      method size { width@height }
+
+      method size:= (p) {
+        width := p.x
+        height := p.y
+      }
+
+      method setSize(p) {
+        width := p.x
+        height := p.y
+        self
       }
 
       method at(l) {
