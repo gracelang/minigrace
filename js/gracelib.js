@@ -1600,9 +1600,6 @@ function gracecode_io() {
 
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
-    this.methods.cputime = function() {
-	return new GraceNum((performance.now() - loadCPU)/1000);
-    }
     this.methods.argv = function() {
         if(typeof(process) != "undefined") {
             var list = [];
@@ -1829,10 +1826,7 @@ GraceUnicodePattern.prototype = {
 
 var util_module = false;
 var loadDate = Date.now();
-// NOTE: loadCPU is used in sys above as well
-var loadCPU = performance.now();
 var previousElapsed = loadDate;
-var previousCPU = loadCPU;
 
 function gracecode_util() {
     if (util_module != false)
@@ -1886,17 +1880,13 @@ function gracecode_util() {
     };
     this.methods.log_verbose = function util_log_verbose(argcv, s) {
         if (minigrace.verbose) {
-            var cpu = Math.round((performance.now() - loadCPU)/10);  // 10 ms
             var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
-            cpu = (cpu / 100);               // seconds, with 2 decimals
             elapsed = (elapsed / 100);       // seconds, with 2 decimals
             minigrace.stderr_write("minigrace: " + minigrace.modname + ': '
-                            + cpu + "/" + elapsed
-                            + " (+" + (cpu - previousCPU).toFixed(2) + "/"
-                            + (elapsed - previousElapsed).toFixed(2) + "): "
+                            + elapsed
+                            + " (+" + (elapsed - previousElapsed).toFixed(2) + "): "
                             + s._value + "\n");
             previousElapsed = elapsed;
-            previousCPU = cpu;
         }
         return GraceDone;
     };
@@ -2197,7 +2187,7 @@ function gracecode_util() {
 }
 
 if (typeof(process) == "undefined" && typeof gctCache !== "undefined")
-    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n previousCPU\n previousCPU:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
+    gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n mgcollections\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
 function gracecode_interactive() {
@@ -3004,6 +2994,7 @@ if (typeof global !== "undefined") {
     global.GraceType = GraceType;
     global.GraceUnicodePattern = GraceUnicodePattern;
     global.ImportErrorObject = ImportErrorObject;
+    global.loadDate = loadDate;
     global.matchCase = matchCase;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
     global.ProgrammingErrorObject = ProgrammingErrorObject;

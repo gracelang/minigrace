@@ -207,6 +207,7 @@ MiniGrace.prototype.compilerun = function(grace_code) {
             this.mode != this.lastMode ||
             this.lastModule != document.getElementById("modname").value ||
             this.visDefault != document.getElementById("defaultVisibility").value) {
+        loadDate = Date.now();
         this.compile(grace_code);
         this.lastSourceCode = grace_code;
         this.lastMode = this.mode;

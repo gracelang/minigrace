@@ -240,7 +240,6 @@ method createDirectoryIfNecessary(d) is confidential {
 }
 
 var previousElapsed := 0
-var previousCPU := 0
 
 method log_verbose(s) {
     if (verbosityv >= 40) then {
@@ -248,12 +247,10 @@ method log_verbose(s) {
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
         }
-        def cpu = (sys.cputime * 100).rounded / 100
         def elapsed = (sys.elapsed * 100).rounded / 100
-        io.error.write("minigrace{vtagw}: {modnamev}: {cpu}/"
-            ++ "{elapsed} (+{cpu-previousCPU}/{elapsed-previousElapsed}): {s}\n")
+        io.error.write("minigrace{vtagw}: {modnamev}: "
+            ++ "{elapsed} (+{elapsed - previousElapsed}): {s}\n")
         previousElapsed := elapsed
-        previousCPU := cpu
     }
 }
 
