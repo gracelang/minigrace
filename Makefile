@@ -353,7 +353,7 @@ $(filter-out rtobjectdraw.grace, $(OBJECTDRAW_BITS)): %.grace: objectdraw/%.grac
 objectdraw.gcn dynamic-modules/objectdraw.gso:
 	@echo "Can't build $@; no C version of dom module"
 
-oldWeb:
+oldWeb: $(WEBFILES)
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z --delete sample $(WEB_SERVER):$(WEB_DIRECTORY)
 
