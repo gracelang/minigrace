@@ -13,73 +13,73 @@
 // - ‹return› returns from the method
 
 
-method sin(a:Number) {
+method sin(a:Number) -> Number {
     // sine of a (assumed to be radians)
     native "c" code ‹    return alloc_Float64(sin(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.sin(var_a._value));›
 }
 
-method cos(a:Number) {
+method cos(a:Number) -> Number {
     // cosine of a (assumed to be radians)
     native "c" code ‹    return alloc_Float64(cos(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.cos(var_a._value));›
 }
 
-method tan(a:Number) {
+method tan(a:Number) -> Number {
     // tangent of a (assumed to be radians)
     native "c" code ‹    return alloc_Float64(tan(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.tan(var_a._value));;›
 }
 
-method asin(a:Number) {
+method asin(a:Number) -> Number {
     // arcsin of a (in radians)
     native "c" code ‹    return alloc_Float64(asin(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.asin(var_a._value));›
 }
 
-method acos(a:Number) {
+method acos(a:Number) -> Number {
     // arccos of a (in radians)
     native "c" code ‹    return alloc_Float64(acos(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.acos(var_a._value));›
 }
 
-method atan(a:Number) {
+method atan(a:Number) -> Number {
     // arctan of a (in radians)
     native "c" code ‹    return alloc_Float64(atan(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.atan(var_a._value));›
 }
 
-method random {
+method random -> Number {
     // a pseudo-random number
     native "c" code ‹    return alloc_Float64((double)rand() / RAND_MAX);›
     native "js" code ‹    return new GraceNum(Math.random());›
 }
 
-method π {
+method π -> Number {
     // an approximation of the constant π
     native "c" code ‹    return alloc_Float64((double)3.141592653589793);›
     native "js" code ‹    return new GraceNum(3.141592653589793);›
 }
 
-method pi {
+method pi -> Number {
     // same as π — for those who don't know Greek
     native "c" code ‹    return alloc_Float64((double)3.141592653589793);›
     native "js" code ‹    return new GraceNum(3.141592653589793);›
 }
 
-method sqrt(a:Number) {
+method sqrt(a:Number) -> Number {
     // square root of a
     native "c" code ‹    return alloc_Float64(sqrt(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.sqrt(var_a._value));›
 }
 
-method abs(a:Number) {
+method abs(a:Number) -> Number {
     // absolute value of a
     native "c" code ‹    return alloc_Float64(fabs(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.abs(var_a._value));›
 }
 
-method lg(a:Number) {
+method lg(a:Number) -> Number {
     // logarithm to base 2 of a
     native "c" code ‹    double log2 = log(2.0);
     double logA = log(*(double*) args[0]->data);
@@ -87,19 +87,19 @@ method lg(a:Number) {
     native "js" code ‹    return new GraceNum(Math.log(var_a._value) / Math.LN2);›
 }
 
-method ln(a:Number) {
+method ln(a:Number) -> Number {
     // natural logarithm (base e) of a
     native "c" code ‹    return alloc_Float64(log(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.log(var_a._value));›
 }
 
-method exp(a:Number) {
+method exp(a:Number) -> Number {
     // e to the power a
     native "c" code ‹    return alloc_Float64(exp(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.exp(var_a._value));›
 }
 
-method log10(a:Number) {
+method log10(a:Number) -> Number {
     // logarithm to base 10 of a
     native "c" code ‹    return alloc_Float64(log10(*(double*) args[0]->data));›
     native "js" code ‹    return new GraceNum(Math.log(var_a._value) / Math.LN10);›
