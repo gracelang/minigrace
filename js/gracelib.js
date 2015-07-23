@@ -1826,7 +1826,7 @@ GraceUnicodePattern.prototype = {
 
 var util_module = false;
 var loadDate = Date.now();
-var previousElapsed = loadDate;
+var previousElapsed = Math.round(loadDate/10)/100;
 
 function gracecode_util() {
     if (util_module != false)
@@ -1882,6 +1882,8 @@ function gracecode_util() {
         if (minigrace.verbose) {
             var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
             elapsed = (elapsed / 100);       // seconds, with 2 decimals
+            if (s._value === "starting compilation")
+                previousElapsed = elapsed;
             minigrace.stderr_write("minigrace: " + minigrace.modname + ': '
                             + elapsed
                             + " (+" + (elapsed - previousElapsed).toFixed(2) + "): "
