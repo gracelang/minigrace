@@ -467,6 +467,7 @@ factory method create(canvasWidth, canvasHeight) {
         jsText.draw(content, font, color)
         stage.add(jsText)
         stage.update
+        self
       }
     }
     shapes.add(text)
