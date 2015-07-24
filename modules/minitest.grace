@@ -88,7 +88,7 @@ method testSuite(block:Block) {
 method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestCase {
     object {
         inherits gu.testCaseNamed(name')
-             
+
         method setup { currentTestBlockForTesting := number; currentTestInThisEvaluation := 0; setupBlock.apply() }
         method teardown { currentTestBlockForTesting := 0 }
 
