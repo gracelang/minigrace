@@ -55,7 +55,7 @@ ace-code: js/ace/ace.js
 alltests: test test.js
 
 blackWeb:
-	$(MAKE) WEB_SERVER=black@cs.pdx.edu oldWeb
+	$(MAKE) WEB_SERVER=black@cs.pdx.edu expWeb
 
 bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
@@ -114,7 +114,7 @@ dynamic-modules/curl.gso: curl.c gracelib.h
 dynamic-modules/requireTypes.gso: sample/dialects/requireTypes.grace
 	./minigrace $(VERBOSITY) --make --noexec --dir dynamic-modules --dynamic-module $<
 
-dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js dynamic-modules/gUnit.gso
+dialects: js js/sample/dialects/requireTypes.js dynamic-modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
