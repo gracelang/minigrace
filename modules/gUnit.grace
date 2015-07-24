@@ -13,10 +13,12 @@ type Assertion = {
     assert(bb:Boolean) -> Done
     deny(bb:Boolean)-> Done
     assert(s1:Object) shouldBe(s2:Object) -> Done
-    assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number)
+    assert(s1:Object) shouldntBe(s2:Object) -> Done
+    assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number) -> Done
     assert(b:Block)shouldRaise(de:Exception) -> Done
     assert(b:Block)shouldntRaise(ue:Exception) -> Done
     assert(s:Object) hasType (t:Type) -> Done
+    failBecause(Message:String) -> Done
 }
    
 type TestCase = Assertion & type {
@@ -70,6 +72,9 @@ class assertion.trait {
     }
     method assert(s1:Object) shouldBe (s2:Object) {
         assert (s1 == s2) description "‹{s1}› should be ‹{s2}›"
+    }
+    method assert(s1:Object) shouldntBe (s2:Object) {
+        assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
     }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
         assert (math.abs(n1 - n2) <= epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
