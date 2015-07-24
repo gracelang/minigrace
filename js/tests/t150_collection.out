@@ -3,10 +3,12 @@ binding
 sequence
 47 run, 0 failed, 0 errors
 list
-78 run, 0 failed, 0 errors
+79 run, 0 failed, 0 errors
 set
-39 run, 0 failed, 0 errors
+40 run, 0 failed, 0 errors
 range
 46 run, 0 failed, 0 errors
 dictionary
-49 run, 0 failed, 0 errors
+52 run, 0 failed, 0 errors
+lazy enumeration
+5 run, 0 failed, 0 errors

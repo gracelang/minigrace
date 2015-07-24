@@ -1,16 +1,1 @@
-import "gUnit" as gu
-inherits gu.assertion.trait
-
-method b { "this is b" }
-
-def o = object {
-    inherits gu.assertion.trait
-    method d { "this is d" }
-
-    self.assert( 1 == 1 )
-}
-
-print(b)
-assert(true)
-print(o.d)
-print "done"
+../js/tests/t164_inherits_test.grace

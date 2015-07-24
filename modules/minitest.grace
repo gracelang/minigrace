@@ -63,8 +63,8 @@ method assert(s:Object) hasType (t:Type) {
     gu.assertion.trait.assert(s) hasType (t)
 }
 
-method deny(s:Object) hasType (t:UndesiredType) {
-    gu.deny(s) hasType (t)
+method deny(s:Object) hasType (UndesiredType) {
+    gu.deny(s) hasType (UndesiredType)
 }
 
 method failBecause(reason) {

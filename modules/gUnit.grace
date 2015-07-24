@@ -12,7 +12,7 @@ type Assertion = {
     deny(bb:Boolean)description (str:String)  -> Done        
     assert(bb:Boolean) -> Done
     deny(bb:Boolean)-> Done
-    assert(s1:Object) shouldBe(s2:Object) -> Done
+    assert(s1:Object)shouldBe(s2:Object) -> Done
     assert(s1:Object) shouldntBe(s2:Object) -> Done
     assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number) -> Done
     assert(b:Block)shouldRaise(de:Exception) -> Done
@@ -33,17 +33,25 @@ type Set = {
     ...
 }
 
+type TestRecord = {
+    name -> String
+    message -> String
+}
+
 type TestResult =  {
     testStarted(name:String) -> Done
     testFailed(name:String) -> Done
     testErrored(name:String) -> Done
+    testFinished(name:String) -> Done
+    erroredTestNames -> List<String>
+    failedTestNames -> List<String>
     summary -> String
     detailedSummary -> String
     numberOfErrors -> Number
-    errors -> Set<String>
+    errors -> List<TestRecord>
     numberOfFailures -> Number
-    failures -> Set<String>
-    numberOfRuns -> Number
+    failures -> List<TestRecord>
+    numberRun -> Number
 }
 
 type TestSuite = TestCase & type {
@@ -54,11 +62,13 @@ type TestSuite = TestCase & type {
 
 class assertion.trait {
     def AssertionFailure is readable = Exception.refine "AssertionFailure"
+    method countOneAssertion { abstract }
     
     method failBecause(str) {
         assert (false) description (str)
     }
-    method assert(bb: Boolean) description (str) {
+    method assert(bb: Boolean)description(str) {
+        countOneAssertion
         if (! bb) then { AssertionFailure.raise(str) }
     }
     method deny(bb: Boolean) description (str) {
@@ -83,8 +93,10 @@ class assertion.trait {
         var completedNormally
         try {
             block0.apply
+            countOneAssertion
             completedNormally := true
         } catch { raisedException:desiredException ->
+            countOneAssertion
             completedNormally := false
         } catch { raisedException ->
             failBecause("code raised exception {raisedException.exception}" ++
@@ -97,12 +109,14 @@ class assertion.trait {
             block0.apply
         } catch { raisedException:undesiredException ->
             failBecause "code raised exception {raisedException.exception}"
-        } catch { raisedException -> // do nothing: it's ok to raise some other exception
+        } catch { raisedException ->
+            countOneAssertion
+            assert (true) // it's ok to raise some other exception
         }
     }
     method assert(value) hasType (DesiredType) {
         match (value)
-            case { _:DesiredType -> assert (true) }
+            case { _:DesiredType -> countOneAssertion }
             case { _ -> 
                 def m = methodsIn(DesiredType) missingFrom (value)
                 failBecause "{value} does not have type {DesiredType}; it's missing methods {m}." }
@@ -122,8 +136,12 @@ class assertion.trait {
     }
     method deny(value) hasType (UndesiredType) {
         match (value)
-            case { _:UndesiredType -> failBecause "{value} has type {UndesiredType}" }
-            case { _ -> assert (true) }
+            case { _:UndesiredType -> 
+                failBecause "{value} has type {UndesiredType}" 
+            }
+            case { _ -> 
+                countOneAssertion 
+            }
     }
 }
 
@@ -132,12 +150,17 @@ factory method testCaseNamed(name') -> TestCase {
     inherits assertion.trait
 
     def size is public = 1
+    var currentResult
     method name {name'}
 
     method setup { }
     method teardown { }
+    method countOneAssertion {
+        currentResult.countOneAssertion
+    }
 
     method run (result) {
+        currentResult := result
         result.testStarted(name)
         try {
             try {
@@ -150,9 +173,11 @@ factory method testCaseNamed(name') -> TestCase {
         } catch {e: Exception ->
             result.testErrored(name)withMessage "{e.exception}: {e.message}"
         }
+        result.testFinished(name)
     }
 
     method debug (result) {
+        currentResult := result
         result.testStarted(name)
         try {
             print ""
@@ -170,7 +195,7 @@ factory method testCaseNamed(name') -> TestCase {
             printBackTrace(e) limitedTo(name)
         }
     }
-    
+
     method printBackTrace(exceptionPacket) limitedTo(testName) {
         def ex = exceptionPacket.exception
         def msg = exceptionPacket.message
@@ -183,7 +208,7 @@ factory method testCaseNamed(name') -> TestCase {
             if (frameDescription.contains(testName)) then { return }
         }
     }
-    
+
     method runAndPrintResults {
         def result = testResult
         self.run(result)
@@ -202,9 +227,21 @@ factory method testResult {
     var failSet := set.empty
     var errorSet := set.empty
     var runCount := 0
-    
+    var currentCountOfAssertions := 0
+
+    method countOneAssertion {
+        currentCountOfAssertions := currentCountOfAssertions + 1
+    }
+
     method testStarted(name) {
         runCount := runCount + 1
+        currentCountOfAssertions := 0
+    }
+
+    method testFinished(name) {
+        if(currentCountOfAssertions == 0) then {
+            failSet.add(testRecordFor(name)message("no assertions were checked in this test"))
+        }
     }
     
     method testFailed(name)withMessage(msg) {
@@ -213,6 +250,7 @@ factory method testResult {
     
     method testErrored(name)withMessage(msg) {
         errorSet.add(testRecordFor(name)message(msg))
+        currentCountOfAssertions := 1   // to prevent the "no assertions" failure
     }
     
     method summary {
@@ -224,13 +262,13 @@ factory method testResult {
         var output := summary
         if (numberOfFailures > 0) then {
             output := output ++ "\nFailures:"
-            for (failSet) do { each ->
+            for (failSet.asList.sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
         if (numberOfErrors > 0) then {
             output := output ++ "\nErrors:"
-            for (errorSet) do { each ->
+            for (errorSet.asList.sort) do { each ->
                 output := output ++ "\n    " ++ each
             }
         }
@@ -242,11 +280,11 @@ factory method testResult {
     }
     
     method errors {
-        set.withAll(errorSet)
+        list.withAll(errorSet).sort
     }
     
     method erroredTestNames {
-        errorSet.map{each -> each.name}.onto(set)
+        errorSet.map{each -> each.name}.asList.sort
     }
     
     method numberOfFailures {
@@ -254,14 +292,14 @@ factory method testResult {
     }
     
     method failures {
-        set.withAll(failSet)
+        list.withAll(failSet).sort
     }
     
     method failedTestNames {
-        failSet.map{each -> each.name}.onto(set)
+        failSet.map{each -> each.name}.asList.sort
     }
     
-    method numberOfRuns {
+    method numberRun {
         runCount
     }
 }
@@ -271,9 +309,16 @@ factory method testRecordFor(testName)message(testMsg) {
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
     method hash {testName.hash}
+    method compare(other) { testName.compare(other.name) }
+    method < (other) { testName < other.name }
+    method <= (other) { testName <= other.name }
+    method ≤ (other) { testName ≤ other.name }
+    method > (other) { testName < other.name }
+    method >= (other) { testName >= other.name }
+    method ≥ (other) { testName ≥ other.name }
 }
 
-def testSuite is readable = object {
+def testSuite is public = object {
     inherits collections.collectionFactory.trait
     factory method withAll(initialContents) -> TestSuite {
         inherits collections.enumerable.trait
@@ -294,7 +339,9 @@ def testSuite is readable = object {
         
         method name { 
             var namelist := ""
-            for (tests) do { each -> namelist := namelist ++ each.name ++ " " }
+            for (tests) do { each -> 
+                namelist := namelist ++ each.name ++ " " 
+            }
             namelist
         }
         
