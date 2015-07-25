@@ -480,7 +480,7 @@ uninstall:
 	rm -f $(PREFIX)/bin/minigrace
 	rm -f $(OBJECT_PATH)/gracelib.o
 	rm -f $(INCLUDE_PATH)/gracelib.h
-	rm -f $(MODULE_PATH)/*.{gct,js,grace,gcn,gso}
+	rm -rf $(MODULE_PATH)/*.{gct,js,grace,gcn,gso,gso.dSYM,c}
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
