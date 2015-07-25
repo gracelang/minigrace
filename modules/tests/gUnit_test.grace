@@ -65,6 +65,15 @@ print "theResult.summary = {theResult.summary}"
 print "theResult.failedTestNames = {theResult.failedTestNames.asList.sort}"
 print "theResult.erroredTestNames = {theResult.erroredTestNames}"
 
-print (theResult.detailedSummary)
+print "Failed:"
+theResult.failures.do { each:gUnit.TestRecord ->
+    print "    {each.name}: {each.message}"
+}
+
+print "Errored:"
+theResult.errors.do { each:gUnit.TestRecord ->
+    print "    {each.name}: {each.message.substringFrom 1 to 48}"
+}
+
 
 

@@ -1,0 +1,11 @@
+size of test suite is 6
+theResult.summary = 6 run, 2 failed, 1 error
+oneTest.log = setup testMethod teardown 
+theResult.summary = 7 run, 2 failed, 1 error
+theResult.failedTestNames = [testFailingMethod, testNoAssertion]
+theResult.erroredTestNames = [testBrokenMethod]
+Failed:
+    testFailingMethod: deliberate failure
+    testNoAssertion: no assertions were checked in this test
+Errored:
+    testBrokenMethod: NoSuchMethod: no method 'thisMethodDoesNotExist'

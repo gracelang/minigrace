@@ -1,0 +1,4 @@
+4 run, 2 failed, 0 errors
+Failures:
+    asserts a falsehood: ‹3› should be ‹0›
+    makes no assertion: no assertions were checked in this test

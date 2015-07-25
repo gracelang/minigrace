@@ -345,6 +345,9 @@ minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modu
 
 minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) dynamic-modules/requireTypes.gso
 
+module-test-js: minigrace-js-env
+	modules/tests/harness_js ../../minigrace modules/tests ""
+
 $(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
 
 $(filter-out rtobjectdraw.grace, $(OBJECTDRAW_BITS)): %.grace: objectdraw/%.grace
