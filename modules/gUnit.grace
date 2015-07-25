@@ -165,8 +165,7 @@ factory method testCaseNamed(name') -> TestCase {
         try {
             try {
                 setup
-                def methodImage = mirror.reflect(self).getMethod(name)
-                methodImage.request([[]])
+                runTest
             } finally { teardown }
         } catch {e: self.AssertionFailure ->
             result.testFailed(name)withMessage(e.message)
@@ -184,8 +183,7 @@ factory method testCaseNamed(name') -> TestCase {
             print "debugging method {name} ..."
             try {
                 setup
-                def methodImage = mirror.reflect(self).getMethod(name)
-                methodImage.request([[]])
+                runTest
             } finally { teardown }
         } catch {e: self.AssertionFailure ->
             result.testFailed(name)withMessage(e.message)
@@ -194,6 +192,12 @@ factory method testCaseNamed(name') -> TestCase {
             result.testErrored(name)withMessage(e.message)
             printBackTrace(e) limitedTo(name)
         }
+        result.testFinished(name)
+    }
+    
+    method runTest {
+        def methodImage = mirror.reflect(self).getMethod(name)
+        methodImage.request([[]])
     }
 
     method printBackTrace(exceptionPacket) limitedTo(testName) {
