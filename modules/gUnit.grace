@@ -179,8 +179,7 @@ factory method testCaseNamed(name') -> TestCase {
         currentResult := result
         result.testStarted(name)
         try {
-            print ""
-            print "debugging method {name} ..."
+            print "\ndebugging method {name} ..."
             try {
                 setup
                 runTest

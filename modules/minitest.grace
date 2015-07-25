@@ -112,43 +112,13 @@ method testCaseNamed(name') setupIn(setupBlock) asTestNumber(number) -> gu.TestC
         method teardown {
             currentTestBlockForTesting := 0
         }
-
-        method run (result) {
-            mtAssertion.currentResult := result
-            result.testStarted(name)
-            try {
-                try {
-                    setup
-                } finally { 
-                    teardown
-                }
-            } catch {e: self.AssertionFailure ->
-                result.testFailed(name)withMessage(e.message)
-            } catch {e: Exception ->
-                result.testErrored(name)withMessage "{e.exception}: {e.message}"
-            }
-            result.testFinished(name)
+        
+        method currentResult:= (r) is override {
+            mtAssertion.currentResult := r
         }
-
-        method debug (result) {
-            mtAssertion.currentResult := result
-            result.testStarted(name)
-            try {
-                print ""
-                print "debugging test {name} ..."
-                try {
-                    setup
-                } finally { 
-                    teardown
-                }
-            } catch {e: self.AssertionFailure ->
-                result.testFailed(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(name)
-            } catch {e: Exception ->
-                result.testErrored(name)withMessage(e.message)
-                printBackTrace(e) limitedTo(name)
-            }
-            result.testFinished(name)
+        
+        method runTest is override {
+            // for minitest, the test is run in setup
         }
     }
 }
