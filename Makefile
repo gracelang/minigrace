@@ -172,7 +172,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 dynamic-modules/gUnit.gso: dynamic-modules/mirrors.gso dynamic-modules/mirrors.gct modules/math.gct
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=dynamic-modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
