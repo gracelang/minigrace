@@ -439,25 +439,25 @@ def aGraceLangTest = object {
         }
 
         method test_019_equality {
-            out(1 == 1)
-            out(1 == 2)
-            out (2 == (1 + 1))
-            out(true == false)
-            out(true == true)
-            out(false == true)
-            out(false == false)
-            out("Hello" == "world")
-            out("Hello" == "Hello")
+            assert(1 == 1) description "1 ≠ 1"
+            deny(1 == 2) description "1 = 2"
+            assert(2 == (1 + 1)) description "2 ≠ (1 + 1)"
+            deny(true == false) description "true = false"
+            assert(true == true) description "true ≠ true"
+            deny(false == true) description "false = true"
+            assert(false == false) description "false ≠ false"
+            deny("Hello" == "world") description "Hello = world"
+            assert("Hello" == "Hello") description "Hello ≠ Hello"
             var x := object {
                 var v := 1
             }
             var y := object {
                 var v := 1
             }
-            out(x == y)
-            out(x == x)
-            
-            assert(str)shouldBe("true\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\n")
+            deny(x == y) description "object x = object y"
+            assert(x == x) description "object x ≠ object x"
+            deny("17" == 17) description "\"17\" = 17"
+            deny(17 == "17") description "17 = \"17\""
         }
         
         method test_020_inequality {
