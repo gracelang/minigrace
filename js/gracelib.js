@@ -334,11 +334,11 @@ GraceString.prototype = {
         "<=": string_lessThanOrEqual,
         "≤": string_lessThanOrEqual,
         "≥": string_greaterThanOrEqual,
-        "==": function(argcv, other) {
+        "==": function string_equal(argcv, other) {
             if (this === other)
                 return GraceTrue;
-            if (this.prototype == other.prototype
-                && this._value == other._value)
+            if (this.prototype === other.prototype
+                && this._value === other._value)
                 return GraceTrue;
             return GraceFalse;
         },
@@ -1600,10 +1600,12 @@ function gracecode_io() {
 
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
+    this.methods.cputime = function() {
+	    return new GraceNum(performance.now());
+    }
     this.methods.argv = function() {
         if(typeof(process) != "undefined") {
             var list = [];
-	    
             process.argv.forEach(function(val, index, array) {
 		        if(index > 1)
                     list.push(new GraceString(val));
