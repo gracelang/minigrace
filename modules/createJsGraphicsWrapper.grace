@@ -267,12 +267,10 @@ factory method stage(width', height') {
 
   method setTimeout(block, time, myStage) {
     timedEventBlock := block
-    jsTimeout := native "js" code ‹
-      var t = setTimeout(function() {
-        callmethod(var_myStage, "timedEvent", [0]);
-      }, var_time._value);
-      var result = t
-    ›
+    native "js" code ‹var t = setTimeout(function() {
+                    callmethod(var_myStage, "timedEvent", [0]);
+                }, var_time._value);
+            this.data.jsTimeout = t;›
   }
 
   method clearTimeout {
@@ -673,30 +671,22 @@ factory method customShape {
 }
 
 factory method tween(jsGraphicsObj, myStage) {
-  var jsTween := native "js" code ‹
-    var stage = var_myStage.data.mystage;
-    createjs.Ticker.setFPS(60);
-    createjs.Ticker.addEventListener("tick", stage);
-    var shape = var_jsGraphicsObj.data.createJsGraphics;
-    var tween = createjs.Tween.get(shape, {override:true})
-    var result = tween;
-  ›
+    var jsTween 
+    native "js" code ‹var stage = var_myStage.data.mystage;
+        createjs.Ticker.setFPS(60);
+        createjs.Ticker.addEventListener("tick", stage);
+        var shape = var_jsGraphicsObj.data.createJsGraphics;
+        this.data.jsTween = createjs.Tween.get(shape, {override:true});›
 
-  method toX(x) {
-    jsTween := native "js" code ‹
-      var tween = this.data.jsTween;
-      tween = tween.to({x:var_x._value}, 250);
-      var result = tween;
-    ›
-  }
+    method toX(x) {
+        native "js" code ‹var tween = this.data.jsTween;
+            this.data.jsTween = tween.to({x:var_x._value}, 250);›
+    }
 
-  method wait(time) {
-    jsTween := native "js" code ‹
-      var tween = this.data.jsTween;
-      tween = tween.wait(var_time._value);
-      var result = tween;
-    ›
-  }
+    method wait(time) {
+        native "js" code ‹var tween = this.data.jsTween;
+            this.data.jsTween = tween.wait(var_time._value);›
+    }
 }
 
 factory method inputBox(mystage) {
@@ -728,7 +718,7 @@ factory method inputBox(mystage) {
   }
 
   method draw {
-    input := native "js" code ‹
+    native "js" code ‹
       var stage = var_mystage;
       var mycanvas = stage.stage.canvas;
       var input = new CanvasInput({
@@ -744,7 +734,7 @@ factory method inputBox(mystage) {
         borderColor: this.data.borderColor._value
       });
       input.focus();
-      var result = input;
+      this.data.input = input;
     ›
     onSubmit(self, submitBlock)
   }
