@@ -3667,7 +3667,7 @@ start:
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
         graceRaise(NoSuchMethodErrorObject,
-            "requested confidential method \"%s\" (defined at %s:%i) from outside.",
+            "requested confidential method '%s' (defined at %s:%i) from outside.",
             name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
@@ -3718,13 +3718,13 @@ start:
     }
     if (error_jump_set) {
         char buf[1024];
-        sprintf(buf, "no method %s in %s %s.", name,
+        sprintf(buf, "no method '%s' in %s %s.", name,
                 self->class->name, grcstring(callmethod(self, "asString", 0, NULL, NULL)));
         currentException = alloc_ExceptionPacket(alloc_String(buf),
                 NoSuchMethodErrorObject);
         longjmp(error_jump, 1);
     }
-    fprintf(stderr, "No method %s %s; ", name, objDesc);
+    fprintf(stderr, "No method '%s' %s; ", name, objDesc);
     fprintf(stderr, "available methods are:\n");
     int len = 0;
     for (i=0; i<c->nummethods; i++) {
@@ -3740,7 +3740,7 @@ start:
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more
     graceRaise(NoSuchMethodErrorObject,
-               "no method %s in %s.", name, self->class->name);
+               "no method '%s' in %s.", name, self->class->name);
     exit(1);
 }
 Object callmethod3(Object self, const char *name,
