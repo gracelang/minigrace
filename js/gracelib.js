@@ -125,12 +125,12 @@ function string_at(argcv, other) {
     if (idx > s.length) {
         var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
         throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString('"' + msgstr + "\".at(" + idx + ") but string.size = " + s.length))
+            new GraceString('"' + msgstr + '".at(' + idx + ') but string.size = ' + s.length))
     };
     if (idx < 1) {
         var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
         throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString("'" + msgstr + "\".at(" + idx + ") but strings are indexed from 1"))
+            new GraceString('"' + msgstr + '".at(' + idx + ') but strings are indexed from 1'))
     };
     return new GraceString(s.charAt(idx-1));
 }
@@ -1525,16 +1525,16 @@ function gracecode_io() {
     };
     this.methods.open = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
-        if(typeof(process) != "undefined") {
+	if(typeof(process) != "undefined") {
             var p = safeJsString(path);
             var m = safeJsString(mode);
             var o = new Grace_allocObject();
-            var f = fs.openSync(p, m);
+	    var f = fs.openSync(p, m);
             if(fs.existsSync(p)) {
                 var c = fs.readFileSync(p);
-                var a = c.toString().split('\n');
-            }
-            var i = 0;
+		var a = c.toString().split('\n');
+	    }
+	    var i = 0;
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
@@ -1542,7 +1542,7 @@ function gracecode_io() {
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(p);};
             return o;
-        }
+	}
         var o = new Grace_allocObject();
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
@@ -1605,7 +1605,7 @@ function gracecode_sys() {
             var list = [];
 	    
             process.argv.forEach(function(val, index, array) {
-		if(index > 1)
+		        if(index > 1)
                     list.push(new GraceString(val));
             });
             return new GraceList(list);
@@ -1615,7 +1615,7 @@ function gracecode_sys() {
                 new GraceString("--target"),
                 new GraceString("js"),
             ]);
-	}
+	    }
     };
     this.methods.elapsed = function() {return new GraceNum(((new Date).getTime()/1000)-startTime);};
     this.methods.exit = function() {
