@@ -166,7 +166,11 @@ factory method stage(width', height') {
       var height = var_height._value;
       var size = "height=" + height.toString() + ",width=" + width.toString()
       var canvas = document.getElementById("graphics");
+      var ctx = canvas.getContext("2d");
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas,height);
       var stage = new createjs.Stage(canvas);
+      createjs.Ticker.removeAllEventListeners();
       stage.enableDOMEvents(true);
       canvas.setAttribute('tabindex','0');
       canvas.focus();
