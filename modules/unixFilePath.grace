@@ -12,14 +12,19 @@ factory method null {
         if (dir == "") then { "./" } else { dir }
     }
     method directory:=(d) {
-        dir := if (d == "./") then { "" } else { d }
+        var newDir := d
+        if (newDir == "") then {
+            dir := ""
+            return
+        }
+        if (newDir.at(newDir.size) != "/") then {
+            newDir := newDir ++ "/"
+        }
+        if (newDir == "./") then { newDir := "" }
+        dir := newDir
     }
     method setDirectory(d) {
-        if (d.at(d.size) == "/") then {
-            directory := d
-        } else {
-            directory := d ++ "/"
-        }
+        directory := d
         self
     }
     method setBase(b) {
