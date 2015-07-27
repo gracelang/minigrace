@@ -584,7 +584,7 @@ method compilemethod(o, selfobj) {
     }
     if (o.generics != false) then {
         def sz = o.signature.size
-        out("// Start generics")
+        out "// Start type arguments"
         out("if (argcv.length == {1 + sz}) \{")
         out("  if (argcv[{sz}] != {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
@@ -598,38 +598,43 @@ method compilemethod(o, selfobj) {
             out("  {varf(g.value)} = var_Unknown;")
         }
         out("\}")
-        out("// End generics")
-        out "var curarg2 = 1;"
-        for (o.signature.indices) do { partnr ->
-            var part := o.signature[partnr]
-            for (part.params) do { p ->
-                if (emitTypeChecks && (p.dtype != false)) then {
-                    linenum := o.line
-                    noteLineNumber(o.line)comment("generic check in compilemethod")
-                    out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
-                    out "  [1], arguments[curarg2])))"
-                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "          new GraceString(\"argument '{p.value}' does not have \" + "
-                    out "             callmethod({varf(p.dtype.nameString)}, \"asString\", [0])._value + \".\"));"
-                }
-                out("curarg2++;")
-            }
-            if (part.vararg != false) then {
-                if (! isSequenceDefined) then {
-                    out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
-                    isSequenceDefined := true
-                }
-                def pName = varf(part.vararg.value)
-                out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
-                out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
-                out "for (var ix = 0; ix < {pName}_len; ix++)"
-                out "  {pName}_array._value[ix] = arguments[curarg2++];"
-                out "onSelf = true"
-                out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
-            }
-        }
-        out "// End checking generics"
+        out("// End type arguments")
     }
+    out "// Start argument processing"
+    out "curarg = 1;"
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        var paramnr := 0
+        for (part.params) do { p ->
+            paramnr := paramnr + 1
+            if (emitTypeChecks && (p.dtype != false)) then {
+                linenum := o.line
+                noteLineNumber(o.line)comment("argument check in compilemethod")
+                def dtype = compilenode(p.dtype)
+                out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
+                    "  [1], arguments[curarg])))")
+                out "    throw new GraceExceptionPacket(TypeErrorObject," 
+                out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
+                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+            }
+            out("curarg++;")
+        }
+        if (part.vararg != false) then {
+            if (! isSequenceDefined) then {
+                out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
+                isSequenceDefined := true
+            }
+            def pName = varf(part.vararg.value)
+            out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+            out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+            out "for (var ix = 0; ix < {pName}_len; ix++)"
+            out "  {pName}_array._value[ix] = arguments[curarg++];"
+            out "onSelf = true"
+            out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
+        }
+    }
+    out "// End argument proessing generics"
+
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
@@ -765,7 +770,7 @@ method compilefreshmethod(o, selfobj) {
     out "var inheritingObject = arguments[curarg++];"
     if (o.generics != false) then {
         def sz = o.signature.size
-        out("// Start generics")
+        out "// Start type arguments"
         out("if (argcv.length == {1 + sz}) \{")
         out("  if (argcv[{sz}] != {o.generics.size}) \{")
         out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
@@ -779,38 +784,43 @@ method compilefreshmethod(o, selfobj) {
             out("  {varf(g.value)} = var_Unknown;")
         }
         out("\}")
-        out("// End generics")
-        out "var curarg2 = 1;"
-        for (o.signature.indices) do { partnr ->
-            var part := o.signature[partnr]
-            for (part.params) do { p ->
-                if (emitTypeChecks && (p.dtype != false)) then {
-                    linenum := o.line
-                    noteLineNumber(o.line)comment("generic check in compilefreshmethod")
-                    out "if (!Grace_isTrue(callmethod({compilenode(p.dtype)}, \"match\","
-                    out "  [1], arguments[curarg2])))"
-                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "          new GraceString(\"argument '{p.value}' does not have \" + "
-                    out "             callmethod({varf(p.dtype.nameString)}, \"asString\", [0])._value + \".\"));"
-                }
-                out("curarg2++;")
-            }
-            if (part.vararg != false) then {
-                if (! isSequenceDefined) then {
-                    out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
-                    isSequenceDefined := true
-                }
-                def pName = varf(part.vararg.value)
-                out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
-                out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
-                out "for (var ix = 0; ix < {pName}_len; ix++)"
-                out "  {pName}_array._value[ix] = arguments[curarg2++];"
-                out "onSelf = true"
-                out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
-            }
-        }
-        out "// End checking generics"
+        out("// End type arguments")
     }
+    out "// Start argument processing"
+    out "curarg = 1;"
+    for (o.signature.indices) do { partnr ->
+        var part := o.signature[partnr]
+        var paramnr := 0
+        for (part.params) do { p ->
+            paramnr := paramnr + 1
+            if (emitTypeChecks && (p.dtype != false)) then {
+                linenum := o.line
+                noteLineNumber(o.line)comment("argument check in compilefreshmethod")
+                def dtype = compilenode(p.dtype)
+                out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
+                    "  [1], arguments[curarg])))")
+                out "    throw new GraceExceptionPacket(TypeErrorObject," 
+                out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
+                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+            }
+            out("curarg++;")
+        }
+        if (part.vararg != false) then {
+            if (! isSequenceDefined) then {
+                out "var var_sequenceClass = callmethod(var___95__prelude, \"sequence\", [0]);"
+                isSequenceDefined := true
+            }
+            def pName = varf(part.vararg.value)
+            out "var {pName}_len = argcv[{partnr - 1}] - {part.params.size};"
+            out "var {pName}_array = new GracePrimitiveArray({pName}_len);"
+            out "for (var ix = 0; ix < {pName}_len; ix++)"
+            out "  {pName}_array._value[ix] = arguments[curarg++];"
+            out "onSelf = true"
+            out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
+        }
+    }
+    out "// End argument processing"
+
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
@@ -827,7 +837,7 @@ method compilefreshmethod(o, selfobj) {
         tailObject := o.body.pop    // remove tail object
         tailObject.classname := o.nameString
     }
-    var ret := "undefined"
+    var ret := "GraceDone"
     for (o.body) do { l ->
         ret := compilenode(l)
     }
