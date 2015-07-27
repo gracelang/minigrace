@@ -2359,25 +2359,6 @@ function gracecode_mirrors() {
 if (typeof gctCache !== "undefined")
     gctCache['mirrors'] = "path:\n mirrors\nclasses:\npublic:\n Mirror\n MethodMirror\n ArgList\n loadDynamicModule\n reflect\nconfidential:\nfresh-methods:\n reflect\nfresh:reflect:\n basicAsString\n asDebugString\n ::\n methodNames\n ==\n !=\n getMethod\n methods\n ≠\n self\n asString\nmodules:\n";
 
-
-function checkmethodcall(func, methname, obj, args) {
-    var pt = func.paramTypes;
-    for (var i=0; i<args.length, i<pt.length; i++) {
-        var p = pt[i];
-        if (!p || p.length == 0)
-            continue;
-        if (!args[i])
-            continue;
-        var t = p[0];
-        if (!Grace_isTrue(callmethod(t, "match", [1], args[i]))) {
-            throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument " + (i+1) + " (" + p[1] + ") of " +
-                            methname + " does not have " +
-                            callmethod(t, "asString", [0])._value + "."));
-        }
-    }
-}
-
 var overrideReceiver = null;
 
 function callmethodsuper(obj, methname, argcv) {
@@ -2471,10 +2452,8 @@ function callmethod(obj, methname, argcv) {
                 throw new GraceExceptionPacket(
                            ProgrammingErrorObject,
                            new GraceString("Uninitialised value used as argument to "
-                                           + methname + "' in " + obj.className + " "
+                                           + methname + "' on " + obj.className + " "
                                            + safeJsString(obj) + "."));
-        if (meth.paramTypes)
-            checkmethodcall(meth, methname, obj, args);
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
     } finally {
@@ -2947,7 +2926,6 @@ if (typeof global !== "undefined") {
     global.callmethodsuper = callmethodsuper;
     global.callStack = callStack;
     global.catchCase = catchCase;
-    global.checkmethodcall = checkmethodcall;
     global.classType = classType;
     global.dbg = dbg;
     global.dbgp = dbgp;
