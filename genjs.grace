@@ -3,7 +3,6 @@ import "io" as io
 import "sys" as sys
 import "ast" as ast
 import "util" as util
-import "mgcollections" as mgcollections
 import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
@@ -28,7 +27,7 @@ var gracelibPath := "gracelib.o"
 var inBlock := false
 var compilationDepth := 0
 def importedModules = set.empty
-def topLevelTypes = mgcollections.map.new
+def topLevelTypes = set.empty
 def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
@@ -289,6 +288,7 @@ method compileobjvardec(o, selfr, pos) {
 }
 method compileclass(o) {
     // TODO: move this re-writing to identifier resolution
+    out "// start compiling class {o.nameString}"
     util.setline(o.line)
     def innerObjectScope = o.scope
     def factoryScope = innerObjectScope.parent
@@ -323,7 +323,7 @@ method compileclass(o) {
         defDec.annotations.push(a)
     }
     compilenode(defDec)
-    out "var {selfr} = {metaObj.register}  // end of compling class"
+    out "var {selfr} = {metaObj.register}  // end of compling class {o.nameString}"
 }
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
@@ -577,7 +577,7 @@ method compilemethod(o, selfobj) {
             } else { 
                 "{part.name} (arg list {partnr}) of {textualSignature}"
             }
-            out("  callmethod(ProgrammingErrorObject, \"raise\", [1], new "
+            out("  throw new GraceExceptionPacket(ProgrammingErrorObject, new "
                 ++ "GraceString(\"wrong number of arguments for "
                 ++ msgSuffix ++ "\"));")
         }
@@ -585,20 +585,19 @@ method compilemethod(o, selfobj) {
     if (o.generics != false) then {
         def sz = o.signature.size
         out "// Start type arguments"
-        out("if (argcv.length == {1 + sz}) \{")
-        out("  if (argcv[{sz}] != {o.generics.size}) \{")
-        out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-            ++ "new GraceString(\"wrong number of type arguments\"));")
-        out("  \}")
         o.generics.do {g->
-            out("  var {varf(g.value)} = arguments[curarg++];")
+            out "var {varf(g.value)} = var_Unknown;"
         }
-        out("\} else \{")
-        o.generics.do {g->
-            out("  {varf(g.value)} = var_Unknown;")
+        out "if (argcv.length == {1 + sz}) \{"
+        out "  if (argcv[{sz}] != {o.generics.size}) \{"
+        out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
+        out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
+        out "  \}"
+        o.generics.do { g ->
+            out("  {varf(g.value)} = arguments[curarg++];")
         }
-        out("\}")
-        out("// End type arguments")
+        out "\}"
+        out "// End type arguments"
     }
     out "// Start argument processing"
     out "curarg = 1;"
@@ -633,7 +632,7 @@ method compilemethod(o, selfobj) {
             out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
         }
     }
-    out "// End argument proessing generics"
+    out "// End argument processing"
 
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site
@@ -769,22 +768,21 @@ method compilefreshmethod(o, selfobj) {
     }
     out "var inheritingObject = arguments[curarg++];"
     if (o.generics != false) then {
-        def sz = o.signature.size
+        def sz = o.signature.size + 1
         out "// Start type arguments"
-        out("if (argcv.length == {1 + sz}) \{")
-        out("  if (argcv[{sz}] != {o.generics.size}) \{")
-        out("    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-            ++ "new GraceString(\"wrong number of type arguments\"));")
-        out("  \}")
         o.generics.do {g->
-            out("  var {varf(g.value)} = arguments[curarg++];")
+            out "var {varf(g.value)} = var_Unknown;"
         }
-        out("\} else \{")
-        o.generics.do {g->
-            out("  {varf(g.value)} = var_Unknown;")
+        out "if (argcv.length == {1 + sz}) \{"
+        out "  if (argcv[{sz}] != {o.generics.size}) \{"
+        out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
+        out "        new GraceString(\"wrong number of type arguments\"));"
+        out "  \}"
+        o.generics.do { g ->
+            out("  {varf(g.value)} = arguments[curarg++];")
         }
-        out("\}")
-        out("// End type arguments")
+        out "\}"
+        out "// End type arguments"
     }
     out "// Start argument processing"
     out "curarg = 1;"
@@ -1552,12 +1550,14 @@ method compile(vl, of, mn, rm, bt, glpath) {
         debugMode := true
     }
     util.log_verbose("generating ECMAScript code.")
-    topLevelTypes.put("String", true)
-    topLevelTypes.put("Number", true)
-    topLevelTypes.put("Boolean", true)
-    topLevelTypes.put("Block", true)
-    topLevelTypes.put("None", true)
-
+    topLevelTypes.add "String"
+    topLevelTypes.add "Number"
+    topLevelTypes.add "Boolean"
+    topLevelTypes.add "Block"
+    topLevelTypes.add "Done"
+    topLevelTypes.add "Type"
+    topLevelTypes.add "Unknown"
+    topLevelTypes.add "Object"
     if (util.extensions.contains("noStrict")) then {
         util.log_verbose("noStrict")
     } else {
