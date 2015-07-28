@@ -8,16 +8,16 @@ import "mirrors" as mirror
 import "math" as math
 
 type Assertion = { 
-    assert(bb:Boolean)description(str:String) -> Done
-    deny(bb:Boolean)description (str:String)  -> Done        
+    assert(bb:Boolean) description(str:String) -> Done
+    deny(bb:Boolean) description (str:String)  -> Done
     assert(bb:Boolean) -> Done
-    deny(bb:Boolean)-> Done
-    assert(s1:Object)shouldBe(s2:Object) -> Done
+    deny(bb:Boolean) -> Done
+    assert(s1:Object) shouldBe(s2:Object) -> Done
     assert(s1:Object) shouldntBe(s2:Object) -> Done
     assert(n1:Number) shouldEqual(n2:Number) within(epsilon:Number) -> Done
-    assert(b:Block)shouldRaise(de:Exception) -> Done
-    assert(b:Block)shouldntRaise(ue:Exception) -> Done
-    assert(s:Object) hasType (t:Type) -> Done
+    assert(b:Block) shouldRaise(desireed:ExceptionKind) -> Done
+    assert(b:Block) shouldntRaise(undesired:ExceptionKind) -> Done
+    assert(s:Object) hasType(t:Type) -> Done
     failBecause(Message:String) -> Done
 }
    
@@ -187,7 +187,7 @@ factory method testCaseNamed(name') -> TestCase {
         } catch {e: self.AssertionFailure ->
             result.testFailed(name)withMessage(e.message)
             printBackTrace(e) limitedTo(name)
-        } catch {e: Exception ->
+        } catch {e: ExceptionKind ->
             result.testErrored(name)withMessage(e.message)
             printBackTrace(e) limitedTo(name)
         }
