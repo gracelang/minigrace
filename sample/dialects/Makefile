@@ -1,5 +1,5 @@
 DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
-SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample minitestExample
+SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
@@ -27,8 +27,6 @@ $(GDM)%.gso $(GDM)%.gct: ../../minigrace
 
 %.gso %.gct: %.grace ../../minigrace
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dynamic-module --dir . $<
-
-minitestExample: minitestExample.grace ../../dynamic-modules/minitest.gso ../../dynamic-modules/minitest.gct
 
 %Example: %Example.grace %.gso ../../gracelib.o ../../minigrace
 	GRACE_MODULE_PATH="$(GDM):$(GM)" ../../minigrace $(VERBOSITY) --dir . $<
