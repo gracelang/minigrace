@@ -667,7 +667,7 @@ def listTest = object {
             assert (oneToFive.remove(1, 4, 5)) shouldBe (list.with(2, 3))
             assert (oneToFive) shouldBe (list.with(2, 3))
         }
-        method testListRemoveAbsentExcpetion {
+        method testListRemoveAbsentException {
             assert {oneToFive.remove(1, 7, 5)} shouldRaise (NoSuchObject)
         }
         method testListRemoveLast {
