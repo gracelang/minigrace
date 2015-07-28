@@ -5,8 +5,8 @@ var isStandardPrelude := true
 
 class SuccessfulMatch.new(result', bindings') {
     inherits true
-    def result = result'
-    def bindings = bindings'
+    method result { result' }
+    method bindings { bindings' }
     method asString {
         "SuccessfulMatch(result = {result}, bindings = {bindings})"
     }
@@ -14,26 +14,11 @@ class SuccessfulMatch.new(result', bindings') {
 
 class FailedMatch.new(result') {
     inherits false
-    def result = result'
-    def bindings = []
+    method result { result' }
+    method bindings { list.empty }
     method asString {
         "FailedMatch(result = {result})"
     }
-}
-
-type Extractable = {
-    extract
-}
-
-type MatchResult = {
-  result -> Object
-  bindings -> List<Object>
-}
-
-type Pattern = {
-  &(and : Pattern) -> Pattern
-  |(or : Pattern) -> Pattern
-  match(value : Object) -> MatchResult
 }
 
 method abstract {
@@ -291,6 +276,31 @@ class TypeSubtraction.new(t1, t2) {
         t1.methodNames.removeAll(t2.methodNames)
     }
     method asString { "({t1} - {t2})" }
+}
+
+// Now define the types.  Because some of the types are defined using &,
+// TypeIntersection must be defined first.
+
+type Extractable = {
+    extract
+}
+
+type MatchResult = Boolean & type {
+    result -> Unknown
+    bindings -> List<Unknown>
+}
+
+type Pattern = {
+    & (other:Pattern) -> Pattern
+    | (other:Pattern) -> Pattern
+    match(value:Object) -> MatchResult
+}
+
+type ExceptionKind = Pattern & type {
+    refine -> ExceptionKind
+    parent -> ExceptionKind
+    raise(message:String) -> Done
+    raise(message:String) with (argument:Object) -> Done
 }
 
 type Point = type {
