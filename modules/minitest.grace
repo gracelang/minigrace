@@ -21,11 +21,11 @@ def mtAssertion = object {
 }
 
 method assert(bb:Boolean) description(str:String) {
-    mtAssertion.assert(bb)description(str)
+    mtAssertion.assert(bb) description(str)
 }
 
 method deny(bb:Boolean) description(str:String) {
-    mtAssertion.deny(bb)description(str)
+    mtAssertion.deny(bb) description(str)
 }
 
 method assert(bb:Boolean) {
@@ -37,7 +37,7 @@ method deny(bb:Boolean) {
 }
 
 method assert(s1:Object) shouldBe (s2:Object) {
-    mtAssertion.assert(s1)shouldBe(s2)
+    mtAssertion.assert(s1) shouldBe (s2)
 }
 
 method assert(s1:Object) shouldntBe (s2:Object) {
@@ -48,20 +48,20 @@ method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
     mtAssertion.assert(n1) shouldEqual (n2) within (epsilon)
 }
 
-method assert(b:Block) shouldRaise(de:Exception) {
-    mtAssertion.assert(b)shouldRaise(de)
+method assert(b:Block) shouldRaise (desired:ExceptionKind) {
+    mtAssertion.assert(b) shouldRaise (desired)
 }
 
-method assert(b:Block) shouldntRaise(ue:Exception) {
-    mtAssertion.assert(b)shouldntRaise(ue)
+method assert(b:Block) shouldntRaise (undesired:ExceptionKind) {
+    mtAssertion.assert(b) shouldntRaise (undesired)
 }
 
-method assert(s:Object) hasType (t:Type) {
-    mtAssertion.assert(s) hasType (t)
+method assert(s:Object) hasType (desired:Type) {
+    mtAssertion.assert(s) hasType (desired)
 }
 
-method deny(s:Object) hasType (UndesiredType) {
-    mtAssertion.deny(s) hasType (UndesiredType)
+method deny(s:Object) hasType (undesired:Type) {
+    mtAssertion.deny(s) hasType (undesired)
 }
 
 method failBecause(reason) {
