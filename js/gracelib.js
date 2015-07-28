@@ -1245,15 +1245,16 @@ var type_Number = var_Number;
 var type_Boolean = var_Boolean;
 var type_Object = var_Object;
 var type_Unknown = var_Unknown;
+var type_Type = var_Type;
 var var_Block = new GraceType("Block");
 var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
 var_Block.typeMethods.push("match");
 var type_Block = var_Block;
-var var_None = new GraceType("None");
-var_None.typeMethods.push("==");
-var_None.typeMethods.push("!=");
-var type_None = var_None;
+var var_Done = new GraceType("Done");
+var_Done.typeMethods.push("==");
+var_Done.typeMethods.push("!=");
+var type_Done = var_Done;
 
 var var_HashMap = { methods: { 'new':
     function HashMap_new () { return new GraceHashMap(); } }
@@ -2988,9 +2989,11 @@ if (typeof global !== "undefined") {
     global.StackFrame = StackFrame;
     global.type_Boolean = type_Boolean;
     global.type_Block = type_Block;
+    global.type_Done = type_Done;
     global.type_Number = type_Number;
     global.type_Object = type_Object;
     global.type_String = type_String;
+    global.type_Type = type_Type;
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var___95__prelude = Grace_prelude;
@@ -3002,6 +3005,7 @@ if (typeof global !== "undefined") {
     global.var_GraceType = var_GraceType;
     global.var_Number = var_Number;
     global.var_Object = var_Object;
-    global.var_String = var_String,
+    global.var_String = var_String;
+    global.var_Type = var_String;
     global.var_Unknown = var_Unknown;
 };
