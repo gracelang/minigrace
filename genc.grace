@@ -43,6 +43,8 @@ var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
 var dialectHasChecker := false
 
+def dynamicOnlyModules = list.with("unicode", "mirrors")
+
 method out(s) {
     output.push(s)
 }
@@ -1579,6 +1581,8 @@ method compileimport(o) {
     out("  if ({modg} == NULL)")
     if (xmodule.builtInModules.contains(o.path)) then {
         out "    {modg} = {modg}_init();"
+    } elseif {dynamicOnlyModules.contains(o.path)} then {
+        out "    {modg} = dlmodule(\"{fn}\");"
     } else {
         out "    {modg} = LOAD_MODULE({fn});"
         // for later transformation by the C preproecessor

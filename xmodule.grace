@@ -179,7 +179,7 @@ method compileModule (nm) inFile (sourceFile)
             cmd := cmd ++ " --dynamic-module"
         }
         if (util.importDynamic) then {
-            cmd := cmd ++ " --import-dynamic --dynamic-module"
+            cmd := cmd ++ " --import-dynamic"
         }
     }
     cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
