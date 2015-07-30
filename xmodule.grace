@@ -27,7 +27,7 @@ method builtInModules {
     }
 }
 
-def dynamicCModules = set.with("mirrors", "curl", "math", "unicode")
+def dynamicCModules = set.with("mirrors", "curl", "unicode")
 def imports = util.requiredModules
 def emptySequence = sequence.empty
 
@@ -87,7 +87,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
                     ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
-                util.log_verbose "No source, but found {moduleFileGct} and {binaryFile}"
+                util.log_verbose "No source, but found {moduleFileGct.asDebugString} and {binaryFile.asDebugString}"
             }
         }
         if (needsDynamic.not) then {
