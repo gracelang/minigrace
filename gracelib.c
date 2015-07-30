@@ -3629,7 +3629,7 @@ start:
         ||strcmp(originalself->class->definitionModule, "unknown") == 0;
     if (originalself->class->definitionLine
             && !unknownmodule)
-        sprintf(objDesc, "in %s created at %s:%i",
+        sprintf(objDesc, " in %s created at %s:%i",
             originalself->class->name, originalself->class->definitionModule,
             originalself->class->definitionLine);
     else if (!unknownmodule)
