@@ -26,7 +26,6 @@ var declaredvars := []
 var bblock := "entry"
 var linenum := 0
 var values := []
-var outfile
 var modname := "main"
 var escmodname := "main"
 var runmode := "build"
@@ -1541,7 +1540,6 @@ method compiledialect(o) {
     }
     var fn := escapestring2(o.value)
     var modg := "module_" ++ escapeident(snm)
-    var modgs := "module_" ++ snm
     out("  if ({modg} == NULL)")
     if (imports.static.contains(o.value)) then {
         out("    {modg} = {modg}_init();")
@@ -1576,16 +1574,14 @@ method compileimport(o) {
     var nm := escapeident(o.nameString)
     var fn := escapestring2(o.path)
     var modg := "module_" ++ escapeident(snm)
-    var modgs := "module_" ++ snm
     declaredvars.push(nm)
     globals.push("Object {modg};")
     out("  if ({modg} == NULL)")
-    if (imports.static.contains(o.path).orElse {
-            xmodule.builtInModules.contains(o.path) }) then {
+    if (xmodule.builtInModules.contains(o.path)) then {
         out "    {modg} = {modg}_init();"
     } else {
-        out "    {modg} = dlmodule(\"{fn}\");"
-        // for dynamic modules
+        out "    {modg} = LOAD_MODULE({fn});"
+        // for later transformation by the C preproecessor
     }
     out("  *var_{nm} = {modg};")
     if (compilationDepth == 1) then {
@@ -1840,7 +1836,88 @@ method processImports(values') {
         }
     }
 }
-method compile(vl, of, mn, rm, bt, buildinfo) {
+
+method compileDynamicModule(fnBase, buildinfo) {
+    // compile a dynamicly-linkable version as .gso
+    log_verbose("producing dynamic module {modname}.gso")
+    var dlbit := ""
+    var exportDynamicBit := ""
+    var cmd := "ld -ldl -o /dev/null 2>/dev/null"
+    if (io.system(cmd)) then {
+        dlbit := "-ldl"
+    }
+    cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
+    if (io.system(cmd)) then {
+        exportDynamicBit := "-Wl,--export-dynamic"
+    } else {
+        cmd := "ld -o /dev/null -undefined dynamic_lookup -lc >/dev/null 2>&1"
+        if (io.system(cmd)) then {
+            exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
+        }
+    }
+    cmd := "gcc -DDYNAMIC -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" " ++
+        "-I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{fnBase}.gso\" " ++
+        "-fPIC {exportDynamicBit} \"{fnBase}.c\" "
+    if ((io.system(cmd)).not) then {
+        io.error.write("Fatal error: Failed compiling dynamic module.\n")
+        io.error.write("The failing command was\n{cmd}\n")
+        sys.exit(3)
+    }
+}
+method compileStaticModule(fnBase, buildinfo) {
+    // compile a statically-linkable version as .gcn
+    log_verbose("producing static module {modname}.gcn")
+    def cmd = "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" " ++
+        "-I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{fnBase}.gcn\" -c \"{fnBase}.c\""
+        // -c          => don't run linker
+        // -o <file>   => names the output file
+    
+    if ((io.system(cmd)).not) then {
+        io.error.write("Fatal error: C compilation of {modname} failed.\n")
+        io.error.write("The failing command was\n{cmd}\n")
+        sys.exit(3)
+    }
+}
+
+method linkExecutable(fnBase, buildinfo) {
+    log_verbose("linking.")
+    var dlbit := ""
+    var exportDynamicBit := ""
+    var cmd := "ld -ldl -o /dev/null 2>/dev/null"
+    if (io.system(cmd)) then {
+        dlbit := "-ldl"
+    }
+    cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
+    if (io.system(cmd)) then {
+        exportDynamicBit := "-Wl,--export-dynamic"
+    }
+    cmd := "gcc -g -o \"{fnBase}\" -fPIC {exportDynamicBit} \"{fnBase}.gcn\" "
+
+    if (io.exists "{util.gracelibPath}/gracelib.o") then {
+        cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
+    } elseif { io.exists "{buildinfo.objectpath}/gracelib.o" } then {
+        cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
+    } elseif { io.exists "{util.outDir}/gracelib.o" } then {
+        cmd := cmd ++ "\"{util.outDir}/gracelib.o\" "
+    } elseif { io.exists "{util.execDir}/gracelib.o" } then {
+        cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
+    } else {
+        io.error.write("Unable to link: can't find file gracelib.o\n")
+        sys.exit(3)
+    }
+
+    for (imports.linkfiles) do { fn ->
+        cmd := cmd ++ " " ++ fn
+    }
+    cmd := cmd ++ " -lm {dlbit}"
+    if ((io.system(cmd)).not) then {
+        io.error.write("Fatal Error: Failed linking executable for {modname}.\n")
+        io.error.write("The failing command was\n{cmd}\n")
+        sys.exit(3)
+    }
+}
+
+method compile(vl, outfile, mn, rm, bt, buildinfo) {
     log_verbose "generating C code..."
     var argv := sys.argv
     var cmd
@@ -1856,7 +1933,6 @@ method compile(vl, of, mn, rm, bt, buildinfo) {
             }
         }
     }
-    outfile := of
     modname := mn
     escmodname := escapeident(modname)
     runmode := rm
@@ -1963,7 +2039,7 @@ method compile(vl, of, mn, rm, bt, buildinfo) {
     out("  Object *var__prelude = alloc_var();")
     out("  *var__prelude = grace_prelude();")
     out("  Object *var_prelude = alloc_var();")
-    out("  *var_prelude = grace_prelude();")
+    out("  *var_prelude = prelude;")
     out("  gc_root(*var_MatchFailed);")
     out("  emptyclosure = createclosure(0, \"empty\");")
     out("  gc_root(emptyclosure);")
@@ -2072,72 +2148,10 @@ method compile(vl, of, mn, rm, bt, buildinfo) {
             } else {
                 ofpn
             }
-
-        cmd := "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{ofpnBase}.gcn\" -c \"{ofpn}\""
-        
-        if ((io.system(cmd)).not) then {
-            io.error.write("Fatal error: C compilation of {modname} failed.\n")
-            sys.exit(3)
-        }
-        if (util.noexec.not) then {
-            log_verbose("linking.")
-            var dlbit := ""
-            var exportDynamicBit := ""
-            cmd := "ld -ldl -o /dev/null 2>/dev/null"
-            if (io.system(cmd)) then {
-                dlbit := "-ldl"
-            }
-            cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
-            if (io.system(cmd)) then {
-                exportDynamicBit := "-Wl,--export-dynamic"
-            }
-            cmd := "gcc -g -o \"{ofpnBase}\" -fPIC {exportDynamicBit} \"{ofpnBase}.gcn\" "
-
-            if (io.exists "{util.gracelibPath}/gracelib.o") then {
-                cmd := cmd ++ "\"{util.gracelibPath}/gracelib.o\" "
-            } elseif { io.exists "{buildinfo.objectpath}/gracelib.o" } then {
-                cmd := cmd ++ "\"{buildinfo.objectpath}/gracelib.o\" "
-            } elseif { io.exists "{util.outDir}/gracelib.o" } then {
-                cmd := cmd ++ "\"{util.outDir}/gracelib.o\" "
-            } elseif { io.exists "{util.execDir}/gracelib.o" } then {
-                cmd := cmd ++ "\"{util.execDir}/gracelib.o\" "
-            } else {
-                io.error.write("Unable to link: can't find file gracelib.o\n")
-                sys.exit(3)
-            }
-
-            for (imports.linkfiles) do { fn ->
-                cmd := cmd ++ " " ++ fn
-            }
-            cmd := cmd ++ " -lm {dlbit}"
-            if ((io.system(cmd)).not) then {
-                io.error.write("Failed linking.\n")
-                sys.exit(3)
-            }
-        }
-        if (util.dynamicModule) then {
-            log_verbose("producing dynamic module {modname}.gso.")
-            var dlbit := ""
-            var exportDynamicBit := ""
-            cmd := "ld -ldl -o /dev/null 2>/dev/null"
-            if (io.system(cmd)) then {
-                dlbit := "-ldl"
-            }
-            cmd := "ld -o /dev/null --export-dynamic -lc >/dev/null 2>&1"
-            if (io.system(cmd)) then {
-                exportDynamicBit := "-Wl,--export-dynamic"
-            } else {
-                cmd := "ld -o /dev/null -undefined dynamic_lookup -lc >/dev/null 2>&1"
-                if (io.system(cmd)) then {
-                    exportDynamicBit := "-Wl,-undefined -Wl,dynamic_lookup"
-                }
-            }
-            cmd := "gcc -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" -I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -shared -o \"{ofpnBase}.gso\" -fPIC {exportDynamicBit} "
-                ++ "\"{ofpnBase}.c\" "
-            if ((io.system(cmd)).not) then {
-                io.error.write("Failed producing dynamic module.\n")
-                sys.exit(3)
-            }
+        compileStaticModule(ofpnBase, buildinfo)
+        compileDynamicModule(ofpnBase, buildinfo)
+        if (util.noexec.not) then { 
+            linkExecutable(ofpnBase, buildinfo)
         }
         log_verbose("done.")
         if (buildtype == "run") then {

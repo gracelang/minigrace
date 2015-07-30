@@ -13,7 +13,10 @@ method builtInModules {
     if (util.target == "c") then {
         list.with("sys",
                 "io",
-                "imports")
+                "imports",
+                "StandardPrelude",
+                "standardGrace",
+                "collectionsPrelude")
     } else {
         list.with("imports",
                 "io",

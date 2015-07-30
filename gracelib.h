@@ -19,6 +19,12 @@ typedef struct Method {
     const char *definitionModule;
     int definitionLine;
 } Method;
+
+#ifdef DYNAMIC
+    #define LOAD_MODULE(name) dlmodule(#name) 
+#else
+    #define LOAD_MODULE(name) module_ ## name ## _init();
+#endif
 #define MFLAG_REALSELFONLY 2
 #define MFLAG_REALSELFALSO 4
 #define MFLAG_DEF 8
