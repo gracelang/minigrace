@@ -3006,6 +3006,6 @@ if (typeof global !== "undefined") {
     global.var_Number = var_Number;
     global.var_Object = var_Object;
     global.var_String = var_String;
-    global.var_Type = var_String;
+    global.var_Type = var_Type;
     global.var_Unknown = var_Unknown;
 };
