@@ -1,10 +1,7 @@
 To use a dialect with the C backend, it must be compiled as a 
 dynamic module.  This is so that it can be linked into the compiler at
-compile time.  
-
-To build a dynamic module, use:
-
-  ../../minigrace --verbose --dynamic-module <name>.grace
+compile time.  As of August 2015, both dynamic and static modules are
+generated at every compile.
 
 A makefile is provided to build all of the example dialects. Dynamic
 modules are not currently supported under Cygwin.

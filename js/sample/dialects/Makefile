@@ -6,7 +6,7 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
 VERBOSITY = --verbose
 MG := ../../../minigrace
-UPPATH := ../../../dynamic-modules/:../../../modules/:../../:../../../:
+UPPATH := ../../../modules/:../../:../../../:
 # ../../ to get the js files for running, and ../../../ for the .gso for compiling
 
 DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit
@@ -25,7 +25,7 @@ requireTypes.js: requireTypes.grace dialect.gso dialect.js
 whileLiteral.js: whileLiteral.grace dialect.gso dialect.js
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ whileLiteral.grace
 
-dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../dynamic-modules/%.gso)
+dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../modules/%.gso)
 
 %Example.js: %Example.grace %.js %.gso
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
@@ -33,8 +33,8 @@ dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../dynamic-modules/%.gso)
 $(addsuffix .js,$(DIALECTS)): %.js: %.grace
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
-%.gso %.gct: %.grace
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --dynamic-module --dir . $<
+%.gso %.gct %.gcn: %.grace
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --dir . $<
 
 clean:
 	rm -fR *.gct *.gso *.c *.gcn $(DIALECTS) *.gso.dSYM *.js $(SAMPLES) $(DIALECTS_JS)
@@ -42,5 +42,5 @@ clean:
 run.js: $(SAMPLES:%=%.js)
 	for f in $(SAMPLES:%=%.js) ; do GRACE_MODULE_PATH=$(UPPATH) ../../tests/grace-node $$f ; done
 
-$(DIALECT_DEPENDENCIES:%=../../../dynamic-modules/%.gso): ../../../dynamic-modules/%.gso:
-	$(MAKE) -C ../../.. dynamic-modules/$*.gso
+$(DIALECT_DEPENDENCIES:%=../../../modules/%.gso): ../../../modules/%.gso:
+	$(MAKE) -C ../../.. modules/$*.gso

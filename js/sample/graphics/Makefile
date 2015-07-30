@@ -8,11 +8,11 @@ dialects: $(DIALECTS:%=%.js)
 
 samples:  $(SAMPLES:%=%.js)
 
-%.js: %.grace
-	../../minigrace --target js --dir . $(VERBOSITY) -o $@ $<
+%.gct %.js: %.grace
+	../../minigrace --target js --dir . $(VERBOSITY) $<
 
-%.gso: %.grace
-	../../minigrace --dynamic-module --dir . $(VERBOSITY) -o $@ $<
+%.gso %.gcn: %.grace
+	../../minigrace --dir . $(VERBOSITY) $<
 
 logoExample: logo.gso logo.js
 
