@@ -64,6 +64,10 @@ method deny(s:Object) hasType (undesired:Type) {
     mtAssertion.deny(s) hasType (undesired)
 }
 
+method assertType(T:Type) describes (value) {
+    mtAssertion.assertType(T) describes (value)
+}
+
 method failBecause(reason) {
     mtAssertion.assert(false) description(reason)
 }

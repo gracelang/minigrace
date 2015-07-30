@@ -110,17 +110,21 @@ class assertion.trait {
         } catch { raisedException:undesiredException ->
             failBecause "code raised exception {raisedException.exception}"
         } catch { raisedException ->
-            countOneAssertion
-            assert (true) // it's ok to raise some other exception
+            countOneAssertion   // it's ok to raise some other exception
         }
     }
-    method assert(value) hasType (DesiredType) {
+    method assert(value) hasType (Desired:Type) {
         match (value)
-            case { _:DesiredType -> countOneAssertion }
+            case { _:Desired -> countOneAssertion }
             case { _ -> 
-                def m = methodsIn(DesiredType) missingFrom (value)
-                failBecause "{value} does not have type {DesiredType}; it's missing methods {m}." }
+                def m = methodsIn(Desired) missingFrom (value)
+                failBecause "{value} does not have type {Desired}; it's missing methods {m}." }
     }
+    method assertType(T:Type) describes (value) {
+        def missingFromT = protocolOf(value) notCoveredBy(T)
+        assert (missingFromT.isEmpty) description (missingFromT)
+    }
+
     method methodsIn(DesiredType) missingFrom (value) -> String is confidential {
         def vMethods = mirror.reflect(value).methodNames
         def tMethods = DesiredType.methodNames
@@ -134,10 +138,23 @@ class assertion.trait {
             s
         }
     }
-    method deny(value) hasType (UndesiredType) {
+    method protocolOf(value) notCoveredBy (Q:Type) -> String is confidential {
+        var s := ""
+        def vMethods = set.withAll(mirror.reflect(value).methodNames)
+        def qMethods = set.withAll(Q.methodNames)
+        def missing = (vMethods -- qMethods).filter{m -> 
+            (! m.endsWith "()object") && (m != "outer")}.asSet
+        if (missing.isEmpty.not) then {
+            s := "{Q.asDebugString} is missing "
+            missing.do { each -> s := s ++ each } 
+                separatedBy { s := s ++ ", " }
+        }
+        return s
+    }
+    method deny(value) hasType (Undesired:Type) {
         match (value)
-            case { _:UndesiredType -> 
-                failBecause "{value} has type {UndesiredType}" 
+            case { _:Undesired ->
+                failBecause "{value} has type {Undesired}"
             }
             case { _ -> 
                 countOneAssertion 
