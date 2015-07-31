@@ -53,11 +53,12 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     }
     def gmp = sys.environ.at "GRACE_MODULE_PATH"
     def pn = filePath.fromString(pathname).setExtension "grace"
-    def moduleFileGrace = util.file(pn) on(util.sourceDir) 
+    def moduleFileGrace = util.file(pn) on(util.sourceDir)
                                 orPath (gmp) otherwise { l ->
         noSource := true
         pn
     }
+    util.log_verbose "pn = {pn}, moduleFileGrace = {moduleFileGrace}"
     var moduleFileGct := moduleFileGrace.copy.setExtension ".gct"
     if (util.sourceDir != util.outDir) then {
         moduleFileGct.setDirectory(util.outDir)
