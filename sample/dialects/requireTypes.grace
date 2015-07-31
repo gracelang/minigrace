@@ -4,6 +4,10 @@ inherits prelude.methods
 def CheckerFailure = Exception.refine "CheckerFailure"
 def staticVisitor = object {
     inherits ast.baseVisitor
+    method asString {
+        "the requireTypes visitor"
+    }
+
     method visitDefDec(v) is public {
         if (v.decType.value=="Unknown") then {
             CheckerFailure.raiseWith("no type given to declaration"
