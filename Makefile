@@ -40,7 +40,7 @@ VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js js/minitest.js $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
-all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) $(GRACE_MODULES:.grace=.gcn) sample-dialects $(GRACE_DIALECTS)
+all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) sample-dialects $(GRACE_DIALECTS)
 
 # These are necessary for l1 until the $(KG) compiler learns about dependencies
 # The dependencises for l2 and . allow parallel compilation of the mg sub-modules
@@ -51,7 +51,7 @@ include Makefile.mgDependencies
 
 ace-code: js/ace/ace.js
 
-alltests: test test.js
+alltests: test test.js module-test-js
 
 blackWeb:
 	$(MAKE) WEB_SERVER=black@cs.pdx.edu expWeb
@@ -185,7 +185,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
+	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks -XnoTypeChecks -XnoTypeChecks --dir js $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -204,7 +204,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 $(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace js/dom.gct
-	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -214,13 +214,13 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+	./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
 
 js/%.gct js/%.js: %.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --target js --dir js $<
+	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
 js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES)
 	ln -f minigrace js/minigrace
@@ -287,7 +287,7 @@ $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace l1/mini
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 $(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace l1/minigrace
-	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
 Makefile.conf: configure stubs modules
 	./configure
@@ -299,7 +299,7 @@ $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
@@ -435,7 +435,7 @@ test.js.compile: minigrace
 	@echo "compiling tests to JavaScript"
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/'\
     | while read -r fileName num; \
-    do echo "$$num \c"; ../../minigrace --target js $${fileName}; \
+    do echo "$$num \c"; ../../minigrace --target js -XnoTypeChecks $${fileName}; \
     done && echo "tests compiled."
 
 test.js: minigrace-js-env sample/dialects/requireTypes.gso modules/minitest.gso modules/util.gso modules/ast.gso modules/gUnit.gso modules/math.gso modules/gUnit.gso
