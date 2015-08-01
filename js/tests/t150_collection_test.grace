@@ -238,20 +238,24 @@ def rangeTest = object {
             assert(rangeDown.asSequence) hasType (Sequence)
         }
         method testRangeDownAt {
+            def naN = "foo".asNumber
             assert(rangeDown.at(1)) shouldBe 10
             assert(rangeDown.at(2)) shouldBe 9
             assert(rangeDown.at(3)) shouldBe 8
             assert(rangeDown.at(4)) shouldBe 7
             assert{rangeDown.at(5)} shouldRaise (BoundsError)
             assert{rangeDown.at(0)} shouldRaise (BoundsError)
+            assert{rangeDown.at(naN)} shouldRaise (BoundsError)
         }
         method testRangeUpAt {
+            def naN = "foo".asNumber
             assert(rangeUp.at(1)) shouldBe 3
             assert(rangeUp.at(2)) shouldBe 4
             assert(rangeUp.at(3)) shouldBe 5
             assert(rangeUp.at(4)) shouldBe 6
             assert{rangeUp.at(5)} shouldRaise (BoundsError)
             assert{rangeUp.at(0)} shouldRaise (BoundsError)
+            assert{rangeUp.at(naN)} shouldRaise (BoundsError)
         }
         method testRangeUpAsDictionary {
             assert(rangeUp.asDictionary) shouldBe
@@ -347,12 +351,14 @@ def sequenceTest = object {
         }
 
         method testSequenceAt {
+            def naN = "fff".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive[1]) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
+            assert {evens.at(naN)} shouldRaise (BoundsError)
         }
 
         method testSequenceOrdinals {
@@ -623,12 +629,14 @@ def listTest = object {
         }
 
         method testListAt {
+            def naN = "foo".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive[1]) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
+            assert {evens.at(naN)} shouldRaise (BoundsError)
         }
 
         method testListOrdinals {
@@ -641,6 +649,7 @@ def listTest = object {
         }
 
         method testListAtPut {
+            def naN = "foo".asNumber
             oneToFive.at(1) put (11)
             assert (oneToFive.at(1)) shouldBe (11)
             oneToFive.at(2) put (12)
@@ -648,6 +657,7 @@ def listTest = object {
             assert (oneToFive.at(3)) shouldBe (3)
             assert {evens.at 6 put 10} shouldRaise (BoundsError)
             assert {evens.at 0 put 0} shouldRaise (BoundsError)
+            assert {evens.at(naN) put 0} shouldRaise (BoundsError)
         }
 
         method testListAtPutExtend {

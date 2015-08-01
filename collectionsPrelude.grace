@@ -481,7 +481,9 @@ factory method sequence<T> {
             def inner = pArray
 
             method boundsCheck(n) is confidential {
-                if ((n < 1) || (n > size)) then {
+                if (!(n >= 1) || !(n <= size)) then {
+                    // the condition is written this way because NaN always
+                    // compares false
                     BoundsError.raise "index {n} out of bounds 1..{size}"
                 }
             }
@@ -602,12 +604,12 @@ factory method list<T> {
 
                 method boundsCheck(n) is confidential {
                     native "js" code ‹var ix = var_n._value;
-                            if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                            if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                                 var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                                 callmethod(BoundsError,"raise", [1], new GraceString(msg));
                             }›
-                    if ((n < 1) || (n > size)) then {
+                    if (!(n >= 1) || ! (n <= size)) then {
                         BoundsError.raise "index {n} out of bounds 1..{size}"
                     }
                 }
@@ -620,7 +622,7 @@ factory method list<T> {
 
                 method at(n) {
                     native "js" code ‹var ix = var_n._value;
-                            if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                            if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                                 var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                                 callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -630,7 +632,7 @@ factory method list<T> {
 
                 method [](n) {
                     native "js" code ‹var ix = var_n._value;
-                            if ((ix < 1) || (ix > this.data.jsArray.length)) {
+                            if ( !(ix >= 1) || !(ix <= this.data.jsArray.length)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                                 var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                                 callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -641,7 +643,7 @@ factory method list<T> {
                 method at(n)put(x) {
                     mods := mods + 1
                     native "js" code ‹var  ix = var_n._value;
-                            if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
+                            if (!(ix >= 1) || !(ix <= this.data.jsArray.length + 1)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                                 var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                                 callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -653,7 +655,7 @@ factory method list<T> {
                 method []:=(n, x) {
                     mods := mods + 1
                     native "js" code ‹var ix = var_n._value;
-                            if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
+                            if (!(ix >= 1) || !(ix <= this.data.jsArray.length + 1)) {
                                 var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
                                 var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                                 callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -893,7 +895,7 @@ factory method list<T> {
                 size := size + 1
             }
             method boundsCheck(n) is confidential {
-                if ((n < 1) || (n > size)) then {
+                if ( !(n >= 1) || !(n <= size)) then {
                     BoundsError.raise "index {n} out of bounds 1..{size}"
                 }
             }
@@ -1760,10 +1762,10 @@ factory method range {
                 }
             }
             method at(ix:Number) {
-                if (ix > self.size) then {
+                if (!(ix <= self.size)) then {
                     BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
                 }
-                if (ix < 1) then {
+                if (!(ix >= 1)) then {
                     BoundsError.raise "requested range.at({ix}), but lower bound is 1"
                 }
                 return start + (ix - 1)
@@ -1875,10 +1877,10 @@ factory method range {
                 }
             }
             method at(ix:Number) {
-                if (ix > self.size) then {
+                if (!(ix <= self.size)) then {
                     BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
                 }
-                if (ix < 1) then {
+                if (!(ix >= 1)) then {
                     BoundsError.raise "requested range.at({ix}) but lower bound is 1"
                 }
                 return start - (ix - 1)
