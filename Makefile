@@ -442,7 +442,10 @@ test.js.compile: minigrace
     do echo "$$num \c"; ../../minigrace --target js -XnoTypeChecks $${fileName}; \
     done && echo "tests compiled."
 
-test.js: minigrace-js-env sample/dialects/requireTypes.gso modules/minitest.gso modules/util.gso modules/ast.gso modules/gUnit.gso modules/math.gso modules/gUnit.gso
+TEST_SAMPLES = requireTypes
+TEST_MODULES = minitest util ast gUnit math
+
+test.js: minigrace-js-env $(TEST_SAMPLES:%=js/sample/dialects/%.gso) $(TEST_SAMPLES:%=js/%.js) $(TEST_MODULES:%=modules/%.gso) $(TEST_MODULES:%=js/%.js)
 	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
