@@ -2,16 +2,32 @@ import "io" as io
 
 factory method null {
     // creates a unixFilePath with empty components
-    var dir := ""
+
+    var dir is readable := ""
+    // the directory part; "" if in current directory
+
     var base is public := ""
+    // the base part of the file name (without an extension)
+
     var extension is public := ""
+    // the extension (like `.grace`) , including the `.`
+
     method asString { dir ++ base ++ extension }
+    // the whole file name as a string
+
     method shortName { base ++ extension }
+    // the file name without the directory part
+
     method asDebugString { "unixFilePath[{dir}|{base}|{extension}]" }
+    // for debugging; shows the division into parts
+
     method directory {
+    // the directory part; "./" if in current directory
         if (dir == "") then { "./" } else { dir }
     }
+    
     method directory:=(d) {
+    // set the directory part
         var newDir := d
         if (newDir == "") then {
             dir := ""
@@ -24,14 +40,17 @@ factory method null {
         dir := newDir
     }
     method setDirectory(d) {
+    // set the directory part; answers self for chaining
         directory := d
         self
     }
     method setBase(b) {
+    // set the base part; answers self for chaining
         base := b
         self
     }
     method setExtension(e) {
+    // set the extension; answers self for chaining
         if (e.first == ".") then {
             extension := e
         } else {
@@ -40,13 +59,16 @@ factory method null {
         self
     }
     method exists -> Boolean {
+    // true if his file exists
         io.exists(self.asString)
     }
-    method newer(pn) -> Boolean {
-        io.newer(self.asString, pn.asString)
+    method newer(other) -> Boolean {
+    // true if this file is newer than other
+        io.newer(self.asString, other.asString)
     }
 
     method copy {
+    // a copy of this filePath
         def p = null
         p.directory := directory
         p.base := base
@@ -103,8 +125,8 @@ method fromString(s) {
 }
 
 method split(pathString) -> List<String> {
-    // splits pathString, assumed to be a Unix PATH, into a List of 
-    // items on colons.  Ensures that each item ends with /  
+    // splits pathString, assumed to be a Unix PATH containing items separated
+    // by colons, into a List of items.  Ensures that each item ends with /
     def locations = list.empty
     var ix := 1
     var ox := 1
@@ -120,4 +142,25 @@ method split(pathString) -> List<String> {
         ox := ix
     }
     return locations
+}
+
+method file(name) onPath(pathString) otherwise(action) {
+    def locations = split(pathString)
+    locations.addFirst "./"
+    def candidate = name.copy
+    def originalDir = name.dir
+    if (originalDir.first == "/") then {
+        if (candidate.exists) then {
+            return candidate
+        } else {
+            return action.apply ""
+        }
+    }
+    locations.do { each ->
+        candidate.setDirectory(each ++ originalDir)
+        if ( candidate.exists ) then {
+            return candidate
+        }
+    }
+    action.apply(locations)
 }
