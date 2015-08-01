@@ -431,7 +431,7 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
     if (origin != "./") then { locations.addFirst "./" }
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
-    def originalDir = name.directory
+    def originalDir = name.dir
     if (originalDir.first == "/") then {
         if (candidate.exists) then { 
             return candidate 
