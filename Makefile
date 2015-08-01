@@ -130,7 +130,7 @@ echo:
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo C_MODULES_BIN = $(C_MODULES_BIN)
 	@echo GRACE_DIALECTS_GSO = $(GRACE_DIALECTS_GSO)
-	@echo SAMPLE_DIALECT:%.grace=js/%.js = $(SAMPLE_DIALECTS:%.grace=js/%.js)
+	@echo SAMPLE_DIALECTS:%.grace=js/%.js = $(SAMPLE_DIALECTS:%.grace=js/%.js)
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 
 expWeb: expWebDeploy
@@ -357,6 +357,9 @@ rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
 
 rtobjectdraw.gcn modules/rtobjectdraw.gso modules/rtobjectdraw.gcn:
 	@echo "Can't build $@; no C version of dom module"
+
+$(SAMPLE_DIALECTS:sample/dialects/%.grace=js/%.js): js/%.js: js/sample/dialects/%.js
+	cd js && ln -sf sample/dialects/$*.js .
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
 	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
