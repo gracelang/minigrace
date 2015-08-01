@@ -1,5 +1,7 @@
 include Makefile.conf
 
+.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary)
+
 .PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
 ARCH := $(shell uname -s)-$(shell uname -m)
@@ -109,7 +111,7 @@ modules/curl.gso: curl.c gracelib.h
 modules/%Types.gct modules/%Types.gso modules/%Types.gcn: sample/dialects/requireTypes.grace
 	./minigrace $(VERBOSITY) --make --noexec --dir modules $<
 
-dialects: js js/sample/dialects/requireTypes.js modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
+dialects: gracelib.o js js/sample/dialects/requireTypes.js modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -286,14 +288,16 @@ $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-$(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: modules/%.grace l1/minigrace
+$(LIBRARY_MODULES:%.grace=js/%.binary): js/%.binary: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
+
+$(LIBRARY_MODULES:%.grace=js/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js): $(LIBRARY_MODULES:%.grace=js/%.binary)
 
 Makefile.conf: configure stubs modules
 	./configure
 
 $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1 &&  GRACE_MODULE_PATH=../modules/:../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
+	cd l1 &&  GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
