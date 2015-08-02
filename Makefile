@@ -1,8 +1,11 @@
 include Makefile.conf
 
-.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary)
+.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary) $(MGSOURCEFILES:%.grace=%.binary)
 
 .PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
+
+.SUFFIXES:
+MAKEFLAGS += -r --debug=b
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
@@ -21,7 +24,7 @@ CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
-DIALECT_DEPENDENCIES = minigrace modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
+DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace
 NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace
@@ -83,7 +86,7 @@ clean:
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
 	rm -f *.gcn *.gct
 	rm -f $(STUB_GCTS)
-	rm -rf *.gso *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM
+	rm -rf *.gso *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM *.binary
 	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
@@ -108,7 +111,7 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-modules/%Types.gct modules/%Types.gso modules/%Types.gcn: sample/dialects/requireTypes.grace
+modules/%Types.gct modules/%Types.gso modules/%Types.gcn: sample/dialects/requireTypes.grace ./minigrace
 	./minigrace $(VERBOSITY) --make --noexec --dir modules $<
 
 dialects: gracelib.o js js/sample/dialects/requireTypes.js modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
@@ -209,11 +212,11 @@ $(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace js/dom.gct minigrace
 	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
-	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
+#	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
 
 js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace minigrace
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
-	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
+#	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
@@ -224,7 +227,7 @@ js/timer.gct: stubs/timer.gct
 js/%.gct js/%.js: %.grace ./minigrace
 	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
-js: minigrace js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES)
+js: js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
 
 just-minigrace:
@@ -235,7 +238,7 @@ $(KG)/minigrace:
 
 known-good/%:
 	@echo "making $@"
-	cd known-good && $(MAKE) $*
+#	cd known-good && $(MAKE) $*
 	rm -f known-good/*out
 
 l1/%.grace: %.grace
@@ -307,11 +310,17 @@ Makefile.conf: configure stubs modules
 $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 	cd l1 &&  GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
 
-$(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
+$(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn) $(MGSOURCEFILES:%.grace=%.gso): $(MGSOURCEFILES:%.grace=%.binary)
+
+$(MGSOURCEFILES:%.grace=%.binary): %.binary: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
+	touch $@
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
+
+$(MGSOURCEFILES:%.grace=modules/%.gso): modules/%.gso: %.gso
+	cd modules && ln -sf ../$< .
 
 # Giant hack! Not suitable for use.
 minigrace-dynamic: l1/minigrace $(SOURCEFILES)
@@ -370,16 +379,16 @@ $(SAMPLE_DIALECTS:sample/dialects/%.grace=js/%.js): js/%.js: js/sample/dialects/
 	cd js && ln -sf sample/dialects/$*.js .
 
 sample-dialects: $(DIALECT_DEPENDENCIES)
-	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
+#	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
 
 sample/dialects/%.gso: $(DIALECT_DEPENDENCIES) sample/dialects/%.grace
-	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/requireTypes.gct sample/dialects/requireTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/requireTypes.grace
-	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/staticTypes.grace
-	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 samples: sample-dialects js/sample-dialects 
 # omitted for the time-being: js/sample-graphics
@@ -477,9 +486,6 @@ uninstall:
 
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
-
-%.gct %.gcn %.gso: %.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --noexec $<
 
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
