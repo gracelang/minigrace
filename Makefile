@@ -4,10 +4,12 @@ MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
+ALL_LIBRARY_MODULES = $(LIBRARY_MODULES) $(OBJECTDRAW:%.grace=modules/%.grace)
 C_MODULES_GSO := $(UNICODE_MODULE:%.gso=modules/%.gso) $(OTHER_MODULES:%.gso=modules/%.gso)
 C_MODULES_GCN := $(OTHER_MODULES:%.gso=%.gcn)
 INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
 JS_STUBS := dom.grace timer.grace
+DIALECTS_NEED = modules/dialect util ast mgcollections modules/gUnit modules/math
 DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
@@ -21,37 +23,36 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
-SAMPLE_DIALECTS = sample/dialects/requireTypes.grace sample/dialects/staticTypes.grace sample/dialects/dialect.grace
-NON_SAMPLE_DIALECTS = rtobjectdraw.grace objectdraw.grace animation.grace ast.grace util.grace
-GRACE_DIALECTS = $(SAMPLE_DIALECTS) $(NON_SAMPLE_DIALECTS)
-GRACE_DIALECTS_GSO = $(patsubst %.grace, %.gso, $(filter-out $(OBJECTDRAW_BITS), $(NON_SAMPLE_DIALECTS)))
+# GRACE_MODULES are the parts of the compiler that should go into the modules
+# directory on an install (in addition to ALL_LIBRARY_MODULES)
 GRACE_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace mgcollections.grace
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
-OBJECTDRAW_BITS = objectdraw.grace rtobjectdraw.grace animation.grace
+OBJECTDRAW = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace xmodule.grace identifierresolution.grace genjson.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
+TYPE_DIALECTS = dialect staticTypes requireTypes
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
-WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/sample js/debugger.html  js/*.png js/unicodedata.js js/objectdraw.js js/animation.js js/importStandardPrelude.js js/sample/dialects/requireTypes.js js/sample/dialects/staticTypes.js js/sample/dialects/dialect.js js/rtobjectdraw.js js/minitest.js $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
-all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) sample-dialects $(GRACE_DIALECTS)
+all: minigrace-environment $(C_MODULES_BIN) $(WEBFILES)
 
-# These are necessary for l1 until the $(KG) compiler learns about dependencies
-# The dependencises for l2 and . allow parallel compilation of the mg sub-modules
-
-#.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary) $(MGSOURCEFILES:%.grace=%.binary)
-.INTERMEDIATE: js/createJsGraphicsWrapper.binary js/gUnit.binary js/graphix.binary js/math.binary js/minitest.binary js/unixFilePath.binary modules/createJsGraphicsWrapper.binary modules/gUnit.binary modules/graphix.binary modules/math.binary modules/minitest.binary modules/unixFilePath.binary ast.binary buildinfo.binary compiler.binary errormessages.binary genc.binary genjs.binary genjson.binary identifierresolution.binary lexer.binary mgcollections.binary parser.binary util.binary xmodule.binary
+#.INTERMEDIATE: $(ALL_LIBRARY_MODULES:%.grace=js/%.binary) $(ALL_LIBRARY_MODULES:%.grace=modules/%.binary) $(MGSOURCEFILES:%.grace=%.binary)
+.INTERMEDIATE: js/createJsGraphicsWrapper.binary js/gUnit.binary js/graphix.binary js/math.binary js/minitest.binary js/unixFilePath.binary js/dialect.binary js/requireTypes.binary js/staticTypes.binary modules/dialect.binary modules/createJsGraphicsWrapper.binary modules/gUnit.binary modules/graphix.binary modules/math.binary modules/minitest.binary modules/unixFilePath.binary ast.binary buildinfo.binary compiler.binary errormessages.binary genc.binary genjs.binary genjson.binary identifierresolution.binary lexer.binary mgcollections.binary parser.binary util.binary xmodule.binary
 
 .PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
+# clear out the default rules: produces far less --debug output
 .SUFFIXES:
 
+# These dependencies are necessary for l1 until the $(KG) compiler learns about dependencies
+# The dependencises for l2 and . should allow parallel compilation of the mg sub-modules
 include Makefile.mgDependencies
 
 # The rules that follow are in alphabetical order.  Keep them that way!
@@ -92,7 +93,7 @@ clean:
 	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
 	rm -f $(SOURCEFILES:.grace=)
-	rm -f $(OBJECTDRAW_BITS:%.grace=%.*)
+	rm -f $(OBJECTDRAW:%.grace=%.*)
 	( cd known-good && $(MAKE) clean )
 	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
@@ -113,10 +114,7 @@ collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 modules/curl.gso: curl.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
 
-modules/%Types.gct modules/%Types.gso modules/%Types.gcn: sample/dialects/requireTypes.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --noexec --dir modules $<
-
-dialects: gracelib.o js js/sample/dialects/requireTypes.js modules/mgcollections.gso js/sample/dialects/requireTypes.gso js/sample/dialects/staticTypes.js js/sample/dialects/staticTypes.gct js/sample/dialects/staticTypes.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
+dialects: gracelib.o js modules/mgcollections.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -125,7 +123,6 @@ echo:
 	@echo WEBFILES = $(WEBFILES) "\n"
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
-	@echo GRACE_MODULES = $(GRACE_MODULES)
 	@echo LIBRARY_MODULES = $(LIBRARY_MODULES)
 	@echo DYNAMIC_STUBS = $(DYNAMIC_STUBS)
 	@echo STATIC_STUBS = $(STATIC_STUBS)
@@ -140,7 +137,7 @@ echo:
 
 expWeb: expWebDeploy
 
-expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(SAMPLE_DIALECTS:%.grace=js/%.js) $(OBJECTDRAW_BITS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js)
+expWebBuild: js grace-web-editor/scripts/setup.js $(filter-out js/tabs.js,$(filter %.js,$(WEBFILES))) $(LIBRARY_MODULES:%.grace=js/%.js) $(OBJECTDRAW:%.grace=js/%.js)
 	[ -d grace-web-editor/js ] || mkdir -m 755 grace-web-editor/js
 	ln -f $(filter-out js/samples.js js/tabs.js,$(filter %.js,$(WEBFILES))) grace-web-editor/js
 	ln -f $(SAMPLE_DIALECTS:%.grace=js/%.js) $(GRAPHIX:%.grace=js/%.js) grace-web-editor/js
@@ -175,7 +172,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 modules/gUnit.gso: modules/mirrors.gso modules/mirrors.gct modules/math.gct
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_DIALECTS_GSO) $(GRACE_DIALECTS:%.grace=js/%.js) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct)$(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
@@ -210,7 +207,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace js/dom.gct minigrace
+$(OBJECTDRAW:%.grace=js/%.js): js/%.js: %.grace js/dom.gct minigrace
 	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
@@ -346,15 +343,18 @@ modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gct modul
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/mirrors.gct modules/math.gct
 
-$(OBJECTDRAW_BITS:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
+$(OBJECTDRAW:%.grace=modules/%.grace): modules/%.grace: $(OBJECTDRAW:%.grace=objectdraw/%.grace)
+	cd modules && ln -sf ../$< .
 
-$(filter-out rtobjectdraw.grace, $(OBJECTDRAW_BITS)): %.grace: objectdraw/%.grace
+$(OBJECTDRAW:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
+
+$(filter-out rtobjectdraw.grace, $(OBJECTDRAW)): %.grace: objectdraw/%.grace
 	ln -f $< .
 
 objectdraw.gcn modules/objectdraw.gso modules/objectdraw.gcn:
 	@echo "Can't build $@; no C version of dom module"
 
-oldWeb: $(WEBFILES)
+oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z --delete sample $(WEB_SERVER):$(WEB_DIRECTORY)
 
@@ -364,33 +364,30 @@ pull-web-editor:
     else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
-	if [ -e objectdraw ] ; \
-    then cd objectdraw; git pull ; \
+	@if [ -e objectdraw ] ; \
+    then printf "objectdraw: " ; cd objectdraw; git pull ; \
     else git clone https://github.com/gracelang/objectdraw/ ; fi
 
 rtobjectdraw.grace: objectdraw.grace pull-objectdraw tools/make-rt-version
-	if [ \(objectdraw.grace -nt rtobjectdraw.grace\) -o \( ! -e rtobjectdraw.grace \) ] ; \
-    then echo "creating rtobjectdraw.grace" ; \
-    ./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace ; \
-    fi
+	@if [ \(objectdraw.grace -nt rtobjectdraw.grace\) -o \( ! -e rtobjectdraw.grace \) ] ; \
+	then echo "creating rtobjectdraw.grace" ; \
+	./tools/make-rt-version objectdraw.grace > rtobjectdraw.grace ; \
+	fi
 
 rtobjectdraw.gcn modules/rtobjectdraw.gso modules/rtobjectdraw.gcn:
 	@echo "Can't build $@; no C version of dom module"
 
-$(SAMPLE_DIALECTS:sample/dialects/%.grace=js/%.js): js/%.js: js/sample/dialects/%.js
-	cd js && ln -sf sample/dialects/$*.js .
-
 sample-dialects: $(DIALECT_DEPENDENCIES)
-#	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
+	$(MAKE) -C sample/dialects VERBOSITY=$(VERBOSITY)
 
 sample/dialects/%.gso: $(DIALECT_DEPENDENCIES) sample/dialects/%.grace
-#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/requireTypes.gct sample/dialects/requireTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/requireTypes.grace
-#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/staticTypes.grace
-#	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
+	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
 samples: sample-dialects js/sample-dialects 
 # omitted for the time-being: js/sample-graphics
@@ -464,10 +461,19 @@ test.js.compile: minigrace
     do echo "$$num \c"; ../../minigrace --target js -XnoTypeChecks $${fileName}; \
     done && echo "tests compiled."
 
-TEST_SAMPLES = requireTypes
-TEST_MODULES = minitest util ast gUnit math
+$(TYPE_DIALECTS:%=%.binary): $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct) $(DIALECTS_NEED:%=%.gso) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
-test.js: minigrace-js-env $(TEST_SAMPLES:%=js/sample/dialects/%.gso) $(TEST_SAMPLES:%=js/%.js) $(TEST_MODULES:%=modules/%.gso) $(TEST_MODULES:%=js/%.js)
+$(TYPE_DIALECTS:%=js/%.binary): $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct) $(DIALECTS_NEED:%=%.gso) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
+
+$(TYPE_DIALECTS:%=%.gct): %.gct: %.binary
+
+$(TYPE_DIALECTS:%=%.gcn): %.gcn: %.binary
+
+$(TYPE_DIALECTS:%=%.gso): %.gso: %.binary
+
+$(TYPE_DIALECTS:%=js/%.js): js/%.js: %.binary
+
+test.js: minigrace-js-env test-sample-env
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
 test: minigrace-c-env modules/minitest.gso
