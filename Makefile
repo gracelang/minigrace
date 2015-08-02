@@ -1,11 +1,6 @@
 include Makefile.conf
 
-.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary) $(MGSOURCEFILES:%.grace=%.binary)
-
-.PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
-
-.SUFFIXES:
-MAKEFLAGS += -r --debug=b
+MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
@@ -49,6 +44,13 @@ all: minigrace-environment $(C_MODULES_BIN) $(GRACE_MODULES:.grace=.gct) sample-
 
 # These are necessary for l1 until the $(KG) compiler learns about dependencies
 # The dependencises for l2 and . allow parallel compilation of the mg sub-modules
+
+#.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary) $(MGSOURCEFILES:%.grace=%.binary)
+.INTERMEDIATE: js/createJsGraphicsWrapper.binary js/gUnit.binary js/graphix.binary js/math.binary js/minitest.binary js/unixFilePath.binary modules/createJsGraphicsWrapper.binary modules/gUnit.binary modules/graphix.binary modules/math.binary modules/minitest.binary modules/unixFilePath.binary ast.binary buildinfo.binary compiler.binary errormessages.binary genc.binary genjs.binary genjson.binary identifierresolution.binary lexer.binary mgcollections.binary parser.binary util.binary xmodule.binary
+
+.PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
+
+.SUFFIXES:
 
 include Makefile.mgDependencies
 
