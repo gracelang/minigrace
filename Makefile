@@ -1,6 +1,6 @@
 include Makefile.conf
 
-.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary)
+.INTERMEDIATE: $(LIBRARY_MODULES:%.grace=js/%.binary) $(LIBRARY_MODULES:%.grace=modules/%.binary)
 
 .PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
@@ -13,11 +13,11 @@ JS_STUBS := dom.grace timer.grace
 DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
-
 C_MODULES_BIN = $(C_MODULES_GCN) $(C_MODULES_GSO)
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c xmodule.c identifierresolution.c genjson.c errormessages.c
+
 # The next 2 rules are here for their side effects: updating
-#    buildinfo.grace if necessary, and creating the l1 directory
+# buildinfo.grace if necessary, and creating the l1 directory
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
@@ -205,7 +205,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.version = '$$(tools/calculate-version HEAD)';" >> js/minigrace.js
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
-$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace minigrace js/dom.gct
+$(OBJECTDRAW_BITS:%.grace=js/%.js): js/%.js: %.grace js/dom.gct minigrace
 	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
@@ -258,7 +258,7 @@ l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collections
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h
 	cd l1 && ln -sf ../compiler.grace . && \
-    GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
+	GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
 l1/StandardPrelude.gct: stubs/StandardPrelude.gct
 	cd l1 && ln -sf ../$<
@@ -285,13 +285,21 @@ $(C_MODULES_GCN:%=l1/%): l1/%.gcn: %.gcn
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
 
-$(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.grace l1/minigrace
+$(LIBRARY_MODULES:%.grace=modules/%.binary): modules/%.binary: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	touch $@
+
+$(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.binary
+
+$(LIBRARY_MODULES:%.grace=modules/%.gso): modules/%.gso: modules/%.binary
 
 $(LIBRARY_MODULES:%.grace=js/%.binary): js/%.binary: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
+	touch $@
 
-$(LIBRARY_MODULES:%.grace=js/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js): $(LIBRARY_MODULES:%.grace=js/%.binary)
+$(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: js/%.binary
+
+$(LIBRARY_MODULES:%.grace=js/%.js):  js/%.js:  js/%.binary
 
 Makefile.conf: configure stubs modules
 	./configure
@@ -302,7 +310,7 @@ $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $
 $(MGSOURCEFILES:%.grace=%.gct): %.gct: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
 
-$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace minigrace js/StandardPrelude.gct
+$(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
 # Giant hack! Not suitable for use.
@@ -471,7 +479,7 @@ uninstall:
 .git/hooks/commit-msg: tools/validate-commit-message
 	@ln -s ../../tools/validate-commit-message .git/hooks/commit-msg
 
-%.gct %.gcn: %.grace ./minigrace
+%.gct %.gcn %.gso: %.grace ./minigrace
 	./minigrace $(VERBOSITY) --make --noexec $<
 
 %.o: %.c
