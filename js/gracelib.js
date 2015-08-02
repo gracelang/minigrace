@@ -1601,9 +1601,6 @@ function gracecode_io() {
 
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
-    this.methods.cputime = function() {
-	    return new GraceNum(performance.now());
-    }
     this.methods.argv = function() {
         if(typeof(process) != "undefined") {
             var list = [];
@@ -1620,7 +1617,12 @@ function gracecode_sys() {
             ]);
 	    }
     };
-    this.methods.elapsed = function() {return new GraceNum(((new Date).getTime()/1000)-startTime);};
+    this.methods.elapsed = function() {
+        return new GraceNum(((new Date).getTime()/1000)-startTime);
+    };
+    this.methods.elapsedTime = function() {
+        return new GraceNum(((new Date).getTime()/1000)-startTime);
+    };
     this.methods.exit = function() {
         throw "SystemExit";
     };
@@ -1634,25 +1636,25 @@ function gracecode_sys() {
                 var str = safeJsString(key);
                 if(str in process.env)
                     return new GraceString(process.env[str]);
-	    }
-	    return GraceEmptyString;
-	};
+            }
+            return GraceEmptyString;
+        };
         o.methods['[]'] = o.methods['at'];
         o.methods['at()put'] = function environ_at_put(argcv, key, value) {
             if(typeof(process) != "undefined") {
                 var kstr = safeJsString(key);
                 var vstr = safeJsString(value);
                 process.env[kstr] = vstr;
-	    }
-	    return GraceTrue;
-	};
+            }
+            return GraceTrue;
+        };
         o.methods['[]:='] = o.methods['at()put'];
         o.methods['contains'] = function environ_contains(argcv, searchkey) {
             if(typeof(process) != "undefined") {
                 return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
             } else {
-		return GraceFalse;
-	    }
+            return GraceFalse;
+            }
         };
         return o;
     };
@@ -1697,6 +1699,9 @@ function gracecode_imports() {
     };
     return this;
 }
+
+if (typeof gctCache !== "undefined")
+    gctCache['sys'] = "fresh:environ:\n self\n ≠\n basicAsString\n asDebugString\n ::\n at\n []\n []:=()put\n ==\n at()put\n !=\n contains\n asString\nmodules:\nfresh-methods:\n environ\npath:\n sys\nclasses:\npublic:\n Environment\n argv\n elapsed\n elaspedTime\n exit\n execPath\n environ\nconfidential:\n";
 
 function gracecode_unicode() {
     this.methods.isLetter = function unicode_isLetter(argcv, s) {

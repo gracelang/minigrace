@@ -7,8 +7,8 @@ type Environment = type {
 }
 
 method argv -> Sequence<String> {}
-method cputime -> Number {}
 method elapsed -> Number {}
+method elapsedTime -> Number {}
 method exit(code:Number) -> Done {}
 method execPath -> String {}
 factory method environ -> Environment {

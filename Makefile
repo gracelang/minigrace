@@ -457,7 +457,6 @@ TEST_SAMPLES = requireTypes
 TEST_MODULES = minitest util ast gUnit math
 
 test.js: minigrace-js-env $(TEST_SAMPLES:%=js/sample/dialects/%.gso) $(TEST_SAMPLES:%=js/%.js) $(TEST_MODULES:%=modules/%.gso) $(TEST_MODULES:%=js/%.js)
-	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
 test: minigrace-c-env modules/minitest.gso

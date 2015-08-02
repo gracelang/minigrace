@@ -3207,13 +3207,6 @@ Object argv_List = NULL;
 void module_sys_init_argv(Object argv) {
     argv_List = argv;
 }
-Object sys_cputime(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    int i = clock() - start_clocks;
-    double d = i;
-    d /= CLOCKS_PER_SEC;
-    return alloc_Float64(d);
-}
 Object sys_elapsed(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct timeval ar;
@@ -3278,10 +3271,10 @@ void sys__mark(struct SysModule *o) {
 Object module_sys_init() {
     if (sysmodule != NULL)
         return sysmodule;
-    SysModule = alloc_class2("sys", 8, (void*)*sys__mark);
+    SysModule = alloc_class2("sys", 9, (void*)*sys__mark);
     add_Method(SysModule, "argv", &sys_argv);
-    add_Method(SysModule, "cputime", &sys_cputime);
     add_Method(SysModule, "elapsed", &sys_elapsed);
+    add_Method(SysModule, "elapsedTime", &sys_elapsed);
     add_Method(SysModule, "exit", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
     add_Method(SysModule, "environ", &sys_environ);

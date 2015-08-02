@@ -464,7 +464,6 @@ test.js.compile: minigrace
 	@cd js/tests; ls *_test.grace | grep -v "fail" | sed 's/^t\([0-9]*\)_.*/& \1/' | while read -r fileName num; do echo "$$num \c"; ../../minigrace --target js $${fileName}; done && echo "tests compiled."
 
 test.js: minigrace-js-env sample/dialects/requireTypes.gso sample/dialects/minitest.gso util.gso ast.gso gUnit.gso
-	if [ ! -e node_modules/performance-now ] ; then npm install performance-now ; fi
 	cd js/tests; cp -fp ../../sample/dialects/minitest.gct .
 	cd js/tests; cp -fp ../../sample/dialects/minitest.grace .
 	cd js/tests; cp -fp ../../sample/dialects/minitest.gso .
