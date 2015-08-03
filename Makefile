@@ -336,7 +336,7 @@ minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modu
 
 minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) modules/requireTypes.gso
 
-module-test-js: minigrace-js-env
+module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.binary) $(TYPE_DIALECTS:%=modules/%.binary)
 	modules/tests/harness_js ../../minigrace modules/tests ""
 
 modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gct modules/math.gct
