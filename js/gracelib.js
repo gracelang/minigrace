@@ -1452,7 +1452,7 @@ function GraceModule(name) {
     newModuleObject.superobj = new GraceObject();
 //    newModuleObject.outer = Grace_prelude;
     newModuleObject.methods.asString = function module_asString(argcv) {
-        return new GraceString("the " + this.definitionModule + " " + this.className);
+        return new GraceString("the \"" + this.definitionModule + "\" " + this.className);
     };
 //    newModuleObject.methods.outer = function module_outer () {
 //        return this.outer;
