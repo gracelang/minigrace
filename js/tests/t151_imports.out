@@ -24,8 +24,8 @@ math's methods are:
     tan
     π
     ≠
-asString = the math module
-asDebugString = the math module
+asString = the "math" module
+asDebugString = the "math" module
 sin(90°) = 1
 cos(0°) = 1
 tan(45°) = 1
