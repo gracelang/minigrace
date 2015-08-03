@@ -1572,7 +1572,7 @@ method compileimport(o) {
             snm := snm ++ c
         }
     }
-    snm = escapeident(snm)
+    snm := escapeident(snm)
     o.register := "done"
     var nm := escapeident(o.nameString)
     var modg := "module_" ++ snm
