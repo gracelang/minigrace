@@ -1572,19 +1572,19 @@ method compileimport(o) {
             snm := snm ++ c
         }
     }
+    snm = escapeident(snm)
     o.register := "done"
     var nm := escapeident(o.nameString)
-    var fn := escapestring2(o.path)
-    var modg := "module_" ++ escapeident(snm)
+    var modg := "module_" ++ snm
     declaredvars.push(nm)
     globals.push("Object {modg};")
     out("  if ({modg} == NULL)")
     if (xmodule.builtInModules.contains(o.path)) then {
         out "    {modg} = {modg}_init();"
     } elseif {dynamicOnlyModules.contains(o.path)} then {
-        out "    {modg} = dlmodule(\"{fn}\");"
+        out "    {modg} = dlmodule(\"{snm}\");"
     } else {
-        out "    {modg} = LOAD_MODULE({fn});"
+        out "    {modg} = LOAD_MODULE({snm});"
         // for later transformation by the C preproecessor
     }
     out("  *var_{nm} = {modg};")
