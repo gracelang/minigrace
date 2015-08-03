@@ -189,7 +189,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks -XnoTypeChecks -XnoTypeChecks --dir js $(<F)
+	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -208,7 +208,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 $(OBJECTDRAW:%.grace=js/%.js): js/%.js: %.grace js/dom.gct minigrace
-	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
 #	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
@@ -296,7 +296,7 @@ $(LIBRARY_MODULES:%.grace=modules/%.gct): modules/%.gct: modules/%.binary
 $(LIBRARY_MODULES:%.grace=modules/%.gso): modules/%.gso: modules/%.binary
 
 $(LIBRARY_MODULES:%.grace=js/%.binary): js/%.binary: modules/%.grace l1/minigrace
-	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js --dir js $<
 	touch $@
 
 $(LIBRARY_MODULES:%.grace=js/%.gct): js/%.gct: js/%.binary
@@ -473,7 +473,7 @@ $(TYPE_DIALECTS:%=%.gso): %.gso: %.binary
 
 $(TYPE_DIALECTS:%=js/%.js): js/%.js: %.binary
 
-test.js: minigrace-js-env test-sample-env
+test.js: minigrace-js-env
 	js/tests/harness ../../minigrace js/tests "" $(TESTS)
 
 test: minigrace-c-env modules/minitest.gso
