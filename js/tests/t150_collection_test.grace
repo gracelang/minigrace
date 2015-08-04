@@ -1,7 +1,6 @@
 import "gUnit" as gU
 
-def bindingTest = object {
-    factory method forMethod(m) {
+class bindingTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         method testStringification {
@@ -24,11 +23,10 @@ def bindingTest = object {
             assert (b.key) shouldBe "one"
             assert (b.value) shouldBe 1
         }
-    }
+
 }
 
-def rangeTest = object {
-    factory method forMethod(m) {
+class rangeTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def rangeUp = range.from 3 to 6
@@ -265,11 +263,10 @@ def rangeTest = object {
             assert(rangeDown.asDictionary) shouldBe
                 (dictionary.with(1::10, 2::9, 3::8, 4::7))
         }
-    }
+
 }
 
-def sequenceTest = object {
-    factory method forMethod(m) {
+class sequenceTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = sequence.with(1, 2, 3, 4, 5)
@@ -546,11 +543,9 @@ def sequenceTest = object {
             def s2 = evens.filter{x -> true}
             assert(s1 ++ s2) shouldBe (sequence.with(1, 3, 5, 2, 4, 6, 8))
         }
-    }
 }
 
-def listTest = object {
-    factory method forMethod(m) {
+class listTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = list.with(1, 2, 3, 4, 5)
@@ -1001,11 +996,9 @@ def listTest = object {
           input.removeAt(1)
           assert {iter4.next} shouldRaise (ConcurrentModification)
         }
-    }
 }
 
-def setTest = object {
-    factory method forMethod(m) {
+class setTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = set.with(1, 2, 3, 4, 5)
@@ -1223,11 +1216,9 @@ def setTest = object {
             input.remove(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
         }
-    }
 }
 
-def dictionaryTest = object {
-    factory method forMethod(m) {
+class dictionaryTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
         def oneToFive = dictionary.with("one"::1, "two"::2, "three"::3,
             "four"::4, "five"::5)
@@ -1548,11 +1539,9 @@ def dictionaryTest = object {
             input.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
-    }
 }
 
-def lazyEnumTest = object {
-    factory method forMethod(m) {
+class lazyEnumTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
         def oneToFive = (1..5).filter{ x -> true }
         def empty = (1..5).filter{ x -> false }
@@ -1579,37 +1568,27 @@ def lazyEnumTest = object {
             o25List.addFirst 0
             assert {o25Iter.next} shouldRaise (ConcurrentModification)
         }
-    }
 }
 
 
-print "binding"
 def bindingTests = gU.testSuite.fromTestMethodsIn(bindingTest)
 bindingTests.runAndPrintResults
 
-print "sequence"
 def sequenceTests = gU.testSuite.fromTestMethodsIn(sequenceTest)
 sequenceTests.runAndPrintResults
 
-print "list"
 def listTests = gU.testSuite.fromTestMethodsIn(listTest)
 listTests.runAndPrintResults
 
-print "set"
 def setTests = gU.testSuite.fromTestMethodsIn(setTest)
 setTests.runAndPrintResults
 
-print "range"
 def rangeTests = gU.testSuite.fromTestMethodsIn(rangeTest)
 rangeTests.runAndPrintResults
 
-print "dictionary"
 def dictTests = gU.testSuite.fromTestMethodsIn(dictionaryTest)
 dictTests.runAndPrintResults
 
-print "lazy enumeration"
 def lazyEnumTests = gU.testSuite.fromTestMethodsIn(lazyEnumTest)
 lazyEnumTests.runAndPrintResults
 
-//def allTests = gU.testSuite.with(bindingTests, sequenceTests, listTests, rangeTests, setTests, dictTests, lazyEnumTests)
-//allTests.runAndPrintResults
