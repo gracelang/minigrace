@@ -1,0 +1,31 @@
+comments for node 1:
+  1:1 comment(Comment def A)
+comments for node 2:
+comments for node 3:
+  3:1 comment(Comment var 1A)
+  5:1 comment(Comment var 1B)
+comments for node 4:
+comments for node 5:
+  8:1 comment(Comment var 2A)
+comments for node 6:
+comments for node 7:
+  10:1 comment(Comment type A)
+  11:1 comment(Comment type B)
+  13:1 comment(Comment type C)
+  inner comments:
+    15:5 comment(Comment for methodtype 1A)
+    16:20 comment(Comment for methodtype 1B)
+
+    17:5 comment(Comment for methodtype 2A)
+    18:5 comment(Comment for methodtype 2B)
+
+comments for node 8:
+comments for node 9:
+  21:1 comment(Comment method A)
+  22:20 comment(Comment method B)
+  23:5 comment(Comment method C)
+  24:5 comment(Comment method D)
+comments for node 10:
+comments for node 11:
+  29:1 comment(Comment class A)
+  30:1 comment(Comment class B)
