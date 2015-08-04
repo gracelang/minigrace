@@ -849,6 +849,8 @@ method setupContext(values) {
     preludeScope.addName "TypeError" as "defdec"
     preludeScope.addName "ResourceException" as "defdec"
     preludeScope.addName "EnvironmentException" as "defdec"
+    preludeScope.addName "π" as "defdec"
+    preludeScope.addName "infinity" as "defdec"
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
     preludeScope.addName "PrimitiveArray" as "defdec"

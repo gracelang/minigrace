@@ -578,6 +578,10 @@ GraceNum.prototype = {
                 str = before + str;
             return new GraceString(str);
         },
+        "isNaN": function Num_isNaN(argcv) {
+            if (this._value === this._value) return GraceFalse;
+            return GraceTrue;
+        },
         "truncate": function(argcv) {
             if (this._value < 0)
                 return new GraceNum(Math.ceil(this._value));
@@ -2757,6 +2761,12 @@ Grace_prelude.methods['NoSuchMethod'] = function(argcv) {
 }
 Grace_prelude.methods['BoundsError'] = function(argcv) {
     return BoundsErrorObject;
+}
+Grace_prelude.methods['infinity'] = function(argcv) {
+    return new GraceNum(Infinity);
+}
+Grace_prelude.methods['π'] = function π (argcv) {
+    return new GraceNum(3.141592653589793);
 }
 Grace_prelude.methods['while()do'] = function(argcv, c, b) {
     if (c.className == "Boolean" || c.className == "Number")
