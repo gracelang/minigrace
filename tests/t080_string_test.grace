@@ -19,18 +19,18 @@ class stringTest.forMethod(m) {
 
     method test_compare_identity_concat {
         def s = "abcd" ++ "ef"
-        assert (s.compare(s) == 0) description "identical strings don't compare 0"
+        assert (s.compare(s) == 0) description "identical strings do not compare 0"
     }
     
     method test_compare_same_concat {
         def s = "abcd" ++ "ef"
         def t = "abcdef"
-        assert (s.compare(t) == 0) description "{s} don't compare 0 to {t}"
+        assert (s.compare(t) == 0) description "{s} doesn't compare 0 to {t}"
     }
     
     method test_compare_identity_flat {
         def s = "rstuvwxyz"
-        assert (s.compare(s) == 0) description "identical strings don't compare 0"
+        assert (s.compare(s) == 0) description "identical strings do not compare 0"
     }
 
     method test_comparelessThan_concat_first {
