@@ -13,6 +13,7 @@ var minIndentLevel := 0
 var statementIndent := 0
 var tokens := false
 var values := list.empty
+var comments := list.empty
 var auto_count := 0
 def noBlocks = false
 def blocksOK = true
@@ -44,13 +45,7 @@ method next {
         lastline := linenum
         lastIndent := sym.indent
         sym := tokens.poll
-        if (sym.kind == "comment") then {
-            comment := ""
-            while {(sym.kind == "comment").andAlso {tokens.size > 0}} do {
-                comment := comment ++ sym.value
-                sym := tokens.poll
-            }
-        }
+        pushcomments
         linenum := sym.line
         util.setPosition(sym.line, sym.linePos)
     } elseif { sym.kind == "eof" } then {
@@ -2320,6 +2315,7 @@ method defdec {
         adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         o.startToken := defTok
         values.push(o)
+        reconcileComments
     }
 }
 
@@ -2387,6 +2383,7 @@ method vardec {
         if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
         values.push(o)
+        reconcileComments
     }
 }
 
@@ -2647,6 +2644,7 @@ method doclass {
             }
         }
         values.push(o)
+        reconcileComments
         minIndentLevel := localMinIndentLevel
     }
 }
@@ -2806,6 +2804,7 @@ method methoddec {
         if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultMethodVisibility) overriding("public")
         values.push(o)
+        reconcileComments
     }
 }
 
@@ -3211,6 +3210,7 @@ method domethodtype {
     var o := ast.methodTypeNode.new(meth.value, signature, dtype)
     o.generics := m.generics
     values.push(o)
+    reconcileComments
     if (accept("semicolon")) then {
         next
     } else {
@@ -3303,6 +3303,7 @@ method typedec {
             nt.annotations.addAll(anns)
         }
         values.push(nt)
+        reconcileComments
     }
 }
 
@@ -3415,6 +3416,78 @@ method statement {
     } else {
         checkUnexpectedTokenAfterStatement
     }
+}
+
+// Push one comment line onto the comments stack as a commentNode. If there
+// are multiple consecutive comments, push them all onto the comments stack
+// as individual commentNodes. Advance sym as we consume tokens.
+method pushcomments {
+    if (accept("comment")) then {
+        var commentbody := ""
+        while {(sym.kind == "comment").andAlso {tokens.size > 0}} do {
+            commentbody := sym.value
+            util.setPosition(sym.line, sym.linePos)
+            var o := ast.commentNode.new(commentbody)
+            if ((lastToken.line == sym.line) && (lastToken.kind != "comment")) then {
+                o.isPartialLine := true
+            }
+            comments.push(o)
+            //lastToken := sym
+            sym := tokens.poll
+        }
+    }
+}
+
+// Called after a new node is pushed to output stack. Find comments that
+// should be associated with that node, remove them from comments stack,
+// and add them to that node's list of comments.
+method reconcileComments {
+    if (values.size == 0) then { return }
+    match(values.last)
+        case { _:ast.AstNode -> true }
+        case { _ -> return }
+    def oLine = values.last.line
+    def out = list.empty
+    def temp = list.empty
+    var lineAbove := oLine - 1
+    var lineBelow := oLine + 1
+
+    while { (comments.size > 0).andAlso {comments.last.line > (oLine - 1)} } do {
+        temp.push(comments.pop)
+    }
+
+    while { (comments.size > 0).andAlso {
+            comments.last.line == lineAbove }.andAlso {
+            comments.last.isPartialLine == false } } do {
+        out.addFirst(comments.pop)
+        lineAbove := lineAbove - 1
+    }
+
+    var commentsBelow := list.empty
+    while {temp.size > 0} do {
+        var o := temp.pop
+        if (o.line == oLine) then {
+            out.addLast(o)
+        }
+        elseif (o.line == lineBelow) then {
+            if ((o.line >= (sym.line - 1)) && (sym.kind != "rbrace")) then {
+                //we shouldn't grab this comment for the entity above
+                //and we should put any below-comments we've found back onto stack
+                while {commentsBelow.size > 0} do {
+                    comments.push(commentsBelow.removeFirst)
+                }
+                comments.push(o)
+            } else {
+                lineBelow := lineBelow + 1
+                commentsBelow.addLast(o)
+            }
+        }
+        else {
+            comments.push(o)
+        }
+    }
+    if (commentsBelow.size > 0) then { out.addAll(commentsBelow) }
+    if (out.size > 0) then { values.last.addComments(out) }
 }
 
 method checkBadOperators {
@@ -3559,6 +3632,8 @@ method parse(toks) {
     next
     var oldlength := tokens.size
     while {tokens.size > 0} do {
+        blank
+        pushcomments
         blank
         methoddec
         blank

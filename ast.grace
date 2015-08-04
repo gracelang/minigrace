@@ -75,6 +75,8 @@ type AstNode = type {
         // The symbolTable for names defined in this node and its sub-nodes
     pretty(n:Number) -> String 
         // Pretty-print-string of node at depth n
+    comments -> List<AstNode>
+        // Comments associated with this node
 }
 
 type SymbolTable = Unknown
@@ -85,6 +87,7 @@ class baseNode.new {
     var line is public := util.linenum
     var linePos is public := util.linepos
     var symbolTable := fakeSymbolTable
+    var comments is public := list.empty
 
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
@@ -92,6 +95,7 @@ class baseNode.new {
     method isInherits { false }
     method isMember { false }
     method isCall { false }
+    method isComment { false }
     method isClass { false }
     method isBind { false }
     method isObject { false }
@@ -153,6 +157,12 @@ class baseNode.new {
         def obj = scope.enclosingObjectScope.node
         util.log_verbose "object enclosing {self} is {obj}"
         obj
+    }
+    method addComment(cmtNode) {
+        self.comments.push(cmtNode)
+    }
+    method addComments(cmtNodeList) {
+        self.comments := self.comments ++ cmtNodeList
     }
 }
 
@@ -733,6 +743,12 @@ class typeDecNode.new(name', typeValue) {
         s := s ++ spc ++ "Value:"
         s := s ++ value.pretty(depth+2)
         s := s ++ "\n"
+        if (comments.size > 0) then {
+            s := s ++ "\n" ++ spc ++ "Comments:"
+            for (comments) do {c->
+                s := s ++ "\n {c.pretty(depth + 2)}"
+            }
+        }
         s
     }
     method toGrace(depth : Number) -> String {
@@ -884,6 +900,13 @@ def methodNode = object {
             s := s ++ spc ++ "Body:"
             for (self.body) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
+            }
+            if (comments.size > 0) then {
+                s := "{s}\n{spc}Comments:"
+                for (comments) do {c->
+                    s := "{s}\n{spc}  {c.pretty(depth + 2)}"
+                }
+                s := s ++ "\n"
             }
             s
         }
@@ -1234,6 +1257,12 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         s := s ++ "\n" ++ spc ++ "Body:"
         for (self.value) do { x ->
             s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
+        }
+        if (comments.size > 0) then {
+            s := s ++ "\n" ++ spc ++ "Comments:"
+            for (comments) do {c->
+                s := s ++ "\n {c.pretty(depth + 2)}"
+            }
         }
         s
     }
@@ -2071,6 +2100,12 @@ def defDecNode = object {
                     s := "{s} {ann.pretty(depth + 2)}"
                 }
             }
+            if (comments.size > 0) then {
+                s := s ++ "\n" ++ spc ++ "Comments:"
+                for (comments) do {c->
+                    s := s ++ "\n {c.pretty(depth + 2)}"
+                }
+            }
             s
         }
         method toGrace(depth : Number) -> String {
@@ -2176,6 +2211,12 @@ class varDecNode.new(name', val', dtype') {
         if (false != self.value) then {
             s := s ++ "\n" ++ spc ++ "Value: "
             s := s ++ self.value.pretty(depth + 2)
+        }
+        if (comments.size > 0) then {
+            s := s ++ "\n" ++ spc ++ "Comments:"
+            for (comments) do {c->
+                s := s ++ "\n {c.pretty(depth + 2)}"
+            }
         }
         s
     }
@@ -2561,6 +2602,41 @@ def callWithPart = object {
     }
 }
 
+def commentNode = object {
+    factory method new(val') {
+        inherits baseNode.new
+        def kind is public = "comment"
+        var value:String is public := val'
+        var isPartialLine:Boolean is public := false
+        method isComment { true }
+        method asString { "Comment: {value}" }
+
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            blk.apply(n, as)
+        }
+        method accept(visitor : ASTVisitor) from(as) {
+            visitor.visitComment(self) up(as)
+        }
+        method pretty(depth) {
+            "{super.pretty(depth)}({value})"
+        }
+        method toGrace(depth) {
+            "// {value}"
+        }
+        method shallowCopy {
+            commentNode.new(nullNode).shallowCopyFieldsFrom(self)
+        }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            value := other.value
+            isPartialLine := other.isPartialLine
+            self
+        }
+    }
+}
+
 type ASTVisitor = {
      visitIf(o) up(as) -> Boolean
      visitBlock(o) up(as) -> Boolean
@@ -2592,6 +2668,7 @@ type ASTVisitor = {
      visitInherits(o) up(as) -> Boolean
      visitDialect(o) up(as) -> Boolean
      visitBlank(o) up(as) -> Boolean
+     visitComment(o) up(as) -> Boolean
 }
 
 factory method baseVisitor -> ASTVisitor {
@@ -2625,6 +2702,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitInherits(o) up(as) { visitInherits(o) }
     method visitDialect(o) up(as) { visitDialect(o) }
     method visitBlank(o) up(as) { visitBlank(o) }
+    method visitComment(o) up(as) { visitComment(o) }
 
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
@@ -2656,6 +2734,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitInherits(o) -> Boolean { true }
     method visitDialect(o) -> Boolean { true }
     method visitBlank(o) -> Boolean { true }
+    method visitComment(o) -> Boolean { true }
     
     method asString { "an AST visitor" }
 }
@@ -2696,6 +2775,7 @@ factory method pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitInherits(o) up(as) { visitation.apply (o, as) }
     method visitDialect(o) up(as) { visitation.apply (o, as) }
     method visitBlank(o) up(as) { visitation.apply (o, as) }
+    method visitComment(o) up(as) { visitation.apply (o, as) }
     
     method asString { "a pluggable AST visitor" }
 }
