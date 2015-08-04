@@ -44,7 +44,7 @@ STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
-WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/samples.js  js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
 all: minigrace-environment $(C_MODULES_BIN) $(WEBFILES)
 
@@ -157,9 +157,8 @@ grace-web-editor/index.html: pull-web-editor
 grace-web-editor/scripts/setup.js: pull-web-editor $(filter-out %/setup.js,$(wildcard grace-web-editor/scripts/*.js)) $(wildcard grace-web-editor/scripts/*/*.js)
 	cd grace-web-editor; npm install
 
-graceWeb: pull-objectdraw js samples ace-code
-	rsync -a -l -z --delete $(WEBFILES) grace@cs.pdx.edu:public_html/minigrace/js
-	rsync -a -l -z --delete sample grace@cs.pdx.edu:public_html/minigrace
+graceWeb:
+	$(MAKE) WEB_SERVER=grace@cs.pdx.edu expWeb
 
 gracelib-basic.o: gracelib.c gracelib.h
 	gcc -g -std=c99 -o gracelib-basic.o -c gracelib.c
@@ -416,7 +415,7 @@ $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct
 	cd l1 && ln -sf ../$< .
 
-tarWeb: js samples
+tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
 #	Untar in your public_html directory with "tar -xpf ~/webfiles.tar". Make the
 #	subdirectory that tar creates readable and executable by your web daemon.
