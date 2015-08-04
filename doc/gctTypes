@@ -1,0 +1,74 @@
+In order to type-check against types declared in imported modules, the GCT
+file for a compiled module contains information about the types in that module.
+The idea is to have just enough information in the GCT to allow for the types
+to be parsed and rebuilt completely as ObjectTypes by the static-types dialect.
+
+The GCT contains this type information with a list of all types declared in the
+module, and for each type a list of the type's methodtype signatures. The list
+of types in collectionsPrelude.gct looks like this:
+
+    types:
+     Binding
+     Block0
+     Block1
+     Block2
+     Collection
+     CollectionFactory
+     Dictionary
+     EmptyCollectionFactory
+     Enumerable
+     Iterator
+     List
+     SelfType
+     Sequence
+     Set
+
+Note that any generic parameters are left off in this type list. The list of
+methodtypes for Binding looks like this:
+
+    methodtypes-of:Binding<K, T>:
+     7 == -> Boolean
+     7 hash -> Number
+     7 key -> K
+     7 value -> T
+
+Note that the generic parameters are included here. The only part of the list
+of methodtypes that is not self-explanatory is the prefix on each line, which 
+is always either a &, a |, or a number. If the prefix of a line is a number, it
+means that that methodtype is listed within a type literal, and all other lines
+which are prefixed with the same number come from the same type literal. This
+is useful in cases like the following, where a type is composed of two type
+literals:
+
+    methodtypes-of:Z:
+     & 3
+     & 4
+     3 m4(x : Y) -> Y
+     4 m5(x : Z) -> Z
+
+This means that type Z is the & type of two type literals, represented by 3
+and 4. One type literal has only the method m4, and the other has only the 
+method m5. The actual values of these numbers are not significant; it only 
+matters that lines with different number prefixes are from different type
+literals.
+
+Finally, note how & types and variant types are prefixed with & or |. An
+entry to the GCT that looks like this:
+
+    methodtypes-of:D:
+     & Collection<T>
+     & F
+     & G
+
+...means that type D is the & type of three types: Collection<T> & F & G. An entry
+to the GCT that looks like this:
+
+    methodtypes-of:A:
+     2 m1(n : Number) -> Number
+     2 m2(n : Number) -> Done
+     | 2
+     | B<T>
+     | other.C
+
+...means that type A is a variant type of B<T> | other.C | 2, where 2 is a type
+literal that contains two methods (m1 and m2).

@@ -508,6 +508,7 @@ method block {
                         sym.line, sym.linePos)withSuggestions(suggestions)
                 }
                 var rhs := values.pop
+                util.setPosition(btok.line, btok.linePos)
                 body.push(ast.bindNode.new(lhs, rhs))
                 if (accept("semicolon")) then {
                     next
@@ -542,7 +543,7 @@ method block {
         minIndentLevel := minInd - 1
         statementIndent := startIndent
         next
-        util.setline(btok.line)
+        util.setPosition(btok.line, btok.linePos)
         var o := ast.blockNode.new(params, body)
         if (isMatchingBlock) then {
             if (params.size > 0) then {
@@ -897,6 +898,7 @@ method doif {
                 }
                 next
             }
+            util.setPosition(btok.line, btok.linePos)
             var o := newIf(cond, body, elseblock)
             values.push(o)
         } else {
@@ -1228,6 +1230,7 @@ method trycatch {
         }
         finally := values.pop
     }
+    util.setPosition(catchTok.line, catchTok.linePos)
     values.push(ast.catchCaseNode.new(mainblock, cases, finally))
     minIndentLevel := localmin
 }
@@ -1389,6 +1392,7 @@ method catchcase { // TODO: This construct is DEPRECATED. Remove it.
         }
         finally := values.pop
     }
+    util.setPosition(catchTok.line, catchTok.linePos)
     values.push(ast.catchCaseNode.new(mainblock, cases, finally))
     minIndentLevel := localmin
 }
@@ -1540,6 +1544,7 @@ method matchcase {
 //        }
 //        elsecase := values.pop
 //    }
+    util.setPosition(matchTok.line, matchTok.linePos)
     values.push(ast.matchCaseNode.new(matchee, cases, elsecase))
     minIndentLevel := localmin
 }
@@ -1744,6 +1749,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             o2 := ops.pop
             tmp2 := terms.pop
             tmp := terms.pop
+            util.setPosition(tmp.line, tmp.linePos)
             tmp := ast.opNode.new(o2, tmp, tmp2)
             terms.push(tmp)
         }
@@ -1824,6 +1830,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
         o := ops.pop
         tmp2 := terms.pop
         tmp := terms.pop
+        util.setPosition(tmp.line, tmp.linePos)
         tmp := ast.opNode.new(o, tmp, tmp2)
         terms.push(tmp)
     }
@@ -2307,6 +2314,7 @@ method defdec {
                 ++ "A variable declaration does not require a value and uses 'var' instead of 'def'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
+        util.setPosition(defTok.line, defTok.linePos)
         var o := ast.defDecNode.new(name, val, dtype)
         if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
@@ -2374,6 +2382,7 @@ method vardec {
                     withSuggestions(suggestions)
             }
         }
+        util.setPosition(line, pos)
         def o = ast.varDecNode.new(name, val, dtype)
         if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
@@ -3154,6 +3163,7 @@ method doimport {
 // of the form "return x". x may be any expression.
 method doreturn {
     if (accept("keyword") && (sym.value == "return")) then {
+        def retTok = sym
         next
         var retval
         if ((tokenOnSameLine).andAlso{accept("rbrace").not}) then {
@@ -3180,6 +3190,7 @@ method doreturn {
         } else {
             retval := ast.identifierNode.new("done", false)
         }
+        util.setPosition(retTok.line, retTok.linePos)
         var o := ast.returnNode.new(retval)
         values.push(o)
     }
@@ -3187,6 +3198,7 @@ method doreturn {
 
 method domethodtype {
     // parses a method in a type literal
+    def methodTypeTok = sym
     var m := methodsignature(true)
     var meth := m.m
     var signature := m.sig
@@ -3195,6 +3207,7 @@ method domethodtype {
     if (dtype == false) then {
         dtype := ast.identifierNode.new("Done", false)
     }
+    util.setPosition(methodTypeTok.line, methodTypeTok.linePos)
     var o := ast.methodTypeNode.new(meth.value, signature, dtype)
     o.generics := m.generics
     values.push(o)
@@ -3216,6 +3229,7 @@ method domethodtype {
 
 method dotypeLiteral {
     // parses a type literal between braces, with optional leading 'type' keyword.
+    def typeLiteralTok = sym
     if (accept("keyword").andAlso { sym.value == "type" }) then {
         next
         if (!accept("lbrace")) then {
@@ -3242,6 +3256,7 @@ method dotypeLiteral {
             }
         }
         next
+        util.setPosition(typeLiteralTok.line, typeLiteralTok.linePos)
         def t = ast.typeLiteralNode.new(meths, types)
         values.push(t)
     }
@@ -3250,6 +3265,8 @@ method dotypeLiteral {
 method typedec {
     // Accept a declaration: 'type = <type expression>'
     if (accept("keyword") && (sym.value == "type")) then {
+        def line = sym.line
+        def pos = sym.linePos
         next
         if(sym.kind != "identifier") then {
             def suggestion = errormessages.suggestion.new
@@ -3258,6 +3275,7 @@ method typedec {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
         }
         pushidentifier
+        util.setPosition(line, pos)
         def nt = ast.typeDecNode.new(values.pop, false)
         if (accept("lgeneric")) then { typeparameters(nt) }
         nt.name.isBindingOccurrence := true
@@ -3332,6 +3350,7 @@ method checkIndent {
 method statement {
     statementIndent := sym.indent
     statementToken := sym
+    def btok = sym
     checkIndent
     if (accept("keyword")) then {
         if (sym.value == "var") then {
@@ -3378,6 +3397,7 @@ method statement {
                         sym.line, sym.linePos)withSuggestions(suggestions)
                 }
                 var val := values.pop
+                util.setPosition(btok.line, btok.linePos)
                 var o := ast.bindNode.new(dest, val)
                 values.push(o)
             }
