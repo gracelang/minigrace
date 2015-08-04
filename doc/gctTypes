@@ -46,13 +46,13 @@ literals:
      3 m4(x : Y) -> Y
      4 m5(x : Z) -> Z
 
-This means that type Z is a union type of two type literals, represented by 3
+This means that type Z is the & type of two type literals, represented by 3
 and 4. One type literal has only the method m4, and the other has only the 
 method m5. The actual values of these numbers are not significant; it only 
 matters that lines with different number prefixes are from different type
 literals.
 
-Finally, note how union types and variant types are prefixed with & or |. An
+Finally, note how & types and variant types are prefixed with & or |. An
 entry to the GCT that looks like this:
 
     methodtypes-of:D:
@@ -60,7 +60,7 @@ entry to the GCT that looks like this:
      & F
      & G
 
-...means that type D is a union of three types: Collection<T> & F & G. An entry
+...means that type D is the & type of three types: Collection<T> & F & G. An entry
 to the GCT that looks like this:
 
     methodtypes-of:A:
