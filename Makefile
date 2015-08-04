@@ -321,9 +321,9 @@ minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hoo
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js ../../minigrace modules/tests ""
 
-modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gct modules/math.gct
+modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
 
-modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/mirrors.gct modules/math.gct
+modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
 modules/objectdraw.gso modules/objectdraw.gcn:
 	@echo "Can't build $@; no C version of dom module"
