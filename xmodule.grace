@@ -58,7 +58,6 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         noSource := true
         pn
     }
-    util.log_verbose "pn = {pn}, moduleFileGrace = {moduleFileGrace}"
     var moduleFileGct := moduleFileGrace.copy.setExtension ".gct"
     if (util.sourceDir != util.outDir) then {
         moduleFileGct.setDirectory(util.outDir)
@@ -88,7 +87,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
                     ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
-                util.log_verbose "No source, but found {moduleFileGct.asDebugString} and {binaryFile.asDebugString}"
+                util.log_verbose "No source, but found {moduleFileGct} and {binaryFile}"
             }
         }
         if (needsDynamic.not) then {
@@ -184,7 +183,7 @@ method compileModule (nm) inFile (sourceFile)
         }
     }
     cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
-    util.log_verbose "executing {cmd}"
+    util.log_verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", "-c", cmd).status
     if (exitCode != 0) then {
         errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
@@ -229,11 +228,6 @@ method writeGCT(modname, dict) is confidential {
     def fp = io.open("{util.outDir}{modname}.gct", "w")
     dict.bindings.asList.sortBy(keyCompare).do { b ->
         fp.write "{b.key}:\n"
-        try {
-            if (Binding.match(b.value.first)) then {
-                util.log_verbose "key = {b.key}, value = {b.value}"
-            }
-        } catch { _ -> }
         b.value.asList.sort.do { v ->
             fp.write " {v}\n"
         }
