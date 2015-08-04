@@ -72,11 +72,12 @@ method failBecause(reason) {
     mtAssertion.assert(false) description(reason)
 }
 
-method testSuite(block:Block) {
+method testSuiteNamed (name:String) with (block:Block) {
     if(currentTestSuiteForDialect != done) then {
         Exception.raise("a testSuite cannot be created inside a testSuite")
     }
     currentTestSuiteForDialect := gu.testSuite.empty
+    currentTestSuiteForDialect.name := name
     currentSetupBlockForTesting := block
     currentTestInThisEvaluation := 0
     block.apply()
@@ -84,6 +85,10 @@ method testSuite(block:Block) {
     currentTestSuiteForDialect.runAndPrintResults()
     currentTestSuiteForDialect := done
     currentTestBlockForTesting := 0
+}
+
+method testSuite (block:Block) {
+    testSuiteNamed "" with (block)
 }
 
 method test(name:String) by(block:Block) {

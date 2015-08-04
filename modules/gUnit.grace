@@ -232,13 +232,21 @@ factory method testCaseNamed(name') -> TestCase {
     method runAndPrintResults {
         def result = testResult
         self.run(result)
-        print(result.detailedSummary)
+        if (name == "") then {
+            print "{result.detailedSummary}"
+        } else {
+            print "{self.name}: {result.detailedSummary}"
+        }
     }
     
     method debugAndPrintResults {
         def result = testResult
         self.debug(result)
-        print(result.detailedSummary)
+        if (name == "") then {
+            print "{result.detailedSummary}"
+        } else {
+            print "{self.name}: {result.detailedSummary}"
+        }
     }
 }
 
@@ -342,6 +350,7 @@ def testSuite is public = object {
     inherits collections.collectionFactory.trait
     factory method withAll(initialContents) -> TestSuite {
         inherits collections.enumerable.trait
+        var name is public := ""
         def tests = list.empty
         for (initialContents) do { each -> self.add(each) }
                 
@@ -357,18 +366,14 @@ def testSuite is public = object {
 
         method size { tests.size }
         
-        method name { 
-            var namelist := ""
-            for (tests) do { each -> 
-                namelist := namelist ++ each.name ++ " " 
-            }
-            namelist
-        }
-        
         method runAndPrintResults {
             def result = testResult
             self.run(result)
-            print(result.detailedSummary)
+            if (name == "") then {
+                print "{result.detailedSummary}"
+            } else {
+                print "{self.name}: {result.detailedSummary}"
+            }
             if (result.numberOfErrors > 0) then {
                 rerunErrors(result)
             }
@@ -377,7 +382,11 @@ def testSuite is public = object {
         method debugAndPrintResults {
             def result = testResult
             self.debug(result)
-            print(result.detailedSummary)
+            if (name == "") then {
+                print "{result.detailedSummary}"
+            } else {
+                print "{self.name}: {result.detailedSummary}"
+            }
         }
         
         method iterator { tests.iterator }
@@ -404,6 +413,7 @@ def testSuite is public = object {
     method fromTestMethodsIn(aTestClass) -> TestCase {
         def newSuite = self.empty
         def example = aTestClass.forMethod("null")
+        newSuite.name := className(aTestClass)
         for (mirror.reflect(example).methods) do { each ->
             if (each.name.substringFrom(1)to(4)=="test") then {
                 newSuite.add(aTestClass.forMethod(each.name))
@@ -413,4 +423,23 @@ def testSuite is public = object {
     }
 }
 
-
+method className(testClass) {
+    if (prelude.engine == "js") then {
+        def cName = testClass.asString
+        // looks like "class wombat"
+        return cName.substringFrom 7 to (cName.size)
+    }
+    def description = testClass.forMethod("null").asString
+    // description looks like "self.wombat[0x0x7fa7d2603ce8]"
+    var answer := ""
+    description.do { ch ->
+        if (ch == ".") then { 
+            answer := ""
+        } elseif {ch == "["} then { 
+            return answer 
+        } else {
+            answer := answer ++ ch
+        }
+    }
+    return answer
+}
