@@ -8,7 +8,6 @@ ALL_LIBRARY_MODULES = $(sort $(filter-out $(GRACE_MODULES), $(LIBRARY_MODULES) $
 C_MODULES_GSO := $(UNICODE_MODULE:%.gso=modules/%.gso) $(OTHER_MODULES:%.gso=modules/%.gso)
 INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
 JS_STUBS := dom.grace timer.grace
-DIALECTS_NEED = modules/dialect util ast mgcollections modules/gUnit modules/math
 DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
@@ -21,6 +20,7 @@ CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MOD
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
+DIALECTS_NEED = modules/dialect util ast mgcollections modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 # GRACE_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
@@ -168,7 +168,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 modules/gUnit.gso: modules/mirrors.gso modules/mirrors.gct modules/math.gct
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct)$(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
@@ -177,7 +177,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gc
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) (LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
+	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
 	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
 
 js/ace/ace.js:
@@ -275,6 +275,8 @@ l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
+
+$(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace l1/minigrace
 	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
@@ -443,7 +445,9 @@ test.js.compile: minigrace
     do echo "$$num \c"; ../../minigrace --target js -XnoTypeChecks $${fileName}; \
     done && echo "tests compiled."
 
-$(TYPE_DIALECTS:%=js/%.gso): $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct) $(DIALECTS_NEED:%=%.gso) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
+$(TYPE_DIALECTS:%=%.gso): %.gso: $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct)
+
+$(TYPE_DIALECTS:%=js/%.js): js/%.js: $(DIALECTS_NEED:%=%.gso) $(DIALECTS_NEED:%=%.gct) $(patsubst modules/%, js/%.js, $(filter modules/%,$(DIALECTS_NEED)))
 
 $(TYPE_DIALECTS:%=%.gct): %.gct: %.gso
 
