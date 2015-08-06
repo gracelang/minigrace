@@ -70,7 +70,7 @@ factory method shape {
 
   method shapeDraw {} // abstract method
   method draw {
-    clearDuplicate
+    clear
     visible := true
     jsShapeObject.setLocation(location)
     if (fill) then {
@@ -84,9 +84,10 @@ factory method shape {
     self
   }
 
-  method clearDuplicate is confidential{
+  method clear {
     myStage.removeChild(jsShapeObject)
     jsShapeObject.clear
+    myStage.update
   }
 
   method tween {
