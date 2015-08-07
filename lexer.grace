@@ -506,7 +506,6 @@ method new {
         // Read the program text from util.infile and return a list of
         // tokens.
         method lexfile(file) {
-            util.log_verbose("reading source.")
             def lines = []
             def cLines = []
             var line := ""
@@ -643,7 +642,7 @@ method new {
             var atStart := true
             var newlineFound := false
             linePosition := 0
-            util.log_verbose("lexing.")
+            util.log_verbose "lexing."
             def badSeparator = unicode.pattern("Z", 9)not(32, 160)
                 // 32 is SPACE, and 160 NO-BREAK SPACE
             def badControl =  unicode.pattern("C")not(10, 13)

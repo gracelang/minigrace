@@ -41,7 +41,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         return
     }
     if (imports.isAlready(nm)) then { 
-        util.log_verbose("checking import of {nm}, but it's already imported\n" ++
+        util.log 100 verbose("checking import of {nm}, but it's already imported\n" ++
             "linkfiles = {imports.linkfiles}")
         return
     }
@@ -71,7 +71,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
         def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
             .orElse { dynamicCModules.contains(nm) }
-        util.log_verbose "needsDynamic for {nm} is {needsDynamic}."
+        util.log 100 verbose "needsDynamic for {nm} is {needsDynamic}."
         var binaryFile
         var importsSet
         if (needsDynamic) then {
@@ -93,13 +93,13 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
                     ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
-                util.log_verbose "No source, but found {moduleFileGct} and {binaryFile}"
+                util.log 60 verbose "No source, but found {moduleFileGct} and {binaryFile}"
             }
         }
         if (needsDynamic.not) then {
             imports.linkfiles.add(binaryFile.asString)
         }
-        util.log_verbose "linkfiles is {imports.linkfiles}."
+        util.log 100 verbose "linkfiles is {imports.linkfiles}."
         if (binaryFile.exists.andAlso {
             moduleFileGct.exists }.andAlso {
                 noSource.orElse { binaryFile.newer(moduleFileGrace) }
@@ -107,9 +107,9 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         ) then {
         } else {
             if ( binaryFile.exists.not ) then {
-                util.log_verbose "{binaryFile} does not exist"
+                util.log 60 verbose "{binaryFile} does not exist"
             } elseif { binaryFile.newer(moduleFileGrace).not } then {
-                util.log_verbose "{binaryFile} not newer than {moduleFileGrace}"
+                util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
             compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
         }
@@ -125,7 +125,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         ) then {
         } else {
             if (moduleFileJs.newer(moduleFileGrace).not) then {
-                util.log_verbose "{moduleFileJs} not newer than {moduleFileGrace}"
+                util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
             compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
         }
@@ -190,7 +190,7 @@ method compileModule (nm) inFile (sourceFile)
         }
     }
     cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
-    util.log_verbose "executing sub-compile {cmd}"
+    util.log 50 verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", "-c", cmd).status
     if (exitCode != 0) then {
         errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
@@ -209,7 +209,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     def sought = filePath.fromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
-        util.log_verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
+        util.log 60 verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
         gctCache.at(moduleName) put(gctData)
         return gctData
     }

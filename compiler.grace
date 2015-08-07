@@ -42,11 +42,11 @@ var values := parser.parse(tokens)
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
-    util.log_verbose "target = parse, outfile = {util.outfile}"
+    util.log_verbose "target = parse, outfile = {util.outfile}."
     for (values) do { v ->
         util.outprint(v.pretty(0))
     }
-    util.log_verbose "closing {util.outfile}"
+    util.log_verbose "done writing {util.outfile}."
     util.outfile.close
     sys.exit(0)
 }

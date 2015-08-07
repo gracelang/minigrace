@@ -98,9 +98,7 @@ method outUnnumbered(s) {
 method outprint(s) {
     util.outprint(s)
 }
-method log_verbose(s) {
-    util.log_verbose(s)
-}
+
 method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
@@ -425,30 +423,6 @@ method compileblock(o) {
     o.register := "block" ++ myc
     inBlock := origInBlock
 }
-//method compiletype(o) {
-//    //
-//    log_verbose "genJS: compiletype({o}) called!"
-//    def myc = auto_count
-//    auto_count := auto_count + 1
-//    def escName = escapestring(o.value)
-//    def idName = escapeident(o.value)
-//    out("var type{myc} = new GraceType(\"{escName}\");")
-//    if (!o.anonymous) then {
-//        out "var var_{idName} = type{myc};"
-//    }
-//    for (o.methods) do {meth->
-//        def mnm = escapestring(meth.value)
-//        out("type{myc}.typeMethods.push(\"{mnm}\");")
-//    }
-//    def enclosing = o.scope.parent
-//    if (compilationDepth == 1) then {
-//        def idd = ast.identifierNode.new(o.value, false) scope(enclosing)
-//        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value) scope(enclosing)],
-//            [idd], false) scope(enclosing))
-//    }
-//
-//    o.register := "type{myc}"
-//}
 method compiletypedec(o) {
     def myc = auto_count
     def enclosing = o.scope.parent
@@ -1475,7 +1449,7 @@ method processImports(values') {
         posEnd -> Number
         suggestions
     }
-    log_verbose("checking imports.")
+    util.log_verbose "checking imports."
     for (values') do { v ->
         if (v.isImport) then {
             xmodule.checkExternalModule(v)
@@ -1483,7 +1457,7 @@ method processImports(values') {
         if (v.isDialect) then {
             var nm := v.value
             xmodule.checkExternalModule(v)
-            log_verbose("loading dialect for checkers.")
+            util.log 50 verbose "loading dialect for checkers."
             def CheckerFailure = Exception.refine "CheckerFailure"
             def DialectError = ProgrammingError.refine "DialectError"
             var dobj
@@ -1637,7 +1611,7 @@ method compile(vl, of, mn, rm, bt, glpath) {
         outprint(o)
     }
     outfile.close
-    log_verbose("done.")
+    util.log_verbose "done."
     if (buildtype == "run") then {
         def runExitCode = io.spawn("grace", of.pathname).wait
         if (runExitCode < 0) then {

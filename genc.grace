@@ -55,9 +55,6 @@ method outswitchup {
 method outswitchdown {
     output := bottomOutput
 }
-method log_verbose(s) {
-    util.log_verbose(s)
-}
 method countnodebindings(n) {
     if (n.kind == "if") then {
         countbindings(n.thenblock.body) + countbindings(n.elseblock.body)
@@ -1789,7 +1786,7 @@ method processImports(values') {
         for (values') do { v ->
             if (v.kind == "dialect") then {
                 var nm := v.value
-                log_verbose("loading dialect {nm} for checker.")
+                util.log 50 verbose "loading dialect {nm} for checker."
                 def CheckerFailure = Exception.refine "CheckerFailure"
                 var dobj
                 try {
@@ -1840,7 +1837,7 @@ method processImports(values') {
 
 method compileDynamicModule(fnBase, buildinfo) {
     // compile a dynamicly-linkable version as .gso
-    log_verbose("producing dynamic module {modname}.gso")
+    util.log 50 verbose "producing dynamic module {modname}.gso"
     var dlbit := ""
     var exportDynamicBit := ""
     var cmd := "ld -ldl -o /dev/null 2>/dev/null"
@@ -1867,7 +1864,7 @@ method compileDynamicModule(fnBase, buildinfo) {
 }
 method compileStaticModule(fnBase, buildinfo) {
     // compile a statically-linkable version as .gcn
-    log_verbose("producing static module {modname}.gcn")
+    util.log 50 verbose "producing static module {modname}.gcn"
     def cmd = "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" " ++
         "-I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{fnBase}.gcn\" -c \"{fnBase}.c\""
         // -c          => don't run linker
@@ -1881,7 +1878,7 @@ method compileStaticModule(fnBase, buildinfo) {
 }
 
 method linkExecutable(fnBase, buildinfo) {
-    log_verbose("linking.")
+    util.log_verbose "linking."
     var dlbit := ""
     var exportDynamicBit := ""
     var cmd := "ld -ldl -o /dev/null 2>/dev/null"
@@ -1919,7 +1916,7 @@ method linkExecutable(fnBase, buildinfo) {
 }
 
 method compile(vl, outfile, mn, rm, bt, buildinfo) {
-    log_verbose "generating C code..."
+    util.log_verbose "generating C code."
     var argv := sys.argv
     var cmd
     values := vl
@@ -2140,7 +2137,7 @@ method compile(vl, outfile, mn, rm, bt, buildinfo) {
     outfile.close
 
     if (runmode == "make") then {
-        log_verbose("compiling C code.")
+        util.log_verbose "compiling C code."
         def ofpn = outfile.pathname
         var ix := ofpn.size
         while { (ix > 1).andAlso {ofpn.at(ix) != "."} } do { ix := ix - 1 }
@@ -2154,7 +2151,7 @@ method compile(vl, outfile, mn, rm, bt, buildinfo) {
         if (util.noexec.not) then { 
             linkExecutable(ofpnBase, buildinfo)
         }
-        log_verbose("done.")
+        util.log_verbose "done."
         if (buildtype == "run") then {
             if (ofpnBase[1] != "/") then {
                 cmd := "./" ++ ofpnBase

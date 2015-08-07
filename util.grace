@@ -54,7 +54,7 @@ method parseargs(buildinfo) {
         var skip := true
         for (indices) do { ai->
             arg := argv.at(ai)
-            if (arg.at(1) == "-") then {
+            if (!skip && (arg.at(1) == "-")) then {
                 match(arg)
                     case { "-o" ->
                         if(argv.size < (ai + 1)) then {
@@ -65,6 +65,14 @@ method parseargs(buildinfo) {
                         skip := true
                     } case { "--verbose" ->
                         verbosityv := 40
+                        if (argv.size >= (ai + 1)) then {
+                            def nextArg = argv.at(ai + 1)
+                            def firstCh = nextArg.at(1)
+                            if ((firstCh >= "0") && (firstCh <= "9")) then {
+                                skip := true
+                                verbosityv := nextArg.asNumber
+                            }
+                        }
                     } case { "--help" ->
                         printhelp
                     } case { "--vtag" ->
@@ -241,8 +249,12 @@ method createDirectoryIfNecessary(d) is confidential {
 
 var previousElapsed := 0
 
-method log_verbose(s) {
-    if (verbosityv >= 40) then {
+method log_verbose(s) { 
+    log 40 verbose (s)
+}
+
+method log(level) verbose(s) {
+    if (verbosityv >= level) then {
         var vtagw := ""
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
@@ -490,7 +502,12 @@ method printhelp {
     print "  --stdout         Output to standard output rather than a file"
     print "  --target TGT     Choose a non-default compilation target TGT"
     print "                   Use --target help to list supported targets."
-    print "  --verbose        Give more detailed output"
+    print "  --verbose n      Give more detailed output (n is optional, default 40)"
+    print "                      n ≥ 20 lists unexpected situations during compilation"
+    print "                      n ≥ 40 also lists phases of the compilation"
+    print "                      n ≥ 50 also lists initiation of sub-compiles"
+    print "                      n ≥ 60 also describes searches for imports"
+    print "                      n ≥ 100 also describes import logic"
     print "  --version        Print version information"
     print ""
     print "By default, {sys.argv.at(1)} FILE will compile and execute FILE."
