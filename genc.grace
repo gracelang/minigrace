@@ -43,8 +43,6 @@ var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false
 var dialectHasChecker := false
 
-def dynamicOnlyModules = list.with("unicode", "mirrors")
-
 method out(s) {
     output.push(s)
 }
@@ -1531,7 +1529,7 @@ method compileoctets(o) {
     auto_count := auto_count + 1
 }
 method compiledialect(o) {
-    out("// Dialect import of {o.value}")
+    out("// Dialect \"{o.value}\"")
     var snm := ""
     for (o.value) do {c->
         if (c == "/") then {
@@ -1579,10 +1577,10 @@ method compileimport(o) {
     declaredvars.push(nm)
     globals.push("Object {modg};")
     out("  if ({modg} == NULL)")
-    if (xmodule.builtInModules.contains(o.path)) then {
-        out "    {modg} = {modg}_init();"
-    } elseif {dynamicOnlyModules.contains(o.path)} then {
+    if (xmodule.dynamicCModules.contains(o.path)) then {
         out "    {modg} = dlmodule(\"{snm}\");"
+    } elseif { xmodule.builtInModules.contains(o.path) } then {
+        out "    {modg} = {modg}_init();"
     } else {
         out "    {modg} = LOAD_MODULE({snm});"
         // for later transformation by the C preproecessor
@@ -1910,9 +1908,9 @@ method linkExecutable(fnBase, buildinfo) {
     }
 
     for (imports.linkfiles) do { fn ->
-        cmd := cmd ++ " " ++ fn
+        cmd := "{cmd} \"{fn}\""
     }
-    cmd := cmd ++ " -lm {dlbit}"
+    cmd := "{cmd} -lm {dlbit}"
     if ((io.system(cmd)).not) then {
         io.error.write("Fatal Error: Failed linking executable for {modname}.\n")
         io.error.write("The failing command was\n{cmd}\n")

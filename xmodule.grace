@@ -27,7 +27,7 @@ method builtInModules {
     }
 }
 
-def dynamicCModules = set.with("mirrors", "curl", "unicode")
+def dynamicCModules is public = set.with("mirrors", "curl", "unicode")
 def imports = util.requiredModules
 def emptySequence = sequence.empty
 
@@ -40,7 +40,11 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         imports.other.add(nm)
         return
     }
-    if (imports.isAlready(nm)) then { return }
+    if (imports.isAlready(nm)) then { 
+        util.log_verbose("checking import of {nm}, but it's already imported\n" ++
+            "linkfiles = {imports.linkfiles}")
+        return
+    }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
     
@@ -67,9 +71,11 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
         def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
             .orElse { dynamicCModules.contains(nm) }
+        util.log_verbose "needsDynamic for {nm} is {needsDynamic}."
         var binaryFile
         var importsSet
         if (needsDynamic) then {
+            dynamicCModules.add(nm)
             binaryFile := moduleFileGso
             importsSet := imports.other
         } else {
@@ -93,6 +99,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         if (needsDynamic.not) then {
             imports.linkfiles.add(binaryFile.asString)
         }
+        util.log_verbose "linkfiles is {imports.linkfiles}."
         if (binaryFile.exists.andAlso {
             moduleFileGct.exists }.andAlso {
                 noSource.orElse { binaryFile.newer(moduleFileGrace) }
