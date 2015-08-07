@@ -168,7 +168,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 modules/gUnit.gso: modules/mirrors.gso modules/mirrors.gct modules/math.gct
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js)
+install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
@@ -177,7 +177,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gc
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
-	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=modules/%.gcn) $(LIBRARY_MODULES:%.grace=modules/%.gso) $(LIBRARY_MODULES:%.grace=js/%.js) $(MODULE_PATH)
+	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) $(MODULE_PATH)
 	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
 
 js/ace/ace.js:
@@ -327,17 +327,20 @@ modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modul
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
-modules/objectdraw.gso modules/objectdraw.gcn:
-	@echo "Can't build $@; no C version of dom module"
-
 modules/rtobjectdraw.grace: modules/objectdraw.grace pull-objectdraw tools/make-rt-version
 	@if [ \($< -nt $@\) -o \( ! -e $@ \) ] ; \
 	then echo "creating $@" ; \
 	./tools/make-rt-version $< > $@ ; \
 	fi
 
-modules/rtobjectdraw.gcn modules/rtobjectdraw.gso:
-	@echo "Can't build $@; no C version of dom module"
+$(OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso:
+	@echo "Can't build $@; no C version of dependencies"
+
+$(OBJECTDRAW:%.grace=modules/%.gcn): modules/%.gcn:
+	@echo "Can't build $@; no C version of dependencies"
+
+$(OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: js/%.gct
+	cd modules && ln -sf ../$< .
 
 $(OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace
 	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
