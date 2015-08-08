@@ -355,8 +355,8 @@ oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete sample $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
-	if [ -e grace-web-editor ] ; \
-    then cd grace-web-editor; git pull ; \
+	@if [ -e grace-web-editor ] ; \
+    then printf "grace-web-editor: " ; cd grace-web-editor; git pull ; \
     else git clone --branch pdx https://github.com/gracelang/grace-web-editor/ ; fi
 
 pull-objectdraw:
