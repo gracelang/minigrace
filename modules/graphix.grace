@@ -54,13 +54,28 @@ factory method shape {
   method onMouseUp := (block) {
     jsShapeObject.addMouseUpListener(jsShapeObject, block)
   }
+  
+  method onMouseUpDo(block) {
+    jsShapeObject.addMouseUpListener(jsShapeObject, block)
+    self
+  }
 
   method onMouseDown := (block) {
     jsShapeObject.addMouseDownListener(jsShapeObject, block)
   }
 
+  method onMouseDownDo(block) {
+    jsShapeObject.addMouseDownListener(jsShapeObject, block)
+    self
+  }
+
   method onPressMove := (block) {
     jsShapeObject.addPressMoveListener(jsShapeObject, block)
+  }
+
+  method onPressMoveDo(block) {
+    jsShapeObject.addPressMoveListener(jsShapeObject, block)
+    self
   }
 
   method onMouseOver := (block) {
@@ -68,7 +83,14 @@ factory method shape {
     jsShapeObject.addMouseOverListener(jsShapeObject, block)
   }
 
-  method shapeDraw {} // abstract method
+  method onMouseOverDo(block) {
+    myStage.enableMouseOver(20)
+    jsShapeObject.addMouseOverListener(jsShapeObject, block)
+    self
+  }
+
+  method shapeDraw is confidential { abstract }
+
   method draw {
     clear
     visible := true
