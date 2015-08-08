@@ -1,7 +1,7 @@
 import "gUnit" as gU
 import "./math" as math
 
-class libTests.forMethod(m) {
+class mathTests.forMethod(m) {
     inherits gU.testCaseNamed(m)
     
     method testModuleAsString {
@@ -74,5 +74,5 @@ class libTests.forMethod(m) {
 }
     
     
-def mathTests = gU.testSuite.fromTestMethodsIn(libTests)
-mathTests.runAndPrintResults
+def t = gU.testSuite.fromTestMethodsIn(mathTests)
+t.runAndPrintResults
