@@ -1888,21 +1888,26 @@ function gracecode_util() {
         return new GraceString("gracelib.h");
     };
     this.methods.verbosity = function util_verbosity(argcv) {
-        return new GraceNum(30);
+        return new GraceNum(minigrace.verbosity);
     };
-    this.methods.log_verbose = function util_log_verbose(argcv, s) {
-        if (minigrace.verbose) {
+    function util_log_verbose(argcv, level, s) {
+        if (minigrace.verbosity >= level._value) {
             var elapsed = Math.round((Date.now() - loadDate)/10); // 10 ms
             elapsed = (elapsed / 100);       // seconds, with 2 decimals
             if (s._value === "starting compilation")
                 previousElapsed = elapsed;
             minigrace.stderr_write("minigrace: " + minigrace.modname + ': '
-                            + elapsed
-                            + " (+" + (elapsed - previousElapsed).toFixed(2) + "): "
-                            + s._value + "\n");
+                                   + elapsed
+                                   + " (+" + (elapsed - previousElapsed).toFixed(2) + "): "
+                                   + s._value + "\n");
             previousElapsed = elapsed;
         }
         return GraceDone;
+    };
+    this.methods['log()verbose'] = util_log_verbose;
+
+    this.methods['log_verbose'] = function (argcv, s) {
+        util_log_verbose([1, 1], new GraceNum(40), s)
     };
     this.methods.outprint = function util_outprint(argcv, s) {
         minigrace.stdout_write(s._value + "\n");
