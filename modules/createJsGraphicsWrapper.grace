@@ -68,8 +68,10 @@ factory method eventListener {
     native "js" code ‹
       var obj = var_obj;
       obj.on("pressup", function(event) {
-        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -77,9 +79,11 @@ factory method eventListener {
   method addMouseDownListener(obj, listener) {
     native "js" code ‹
       var obj = var_obj;
-      obj.on("mousedown", function(event) {
-        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+      obj.on("pressup", function(event) {
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -88,8 +92,10 @@ factory method eventListener {
     native "js" code ‹
       var obj = var_obj;
       obj.on("mouseover", function(event) {
-        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -98,8 +104,10 @@ factory method eventListener {
     native "js" code ‹
       var shape = var_obj;
       shape.on("click", function(event) {
-        callmethod(var_listener, "onClick", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onClick", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -108,8 +116,10 @@ factory method eventListener {
     native "js" code ‹
       var shape = var_obj;
       shape.on("pressmove", function(event) {
-        callmethod(var_listener, "onPressMove", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onPressMove", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -117,8 +127,10 @@ factory method eventListener {
   method addStageDownListener(stage, listener) {
     native "js" code ‹
       var_stage.on("stagemousedown", function(event) {
-        callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseDown", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -126,8 +138,10 @@ factory method eventListener {
   method addStageUpListener(stage, listener) {
     native "js" code ‹
       var_stage.on("stagemouseup", function(event) {
-        callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseUp", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
@@ -135,7 +149,9 @@ factory method eventListener {
   method addMouseExitListener(stage, listener) {
     native "js" code ‹
       var_stage.on("mouseleave", function(event) {
-        callmethod(var_listener, "onMouseExit", [0]);
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseExit", [0]);
+        });
       });
     ›
   }
@@ -143,8 +159,10 @@ factory method eventListener {
   method addStageMouseMoveListener(stage, listener) {
     native "js" code ‹
       var_stage.on("stagemousemove", function(event) {
-        callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
-          new GraceNum(event.stageY));
+        minigrace.trapErrors(function() {
+          callmethod(var_listener, "onMouseOver", [2], new GraceNum(event.stageX),
+                new GraceNum(event.stageY));
+        });
       });
     ›
   }
