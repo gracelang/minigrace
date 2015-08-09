@@ -50,11 +50,15 @@ factory method shape {
     jsShapeObject.addClickListener(jsShapeObject, block)
     myStage.update
   }
+  method onClickDo(block) {
+    jsShapeObject.addClickListener(jsShapeObject, block)
+    myStage.update
+    self
+  }
 
   method onMouseUp := (block) {
     jsShapeObject.addMouseUpListener(jsShapeObject, block)
   }
-
   method onMouseUpDo(block) {
     jsShapeObject.addMouseUpListener(jsShapeObject, block)
     self
@@ -63,7 +67,6 @@ factory method shape {
   method onMouseDown := (block) {
     jsShapeObject.addMouseDownListener(jsShapeObject, block)
   }
-
   method onMouseDownDo(block) {
     jsShapeObject.addMouseDownListener(jsShapeObject, block)
     self
@@ -147,17 +150,33 @@ factory method create(canvasWidth, canvasHeight) {
   method onStageMouseDown := (block) {
     stage.addStageDownListener(block)
   }
+  method onMouseDownDo(block) {
+    stage.addStageDownListener(block)
+    self
+  }
 
   method onStageMouseUp := (block) {
     stage.addStageUpListener(block)
+  }
+  method onMouseUpDo(block) {
+    stage.addStageUpListener(block)
+    self
   }
 
   method onMouseExit := (block) {
     stage.addMouseExitListener(block)
   }
+  method onMouseExitDo(block) {
+    stage.addMouseExitListener(block)
+    self
+  }
 
   method onStageMouseMove := (block) {
     stage.addStageMouseMoveListener(block)
+  }
+  method onMouseMoveDo(block) {
+    stage.addStageMouseMoveListener(block)
+    self
   }
 
   method mouseLocation {
@@ -171,6 +190,10 @@ factory method create(canvasWidth, canvasHeight) {
   }
 
   method timedEvent(block, time) {
+    // decprecated; use after(time) do(block)
+    stage.setTimeout(block, time, stage)
+  }
+  method after(time) do(block) {
     stage.setTimeout(block, time, stage)
   }
 
@@ -179,7 +202,11 @@ factory method create(canvasWidth, canvasHeight) {
   }
 
   method tickEvent(block, freq) {
+    // deprecated; use every(interval) do(block)
     stage.setTicker(block, freq, stage)
+  }
+  method every(interval) do(block) {
+    stage.setTicker(block, 1000/interval, stage)
   }
 
   method clearTicker {
