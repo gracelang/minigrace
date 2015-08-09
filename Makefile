@@ -166,7 +166,7 @@ gracelib-basic.o: gracelib.c gracelib.h
 gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
-modules/gUnit.gso: modules/mirrors.gso modules/mirrors.gct modules/math.gct
+modules/gUnit.gso: modules/mirrors.gso modules/math.gso
 
 install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso)
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
@@ -209,7 +209,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
+js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.js minigrace
 	./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/timer.gct: stubs/timer.gct
