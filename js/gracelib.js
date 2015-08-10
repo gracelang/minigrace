@@ -219,7 +219,14 @@ GraceString.prototype = {
             if (result === -1) { return new GraceNum(0) };
             return new GraceNum(result + 1);
         },
-        "lastIndexOf()startingAt()ifAbsent": function string_lastIndexOf (argcv, needle, startPos, block0) {
+        "lastIndexOf()startingAt": function string_lastIndexOf_startingAt (argcv, needle, startPos) {
+            var self = this._value;
+            var start = startPos._value - 1;
+            var result = self.lastIndexOf(needle._value, start);
+            if (result === -1) { return new GraceNum(0) };
+            return new GraceNum(result + 1);
+        },
+        "lastIndexOf()startingAt()ifAbsent": function string_lastIndexOf_startingAt_ifAbsent (argcv, needle, startPos, block0) {
             var self = this._value;
             var start = startPos._value - 1;
             var result = self.lastIndexOf(needle._value, start);
