@@ -2,7 +2,7 @@ type Environment = type {
     at(key:String) -> String
     [](key:String) -> String
     at(key:String) put(value:String) -> Boolean
-    []:= (key:String) put(value:String) -> Boolean
+    []:= (key:String, value:String) -> Boolean
     contains(key:String) -> Boolean
 }
 
@@ -15,6 +15,6 @@ factory method environ -> Environment {
     method at(key:String) -> String {}
     method [](key:String) -> String {}
     method at(key:String) put(value:String) -> Boolean {}
-    method []:= (key:String) put(value:String) -> Boolean {}
+    method []:= (key:String, value:String) -> Boolean {}
     method contains(key:String) -> Boolean {}
 }
