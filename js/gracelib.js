@@ -277,6 +277,19 @@ GraceString.prototype = {
             };
             return new GraceString(s.substr(start - 1, n));
         },
+        "substringFrom": function string_substringFrom_size(argcv, from) {
+            var s = this._value;
+            var start = from._value;
+            var n = s.length;
+            // we deliberatly allow "abc".substringFrom 4
+            if ((start < 1) || (start > s.length + 1)) {
+                var msgstr = s.length <= 20 ? s : (s.substr(0, 17) + "…");
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('"' + msgstr + "\".substringFrom(" + start
+                                    + ") but string.size = " + s.length));
+            };
+            return new GraceString(s.substr(start - 1, n));
+        },
         "startsWith": function string_startsWith(argcv, needle) {
             var self = this._value;
             var n = needle._value;
