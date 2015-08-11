@@ -785,7 +785,9 @@ factory method inputBox(mystage) {
       if(this.data.input != null) {
         var input = this.data.input;
         input.onsubmit(function(event) {
-          callmethod(var_inputObj, "callSubmit", [0])
+            minigrace.trapErrors(function() {
+                callmethod(var_inputObj, "callSubmit", [0])
+            });
         });
       }
     ›
