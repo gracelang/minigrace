@@ -484,28 +484,46 @@ function GraceNum(n) {
 GraceNum.prototype = {
     methods: {
         "+": function(argcv, other) {
-            var s = this._value + other._value;
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = this._value + other._value;
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reversePlusNumber", [1], this);
         },
         "*": function(argcv, other) {
-            var s = this._value * other._value;
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = this._value * other._value;
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reverseTimesNumber", [1], this);
         },
         "/": function(argcv, other) {
-            var s = this._value / other._value;
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = this._value / other._value;
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reverseDivideNumber", [1], this);
         },
         "-": function(argcv, other) {
-            var s = this._value - other._value;
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = this._value - other._value;
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reverseMinusNumber", [1], this);
         },
         "^": function(argcv, other) {
-            var s = Math.pow(this._value, other._value);
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = Math.pow(this._value, other._value);
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reversePowerNumber", [1], this);
         },
         "%": function(argcv, other) {
-            var s = this._value % other._value;
-            return new GraceNum(s)
+            if (this.prototype === other.prototype) {
+                var s = this._value % other._value;
+                return new GraceNum(s)
+            }
+            return callmethod(other, "reverseRemainderNumber", [1], this);
         },
         "@": function(argcv, other) {
             return callmethod(GracePoint2DClass(), "x()y", [1, 1], this, other);
