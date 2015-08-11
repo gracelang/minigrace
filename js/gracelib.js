@@ -145,6 +145,19 @@ function string_curriedAt(idx) {
     return new GraceString(s.charAt(idx-1));
 }
 
+function string_hash(argcv) {
+    if (typeof this._hash === 'undefined') {
+        var hc = 0;
+        for (var i=0; i<this._value.length; i++) {
+            hc *= 23;
+            hc += this._value.charCodeAt(i);
+            hc = hc & hc;
+        }
+        this._hash = new GraceNum(Math.abs(hc));
+    }
+    return this._hash;
+}
+
 GraceString.prototype = {
     methods: {
         "++": function(argcv, other) {
@@ -384,24 +397,8 @@ GraceString.prototype = {
         "ord": function string_ord (argcv) {
             return new GraceNum(this._value.charCodeAt(0));
         },
-        "hashcode": function string_hashcode(argcv) {
-            var hc = 0;
-            for (var i=0; i<this._value.length; i++) {
-                hc *= 23;
-                hc += this._value.charCodeAt(i);
-                hc %= 0x100000000;
-            }
-            return new GraceNum(hc);
-        },
-        "hash": function string_hash(argcv) {
-            var hc = 0;
-            for (var i=0; i<this._value.length; i++) {
-                hc *= 23;
-                hc += this._value.charCodeAt(i);
-                hc %= 0x100000000;
-            }
-            return new GraceNum(hc);
-        },
+        "hashcode": string_hash,
+        "hash": string_hash,
         "match()matchesBinding()else": function string_match (argcv, pat, b, e) {
             return callmethod(pat, "matchObject()matchesBinding()else", [3],
                     this, b, e);
@@ -592,10 +589,12 @@ GraceNum.prototype = {
             return callmethod(t, "not", [0]);
         },
         "hash": function num_hash (argcv) {
-            return new GraceNum(parseInt("" + (this._value * 10)));
+            var raw = this._value * 13
+            return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
         },
         "hashcode": function num_hashcode (argcv) {
-            return new GraceNum(parseInt("" + (this._value * 10)));
+            var raw = this._value * 13
+            return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
         },
         "inBase": function(argcv, other) {
             var mine = this._value;
@@ -635,6 +634,9 @@ GraceNum.prototype = {
         },
         "abs": function(argcv) {
             return new GraceNum(Math.abs(this._value));
+        },
+        "sqrt": function(argcv) {
+            return new GraceNum(Math.sqrt(this._value));
         },
         "match": function(argcv, o) {
             if (Grace_isTrue(callmethod(this, "==", [1], o)))
