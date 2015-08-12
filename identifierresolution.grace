@@ -1236,6 +1236,7 @@ method rewriteMatches(topNode) {
 }
 
 method resolve(values) {
+    util.log_verbose "rewriting tree."
     setupContext(values)
     util.setPosition(0, 0)
     def moduleObject = ast.moduleNode.body(values) 
