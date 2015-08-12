@@ -42,6 +42,22 @@ method repeat(n)times(action) {
     }
 }
 
+method min(a, b, *xs) {
+    var result := if (a < b) then { a } else { b }
+    xs.do { x -> 
+        if (x < result) then { result := x }
+    }
+    result
+}
+
+method max(a, b, *xs) {
+    var result := if (a > b) then { a } else { b }
+    xs.do { x -> 
+        if (x > result) then { result := x }
+    }
+    result
+}
+
 class BasicPattern.new {
     method &(o) {
         AndPattern.new(self, o)
