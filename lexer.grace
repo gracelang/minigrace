@@ -1049,7 +1049,6 @@ method new {
                         accum := accum ++ c
                     } else {
                         // Linebreaks terminate any open tokens
-                        newlineFound := true
                         modechange(tokens, mode, accum)
                         mode := "d"
                         newmode := "d"

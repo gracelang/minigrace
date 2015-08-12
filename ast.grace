@@ -12,6 +12,7 @@ import "util" as util
 // each case. Some nodes contain other fields for their specific use: while has
 // both a value (the condition) and a body, for example.
 
+def lineLength is public = 80
 
 method listMap(l, b) ancestors(as) is confidential {
     def newList = list.empty
@@ -75,7 +76,7 @@ type AstNode = type {
         // The symbolTable for names defined in this node and its sub-nodes
     pretty(n:Number) -> String 
         // Pretty-print-string of node at depth n
-    comments -> List<AstNode>
+    comments -> AstNode
         // Comments associated with this node
 }
 
@@ -87,7 +88,7 @@ class baseNode.new {
     var line is public := util.linenum
     var linePos is public := util.linepos
     var symbolTable := fakeSymbolTable
-    var comments is public := list.empty
+    var comments is public := false
 
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
@@ -117,6 +118,7 @@ class baseNode.new {
         }
         return self.dtype
     }
+    method isSimple { true }  // needs no parens when used as reciever
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
     }
@@ -159,10 +161,14 @@ class baseNode.new {
         obj
     }
     method addComment(cmtNode) {
-        self.comments.push(cmtNode)
+        if (comments == false) then {
+            comments := cmtNode
+        } else {
+            cmtNode.extendCommentUsing(cmtNode)
+        }
     }
     method addComments(cmtNodeList) {
-        self.comments := self.comments ++ cmtNodeList
+        cmtNodeList.do { each -> addComment(each) }
     }
 }
 
@@ -196,6 +202,7 @@ class ifNode.new(cond, thenblock', elseblock') {
     var thenblock is public := thenblock'
     var elseblock is public := elseblock'
     var handledIdentifiers is public := false
+    method isSimple { false }  // needs parens when used as reciever
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitIf(self) up(as)) then {
             def newChain = as.extend(self)
@@ -238,14 +245,14 @@ class ifNode.new(cond, thenblock', elseblock') {
     }
     method toGrace(depth : Number) -> String {
         var spc := ""
-        for (0..(depth - 1)) do { i ->
+        repeat (depth) times {
             spc := spc ++ "    "
         }
         var s := "if ({self.value.toGrace(0)}) then \{"
         for (self.thenblock.body) do { ix ->
             s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
         }
-        if (self.elseblock.size > 0) then {
+        if (self.elseblock.isntEmpty) then {
             s := s ++ "\n" ++ spc ++ "\} else \{"
             for (self.elseblock.body) do { ix ->
                 s := s ++ "\n" ++ spc ++ "    " ++ ix.toGrace(depth + 1)
@@ -275,6 +282,8 @@ class blockNode.new(params', body') {
     for (params') do {p->
         p.accept(patternMarkVisitor) from(ancestorChain.with(self))
     }
+    method isEmpty { body.size == 0 }
+    method isntEmpty { body.size > 0 }
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the synmol table that defines the scope that I open.
@@ -286,7 +295,7 @@ class blockNode.new(params', body') {
     }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
-        body.isEmpty.not.andAlso { body.last.returnsObject }
+        (body.size > 0).andAlso { body.last.returnsObject }
     }
     method returnedObjectScope {
         // precondition: returnsObject
@@ -383,6 +392,7 @@ class catchCaseNode.new(block, cases', finally') {
     var value is public := block
     var cases is public := cases'
     var finally is public := finally'
+    method isSimple { false }  // needs parens when used as reciever
 
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitCatchCase(self) up(as)) then {
@@ -443,6 +453,7 @@ class matchCaseNode.new(matchee', cases', elsecase') {
     var value is public := matchee'
     var cases is public := cases'
     var elsecase is public := elsecase'
+    method isSimple { false }  // needs parens when used as reciever
     method matchee { value }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitMatchCase(self) up(as)) then {
@@ -743,11 +754,8 @@ class typeDecNode.new(name', typeValue) {
         s := s ++ spc ++ "Value:"
         s := s ++ value.pretty(depth+2)
         s := s ++ "\n"
-        if (comments.size > 0) then {
-            s := s ++ "\n" ++ spc ++ "Comments:"
-            for (comments) do {c->
-                s := s ++ "\n {c.pretty(depth + 2)}"
-            }
+        if (false != comments) then {
+            s := s ++ comments.prety(depth+2)
         }
         s
     }
@@ -901,12 +909,8 @@ def methodNode = object {
             for (self.body) do { mx ->
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
-            if (comments.size > 0) then {
-                s := "{s}\n{spc}Comments:"
-                for (comments) do {c->
-                    s := "{s}\n{spc}  {c.pretty(depth + 2)}"
-                }
-                s := s ++ "\n"
+            if (false != comments) then {
+                s := s ++ comments.prety(depth+2)
             }
             s
         }
@@ -951,6 +955,9 @@ def methodNode = object {
                     if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
             }
             s := s ++ " \{"
+            if (comments != false) then {
+                s := s ++ comments.toGrace(depth + 1)
+            }
             for (self.body) do { mx ->
                 s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
             }
@@ -1062,7 +1069,7 @@ def callNode = object {
         }
         method toGrace(depth : Number) -> String {
             var spc := ""
-            for (0..(depth - 1)) do { i ->
+            repeat (depth) times {
                 spc := spc ++ "    "
             }
             var s := ""
@@ -1073,7 +1080,11 @@ def callNode = object {
                     s := member.value.substringFrom(7)to(member.value.size)
                     return s ++ member.in.toGrace(0)
                 }
-                s := member.in.toGrace(0) ++ "."
+                if (member.in.isSimple) then {
+                    s := "{member.in.toGrace 0}."
+                } else {
+                    s := "({member.in.toGrace 0})."
+                }
             }
             var firstPart := true
             for (self.with) do { part ->
@@ -1258,11 +1269,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         for (self.value) do { x ->
             s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
         }
-        if (comments.size > 0) then {
-            s := s ++ "\n" ++ spc ++ "Comments:"
-            for (comments) do {c->
-                s := s ++ "\n {c.pretty(depth + 2)}"
-            }
+        if (false != comments) then {
+            s := s ++ comments.prety(depth+2)
         }
         s
     }
@@ -1866,6 +1874,7 @@ class opNode.new(op, l, r) {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
+    method isSimple { false }  // needs parens when used as reciever
     method nameString { value }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
@@ -2100,11 +2109,8 @@ def defDecNode = object {
                     s := "{s} {ann.pretty(depth + 2)}"
                 }
             }
-            if (comments.size > 0) then {
-                s := s ++ "\n" ++ spc ++ "Comments:"
-                for (comments) do {c->
-                    s := s ++ "\n {c.pretty(depth + 2)}"
-                }
+            if (false != comments) then {
+                s := s ++ comments.prety(depth+2)
             }
             s
         }
@@ -2114,7 +2120,8 @@ def defDecNode = object {
                 spc := spc ++ "    "
             }
             var s := "def {self.name.toGrace(0)}"
-            if (self.dtype.value != "Unknown") then {
+            if ( (self.dtype != false).andAlso{
+                    self.dtype.value != "Unknown" }) then {
                 s := s ++ " : " ++ self.dtype.toGrace(0)
             }
             if (self.annotations.size > 0) then {
@@ -2212,21 +2219,19 @@ class varDecNode.new(name', val', dtype') {
             s := s ++ "\n" ++ spc ++ "Value: "
             s := s ++ self.value.pretty(depth + 2)
         }
-        if (comments.size > 0) then {
-            s := s ++ "\n" ++ spc ++ "Comments:"
-            for (comments) do {c->
-                s := s ++ "\n {c.pretty(depth + 2)}"
-            }
+        if (false != comments) then {
+            s := s ++ comments.prety(depth+2)
         }
         s
     }
     method toGrace(depth : Number) -> String {
         var spc := ""
-        for (0..(depth - 1)) do { i ->
+        repeat (depth) times {
             spc := spc ++ "    "
         }
         var s := "var {self.name.toGrace(0)}"
-        if (self.dtype.value != "Unknown") then {
+        if ( (self.dtype != false).andAlso{
+                self.dtype.value != "Unknown" }) then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
         }
         if (self.annotations.size > 0) then {
@@ -2460,6 +2465,7 @@ class blankNode.new {
         def newChain = as.extend(n)
         blk.apply(n, as)
     }
+    def nameString is public = ""
     method toGrace(depth : Number) -> String {
         ""
     }
@@ -2581,7 +2587,7 @@ def callWithPart = object {
         }
         method pretty(depth) {
             var spc := ""
-            for (0..depth) do { i ->
+            repeat (depth+1) times {
                 spc := spc ++ "  "
             }
             var s := "{super.pretty(depth)}: {name}"
@@ -2610,7 +2616,11 @@ def commentNode = object {
         var isPartialLine:Boolean is public := false
         method isComment { true }
         method asString { "Comment: {value}" }
-
+        method extendCommentUsing(cmtNode) {
+            value := value ++ " " ++ cmtNode.value
+            // TODO: the end location in the source should be
+            // updated too.
+        }
         method map(blk) ancestors(as) {
             var n := shallowCopy
             def newChain = as.extend(n)
@@ -2623,7 +2633,13 @@ def commentNode = object {
             "{super.pretty(depth)}({value})"
         }
         method toGrace(depth) {
-            "// {value}"
+            if (isPartialLine) then {
+                "// {value}"
+            } else {
+                var spc := ""
+                repeat (depth) times { spc := spc ++ "    " }
+                wrap(value) to (lineLength) prefix (spc ++ "// ")
+            }
         }
         method shallowCopy {
             commentNode.new(nullNode).shallowCopyFieldsFrom(self)
@@ -2636,6 +2652,47 @@ def commentNode = object {
         }
     }
 }
+
+method max(a, b) { 
+    if (a > b) then { a } else { b }
+}
+method min(a, b) {
+    if (a < b) then { a } else { b }
+}
+
+method wrap(str:String) to (l:Number) prefix (margin:String) {
+    def ind = margin.size
+    def len = max(ind + 4, l)
+    if ((ind + str.size) <= len) then {
+        return "\n" ++ margin ++ str
+    }
+    var currBreak 
+    var trimmedLine
+
+    try {
+        currBreak := str.lastIndexOf " " startingAt (len - ind)
+            ifAbsent {len - ind}
+        trimmedLine := str.substringFrom (1) to (currBreak).trim
+    } catch { ex:NoSuchMethod ->  // C string libraries lack methods
+        currBreak := min(len - ind, str.size)
+        (1..currBreak).do { ix ->
+            if (str.at(ix) == " ") then { currBreak := ix }
+        }
+        var end := currBreak
+        while {(end >= 1).andAlso{str.at(end) == " "}} do {
+            end := end - 1
+        }
+        var start := 1
+        while {(start <= str.size).andAlso{str.at(start) == " "}} do {
+            start := start + 1
+        }
+        trimmedLine := str.substringFrom (start) to (end)
+    }
+    "\n" ++ margin ++ trimmedLine ++
+        wrap(str.substringFrom (currBreak+1) to (str.size))
+            to (l) prefix (margin)
+}
+
 
 type ASTVisitor = {
      visitIf(o) up(as) -> Boolean

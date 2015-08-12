@@ -3442,6 +3442,7 @@ method pushcomments {
 // should be associated with that node, remove them from comments stack,
 // and add them to that node's list of comments.
 method reconcileComments {
+    pushcomments
     if (values.size == 0) then { return }
     match(values.last)
         case { _:ast.AstNode -> true }
@@ -3632,13 +3633,9 @@ method parse(toks) {
     next
     var oldlength := tokens.size
     while {tokens.size > 0} do {
-        blank
         pushcomments
-        blank
         methoddec
-        blank
         inheritsdec
-        blank
         statement
         if (tokens.size == oldlength) then {
             def suggestion = errormessages.suggestion.new
