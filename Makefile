@@ -195,6 +195,7 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 
 js/grace: js/grace.in
 	sed -e "s|@MODULE_PATH@|$(MODULE_PATH)|" $< > js/grace
+	chmod a+x js/grace
 
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo Generating minigrace.js from minigrace.in.js...
