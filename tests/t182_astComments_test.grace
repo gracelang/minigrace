@@ -33,9 +33,9 @@ def input = list.with(
     "\}",
     "",
     "//Comment class A",
-    "//Comment class B",
     "class person.new(name', age') -> Person \{",
-    "   def name:String is public = name'",
+    "   //Comment class B",
+    "   def name:String is public = name'  // the name",
     "   def age:Number is public = age'",
     "\}"
 )
@@ -44,18 +44,18 @@ util.lines := input
 def tokens = lexer.new.lexinput(input)
 def nodes = parser.parse(tokens)
 
-for (1..nodes.size) do { i ->
-    print "comments for node {i}:"
-    for (nodes[i].comments) do { c ->
-        print ("  "++c.pretty(0))
+nodes.keysAndValuesDo { i, node ->
+    print "comments for node {i} {node.asString} {node.nameString}:"
+    if (node.comments != false) then {
+        print(node.comments.pretty 0)
     }
-    if (nodes[i].kind == "typedec") then {
+    if (node.kind == "typedec") then {
         print "  inner comments:"
-        for (nodes[i].value.methods) do {mt ->
-            for (mt.comments) do { mtc ->
-                print ("    "++mtc.pretty(0))
+        for (nodes[i].value.methods) do { mt ->
+            if (mt.comments != false) then {
+                print(mt.comments.pretty 4)
             }
-            print ""
         }
+        print ""
     }
 }
