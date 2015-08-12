@@ -71,9 +71,10 @@ type Sequence<T> = Enumerable<T> & type {
 
 type List<T> = Sequence<T> & type {
     add(*x: T) -> List<T>
+    addAll(xs:Collection<T>) -> List<T>
     addFirst(*x: T) -> List<T>
     addAllFirst(xs:Collection<T>) -> List<T>
-    addLast(x: T) -> List<T>    // same as add
+    addLast(*x: T) -> List<T>    // same as add
     at(ix:Number) put(v:T) -> List<T>
     []:= (ix:Number, v:T) -> Done
     removeFirst -> T
@@ -98,6 +99,7 @@ type List<T> = Sequence<T> & type {
     sort -> List<T>
     sortBy(sortBlock:Block2<T,T,Number>) -> List<T>
     reverse -> List<T>
+    reversed -> List<T>
 }
 
 type Set<T> = Collection<T> & type {
