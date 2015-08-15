@@ -150,6 +150,9 @@ method parseargs(buildinfo) {
                             }
                             sys.exit(0)
                         }
+                        if (targetv != "js") then {
+                            buildtypev := "source"
+                        }
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
@@ -220,13 +223,25 @@ method parseargs(buildinfo) {
                 sys.exit(1)
             }
     }
-    if (gracelibPathv == false) then {
-        if (io.exists(sys.execPath ++ "/../lib/minigrace/gracelib.o")) then {
-            gracelibPathv := sys.execPath ++ "/../lib/minigrace"
+    if ((buildtype == "run") && (gracelibPathv == false)) then {
+        def extension = "." ++ target
+        def soughtLibrary = filePath.withDirectory(execDir)
+                                base "gracelib" extension(extension)
+        if (soughtLibrary.exists) then {
+            gracelibPathv := execDir
         } else {
-            gracelibPathv := sys.execPath
+            soughtLibrary.directory := ""
+            def gracelib = file (soughtLibrary)
+                onPath (sys.environ.at "GRACE_MODULE_PATH")
+                otherwise { locs ->
+                    io.error.write "minigrace: can't find {soughtLibrary.shortName}.\n"
+                    io.error.write "Looked in {locs}.\n"
+                    sys.exit(1)
+                }
+            gracelibPathv := gracelib.directory
         }
     }
+    log 50 verbose "gracelibPath = {gracelibPathv}"
     if (infilev == io.input) then {
         if (infilev.isatty) then {
             print("minigrace {buildinfo.gitgeneration} / "
@@ -486,15 +501,17 @@ method printhelp {
     print "Compile, process, or run a Grace source file or standard input."
     print ""
     print "Modes:"
-    print "  --make           Compile FILE and link, creating a native executable"
+    print "  --make           Compile FILE and link, creating a executable"
     print "  --run            Compile FILE and execute the program [default]"
     print "  --source         Compile FILE to C source, but no further"
-    print "  --noexec         Compile FILE to native object code, but don't create executable"
+    print "  --noexec         Compile FILE to object code, but don't create executable"
     print "  --dynamic-module Compile FILE as a dynamic module"
     print ""
     print "Options:"
     print "  --dir DIR        Use the directory DIR for generated output files,"
     print "                   and for .gct files of imported modules"
+    print "  --gracelib DIR   Look in DIR for gracelib.  If not specified, looks in"
+    print "                   the same directory as {sys.argv.at(1)}, and then on GRACE_MODULE_PATH."
     print "  --help           This text"
     print "  --module         Override default module name (derived from FILE)"
     print "  --no-recurse     Do not compile imported modules"

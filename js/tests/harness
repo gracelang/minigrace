@@ -97,7 +97,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="GRACE_MODULE_PATH=../../modules/:../sample/dialects/: $GRACE --verbose --target js $tcase"
+            COMMAND="GRACE_MODULE_PATH=../../modules/:../sample/dialects/: $GRACE --verbose --target js --noexec $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -106,7 +106,7 @@ do
                 cat $tcase | $GRACE --interactive > test-$$.out
             else
                 execname="${tcase%%.*}"
-                $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
+                GRACE_MODULE_PATH=../:../sample/dialects/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
                 if [ ! -s test-$$.err ]
                 then
                     /bin/rm -f test-$$.err
@@ -138,7 +138,7 @@ do
         then
             COMMAND="cat $tcase | $GRACE --interactive"
         else
-            COMMAND="$GRACE --make --native $tcase"
+            COMMAND="$GRACE --make --target js --noexec $tcase"
         fi
         if eval "$COMMAND" > test-$$.log 2>&1
         then

@@ -1903,6 +1903,7 @@ method linkExecutable(fnBase, buildinfo) {
         io.error.write("Unable to link: can't find file gracelib.o\n")
         sys.exit(3)
     }
+    util.log 50 verbose "linking with {cmd}"
 
     for (imports.linkfiles) do { fn ->
         cmd := "{cmd} \"{fn}\""

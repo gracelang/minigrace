@@ -3,6 +3,7 @@ import "io" as io
 import "sys" as sys
 import "ast" as ast
 import "util" as util
+import "unixFilePath" as unixFilePath
 import "xmodule" as xmodule
 import "mirrors" as mirrors
 import "errormessages" as errormessages
@@ -23,7 +24,6 @@ var outfile
 var modname := "main"
 var runmode := "build"
 var buildtype := "bc"
-var gracelibPath := "gracelib.o"
 var inBlock := false
 var compilationDepth := 0
 def importedModules = set.empty
@@ -1504,7 +1504,7 @@ method processImports(values') {
         }
     }
 }
-method compile(vl, of, mn, rm, bt, glpath) {
+method compile(vl, of, mn, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
     if (util.extensions.contains "noTypeChecks") then {
@@ -1519,7 +1519,6 @@ method compile(vl, of, mn, rm, bt, glpath) {
     modname := mn.substringFrom (slashPos+1) to (mn.size)
     runmode := rm
     buildtype := bt
-    gracelibPath := glpath
     if (util.extensions.contains("Debug")) then {
         debugMode := true
     }
@@ -1612,11 +1611,22 @@ method compile(vl, of, mn, rm, bt, glpath) {
     }
     outfile.close
     util.log_verbose "done."
-    if (buildtype == "run") then {
-        def runExitCode = io.spawn("grace", of.pathname).wait
-        if (runExitCode < 0) then {
-            io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
-            sys.exit(4)
+    if (buildtype == "run") then { runJsCode(of, glPath) }
+}
+
+method runJsCode(of, glPath) {
+    def gmp = sys.environ.at "GRACE_MODULE_PATH"
+    def pathList = unixFilePath.split(gmp)
+    def libPath = if (glPath.at(glPath.size) == "/") then { glPath }
+                        else { glPath ++ "/" }
+    if (io.exists(libPath ++ "gracelib.js")) then {
+        if (pathList.contains(libPath).not) then {
+            sys.environ.at "GRACE_MODULE_PATH" put "{libPath}:{gmp}"
         }
+    }
+    def runExitCode = io.spawn("grace", of.pathname).wait
+    if (runExitCode < 0) then {
+        io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
+        sys.exit(4)
     }
 }
