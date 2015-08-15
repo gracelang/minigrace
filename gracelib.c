@@ -1696,6 +1696,12 @@ Object String_GreaterOrEqual(Object self, int nparts, int *argcv,
     int cmp = String_Compare_int(self, args[0]);
     return alloc_Boolean(cmp >= 0);
 }
+Object ConcatString_quoted(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    char *c = grcstring(self);
+    Object o = makeQuotedString(c);
+    return o;
+}
 Object ConcatString__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = grcstring(self);
@@ -1868,6 +1874,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "first", &ConcatString_first);
         add_Method(ConcatString, "do", &ConcatString_do);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
+        add_Method(ConcatString, "quoted", &ConcatString_quoted);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
         add_Method(ConcatString, "iter", &ConcatString_iter);
@@ -1917,6 +1924,7 @@ Object alloc_ConcatString(Object left, Object right) {
     so->hashcode = 0;
     return o;
 }
+Object String_quoted(Object, int, int*, Object*, int flags);
 Object String__escape(Object, int, int*, Object*, int flags);
 Object String_QuotedString(Object, int, int*, Object*, int flags);
 Object String_length(Object, int, int*, Object*, int flags);
@@ -2109,6 +2117,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "compare", &String_Compare);
         add_Method(String, "first", &String_first);
         add_Method(String, "iterator", &String_iter);
+        add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
         add_Method(String, "do", &String_do);
@@ -2209,12 +2218,21 @@ Object makeQuotedString(char *p) {
         } else if (p[ip] == '\\') {
             buf[op++] = '\\';
             buf[op] = '\\';
+        } else if (p[ip] == '\n') {
+            buf[op++] = '\\';
+            buf[op] = 'n';
         } else {
             buf[op] = p[ip];
         }
     }
     buf[op] = 0;
     return alloc_String(buf);
+}
+Object String_quoted(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    char *p = sself->body;
+    return makeQuotedString(p);
 }
 Object String__escape(Object self, int nparts, int *argcv,
         Object *args, int flags) {

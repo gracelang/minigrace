@@ -178,6 +178,13 @@ GraceString.prototype = {
         "fourth": function() { return string_curriedAt.call(this, 4) },
         "fifth": function() { return string_curriedAt.call(this, 5) },
         "last": function() { return string_curriedAt.call(this, this._value.length) },
+        "quoted": function(argcv) {
+            var s = this._value;
+            var tmp = s.replace(/\\/g, '\\\\');
+            tmp = tmp.replace(/"/g, '\\"');
+            tmp = tmp.replace(/\n/g, '\\n');
+            return new GraceString(tmp);
+        },
         "_escape": function(argcv) {
             var tmp = callmethod(this, "replace()with", [2],
                     new GraceString("\\"), new GraceString("\\\\"));
@@ -333,16 +340,10 @@ GraceString.prototype = {
         "asString": function string_asString(argcv) { return this ; },
         "asDebugString": function string_asDebugString (argcv) {
             var quote = new GraceString("\"");
-            var self = callmethod(this, "_escape", [0]);
+            var self = callmethod(this, "quoted", [0]);
             var qSelf = callmethod(quote, "++", [1], self);
             var qSelfq = callmethod(qSelf, "++", [1], quote);
             return qSelfq;
-        },
-        "encode": function string_encode(argcv) {
-// TODO this is a hack
-            var patt = /"/gm;
-            var s = '"' + this._value.replace(patt, '\\"') + '"';
-            return new GraceString(s);
         },
         "compare": function string_compare (argcv, that) {
             var self = this._value;
@@ -1570,16 +1571,16 @@ function gracecode_io() {
     };
     this.methods.open = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
-	if(typeof(process) != "undefined") {
-            var p = safeJsString(path);
-            var m = safeJsString(mode);
-            var o = new Grace_allocObject();
-	    var f = fs.openSync(p, m);
-            if(fs.existsSync(p)) {
-                var c = fs.readFileSync(p);
-		var a = c.toString().split('\n');
-	    }
-	    var i = 0;
+        if (typeof(process) != "undefined") {
+                var p = safeJsString(path);
+                var m = safeJsString(mode);
+                var o = new Grace_allocObject();
+            var f = fs.openSync(p, m);
+                if(fs.existsSync(p)) {
+                    var c = fs.readFileSync(p);
+            var a = c.toString().split('\n');
+            }
+            var i = 0;
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
@@ -1587,7 +1588,7 @@ function gracecode_io() {
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(p);};
             return o;
-	}
+        }
         var o = new Grace_allocObject();
         o.methods['write'] = function io_write () {};
         o.methods['close'] = function io_close () {};
@@ -2402,7 +2403,7 @@ function gracecode_mirrors() {
             return do_import(v._value, moduleFunc);
         } catch (e) {
             throw new GraceExceptionPacket(ProgrammingErrorObject,
-                                           new GraceString("Error importing module " + v._value));
+                       new GraceString("Error importing module " + v._value));
         }
     };
     this.methods['reflect'] = function(argcv, o) {
