@@ -444,6 +444,7 @@ function startup() {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
         editor = ace.edit("code_txt_real");
+        editor.$blockScrolling = Infinity;
         var GraceMode = require("ace/mode/grace").Mode;
         editor.getSession().setMode(new GraceMode());
         editor.setBehavioursEnabled(false);
