@@ -1487,21 +1487,17 @@ StackFrame.prototype = {
 };
 
 function GraceModule(name) {
-// The base to which a module adds its contents.  Thus, it is
-// important that 'methods' be a property of the module object itself,
-// and not of a prototype, since 'methods' will be changed.
+    // The base to which a module adds its contents.  Thus, it is
+    // important that 'methods' be a property of the module object itself,
+    // and not of a prototype, since 'methods' will be changed.
     var newModuleObject = Grace_allocObject();
     newModuleObject.className = "module";
     newModuleObject.definitionModule = name;
     newModuleObject.definitionLine = 0;
     newModuleObject.superobj = new GraceObject();
-//    newModuleObject.outer = Grace_prelude;
     newModuleObject.methods.asString = function module_asString(argcv) {
         return new GraceString("the \"" + this.definitionModule + "\" " + this.className);
     };
-//    newModuleObject.methods.outer = function module_outer () {
-//        return this.outer;
-//    };
     return newModuleObject;
 }
 
@@ -2399,12 +2395,7 @@ function gracecode_mirrors() {
             throw new GraceExceptionPacket(ImportErrorObject,
                        new GraceString("Can't find module " + v._value))
         }
-        try {
-            return do_import(v._value, moduleFunc);
-        } catch (e) {
-            throw new GraceExceptionPacket(ProgrammingErrorObject,
-                       new GraceString("Error importing module " + v._value));
-        }
+        return do_import(v._value, moduleFunc);
     };
     this.methods['reflect'] = function(argcv, o) {
         return new GraceMirror(o);
@@ -2693,18 +2684,21 @@ GraceException.prototype = {
 
 var importedModules = {};
 
-function do_import(modname, func) {
+function do_import(modname, moduleCodeFunc) {
     if (importedModules[modname]) {
         return importedModules[modname];
     }
-    if (!func)
+    if (moduleCodeFunc == undefined)
         throw new GraceExceptionPacket(ImportErrorObject,
-            new GraceString("Could not find module '" + modname + "'"));
+            new GraceString("Could not find code for module '" + modname + "'"));
     var origSuperDepth = superDepth;
     superDepth = (modname === "StandardPrelude") ? Grace_prelude : new GraceModule(modname);
     // importing "StandardPrelude" adds to the built-in prelude.
     try {
-        var f = Function.prototype.call.call(func, superDepth);
+        var f = Function.prototype.call.call(moduleCodeFunc, superDepth);
+          // Almost like moduleCodeFunc.call(superDepth), which executes
+          // moduleCodeFunc with this == superDepth.  The difference is that we
+          // ensure that the `call` function is the one from Function.prototype
         return f;
     } finally {
         superDepth = origSuperDepth;
@@ -2977,7 +2971,6 @@ function GraceListClass() {
 // these names are used in the generated code.
 // __95__ is the escape for _
 var var___95__prelude = Grace_prelude;
-var var_prelude = Grace_prelude;
 var var_Done = GraceDone;
 var var_done = GraceDone;
 
@@ -3058,7 +3051,6 @@ if (typeof global !== "undefined") {
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var___95__prelude = Grace_prelude;
-    global.var_prelude = var_prelude;
     global.var_Done = GraceDone;
     global.var_done = GraceDone;
     global.var_Block = var_Block;

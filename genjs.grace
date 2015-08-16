@@ -1547,6 +1547,10 @@ method compile(vl, of, mn, rm, bt, glPath) {
     out("  callStack = [\"execution environment\"]")
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
+    out "var var_prelude = var___95__prelude;"
+        // var_prelude must be local to this function, because it has
+        // a different value in different modules.
+
     if (debugMode) then {
         out "myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
