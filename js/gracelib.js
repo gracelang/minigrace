@@ -1568,13 +1568,12 @@ function gracecode_io() {
     this.methods.open = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
         if (typeof(process) != "undefined") {
-                var p = safeJsString(path);
-                var m = safeJsString(mode);
-                var o = new Grace_allocObject();
-            var f = fs.openSync(p, m);
-                if(fs.existsSync(p)) {
-                    var c = fs.readFileSync(p);
-            var a = c.toString().split('\n');
+            var m = mode._value;
+            var o = new Grace_allocObject();
+            var f = fs.openSync(path, m);
+            if (fs.existsSync(path)) {
+                var c = fs.readFileSync(path);
+                var a = c.toString().split('\n');
             }
             var i = 0;
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
@@ -1619,7 +1618,7 @@ function gracecode_io() {
     this.methods.realpath = function io_browser_realpath (argcv, x) {
         if(typeof(process) != "undefined") {
             return new GraceString(fs.realpathSync(safeJsString(x)));
-	}
+        }
         return x;
     };
     this.methods.listdir = function (argcv, x) {
@@ -2071,6 +2070,9 @@ function gracecode_util() {
     };
     this.methods.outDir = function util_outDir(argcv) {
         return new GraceString("./");
+    };
+    this.methods['outDir:='] = function util_outDir_gets(argcv, newVal) {
+        return GraceDone;
     };
     this.methods.execDir = function util_execDir(argcv) {
         return new GraceString("./");

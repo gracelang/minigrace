@@ -21,7 +21,7 @@ methodtypes-of:Z:
  4 m5(x : Z) -> Z
 modules:
 path:
- test179
+ test_179_output
 public:
  A
  D

@@ -145,7 +145,7 @@ function testall() {
             et = (new Date).getTime();
             runTime += (et - st);
             if (tc.children[idx].value.indexOf("_fail") != -1) {
-                if (stderr_txt.value.indexOf("error") != -1) {
+                if (minigrace.compileError || (stderr_txt.value.indexOf("error") != -1)) {
                     passes++;
                 } else {
                     failures.push(tc.children[idx].value);

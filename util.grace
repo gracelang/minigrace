@@ -440,6 +440,10 @@ method outDir {
     }
     outDirCache
 }
+method outDir:=(new) {
+    // this method exists for testing, in particular, t179_gctTypeInformation_test
+    outDirCache := new
+}
 
 var execDirCache := ""
 method execDir {

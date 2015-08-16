@@ -27,8 +27,9 @@ util.lines := input
 def tokens = lexer.new.lexinput(input)
 def nodes = parser.parse(tokens)
 
-xmodule.writeGCT("test179")fromValues(nodes)modules(list.empty)
-def gct = xmodule.parseGCT("test179")
+util.outDir := "./"
+xmodule.writeGCT("test_179_output")fromValues(nodes)modules(list.empty)
+def gct = xmodule.parseGCT("test_179_output")
 def gctText = xmodule.gctAsString(gct)
 
 print (gctText)
