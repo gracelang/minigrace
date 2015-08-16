@@ -61,6 +61,12 @@ js/createJsGraphicsWrapper.js
 js/graphix.js
 js/math.js
 js/minitest.js
+js/dialect.js
+js/gUnit_test.js
+js/math_test.js
+js/minitest_test.js
+js/staticTypes.js
+js/staticTypes_test.js
 js/requireTypes.js
 js/unixFilePath.js
 js/util.js
@@ -68,6 +74,7 @@ objectdraw/
 stubs/StandardPrelude.grace
 stubs/collectionsPrelude.grace
 .git-generation-cache
+modules/tests/test.log
 c/*.c
 c/*.grace
 c/*.gcn
@@ -87,4 +94,3 @@ grace-web-editor/
 *.xcworkspace
 *.xcworkspace/*
 .gitignore~
-
