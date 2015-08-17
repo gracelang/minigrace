@@ -10,7 +10,7 @@ then
     echo "- command to execute compiled code (empty for javascript)" >&2
     echo '- <test file name prefix>*  ; if omitted, all tests in directory'
 fi
-GRACE="$1"
+COMPILER="$1"
 TESTDIR="$2"
 EXECUTOR="$3"
 shift
@@ -35,7 +35,7 @@ then
         EXECUTOR="$EXECUTOR "
     fi
 else
-    EXECUTOR="./grace-node "
+    EXECUTOR="../grace "
 fi
 
 if [ $# -gt 0 ]
@@ -71,7 +71,7 @@ do
     if [ "$TYPE" = "tograce" ]
     then
         # hack to allow tests that test for compilation failure
-        if ! $GRACE --target grace $tcase > tg_$tcase 2>/dev/null
+        if ! $COMPILER --target grace --dir .. $tcase > tg_$tcase 2>/dev/null
         then
             if echo $tcase | grep -q _fail
             then
@@ -93,26 +93,17 @@ do
     FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
     then
-        if [ "$TYPE" = "repl" ]
-        then
-            COMMAND="cat $tcase | $GRACE --interactive"
-        else
-            COMMAND="GRACE_MODULE_PATH=../../modules/:../sample/dialects/: $GRACE --verbose --target js --noexec $tcase"
-        fi
+        COMMAND="GRACE_MODULE_PATH=../:../../modules/ $COMPILER --verbose --target js --noexec --dir .. $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
-            if [ "$TYPE" = "repl" ]
+            execname="${tcase%%.*}"
+#   The %%.* _deletes_ the longest . extension.
+            GRACE_MODULE_PATH=../:../sample/dialects/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
+            if [ ! -s test-$$.err ]
             then
-                cat $tcase | $GRACE --interactive > test-$$.out
+                /bin/rm -f test-$$.err
             else
-                execname="${tcase%%.*}"
-                GRACE_MODULE_PATH=../:../sample/dialects/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
-                if [ ! -s test-$$.err ]
-                then
-                    /bin/rm -f test-$$.err
-                else
-                    cat test-$$.err
-                fi
+                cat test-$$.err
             fi
             if diff test-$$.out ${tcase%_test.grace}.out
             then
@@ -134,12 +125,7 @@ do
             fail "${tcase}: compile error"
         fi
     else
-        if [ "$TYPE" = "repl" ]
-        then
-            COMMAND="cat $tcase | $GRACE --interactive"
-        else
-            COMMAND="$GRACE --make --target js --noexec $tcase"
-        fi
+        COMMAND="$COMPILER --make --target js --noexec --dir .. $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
@@ -168,7 +154,7 @@ do
             cat ${tcase%_test.grace}.out >> test.log
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *_test.gct
+    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct} *_test.gct
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*

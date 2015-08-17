@@ -206,12 +206,18 @@ function findOnPath(fn, pathArray) {
         if (fs.existsSync(fn)) { return fn };
         throw new Error('file "' + fn + '" does not exist.');
     }
+    var candidates = [];
     for (var ix = 0; ix < pathArray.length ; ix++) {
         var candidate = path.resolve(pathArray[ix], fn);  
             // path.resolve joins, normalizes, & makes absolute
         if (fs.existsSync(candidate)) { return candidate };
+        candidates.push(candidate);
     }
-    throw new Error('module "' + fn + '" not found on path ' + pathArray + '.');
+    console.error('module "' + fn + '" not found.  Tried:');
+    for (var ix = 0; ix < candidates.length ; ix++) {
+        console.error(candidates[ix]);
+    }
+    process.exit(2);
 }
 
 function addToPathIfNecessary(dir) {
@@ -221,14 +227,14 @@ function addToPathIfNecessary(dir) {
 }
 
 var graceModulePath = process.env.GRACE_MODULE_PATH;
-var fallbackPath = "/usr/lib/grace/modules/"
-if (! graceModulePath) {
+if (graceModulePath === undefined) {
+    var fallbackPath = "@MODULE_PATH@"
     try {
         if (fs.statSync(fallbackPath).isDirectory) {
-            graceModulePath =  "./:../:" + fallbackPath;
+            graceModulePath = fallbackPath;
         }
     } catch (e) {
-            graceModulePath = "./:../";
+            graceModulePath = "";
     }
     if (! process.env.CI) {
         console.warn("environment does not contain GRACE_MODULE_PATH; using " + graceModulePath);
@@ -237,7 +243,6 @@ if (! graceModulePath) {
 
 var pathdirs = graceModulePath.split(path.delimiter);
 
-addToPathIfNecessary("@MODULE_PATH@")
 addToPathIfNecessary("./")
 addToPathIfNecessary("../")
 
@@ -255,8 +260,9 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     var sourceDir = fsPath.dirname(fs.realpathSync(found));
     require(found);
     if (typeof global[graceModule] !== 'function') {
-        throw new Error('loadModule(' + moduleName + ', ' + 
+        console.error('loadModule(' + moduleName + ', ' +
                             referencingDir + ') failed!');
+        process.exit(2);
     }
     var recursiveImports = global[graceModule].imports
     for (var ix = 0; ix < recursiveImports.length; ix++) {

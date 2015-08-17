@@ -194,7 +194,7 @@ js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
 
 js/grace: js/grace.in
-	sed -e "s|@MODULE_PATH@|$(MODULE_PATH)|" $< > js/grace
+	sed -e "s|@MODULE_PATH@|$(MODULE_PATH)/|" $< > js/grace
 	chmod a+x js/grace
 
 js/minigrace.js: js/minigrace.in.js buildinfo.grace
@@ -322,7 +322,7 @@ minigrace-c-env: minigrace StandardPrelude.gct gracelib.o modules/gUnit.gct modu
 minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hooks/commit-msg $(PRELUDESOURCEFILES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) js/ast.js js/errormessages.js dom.gct $(JSSOURCEFILES) modules/requireTypes.gso
 
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
-	modules/tests/harness_js ../../minigrace modules/tests ""
+	modules/tests/harness_js minigrace
 
 modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
 
