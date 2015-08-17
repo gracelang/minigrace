@@ -2419,14 +2419,30 @@ function callmethodsuper(obj, methname, argcv) {
 }
 
 function safeJsString (obj) {
+    // Don't use callmethod!  This function is called from within callmethod.
     var objString
     try {
-        objString = callmethod(obj, "asString", [0])._value;
+        var m = findMethod(obj, "asString")
+        objString = m.call(obj)._value;
     } catch (e) {
         objString = "(without string representation)"
     }
     return objString;
 }
+
+function findMethod (obj, methname) {
+    var isSuper = false;
+    var s = obj;
+    var meth = s.methods[methname];
+    while ((typeof(meth) != "function") && (s.superobj != null)) {
+        isSuper = true;
+        s = s.superobj;
+        meth = s.methods[methname];
+    }
+    if (typeof(meth) != "function") meth = null;
+    return meth;
+}
+
 
 function GraceCallStackToString() {
     var errorLine = this.lineNumber;
@@ -2884,6 +2900,7 @@ Grace_prelude.methods['clone'] = function prelude_clone (argcv, obj) {
 function clone (obj) {
 //   shallow copy, except up the superchain
     var copy = new GraceObject();
+    copy.superobj = null;
     if (obj.superobj)
         copy.superobj = clone(obj.superobj);
     copy.className = obj.className;
