@@ -426,8 +426,11 @@ def testSuite is public = object {
 method className(testClass) {
     if (prelude.engine == "js") then {
         def cName = testClass.asString
-        // looks like "class wombat"
-        return cName.substringFrom 7 to (cName.size)
+        if (cName.startsWith "class ") then {
+            return cName.substringFrom 7 to (cName.size)
+        } else {
+            return "un-named"
+        }
     }
     def description = testClass.forMethod("null").asString
     // description looks like "self.wombat[0x0x7fa7d2603ce8]"
@@ -441,5 +444,6 @@ method className(testClass) {
             answer := answer ++ ch
         }
     }
+    if (answer == "forMethod") then { return "un-named" }
     return answer
 }
