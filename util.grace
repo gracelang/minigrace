@@ -224,7 +224,7 @@ method parseargs(buildinfo) {
             }
     }
     if ((buildtype == "run") && (gracelibPathv == false)) then {
-        def extension = "." ++ target
+        def extension = if (target == "c") then { ".o" } else { "." ++ target }
         def soughtLibrary = filePath.withDirectory(execDir)
                                 base "gracelib" extension(extension)
         if (soughtLibrary.exists) then {
