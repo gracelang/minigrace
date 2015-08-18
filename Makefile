@@ -174,6 +174,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gc
 	install -m 755 js/grace $(PREFIX)/bin/grace
 	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
+	install -m 755 gracelib.o $(MODULE_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
