@@ -475,9 +475,6 @@ factory method create(canvasWidth, canvasHeight) {
       font := f
       self
     }
-    method click:=(block) {
-      stage.addListener(jsText, block)
-    }
 
     method height {
       jsText.height
