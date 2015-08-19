@@ -188,8 +188,9 @@ method compileModule (nm) inFile (sourceFile)
         if (util.importDynamic) then {
             cmd := cmd ++ " --import-dynamic"
         }
+        cmd := cmd ++ " -XNoMain"
     }
-    cmd := "{cmd} --target {util.target} --noexec -XNoMain \"{sourceFile}\""
+    cmd := "{cmd} --target {util.target} --noexec \"{sourceFile}\""
     util.log 50 verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", "-c", cmd).status
     if (exitCode != 0) then {
