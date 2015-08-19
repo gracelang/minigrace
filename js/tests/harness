@@ -1,42 +1,54 @@
 #!/bin/bash
 
-set -e
+absolutePath(){
+    [[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
+    ( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
+}
 
-if [ $# -lt 3 ]
-then
-    echo "Error: harness requires three or more arguments" >&2
-    echo "- compilation command" >&2
-    echo "- directory containing tests" >&2
-    echo "- command to execute compiled code (empty for javascript)" >&2
-    echo '- <test file name prefix>*  ; if omitted, all tests in directory'
-fi
-COMPILER="$1"
-TESTDIR="$2"
-EXECUTOR="$3"
-shift
-shift
-shift
-cd "$TESTDIR"
-
-TYPE="normal"
+TESTDIR=`absolutePath $0`
+TESTDIR=`dirname $TESTDIR`
+# echo TESTDIR = $TESTDIR
+# echo num args = $#
 
 # somewhat hacky way to make the tograce target work without too many changes
-if [ "$EXECUTOR" ]
+
+TYPE="normal"
+if [ "$3" ]
 then
-    if [ "$EXECUTOR" = "tograce" ]
+    if [ "$3" = "tograce" ]
     then
         EXECUTOR="./"
         TYPE="tograce"
-    elif [ "$EXECUTOR" = "repl" ]
-    then
-        EXECUTOR="./"
-        TYPE="repl"
     else
-        EXECUTOR="$EXECUTOR "
+        EXECUTOR="$3 "
     fi
 else
     EXECUTOR="../grace "
 fi
+
+if [ $# -lt 1 ]
+then
+    echo "Error: $0 requires one or more arguments:" >&2
+    echo "  - compiler to test" >&2
+    echo "  - directory containing tests (defaults to $TESTDIR)" >&2
+    echo "  - command to execute compiled code (defaults to $EXECUTOR)" >&2
+    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'
+    exit 1
+fi
+
+if [ "$2" ]
+then
+    TESTDIR="$2"
+fi
+
+COMPILER=`absolutePath $1`
+# echo COMPILER = $COMPILER
+shift
+shift
+shift
+cd "$TESTDIR"
+# echo "now in `pwd`"
+
 
 if [ $# -gt 0 ]
 then
@@ -92,13 +104,16 @@ do
     NUM_TESTS=$((NUM_TESTS + 1))
     FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
+#   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
+#   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=../:../../modules/ $COMPILER --verbose --target js --noexec --dir .. $tcase"
+        COMMAND="GRACE_MODULE_PATH=.. $COMPILER --verbose 60 --target js --dir .. $tcase"
+#        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            GRACE_MODULE_PATH=../:../sample/dialects/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
+            GRACE_MODULE_PATH=.. $EXECUTOR "./$execname" > test-$$.out 2> test-$$.err
             if [ ! -s test-$$.err ]
             then
                 /bin/rm -f test-$$.err
@@ -125,6 +140,7 @@ do
             fail "${tcase}: compile error"
         fi
     else
+#   this is a _fail_test
         COMMAND="$COMPILER --make --target js --noexec --dir .. $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
@@ -165,18 +181,18 @@ echo
 echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
 if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
 then
-echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
 fi
 if [ $NUM_WRONG_OUTPUT -ne "0" ]
 then
-echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
 fi
 if [ $NUM_COMPILE_ERROR -ne "0" ]
 then
-echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
 fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
 then
-exit 1
+    exit 1
 fi

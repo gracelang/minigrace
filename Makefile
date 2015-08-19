@@ -459,13 +459,13 @@ $(TYPE_DIALECTS:%=%.gct): %.gct: %.gso
 $(TYPE_DIALECTS:%=%.gcn): %.gcn: %.gso
 
 test.js: minigrace-js-env
-	js/tests/harness ../../minigrace js/tests "" $(TESTS)
+	js/tests/harness minigrace js/tests "" $(TESTS)
 
 test: minigrace-c-env modules/minitest.gso
-	./tests/harness "../minigrace" tests "" $(TESTS)
+	tests/harness minigrace tests "" $(TESTS)
 
 togracetest: minigrace
-	./tests/harness "../minigrace" tests tograce
+	tests/harness minigrace tests tograce $(TESTS)
 
 # The dependency on unicodedata.h isn't captured by the pattern rule
 unicode.gso: unicode.c unicodedata.h gracelib.h

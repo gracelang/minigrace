@@ -1,42 +1,54 @@
 #!/bin/bash
 
-set -e
+absolutePath(){
+    [[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
+    ( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
+}
 
-if [ $# -lt 3 ]
+TESTDIR=`absolutePath $0`
+TESTDIR=`dirname $TESTDIR`
+# echo TESTDIR = $TESTDIR
+# echo num args = $#
+
+if [ "$2" ]
 then
-    echo "Error: harness requires three or more arguments" >&2
-    echo "- compilation command" >&2
-    echo "- directory containing tests" >&2
-    echo "- command to execute compiled code (empty for native)" >&2
-    echo '- <test file name prefix>*  ; if omitted, all tests in directory'
+    TESTDIR="$2"
 fi
-GRACE="$1"
-TESTDIR="$2"
-EXECUTOR="$3"
-shift
-shift
-shift
-cd "$TESTDIR"
-
-TYPE="normal"
 
 # somewhat hacky way to make the tograce target work without too many changes
-if [ "$EXECUTOR" ]
+
+TYPE="normal"
+if [ "$3" ]
 then
-    if [ "$EXECUTOR" = "tograce" ]
+    if [ "$3" = "tograce" ]
     then
         EXECUTOR="./"
         TYPE="tograce"
-    elif [ "$EXECUTOR" = "repl" ]
-    then
-        EXECUTOR="./"
-        TYPE="repl"
     else
-        EXECUTOR="$EXECUTOR "
+        EXECUTOR="$3 "
     fi
 else
     EXECUTOR="./"
 fi
+
+if [ $# -lt 1 ]
+then
+    echo "Error: $0 requires one or more arguments:" >&2
+    echo "  - compiler to test" >&2
+    echo "  - directory containing tests (defaults to $TESTDIR)" >&2
+    echo "  - command to execute compiled code (defaults to $EXECUTOR)" >&2
+    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'
+    exit 1
+fi
+
+COMPILER=`absolutePath $1`
+# echo COMPILER = $COMPILER
+shift
+shift
+shift
+cd "$TESTDIR"
+# echo "now in `pwd`"
+
 
 if [ $# -gt 0 ]
 then
@@ -72,7 +84,7 @@ do
     if [ "$TYPE" = "tograce" ]
     then
         # hack to allow tests that test for compilation failure
-        if ! $GRACE --target grace $tcase > tg_$tcase 2>/dev/null
+        if ! $COMPILER --target grace $tcase > tg_$tcase 2>/dev/null
         then
             if echo $tcase | grep -q _fail
             then
@@ -93,27 +105,20 @@ do
     NUM_TESTS=$((NUM_TESTS + 1))
     FAILED="true"
     if [ "${tcase%fail_test.grace}" = "$tcase" ]
+#   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
+#   if the test name does NOT end with fail_test
     then
-        if [ "$TYPE" = "repl" ]
-        then
-            COMMAND="cat $tcase | $GRACE --interactive"
-        else
-            COMMAND="$GRACE --verbose --make --native $tcase"
-        fi
+        COMMAND="$COMPILER --verbose 60 $tcase"
+#        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
-            if [ "$TYPE" = "repl" ]
+            execname="${tcase%%.*}"
+            $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+            if [ ! -s test-$$.err ]
             then
-                cat $tcase | $GRACE --interactive > test-$$.out
-            else
-                execname="${tcase%%.*}"
-                $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
-                if [ ! -s test-$$.err ]
-                then
                 /bin/rm -f test-$$.err
-                else
+            else
                 cat test-$$.err
-                fi
             fi
             if diff test-$$.out ${tcase%_test.grace}.out
             then
@@ -135,24 +140,18 @@ do
             fail "${tcase}: compile error"
         fi
     else
-        if [ "$TYPE" = "repl" ]
+#   this is a _fail_test
+        COMMAND="$COMPILER --make --native $tcase"
+        if eval "$COMMAND" > test-$$.log 2>&1
         then
-            COMMAND="cat $tcase | $GRACE --interactive"
+            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
+            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
+            fail "${tcase} compiled"
         else
-            COMMAND="$GRACE --verbose --make --native $tcase"
-        fi
-        eval "$COMMAND" > test-$$.log 2>&1
-        ret_code=$?
-        if [ $ret_code -eq 2 ]
-        then
             NUM_PASS=$((NUM_PASS + 1))
 #            echo "${NUM_TESTS} PASS: $tcase"
             printf %s .
             pass ${tcase}
-        else
-            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
-            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
-            fail "${tcase} compiled"
         fi
     fi
     if [ "$FAILED" = "true" ]
@@ -171,7 +170,7 @@ do
             cat ${tcase%_test.grace}.out >> test.log
         fi
     fi
-    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *.gct
+    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *_test.gct
     if [ "$TYPE" = "tograce" ]
     then
         rm -f tg_t*
