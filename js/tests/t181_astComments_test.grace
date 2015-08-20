@@ -1,59 +1,111 @@
+
+dialect "minitest"
 import "lexer" as lexer
 import "parser" as parser
 import "ast" as ast
 import "util" as util
+import "io" as io
 
 def input = list.with(
-    "//Comment def A",
-    "def x = 10",
-    "//Comment var 1A",
-    "var y := 47",
-    "//Comment var 1B",
+    "//Pre-comment def x",  // 1
+    "def x = 10",           // 2
+    "//Post-comment def x", // 3
+    "var y := 47",          // 4
+    "//Post-comment var y", // 5
+    "",                     // 6
+    "var z := 42",          // 7
+    "//Post-comment var z", // 8
+    "",                     // 9
+    "def w = 10",           // 10
+    "//Post-comment def w",
+    "var q",                // 12
     "",
-    "var z := 42",
-    "//Comment var 2A",
-    "",
-    "//Comment type A",
-    "//Comment type B",
+    "//Pre-comment one type Person after blank",        // 14
+    "//Pre-comment two type Person",                    // 15
     "type Person = \{",
-    "//Comment type C",
+    "//Post-comment type Person",
     "",
-    "    //Comment for methodtype 1A",
-    "    name -> String //Comment for methodtype 1B",
-    "    //Comment for methodtype 2A",
-    "    //Comment for methodtype 2B",
+    "    //pre-comment for methodtype name",
+    "    name -> String //sameline comment for methodtype name",   // 20
+    "    //post-comment for methodtype name",
+    "    //post-comment for methodtype name",
     "    age -> Number",
     "}",
-    "//Comment method A",
-    "method m -> Done \{ //Comment method B",
-    "    //Comment method C",
-    "    //Comment method D",
+    "//post-Comment on typeDec person",                 // 25
+    "method m -> Done \{ //post-comment (sameline) method m",
+    "    //post-comment one method m",
+    "    //post-comment two method m",
     "    print \"hello\"",
-    "    //Comment method E (should not print)",
+    "    //Comment on request of print (should not be captured)",  // 30
     "\}",
     "",
-    "//Comment class A",
-    "//Comment class B",
-    "class person.new(name', age') -> Person \{",
+    "//pre-comment one class person.new",
+    "//pre-comment two class person.new",
+    "class person.new(name', age') -> Person \{",       // 35
+    "   // post-comment on class person.new",
     "   def name:String is public = name'",
+    "   // post-comment on def name'",
     "   def age:Number is public = age'",
-    "\}"
+    "\}"                                                // 40
 )
 
 util.lines := input
+input.keysAndValuesDo { linenum, code -> 
+    print "{linenum}    {code}"
+}
 def tokens = lexer.new.lexinput(input)
 def nodes = parser.parse(tokens)
+nodes.do { each -> print(each.pretty 0) }
 
-for (1..nodes.size) do { i ->
-    print "comments for node {i}:"
-    for (nodes[i].comments) do { c ->
-        print ("  "++c.pretty(0))
+testSuite {
+    test "pre-comment on def" by {
+        def first = nodes.first
+        assert (first.kind) shouldBe "defdec"
+        assert (first.comments.value.contains "Pre-comment def x")
+            description "first.comments doesn't include Pre-comment def x"
     }
-    if (nodes[i].kind == "typedec") then {
-        print "  inner comments:"
-        for (nodes[i].value.methods) do {mt ->
-            for (mt.comments) do { mtc ->
-                print ("    "++mtc.pretty(0))
+    
+    test "post-comment on def" by {
+        def first = nodes.first
+        assert (first.kind) shouldBe "defdec"
+        assert (first.comments.value.contains "Post-comment def x")
+            description "first.comments doesn't include Post-comment def x"
+    }
+    test "blanks" by {
+        def blankNodes = nodes.filter { each -> each.kind == "blank" }
+        def blankLines = blankNodes.map { each -> each.line }
+        assert (blankLines) shouldBe (list.with(6, 9, 13, 18, 32))
+    }
+    test "var y" by {
+        def varNodes = nodes.filter { each -> each.kind == "vardec" }
+        def varY = varNodes.filter {n -> n.nameString == "y"}.iterator.next
+        assert (varY.comments.value.contains "Post-comment var y")
+            description "var y.comments doesn't include Post-comment var y"
+    }
+    test "var z" by {
+        def varNodes = nodes.filter { each -> each.kind == "vardec" }
+        def varZ = varNodes.filter {n -> n.nameString == "z"}.iterator.next
+        assert (varZ.comments.value.contains "Post-comment var z")
+            description "var y.comments doesn't include Post-comment var y"
+    }
+    test "var q" by {
+        def varNodes = nodes.filter { each -> each.kind == "vardec" }
+        def varQ = varNodes.filter {n -> n.nameString == "q"}.iterator.next
+        deny (varQ.comments) description "var q has comments"
+    }
+}
+
+nodes.keysAndValuesDo { i, node ->
+    if ( node.comments != false ) then {
+        io.output.write "comments for node {i} {node}:"
+        print("‹{node.comments.toGrace 1}›")
+    }
+    if (node.kind == "typedec") then {
+        print "  methods in type:"
+        node.value.methods.do { mt ->
+            io.output.write "        {mt}"
+            if (mt.comments != false) then {
+                print("‹{mt.comments.toGrace 2}›")
             }
             print ""
         }

@@ -4,9 +4,8 @@ import "ast" as ast
 import "util" as util
 import "errormessages" as errormessages
 
-def don'tBreak = true
+var blankLocation := 0
 var lastline := 0
-var linenum := 0
 var lastIndent := 0
 var indentFreePass := false
 var minIndentLevel := 0
@@ -27,31 +26,38 @@ def emptySequence = sequence.empty
 var sym
 var lastToken := object {
     var kind := "start"
-    var line := 1
+    var line := 0
     var linePos := 0
     var indent := 0
     var value := ""
     def size = 0
 }
 
+var previousCommentToken := lastToken
 var statementToken := lastToken
 var comment := false
 
 // Advance to the next token in the stream, with special handling
 // so the magic "line" tokens update the line number for error output.
+
+method noteBlank {
+    blankLocation := sym.line - 1
+}
+
 method next {
     lastToken := sym
     if (tokens.size > 0) then {
-        lastline := linenum
+        lastline := lastToken.line
         lastIndent := sym.indent
         sym := tokens.poll
+        if (sym.line > (lastToken.line + 1)) then { noteBlank }
         pushcomments
-        linenum := sym.line
         util.setPosition(sym.line, sym.linePos)
     } elseif { sym.kind == "eof" } then {
-        errormessages.syntaxError("Unexpetedly found the end of the input. This is often caused by a missing '\}'")
+        errormessages.syntaxError("Unexpectedly found the end of the input. This is often caused by a missing '\}'")
             atRange(sym.line, sym.linePos, sym.linePos)
     } else {
+        print "else branch of next in parser — not so impossible!"
         sym := object {
             var kind := "eof"
             var line := lastToken.line
@@ -315,13 +321,20 @@ method doannotation {
 }
 
 method blank {
-    if (sym.line > (lastToken.line + 1)) then {
-        if (values.size > 0) then {
-            if (values.last.kind != "blank") then {
-                util.setPosition(lastToken.line + 1, 0)
-                values.push(ast.blankNode.new)
-            }
+    if (blankLocation == 0) then {
+        if ( sym.line <= (lastToken.line + 1) ) then { return }
+        if ( sym.line <= (previousCommentToken.line + 1) ) then { return }
+    }
+    pushcomments
+    if ((values.size == 0) || 
+            ((values.size > 0).andAlso { values.last.kind != "blank" })) then {
+        if (blankLocation > 0) then {
+            util.setPosition(blankLocation, 0)
+            blankLocation := 0
+        } else {
+            util.setPosition(sym.line - 1, 0)
         }
+        values.push(ast.blankNode.new)
     }
 }
 
@@ -3418,77 +3431,93 @@ method statement {
     }
 }
 
-// Push one comment line onto the comments stack as a commentNode. If there
-// are multiple consecutive comments, push them all onto the comments stack
-// as individual commentNodes. Advance sym as we consume tokens.
 method pushcomments {
-    if (accept("comment")) then {
-        var commentbody := ""
-        while {(sym.kind == "comment").andAlso {tokens.size > 0}} do {
-            commentbody := sym.value
-            util.setPosition(sym.line, sym.linePos)
-            var o := ast.commentNode.new(commentbody)
-            if ((lastToken.line == sym.line) && (lastToken.kind != "comment")) then {
-                o.isPartialLine := true
-            }
+    // Push a comment onto the comments stack as a commentNode. If
+    // there are consecutive comments following, deal with them all.
+    // Adjacent comments extend the first; a break of a blank line
+    // starts a new comment node.
+
+    if ( ! accept "comment" ) then { return }
+    util.setPosition(sym.line, sym.linePos)
+    var o := ast.commentNode.new(sym.value)
+    if (lastToken.kind == "comment") then { 
+        print "*** successive comments found! ***"
+    }
+    if ((lastToken.line == sym.line) && (lastToken.kind != "comment")) then {
+        o.isPartialLine := true
+    }
+    comments.push(o)
+    while { 
+        previousCommentToken := sym
+        sym := tokens.poll
+        if (sym.line > (previousCommentToken.line + 1)) then { noteBlank }
+        accept "comment"
+    } do {
+        util.setPosition(sym.line, sym.linePos)
+        o := ast.commentNode.new(sym.value)
+        if ( comments.last.line == (sym.line - 1) ) then {
+            comments.last.extendCommentUsing(o)
+        } else {
             comments.push(o)
-            //lastToken := sym
-            sym := tokens.poll
         }
     }
 }
 
-// Called after a new node is pushed to output stack. Find comments that
-// should be associated with that node, remove them from comments stack,
-// and add them to that node's list of comments.
 method reconcileComments {
+    // Should be requested after a new node that repreents a "syntactic unit"
+    // to whcih commenst can be attached is pushed onto `values`
+    // Finds comments associated with that node, remove thems from comments
+    // stack, and puts them in that node's comments attribute.
     pushcomments
-    if (values.size == 0) then { return }
-    match(values.last)
-        case { _:ast.AstNode -> true }
-        case { _ -> return }
+    if (values.size == 0 ) then { return }
+    if (comments.isEmpty) then { return }
+    if ( ast.AstNode.match(values.last).not ) then {
+        util.log 20 verbose "value {values.last} (not an AstNode) found on value stack."
+        return
+    }
     def oLine = values.last.line
-    def out = list.empty
-    def temp = list.empty
+    def preComments = list.empty
+    def postComments = list.empty
     var lineAbove := oLine - 1
     var lineBelow := oLine + 1
 
     while { (comments.size > 0).andAlso {comments.last.line > (oLine - 1)} } do {
-        temp.push(comments.pop)
+        postComments.push(comments.pop)
     }
 
     while { (comments.size > 0).andAlso {
-            comments.last.line == lineAbove }.andAlso {
+            comments.last.endLine == lineAbove }.andAlso {
             comments.last.isPartialLine == false } } do {
-        out.addFirst(comments.pop)
+        // collect the comments that preceed the last value into preComments
+        preComments.addFirst(comments.pop)
         lineAbove := lineAbove - 1
     }
 
-    var commentsBelow := list.empty
-    while {temp.size > 0} do {
-        var o := temp.pop
+    def commentsBelow = list.empty
+    while {postComments.size > 0} do {
+        var o := postComments.pop
         if (o.line == oLine) then {
-            out.addLast(o)
+            preComments.addLast(o)
         }
         elseif (o.line == lineBelow) then {
-            if ((o.line >= (sym.line - 1)) && (sym.kind != "rbrace")) then {
-                //we shouldn't grab this comment for the entity above
-                //and we should put any below-comments we've found back onto stack
-                while {commentsBelow.size > 0} do {
-                    comments.push(commentsBelow.removeFirst)
-                }
-                comments.push(o)
-            } else {
+//            if ((o.line >= (sym.line - 1)) && (sym.kind != "rbrace")) then {
+//                //we shouldn't grab this comment for the entity above
+//                //and we should put any below-comments we've found back onto stack
+//                while {commentsBelow.size > 0} do {
+//                    comments.push(commentsBelow.removeFirst)
+//                }
+//                comments.push(o)
+//            } else {
                 lineBelow := lineBelow + 1
                 commentsBelow.addLast(o)
-            }
+//            }
         }
         else {
             comments.push(o)
         }
     }
-    if (commentsBelow.size > 0) then { out.addAll(commentsBelow) }
-    if (out.size > 0) then { values.last.addComments(out) }
+    preComments.addAll(commentsBelow)
+    values.last.addComments(preComments)
 }
 
 method checkBadOperators {
@@ -3629,14 +3658,16 @@ method parse(toks) {
         var next := false
         var prev := false
     })
-    linenum := 1
     next
     var oldlength := tokens.size
     while {tokens.size > 0} do {
-        pushcomments
+        blank
         methoddec
+        blank
         inheritsdec
+        blank
         statement
+        blank
         if (tokens.size == oldlength) then {
             def suggestion = errormessages.suggestion.new
             suggestion.deleteToken(sym)
@@ -3645,6 +3676,8 @@ method parse(toks) {
         }
         oldlength := tokens.size
     }
+    blank
     statement
-    values
+    blank
+    return values
 }
