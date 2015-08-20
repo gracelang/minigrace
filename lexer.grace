@@ -37,6 +37,7 @@ method new {
                 (other.line == line) && (other.linePos == linePos)
             }
         }
+        method asString { "{self.kind} {self.value}" }
     }
 
 
@@ -66,7 +67,7 @@ method new {
         inherits Token.new
         def kind is public = "comment"
         def value is public = s
-        def size = s.size + 2
+        def size is public = s.size + 2
     }
     class LBraceToken.new {
         inherits Token.new
