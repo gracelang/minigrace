@@ -90,6 +90,7 @@ class baseNode.new {
     var symbolTable := fakeSymbolTable
     var comments is public := false
 
+    method kind { abstract }
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
@@ -107,7 +108,8 @@ class baseNode.new {
     method returnsObject { false }
     method usesAsType(aNode) { false }
     method hash { line.hash * linePos.hash }
-    method asString { "astNode {self.kind}" }
+    method asString { "{kind} {nameString}" }
+    method nameString { "?" }
     method isWritable { true }
     method isReadable { true }
     method isPublic { true }
@@ -755,7 +757,7 @@ class typeDecNode.new(name', typeValue) {
         s := s ++ value.pretty(depth+2)
         s := s ++ "\n"
         if (false != comments) then {
-            s := s ++ comments.prety(depth+2)
+            s := s ++ comments.pretty(depth+2)
         }
         s
     }
@@ -771,7 +773,6 @@ class typeDecNode.new(name', typeValue) {
         }
         s ++ " = " ++ value(toGrace(depth + 2))
     }
-    method asString { "TypeDec {nameString}" }
     method shallowCopy {
         typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
     }
@@ -910,7 +911,7 @@ def methodNode = object {
                 s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
             }
             if (false != comments) then {
-                s := s ++ comments.prety(depth+2)
+                s := s ++ comments.pretty(depth+2)
             }
             s
         }
@@ -964,7 +965,6 @@ def methodNode = object {
             s := s ++ "\n" ++ spc ++ "\}"
             s
         }
-        method asString { "Method {nameString}" }
         method shallowCopy {
             methodNode.new(value, signature, body, dtype).shallowCopyFieldsFrom(self)
         }
@@ -1270,7 +1270,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
         }
         if (false != comments) then {
-            s := s ++ comments.prety(depth+2)
+            s := s ++ comments.pretty(depth+2)
         }
         s
     }
@@ -2110,7 +2110,7 @@ def defDecNode = object {
                 }
             }
             if (false != comments) then {
-                s := s ++ comments.prety(depth+2)
+                s := s ++ comments.pretty(depth+2)
             }
             s
         }
@@ -2220,7 +2220,7 @@ class varDecNode.new(name', val', dtype') {
             s := s ++ self.value.pretty(depth + 2)
         }
         if (false != comments) then {
-            s := s ++ comments.prety(depth+2)
+            s := s ++ comments.pretty(depth+2)
         }
         s
     }
@@ -2465,10 +2465,9 @@ class blankNode.new {
         def newChain = as.extend(n)
         blk.apply(n, as)
     }
-    def nameString is public = ""
-    method toGrace(depth : Number) -> String {
-        ""
-    }
+    method nameString { "" }
+    method asString { "blank" }
+    method toGrace(depth : Number) -> String { "" }
     method shallowCopy {
         blankNode.new.shallowCopyFieldsFrom(self)
     }
@@ -2614,12 +2613,12 @@ def commentNode = object {
         def kind is public = "comment"
         var value:String is public := val'
         var isPartialLine:Boolean is public := false
+        var endLine is public := util.linenum
         method isComment { true }
         method asString { "Comment: {value}" }
         method extendCommentUsing(cmtNode) {
             value := value ++ " " ++ cmtNode.value
-            // TODO: the end location in the source should be
-            // updated too.
+            endLine := cmtNode.endLine
         }
         method map(blk) ancestors(as) {
             var n := shallowCopy
@@ -2633,8 +2632,10 @@ def commentNode = object {
             "{super.pretty(depth)}({value})"
         }
         method toGrace(depth) {
+            // Partial line comments don't start with a newline, whereas
+            // full-line comments do.  No newline at end in either case.
             if (isPartialLine) then {
-                "// {value}"
+                "//(partial) {value}"
             } else {
                 var spc := ""
                 repeat (depth) times { spc := spc ++ "    " }
@@ -2648,16 +2649,10 @@ def commentNode = object {
             super.shallowCopyFieldsFrom(other)
             value := other.value
             isPartialLine := other.isPartialLine
+            endLine := other.endLine
             self
         }
     }
-}
-
-method max(a, b) { 
-    if (a > b) then { a } else { b }
-}
-method min(a, b) {
-    if (a < b) then { a } else { b }
 }
 
 method wrap(str:String) to (l:Number) prefix (margin:String) {
