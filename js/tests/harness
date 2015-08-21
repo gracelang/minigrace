@@ -107,13 +107,13 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=.. $COMPILER --verbose 60 --target js --dir .. $tcase"
+        COMMAND="GRACE_MODULE_PATH=../:../../modules/: $COMPILER --verbose 60 --target js --dir .. $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
 #   The %%.* _deletes_ the longest . extension.
-            GRACE_MODULE_PATH=.. $EXECUTOR "./$execname" > test-$$.out 2> test-$$.err
+            GRACE_MODULE_PATH=../:../../modules/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
             if [ ! -s test-$$.err ]
             then
                 /bin/rm -f test-$$.err
