@@ -2423,7 +2423,7 @@ function safeJsString (obj) {
     var objString
     try {
         var m = findMethod(obj, "asString")
-        objString = m.call(obj)._value;
+        objString = m.call(obj, [0])._value;
     } catch (e) {
         objString = "(without string representation)"
     }
@@ -2431,11 +2431,9 @@ function safeJsString (obj) {
 }
 
 function findMethod (obj, methname) {
-    var isSuper = false;
     var s = obj;
     var meth = s.methods[methname];
     while ((typeof(meth) != "function") && (s.superobj != null)) {
-        isSuper = true;
         s = s.superobj;
         meth = s.methods[methname];
     }
