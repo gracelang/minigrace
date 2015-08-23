@@ -1229,6 +1229,7 @@ GraceBlock.prototype = {
                 callmethod(ProgrammingErrorObject, "raise", [1],
                        new GraceString("block applied to " + args.length +
                                        " arguments where " + this.numParams + " expected."));
+            superDepth = this.receiver;
             return this.real.apply(this.receiver, args);
         },
         "applyIndirectly": function block_applyIndirectly (argcv, a) {
