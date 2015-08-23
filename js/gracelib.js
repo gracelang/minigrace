@@ -2532,15 +2532,15 @@ function callmethod(obj, methname, argcv) {
 
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
+    var ret
     try {
-        callmethod(obj, "apply")
+        return callmethod(obj, "apply")
     } catch (e) {
         if (e.exctype == 'graceexception') {
             for (var i = 0; i<cases.length; i++) {
-                var ret = callmethod(cases[i], "match", [1],
-                        e);
+                var ret = callmethod(cases[i], "match", [1], e);
                 if (Grace_isTrue(ret))
-                    return GraceDone;
+                    return callmethod(ret, "result", [0]);
             }
             throw e;
         } else {
@@ -2548,9 +2548,9 @@ function catchCase(obj, cases, finallyblock) {
         }
     } finally {
         if (finallyblock != false)
-            callmethod(finallyblock, "apply");
+            ret = callmethod(finallyblock, "apply");
     }
-    return GraceDone;
+    return ret;
 }
 
 function matchCase(obj, cases, elsecase) {

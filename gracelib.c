@@ -3850,9 +3850,9 @@ Object catchCase(Object block, Object *caseList, int ncases,
     finally_stack[calldepth] = finally;
     int start_exceptionHandlerDepth = exceptionHandlerDepth++;
     jmp_buf old_error_jump;
-    if (error_jump)
+    if (error_jump_set)
         memcpy(old_error_jump, error_jump, sizeof(jmp_buf));
-    if (setjmp(error_jump)) {
+    if (setjmp(error_jump)) {  // continuing from a longjmp
         memcpy(error_jump, old_error_jump, sizeof(jmp_buf));
         error_jump_set = old_error_jump_set;
         calldepth = start_calldepth;
@@ -3865,7 +3865,7 @@ Object catchCase(Object block, Object *caseList, int ncases,
                 callmethod(finally, "apply", 0, NULL, NULL);
                 finally_stack[start_calldepth] = NULL;
                 exceptionHandlerDepth--;
-                return alloc_done();
+                return callmethod(ret, "result", 0, NULL, NULL);
             }
         }
         callmethod(finally, "apply", 0, NULL, NULL);
