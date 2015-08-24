@@ -12,6 +12,10 @@ type OptionNumber =  Number | empty | full
 def items = list.with(6, 7, empty, 9, full)
 
 def block1 = { x:OptionNumber ->
+    // with the C backend, the type assertion in the header is not checked!
+    if (OptionNumber.match(x).not) then {
+        TypeError.raise "manual type error"
+    }
     match(x)
       case {n:Number -> "Number {n}"}
       case {y:empty -> "Singleton {y}"}
@@ -53,5 +57,4 @@ testSuite {
         assert {block3.apply(true, 56, true)} shouldRaise (TypeError)
     }
 }
-
 

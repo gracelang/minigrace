@@ -401,14 +401,24 @@ method compileblock(o) {
         out "block{myc}.pattern = {pat};"
     }
     var paramList := ""
+    var paramTypes := list.empty
+    var paramsAreTyped := false
     var first := true
     for (o.params) do { each ->
+        def dType = each.decType
+        paramTypes.push(compilenode(dType))
+        if (dType != ast.unknownType) then {
+            paramsAreTyped := true
+        }
         if (first) then {
             paramList := varf(each.value)
             first := false
         } else {
             paramList := paramList ++ ", " ++ varf(each.value)
         }
+    }
+    if (paramsAreTyped && emitTypeChecks) then {
+        out "block{myc}.paramTypes = {paramTypes};"
     }
     out("block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
     increaseindent

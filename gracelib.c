@@ -3599,7 +3599,8 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
-                    gracedie("Type error: expected %s for argument %s (%i) of %s (defined at %s:%i), got %s",
+                    graceRaise(TypeErrorObject, "expected %s for argument %s (%i) "
+                            "of %s (defined at %s:%i), got %s",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
                             m->name, m->definitionModule, m->definitionLine,
@@ -3683,7 +3684,7 @@ start:
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
-            gracedie("Type error.");
+            graceRaise(TypeErrorObject, "bad argument in method request.");
     }
     Object prevSourceObject = sourceObject;
     sourceObject = realself;
@@ -4940,8 +4941,8 @@ Object grace_while_do(Object self, int nparts, int *argcv,
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         gracedie("while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
-        gracedie("Type error: expected Block for argument condition (1) of "
-                "while()do (defined in standardPrelude), got %s",
+        graceRaise(TypeErrorObject, "expected a Block for first (condition) "
+                "argument of while()do (defined in standardPrelude), got %s",
                 argv[0]->class->name);
     }
     while (istrue(callmethod(argv[0], "apply", 0, NULL, NULL))) {

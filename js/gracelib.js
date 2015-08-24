@@ -1222,30 +1222,52 @@ function GraceBlock(recvr, lineNum, numParams) {
 }
 
 GraceBlock.prototype = {
-    methods : {
-        "apply": function block_apply (argcv) {
-            var args = Array.prototype.slice.call(arguments, 1);
-            if (args.length != this.numParams)
-                callmethod(ProgrammingErrorObject, "raise", [1],
-                       new GraceString("block applied to " + args.length +
-                                       " arguments where " + this.numParams + " expected."));
-            superDepth = this.receiver;
-            return this.real.apply(this.receiver, args);
-        },
-        "applyIndirectly": function block_applyIndirectly (argcv, a) {
+    methods: {
+        "apply": GraceBlock_apply,
+        "applyIndirectly": function GraceBlock_applyIndirectly (argcv, a) {
             return this.real.apply(this.receiver, a._value);
         },
-        "outer": function block_outer () {
+        "outer": function GraceBlock_outer () {
             return callmethod(this.receiver, 'outer', [0]);
         },
         "match": GraceBlock_match,
-        "asString": function block_asString (argcv) {
+        "asString": function GraceBlock_asString (argcv) {
             return new GraceString("block<" + this.definitionModule +
                                    ":" + this.definitionLine + ">");
         }
     },
     className: "block",
     superobj: new GraceObject()
+}
+
+function GraceBlock_apply(argcv) {
+    var args = Array.prototype.slice.call(arguments, 1);
+        // makes a copy of arguments, without element at index 0
+    var len = args.length;
+    var plural = (len == 1) ? "" : "s";
+    if (args.length != this.numParams)
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+            new GraceString("block applied to " + len + " argument" +
+                plural + " where " + this.numParams + " expected."));
+    superDepth = this.receiver;
+    if (this.pattern) {
+        var match = callmethod(this.pattern, "match", [1], args[0]);
+        if ( ! Grace_isTrue(match)) {
+            throw new GraceExceptionPacket(TypeErrorObject,
+                new GraceString("argument to block.apply has wrong type."));
+        }
+    } else if (this.paramTypes) {
+        for (var ix=0; ix < this.paramTypes.length; ix++) {
+            var match = callmethod(this.paramTypes[ix], "match", [1], args[ix]);
+            if ( ! Grace_isTrue(match)) {
+                var n = ix + 1
+                throw new GraceExceptionPacket(TypeErrorObject,
+                    new GraceString("argument " + n +
+                        " to block.apply has wrong type."));
+            }
+        }
+    }
+    return this.real.apply(this.receiver, args);
 }
 
 function GraceBlock_match(argcv, o) {
