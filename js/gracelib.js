@@ -2563,7 +2563,9 @@ function matchCase(obj, cases, elsecase) {
     }
     if (elsecase != false)
         return callmethod(elsecase, "apply", [0]);
-    return new GraceFailedMatch(obj);
+    callmethod(ProgrammingErrorObject, "raise", [1],
+               new GraceString ("non-exhaustive match in match()case()…."));
+    return GraceDone;       // should never happen
 }
 
 function ReturnException(v, target) {

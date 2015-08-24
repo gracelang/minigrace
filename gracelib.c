@@ -3835,7 +3835,8 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     }
     if (elsecase)
         return callmethod(elsecase, "apply", 1, partcv, &matchee);
-    return alloc_FailedMatch(matchee, NULL);
+    graceRaise(ProgrammingErrorObject, "non-exhaustive match in match()case()….");
+    return done;        // will never happen, but keeps C compiler quiet
 }
 Object catchCase(Object block, Object *caseList, int ncases,
         Object finally) {
