@@ -166,7 +166,7 @@ class baseNode.new {
         if (comments == false) then {
             comments := cmtNode
         } else {
-            cmtNode.extendCommentUsing(cmtNode)
+            comments.extendCommentUsing(cmtNode)
         }
     }
     method addComments(cmtNodeList) {
