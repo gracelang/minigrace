@@ -482,42 +482,42 @@ function GraceNum(n) {
 GraceNum.prototype = {
     methods: {
         "+": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = this._value + other._value;
                 return new GraceNum(s)
             }
             return callmethod(other, "reversePlusNumber", [1], this);
         },
         "*": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = this._value * other._value;
                 return new GraceNum(s)
             }
             return callmethod(other, "reverseTimesNumber", [1], this);
         },
         "/": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = this._value / other._value;
                 return new GraceNum(s)
             }
             return callmethod(other, "reverseDivideNumber", [1], this);
         },
         "-": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = this._value - other._value;
                 return new GraceNum(s)
             }
             return callmethod(other, "reverseMinusNumber", [1], this);
         },
         "^": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = Math.pow(this._value, other._value);
                 return new GraceNum(s)
             }
             return callmethod(other, "reversePowerNumber", [1], this);
         },
         "%": function(argcv, other) {
-            if (this.prototype === other.prototype) {
+            if (other.className === "number") {
                 var s = this._value % other._value;
                 return new GraceNum(s)
             }
