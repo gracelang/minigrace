@@ -1,11 +1,10 @@
-#pragma DefaultVisibility=public
 import "io" as io
 import "ast" as ast
 import "util" as util
 import "errormessages" as errormessages
 
 var blankLocation := 0
-var lastline := 0
+var lastLine := 0
 var lastIndent := 0
 var indentFreePass := false
 var minIndentLevel := 0
@@ -22,57 +21,52 @@ var defaultVarVisibility := "confidential"
 var defaultMethodVisibility := "public"
 def emptySequence = sequence.empty
 
-// Global object containing the current token
-var sym
-var lastToken := object {
-    var kind := "start"
-    var line := 0
-    var linePos := 0
-    var indent := 0
-    var value := ""
-    def size = 0
+// sym is a module-level field containing the current token
+var sym := object {
+    def kind is public = "start"
+    def line is public = 0
+    def linePos is public = 0
+    def indent is public = 0
+    def value is public = ""
+    def size is public = 0
 }
 
+var lastToken := sym
 var previousCommentToken := lastToken
 var statementToken := lastToken
 var comment := false
-
-// Advance to the next token in the stream, with special handling
-// so the magic "line" tokens update the line number for error output.
 
 method noteBlank {
     blankLocation := sym.line - 1
 }
 
+var firstCallOfNext := true
+
 method next {
-    lastToken := sym
+    // Advance to the next token in the stream, assigning it to sym.
+    // Put the position in the input into util module variables.
+
     if (tokens.size > 0) then {
-        lastline := lastToken.line
-        lastIndent := sym.indent
+        lastToken := sym
+        lastLine := lastToken.line
+        lastIndent := lastToken.indent
         sym := tokens.poll
-        if (sym.line > (lastToken.line + 1)) then { noteBlank }
+        if (sym.line > (lastLine + 1)) then { noteBlank }
         pushcomments
         util.setPosition(sym.line, sym.linePos)
-    } elseif { sym.kind == "eof" } then {
-        errormessages.syntaxError("Unexpectedly found the end of the input. This is often caused by a missing '\}'")
-            atRange(sym.line, sym.linePos, sym.linePos)
     } else {
-        print "else branch of next in parser — not so impossible!"
-        sym := object {
-            var kind := "eof"
-            var line := lastToken.line
-            var linePos := util.lines[lastToken.line].size + 1
-            var indent := 0
-            var value := ""
-            def size = 0
-        }
+        errormessages.syntaxError("Unexpectedly found the end of the input. " 
+            ++ "This is often caused by a missing '\}'")
+            atRange(sym.line, sym.linePos, sym.linePos)
     }
 }
 
-// Search for the next token for which the given block returns true.
-// Used for generating suggestions.
+
 method findNextToken(tokenMatcher) {
-    if(tokenMatcher.apply(sym)) then {
+    // Search for the next token for which the given block returns true.
+    // Used for generating suggestions.
+
+    if (tokenMatcher.apply(sym)) then {
         return sym
     }
     var nextTok := false
@@ -131,8 +125,8 @@ method findClosingBrace(token, inserted) {
     var numOpening := if(inserted) then {1} else {0}
     var numClosing := 0
     def result = object {
-        var found
-        var tok
+        var found is public
+        var tok is public
     }
     // Skip all tokens on the same line first.
     while {(n.kind != "eof") && (n.line == token.line)} do {
@@ -170,7 +164,7 @@ method accept(t) {
 // line (either because it's on the same physical line, or because
 // it's on an indented continuation line).
 method acceptSameLine(t) {
-    (sym.kind == t) && ((lastline == sym.line) ||
+    (sym.kind == t) && ((lastLine == sym.line) ||
         (sym.indent > lastIndent))
 }
 
@@ -188,7 +182,7 @@ method accept(t)onLineOfLastOr(other) {
 }
 // True if there is a token on the same logical line
 method tokenOnSameLine {
-    (lastline == sym.line) || (sym.indent > lastIndent)
+    (lastLine == sym.line) || (sym.indent > lastIndent)
 }
 // Check if block did consume at least one token.
 method didConsume(ablock) {
@@ -1744,7 +1738,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             suggestion.insert(")")afterToken(lastToken.prev)
             suggestion.insert("(")beforeToken(lastToken.prev.prev.prev)
             suggestions.push(suggestion)
-            errormessages.syntaxError("An expression containing both mathematical and non-mathematical operators requires parentheses.")atPosition(
+            errormessages.syntaxError("An expression containing both arithmetic and non-arithmetic operators requires parentheses.")atPosition(
                 lastToken.prev.line, lastToken.prev.linePos)withSuggestions(suggestions)
         }
         opdtype := o
@@ -2465,8 +2459,9 @@ method dodialect {
     }
 }
 
-// Accept "inherits X.new"
 method inheritsdec {
+    // Accept "inherits x.new"
+
     if (accept("keyword") && (sym.value == "inherits")) then {
         def btok = sym
         checkIndent
@@ -2493,9 +2488,11 @@ method inheritsdec {
     }
 }
 
-// Accept an object literal.
+
 method doobject {
-    // doobject because "object" is a keyword
+    // Accept an object literal.
+    // this method is called doobject because "object" is a keyword
+
     if (accept("keyword") && (sym.value == "object")) then {
         def btok = sym
         def localMinIndentLevel = minIndentLevel
@@ -2512,8 +2509,8 @@ method doobject {
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         values.push(object {
-            var kind := "lbrace"
-            var register := ""
+            def kind is public = "lbrace"
+            var register is public := ""
         })
         next
         if (sym.line == statementToken.line) then {
@@ -2733,6 +2730,7 @@ method dofactoryMethod {
             }
         }
         values.push(meth)
+        reconcileComments
         minIndentLevel := localMinIndentLevel
     }
 }
@@ -2763,8 +2761,8 @@ method methoddec {
                 minIndentLevel := stok.indent + 1
             }
             values.push(object {
-                var kind := "lbrace"
-                var register := ""
+                def kind is public = "lbrace"
+                var register is public := ""
             })
             statement
             var s := values.pop
@@ -3168,12 +3166,12 @@ method doimport {
         if (anns != false) then { o.annotations.addAll(anns) }
         adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         values.push(o)
+        reconcileComments
     }
 }
 
-// Accept a return statement. return takes a mandatory argument,
-// of the form "return x". x may be any expression.
 method doreturn {
+    // Accept a return statement; 'return' is followed by an optional expression.
     if (accept("keyword") && (sym.value == "return")) then {
         def retTok = sym
         next
@@ -3356,12 +3354,13 @@ method checkIndent {
     }
 }
 
-// Accept a statement. A statement is any of the above that may exist
-// at the top level, and includes expressions.
-// A statement may also be a bind statement x := y, which creates a
-// bind AST node out of the expressions on either side (which at this point
-// can be any arbitrary expression).
 method statement {
+    // Accept a statement. A statement is any of the above that may exist
+    // at the top level, and includes expressions.
+    // A statement may also be a bind statement x := y, which creates a
+    // bind AST node out of the expressions on either side (which at this point
+    // can be any arbitrary expression).
+
     statementIndent := sym.indent
     statementToken := sym
     def btok = sym
@@ -3417,6 +3416,7 @@ method statement {
             }
         }
     }
+    reconcileComments
     if (accept("eof")) then {
         return true
     }
@@ -3440,11 +3440,10 @@ method pushcomments {
     if ( ! accept "comment" ) then { return }
     util.setPosition(sym.line, sym.linePos)
     var o := ast.commentNode.new(sym.value)
-    if (lastToken.kind == "comment") then { 
-        print "*** successive comments found! ***"
-    }
     if ((lastToken.line == sym.line) && (lastToken.kind != "comment")) then {
         o.isPartialLine := true
+    } elseif { lastToken.line < (sym.line - 1) } then {
+        o.isPreceededByBlankLine := true
     }
     comments.push(o)
     while { 
@@ -3455,69 +3454,58 @@ method pushcomments {
     } do {
         util.setPosition(sym.line, sym.linePos)
         o := ast.commentNode.new(sym.value)
-        if ( comments.last.line == (sym.line - 1) ) then {
+        if ( comments.last.endLine == (sym.line - 1) ) then {
             comments.last.extendCommentUsing(o)
         } else {
             comments.push(o)
+            if ( lastToken.line < (sym.line - 1) ) then {
+                o.isPreceededByBlankLine := true
+            }
         }
     }
 }
 
 method reconcileComments {
-    // Should be requested after a new node that repreents a "syntactic unit"
-    // to whcih commenst can be attached is pushed onto `values`
+    // Should be requested after a new node that represents a "syntactic unit"
+    // to which comments can be attached is pushed onto `values`
     // Finds comments associated with that node, remove thems from comments
     // stack, and puts them in that node's comments attribute.
+
     pushcomments
     if (values.size == 0 ) then { return }
-    if (comments.isEmpty) then { return }
-    if ( ast.AstNode.match(values.last).not ) then {
-        util.log 20 verbose "value {values.last} (not an AstNode) found on value stack."
+    def node = values.last
+    if (node.kind == "lbrace") then {
+        // lbrace nodes not AST nodes.  They are used to mark the stack for
+        // nested expressions.  Hence, no comments should be attached to them.
         return
     }
-    def oLine = values.last.line
+    def oLine = node.line
     def preComments = list.empty
     def postComments = list.empty
-    var lineAbove := oLine - 1
-    var lineBelow := oLine + 1
 
-    while { (comments.size > 0).andAlso {comments.last.line > (oLine - 1)} } do {
-        postComments.push(comments.pop)
+    var ix := comments.size
+    while { ix > 0 } do {
+        def each = comments.at(ix)
+        def isPostComment = (each.line == oLine) || (each.line == (oLine+1))
+        def isPreComment = each.isPreceededByBlankLine && (each.endLine == (oLine-1))
+        if (isPostComment) then {
+            postComments.push(comments.removeAt(ix))
+        } elseif { isPreComment } then {
+            preComments.addFirst(comments.removeAt(ix))
+        } elseif { each.endLine < (oLine-1) } then {
+            ix := 0     // exit from while
+        }
+        ix := ix - 1
     }
 
-    while { (comments.size > 0).andAlso {
-            comments.last.endLine == lineAbove }.andAlso {
-            comments.last.isPartialLine == false } } do {
-        // collect the comments that preceed the last value into preComments
-        preComments.addFirst(comments.pop)
-        lineAbove := lineAbove - 1
-    }
+    def postSz = postComments.size
+    def preSz = preComments.size
 
-    def commentsBelow = list.empty
-    while {postComments.size > 0} do {
-        var o := postComments.pop
-        if (o.line == oLine) then {
-            preComments.addLast(o)
-        }
-        elseif (o.line == lineBelow) then {
-//            if ((o.line >= (sym.line - 1)) && (sym.kind != "rbrace")) then {
-//                //we shouldn't grab this comment for the entity above
-//                //and we should put any below-comments we've found back onto stack
-//                while {commentsBelow.size > 0} do {
-//                    comments.push(commentsBelow.removeFirst)
-//                }
-//                comments.push(o)
-//            } else {
-                lineBelow := lineBelow + 1
-                commentsBelow.addLast(o)
-//            }
-        }
-        else {
-            comments.push(o)
-        }
+    if ((postSz > 1) && (preSz > 1)) then {
+        preComments.last.value := preComments.last.value ++ "\n"
     }
-    preComments.addAll(commentsBelow)
-    values.last.addComments(preComments)
+    node.addComments(preComments)
+    node.addComments(postComments)
 }
 
 method checkBadOperators {
@@ -3616,10 +3604,13 @@ method checkUnexpectedTokenAfterStatement {
     }
 }
 
-// Parse the given list of tokens, returning a list of AST nodes
-// corresponding to it.
+
 method parse(toks) {
+    // Parse the given list of tokens, returning a list of AST nodes
+    // corresponding to it.
+
     util.log_verbose "parsing."
+
     if (util.extensions.contains("DefaultVisibility")) then {
         defaultDefVisibility := util.extensions.get("DefaultVisibility")
         defaultVarVisibility := util.extensions.get("DefaultVisibility")
@@ -3638,7 +3629,7 @@ method parse(toks) {
         return list.empty
     }
     tokens := toks
-    sym := tokens.first
+    next
     if (sym.indent > 0) then {
         def sugg = errormessages.suggestion.new
         sugg.deleteRange(1, sym.indent) onLine(sym.line)
@@ -3646,19 +3637,6 @@ method parse(toks) {
             atRange(sym.line, 1, sym.indent)
             withSuggestion(sugg)
     }
-    sym.prev := lastToken
-// TODO: Do this in lexer.
-    tokens.push(object {
-        var kind := "eof"
-        var line := tokens.last.line
-        var linePos := util.lines[tokens.last.line].size + 1
-        var indent := 0
-        var value := ""
-        def size = 0
-        var next := false
-        var prev := false
-    })
-    next
     var oldlength := tokens.size
     while {tokens.size > 0} do {
         blank

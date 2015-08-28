@@ -37,7 +37,7 @@ method new {
                 (other.line == line) && (other.linePos == linePos)
             }
         }
-        method asString { "{self.kind} {self.value}" }
+        method asString { "({line}:{linePos}){self.kind} {self.value}" }
     }
 
 
@@ -171,6 +171,12 @@ method new {
         def kind is public = "rgeneric"
         def value is public = ">"
         def size is public = 1
+    }
+    class eofToken.new {
+        inherits Token.new
+        def kind is public = "eof"
+        def value is public = ""
+        def size is public = 0
     }
 
 
@@ -1114,6 +1120,7 @@ method new {
                 }
             }
             modechange(tokens, mode, accum)
+            tokens.push(eofToken.new)
             tokens
         }
     }
