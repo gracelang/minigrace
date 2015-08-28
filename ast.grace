@@ -534,7 +534,6 @@ class methodTypeNode.new(name', signature', rtype') {
     var rtype is public := rtype'
     var generics is public := false
     def nameString:String is public = value
-    method asString { "MethodType {value} -> {rtype}" }
 
     method parametersDo(b) {
         signature.do { part -> 
@@ -633,7 +632,7 @@ class typeLiteralNode.new(methods', types') {
         anonymous := false
     }
     method asString {
-        "TypeLiteral: methods = {methods}, types = {types}"
+        "typeliteral: methods = {methods}, types = {types}"
     }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitTypeLiteral(self) up(as)) then {
@@ -1111,7 +1110,7 @@ def callNode = object {
             }
             s
         }
-        method asString { "Call {what.pretty(0)}" }
+        method asString { "call {what.pretty(0)}" }
         method shallowCopy {
             callNode.new(value, with).shallowCopyFieldsFrom(self)
         }
@@ -1579,7 +1578,7 @@ class genericNode.new(base, params') {
     var params is public := params'
     method nameString { value.nameString }
     method asString { 
-        var s := "{base}<"
+        var s := "generic {base}<"
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
         s ++ ">"
     }
@@ -1632,7 +1631,7 @@ class typeParametersNode.new(params') {
     def kind is public = "typeparams"
     var params is public := params'
     method asString { 
-        var s := "<"
+        var s := "typeparams <"
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
         s ++ ">"
     }
@@ -1776,9 +1775,9 @@ def identifierNode = object {
 
         method asString { 
             if (isBindingOccurrence) then {
-                "IdentifierBinding‹{value}›"
+                "identifierBinding‹{value}›"
             } else { 
-                "Identifier‹{value}›"
+                "identifier‹{value}›"
             }
         }
         method shallowCopy {
@@ -1863,7 +1862,7 @@ class numNode.new(val) {
     method toGrace(depth : Number) -> String {
         self.value.asString
     }
-    method asString { "Number {value}" }
+    method asString { "num {value}" }
     method shallowCopy {
         numNode.new(value).shallowCopyFieldsFrom(self)
     }
@@ -1986,7 +1985,7 @@ class bindNode.new(dest', val') {
     var value is public := val'
     
     method isBind { true }
-    method asString { "Bind {value}" }
+    method asString { "bind {value}" }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitBind(self) up(as)) then {
             def newChain = as.extend(self)
@@ -2441,7 +2440,6 @@ def inheritsNode = object {
             "inherits {self.value.toGrace(0)}"
         }
         method nameString { value.toGrace(0) }
-        method asString { "Inherits {nameString}" }
         method shallowCopy {
             inheritsNode.new(nullNode).shallowCopyFieldsFrom(self)
         }
@@ -2532,7 +2530,7 @@ def signaturePart = object {
                 spc := spc ++ "  "
             }
             var s := "{super.pretty(depth)}: {name}"
-            s := "{s}\n{spc}Parameters:"
+            if (params.isEmpty.not) then { s := "{s}\n{spc}Parameters:" }
             for (params) do { p ->
                 s := "{s}\n  {spc}{p.pretty(depth + 2)}"
             }
@@ -2550,7 +2548,7 @@ def signaturePart = object {
             self
         }
         method asString {
-            "Part: {name}"
+            "part: {name}"
         }
     }
 }
@@ -2613,9 +2611,10 @@ def commentNode = object {
         def kind is public = "comment"
         var value:String is public := val'
         var isPartialLine:Boolean is public := false
+        var isPreceededByBlankLine is public := false
         var endLine is public := util.linenum
         method isComment { true }
-        method asString { "Comment: {value}" }
+        method asString { "comment ({line}–{endLine}): {value}" }
         method extendCommentUsing(cmtNode) {
             value := value ++ " " ++ cmtNode.value
             endLine := cmtNode.endLine
@@ -2629,13 +2628,18 @@ def commentNode = object {
             visitor.visitComment(self) up(as)
         }
         method pretty(depth) {
-            "{super.pretty(depth)}({value})"
+            var s := "\n"
+            repeat (depth-1) times {
+                s := s ++ "  "
+            }
+            def pb = if (isPreceededByBlankLine) then { " > blank" } else { "" }
+            "{s}Comment{pb}({line}–{endLine}): ‹{value}›"
         }
         method toGrace(depth) {
             // Partial line comments don't start with a newline, whereas
             // full-line comments do.  No newline at end in either case.
             if (isPartialLine) then {
-                "//(partial) {value}"
+                "// (partial) {value}"
             } else {
                 var spc := ""
                 repeat (depth) times { spc := spc ++ "    " }
