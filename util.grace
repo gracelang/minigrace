@@ -372,6 +372,9 @@ method warning(s) {
 method verbosity {
     verbosityv
 }
+method verbosity:=(val) {
+    verbosityv := val
+}
 method outfile {
     outfilev
 }
