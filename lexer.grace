@@ -351,7 +351,13 @@ method new {
                 } elseif (mode == "n") then {
                     isDone := true
                 } elseif (mode == "c") then {
-                    def cmt = accum.substringFrom(3)to(accum.size)
+                    var firstNonSpace := 3      // skip the leading "//"
+                    def accumSize = accum.size
+                    while { (firstNonSpace <= accum.size).andAlso {
+                            accum.at(firstNonSpace) == " " } } do {
+                        firstNonSpace := firstNonSpace + 1 
+                    }
+                    def cmt = accum.substringFrom(firstNonSpace)to(accum.size)
                     tokens.push(CommentToken.new(cmt))
                     isDone := true
                 } elseif (mode == "p") then {
@@ -362,7 +368,8 @@ method new {
                 } elseif (isDone) then {
                     //print(mode, accum, tokens)
                 } else {
-                    errormessages.syntaxError("Lexing error: no handler for mode {mode} with accum {accum}.")atPosition(lineNumber, linePosition)
+                    errormessages.syntaxError "Lexing error: no handler for mode {mode} with accum ‹{accum}›"
+                        atPosition(lineNumber, linePosition)
                 }
             }
             startPosition := linePosition
