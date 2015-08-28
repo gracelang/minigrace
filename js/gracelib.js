@@ -725,6 +725,9 @@ GraceBoolean.prototype = {
                 return new GraceSuccessfulMatch(o);
             return new GraceFailedMatch(o);
         },
+        "hash": function(argcv) {
+            return new GraceNum(this._value ? 3637 : 1741);
+        },
     },
     className: "boolean",
     definitionModule: "unknown",
@@ -806,17 +809,17 @@ GraceList.prototype = {
             var s = "[";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
-                var v = this._value[i];
+                var obj = this._value[i];
                 if (isFirst) {
                     isFirst = false;
                 } else {
                     s += ", ";
                 }
-                if (v.methods['asString'])
-                    s += callmethod(v, "asString", [0])._value;
-                else {
-                    var q = dbgp(v, 2);
-                    s += "((" + q + "))"
+                try {
+                    var m = findMethod(obj, "asString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(v, 2) + "›";
                 }
             }
             s += "]";
@@ -826,17 +829,17 @@ GraceList.prototype = {
             var s = "[";
             var isFirst = true;
             for (var i=0; i<this._value.length; i++) {
-                var v = this._value[i];
+                var obj = this._value[i];
                 if (isFirst) {
                     isFirst = false;
                 } else {
                     s += ", ";
                 }
-                if (v.methods['asDebugString'])
-                    s += (i+1) + ":" + callmethod(v, "asDebugString", [0])._value;
-                else {
-                    var q = dbgp(v, 2);
-                    s += "((" + q + "))"
+                try {
+                    var m = findMethod(obj, "asDebugString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(v, 2) + "›";
                 }
             }
             s += "]";
@@ -953,13 +956,12 @@ GracePrimitiveArray.prototype = {
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
-                var v = this._value[i];
-                if ((v) && (v.methods) &&
-                    (v.methods['asString']))
-                    s += callmethod(v, "asString", [0])._value;
-                else {
-                    var q = dbgp(v, 2);
-                    s += "‹" + q + "›"
+                var obj = this._value[i];
+                try {
+                    var m = findMethod(obj, "asString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
             s += "]";
@@ -970,12 +972,12 @@ GracePrimitiveArray.prototype = {
             s += this._value.length + ": "
             for (var i=0; i<this._value.length; i++) {
                 if (i !== 0) s += ", ";
-                var v = this._value[i];
-                if ((v) && (v.methods) && (v.methods['asDebugString']))
-                    s += callmethod(v, "asDebugString", [0])._value;
-                else {
-                    var q = dbgp(v, 2);
-                    s += "‹" + q + "›"
+                var obj = this._value[i];
+                try {
+                    var m = findMethod(obj, "asDebugString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(obj, 2) + "›";
                 }
             }
             s += ")";
@@ -2770,7 +2772,8 @@ function dbgp(o, d) {
     }
     var s = "Object{\n";
     for (var t in o) {
-        s += ind + "  " + t + ": " + dbgp(o[t], d + 1) + "\n";
+        if (o.hasOwnProperty(t))
+            s += ind + "  " + t + ": " + typeof(o[t]) + "\n";
     }
     return s + "}";
 }
