@@ -144,10 +144,10 @@ def aMethodType = object {
             }
 
             def rType = match(meth) case { m : Method | Class ->
-                m.dtype
-            } case { m : MethodSignature ->
-                meth.rtype
-            }
+                            m.dtype
+                        } case { m : MethodSignature ->
+                            meth.rtype
+                        } case { _ -> }
 
             return signature(signature)
                 returnType(anObjectType.fromDType(rType))
@@ -424,7 +424,7 @@ def anObjectType = object {
                 "type '{bType}' does not satisfy the type 'Block'") with(block)
         } case { meth : MethodType ->
             return meth.returnType
-        }
+        } case { _ -> }
     }
 
     method fromBlockBody(body) -> ObjectType {
@@ -669,7 +669,7 @@ rule { req : Request ->
         }
     } case { ident : Identifier ->
         find(req) atScope(scope.methods.stack.size)
-    }
+    } case { _ -> }
 }
 
 method check(req : Request)
@@ -725,7 +725,7 @@ method find(req : Request) atScope(i : Number) -> ObjectType is confidential {
         find(req) atScope(i - 1)
     } case { meth : MethodType ->
         check(req) against(meth)
-    }
+    } case { _ -> }
 }
 
 rule { memb : Member ->
@@ -745,8 +745,8 @@ rule { op : Operator ->
         def name = op.value
 
         match(rType.getMethod(name)) case { (noSuchMethod) ->
-            RequestError.raiseWith("no such method '{name}' in " ++
-                "`{rec.toGrace(0)}` of type '{rType}'", op)
+            RequestError.raise("no method '{name}' in " ++
+                "`{rec.toGrace(0)}` of type '{rType}'") with (op)
         } case { meth : MethodType ->
             def arg = op.right
             def params = meth.signature.first.parameters
@@ -766,7 +766,7 @@ rule { op : Operator ->
             }
 
             meth.returnType
-        }
+        } case { _ -> }
     }
 }
 
@@ -848,7 +848,7 @@ rule { req : CatchCase ->
         if(params.size > 0) then {
             RequestError.raiseWith("Too many parameters to catch", bl)
         }
-    }
+    } case { _ -> }
 
     for(req.cases) do { case ->
         match(case) case { bl : BlockLiteral ->
@@ -860,7 +860,7 @@ rule { req : CatchCase ->
                 RequestError.raiseWith("{which} parameters to case of catch",
                     bl)
             }
-        }
+        } case { _ -> }
     }
 
     if(req.finally != false) then {
@@ -869,7 +869,7 @@ rule { req : CatchCase ->
             if(params.size > 0) then {
                 RequestError.raiseWith("Too many parameters to finally", bl)
             }
-        }
+        } case { _ -> }
     }
 
     anObjectType.done
@@ -1181,7 +1181,7 @@ method processBody(body : List) -> ObjectType is confidential {
                     allMethods.push(mType)
                     publicMethods.push(mType)
                 }
-            }
+            } case { _ -> }
         }
 
         scope.types.at("Self") put(anObjectType.fromMethods(allMethods))
@@ -1229,7 +1229,7 @@ method collectTypes(nodes : List) -> Done is confidential {
             types.push(td)
             placeholders.push(placeholder)
             scope.types.at(td.nameString) put(placeholder)
-        }
+        } case { _ -> }
     }
 
     for(types) and(placeholders) do { td, ph ->
