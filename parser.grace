@@ -2939,6 +2939,8 @@ method methodsignature(sameline) {
     meth.isBindingOccurrence := true
     var signature := list.empty
     def part = ast.signaturePart.new(meth.value)
+    part.line := meth.line
+    part.linePos := meth.linePos
     signature.push(part)
     if (meth.value == "[") then {
         if(sym.kind != "rsquare") then {

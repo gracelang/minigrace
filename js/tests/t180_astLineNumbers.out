@@ -8,13 +8,13 @@
           Returns:
             2:10 identifier‹Number›
           Signature:
-            2:7 signaturepart: age
+            2:3 signaturepart: age
         3:3 methodtype
           Name: name
           Returns:
             3:11 identifier‹String›
           Signature:
-            3:8 signaturepart: name
+            3:3 signaturepart: name
 
 
 5:0 blank
