@@ -131,7 +131,7 @@ fi
 if [ "$STATIC" ]
 then
     UNICODE_MODULE=unicode.gcn
-    STATIC_MODULES=unicode.gcn
+    STATIC_MODULES="modules/unicode.gcn modules/unixFilePath.gcn"
     for mod in ${other_modules[@]}
     do
         OTHER_MODULES=(${OTHER_MODULES:+"${OTHER_MODULES[@]}"} $mod.gcn)
@@ -142,6 +142,8 @@ then
         sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
 else
+    echo Assigning to STATIC_MODULES
+    STATIC_MODULES=modules/unixFilePath.gcn
     checkcurl
     for mod in ${other_modules[@]}
     do

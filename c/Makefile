@@ -50,6 +50,9 @@ install: minigrace $(GRACE_DIALECTS:%.grace=%.gso)
 Makefile.conf:
 	./configure
 
+$(STATIC_MODULES:modules/%.gcn): modules/%.gcn: modules/%.c gracelib.h
+	gcc -std=c99 -I. -c -o $@ $<
+
 minigrace-environment: minigrace StandardPrelude.gct gracelib.o gUnit.gct
 
 mirrors.gcn: mirrors.c gracelib.h
