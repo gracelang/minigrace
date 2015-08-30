@@ -9,18 +9,16 @@
             2:10 identifier‹Number›
           Signature:
             2:7 signaturepart: age
-              Parameters:
         3:3 methodtype
           Name: name
           Returns:
             3:11 identifier‹String›
           Signature:
             3:8 signaturepart: name
-              Parameters:
 
 
 5:0 blank
-6:2 class
+6:1 class
   Name: 6:7 identifierBinding‹person›
   Factory method: 6:14 identifierBinding‹new›
   Signature:
