@@ -94,20 +94,20 @@ class vector.new {
         def ret = vector.new
         def indices = ret.data
         def used = set.empty
-        var min := 1
+        var minsIndex := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
-                if (data.at(i) < data.at(min)) then {
+                if (data.at(i) < data.at(minsIndex)) then {
                     if (!used.contains(i)) then {
-                        min := i
+                        minsIndex := i
                     }
                 }
             }
-            indices.push(min)
-            used.add(min)
+            indices.push(minsIndex)
+            used.add(minsIndex)
             for (1..data.size) do {i->
                 if (!used.contains(i)) then {
-                    min := i
+                    minsIndex := i
                 }
             }
         }
@@ -117,20 +117,20 @@ class vector.new {
         def ret = vector.new
         def indices = ret.data
         def used = set.empty
-        var max := 1
+        var maxsIndex := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
-                if (data.at(i) > data.at(max)) then {
+                if (data.at(i) > data.at(maxsIndex)) then {
                     if (!used.contains(i)) then {
-                        max := i
+                        maxsIndex := i
                     }
                 }
             }
-            indices.push(max)
-            used.add(max)
+            indices.push(maxsIndex)
+            used.add(maxsIndex)
             for (1..data.size) do {i->
                 if (!used.contains(i)) then {
-                    max := i
+                    maxsIndex := i
                 }
             }
         }

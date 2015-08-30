@@ -1,7 +1,7 @@
 .PHONY: compile js run.js
-DIALECTS = dbc fsm objectAssociations dialect grapl loopInvariant
-DIALECT_DIALECTS = whileLiteral staticTypes requireTypes
-SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
+DIALECTS = dbc fsm objectAssociations ../../dialect grapl loopInvariant
+DIALECT_DIALECTS = whileLiteral ../../staticTypes ../../requireTypes
+SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample staticTypesExample
 
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
 VERBOSITY = --verbose
@@ -16,21 +16,25 @@ js: $(DIALECTS_JS) run.js
 
 # These need the .gso to load at compile time, and the .js to load at runtime.
 
-staticTypes.js: staticTypes.grace dialect.gso dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ staticTypes.grace
+../../staticTypes.js: ../../../modules/staticTypes.grace ../../../modules/dialect.gso ../../dialect.js
+	$(MAKE) -C ../../.. js/staticTypes.js
 
-requireTypes.js: requireTypes.grace dialect.gso dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ requireTypes.grace
+../../requireTypes.js: ../../../modules/requireTypes.grace ../../../modules/dialect.gso ../../dialect.js
+	$(MAKE) -C ../../.. js/requireTypes.js
+    
+../../dialect.js: ../../../modules/dialect.grace
+	$(MAKE) -C ../../.. js/dialect.js
 
-whileLiteral.js: whileLiteral.grace dialect.gso dialect.js
+whileLiteral.js: whileLiteral.grace  ../../../modules/dialect.gso ../../dialect.js
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ whileLiteral.grace
 
-dialect.gso: $(DIALECT_DEPENDENCIES:%=../../../modules/%.gso)
+../../../modules/dialect.gso:
+	$(MAKE) -C ../../.. modules/dialect.gso
 
-%Example.js: %Example.grace %.js %.gso
+%Example.js: %Example.grace ../../%.js ../../../modules/%.gso
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
-$(addsuffix .js,$(DIALECTS)): %.js: %.grace
+$(addsuffix .js, $(filter-out ../..%, $(DIALECTS))): %.js: %.grace
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
 %.gso %.gct %.gcn: %.grace
