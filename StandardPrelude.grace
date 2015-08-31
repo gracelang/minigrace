@@ -319,15 +319,31 @@ type ExceptionKind = Pattern & type {
     raise(message:String) with (argument:Object) -> Done
 }
 
-type Point = type {
+type Point =  {
+
     x -> Number
+    // the x-coordinates of self
+
     y -> Number
-    asString -> String
-    distanceTo(other:Point) -> Number
-    -(other:Point) -> Point
-    +(other:Point) -> Point
+    // the y-coordinate of self
+
+    + (other:Point) -> Point
+    // the Point that is the vector sum of self and other, i.e. (self.x+other.x) @ (self.y+other.y)
+
+    - (other:Point) -> Point
+    // the Point that is the vector difference of self and other, i.e. (self.x-other.x) @ (self.y-other.y)
+    
+    * (factor:Number) -> Point
+    // this point scaled by factor, i.e. (self.x*factor) @ (self.y*factor)
+    
+    / (factor:Number) -> Point
+    // this point scaled by 1/factor, i.e. (self.x/factor) @ (self.y/factor)
+
     length -> Number
-    ==(other:Object) -> Boolean
+    // distance from self to the origin
+
+    distanceTo(other:Point) -> Number
+    // distance from self to other
 }
 
 class point2D.x(x')y(y') {
