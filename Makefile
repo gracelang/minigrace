@@ -246,12 +246,6 @@ l1/%.grace: %.grace
 l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 	cd l1;  GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F)
 
-l1/collectionsPrelude.gct: stubs/collectionsPrelude.gct
-	cd l1 && ln ../$< .
-
-l1/collectionsPrelude.gcn: stubs/collectionsPrelude.gct
-	cd l1 && ln -sf ../stubs/$(@F)
-
 l1/gracelib.h:
 	cd l1 && ln -sf ../gracelib.h .
 
@@ -262,11 +256,11 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 	cd l1 && ln -sf ../compiler.grace . && \
 	GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
 
-l1/StandardPrelude.gct: stubs/StandardPrelude.gct
-	cd l1 && ln -sf ../$<
+l1/StandardPrelude.gct: l1/StandardPrelude.grace l1/collectionsPrelude.grace $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $(<F)
 
-l1/StandardPrelude.gcn: stubs/StandardPrelude.gct
-	cd l1 && ln -sf ../stubs/$(@F)
+l1/collectionsPrelude.gct: l1/collectionsPrelude.grace $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $(<F)
 
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
@@ -410,24 +404,16 @@ selftest: minigrace
 StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-stubs/collectionsPrelude.gct: collectionsPrelude.grace
-	cd stubs && ln -sf ../collectionsPrelude.grace . && \
-    ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
-
-stubs/StandardPrelude.gct: StandardPrelude.grace stubs/collectionsPrelude.gct
-	cd stubs && ln -sf ../StandardPrelude.grace . && \
-    ../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F)
-
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
 $(DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct $(KG)/minigrace
-	cd stubs && rm -f $(@F:%.gct=%{.c,.gcn,}) && \
-	../$(KG)/minigrace $(VERBOSITY) --make --noexec --vtag kg $(<F) && \
-	rm -f $(@F:%.gct=%{.c,.gcn});
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+	rm -f $(@:%.gct=%{.c,.gcn,})
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	rm -f $(@:%.gct=%{.c,.gcn});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .

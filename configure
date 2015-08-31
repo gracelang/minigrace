@@ -142,7 +142,6 @@ then
         sed -i "" 's/dlmodule("unicode")/module_unicode_init()/' minigrace.c
     fi
 else
-    echo Assigning to STATIC_MODULES
     STATIC_MODULES=modules/unixFilePath.gcn
     checkcurl
     for mod in ${other_modules[@]}
