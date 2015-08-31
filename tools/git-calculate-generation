@@ -18,10 +18,6 @@ findgen() {
     then
         echo 857
         return 0
-    elif [ "7c9986bc77c7f13621e4616f44c4be4fed710326" = "$h" ]
-    then
-        echo 1340
-        return 0
     elif [ "08f7d89889a7bc8afac98ab1d0a6d10033a1d24d" = "$h" ]
     then
         echo 1674
@@ -34,25 +30,17 @@ findgen() {
     then
         echo 2000
         return 0
-    elif [ "90f7b6b09a615e8dcda829cbe082fd644f9c0961" = $h ]
-    then
-        echo 2037
-        return 0
     elif [ "c01c85ef098bb275d73965aa95d8fdbe0bf2cf18" = $h ]
     then
         echo 2104
         return 0
-    elif [ "61482bce15cec41844a512fd6f07853796a59bdb" = $h ]
-    then
-        echo 2188
-        return 0
-    elif [ "3351a750205e9eabde8cbf2d23c38256c10ee20c" = $h ]
-    then
-        echo 2313
-        return 0
-	elif [ "66625d4f94cdf2ecc7b7689ea147277ffe16f1c1" = $h ]
+    elif [ "66625d4f94cdf2ecc7b7689ea147277ffe16f1c1" = $h ]
 	then
 		echo 2325
+		return 0
+    elif [ "d86ce5008429f6251c8d3ec110d20be1dce4f560" = $h ]
+	then
+		echo 2711
 		return 0
     fi
     if [ "$KNOWN" ] && [ "${known[$h]}" ]

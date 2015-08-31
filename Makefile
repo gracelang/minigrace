@@ -39,9 +39,10 @@ OBJECTDRAW = objectdraw.grace rtobjectdraw.grace animation.grace
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace xmodule.grace identifierresolution.grace genjson.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
-STABLE=6a7a5c84fb667753eeceb7f0a515ad8f8f730657
+STABLE=1560723984934899b9bf4496f3b68ced32fab99c
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
+VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
@@ -227,7 +228,10 @@ just-minigrace:
 	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 $(KG)/minigrace:
-	./tools/tarball-bootstrap -a
+	if [ -e minigrace-$(VER).tar.bz2 ] ;\
+	then ./tools/tarball-bootstrap minigrace-$(VER).tar.bz2 ;\
+	else ./tools/tarball-bootstrap -a ;\
+	fi
 
 known-good/%:
 	@echo "making $@"
