@@ -35,7 +35,8 @@ LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
-OBJECTDRAW = objectdraw.grace rtobjectdraw.grace animation.grace
+OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
+OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
 REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace xmodule.grace identifierresolution.grace genjson.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
@@ -82,7 +83,9 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
 clean:
 	rm -f gracelib.o gracelib-basic.o
 	rm -fr unicode.gco unicode.gcn unicode.gso.dSYM
-	rm -fr modules/*.gct modules/*.gcn modules/*.gso modules/*.gso.dSYM
+	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
+	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
+	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
 	rm -f debugger.o 
 	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
@@ -92,8 +95,9 @@ clean:
 	rm -rf *.gso *.gso.dSYM */*.gso.dSYM */*/*.gso.dSYM
 	rm -f stdin_minigrace.c
 	rm -f minigrace-dynamic
-	rm -f $(SOURCEFILES:.grace=)
+	rm -f $(SOURCEFILES:%.grace=%)
 	rm -f $(OBJECTDRAW:%.grace=%.*)
+	rm -f $(OBJECTDRAW:%.grace=modules/%.*)
 	( cd known-good && $(MAKE) clean )
 	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
@@ -111,9 +115,6 @@ clean:
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-modules/curl.gso: curl.c gracelib.h
-	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
-
 dialects: gracelib.o js modules/mgcollections.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
@@ -123,6 +124,7 @@ echo:
 	@echo WEBFILES = $(WEBFILES) "\n"
 	@echo KG = $(KG):
 	@echo STUBS = $(STUBS)
+	@echo OBJECTDRAW_REAL = $(OBJECTDRAW_REAL)
 	@echo ALL_LIBRARY_MODULES = $(ALL_LIBRARY_MODULES)
 	@echo LIBRARY_WO_OBJECTDRAW = $(LIBRARY_WO_OBJECTDRAW)
 	@echo DYNAMIC_STUBS = $(DYNAMIC_STUBS)
@@ -329,14 +331,23 @@ minigrace-js-env: minigrace js/grace StandardPrelude.gct js/gracelib.js .git/hoo
 module-test-js: minigrace-js-env $(TYPE_DIALECTS:%=js/%.js) $(TYPE_DIALECTS:%=modules/%.gso)
 	modules/tests/harness_js minigrace
 
+modules/curl.gso: curl.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
+
 modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modules/math.gso
 
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
-modules/rtobjectdraw.grace: modules/objectdraw.grace pull-objectdraw tools/make-rt-version
+modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
 	@if [ \($< -nt $@\) -o \( ! -e $@ \) ] ; \
 	then echo "creating $@" ; \
 	./tools/make-rt-version $< > $@ ; \
+	fi
+
+modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
+	@if [ \($< -nt $@\) -o \( ! -e $@ \) ] ; \
+	then echo "creating $@" ; \
+	./tools/make-st-version $< > $@ ; \
 	fi
 
 $(OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso:
@@ -349,12 +360,10 @@ $(OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: js/%.gct
 	cd modules && ln -sf ../$< .
 
 $(OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace js/dom.gct minigrace
-	GRACE_MODULE_PATH="modules/:js/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
+	GRACE_MODULE_PATH="js/:modules/" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
-$(patsubst %.grace, modules/%.grace, $(filter-out rtobjectdraw.grace, $(OBJECTDRAW))): modules/%.grace: objectdraw/%.grace
-	cd modules && ln -sf ../$< .
-
-$(OBJECTDRAW:%.grace=objectdraw/%.grace): objectdraw/%.grace: pull-objectdraw
+$(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
+	cd modules && ln -sf $(@:modules/%.grace=../objectdraw/%.grace) .
 
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
