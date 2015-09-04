@@ -65,19 +65,13 @@ selfhost: minigrace $(CFILES:.c=.grace) $(STUBS:%.grace=%.gct)
 # The next two rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace stubs/StandardPrelude.gct minigrace
-	cd stubs && rm -f $(@:%.gct=%{.c,.gcn,}) && \
-	../minigrace $(VERBOSITY) --make --noexec --vtag stub $(<F) && \
-	rm -f $(@:%.gct=%{.c,.gcn});
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct l1/minigrace
+	rm -rf $(@:%.gct=stubs/%{.c,.gcn,.gso})
+	GRACE_MODULE_PATH=l1 l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	rm -rf $(@:%.gct=stubs/%{.c,.gcn,.gso})
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -f $< ./
-
-stubs/collectionsPrelude.gct stubs/collectionsPrelude.gcn: stubs/collectionsPrelude.grace minigrace
-	./minigrace $(VERBOSITY) --make --noexec --vtag stub $<
-
-stubs/StandardPrelude.gct stubs/StandardPrelude.gcn: stubs/StandardPrelude.grace stubs/collectionsPrelude.gct minigrace
-	./minigrace $(VERBOSITY) --make --noexec --vtag stub $<
 
 test: minigrace-environment
 	./tests/harness "../minigrace" tests ""

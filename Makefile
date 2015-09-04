@@ -406,18 +406,16 @@ StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelud
 $(DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
 	rm -f $(@:%.gct=%{.c,.gcn,})
-	l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	GRACE_MODULE_PATH=l1 $(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
 	rm -f $(@:%.gct=%{.c,.gcn});
-
-$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	rm -f $(@:%.gct=%{.c,.gcn,.gso,})
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
-	rm -f $(@:%.gct=%{.c,.gcn,.gso,});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
+
+$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct
+	cd l1 && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
