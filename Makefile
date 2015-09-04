@@ -4,7 +4,7 @@ MAKEFLAGS += -r
 
 ARCH := $(shell uname -s)-$(shell uname -m)
 STUBS := $(filter-out %Prelude.grace,$(STUBS))
-ALL_LIBRARY_MODULES = $(sort $(filter-out $(GRACE_MODULES), $(LIBRARY_MODULES) $(OBJECTDRAW)))
+ALL_LIBRARY_MODULES = $(sort $(filter-out $(COMPILER_MODULES), $(LIBRARY_MODULES) $(OBJECTDRAW)))
 C_MODULES_GSO := $(UNICODE_MODULE:%.gso=modules/%.gso) $(OTHER_MODULES:%.gso=modules/%.gso)
 INTERNAL_STUBS := io.grace sys.grace imports.grace   # for which there are no c files
 JS_STUBS := dom.grace timer.grace
@@ -19,12 +19,13 @@ CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.
 CHECK_BUILDINFO := $(shell tools/check-buildinfo $(PREFIX) $(INCLUDE_PATH) $(MODULE_PATH) $(OBJECT_PATH))
 CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
+# COMPILER_MODULES are the parts of the compiler that should go into the modules
+# directory on an install (in addition to ALL_LIBRARY_MODULES)
+COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace mgcollections.grace
+
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast mgcollections modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
-# GRACE_MODULES are the parts of the compiler that should go into the modules
-# directory on an install (in addition to ALL_LIBRARY_MODULES)
-GRACE_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace mgcollections.grace
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
 LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
@@ -72,7 +73,7 @@ bruceWeb:
 	$(MAKE) WEB_SERVER=kim@project2.cs.pomona.edu EXP_WEB_DIRECTORY=www/minigrace/ expWeb
 
 c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefile mirrors.c mirrors.gct definitions.h curl.c modules/math.gso modules/unicode.gso modules/mirrors.gso modules/math.gct modules/math.gcn
-	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) collectionsPrelude.grace StandardPrelude.grace mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
+	for f in gracelib.c gracelib.h unicode.{c,gct} unicodedata.h $(SOURCEFILES) mirrors.{c,gct} definitions.h debugger.c curl.c modules/*.gso modules/*.gct modules/*.gcn ;\
     do cp -f $$f c ; done &&\
     cd c &&\
     ../minigrace --make $(VERBOSITY) --noexec -XNoMain -XNativePrelude collectionsPrelude.grace &&\
@@ -112,6 +113,13 @@ clean:
 	cd js/sample/graphics && $(MAKE) clean
 	cd js/sample/dialects && $(MAKE) clean
 
+# must be a pattern rule to get the "simultaneous build" semantics.  But the
+# pattern rule seems to induce a bogus circular depencency of l1/collectionsPrelude
+# on l1/minigrace.  So we must omit this rule, and incldue just the one for .gct
+#
+# collectionsPrelude%gct collectionsPrelude%gcn: collectionsPrelude.grace l1/minigrace
+#	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
@@ -119,6 +127,7 @@ dialects: gracelib.o js modules/mgcollections.gso js/minitest.js js/gUnit.js $(D
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
+	@echo MGSOURCEFILES = $(SOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
 	@echo WEBFILES = $(WEBFILES) "\n"
@@ -171,7 +180,7 @@ gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.g
 
 modules/gUnit.gso: modules/mirrors.gso modules/math.gso
 
-install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso)
+install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) gracelib.o
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
@@ -180,7 +189,7 @@ install: minigrace $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gc
 	install -m 755 gracelib.o $(MODULE_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
 	install -m 644 mgcollections.grace $(MODULE_PATH)
-	install -m 644 $(GRACE_MODULES) $(GRACE_MODULES:%.grace=js/%.js) $(GRACE_MODULES:%.grace=%.gct) $(MODULE_PATH)
+	install -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) $(MODULE_PATH)
 	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
 
@@ -223,7 +232,7 @@ js/timer.gct: stubs/timer.gct
 js/%.gct js/%.js: %.grace ./minigrace
 	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
-js: js/index.html js/dom.gct $(GRACE_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
+js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
 
 just-minigrace:
@@ -235,17 +244,6 @@ $(KG)/minigrace:
 	else ./tools/tarball-bootstrap -a ;\
 	fi
 
-known-good/%:
-	@echo "making $@"
-#	cd known-good && $(MAKE) $*
-	rm -f known-good/*out
-
-l1/%.grace: %.grace
-	cd l1 && ln -sf ../$(@F) .
-
-l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1;  GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec -XNoMain --vtag l1 $(<F)
-
 l1/gracelib.h:
 	cd l1 && ln -sf ../gracelib.h .
 
@@ -253,27 +251,25 @@ l1/gracelib.o: gracelib-basic.o debugger.o l1/StandardPrelude.gcn l1/collections
 	ld -o l1/gracelib.o -r gracelib-basic.o l1/StandardPrelude.gcn l1/collectionsPrelude.gcn debugger.o
 
 l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=l1/%.gso) $(PRELUDESOURCEFILES:%.grace=l1/%.gct) $(MGSOURCEFILES) gracelib.c gracelib.h l1/gracelib.o l1/gracelib.h
-	cd l1 && ln -sf ../compiler.grace . && \
-	GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --vtag l1 compiler.grace
+	GRACE_MODULE_PATH=../modules/: $(KG)/minigrace  $(VERBOSITY) --make --native --module minigrace --gracelib l1/ --dir l1 compiler.grace
 
-l1/StandardPrelude.gct: l1/StandardPrelude.grace l1/collectionsPrelude.grace $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $(<F)
+# The following 2 rules ought to be pattern rules, to get the "sumiltaneous build"
+# behaviour, but that seems to induce fake curcular dependencies.
 
-l1/collectionsPrelude.gct: l1/collectionsPrelude.grace $(KG)/minigrace
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $(<F)
+l1/StandardPrelude.gct l1/StandardPrelude.gcn: StandardPrelude.grace l1/collectionsPrelude.gct l1/collectionsPrelude.gcn $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+
+l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: collectionsPrelude.grace $(KG)/minigrace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
-
-#l1/unicode.gcn: unicode.c unicodedata.h gracelib.h
-#	gcc -g -std=c99 -c -o $@ -fPIC $<
 
 l1/unicode.gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
-	cd l1 && ln -sf ../modules/unixFilePath.grace . && \
-    ../$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --vtag l1 unixFilePath.grace
+	$(KG)/minigrace $(VERBOSITY) --make --noexec -XNoMain --dir l1 $<
 
 $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
@@ -293,8 +289,8 @@ $(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.gct): js/%.gct: js/%.js
 Makefile.conf: configure stubs modules
 	./configure
 
-$(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: l1/%.grace l1/StandardPrelude.gct $(KG)/minigrace
-	cd l1 &&  GRACE_MODULE_PATH=../modules/: ../$(KG)/minigrace  $(VERBOSITY) --make --noexec --vtag l1 $(<F)
+$(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: %.grace l1/StandardPrelude.gct $(KG)/minigrace
+	GRACE_MODULE_PATH=modules/: $(KG)/minigrace  $(VERBOSITY) --make --noexec --dir l1 $<
 
 $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
@@ -313,7 +309,7 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l1/gracelib.o modules/mirrors.gct modules/unicode.gct
+minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) l1/gracelib.o modules/mirrors.gct modules/unicode.gct modules/unixFilePath.gct
 	l1/minigrace --make --native --module minigrace $(VERBOSITY) compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
@@ -410,16 +406,18 @@ StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelud
 $(DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+$(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace StandardPrelude.gct l1/minigrace
 	rm -f $(@:%.gct=%{.c,.gcn,})
-	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
+	l1/minigrace $(VERBOSITY) --make --noexec --dir stubs $<
 	rm -f $(@:%.gct=%{.c,.gcn});
+
+$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
+	rm -f $(@:%.gct=%{.c,.gcn,.gso,})
+	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
+	rm -f $(@:%.gct=%{.c,.gcn,.gso,});
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
-
-$(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct
-	cd l1 && ln -sf ../$< .
 
 tarWeb: js
 	tar -cvf webfiles.tar $(WEBFILES) tests sample
