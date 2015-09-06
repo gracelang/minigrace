@@ -91,12 +91,11 @@ class assertion.trait {
     }
     method assert(block0) shouldRaise (desiredException) {
         var completedNormally
+        countOneAssertion
         try {
             block0.apply
-            countOneAssertion
             completedNormally := true
         } catch { raisedException:desiredException ->
-            countOneAssertion
             completedNormally := false
         } catch { raisedException ->
             failBecause("code raised exception {raisedException.exception}" ++
@@ -105,12 +104,11 @@ class assertion.trait {
         if (completedNormally) then {failBecause "code did not raise an exception"}
     }
     method assert(block0) shouldntRaise (undesiredException) {
+        countOneAssertion
         try {
             block0.apply
         } catch { raisedException:undesiredException ->
             failBecause "code raised exception {raisedException.exception}"
-        } catch { raisedException ->
-            countOneAssertion   // it's ok to raise some other exception
         }
     }
     method assert(value) hasType (Desired:Type) {
