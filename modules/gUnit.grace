@@ -109,6 +109,8 @@ class assertion.trait {
             block0.apply
         } catch { raisedException:undesiredException ->
             failBecause "code raised exception {raisedException.exception}"
+        } catch { _ -> 
+            // do nothing; it's OK to raise a different exception.
         }
     }
     method assert(value) hasType (Desired:Type) {

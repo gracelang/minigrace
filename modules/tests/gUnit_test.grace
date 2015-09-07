@@ -15,14 +15,15 @@ def gUnitTest = object {
         }
         
         method testShouldRaise {
-            def testException = Exception.refine "for testing"
-            self.assert {testException.raise} shouldRaise (testException)
+            def testException = Exception.refine "testException"
+            self.assert {testException.raise "message"} shouldRaise (testException)
         }
         
         method testShouldntRaise {
-            def testException = Exception.refine "for testing"
+            def testException = Exception.refine "testException"
             self.assert {var x:= 3} shouldntRaise (testException)
-            self.assert {Exception.raise} shouldntRaise (testException)
+            self.assert {Exception.raise "deliberately raised exception"}
+                shouldntRaise (testException)
         }
         
         method testBrokenMethod {

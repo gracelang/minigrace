@@ -2691,12 +2691,21 @@ GraceException.prototype = {
             return new GraceException(nm._value, this)
         },
         "raise": function(argcv, msg) {
+            if (argcv[0] != 1)
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("wrong number of arguments for raise(1)"));
             throw new GraceExceptionPacket(this, msg, new GraceObject())
         },
         "raiseWith": function(argcv, msg, data) {
+            if (argcv[0] != 2)
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("wrong number of arguments for raiseWith(1)"));
             throw new GraceExceptionPacket(this, msg, data)
         },
         "raise()with": function(argcv, msg, data) {
+            if ((argcv[0] != 1) && (argcv[1] != 1))
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("wrong number of arguments for raise(1)with(1)"));
             throw new GraceExceptionPacket(this, msg, data)
         },
         "match": function(argcv, other) {
