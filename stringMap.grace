@@ -81,7 +81,7 @@ class map.new {
                 count <= size
             }
             method next {
-                if (count > size) then { RuntimeError.raise "iterator exhausted" }
+                if (count > size) then { IteratorExhausted.raise "on string map" }
                 while {inner.at(idx) == unused} do {
                     idx := idx + 1
                 }

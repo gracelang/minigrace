@@ -400,18 +400,6 @@ GraceString.prototype = {
         },
         "hashcode": string_hash,
         "hash": string_hash,
-        "match()matchesBinding()else": function string_match (argcv, pat, b, e) {
-            return callmethod(pat, "matchObject()matchesBinding()else", [3],
-                    this, b, e);
-        },
-        "matchObject()matchesBinding()else": function string_matchObject (argcv, obj, b, e) {
-            var bl = callmethod(this, "==", [1], obj);
-            if (Grace_isTrue(bl)) {
-                return callmethod(b, "apply", [1], obj);
-            } else {
-                return callmethod(e, "apply", [1], obj);
-            }
-        },
         "indices": function string_indices(argcv) {
             var size = this._value.length;
             return callmethod(GraceRangeClass(), "from()to", [1, 1], new GraceNum(1), new GraceNum(size));
@@ -465,6 +453,31 @@ GraceString.prototype = {
             }
             output = output.substr(0, requiredLength);
             return new GraceString(output);
+        },
+        "reverseTimesNumber": function (argcv, num) {
+            return callmethod(this, "*", [1], num);
+        },
+        "map": function string_map(argcv, function1) {
+            var collections = callmethod(var___95__prelude, "collections", [0]);
+            onSelf = true;
+            return callmethod(collections,
+                        "lazySequenceOver()mappedBy", [1, 1], this, function1);
+        },
+        "filter": function string_map(argcv, predicate1) {
+            var collections = callmethod(var___95__prelude, "collections", [0]);
+            onSelf = true;
+            return callmethod(collections,
+                        "lazySequenceOver()filteredBy", [1, 1], this, predicate1);
+        },
+        "fold()startingWith": function string_fold(argcv, block2, initialValue) {
+            var self = this._value;
+            var size = self.length;
+            var accum = initialValue
+            for (var ix = 0; ix < size; ix ++) {
+                accum = callmethod(block2, "apply", [2],
+                                   accum, new GraceString(self[ix]));
+            };
+            return accum;
         }
     },
     className: "string",
@@ -1417,6 +1430,10 @@ GraceStringIterator.prototype = {
             return ((this._index < this._max) ? GraceTrue : GraceFalse);
         },
         next: function() {
+            if (this._index >= this._max) {
+                var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
+                throw new GraceExceptionPacket(ie, "on string " + this.value);
+            }
             var rv = new GraceString(this._value.charAt(this._index));
             this._index++;
             return rv;

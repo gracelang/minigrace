@@ -191,7 +191,7 @@ class rangeTest.forMethod(m) {
             def rangeFilteredIterator = rangeFiltered.iterator
             assert(rangeFilteredIterator) hasType (Iterator)
             deny(rangeFilteredIterator.hasNext) description "empty rangeFilteredIterator hasNext!"
-            assert{rangeFilteredIterator.next} shouldRaise (Exhausted)
+            assert{rangeFilteredIterator.next} shouldRaise (IteratorExhausted)
         }
         method testRangeFilterEmptyList {
             assert (rangeUp.filter{each -> each > 10}.onto(list)) shouldBe (list.empty)

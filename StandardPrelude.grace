@@ -388,7 +388,7 @@ type Set<T> = collections.Set<T>
 type Dictionary<K,T> = collections.Dictionary<K,T>
 
 def BoundsError is public = collections.BoundsError
-def Exhausted is public = collections.Exhausted
+def IteratorExhausted is public = collections.IteratorExhausted
 def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility

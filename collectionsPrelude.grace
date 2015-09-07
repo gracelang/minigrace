@@ -1,12 +1,12 @@
 #pragma NativePrelude
 
 def BoundsError = ProgrammingError.refine "BoundsError"
-def Exhausted = ProgrammingError.refine "iterator Exhausted"
+def IteratorExhausted = ProgrammingError.refine "IteratorExhausted"
 def SubobjectResponsibility = ProgrammingError.refine "SubobjectResponsibility"
-def NoSuchObject = ProgrammingError.refine "no such object"
-def RequestError = ProgrammingError.refine "inapproriate argument in method request"
-def ConcurrentModification = ProgrammingError.refine "object modified while iterating"
-def SizeUnknown = Exception.refine "the size is unknown"
+def NoSuchObject = ProgrammingError.refine "NoSuchObject"
+def RequestError = ProgrammingError.refine "RequestError"
+def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
+def SizeUnknown = Exception.refine "SizeUnknown"
 
 method abstract {
     // repeated in StandardPrelude
@@ -198,7 +198,7 @@ factory method lazySequenceOver<T>(source:Collection<T>)
             try {
                 cache := nextAcceptableElement
                 cacheLoaded := true
-            } catch { ex:Exhausted -> return false }
+            } catch { ex:IteratorExhausted -> return false }
             return true
         }
         method next {
@@ -208,7 +208,7 @@ factory method lazySequenceOver<T>(source:Collection<T>)
         }
         method nextAcceptableElement is confidential {
         // return the next element of the underlying iterator satisfying
-        // predicate; if there is none, raises Exhausted.
+        // predicate; if there is none, raises IteratorExhausted.
             while { true } do {
                 def outerNext = sourceIterator.next
                 def acceptable = predicate.apply(outerNext)
@@ -567,7 +567,7 @@ factory method sequence<T> {
                     method hasNext { idx <= sz }
                     method next {
                         if (imods != mods) then { ConcurrentModification.raise (asDebugString) }
-                        if (idx > sz) then { Exhausted.raise "on sequence {outer}⟪{idx}⟫" }
+                        if (idx > sz) then { IteratorExhausted.raise "on sequence {outer}⟪{idx}⟫" }
                         def ret = at(idx)
                         idx := idx + 1
                         ret
@@ -846,7 +846,7 @@ factory method list<T> {
                             if (imods != mods) then {
                                 ConcurrentModification.raise (asDebugString)
                             }
-                            if (idx > size) then { Exhausted.raise "on list" }
+                            if (idx > size) then { IteratorExhausted.raise "on list" }
                             def ret = at(idx)
                             idx := idx + 1
                             ret
@@ -1076,7 +1076,7 @@ factory method list<T> {
                         if (imods != mods) then {
                             ConcurrentModification.raise (asDebugString)
                         }
-                        if (idx > size) then { Exhausted.raise "on list" }
+                        if (idx > size) then { IteratorExhausted.raise "on list" }
                         def ret = at(idx)
                         idx := idx + 1
                         ret
@@ -1295,7 +1295,7 @@ factory method set<T> {
                                 ConcurrentModification.raise (outer.asString)
                             }
                             if (idx >= innerSize) then {
-                                Exhausted.raise "iterator over {outer.asString}"
+                                IteratorExhausted.raise "iterator over {outer.asString}"
                             }
                             candidate := inner.at(idx)
                             (candidate == unused).orElse{candidate == removed}
@@ -1618,7 +1618,7 @@ factory method dictionary<K,T> {
                     if (imods != mods) then {
                         ConcurrentModification.raise (outer.asString)
                     }
-                    if (size < count) then { Exhausted.raise "over {outer.asString}" }
+                    if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
                     while {
                         elt := inner.at(idx)
                         (elt == unused) || (elt == removed)
@@ -1755,7 +1755,7 @@ factory method range {
                     method hasNext { val <= stop }
                     method next {
                         if (val > stop) then {
-                            Exhausted.raise "over {outer.asString}"
+                            IteratorExhausted.raise "over {outer.asString}"
                         }
                         val := val + 1
                         return (val - 1)
@@ -1871,7 +1871,7 @@ factory method range {
                     var val := start
                     method hasNext { val >= stop }
                     method next {
-                        if (val < stop) then { Exhausted.raise "over {outer.asString}" }
+                        if (val < stop) then { IteratorExhausted.raise "over {outer.asString}" }
                         val := val - 1
                         return (val + 1)
                     }
