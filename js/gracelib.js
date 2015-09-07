@@ -387,6 +387,19 @@ GraceString.prototype = {
             };
             return GraceDone;
         },
+        "do()separatedBy": function string_do_sepBy(argcv, action1, separatorAction) {
+            var self = this._value;
+            var size = self.length;
+            var firstTime = true;
+            for (var ix = 0; ix < size; ix ++) {
+                if (! firstTime)
+                    callmethod(separatorAction, "apply", [0]);
+                else
+                    firstTime = false;
+                callmethod(action1, "apply", [1], new GraceString(self[ix]));
+            };
+            return GraceDone;
+        },
         "keysAndValuesDo": function string_do(argcv, action2) {
             var self = this._value;
             var size = self.length;
