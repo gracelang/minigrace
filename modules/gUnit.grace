@@ -86,6 +86,9 @@ class assertion.trait {
     method assert(s1:Object) shouldntBe (s2:Object) {
         assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
     }
+    method deny(s1:Object) shouldBe (s2:Object) {
+        assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
+    }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
         assert (math.abs(n1 - n2) <= epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
     }
@@ -201,10 +204,7 @@ factory method testCaseNamed(name') -> TestCase {
                 setup
                 runTest
             } finally { teardown }
-        } catch {e: self.AssertionFailure ->
-            result.testFailed(name)withMessage(e.message)
-            printBackTrace(e) limitedTo(name)
-        } catch {e: ExceptionKind ->
+        } catch {e: Exception ->
             result.testErrored(name)withMessage(e.message)
             printBackTrace(e) limitedTo(name)
         }
