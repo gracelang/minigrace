@@ -7,6 +7,11 @@ var currentSetupBlockForTesting := done
 var currentTestBlockForTesting := 0
 var currentTestInThisEvaluation := 0
 
+method numberOfErrorsToRerun -> Number { gu.numberOfErrorsToRerun }
+method numberOfErrorsToRerun:=(n:Number) {
+    gu.numberOfErrorsToRerun := n
+}
+
 def mtAssertion = object {
     inherits gu.assertion.trait
     var currentResult is writable := object {

@@ -59,6 +59,7 @@ type TestSuite = TestCase & type {
     rerunErrors(r:TestResult) -> Done
 }
 
+var numberOfErrorsToRerun is public := 10
 
 class assertion.trait {
     def AssertionFailure is readable = Exception.refine "AssertionFailure"
@@ -226,6 +227,11 @@ factory method testCaseNamed(name') -> TestCase {
             def frameDescription = bt.pop
             print("  called from " ++ frameDescription)
             if (frameDescription.contains(testName)) then { return }
+            if (frameDescription.contains "testCaseNamed()setupIn()asTestNumber")
+                    then {  
+                // this is for minitest, where the name won't be on the stack
+                return
+            }
         }
     }
 
@@ -399,12 +405,20 @@ def testSuite is public = object {
             outer.withAll(tests).addAll(anotherSuite)
         }
         method rerunErrors(result) {
-            print "\nRe-running errors."
+            if (numberOfErrorsToRerun <= 0) then { return }
+            var n := min(result.numberOfErrors, numberOfErrorsToRerun)
+            if (n == 1) then {
+                print "\nRe-running 1 error."
+            } else {
+                print "\nRe-running {n} errors."
+            }
             def newResult = testResult
             def errors = result.erroredTestNames
             tests.do { each ->
                 if (errors.contains(each.name)) then {
                     each.debug(newResult)
+                    n := n - 1
+                    if (n == 0) then { return }
                 }
             }
         }
