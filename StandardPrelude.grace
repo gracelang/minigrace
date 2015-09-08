@@ -377,6 +377,8 @@ type Block1<T,R> = collections.Block1<T,R>
 type Block2<S,T,R> = collections.Block1<T,R>
 
 type Collection<T> = collections.Collection<T>
+type Iterable<T> = collections.Iterable<T>
+type Expandable<T> = collections.Expandable<T>
 type Enumerable<T> = collections.Enumerable<T>
 type Binding<K,T> = collections.Binding<K,T>
 type Iterator<T> = collections.Iterator<T>

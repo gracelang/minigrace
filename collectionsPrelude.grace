@@ -27,15 +27,24 @@ type Block2<S,T,R> = type {
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
-type Collection<T> = Object & type {
+type Iterable<T> = Object & type {
+    iterator -> Iterator<T>       // all the rest can be defined using iterator
     isEmpty -> Boolean
+    first -> T
     do(block1: Block1<T,Done>) -> Done
     do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
+    ++(o: Iterable<T>) -> Collection<T>
     fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
     map(blk:Block1<T,Object>) -> Iterator<Object>
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
-    iterator -> Iterator<T>
-    ++(o: Collection<T>) -> Collection<T>
+}
+
+type Expandable<T> = Iterable<T> & type {
+    add(*x: T) -> SelfType
+    addAll(xs: Iterable<T>) -> SelfType
+}
+
+type Collection<T> = Iterable<T> & type {
     asList -> List<T>
     asSequence -> Sequence<T>
     asSet -> Set<T>
@@ -46,7 +55,7 @@ type Enumerable<T> = Collection<T> & type {
     asDictionary -> Dictionary<Number,T>
     keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
     onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
-    into(existing:Collection<Unknown>) -> Collection<Unknown>
+    into(existing: Expandable<Unknown>) -> Collection<Unknown>
     sortedBy(comparison:Block2<T,T,Number>) -> SelfType
     sorted -> SelfType
 }
@@ -57,7 +66,6 @@ type Sequence<T> = Enumerable<T> & type {
     [](n:Number) -> T
     indices -> Sequence<Number>
     keys -> Sequence<Number>
-    first -> T
     second -> T
     third -> T
     fourth -> T
@@ -71,9 +79,9 @@ type Sequence<T> = Enumerable<T> & type {
 
 type List<T> = Sequence<T> & type {
     add(*x: T) -> List<T>
-    addAll(xs:Collection<T>) -> List<T>
+    addAll(xs: Iterable<T>) -> List<T>
     addFirst(*x: T) -> List<T>
-    addAllFirst(xs:Collection<T>) -> List<T>
+    addAllFirst(xs: Iterable<T>) -> List<T>
     addLast(*x: T) -> List<T>    // same as add
     at(ix:Number) put(v:T) -> List<T>
     []:= (ix:Number, v:T) -> Done
@@ -82,19 +90,11 @@ type List<T> = Sequence<T> & type {
     removeLast -> T
     remove(*v:T)
     remove(*v:T) ifAbsent(action:Block0<Done>)
-    removeAll(vs: Collection<T>)
-    removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)
-    indexOf(v:T)
-    indexOf<U>(v:T) ifAbsent(action:Block0<U>)
+    removeAll(vs: Iterable<T>)
+    removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Unknown>)
     pop -> T
-    first -> T
-    second -> T
-    third -> T
-    fourth -> T
-    fifth -> T
-    last -> T
     ++(o: List<T>) -> List<T>
-    addAll(l: Collection<T>) -> List<T>
+    addAll(l: Iterable<T>) -> List<T>
     copy -> List<T>
     sort -> List<T>
     sortBy(sortBlock:Block2<T,T,Number>) -> List<T>
@@ -105,7 +105,7 @@ type List<T> = Sequence<T> & type {
 type Set<T> = Collection<T> & type {
     size -> Number
     add(*elements:T) -> SelfType
-    addAll(elements:Collection<T>) -> SelfType
+    addAll(elements: Iterable<T>) -> SelfType
     remove(*elements: T) -> Set<T>
     remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
     includes(booleanBlock: Block1<T,Boolean>) -> Boolean
@@ -115,10 +115,10 @@ type Set<T> = Collection<T> & type {
     ** (other:Set<T>) -> Set<T>
     -- (other:Set<T>) -> Set<T>
     ++ (other:Set<T>) -> Set<T>
-    removeAll(elems:Collection<T>)
-    removeAll(elems:Collection<T>)ifAbsent(action:Block0<Done>) -> Set<T>
+    removeAll(elems: Iterable<T>)
+    removeAll(elems: Iterable<T>)ifAbsent(action:Block0<Done>) -> Set<T>
     onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
-    into(existing:Collection<Unknown>) -> Collection<Unknown>
+    into(existing: Expandable<Unknown>) -> Collection<Unknown>
 }
 
 type Dictionary<K,T> = Collection<T> & type {
@@ -131,9 +131,9 @@ type Dictionary<K,T> = Collection<T> & type {
     []:= (k:K, v:T) -> Done
     at(k:K) -> T
     [] (k:K) -> T
-    removeAllKeys(keys:Collection<K>) -> Dictionary<K,T>
+    removeAllKeys(keys: Iterable<K>) -> Dictionary<K,T>
     removeKey(*keys:K) -> Dictionary<K,T>
-    removeAllValues(removals:Collection<T>) -> Dictionary<K,T>
+    removeAllValues(removals: Iterable<T>) -> Dictionary<K,T>
     removeValue(*removals:T) -> Dictionary<K,T>
     keys -> Enumerable<K>
     values -> Enumerable<T>
@@ -154,7 +154,7 @@ type Iterator<T> = type {
 }
 
 type CollectionFactory<T> = type {
-    withAll (elts:Collection<T>) -> Collection<T>
+    withAll (elts: Iterable<T>) -> Collection<T>
     with (*elts:Object) -> Collection<T>
     empty -> Collection<T>
 }
@@ -164,12 +164,12 @@ type EmptyCollectionFactory<T> = type {
 }
 
 class collectionFactory.trait<T> {
-    method withAll(elts:Collection<T>) -> Collection<T> { abstract }
+    method withAll(elts: Iterable<T>) -> Collection<T> { abstract }
     method with(*a:T) -> Unknown { self.withAll(a) }
     method empty -> Unknown { self.with() }
 }
 
-factory method lazySequenceOver<T,R>(source:Collection<T>)
+factory method lazySequenceOver<T,R>(source: Iterable<T>)
         mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
     inherits enumerable.trait<T>
     factory method iterator {
@@ -183,7 +183,7 @@ factory method lazySequenceOver<T,R>(source:Collection<T>)
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-factory method lazySequenceOver<T>(source:Collection<T>)
+factory method lazySequenceOver<T>(source: Iterable<T>)
         filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
     inherits enumerable.trait<T>
     factory method iterator {
@@ -218,6 +218,7 @@ factory method lazySequenceOver<T>(source:Collection<T>)
     }
     method asDebugString { "a lazy sequence filtering {source}" }
 }
+
 factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method next {
         if (left.hasNext) then {
@@ -249,6 +250,14 @@ class collection.trait<T> {
     method isEmpty {
         // override if size is known
         iterator.hasNext.not
+    }
+    method first {
+        def it = self.iterator
+        if (it.hasNext) then { 
+            it.next
+        } else {
+            BoundsError.raise "no first element in {self}"
+        }
     }
     method do(block1) separatedBy(block0) {
         var firstTime := true
@@ -311,7 +320,7 @@ class enumerable.trait<T> {
     method onto(f: CollectionFactory<T>) -> Collection<T> {
         f.withAll(self)
     }
-    method into(existing: Collection<T>) -> Collection<T> {
+    method into(existing: Expandable<T>) -> Collection<T> {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             existing.add(selfIterator.next)
@@ -321,7 +330,7 @@ class enumerable.trait<T> {
     method ==(other) {
         // there are 6 copies of this method!  Do we need traits!
         match (other)
-            case {o:Collection ->
+            case {o: Iterable ->
                 def selfIter = self.iterator
                 def otherIter = other.iterator
                 while {selfIter.hasNext && otherIter.hasNext} do {
@@ -417,7 +426,7 @@ class indexable.trait<T> {
     method onto(f: CollectionFactory<T>) -> Collection<T> {
         f.withAll(self)
     }
-    method into(existing: Collection<T>) -> Collection<T> {
+    method into(existing: Expandable<T>) -> Collection<T> {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             existing.add(selfIterator.next)
@@ -433,7 +442,7 @@ method max(a,b) is confidential {
 factory method sequence<T> {
     inherits collectionFactory.trait<T>
 
-    method withAll(*a:Collection) {
+    method withAll(*a: Iterable) {
         var forecastSize := 0
         var sizeUncertain := false
         // size might be uncertain if one of the arguments is a lazy collection.
@@ -519,7 +528,7 @@ factory method sequence<T> {
                 }
                 outer.fromPrimitiveArray(freshArray, size)
             }
-            method ++(other:Collection) {
+            method ++(other: Iterable) {
                 sequence.withAll(self, other)
             }
             method asString {
@@ -544,7 +553,7 @@ factory method sequence<T> {
             method ==(other) {
                 // there are 6 copies of this method!  Do we need traits!
                 match (other)
-                    case {o:Collection ->
+                    case {o: Iterable ->
                         def selfIter = self.iterator
                         def otherIter = other.iterator
                         while {selfIter.hasNext && otherIter.hasNext} do {
@@ -591,7 +600,7 @@ factory method sequence<T> {
 factory method list<T> {
     inherits collectionFactory.trait<T>
 
-    method withAll(a:Collection<T>) -> List<T> {
+    method withAll(a: Iterable<T>) -> List<T> {
         if (engine == "js") then {
             return object {
                 inherits indexable.trait<T>
@@ -748,19 +757,22 @@ factory method list<T> {
                 }
 
 
-                method removeAll(vs: Collection<T>) {
+                method removeAll(vs: Iterable<T>) {
                     removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
                 }
 
 
-                method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+                method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Unknown>)  {
                     for (vs) do { each ->
-                        def ix = self.indexOf(each) ifAbsent {return action.apply}
-                        removeAt(ix)
+                        def ix = self.indexOf(each) ifAbsent { 0 }
+                        if (ix ≠ 0) then {
+                            removeAt(ix)
+                        } else {
+                            action.apply
+                        }
                     }
                     self
                 }
-
 
                 method pop { removeLast }
 
@@ -820,7 +832,7 @@ factory method list<T> {
                 method ==(other) {
                 // there are 6 copies of this method!  Do we need traits!
                     match (other)
-                        case {o:Collection ->
+                        case {o: Iterable ->
                             def selfIter = self.iterator
                             def otherIter = other.iterator
                             while {selfIter.hasNext && otherIter.hasNext} do {
@@ -994,10 +1006,10 @@ factory method list<T> {
             method remove(*v:T) ifAbsent(action:Block0<Done>) {
                 removeAll(v) ifAbsent (action)
             }
-            method removeAll(vs: Collection<T>) {
+            method removeAll(vs: Iterable<T>) {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
             }
-            method removeAll(vs: Collection<T>) ifAbsent(action:Block0<Done>)  {
+            method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Done>)  {
                 mods := mods + 1
                 for (vs) do { each ->
                     def ix = indexOf(each) ifAbsent {return action.apply}
@@ -1051,7 +1063,7 @@ factory method list<T> {
             method ==(other) {
                 // there are 6 copies of this method!  Do we need traits!
                 match (other)
-                    case {o:Collection ->
+                    case {o: Iterable ->
                         def selfIter = self.iterator
                         def otherIter = other.iterator
                         while {selfIter.hasNext && otherIter.hasNext} do {
@@ -1123,7 +1135,7 @@ factory method list<T> {
 factory method set<T> {
     inherits collectionFactory.trait<T>
 
-    method withAll(a:Collection<T>) -> Set<T> {
+    method withAll(a: Iterable<T>) -> Set<T> {
         object {
             inherits collection.trait
             var mods:Number is readable := 0
@@ -1323,7 +1335,7 @@ factory method set<T> {
             }
             method ==(other) {
                 match (other)
-                    case {o:Collection ->
+                    case {o: Iterable ->
                         var oSize := 0
                         o.do { each ->
                             oSize := oSize + 1
@@ -1358,10 +1370,23 @@ factory method set<T> {
             // set intersection
                 (filter {each -> other.contains(each)}).asSet
             }
+            method isSubset(s2: Set<T>) {
+                self.do{ each ->
+                    if (s2.contains(each).not) then { return false }
+                }
+                return true
+            }
+
+            method isSuperset(s2: Iterable<T>) {
+                s2.do{ each ->
+                    if (self.contains(each).not) then { return false }
+                }
+                return true
+            }
             method onto(f: CollectionFactory<T>) -> Collection<T> {
                 f.withAll(self)
             }
-            method into(existing: Collection<T>) -> Collection<T> {
+            method into(existing: Expandable<T>) -> Collection<T> {
                 do { each -> existing.add(each) }
                 existing
             }
@@ -1394,7 +1419,7 @@ factory method dictionary<K,T> {
     method at(k:K)put(v:T) {
             self.empty.at(k)put(v)
     }
-    method withAll(initialBindings:Collection<Binding<K,T>>) -> Dictionary<K,T> {
+    method withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits collection.trait<T>
             var mods:Number is readable := 0
@@ -1806,7 +1831,7 @@ factory method range {
             method ==(other) {
                 // there are 6 copies of this method!  Do we need traits!
                 match (other)
-                    case {o:Collection ->
+                    case {o: Iterable ->
                         def selfIter = self.iterator
                         def otherIter = other.iterator
                         while {selfIter.hasNext && otherIter.hasNext} do {
@@ -1921,7 +1946,7 @@ factory method range {
             method ==(other) {
                 // there are 6 copies of this method!  Do we need traits!
                 match (other)
-                    case {o:Collection ->
+                    case {o: Iterable ->
                         def selfIter = self.iterator
                         def otherIter = other.iterator
                         while {selfIter.hasNext && otherIter.hasNext} do {
