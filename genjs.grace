@@ -952,8 +952,6 @@ method compileidentifier(o) {
 method compilebind(o) {
     var dest := o.dest
     var val := ""
-    var c := ""
-    var r := ""
     def currentScope = o.scope
     if (dest.kind == "identifier") then {
         val := o.value
@@ -961,7 +959,7 @@ method compilebind(o) {
         var nm := dest.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
-        o.register := val
+        o.register := "GraceDone"
     } elseif (dest.kind == "member") then {
         var nm := dest.value
         // we could use endsWith(), but it's not yet in the C string library 
@@ -969,14 +967,14 @@ method compilebind(o) {
             != ":="}) then {
             dest.value := nm ++ ":="
         }
-        c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])]) scope(currentScope)
-        r := compilenode(c)
-        o.register := r
+        def c = ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])]) 
+                        scope(currentScope)
+        o.register := compilenode(c)
     } elseif (dest.kind == "index") then {
         var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
-        c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])  scope(currentScope)]) scope(currentScope)
-        r := compilenode(c)
-        o.register := r
+        def c = ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])  scope(currentScope)])
+                        scope(currentScope)
+        o.register := compilenode(c)
     }
 }
 method compiledefdec(o) {
@@ -1015,7 +1013,7 @@ method compiledefdec(o) {
             }
         }
     }
-    o.register := val
+    o.register := "GraceDone"
 }
 method compilevardec(o) {
     var nm := o.name.value
@@ -1056,7 +1054,7 @@ method compilevardec(o) {
             }
         }
     }
-    o.register := val
+    o.register := "GraceDone"
 }
 method compileindex(o) {
     def of = compilenode(o.value)
