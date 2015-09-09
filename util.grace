@@ -23,6 +23,7 @@ var jobs := 2
 var cLines := list.empty
 var lines := list.empty
 var filename is readable := "standardInput.grace"
+var commandLineExtensions is readable := ""
 
 
 def targets = set.with("lex", "parse", "grace", "ast", "processed-ast",
@@ -168,6 +169,7 @@ method parseargs(buildinfo) {
                     } case { _ ->
                         if (arg.at(2) == "X") then {
                             var ext := arg.substringFrom(3)to(arg.size)
+                            commandLineExtensions := "{commandLineExtensions} {arg}"
                             processExtension(ext)
                         } else {
                             io.error.write("minigrace: invalid "

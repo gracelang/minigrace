@@ -190,6 +190,7 @@ method compileModule (nm) inFile (sourceFile)
         }
         cmd := cmd ++ " -XNoMain"
     }
+    cmd := cmd ++ util.commandLineExtensions
     cmd := "{cmd} --target {util.target} --noexec \"{sourceFile}\""
     util.log 50 verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", "-c", cmd).status
