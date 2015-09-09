@@ -764,7 +764,7 @@ GraceBoolean.prototype = {
 var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
 
-function RealGraceList(jsList) {
+function GraceList(jsList) {
     var newList = callmethod(GraceListClass(), "empty", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
         callmethod(newList, "push", [1], jsList[ix]);
@@ -772,10 +772,10 @@ function RealGraceList(jsList) {
     return newList;
 }
 
-function GraceList(l) {
-    this._value = l;
+function PrimitiveGraceList(jsList) {
+    this._value = jsList;
 }
-GraceList.prototype = {
+PrimitiveGraceList.prototype = {
     methods: {
         "push": function(argcv, val) {
             this._value.push(val);
@@ -1114,21 +1114,14 @@ function Grace_length(obj) {
     return new GraceNum(obj._value.length);
 }
 
-function GraceMatchResult(result, bindings) {
-    this.data['result'] = result;
-    if (bindings == undefined)
-        bindings = new GraceList([]);
-    this.data['bindings'] = bindings;
-    this._value = this.superobj._value;
-}
-GraceMatchResult.prototype = Grace_allocObject();
-GraceMatchResult.prototype.methods.result = function() {
+var GraceMatchResultPrototype = Grace_allocObject();
+GraceMatchResultPrototype.methods.result = function() {
     return this.data['result'];
 }
-GraceMatchResult.prototype.methods.bindings = function() {
+GraceMatchResultPrototype.methods.bindings = function() {
     return this.data['bindings'];
 }
-GraceMatchResult.prototype.methods.asString = function() {
+GraceMatchResultPrototype.methods.asString = function() {
     var s = ""
     if (Grace_isTrue(this))
         s = "SuccessfulMatch(result = ";
@@ -1140,7 +1133,7 @@ GraceMatchResult.prototype.methods.asString = function() {
     s += ")";
     return new GraceString(s);
 }
-GraceMatchResult.prototype.methods['::'] = function(argcv, other) {
+GraceMatchResultPrototype.methods['::'] = function(argcv, other) {
     return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
 }
 
@@ -1149,22 +1142,20 @@ function GraceSuccessfulMatch(result, bindings) {
     this.data = {};
     this.data['result'] = result;
     if (bindings == undefined)
-        bindings = new GraceList([]);
+        bindings = GraceEmptySequence();
     this.data['bindings'] = bindings;
     this._value = this.superobj._value;
 }
-GraceSuccessfulMatch.prototype = GraceMatchResult.prototype;
+GraceSuccessfulMatch.prototype = GraceMatchResultPrototype;
 
-function GraceFailedMatch(result, bindings) {
+function GraceFailedMatch(result) {
     this.superobj = new GraceBoolean(false);
     this.data = {};
     this.data['result'] = result;
-    if (bindings == undefined)
-        bindings = new GraceList([]);
-    this.data['bindings'] = bindings;
+    this.data['bindings'] = GraceEmptySequence();
     this._value = this.superobj._value;
 }
-GraceFailedMatch.prototype = GraceMatchResult.prototype;
+GraceFailedMatch.prototype = GraceMatchResultPrototype;
 
 function GraceTypeIntersection(l, r) {
     var opClass = callmethod(Grace_prelude, "TypeIntersection", [0]);
@@ -1206,8 +1197,7 @@ GraceType.prototype = {
                         return new GraceFailedMatch(other);
                 }
             }
-            return new GraceSuccessfulMatch(other,
-                    new GraceList([]));
+            return new GraceSuccessfulMatch(other);
         },
         "|": function type_or(argcv, other) {
             return new GraceTypeVariant(this, other);
@@ -1253,7 +1243,16 @@ GraceBlock.prototype = {
     methods: {
         "apply": GraceBlock_apply,
         "applyIndirectly": function GraceBlock_applyIndirectly (argcv, a) {
-            return this.real.apply(this.receiver, a._value);
+            var argList = a._value || a.data.jsArray || a.data.inner._value
+            // APB: 2015 09 08.  This is a horrible hack.
+            // a._value   => a is a PrimitiveGraceList
+            // a.data.jsArray    => a is a native code list from collectionsPrelude
+            // a.data.inner._value    =>  a is a Grace sequence or list
+            if (! argList)
+                throw ("Can't find argument list for applyIndirectly of " +
+                            "block<" + this.definitionModule +
+                            ":" + this.definitionLine + ">");
+            return this.real.apply(this.receiver, argList);
         },
         "outer": function GraceBlock_outer () {
             return callmethod(this.receiver, 'outer', [0]);
@@ -2587,6 +2586,7 @@ function callmethod(obj, methname, argcv) {
 
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
+    setLineNumber(0);
     var ret
     try {
         return callmethod(obj, "apply")
@@ -3013,42 +3013,49 @@ var _point2DClass;
 function GracePoint2DClass() {
     if (!_point2DClass)
         _point2DClass = callmethod(Grace_prelude, "point2D", [0]);
-    return _point2DClass
+    return _point2DClass;
 }
 
 var _bindingClass;
 function GraceBindingClass() {
     if (!_bindingClass)
         _bindingClass = callmethod(Grace_prelude, "binding", [0]);
-    return _bindingClass
+    return _bindingClass;
 }
 
 var _rangeClass;
 function GraceRangeClass() {
     if (!_rangeClass)
         _rangeClass = callmethod(Grace_prelude, "range", [0]);
-    return _rangeClass
+    return _rangeClass;
 }
 
 var _setClass;
 function GraceSetClass() {
     if (!_setClass)
         _setClass = callmethod(Grace_prelude, "set", [0]);
-    return _setClass
+    return _setClass;
 }
 
 var _sequenceClass;
 function GraceSequenceClass() {
     if (!_sequenceClass)
         _sequenceClass = callmethod(Grace_prelude, "sequence", [0]);
-    return _sequenceClass
+    return _sequenceClass;
+}
+
+var _emptySequence;
+function GraceEmptySequence() {
+    if (!_emptySequence)
+        _emptySequence = callmethod(GraceSequenceClass(), "empty", [0]);
+    return _emptySequence;
 }
 
 var _listClass;
 function GraceListClass() {
     if (!_listClass)
         _listClass = callmethod(Grace_prelude, "list", [0]);
-    return _listClass
+    return _listClass;
 }
 
 
@@ -3102,7 +3109,6 @@ if (typeof global !== "undefined") {
     global.GraceIterator = GraceIterator;
     global.GraceList = GraceList;
     global.GraceListIterator = GraceListIterator;
-    global.GraceMatchResult = GraceMatchResult;
     global.GraceMirrorMethod = GraceMirrorMethod;
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;

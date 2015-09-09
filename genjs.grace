@@ -1,4 +1,5 @@
 #pragma DefaultVisibility=public
+#pragma PrimitiveLists
 import "io" as io
 import "sys" as sys
 import "ast" as ast
@@ -149,13 +150,17 @@ method compilearray(o) {
         r := compilenode(a)
         vals.push(r)
     }
-    out("var array" ++ myc ++ " = new GraceList([")
+    if (util.extensions.contains "PrimitiveLists") then {
+        out "var array{myc} = new PrimitiveGraceList(["
+    } else {
+        out "var array{myc} = new GraceList(["
+    }
     increaseindent
     for (vals) do {v->
         out(v ++ ",")
     }
     decreaseindent
-    out("]);\n")
+    out "]);"
     o.register := "array" ++ myc
 }
 method compilemember(o) {
