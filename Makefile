@@ -223,7 +223,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.js minigrace
+js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	./minigrace --target js -XnoTypeChecks --dir js --make $(VERBOSITY) $<
 
 js/timer.gct: stubs/timer.gct
