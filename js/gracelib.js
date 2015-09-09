@@ -477,10 +477,15 @@ GraceString.prototype = {
                         "lazySequenceOver()mappedBy", [1, 1], this, function1);
         },
         "filter": function string_map(argcv, predicate1) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            onSelf = true;
-            return callmethod(collections,
-                        "lazySequenceOver()filteredBy", [1, 1], this, predicate1);
+            var self = this._value;
+            var size = self.length;
+            var result = "";
+            for (var ix = 0; ix < size; ix ++) {
+                var ch = self[ix]
+                if (GraceTrue === callmethod(predicate1, "apply", [1], new GraceString(ch)))
+                    result = result + ch;
+            };
+            return new GraceString(result);
         },
         "fold()startingWith": function string_fold(argcv, block2, initialValue) {
             var self = this._value;

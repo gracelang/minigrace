@@ -262,7 +262,7 @@ class stringTest.forMethod(m) {
         assert {ffl.substringFrom 7 to 6}
             shouldRaise (BoundsError)
     }
-    method testRepetition {
+    method testTimesNumber {
         def in = "abc"
         var out := "abcabc"
         assert (in * 0) shouldBe (empty)
@@ -272,6 +272,29 @@ class stringTest.forMethod(m) {
             out := out ++ in
             assert ((in * n) == out) description "string * n fails for n = {n}"
         }
+    }
+    method testReplaceWith {
+        def input = "abc and the blocks spelled \"abc\" all over again: abc"
+        def output = "wxyz and the blocks spelled \"wxyz\" all over again: wxyz"
+        assert (input.replace "abc" with "wxyz") shouldBe (output)
+    }
+    method testNumberTimes {
+        def in = "abc"
+        var out := "abcabc"
+        assert (0 * in) shouldBe (empty)
+        assert (1 * in) shouldBe (in)
+        assert (2 * in) shouldBe (out)
+    }
+    method testMap {
+        assert(vowels.map { ch -> ch.ord })
+            shouldBe (sequence.with(97, 101, 105, 111, 117, 121)) 
+    }
+    method testFilter {
+        assert(vowels.filter { ch -> ch < "j" }) shouldBe "aei"
+    }
+    method testFold {
+        assert(vowels.fold { acc, ch -> acc ++ ch } startingWith "<")
+            shouldBe ("<" ++ vowels)
     }
 }
 
