@@ -1,6 +1,6 @@
 bindingTest: 6 run, 0 failed, 0 errors
 sequenceTest: 47 run, 0 failed, 0 errors
-listTest: 79 run, 0 failed, 0 errors
+listTest: 80 run, 0 failed, 0 errors
 setTest: 40 run, 0 failed, 0 errors
 rangeTest: 46 run, 0 failed, 0 errors
 dictionaryTest: 52 run, 0 failed, 0 errors

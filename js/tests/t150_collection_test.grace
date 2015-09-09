@@ -690,7 +690,16 @@ class listTest.forMethod(m) {
             assert {empty.pop} shouldRaise (BoundsError)
         }
         method testListRemoveAbsentActionBlock {
-            assert (oneToFive.remove 9 ifAbsent {99}) shouldBe 99
+            var absent := false
+            assert (oneToFive.remove 9 ifAbsent {absent := true}) 
+                shouldBe (list.with(1, 2, 3, 4, 5))
+            assert (absent) description "9 was found in list 1..5"
+        }
+        method testListRemoveSomeAbsent {
+            var absent := false
+            assert (oneToFive.remove(1, 9, 2) ifAbsent {absent := true})
+                shouldBe (list.with(3, 4, 5))
+            assert (absent) description "9 was found in list 1..5"
         }
         method testListIndexOfPresent {
             assert (evens.indexOf 6) shouldBe 3

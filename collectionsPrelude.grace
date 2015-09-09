@@ -441,6 +441,13 @@ method max(a,b) is confidential {
 
 factory method sequence<T> {
     inherits collectionFactory.trait<T>
+    
+    def emptySequence = self.fromPrimitiveArray(_prelude.PrimitiveArray.new(0), 0)
+
+    method empty is override {
+        // this is an optimization: there need be just one empty sequence
+        emptySequence
+    }
 
     method withAll(*a: Iterable) {
         var forecastSize := 0
@@ -485,9 +492,10 @@ factory method sequence<T> {
         self.fromPrimitiveArray(inner, ix)
     }
     method fromPrimitiveArray(pArray, sz) is confidential {
+        // constructs a sequence from the first sz elements of pArray
+
         object {
             inherits indexable.trait
-            var mods:Number is readable := 0
             def size is public = sz
             def inner = pArray
 
@@ -569,13 +577,11 @@ factory method sequence<T> {
             }
             method iterator {
                 object {
-                    var imods:Number := mods
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aSequenceIterator" }
                     method hasNext { idx <= sz }
                     method next {
-                        if (imods != mods) then { ConcurrentModification.raise (asDebugString) }
                         if (idx > sz) then { IteratorExhausted.raise "on sequence {outer}⟪{idx}⟫" }
                         def ret = at(idx)
                         idx := idx + 1
@@ -602,29 +608,16 @@ factory method list<T> {
 
     method withAll(a: Iterable<T>) -> List<T> {
         if (engine == "js") then {
+          if (native "js" code ‹var result = (this === superDepth) ? GraceTrue : GraceFalse›) then {
             return object {
                 inherits indexable.trait<T>
 
-                var mods:Number is readable := 0
+                var mods is readable := 0
                 var sz := 0
                 var jsArray := native "js" code ‹var result = [];›
                 a.do { each ->
                     native "js" code ‹superDepth.data.jsArray.push(var_each);›
                 }
-
-
-                method boundsCheck(n) is confidential {
-                    native "js" code ‹var ix = var_n._value;
-                      if ( !(ix >= 1) || !(ix <= superDepth.data.jsArray.length)) {
-                          var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
-                          var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                          callmethod(BoundsError,"raise", [1], new GraceString(msg));
-                      }›
-                    if (!(n >= 1) || ! (n <= size)) then {
-                        BoundsError.raise "index {n} out of bounds 1..{size}"
-                    }
-                }
-
 
                 method size {
                     native "js" code ‹return new GraceNum(superDepth.data.jsArray.length)›
@@ -892,13 +885,14 @@ factory method list<T> {
                     outer.withAll(self)
                 }
             }
+          }
         }   // end of if (engine == "js") then ...
 
         object {
             // the new list object without native code
             inherits indexable.trait<T>
 
-            var mods:Number is readable := 0
+            var mods is readable := 0
             var initialSize
             try { initialSize := a.size * 2 + 1 }
                 catch { _ex:SizeUnknown -> initialSize := 9 }
@@ -1010,10 +1004,13 @@ factory method list<T> {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
             }
             method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Done>)  {
-                mods := mods + 1
                 for (vs) do { each ->
-                    def ix = indexOf(each) ifAbsent {return action.apply}
-                    removeAt(ix)
+                    def ix = indexOf(each) ifAbsent { 0 }
+                    if (ix ≠ 0) then {
+                        removeAt(ix)
+                    } else {
+                        action.apply
+                    }
                 }
                 self
             }
@@ -1138,7 +1135,7 @@ factory method set<T> {
     method withAll(a: Iterable<T>) -> Set<T> {
         object {
             inherits collection.trait
-            var mods:Number is readable := 0
+            var mods is readable := 0
             var initialSize
             try { initialSize := max(a.size * 3 + 1, 8) }
                 catch { _:SizeUnknown -> initialSize := 8 }
@@ -1422,7 +1419,7 @@ factory method dictionary<K,T> {
     method withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
         object {
             inherits collection.trait<T>
-            var mods:Number is readable := 0
+            var mods is readable := 0
             var numBindings := 0
             var inner := _prelude.PrimitiveArray.new(8)
             def unused = object {
@@ -1752,21 +1749,21 @@ factory method range {
             inherits indexable.trait<Number>
             match (lower)
                 case {_:Number -> }
-                case {_ -> RequestError.raise "lower bound {lower}" ++
-                    " in range.from({lower})to({upper}) is not an integer" }
+                case {_ -> RequestError.raise ("lower bound {lower}" ++
+                    " in range.from({lower})to({upper}) is not an integer") }
             def start = lower.truncated
             if (start != lower) then {
-                RequestError.raise "lower bound {lower}" ++
-                    " in range.from({lower})to({upper}) is not an integer" }
+                RequestError.raise ("lower bound {lower}" ++
+                    " in range.from({lower})to({upper}) is not an integer") }
 
             match (upper)
                 case {_:Number -> }
-                case {_ -> RequestError.raise "upper bound {upper}" ++
-                    " in range.from({lower})to({upper}) is not an integer" }
+                case {_ -> RequestError.raise ("upper bound {upper}" ++
+                    " in range.from({lower})to({upper}) is not an integer") }
             def stop = upper.truncated
             if (stop != upper) then {
-                RequestError.raise "upper bound {upper}" ++
-                    " in range.from()to() is not an integer"
+                RequestError.raise ("upper bound {upper}" ++
+                    " in range.from()to() is not an integer")
             }
 
             def size is public =
@@ -1873,21 +1870,21 @@ factory method range {
             inherits indexable.trait
             match (upper)
                 case {_:Number -> }
-                case {_ -> RequestError.raise "upper bound {upper}" ++
-                    " in range.from({upper})downTo({lower}) is not an integer" }
+                case {_ -> RequestError.raise ("upper bound {upper}" ++
+                    " in range.from({upper})downTo({lower}) is not an integer") }
             def start = upper.truncated
             if (start != upper) then {
-                RequestError.raise "upper bound {upper}" ++
-                    " in range.from({upper})downTo({lower}) is not an integer"
+                RequestError.raise ("upper bound {upper}" ++
+                    " in range.from({upper})downTo({lower}) is not an integer")
             }
             match (lower)
                 case {_:Number -> }
-                case {_ -> RequestError.raise "lower bound {lower}" ++
-                    " in range.from({upper})downTo({lower}) is not an integer" }
+                case {_ -> RequestError.raise ("lower bound {lower}" ++
+                    " in range.from({upper})downTo({lower}) is not an integer") }
             def stop = lower.truncated
             if (stop != lower) then {
-                RequestError.raise "lower bound {lower}" ++
-                    " in range.from({upper})downTo({lower}) is not an integer"
+                RequestError.raise ("lower bound {lower}" ++
+                    " in range.from({upper})downTo({lower}) is not an integer")
             }
             def size is public =
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
