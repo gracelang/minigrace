@@ -214,7 +214,7 @@ factory method testCaseNamed(name') -> TestCase {
     
     method runTest {
         def methodImage = mirror.reflect(self).getMethod(name)
-        methodImage.request([[]])
+        methodImage.request([sequence.empty])
     }
 
     method printBackTrace(exceptionPacket) limitedTo(testName) {

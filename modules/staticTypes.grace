@@ -1,4 +1,5 @@
 #pragma noTypeChecks
+#pragma PrimitiveLists
 // until [] means a real list, it won't match type List
 dialect "dialect"
 

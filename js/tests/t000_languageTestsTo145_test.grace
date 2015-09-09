@@ -1,4 +1,4 @@
-#pragma ClassMethods
+#pragma PrimitiveLists
 import "gUnit" as gU
 
 var str := ""
@@ -231,7 +231,7 @@ def t142_x = object {
 
 
 def aGraceLangTest = object {
-    class forMethod(m) {
+    factory method forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         method setup {

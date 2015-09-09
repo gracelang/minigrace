@@ -1,3 +1,4 @@
+#pragma PrimitiveLists
 import "mgcollections" as collections
 import "util" as util
 import "io" as io

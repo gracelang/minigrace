@@ -1,5 +1,6 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
+#pragma PrimitiveLists
 
 var isStandardPrelude := true
 
@@ -15,7 +16,7 @@ class SuccessfulMatch.new(result', bindings') {
 class FailedMatch.new(result') {
     inherits false
     method result { result' }
-    method bindings { list.empty }
+    method bindings { sequence.empty }
     method asString {
         "FailedMatch(result = {result})"
     }
