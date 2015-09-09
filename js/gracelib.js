@@ -2573,7 +2573,7 @@ function callmethod(obj, methname, argcv) {
             if (typeof args[i] == 'undefined')
                 throw new GraceExceptionPacket(
                            ProgrammingErrorObject,
-                           new GraceString("Uninitialised value used as argument to "
+                           new GraceString("Uninitialised value used as argument to '"
                                            + methname + "' on " + obj.className + " "
                                            + safeJsString(obj) + "."));
         args.unshift(argcv);
@@ -3129,6 +3129,7 @@ if (typeof global !== "undefined") {
     global.loadDate = loadDate;
     global.matchCase = matchCase;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;
+    global.PrimitiveGraceList = PrimitiveGraceList;
     global.ProgrammingErrorObject = ProgrammingErrorObject;
     global.ResourceExceptionObject = ResourceExceptionObject;
     global.ReturnException = ReturnException;
