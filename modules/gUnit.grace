@@ -28,11 +28,6 @@ type TestCase = Assertion & type {
     name -> String
 }
 
-type Set = {
-    add -> done
-    ...
-}
-
 type TestRecord = {
     name -> String
     message -> String
