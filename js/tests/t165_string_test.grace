@@ -111,11 +111,11 @@ class stringTest.forMethod(m) {
     }
     method testLastIndexOfMultiple {
         def vowels2 = vowels * 2
-        assert (vowels2.lastIndexOf("iou") ifAbsent {done}) shouldBe (3 + vowels.size)
-        assert (vowels2.lastIndexOf("y") ifAbsent {done}) shouldBe (vowels.size * 2)
+        assert (vowels2.lastIndexOf("iou") ifAbsent {0}) shouldBe (3 + vowels.size)
+        assert (vowels2.lastIndexOf("y") ifAbsent {0}) shouldBe (vowels.size * 2)
         assert {vowels2.lastIndexOf("w") ifAbsent {NoSuchObject.raise "not found"} }
             shouldRaise (NoSuchObject)
-        assert (vowels2.lastIndexOf("w") ifAbsent {done}) shouldBe(done)
+        assert (vowels2.lastIndexOf("w") ifAbsent {0}) shouldBe(0)
     }
     method testLastIndexOfEmpty {
         assert (vowels.lastIndexOf(empty) ifAbsent {"absent"}) shouldBe (vowels.size + 1)

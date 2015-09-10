@@ -2,8 +2,11 @@ import "gUnit" as gu
 
 inherits prelude.methods
 
-var currentTestSuiteForDialect := done
-var currentSetupBlockForTesting := done
+def nullSuite = _prelude.Singleton.named "nullSuite"
+def nullBlock = _prelude.Singleton.named "nullBlock"
+
+var currentTestSuiteForDialect := nullSuite
+var currentSetupBlockForTesting := nullBlock
 var currentTestBlockForTesting := 0
 var currentTestInThisEvaluation := 0
 
@@ -78,7 +81,7 @@ method failBecause(reason) {
 }
 
 method testSuiteNamed (name:String) with (block:Block) {
-    if(currentTestSuiteForDialect != done) then {
+    if(currentTestSuiteForDialect != nullSuite) then {
         Exception.raise("a testSuite cannot be created inside a testSuite")
     }
     currentTestSuiteForDialect := gu.testSuite.empty
@@ -86,9 +89,9 @@ method testSuiteNamed (name:String) with (block:Block) {
     currentSetupBlockForTesting := block
     currentTestInThisEvaluation := 0
     block.apply()
-    currentSetupBlockForTesting := done
+    currentSetupBlockForTesting := nullBlock
     currentTestSuiteForDialect.runAndPrintResults()
-    currentTestSuiteForDialect := done
+    currentTestSuiteForDialect := nullSuite
     currentTestBlockForTesting := 0
 }
 
@@ -97,18 +100,16 @@ method testSuite (block:Block) {
 }
 
 method test(name:String) by(block:Block) {
-    if(currentTestSuiteForDialect == done) then {
+    if(currentTestSuiteForDialect == nullSuite) then {
         Exception.raise("a test can be created only within a testSuite")
     }
     currentTestInThisEvaluation := currentTestInThisEvaluation + 1
-    if(currentSetupBlockForTesting != done) then {
+    if (currentSetupBlockForTesting != nullBlock) then {
         currentTestSuiteForDialect.add(testCaseNamed(name)
             setupIn(currentSetupBlockForTesting)
             asTestNumber(currentTestInThisEvaluation))
-    } else {
-        if(currentTestInThisEvaluation == currentTestBlockForTesting) then {
+    } elseif(currentTestInThisEvaluation == currentTestBlockForTesting) then {
             block.apply()
-        }
     }
 }
 
