@@ -1351,9 +1351,6 @@ var_Block.typeMethods.push("apply");
 var_Block.typeMethods.push("applyIndirectly");
 var_Block.typeMethods.push("match");
 var type_Block = var_Block;
-var var_Done = new GraceType("Done");
-var_Done.typeMethods.push("==");
-var_Done.typeMethods.push("!=");
 var type_Done = var_Done;
 
 var var_HashMap = { methods: { 'new':
@@ -3067,7 +3064,6 @@ function GraceListClass() {
 // these names are used in the generated code.
 // __95__ is the escape for _
 var var___95__prelude = Grace_prelude;
-var var_Done = GraceDone;
 var var_done = GraceDone;
 
 
@@ -3147,8 +3143,8 @@ if (typeof global !== "undefined") {
     global.type_Unknown = type_Unknown;
     global.TypeErrorObject = TypeErrorObject;
     global.var___95__prelude = Grace_prelude;
-    global.var_Done = GraceDone;
-    global.var_done = GraceDone;
+    global.var_Done = var_Done;
+    global.var_done = var_done;
     global.var_Block = var_Block;
     global.var_Boolean = var_Boolean;
     global.var_GraceType = var_GraceType;
