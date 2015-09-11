@@ -3425,13 +3425,9 @@ Object module_imports_init() {
 Object alloc_done() {
     if (done != NULL)
         return done;
-    Done = alloc_class("done", 6);
-    add_Method(Done, "==", &Object_Equals);
-    add_Method(Done, "!=", &Object_NotEquals);
-    add_Method(Done, "≠", &Object_NotEquals);
+    Done = alloc_class("done", 2);
     add_Method(Done, "asDebugString", &Object_asDebugString);
     add_Method(Done, "asString", &Singleton_asString);
-    add_Method(Done, "::", &Object_bind);
     Object o = alloc_obj(0, Done);
     done = o;
     gc_root(o);

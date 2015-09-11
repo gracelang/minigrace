@@ -2918,13 +2918,24 @@ function dbg(o) {
 }
 
 var extensionsMap = callmethod(var_HashMap, "new", [0]);
-var GraceDone = Grace_allocObject(null, "done");
-GraceDone.methods.asString = function done_asString() {
+
+function done_asString() {
     return new GraceString("done");
 };
-GraceDone.methods.asDebugString = function done_asDebugString() {
-    return new callemethod(this, "asString", [0]);
-};
+var GraceDone = {
+    // The singleton object "done".
+    // this is defined directly rather than using Grace_allocObject()
+    // to avoid getting GraceObject as the superObject.
+        methods: {
+            asString: done_asString,
+            asDebugString: done_asString },
+        superobj: null,
+        data: {},
+        className: "done",
+        mutable: false,
+        definitionModule: "unknown",
+        definitionLine: 0
+}
 
 var ellipsis = Grace_allocObject(GraceObject, "ellipsis");
 ellipsis.methods.asString = function ellipsis_asString() {return new GraceString("...");}
