@@ -329,16 +329,10 @@ modules/gUnit.gct modules/gUnit.gso modules/gUnit.gcn: modules/mirrors.gso modul
 modules/minitest.gct modules/minitest.gso modules/minitest.gcn: modules/gUnit.gso
 
 modules/rtobjectdraw.grace: modules/objectdraw.grace tools/make-rt-version
-	@if [ \($< -nt $@\) -o \( ! -e $@ \) ] ; \
-	then echo "creating $@" ; \
-	./tools/make-rt-version $< > $@ ; \
-	fi
+	./tools/make-rt-version $< > $@
 
 modules/stobjectdraw.grace: modules/objectdraw.grace tools/make-st-version
-	@if [ \($< -nt $@\) -o \( ! -e $@ \) ] ; \
-	then echo "creating $@" ; \
-	./tools/make-st-version $< > $@ ; \
-	fi
+	./tools/make-st-version $< > $@
 
 $(OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso:
 	@echo "Can't build $@; no C version of dependencies"
