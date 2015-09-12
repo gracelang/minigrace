@@ -908,7 +908,7 @@ PrimitiveGraceList.prototype = {
             var l = [item];
             for (var i=0; i<self.length; i++)
                 l.push(self[i]);
-            return new GraceList(l);
+            return new PrimitiveGraceList(l);
         },
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);
@@ -953,7 +953,7 @@ PrimitiveGraceList.prototype = {
         },
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
-            return new GraceList(l);
+            return new PrimitiveGraceList(l);
         }
     },
     className: "list",
