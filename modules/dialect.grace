@@ -230,21 +230,19 @@ method typeOf(node) {
 }
 
 method runRules(node) {
+    // apply all rules to node; returns the last SuccessfulMatch.
+    // if there is no successful match, returns FailedMatch(node).
     cache.atKey(node) do { value -> return value }
     currentLine := node.line
 
-    var result := done
+    var result := FailedMatch.new(node)
     for(rules) do { each ->
         def matched = each.match(node)
         if(matched) then {
-            def result' = matched.result
-            if(done != result') then {
-                result := result'
-                cache.at(node) put(result)
-            }
+            result := matched.result
+            cache.at(node) put(result)
         }
     }
-
     return result
 }
 
