@@ -73,6 +73,7 @@ NUM_PASS=0
 NUM_UNEXPECTED_SUCCESS=0
 NUM_WRONG_OUTPUT=0
 NUM_COMPILE_ERROR=0
+NUM_CRASHED=0
 echo "Beginning test run at $(date)" > test.log
 for tcase in "${tests[@]}"
 do
@@ -107,35 +108,41 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --verbose 60 $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --verbose 60 $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
             GRACE_MODULE_PATH=../modules/:../ $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
-            if [ ! -s test-$$.err ]
+            RESULT=$?
+            if [ -s test-$$.err ]
             then
                 /bin/rm -f test-$$.err
             else
                 cat test-$$.err
             fi
-            if diff test-$$.out ${tcase%_test.grace}.out
+            if [ 0 -ne ${RESULT} ]
+            then
+                NUM_CRASHED=$((NUM_CRASHED + 1))
+                echo ""
+                echo ERROR: ${tcase} crashed
+                fail "${tcase}: crashed"
+            elif diff test-$$.out ${tcase%_test.grace}.out
             then
                 NUM_PASS=$((NUM_PASS + 1))
-#                echo "${NUM_TESTS} PASS: $tcase"
                 printf %s .
                 pass ${tcase}
                 rm -f test-$$.out
             else
                 NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
                 echo ""
-                echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                echo "ERROR: ${tcase} produced wrong output"
                 fail "${tcase}: wrong output"
             fi
         else
             NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
             echo ""
-            echo "${NUM_TESTS} ERROR: $tcase failed to compile"
+            echo "ERROR: ${tcase} failed to compile"
             fail "${tcase}: compile error"
         fi
     else
@@ -163,10 +170,14 @@ do
         fi
         if [ -e test-$$.out ]
         then
+            echo "==============" >> test.log
             echo "Got output:" >> test.log
             cat test-$$.out >> test.log
             echo "Expected output:" >> test.log
             cat ${tcase%_test.grace}.out >> test.log
+            echo "differnces: " >> test.log
+            diff test-$$.out ${tcase%_test.grace}.out >> test.log
+            echo "==============" >> test.log
         fi
     fi
     rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*} *.bc *.ll *.gco *.s *.gcn *.c *.java *.class *_test.gct
@@ -178,13 +189,17 @@ done
 
 echo
 echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
-if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
+if [ $NUM_UNEXPECTED_SUCCESS -ne 0 ]
 then
     echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
 fi
-if [ $NUM_WRONG_OUTPUT -ne "0" ]
+if [ $NUM_WRONG_OUTPUT -ne 0 ]
 then
     echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+fi
+if [ $NUM_CRASHED -ne 0 ]
+then
+    echo "$NUM_CRASHED tests crashed during execution." | tee -a test.log
 fi
 if [ $NUM_COMPILE_ERROR -ne "0" ]
 then
