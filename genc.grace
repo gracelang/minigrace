@@ -668,7 +668,7 @@ method compilemethod(o, selfobj, pos) {
     out("  int pushcv[] = \{1\};")
     if (!o.selfclosure) then {
         out "  if (nparts < {o.signature.size} && args)"
-        out("    gracedie(\"missing argument list for {name} (probably "
+        out("    graceRaise(RequestError(), \"missing argument list for {name} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{o.signature.size}.\", nparts);")
     }
@@ -705,7 +705,7 @@ method compilemethod(o, selfobj, pos) {
         } else {
             if (!o.selfclosure) then {
                 out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-                out "    gracedie(\"wrong number of arguments for {part.name}\");"
+                out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name}\");"
             }
         }
     }
@@ -726,7 +726,7 @@ method compilemethod(o, selfobj, pos) {
         }
         out("  if (nparts == 1 + {o.signature.size} + (methodInheritingObject != NULL)) \{")
         out("    if (argcv[nparts-1] < {o.generics.size}) \{")
-        out("      gracedie(\"insufficient generic parameters\");")
+        out("      graceRaise(RequestError(), \"insufficient generic parameters\");")
         out("    \}")
         o.generics.do {g->
             var gn := escapeident(g.value)
@@ -835,7 +835,7 @@ method compilemethod(o, selfobj, pos) {
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method {name}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
         }
     }
     // We need to detect which parameters are used in a closure, and
@@ -975,7 +975,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    gracedie(\"insufficient arguments to method {name}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
         }
     }
     out("  Object params[{paramsUsed}];")

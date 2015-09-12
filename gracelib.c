@@ -268,11 +268,13 @@ static Object ErrorObject;
 static Object RuntimeErrorObject;
 static Object NoSuchMethodErrorObject;
 static Object ProgrammingErrorObject;
+static Object RequestErrorObject;
 static Object ResourceExceptionObject;
 static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
 
 Object ProgrammingError() { return ProgrammingErrorObject; }
+Object RequestError() { return RequestErrorObject; }
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -4766,6 +4768,8 @@ void gracelib_argv(char **argv) {
     RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
     gc_root(RuntimeErrorObject);
     ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
+    gc_root(ProgrammingErrorObject);
+    RequestErrorObject = alloc_Exception("RequestError", ProgrammingErrorObject);
     gc_root(ProgrammingErrorObject);
     BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingErrorObject);
     gc_root(BoundsErrorObject);

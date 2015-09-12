@@ -144,6 +144,8 @@ struct StackFrameObject *getclosureframe(Object);
 void setline(int);
 void gracedie(char *msg, ...);
 void graceRaise(Object, char *msg, ...);
+Object ProgrammingError();
+Object RequestError();
 
 void grace_register_shutdown_function(void(*)());
 Object alloc_SuccessfulMatch(Object result, Object bindings);
