@@ -942,6 +942,15 @@ PrimitiveGraceList.prototype = {
             }
             return res;
         },
+        "fold()startingWith": function(argcv, block, initial) {
+            var self = this._value;
+            var res = initial;
+            for (var i=0; i<self.length; i++) {
+                var v = self[i];
+                res = callmethod(block, "apply", [2], res, v)
+            }
+            return res;
+        },
         "++": function(argcv, other) {
             var l = this._value.concat(other._value);
             return new GraceList(l);
