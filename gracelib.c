@@ -1144,6 +1144,23 @@ Object BuiltinList_reduce(Object self, int nparts, int *argcv,
     }
     return accum;
 }
+Object BuiltinList_fold_startingWith(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object initialValue = args[1];
+    Object functionBlock = args[0];
+    Object each;
+    Object accum = initialValue;
+    int slot = gc_frame_newslot(accum);
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {2};
+        accum = callmethod(functionBlock, "apply", 1, partcv, &accum);
+        gc_frame_setslot(slot, accum);
+    }
+    return accum;
+}
 Object BuiltinList_do(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1270,7 +1287,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 22, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("BuiltinList", 23, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "::", &Object_bind);
@@ -1293,6 +1310,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
+        add_Method(BuiltinList, "fold()startingWith", &BuiltinList_fold_startingWith);
         add_Method(BuiltinList, "do", &BuiltinList_do);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
