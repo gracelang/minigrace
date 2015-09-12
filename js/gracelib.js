@@ -1597,38 +1597,40 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
-	if(typeof(process) != "undefined") {
+        if(typeof(process) != "undefined") {
             return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
-	}
+        }
         if (fileExists(path._value)) return GraceTrue;
         return GraceFalse;
     };
     this.methods.system = function(argcv, systemString) {
         if(typeof(process) != "undefined") {
-	    try {
-		var result = child_process.execSync(safeJsString(systemString), {stdio: [process.stdin, process.stdout, process.stderr]});
-		return GraceTrue;
-	    } catch(e) {
-		return GraceFalse;
-	    }
-	}
-	return GraceFalse;
+            try {
+                var result = child_process.execSync(safeJsString(systemString),
+                                            {stdio: [process.stdin, process.stdout, process.stderr]});
+                return GraceTrue;
+            } catch(e) {
+                return GraceFalse;
+            }
+        }
+        return GraceFalse;
     };
     this.methods.spawn = function() {
         if(typeof(process) != "undefined") {
-	    var cmd = safeJsString(arguments[1]);
-	    var args = [];
-	    for(var i = 2; i < arguments.length; i++)
-		args.push(safeJsString(arguments[i]));
-	    var result = child_process.spawnSync(cmd, args, {stdio: [process.stdin, process.stdout, process.stderr]});
+            var cmd = safeJsString(arguments[1]);
+            var args = [];
+            for(var i = 2; i < arguments.length; i++)
+            args.push(safeJsString(arguments[i]));
+            var result = child_process.spawnSync(cmd, args,
+                    {stdio: [process.stdin, process.stdout, process.stderr]});
             var o = new Grace_allocObject();
-	    o.methods['terminated'] = function () { return GraceTrue; };
-	    o.methods['wait'] = function () { return GraceTrue; };
-	    o.methods['status'] = function () { return new GraceNum(result.status); };
-	    o.methods['success'] = function () { return result.status == 0 ? GraceTrue : GraceFalse; };
-	    return o;
-	}
-	return GraceFalse;
+            o.methods['terminated'] = function () { return GraceTrue; };
+            o.methods['wait'] = function () { return GraceTrue; };
+            o.methods['status'] = function () { return new GraceNum(result.status); };
+            o.methods['success'] = function () { return result.status == 0 ? GraceTrue : GraceFalse; };
+            return o;
+        }
+        return GraceFalse;
     };
     this.methods.open = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
@@ -1646,7 +1648,7 @@ function gracecode_io() {
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
             o.methods['eof'] = function () { return (i == a.length) ? GraceTrue : GraceFalse; };
             o.methods['read'] = function () { return new GraceString(c.toString()); };
-            o.methods['pathname'] = function () { return new GraceString(p);};
+            o.methods['pathname'] = function () { return new GraceString(path);};
             return o;
         }
         var o = new Grace_allocObject();
