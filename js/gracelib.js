@@ -1625,7 +1625,7 @@ function gracecode_io() {
                     {stdio: [process.stdin, process.stdout, process.stderr]});
             var o = new Grace_allocObject();
             o.methods['terminated'] = function () { return GraceTrue; };
-            o.methods['wait'] = function () { return GraceTrue; };
+            o.methods['wait'] = function () { return new GraceNum(result.status); };
             o.methods['status'] = function () { return new GraceNum(result.status); };
             o.methods['success'] = function () { return result.status == 0 ? GraceTrue : GraceFalse; };
             return o;
@@ -1637,7 +1637,12 @@ function gracecode_io() {
         if (typeof(process) != "undefined") {
             var m = mode._value;
             var o = new Grace_allocObject();
-            var f = fs.openSync(path, m);
+            try {
+                var f = fs.openSync(path, m);
+            } catch(e) {
+                throw new GraceExceptionPacket(EnvironmentExceptionObject,
+                    new GraceString("Can't open file '" + path + "' for '" + m + "'."));
+            }
             if (fs.existsSync(path)) {
                 var c = fs.readFileSync(path);
                 var a = c.toString().split('\n');
@@ -1663,8 +1668,8 @@ function gracecode_io() {
             else if (mode._value == "r") {
                 if (typeof gctCache[gctpath] == "undefined")
                     throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                           new GraceString("Can't open file " + gctpath +
-                                           ".gct for 'r'.  File does not exist."))
+                           new GraceString("Can't open file '" + gctpath +
+                                           ".gct' for 'r'.  File does not exist."))
                 else {
                     o._lines = gctCache[gctpath].split("\n");
                     o._index = 0;
