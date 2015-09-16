@@ -56,7 +56,7 @@ class mathTests.forMethod(m) {
         assert (math.ln 1) shouldBe 0
     }
     method testExp {
-        assert (math.exp(math.ln 15)) shouldBe 15
+        assert (math.exp(math.ln 15)) shouldEqual 15 within (10^(-10))
         assert (math.exp 1) shouldEqual 2.71828183 within (10^(-8))
         assert (math.exp 0) shouldEqual 1 within (10^(-10))
     }
