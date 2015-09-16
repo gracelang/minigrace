@@ -171,9 +171,14 @@ method compileModule (nm) inFile (sourceFile)
     } else {
         cmd := io.realpath "{sys.execPath}/{sys.argv.first}"
     }
-    cmd := "\"{cmd}\""
-    if (util.verbosity > 30) then {
-        cmd := cmd ++ " --verbose"
+    def cmdSz = cmd.size
+    if (cmd.substringFrom(cmdSz-2) to (cmdSz) == ".js") then {
+        cmd := "grace \"{cmd}\""
+    } else {
+        cmd := "\"{cmd}\""
+    }
+    if (util.verbosity != 40) then {
+        cmd := cmd ++ " --verbose {util.verbosity}"
     }
     if (util.dirFlag) then {
         cmd := cmd ++ " --dir " ++ util.outDir
@@ -190,6 +195,7 @@ method compileModule (nm) inFile (sourceFile)
         }
         cmd := cmd ++ " -XNoMain"
     }
+    cmd := cmd ++ " --gracelib " ++ util.gracelibPath
     cmd := cmd ++ util.commandLineExtensions
     cmd := "{cmd} --target {util.target} --noexec \"{sourceFile}\""
     util.log 50 verbose "executing sub-compile {cmd}"
