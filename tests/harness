@@ -108,7 +108,7 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --verbose 60 $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --gracelib .. --verbose 60 $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
