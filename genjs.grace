@@ -38,6 +38,10 @@ var priorLineSeen := 0
 var priorLineComment := ""
 var priorLineEmitted := 0
 var emitTypeChecks := true
+var emitUndefinedChecks := true
+var emitArgChecks := true
+var emitPositions := true
+var requestCall := "callmethodChecked"
 
 method increaseindent() {
     indent := indent ++ "  "
@@ -77,13 +81,15 @@ method forceLineNumber(n)comment(c) {
     // force the generation of code that sets the line number.  
     // Used at the start of a method
     noteLineNumber(n)comment(c)
-    output.push "{indent}setLineNumber({priorLineSeen})    // {priorLineComment};"
+    if (emitPositions) then {
+        output.push "{indent}setLineNumber({priorLineSeen})    // {priorLineComment};"
+    }
     priorLineEmitted := priorLineSeen
 }
 
 method out(s) {
     // output code, but first output code to set the line number
-    if (priorLineSeen != priorLineEmitted) then {
+    if (emitPositions && (priorLineSeen != priorLineEmitted)) then {
         output.push "{indent}setLineNumber({priorLineSeen})    // {priorLineComment};"
         priorLineEmitted := priorLineSeen
     }
@@ -559,7 +565,7 @@ method compilemethod(o, selfobj) {
             }
             out "onSelf = true"
             out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
-        } else {
+        } elseif { emitArgChecks } then {
             out "if (argcv[{partnr - 1}] != {part.params.size})"
             def msgSuffix = if (o.signature.size < 2) then { 
                 textualSignature
@@ -578,10 +584,12 @@ method compilemethod(o, selfobj) {
             out "var {varf(g.value)} = var_Unknown;"
         }
         out "if (argcv.length == {1 + sz}) \{"
-        out "  if (argcv[{sz}] != {o.generics.size}) \{"
-        out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
-        out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
-        out "  \}"
+        if (emitArgChecks) then {
+            out "  if (argcv[{sz}] != {o.generics.size}) \{"
+            out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
+            out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
+            out "  \}"
+        }
         o.generics.do { g ->
             out("  {varf(g.value)} = arguments[curarg++];")
         }
@@ -763,10 +771,12 @@ method compilefreshmethod(o, selfobj) {
             out "var {varf(g.value)} = var_Unknown;"
         }
         out "if (argcv.length == {1 + sz}) \{"
-        out "  if (argcv[{sz}] != {o.generics.size}) \{"
-        out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
-        out "        new GraceString(\"wrong number of type arguments\"));"
-        out "  \}"
+        if (emitArgChecks) then {
+            out "  if (argcv[{sz}] != {o.generics.size}) \{"
+            out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
+            out "        new GraceString(\"wrong number of type arguments\"));"
+            out "  \}"
+        }
         o.generics.do { g ->
             out("  {varf(g.value)} = arguments[curarg++];")
         }
@@ -1061,7 +1071,11 @@ method compileindex(o) {
     def index = compilenode(o.index)
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
-    out "var {o.register} = callmethod({of}, \"[]\", [1], {index})"
+    if (emitArgChecks) then {
+        out "var {o.register} = callmethodChecked({of}, \"[]\", [1], {index})"
+    } else {
+        out "var {o.register} = callmethod({of}, \"[]\", [1], {index})"
+    }
 }
 method compilecatchcase(o) {
     def myc = auto_count
@@ -1123,8 +1137,13 @@ method compileop(o) {
     } else {
         var left := compilenode(o.left)
         auto_count := auto_count + 1
-        out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-            ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+        if (emitArgChecks) then {
+            out("var " ++ rnm ++ auto_count ++ " = callmethodChecked(" ++ left
+                ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+        } else {
+            out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
+                ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+        }
     }
     o.register := rnm ++ auto_count
     auto_count := auto_count + 1
@@ -1155,6 +1174,11 @@ method compilecall(o) {
     if (false != o.generics) then {
         partl := partl ++ ", {o.generics.size}"
     }
+    def request = if (emitArgChecks) then {
+        "callmethodChecked"
+    } else { 
+        "callmethod"
+    }
     if ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "super")}) then {
         var call := "var call" ++ auto_count ++ " = callmethodsuper(this"
@@ -1169,7 +1193,7 @@ method compilecall(o) {
         o.value.in.kind == "member"}.andAlso {
             o.value.in.value == "outer"}) then {
         def ot = compilenode(o.value.in)
-        var call := "var call" ++ auto_count ++ " = callmethod({ot}"
+        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1182,11 +1206,11 @@ method compilecall(o) {
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self") && (o.value.value == "outer")}
         ) then {
-        out("var call{auto_count} = callmethod(superDepth, "
+        out("var call{auto_count} = " ++ requestCall ++ "(superDepth, "
             ++ "\"outer\", [0]);")
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "self")}) then {
-        var call := "var call" ++ auto_count ++ " = callmethod(this"
+        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1197,7 +1221,7 @@ method compilecall(o) {
         out(call)
     } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
         && (o.value.in.value == "prelude")}) then {
-        var call := "var call" ++ auto_count ++ " = callmethod(var_prelude, \""
+        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(var_prelude, \""
             ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1207,7 +1231,7 @@ method compilecall(o) {
         out(call)
     } elseif (o.value.kind == "member") then {
         obj := compilenode(o.value.in)
-        var call := "var call" ++ auto_count ++ " = callmethod(" ++ obj
+        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
             ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1217,7 +1241,7 @@ method compilecall(o) {
         out(call)
     } else {
         obj := "this"
-        var call := "var call" ++ auto_count ++ " = callmethod(this,"
+        var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this,"
             ++ "\"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
@@ -1520,8 +1544,25 @@ method processImports(values') {
 method compile(vl, of, mn, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
+    if (util.extensions.contains "noChecks") then {
+        emitTypeChecks := false
+        emitUndefinedChecks := false
+        emitArgChecks := false
+        emitPositions := false
+        requestCall := "callmethod"
+    }
     if (util.extensions.contains "noTypeChecks") then {
         emitTypeChecks := false
+    }
+    if (util.extensions.contains "noArgChecks") then {
+        emitArgChecks := false
+    }
+    if (util.extensions.contains "noUndefChecks") then {
+        emitUndefinedChecks := false
+    }
+    if (util.extensions.contains "noLineNumbers") then {
+        emitPositions := false
+        requestCall := "callmethod"
     }
     values := vl
     outfile := of

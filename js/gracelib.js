@@ -2602,6 +2602,84 @@ function callmethod(obj, methname, argcv) {
     return ret;
 }
 
+function callmethodChecked(obj, methname, argcv) {
+    if (typeof obj == 'undefined')
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("Requested method '" + methname + "' on uninitialised value."));
+    if (!obj || obj === undefined || !obj.methods)
+        debugger
+    var meth = obj.methods[methname];
+    var origSuperDepth = superDepth;
+    var isSuper = false;
+    if (overrideReceiver != null)
+        isSuper = true;
+    superDepth = obj;
+    var origModuleName = moduleName;
+    var origLineNumber = lineNumber;
+    if (typeof(meth) != "function") {
+        var s = obj;
+        isSuper = true;
+        while (s.superobj != null) {
+            s = s.superobj;
+            meth = s.methods[methname];
+            if (typeof(meth) == "function") {
+                superDepth = s;
+                break;
+            }
+        }
+    }
+    if (typeof(meth) != "function") {
+        var objDesc = "";
+        if (obj.definitionLine && obj.definitionModule != "unknown")
+            objDesc = " in object at " + obj.definitionModule
+                + ":" + obj.definitionLine;
+        else if (obj.definitionModule != "unknown")
+            objDesc = " in " + obj.definitionModule + " module";
+        callStack.push(obj.className + "." + methname
+                + " (defined nowhere"
+                + objDesc + ")"
+                + " at " + moduleName
+                + ":" + lineNumber);
+        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+                new GraceString("no method '" + methname + "' in " +
+                    obj.className + " " + safeJsString(obj) + "."));
+    }
+    if (meth.confidential && !onSelf) {
+        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
+    }
+    onSelf = false;
+    onOuter = false;
+    var oldSourceObject = sourceObject;
+    sourceObject = superDepth;
+    if (overrideReceiver != null) {
+        obj = overrideReceiver;
+        overrideReceiver = null;
+    }
+    var beforeSize = callStack.length;
+    callStack.push({className: obj.className, methname: methname, moduleName: moduleName, lineNumber: lineNumber, toString: GraceCallStackToString});
+    try {
+        var args = Array.prototype.slice.call(arguments, 3);
+        for (var i=0; i<args.length; i++)
+            if (typeof args[i] == 'undefined')
+                throw new GraceExceptionPacket(
+                           ProgrammingErrorObject,
+                           new GraceString("Uninitialised value used as argument to '"
+                                           + methname + "' on " + obj.className + " "
+                                           + safeJsString(obj) + "."));
+        args.unshift(argcv);
+        var ret = meth.apply(obj, args);
+    } finally {
+        superDepth = origSuperDepth;
+        while (callStack.length > beforeSize)
+            callStack.pop();
+        sourceObject = oldSourceObject;
+        setModuleName(origModuleName);
+        setLineNumber(origLineNumber);
+    }
+    return ret;
+}
+
 function catchCase(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
     setLineNumber(0);
@@ -3086,6 +3164,7 @@ var var_done = GraceDone;
 // for node: explicitly make names global
 if (typeof global !== "undefined") {
     global.callmethod = callmethod;
+    global.callmethodChecked = callmethodChecked;
     global.callmethodsuper = callmethodsuper;
     global.callStack = callStack;
     global.catchCase = catchCase;
