@@ -1,11 +1,12 @@
 language:
   - c
-  - node_js
-node_js:
-  - "0.10"
+compiler:
+  - clang
 before_script:
   - git fetch --unshallow
+  - nvm install 4.0.0
 script:
-  - ./tools/tarball-bootstrap -a && (make test || ( cat tests/test.log ; exit 1))
+  - make test || ( cat tests/test.log ; exit 1)
   - ([ -e ./minigrace ] && ( make test.js || ( cat js/tests/test.log ; exit 1 )))
+  - ([ -e ./minigrace ] && ( make module-test-js || ( cat modules/tests/test.log ; exit 1 )))
 sudo: false
