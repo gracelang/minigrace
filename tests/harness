@@ -73,7 +73,6 @@ NUM_PASS=0
 NUM_UNEXPECTED_SUCCESS=0
 NUM_WRONG_OUTPUT=0
 NUM_COMPILE_ERROR=0
-export GRACE_MODULE_PATH=../modules/:../
 echo "Beginning test run at $(date)" > test.log
 for tcase in "${tests[@]}"
 do
@@ -108,12 +107,12 @@ do
 #   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
 #   if the test name does NOT end with fail_test
     then
-        COMMAND="$COMPILER --verbose 60 $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --verbose 60 $tcase"
 #        echo COMMAND = $COMMAND
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
-            $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+            GRACE_MODULE_PATH=../modules/:../ $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
             if [ ! -s test-$$.err ]
             then
                 /bin/rm -f test-$$.err
@@ -141,7 +140,7 @@ do
         fi
     else
 #   this is a _fail_test
-        COMMAND="$COMPILER --make --native $tcase"
+        COMMAND="GRACE_MODULE_PATH=../modules/:../ $COMPILER --make --native $tcase"
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
