@@ -3242,7 +3242,7 @@ Object sys_exit(Object self, int nparts, int *argcv,
     return NULL;
 }
 
-char *execPathHelper(){
+char *execDir(){
     char *ep = ARGV[0];
     if (ep[0] == '/') {
         // Absolute path - needs no work
@@ -3275,7 +3275,7 @@ char *execPathHelper(){
 
 Object sys_execPath(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    return alloc_String(execPathHelper());
+    return alloc_String(execDir());
 }
 Object sys_environ(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -4592,66 +4592,55 @@ Object process_varargs(Object *args, int fixed, int nargs) {
     }
     return lst;
 }
-char * compilerModulePath;
+
 void setCompilerModulePath(char *s) {
-    compilerModulePath = s;
+    // do nothing; function must exist for backward-compatibility
 }
 
-char *modulePath = NULL;
 void setModulePath(char *s) {
-    modulePath = s;
+    // do nothing; function must exist for backward-compatibility
 }
-int find_resource(const char *name, char *buf) {
 
-    char *execPath = execPathHelper();
-    char *home = getenv("HOME");
-    char buf1[PATH_MAX];
+int find_resource(const char *name, char *buf) {
+    // Find the file with basename name, and put the full path into buf.
+    // This function should mimic the logic from util.file()onPath, which is
+    // used at compile time to do the same task as is done here at run time.
+
     struct stat st;
 
-    strcpy(buf1, execPath);
-    char *locations[] = {".", execPath, NULL, NULL, NULL, NULL, strcat(buf1, "/../lib/minigrace/modules")};
-
-    char buf5[PATH_MAX];
-    if(modulePath != NULL){
-        locations[2] = strncpy(buf5, modulePath, PATH_MAX);
-    }
-    char buf2[PATH_MAX];
-    if(home != NULL){
-        strcpy(buf2, home); 
-        locations[3] = strcat(buf2, "/.local/lib/grace/modules");
-    }
-    char buf4[PATH_MAX];
-    if(compilerModulePath != NULL){
-        locations[5] = strncpy(buf4, compilerModulePath, PATH_MAX);
+    // first try "."
+    strcpy(buf, "./");
+    strcat(buf, name);
+    if (stat(buf, &st) == 0) {
+        return 1;
     }
 
-    int i;
-    for(i = 0; i < 7; i++){
-        if(locations[i] == NULL){
-            continue;
-        }
-        strncpy(buf, locations[i], PATH_MAX);
-        strcat(buf, "/");
-        strcat(buf, name);
-        if(stat(buf, &st) == 0){
-            return 1;
-        }
-    }
-
+    // next try the elements of GRACE_MODULE_PATH
     char gmp[PATH_MAX];
-    strncpy(gmp, getenv("GRACE_MODULE_PATH"), PATH_MAX);
-    // Must make copy, because strtok changes its argument.
-    // If we don't, future calls to getenv return the wrong value.
-
-    char * elem = strtok(gmp, ":");
-    while (elem != NULL) {
-        strncpy(buf, elem, PATH_MAX);
-        strcat(buf, "/");
-        strcat(buf, name);
-        if(stat(buf, &st) == 0){
-            return 1;
+    char *envEnquiry = getenv("GRACE_MODULE_PATH");
+    if (envEnquiry) {
+        strncpy(gmp, envEnquiry, PATH_MAX);
+            // We must make copy, because strtok changes its argument.
+            // If we don't copy, _future_ calls to getenv return the wrong value!
+        char * elem = strtok(gmp, ":");
+        while (elem != NULL) {
+            strncpy(buf, elem, PATH_MAX);
+            strcat(buf, "/");
+            strcat(buf, name);
+            if(stat(buf, &st) == 0){
+                return 1;
+            }
+            elem = strtok(NULL, ":");
         }
-        elem = strtok(NULL, ":");
+    }
+
+    // finally try execdir
+    char *execPath = execDir();
+    strncpy(buf, execPath, PATH_MAX);
+    strcat(buf, "/");
+    strcat(buf, name);
+    if(stat(buf, &st) == 0){
+        return 1;
     }
     return 0;
 }
@@ -4666,7 +4655,7 @@ Object dlmodule(const char *name) {
     char buf[blen];
     char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
-        gracedie("unable to find dynamic module '%s.gso'", name);
+        gracedie("failed to find dynamic module '%s.gso'", name);
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle)
