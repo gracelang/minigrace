@@ -1806,7 +1806,8 @@ method processImports(values') {
                     }
                 } catch { e : RuntimeError ->
                     util.setPosition(v.line, 1)
-                    errormessages.error("Dialect error.  Dialect '{nm}' failed to load: {e.message}.")atLine(v.line)
+                    errormessages.error("Dialect error.  \n" ++ 
+                        "Dialect '{nm}' {e.message}.")atLine(v.line)
                 } 
                 try {
                     if (dialectHasChecker) then { dobj.checker(values') }
