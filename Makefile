@@ -197,7 +197,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $(<F)
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -230,7 +230,7 @@ js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
 
 js/%.gct js/%.js: %.grace ./minigrace
-	./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $<
 
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
