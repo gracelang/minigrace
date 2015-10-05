@@ -2525,11 +2525,6 @@ function GraceCallStackToString() {
 }
 
 function callmethod(obj, methname, argcv) {
-    if (typeof obj == 'undefined')
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("Requested method '" + methname + "' on uninitialised value."));
-    if (!obj || obj === undefined || !obj.methods)
-        debugger
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
@@ -2582,13 +2577,6 @@ function callmethod(obj, methname, argcv) {
     callStack.push({className: obj.className, methname: methname, moduleName: moduleName, lineNumber: lineNumber, toString: GraceCallStackToString});
     try {
         var args = Array.prototype.slice.call(arguments, 3);
-        for (var i=0; i<args.length; i++)
-            if (typeof args[i] == 'undefined')
-                throw new GraceExceptionPacket(
-                           ProgrammingErrorObject,
-                           new GraceString("Uninitialised value used as argument to '"
-                                           + methname + "' on " + obj.className + " "
-                                           + safeJsString(obj) + "."));
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
     } finally {
