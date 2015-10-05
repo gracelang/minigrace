@@ -1,3 +1,5 @@
+var domNoObject = Grace_allocObject(GraceObject, "noObject");
+
 function unwrapDOMObject(obj) {
   if (obj.hasOwnProperty("_wrappedDOMObject")) {
     return obj._wrappedDOMObject;
@@ -33,10 +35,10 @@ function wrapDOMObject(obj) {
         case "number":
             return new GraceNum(obj);
         case "undefined":
-            return var_done;
+            return domNoObject;
     }
     if (obj == null) {
-      return var_done;
+      return domNoObject;
     }
     if (obj._graceWrapper)
         return obj._graceWrapper;
@@ -72,8 +74,9 @@ function wrapDOMObject(obj) {
 }
 
 function wrapGraceObject(o) {
-    if (o === undefined || o === null)
-        return var_done;
+    if (o === undefined || o === null) {
+        return domNoObject;
+    }
     if (o instanceof GraceString) {
         return o._value;
     }
@@ -134,13 +137,14 @@ function gracecode_dom() {
         };
         return win;
     };
-
     this.methods.window.paramCounts = [0];
     this.methods.window.variableArities = [false];
 
     this.methods["doesObject()haveProperty"] = function (argcv, object, name) {
         return name._value in unwrapDOMObject(object) ? GraceTrue : GraceFalse;
     };
+    this.methods["doesObject()haveProperty"].paramCounts = [1, 1];
+    this.methods["doesObject()haveProperty"].variableArities = [false, false]
 
     this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
         var ret = Grace_allocObject();
@@ -163,7 +167,6 @@ function gracecode_dom() {
         func();
         return ret;
     };
-
     this.methods["for()waiting()do"].paramCounts = [1, 1, 1];
     this.methods["for()waiting()do"].variableArities = [false, false, false];
 
@@ -186,7 +189,6 @@ function gracecode_dom() {
         func();
         return ret;
     };
-
     this.methods["while()waiting()do"].paramCounts = [1, 1, 1];
     this.methods["while()waiting()do"].variableArities = [false, false, false];
 
@@ -276,12 +278,18 @@ function gracecode_dom() {
           graphic.methods.draw.call(graphic, [1], ctx);
         }
       }
+      return GraceDone;
     };
+
+    this.methods.noObject = function (argcv) {
+        return domNoObject;
+    }
+    this.methods.noObject.paramcounts = [ 0 ];
+    this.methods.noObject.variableArities = [ false ];
 
     return this;
 }
 
-gracecode_dom.imports = [
-];
+gracecode_dom.imports = [];
 if (typeof gctCache !== "undefined")
-gctCache['dom'] = "modules:\nfresh-methods:\npath:\n dom\nclasses:\npublic:\n document\n window\n for()waiting()do\n while()waiting()do\nconfidential:\n";
+gctCache['dom'] = "classes:\nconfidential:\nfresh-methods:\nmodules:\npath:\n dom\npublic:\n document\n doesObject()haveProperty\n draw\n filledOval\n filledRect\n for()waiting()do\n framedOval\n framedRect\n image\n noObject\n while()waiting()do\n window\ntypes:\n";
