@@ -28,15 +28,24 @@ type Block2<S,T,R> = type {
 type SelfType = Unknown     // becuase it's not yet in the language
 
 type Iterable<T> = Object & type {
-    iterator -> Iterator<T>       // all the rest can be defined using iterator
+    iterator -> Iterator<T>
+        // the iterator on which I am based
     isEmpty -> Boolean
+        // true if I have no elements
     first -> T
-    do(block1: Block1<T,Done>) -> Done
-    do(body:Block1<T,Done>) separatedBy(separator:Block0<Done>) -> Done
-    ++(o: Iterable<T>) -> Collection<T>
-    fold(blk:Block1<Object, T>) startingWith(initial:Object) -> Object
-    map(blk:Block1<T,Object>) -> Iterator<Object>
+        // my first element; raises BoundsError if I have none.
+    do(block1: Block1<T, Done>) -> Done
+        // an internal iterator; applies block1 to each of my elements
+    do(body:Block1<T, Done>) separatedBy(separator:Block0<Done>) -> Done
+        // an internal iterator; ; applies block1 to each of my elements, and applies separator in between
+    ++(other: Iterable<T>) -> Iterable<T>
+        // returns a new iterator over the concatenation of self and other
+    fold(binaryFunction:Block2<T, T, T>) startingWith(initial:T) -> Object
+        // the left-associative fold of binaryFunction over self, starting with initial
+    map<U>(function:Block1<T, U>) -> Iterator<U>
+        // returns a new iterator that yields my elements mapped by function
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
+        // returns a new iterator that yields those of my elements for which condition holds 
 }
 
 type Expandable<T> = Iterable<T> & type {
