@@ -2678,6 +2678,10 @@ Object Float64_asString(Object self, int nparts, int *argcv,
     if (*strp != NULL)
         return *strp;
     double num = *(double*)self->data;
+    if (num == INFINITY)
+        return alloc_String("infinity");
+    if (num == -INFINITY)
+        return alloc_String("-infinity");
     char s[1024];
     sprintf(s, "%f", num);
     int l = strlen(s) - 1;

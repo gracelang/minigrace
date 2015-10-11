@@ -595,7 +595,12 @@ GraceNum.prototype = {
             return new GraceNum(-this._value)
         },
         "asString": function(argcv) {
-            return new GraceString((Math.round(this._value * 1000000) / 1000000).toString())
+            var num = this._value;
+            if (num === Infinity)
+                return new GraceString("infinity");
+            if (num === -Infinity)
+                return new GraceString("-infinity");
+            return new GraceString((Math.round(num * 1000000) / 1000000).toString());
         },
         "asDebugString": function(argcv) {
             return new GraceString("" + this._value)
