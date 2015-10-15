@@ -275,6 +275,7 @@ static Object EnvironmentExceptionObject;
 
 Object ProgrammingError() { return ProgrammingErrorObject; }
 Object RequestError() { return RequestErrorObject; }
+Object NoSuchMethod() { return NoSuchMethodErrorObject; }
 
 static jmp_buf *return_stack;
 Object return_value;

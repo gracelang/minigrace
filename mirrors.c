@@ -136,7 +136,8 @@ Object Mirror_getMethod(Object self, int nparams, int *argcv, Object *argv,
     Object o = s->obj;
     Method *m = findmethodsimple(o, grcstring(argv[0]));
     if (m == NULL) {
-        gracedie("no such method '%s' found by mirror\n", grcstring(argv[0]));
+        graceRaise(NoSuchMethod(), "method '%s' not found by mirror\n",
+                        grcstring(argv[0]));
     }
     return alloc_MirrorMethod(m, o);
 }
