@@ -5,8 +5,10 @@ DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
 VERBOSITY = --verbose
 
 GM = ../../modules/
+CM = ../../
 
-DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit math mirrors
+DIALECT_DEPENDENCIES = $(CM)errormessages $(CM)buildinfo $(CM)util $(CM)ast \
+    $(GM)gUnit $(GM)math $(GM)mirrors
 
 c: $(DIALECT_MODULES) $(SAMPLES)
 
@@ -21,8 +23,11 @@ staticTypes.gso: staticTypes.grace dialect.gso
 requireTypes.gso: requireTypes.grace dialect.gso
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
-$(GM)%.gct $(GM)%.gso $(GM)%.gcn: ../../minigrace
+$(GM)%.gct $(GM)%.gso $(GM)%.gcn:
 	$(MAKE) -C ../../ VERBOSITY=$(VERBOSITY) modules/$(@F)
+    
+$(CM)%.gct $(CM)%.gso $(CM)%.gcn:
+	$(MAKE) -C ../../ VERBOSITY=$(VERBOSITY) $(@F)
 
 %.gct %.gso %.gcn: %.grace ../../minigrace
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<

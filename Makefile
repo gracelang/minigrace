@@ -23,7 +23,7 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
 COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace stringMap.grace
 
-DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
+DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace

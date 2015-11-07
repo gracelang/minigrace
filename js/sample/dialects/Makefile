@@ -5,11 +5,14 @@ SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopI
 
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
 VERBOSITY = --verbose
+
+GM = ../../
+
 MG := ../../../minigrace
 UPPATH := ../../../modules/:../../:../../../:
 # ../../ to get the js files for running, and ../../../ for the .gso for compiling
 
-DIALECT_DEPENDENCIES = mgcollections errormessages buildinfo util ast gUnit
+DIALECT_DEPENDENCIES = $(GM)errormessages $(GM)buildinfo $(GM)util $(GM)ast $(GM)gUnit
 
 compile: $(DIALECTS_JS)
 js: $(DIALECTS_JS) run.js
@@ -30,6 +33,9 @@ whileLiteral.js: whileLiteral.grace  ../../../modules/dialect.gso ../../dialect.
 
 ../../../modules/dialect.gso:
 	$(MAKE) -C ../../.. modules/dialect.gso
+
+$(GM)%.js: 
+	$(MAKE) -C ../$(GM) VERBOSITY=$(VERBOSITY) js/$(@F)
 
 %Example.js: %Example.grace ../../%.js ../../../modules/%.gso
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<

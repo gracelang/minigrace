@@ -14,21 +14,14 @@ are found in these locations.
 The Minigrace distribution includes some additional modules that may be
 useful in user code. They are briefly described here.
 
-mgcollections
--------------
-mgcollections.grace includes three common collection types: list, set,
-and map. Requesting platform.mgcollections.list.new(*elements)
-constructs a list of the given elements, and similarly for set. map.new
-does not take arguments.
-
-Lists support methods add, at, at()put, [], []:=, size, push, pop,
-indices, first, last, ++, extend, and reduce. Sets support add,
-contains, and extend. Maps support put, get, and contains. All
-collections are iterable.
-
+stringMap
+---------
 This is a Grace module that is available on all targets and
-architectures, but must be found in the current directory at compile
-time for the native compiler.
+architectures, but must be found on GRACE_MODULE_PATH compile
+time for the native compiler.  It implements a simple distionary where
+the keys are strings.  It exists for two reasons: it has an interface
+that is largely backward-compatable with the now-defunct mgcollections,
+and it has an accelerated implementation in JavaScript.
 
 mirrors
 -------

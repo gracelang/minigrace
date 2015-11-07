@@ -36,7 +36,7 @@ js/genjson.js
 js/gUnit.js
 js/identifierresolution.js
 js/lexer.js
-js/mgcollections.js
+js/stringMap.js
 js/minigrace.js
 js/parser.js
 js/objectdraw.js
@@ -53,7 +53,7 @@ js/genjs.grace
 js/genjson.grace
 js/identifierresolution.grace
 js/lexer.grace
-js/mgcollections.grace
+js/stringMap.grace
 js/parser.grace
 js/xmodule.grace
 js/animation.js
