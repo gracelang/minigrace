@@ -1,8 +1,11 @@
 // This module defines a class new that implements a mapping from strings to objects
 // Its interface is strange, but is designed to mimic that of mgcollecitons.map.new
 // For a general-purpose mapping obejct, use dictonary from standardGrace.
+//
 // The implementation for C is based on that from mgcollections; that for JS uses
 // native code, since hashing is built-in to JavaScript objects.
+// External iterators are not implemented.  Instead, the internal iterators
+// keysDo and valuesDo are provided.
 
 def unused = object {
     inherits Singleton.named "unused"
@@ -19,12 +22,15 @@ class new {
         // override the PrimitiveArray with an empty object
 
     method size {
+        // The number of bindings that I contain.
         native "js" code ‹var s = Object.keys(this.data.inner).length;
               return new GraceNum(s);›
         elems
     }
 
     method put(k, v) {
+        // binds the value v and the key k, which must be a String.
+        // Returns self, for chaining.
         native "js" code ‹this.data.inner[var_k._value] = var_v;
                         return this;›
         var t := findPosition(k)
@@ -38,6 +44,8 @@ class new {
         self
     }
     method get(k) {
+        // answers the value associated with the key k.  If there is none
+        // raises the NoSuchObject exception.
         native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
                 return this.data.inner[var_k._value];
             var nso = callmethod(var___95__prelude, "NoSuchObject", [0]);
@@ -49,6 +57,8 @@ class new {
         return c.value
     }
     method get(k) ifAbsent (absentBlock) {
+        // answers the value associated with the key k.  If there is none
+        // evaluates absentBlock and returns its result.
         native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
                 return this.data.inner[var_k._value];
             return callmethod(var_absentBlock, "apply", [0]);›
@@ -59,6 +69,7 @@ class new {
             else { return c.value }
     }
     method contains(k) {
+        // true if I contain the key k
         native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
                 return GraceTrue;
             else return GraceFalse;›
@@ -118,6 +129,7 @@ class new {
         asString
     }
     method do(action) {
+        // internal iterator over my values.
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);
@@ -137,28 +149,30 @@ class new {
             idx := idx + 1
         }
     }
-//    method iterator {
-//        object {
-//            var count := 1
-//            var idx := 0
-//            method havemore {
-//                count <= elems
-//            }
-//            method hasNext {
-//                count <= elems
-//            }
-//            method next {
-//                if (count > size) then { IteratorExhausted.raise "on string map" }
-//                while {inner.at(idx) == unused} do {
-//                    idx := idx + 1
-//                }
-//                def ret = inner.at(idx).key
-//                count := count + 1
-//                idx := idx + 1
-//                ret
-//            }
-//        }
-//    }
+    
+    method keysDo(action) {
+        native "js" code ‹
+            var inner = this.data.inner;
+            var keys = Object.keys(inner);
+            for (var ix in keys) {
+                var key = keys[ix];
+                callmethod(var_action, "apply", [1], new GraceString(key));
+            }
+            return GraceDone;›
+        var count := 1
+        var idx := 0
+        while {count <= size} do {
+            while {inner.at(idx) == unused} do {
+                idx := idx + 1
+            }
+            action.apply (inner.at(idx).key)
+            count := count + 1
+            idx := idx + 1
+        }
+    }
+    
+    method valuesDo(action) { do(action) }
+
     method expand is confidential {
         def c = inner.size
         def n = c * 2
@@ -176,6 +190,7 @@ class new {
         }
     }
     method asList {
+        // the contents of this stringMap as a list of bindings
         def result = list.empty
         native "js" code ‹
             var inner = this.data.inner;

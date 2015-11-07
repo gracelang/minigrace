@@ -108,13 +108,11 @@ factory method newScopeIn(parent') kind(variety') {
     }
     method keysAsList {
         def result = list.empty
-        elements.do { each -> result.addLast(each) }
+        elements.keysDo { each -> result.addLast(each) }
         result
     }
     method keysAndValuesAsList {
-        def result = list.empty
-        elements.do { each -> result.addLast(each::kind(each)) }
-        result
+        elements.asList
     }
     method kind(n) {
         elements.get(n)
@@ -666,7 +664,7 @@ method reportUndeclaredIdentifier(node) {
     def nm = node.nameString
     def suggestions = []
     var suggestion
-    for (nodeScope.elements) do { v ->
+    nodeScope.elements.keysDo { v ->
         var thresh := 1
         if (nm.size > 2) then {
             thresh := ((nm.size / 3) + 1).truncated
@@ -678,7 +676,7 @@ method reportUndeclaredIdentifier(node) {
             suggestions.push(suggestion)
         }
     }
-    for (nodeScope.elementScopes) do { s ->
+    nodeScope.elementScopes.keysDo { s ->
         if (nodeScope.elementScopes.get(s).contains(nm)) then {
             suggestion := errormessages.suggestion.new
             suggestion.insert("{s}.")atPosition(node.linePos)onLine(node.line)
@@ -781,7 +779,6 @@ method resolveIdentifiers(topNode) {
 }
 
 method processGCT(gct, importedModuleScope) {
-    def classes = map.new
     gct.at "classes" ifAbsent {emptySequence}.do { c ->
         def cmeths = []
         def constrs = gct.at "constructors-of:{c}"
@@ -1155,7 +1152,7 @@ method collectInheritedNames(node) {
             }
         }
     }
-    superScope.elements.do { each ->
+    superScope.elements.keysDo { each ->
         if (each != "self") then {
             nodeScope.addName(each) as "inherited"
         }
@@ -1217,9 +1214,10 @@ method transformInherits(inhNode) ancestors(as) {
                     superObject.linePos + superObject.nameString.size - 1)
         }
     }
-    newInhNode.providedNames.addAll(superScope.elements)
-        // iterating through elements returns just the keys (= names)
-    for (newInhNode.providedNames) do { each ->
+    superScope.elements.keysDo { each ->
+        newInhNode.providedNames.add(each)
+    }
+    newInhNode.providedNames.do { each ->
         if (each != "self") then {
             currentScope.addName(each) as "inherited"
         }

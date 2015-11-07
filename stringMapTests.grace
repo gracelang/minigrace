@@ -77,6 +77,11 @@ def stringMapTest = object {
             m123.do { val -> sum := sum + val }
             assert (sum) shouldBe 6
         }
+        method testKeysDo {
+            def keys = set.empty
+            m123.keysDo { k -> keys.add(k) }
+            assert (keys) shouldBe (set.with("one", "two", "three"))
+        }
         method randomKeys(n) {
             def base = "A".ord
             def result = list.empty
