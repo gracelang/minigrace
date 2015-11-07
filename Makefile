@@ -12,7 +12,7 @@ DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 C_MODULES_BIN = $(C_MODULES_GSO)
-CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c mgcollections.c xmodule.c identifierresolution.c genjson.c errormessages.c
+CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c stringMap.c xmodule.c identifierresolution.c genjson.c errormessages.c
 
 # The next 2 rules are here for their side effects: updating
 # buildinfo.grace if necessary, and creating the l1 directory
@@ -21,10 +21,10 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
-COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace mgcollections.grace
+COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace stringMap.grace
 
-DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/mgcollections.gct modules/mgcollections.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
-DIALECTS_NEED = modules/dialect util ast mgcollections modules/gUnit modules/math
+DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso modules/util.gct modules/util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
+DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
 EXP_WEB_DIRECTORY = public_html/minigrace/exp/
 GRAPHIX = createJsGraphicsWrapper.grace graphix.grace
 
@@ -39,7 +39,7 @@ KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace mgcollections.grace xmodule.grace identifierresolution.grace genjson.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace genjson.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=1560723984934899b9bf4496f3b68ced32fab99c
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
@@ -123,7 +123,7 @@ clean:
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-dialects: gracelib.o js modules/mgcollections.gso js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
+dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
@@ -188,7 +188,6 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 755 gracelib.o $(MODULE_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
-	install -m 644 mgcollections.grace $(MODULE_PATH)
 	install -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
 	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
@@ -474,15 +473,15 @@ uninstall:
 %.o: %.c
 	gcc -g -std=c99 -c -o $@ $<
 
-## GENERATED WITH: for i in mgcollections errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
+## GENERATED WITH: for i in stringMap errormessages buildinfo util ast; do ./tools/make-depend $i; done | sort -u | grep -v :$ | sed 's/gct/gso/g'
 # manually removed io.gso and sys.gso, which are built in!
 ast.gso: util.gso
 errormessages.gso: util.gso
-util.gso: buildinfo.gso mgcollections.gso
+util.gso: buildinfo.gso stringMap.gso
 
 l1/ast.gso: l1/util.gso
 l1/errormessages.gso: l1/util.gso
-l1/util.gso: l1/mgcollections.gso
+l1/util.gso: l1/stringMap.gso
 
 modules/%.gso: %.c gracelib.h
 	gcc -g -I. -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<

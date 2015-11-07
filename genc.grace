@@ -3,7 +3,7 @@
 import "ast" as ast
 import "errormessages" as errormessages
 import "io" as io
-import "mgcollections" as collections
+import "stringMap" as map
 import "mirrors" as mirrors
 import "sys" as sys
 import "util" as util
@@ -38,7 +38,7 @@ var topLevelMethodPos := 1
 var topOutput := []
 var bottomOutput := output
 var compilationDepth := 0
-def topLevelTypes = collections.map.new
+def topLevelTypes = map.new
 def imports = util.requiredModules
 var dialectHasAtModuleEnd := false
 var dialectHasAtModuleStart := false

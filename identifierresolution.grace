@@ -5,7 +5,7 @@ import "sys" as sys
 import "ast" as ast
 import "util" as util
 import "xmodule" as xmodule
-import "mgcollections" as collections
+import "stringMap" as map
 import "mirrors" as mirrors
 import "errormessages" as errormessages
 
@@ -47,10 +47,10 @@ method newScopeKind(variety') {
     s
 }
 factory method newScopeIn(parent') kind(variety') {
-    def elements = collections.map.new
-    def elementScopes = collections.map.new
-    def elementLines = collections.map.new
-    def elementTokens = collections.map.new
+    def elements = map.new
+    def elementScopes = map.new
+    def elementLines = map.new
+    def elementTokens = map.new
     def parent = parent'
     var hasParent := true
     def variety = variety'
@@ -781,7 +781,7 @@ method resolveIdentifiers(topNode) {
 }
 
 method processGCT(gct, importedModuleScope) {
-    def classes = collections.map.new
+    def classes = map.new
     gct.at "classes" ifAbsent {emptySequence}.do { c ->
         def cmeths = []
         def constrs = gct.at "constructors-of:{c}"

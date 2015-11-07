@@ -1,5 +1,5 @@
 #pragma PrimitiveLists
-import "mgcollections" as collections
+import "stringMap" as map
 import "util" as util
 import "io" as io
 import "ast" as ast
@@ -11,7 +11,7 @@ method wrap(v) {
         case { _ -> v }
 }
 class JSObj.new {
-    def data = collections.map.new
+    def data = map.new
     method put(key, val) {
         data.put(key, wrap(val))
     }

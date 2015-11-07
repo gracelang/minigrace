@@ -1,7 +1,7 @@
 import "io" as io
 import "sys" as sys
 import "unixFilePath" as filePath
-import "mgcollections" as mgcollections
+import "stringMap" as map
 
 var verbosityv := 30
 var outfilev := io.output
@@ -15,7 +15,7 @@ var lineposv := 1
 var vtagv := false
 var noexecv := false
 var targetv := "c"
-var extensionsv := mgcollections.map.new
+var extensionsv := map.new
 var recurse is readable := true
 var dynamicModule := false
 var importDynamic := false
