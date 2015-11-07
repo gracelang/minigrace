@@ -1,31 +1,47 @@
-def unused = object { var unused := true ; def key = self }
+// This module defines a class new that implements a mapping from strings to objects
+// Its interface is strange, but is designed to mimic that of mgcollecitons.map.new
+// For a general-purpose mapping obejct, use dictonary from standardGrace.
+// The implementation for C is based on that from mgcollections; that for JS uses
+// native code, since hashing is built-in to JavaScript objects.
 
-class map.new {
-    var size := 0
+def unused = object {
+    inherits Singleton.named "unused"
+    def key is public = self
+}
+
+class new {
+    var elems := 0
     var inner := PrimitiveArray.new(4)
-    native "js" code ‹this.data.inner = { };›
     for (0..(inner.size-1)) do {i->
         inner.at(i)put(unused)
     }
+    native "js" code ‹this.data.inner = { };›  
+        // override the PrimitiveArray with an empty object
+
+    method size {
+        native "js" code ‹var s = Object.keys(this.data.inner).length;
+              return new GraceNum(s);›
+        elems
+    }
+
     method put(k, v) {
-        native "js" code ‹this.data.inner[var_k] = var_v;
+        native "js" code ‹this.data.inner[var_k._value] = var_v;
                         return this;›
         var t := findPosition(k)
         if (inner.at(t) == unused) then {
-            size := size + 1
+            elems := elems + 1
         }
-        inner.at(t)put(k::value')
-        if (size > (inner.size / 2)) then {
+        inner.at(t)put(k::v)
+        if (elems > (inner.size / 2)) then {
             expand
         }
+        self
     }
     method get(k) {
-        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined') 
-                return this.data.inner[var_k];
-            var nso = callmethod(var_prelude, "NoSuchObject", [0]);
-            var exceptionMsg = new GraceString("no value for key ");
-            var kDesc = callmethod(k, "asString", [0]);
-            exceptionMsg = callmethod(exceptionMsg, "++", [1], kDesc);
+        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
+                return this.data.inner[var_k._value];
+            var nso = callmethod(var___95__prelude, "NoSuchObject", [0]);
+            var exceptionMsg = new GraceString("no value for key " + var_k._value);
             throw new GraceExceptionPacket(nso, exceptionMsg);›
         var t := findPosition(k)
         var c := inner.at(t)
@@ -33,8 +49,8 @@ class map.new {
         return c.value
     }
     method get(k) ifAbsent (absentBlock) {
-        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined')
-                return this.data.inner[var_k];
+        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
+                return this.data.inner[var_k._value];
             return callmethod(var_absentBlock, "apply", [0]);›
         var t := findPosition(k)
         var c := inner.at(t)
@@ -43,7 +59,7 @@ class map.new {
             else { return c.value }
     }
     method contains(k) {
-        native "js" code ‹if ((typeof this.data.inner[var_k]) !== 'undefined') 
+        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
                 return GraceTrue;
             else return GraceFalse;›
         var t := findPosition(k)
@@ -71,51 +87,79 @@ class map.new {
         return t
     }
     method asString {
-        native "js" code ‹var s = "map.new[";
+        native "js" code ‹var s = "";
             var inner = this.data.inner;
-            for (var property in inner) {
-                if (inner.hasOwnProperty(property)) {
-                    s = s + callmethod(property, "asString", [0])._value + "::" +
-                        callmethid(inner[property], "asString", [0])._value;
+            var keys = Object.keys(inner);
+            for (var ix in keys) {
+                var key = keys[ix];
+                if (s === "") {
+                    s = key + "::";
+                } else {
+                    s = s + ", " + key + "::";
                 }
+                s = s + callmethod(inner[key], "asString", [0])._value;
             }
-            s = s + "]"
+            s = "map.new[" + s + "]";
             return new GraceString(s);›
-        var s := "map.new["
+        var s := ""
         for (0..(inner.size-1)) do {i->
             def a = inner.at(i)
             if (a != unused) then {
-                s := s ++ "{a.key}::{a.value},"
+                if (s == "") then {
+                    s := "{a.key}::{a.value}"
+                } else {
+                    s := s ++ ", {a.key}::{a.value}"
+                }
             }
         }
-        s ++ "]"
+        "map.new[" ++ s ++ "]"
     }
     method asDebugString {
         asString
     }
-    method iterator {
-        object {
-            var count := 1
-            var idx := 0
-            method havemore {
-                count <= size
+    method do(action) {
+        native "js" code ‹
+            var inner = this.data.inner;
+            var keys = Object.keys(inner);
+            for (var ix in keys) {
+                var key = keys[ix];
+                callmethod(var_action, "apply", [1], inner[key]);
             }
-            method hasNext {
-                count <= size
-            }
-            method next {
-                if (count > size) then { IteratorExhausted.raise "on string map" }
-                while {inner.at(idx) == unused} do {
-                    idx := idx + 1
-                }
-                def ret = inner.at(idx).key
-                count := count + 1
+            return GraceDone;›
+        var count := 1
+        var idx := 0
+        while {count <= size} do {
+            while {inner.at(idx) == unused} do {
                 idx := idx + 1
-                ret
             }
+            action.apply (inner.at(idx).value)
+            count := count + 1
+            idx := idx + 1
         }
     }
-    method expand {
+//    method iterator {
+//        object {
+//            var count := 1
+//            var idx := 0
+//            method havemore {
+//                count <= elems
+//            }
+//            method hasNext {
+//                count <= elems
+//            }
+//            method next {
+//                if (count > size) then { IteratorExhausted.raise "on string map" }
+//                while {inner.at(idx) == unused} do {
+//                    idx := idx + 1
+//                }
+//                def ret = inner.at(idx).key
+//                count := count + 1
+//                idx := idx + 1
+//                ret
+//            }
+//        }
+//    }
+    method expand is confidential {
         def c = inner.size
         def n = c * 2
         def oldInner = inner
@@ -123,7 +167,7 @@ class map.new {
         for (0..(inner.size-1)) do {i->
             inner.at(i)put(unused)
         }
-        size := 0
+        elems := 0
         for (0..(oldInner.size-1)) do {i->
             def a = oldInner.at(i)
             if (a != unused) then {
@@ -133,6 +177,17 @@ class map.new {
     }
     method asList {
         def result = list.empty
+        native "js" code ‹
+            var inner = this.data.inner;
+            var keys = Object.keys(inner);
+            for (var ix in keys) {
+                var key = keys[ix];
+                var keyStr = new GraceString(key);
+                var binding = callmethod(GraceBindingClass(), "key()value", 
+                                                    [1, 1], keyStr, inner[key]);
+                callmethod(var_result, "add", [1], binding);
+            }
+            return var_result;›
         var count := 1
         var idx := 0
         while {count <= size} do {
