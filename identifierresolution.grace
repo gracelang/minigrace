@@ -108,12 +108,12 @@ factory method newScopeIn(parent') kind(variety') {
     }
     method keysAsList {
         def result = list.empty
-        for (elements) do { each -> result.addLast(each) }
+        elements.do { each -> result.addLast(each) }
         result
     }
     method keysAndValuesAsList {
         def result = list.empty
-        for (elements) do { each -> result.addLast(each::kind(each)) }
+        elements.do { each -> result.addLast(each::kind(each)) }
         result
     }
     method kind(n) {
@@ -1155,7 +1155,7 @@ method collectInheritedNames(node) {
             }
         }
     }
-    for (superScope.elements) do { each ->
+    superScope.elements.do { each ->
         if (each != "self") then {
             nodeScope.addName(each) as "inherited"
         }
