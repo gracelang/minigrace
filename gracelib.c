@@ -84,6 +84,7 @@ Object BOOLEAN_FALSE = NULL;
 Object FLOAT64_ZERO = NULL;
 Object FLOAT64_ONE = NULL;
 Object FLOAT64_TWO = NULL;
+Object FLOAT64_INF = NULL;
 
 #define FLOAT64_INTERN_MIN -10
 #define FLOAT64_INTERN_MAX 10000
@@ -2671,6 +2672,8 @@ Object alloc_Float64(double num) {
         FLOAT64_ONE = o;
     if (num == 2)
         FLOAT64_TWO = o;
+    if (num == INFINITY)
+        FLOAT64_INF = o;
     return o;
 }
 Object Float64_asString(Object self, int nparts, int *argcv,
@@ -5157,11 +5160,19 @@ Object prelude_false_object(Object self, int argc, int *argcv, Object *argv,
                      int flags) {
     return alloc_Boolean(0);
 }
+Object prelude_infinity_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Float64(INFINITY);
+}
+Object prelude_pi_object(Object self, int argc, int *argcv, Object *argv,
+                     int flags) {
+    return alloc_Float64(3.1415926535897932);
+}
 
 Object grace_prelude() {
     if (_prelude != NULL)
         return _prelude;
-    ClassData c = alloc_class2("StandardPrelude", 31, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("StandardPrelude", 33, (void*)&UserObj__mark);
     add_Method(c, "asString", &Module_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
@@ -5193,6 +5204,8 @@ Object grace_prelude() {
     add_Method(c, "engine", &prelude_engine);
     add_Method(c, "true()object", &prelude_true_object);
     add_Method(c, "false()object", &prelude_false_object);
+    add_Method(c, "infinity", &prelude_infinity_object);
+    add_Method(c, "π", &prelude_pi_object);
     _prelude = alloc_userobj2(0, 0, c);
     struct UserObject *uo = (struct UserObject *)_prelude;
     gc_root(_prelude);
