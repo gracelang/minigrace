@@ -550,9 +550,21 @@ GraceNum.prototype = {
         "%": function(argcv, other) {
             if (other.className === "number") {
                 var s = this._value % other._value;
+                if (s < 0) s = s + Math.abs(other._value);
                 return new GraceNum(s)
             }
             return callmethod(other, "reverseRemainderNumber", [1], this);
+        },
+        "÷": function(argv, other) {
+            if (other.className === "number") {
+                var quo = this._value / other._value;
+                var q = Math.trunc(quo);
+                if (this._value >= 0) return new GraceNum(q);
+                if (q === quo) return new GraceNum(q);
+                if (other._value < 0) return new GraceNum(q + 1)
+                return new GraceNum(q - 1)
+            }
+            return callmethod(other, "reverseDivideNumber", [1], this);
         },
         "@": function(argcv, other) {
             return callmethod(GracePoint2DClass(), "x()y", [1, 1], this, other);
