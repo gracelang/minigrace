@@ -2441,14 +2441,26 @@ Object Float64_Mod(Object self, int nparts, int *argcv,
     Object other = args[0];
     assertClass(other, Number);
     double a = *(double*)self->data;
-    unsigned int i = (unsigned int)a;
-    double b;
-    if (other->class == Number)
-        b = *(double*)other->data;
-    else
-        b = integerfromAny(other);
-    unsigned int j = (unsigned int)b;
-    return alloc_Float64(i % j);
+    double b = *(double*)other->data;
+    double quo = a / b;
+    double q = trunc(quo);
+    if ((a < 0) && (q != quo))
+        q = (b < 0) ? q+1 : q-1;
+    double r = a - (b * q);
+    return alloc_Float64(r);
+}
+Object Float64_IntDiv(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    Object other = args[0];
+    assertClass(other, Number);
+    double a = *(double*)self->data;
+    double b = *(double*)other->data;
+    double quo = a / b;
+    double q = trunc(quo);
+    if (a >= 0) return alloc_Float64(q);
+    if (q == quo) return alloc_Float64(q);
+    if (b < 0) return alloc_Float64(q + 1);
+    return alloc_Float64(q - 1);
 }
 Object Float64_Equals(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -2618,13 +2630,14 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 36, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 37, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
         add_Method(Number, "/", &Float64_Div);
         add_Method(Number, "^", &Float64_Exp);
         add_Method(Number, "%", &Float64_Mod);
+        add_Method(Number, "÷", &Float64_IntDiv);
         add_Method(Number, "@", &Float64_Point);
         add_Method(Number, "==", &Float64_Equals);
         add_Method(Number, "!=", &Object_NotEquals);
