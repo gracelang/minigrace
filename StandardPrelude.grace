@@ -43,6 +43,17 @@ method repeat(n)times(action) {
     }
 }
 
+method for (cs) and (ds) do (action) -> Done {
+    def dIter = ds.iterator
+    cs.do { c -> 
+        if (dIter.hasNext) then {
+            action.apply(c, dIter.next)
+        } else {
+            return
+        }
+    }
+}
+
 method min(a, b, *xs) {
     var result := if (a < b) then { a } else { b }
     xs.do { x -> 
