@@ -2209,7 +2209,7 @@ function gracecode_util() {
             + callmethod(this._lines, "at",
                     [1], new GraceNum(errlinenum._value + 1))._value + "\n");
 
-        var numsuggestions = callmethod(suggestions, "size", []);
+        var numsuggestions = callmethod(suggestions, "size", [0]);
         if(numsuggestions._value > 0) {
             for(var i=1; i <= numsuggestions._value; i++) {
                 minigrace.stderr_write("\nDid you mean:\n");
