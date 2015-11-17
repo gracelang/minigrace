@@ -2045,15 +2045,18 @@ Object String_substringFrom_to(Object self,
 }
 Object String_do(Object self, int nparts, int *argcv,
                  Object *args, int flags) {
+    if (nparts != 1 || argcv[0] != 1)
+        gracedie("string.do requires exactly one argument");
     Object block = args[0];
-    Object iter = alloc_StringIter(self);
-    gc_root(iter);
+    Object iter = callmethod(self, "iterator", 0, NULL, NULL);
+    gc_frame_newslot(iter);
+    int slot = gc_frame_newslot(NULL);     // Stack slot for argument object
     int partcv[] = {1};
     while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
         Object next = callmethod(iter, "next", 0, NULL, NULL);
+        gc_frame_setslot(slot, next);
         callmethod(block, "apply", 1, partcv, &next);
     }
-//    gc_unroot(iter);
     return done;
 }
 Object String_startsWith(Object self, int nparts, int *argcv,
@@ -4851,20 +4854,6 @@ void gc_root(Object o) {
     r->next = GC_roots;
     GC_roots = r;
 }
-//void gc_unroot(Object o) {
-//    struct GC_Root *r = GC_roots;
-//    void *p = &GC_roots;
-//    while (r != NULL) {
-//        if (r->object == o) {
-//            fprintf(stderr, "found object for unroot\n");
-//            p->next = r->next;
-//            free(r);
-//            return;
-//        }
-//        p = ;
-//        r = r->next;
-//    }
-//}
 int gc_paused;
 int gc_wouldHaveRun;
 void gc_pause() {
@@ -4982,16 +4971,10 @@ Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         gracedie("for-do requires exactly two arguments");
-    Object iter = callmethod(argv[0], "iterator", 0, NULL, NULL);
-    gc_frame_newslot(iter);
-    // Stack slot for argument object
-    int slot = gc_frame_newslot(NULL);
+    Object coll = argv[0];
+    Object blk = argv[1];
     int partcv[] = {1};
-    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
-        Object val = callmethod(iter, "next", 0, NULL, NULL);
-        gc_frame_setslot(slot, val);
-        callmethod(argv[1], "apply", 1, partcv, &val);
-    }
+    callmethod(coll, "do", 1, partcv, &blk);
     return done;
 }
 #define HEXVALC(c) ((c >= '0' && c <= '9') ? c - '0' : ((c >= 'a' && c <= 'f') ? c - 'a' + 10 : -1))

@@ -931,6 +931,10 @@ PrimitiveGraceList.prototype = {
             return new GraceListIterator(this._value);
         },
         "do": function list_do(argcv, action1) {
+            if (argcv[0] !== 1)
+                callmethod(ProgrammingErrorObject, "raise", [1],
+                    new GraceString("wrong number of arguments for do(1)" +
+                    "\n argcv[0] = " + argcv[0]));
             var self = this._value;
             var size = self.length;
             for (var ix = 0; ix < size; ix ++) {
@@ -3043,11 +3047,7 @@ Grace_prelude.methods['while()do'] = function(argcv, c, b) {
     return GraceDone;
 }
 Grace_prelude.methods['for()do'] = function(argcv, c, b) {
-    var iter = callmethod(c, "iterator", [0]);
-    while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
-        var val = callmethod(iter, "next", [0]);
-        callmethod(b, "apply", [1], val);
-    }
+    callmethod(c, "do", [1], b);
     return GraceDone;
 }
 Grace_prelude.methods['identical'] = function prelude_identical (argcv, a, b) {
