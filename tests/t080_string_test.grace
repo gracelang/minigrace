@@ -205,14 +205,30 @@ class stringTest.forMethod(m) {
         assert (s == t) description "{s} not == {t}"
         assert ((s ≥ t) && (s ≤ t)) description "{s} not both ≥ and ≤ to {t}"
     }
-
+    method test_do {
+        def s = "abçdéfg"
+        var r := ""
+        var count := 0
+        s.do { ch -> 
+            r := r ++ ch
+            count := count + 1
+        }
+        assert (count) shouldBe (s.size)
+        assert (r) shouldBe (s)
+    }
+    method test_do_with_concatString {
+        def s = "abçdéfg‹›ﬁﬂ‡°·‚—±Œ„´‰ˇÁ¨ˆØ∏”ÅÍÎÏ˝" ++ 
+                    "ÓÔ\uf8ffÒÚÆ¿˘¯Â˜ı◊Ç˛¸Ω≈ç¡™£¢∞§¶•ªº–≠"  // a concatString
+        var r := ""
+        var count := 0
+        s.do { ch -> 
+            r := r ++ ch
+            count := count + 1
+        }
+        assert (count) shouldBe (s.size)
+        assert (r) shouldBe (s)
+    }
 }
 
 def stringTests = gU.testSuite.fromTestMethodsIn(stringTest)
-//stringTests.debugAndPrintResults
 stringTests.runAndPrintResults
-//def failingTests = gU.testSuite.empty
-//failingTests.add(stringTest.forMethod("testInCategorySpace"))
-//failingTests.add(stringTest.forMethod("testInCategoryNBS"))
-//failingTests.debugAndPrintResults
-
