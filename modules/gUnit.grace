@@ -161,6 +161,7 @@ class assertion.trait {
     }
 }
 
+def noArguments = sequence.with(sequence.empty)
 
 factory method testCaseNamed(name') -> TestCase {
     inherits assertion.trait
@@ -209,7 +210,7 @@ factory method testCaseNamed(name') -> TestCase {
     
     method runTest {
         def methodImage = mirror.reflect(self).getMethod(name)
-        methodImage.request([sequence.empty])
+        methodImage.request(noArguments)
     }
 
     method printBackTrace(exceptionPacket) limitedTo(testName) {
