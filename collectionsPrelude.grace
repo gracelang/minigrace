@@ -444,14 +444,44 @@ class indexable.trait<T> {
     }
 }
 
-method max(a,b) is confidential {
+method max(a,b) is confidential {       // repeated from standard prelude
     if (a > b) then { a } else { b }
+}
+
+def emptySequence is confidential = object {
+    inherits indexable.trait
+    method size { 0 }
+    method isEmpty { true }
+    method at(n) { BoundsError.raise "index {n} of empty sequence" }
+    method [](n) { BoundsError.raise "index {n} of empty sequence" }
+    method keys { self }
+    method values { self }
+    method keysAndValuesDo(block2) { done }
+    method reversed { self }
+    method ++(other: Iterable) { sequence.withAll(other) }
+    method asString { "⟨⟩" }
+    method contains(element) { false }
+    method do(block1) { done }
+    method ==(other) {
+        match (other)
+            case {o: Iterable ->
+                o.size == 0
+            }
+            case {_ ->
+                false
+            }
+    }
+    class iterator {
+        method asString { "emptySequenceIterator" }
+        method hasNext { false }
+        method next { IteratorExhausted.raise "on empty sequence" }
+    }
+    method sorted { self }
+    method sortedBy(sortBlock:Block2){ self }
 }
 
 factory method sequence<T> {
     inherits collectionFactory.trait<T>
-    
-    def emptySequence = self.fromPrimitiveArray(_prelude.PrimitiveArray.new(0), 0)
 
     method empty is override {
         // this is an optimization: there need be just one empty sequence

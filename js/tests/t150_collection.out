@@ -1,5 +1,5 @@
 bindingTest: 6 run, 0 failed, 0 errors
-sequenceTest: 47 run, 0 failed, 0 errors
+sequenceTest: 50 run, 0 failed, 0 errors
 listTest: 80 run, 0 failed, 0 errors
 setTest: 40 run, 0 failed, 0 errors
 rangeTest: 46 run, 0 failed, 0 errors

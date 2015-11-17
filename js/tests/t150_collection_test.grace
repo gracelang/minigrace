@@ -285,6 +285,18 @@ class sequenceTest.forMethod(m) {
             def witness = sequence<Number>.with(1,3)
             assert (witness) hasType (Enumerable<Number>)
         }
+        method testEmptySequenceTypeCollection {
+            def witness = sequence.empty
+            assert (witness) hasType (Collection)
+        }
+        method testEmptySequenceTypeSequence {
+            def witness = sequence.empty
+            assert (witness) hasType (Sequence)
+        }
+        method testEmptySequenceTypeEnumerable {
+            def witness = sequence.empty
+            assert (witness) hasType (Enumerable)
+        }
         method testFilteredSequenceTypeEnumerable {
             def witness = sequence<Number>.with(1,3).filter{x -> true}
             assert (witness) hasType (Enumerable<Number>)
@@ -298,7 +310,7 @@ class sequenceTest.forMethod(m) {
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
         }
-
+        
         method testSequenceEmptyDo {
             empty.do {each -> failBecause "emptySequence.do did with {each}"}
             assert(true)
