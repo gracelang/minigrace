@@ -1278,15 +1278,19 @@ GraceBlock.prototype = {
     methods: {
         "apply": GraceBlock_apply,
         "applyIndirectly": function GraceBlock_applyIndirectly (argcv, a) {
-            var argList = a._value || a.data.jsArray || a.data.inner._value
+            var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.
-            // a._value   => a is a PrimitiveGraceList
+            // a._value          => a is a PrimitiveGraceList
             // a.data.jsArray    => a is a native code list from collectionsPrelude
-            // a.data.inner._value    =>  a is a Grace sequence or list
-            if (! argList)
-                throw ("Can't find argument list for applyIndirectly of " +
-                            "block<" + this.definitionModule +
-                            ":" + this.definitionLine + ">");
+            // in these cases, extract the JS Array burried in the object.
+            if (! argList) {
+                argList = [];
+                var iter = callmethod(a, "iterator", [0]);
+                while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
+                    var arg = callmethod(iter, "next", [0]);
+                    argList.push(arg);
+                }
+            }
             return this.real.apply(this.receiver, argList);
         },
         "outer": function GraceBlock_outer () {
