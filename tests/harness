@@ -113,7 +113,7 @@ do
         if eval "$COMMAND" > test-$$.log 2>&1
         then
             execname="${tcase%%.*}"
-            GRACE_MODULE_PATH=../modules/:../ $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
+            GRACE_MODULE_PATH=../modules/:../ GRACE_GC_DISABLE=true $EXECUTOR"$execname" > test-$$.out 2> test-$$.err
             RESULT=$?
             if [ -s test-$$.err ]
             then
