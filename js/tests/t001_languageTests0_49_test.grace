@@ -323,13 +323,6 @@ def aGraceLangTest = object {
             assert(str)shouldBe("false\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\n")
         }
         
-        method test_027_unicodewhitespace {
-            // The next line is terminated by U+2028 LINE SEPARATOR, a legal character
-            if (true) then {                 out("Here")
-            }
-            assert(str)shouldBe("Here\n")
-        }
-
         method test_028_stringescape {
             var x := "test\"quotes\"hello\"\"world"
             out(x)
