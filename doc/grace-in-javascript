@@ -1,0 +1,25 @@
+The JS backend tarnslates Grace objetcs into JS objects.
+As of mid 2015, this translation has a number of deficiecncies:
+
+ - Grace methods are stored as properties of a methods object
+ - Grace superobjects are stored in the superobject property of the JS object.
+ - Grace fields are stored in a data object, except for
+ - Built-in objects like strings and Numbers, where the data is stored in 
+   a _value property.
+   
+As a consequence, Grace method dispatch must be coded up as a gearch through the
+methods object, followed by a search through the methods object of the superobject,
+and so on.
+
+An other consequence is that great care must be taken not to add to of change
+the methods object of an object that actually gets its methods obejct from a 
+prototype. If this is done accidentally, the prototype will be corrupted, 
+and all other objects that use this prototype will see the change.  
+
+APB, August 2015: I think that a better scheme would be to make the Grace methods
+methods of the JS object, having mangled their name by adding a suitable prefix,
+like GR_ or ⓖ, or 𝒢.   Similarly, fields of the Grace object should be fields of
+the Javascript object.
+
+To support the non-differentation of methdos and fields, Grace zero-argument 
+functions shoudl always be compield into JS get functions.
