@@ -110,6 +110,7 @@ class baseNode.new {
     method hash { line.hash * linePos.hash }
     method asString { "{kind} {nameString}" }
     method nameString { "?" }
+    method isFreshMethod { false }
     method isWritable { true }
     method isReadable { true }
     method isPublic { true }
@@ -804,6 +805,7 @@ def methodNode = object {
         var annotations is public := list.empty
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
 
+        method isFreshMethod { isFresh }
         method scope:=(st) {
             // sets up the 2-way conection between this node
             // and the synmol table that defines the scope that I open.
