@@ -289,15 +289,16 @@ method outprint(s) {
     outfilev.write("\n")
 }
 
-// This is called by various wrapper methods in the errormessages module.
-// The parameters are explained as follows:
-// - message: The text of the error message.
-// - errlinenum: The line number on which the error occurred.
-// - position: A string used to show the position of the error in the error message.
-// - arr: The string used to draw an arrow showing the position of the error.
-// - spacePos: The position in the error line that a space should be inserted, or false.
-// - suggestions: A (possibly empty) list of suggestions to correct the error.
+
 method syntaxError(message, errlinenum, position, arr, spacePos, suggestions) {
+    // Used by various wrapper methods in the errormessages module.
+    // The parameters mean:
+    //   - message: The text of the error message.
+    //   - errlinenum: The line number on which the error occurred.
+    //   - position: A string used to show the position of the error in the error message.
+    //   - arr: The string used to draw an arrow showing the position of the error.
+    //   - spacePos: The position in the error line that a space should be inserted, or false.
+    //   - suggestions: A (possibly empty) list of suggestions to correct the error.
     generalError("Syntax error: {message}", errlinenum, position, arr, spacePos,
         suggestions)
 }
@@ -312,16 +313,12 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
     }
     if ((lines.size >= errlinenum) && (errlinenum > 0)) then {
         var line := lines.at(errlinenum)
-        if(spacePos != false) then {
-            io.error.write("  {errlinenum}: {line.substringFrom(1)to(spacePos-1)} {line.substringFrom(spacePos)to(line.size)}\n")
-        } else {
-            io.error.write("  {errlinenum}: {line}\n")
-        }
-        io.error.write("{arr}\n")
+        io.error.write "  {errlinenum}: {line}\n"
+        io.error.write "{arr}\n"
     }
     if (suggestions.size > 0) then {
         for(suggestions) do { s ->
-            io.error.write("\nDid you mean:\n")
+            io.error.write "\nDid you mean:\n"
             s.print
         }
     }
