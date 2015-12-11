@@ -21,19 +21,12 @@ method isParameter(kindString) {
     if (kindString == "typeparam") then { return true }
     return false
 }
+
+def completed = Singleton.named "completed"
+def inProgress = Singleton.named "inProgress"
+def undiscovered = Singleton.named "undiscovered"
 // constants used in detecting cyclic inheritance
-def completed = object { 
-//    inherits Singleton.new      TODO — uncomment once this is in STABLE
-    var asString is readable := "completed"
-}
-def inProgress = object { 
-//    inherits Singleton.new      TODO — uncomment once this is in STABLE
-    var asString is readable := "inProgress"
-}
-def undiscovered = object {
-//    inherits Singleton.new      TODO — uncomment once this is in STABLE
-    var asString is readable := "undiscovered"
-}
+
 var stSerial := 100
 
 def reserved = sequence.with("self", "super", "outer", "true", "false")
@@ -58,6 +51,8 @@ factory method newScopeIn(parent') kind(variety') {
     var inheritedNames := undiscovered
     stSerial := stSerial + 1
     def serialNumber is public = stSerial
+    def hash is public = serialNumber.hash
+    
     if (isObjectScope) then {
         addName "self" as "defdec"
         at "self" putScope(self)
@@ -157,11 +152,17 @@ factory method newScopeIn(parent') kind(variety') {
     method asDebugString { "(ST {serialNumber})" }
 
     method elementScopesAsString {
+        def referencedScopes = set.empty
         var result := "\n    [elementScopes:"
         elementScopes.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
+            referencedScopes.add (each.value)
         }
-        result ++ "]"
+        result ++ "]\n"
+        referencedScopes.asList
+            .sortBy { a, b -> a.serialNumber.compare(b.serialNumber) }
+                .do { each -> result := result ++ each.asString }
+        result
     }
     method hasDefinitionInNest(nm) {
         self.do { s ->
@@ -289,6 +290,7 @@ factory method newScopeIn(parent') kind(variety') {
         }
         ProgrammingError.raise "self = {self}; encScope = {encScope}"
     }
+    method isUniversal { false }
     method checkShadowing(ident) as(newKind) {
         def name = ident.nameString
         def priorScope = thatDefines(name) ifNone {
@@ -359,6 +361,7 @@ def universalScope = object {
     method kind(n) { "unknown" }
     method at(n) putScope(scp) { }
     method getScope(n) { self }
+    method isUniversal { true }
 }
 
 method rewritematchblockterm(arg) {
@@ -996,7 +999,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitInherits(o) up(as) {
             o.scope := as.parent.scope
             if (as.parent.canInherit.not) then {
-                errormessages.syntaxError "inherits statements must be inside an object"
+                errormessages.syntaxError "inherits statements must be inside an object or class"
                     atRange(o.line, o.linePos, o.linePos + 7)
             }
             if (as.parent.superclass != false) then {
@@ -1142,9 +1145,9 @@ method collectInheritedNames(node) {
         superScope := graceObjectScope
     } else {
         superScope := nodeScope.scopeReferencedBy(node.superclass)
-        // If superScope == universalScope then we have no information
+        // If superScope is the universal scope, then we have no information
         // about the inherited attributes
-        if (superScope != universalScope) then {
+        if (superScope.isUniversal.not) then {
             if (superScope.node != ast.nullNode) then {
                 // superScope.node == nullNode when superScope describes 
                 // an imported module.
@@ -1263,6 +1266,7 @@ method resolve(values) {
         util.outprint "module with symbol tables"
         util.outprint "====================================="
         util.outprint "top-level"
+        util.outprint "Universal scope = {universalScope.asDebugString}"
         patternMatchModule.scope.do { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
