@@ -3,7 +3,8 @@ import "sys" as sys
 import "unixFilePath" as filePath
 import "stringMap" as map
 
-var verbosityv := 30
+def defaultVerbosity is public = 30
+var verbosity is public := defaultVerbosity
 var outfilev := io.output
 var infilev := io.input
 var modnamev := "standardInput"
@@ -65,13 +66,13 @@ method parseargs(buildinfo) {
                         outfilev := io.open(argv.at(ai + 1), "w")
                         skip := true
                     } case { "--verbose" ->
-                        verbosityv := 40
+                        verbosity := 40
                         if (argv.size >= (ai + 1)) then {
                             def nextArg = argv.at(ai + 1)
                             def firstCh = nextArg.at(1)
                             if ((firstCh >= "0") && (firstCh <= "9")) then {
                                 skip := true
-                                verbosityv := nextArg.asNumber
+                                verbosity := nextArg.asNumber
                             }
                         }
                     } case { "--help" ->
@@ -267,11 +268,11 @@ method createDirectoryIfNecessary(d) is confidential {
 var previousElapsed := 0
 
 method log_verbose(s) { 
-    log 40 verbose (s)
+    log (defaultVerbosity + 1) verbose (s)
 }
 
 method log(level) verbose(s) {
-    if (verbosityv >= level) then {
+    if (verbosity >= level) then {
         var vtagw := ""
         if (false != vtagv) then {
             vtagw := "[" ++ vtagv ++ "]"
@@ -371,12 +372,6 @@ method warning(s) {
     io.error.write("\n")
 }
 
-method verbosity {
-    verbosityv
-}
-method verbosity:=(val) {
-    verbosityv := val
-}
 method outfile {
     outfilev
 }

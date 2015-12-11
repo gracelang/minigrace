@@ -177,7 +177,7 @@ method compileModule (nm) inFile (sourceFile)
     } else {
         cmd := "\"{cmd}\""
     }
-    if (util.verbosity != 40) then {
+    if (util.verbosity != util.defaultVerbosity) then {
         cmd := cmd ++ " --verbose {util.verbosity}"
     }
     if (util.dirFlag) then {
@@ -440,34 +440,43 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
     def freshmeths = list.empty
     gct.at "fresh-methods" put(freshmeths)
     for (values) do {val->
-        if (val.kind == "method") then {
-            if (val.isFresh) then {
-                freshmeths.push(val.nameString)
-                def freshMethResult = val.body.last
-                if (freshMethResult.isObject) then {
-                    gct.at "fresh:{val.nameString}"
-                        put(freshMethResult.scope.keysAsList)
-                } elseif {freshMethResult.isCall} then {
-                    // we know that freshMethResult.value.isMember and 
-                    // freshMethResult.value.nameString == "clone"
-                    def receiver = freshMethResult.value.in
-                    if ((receiver.nameString == "prelude").andAlso{
-                      freshMethResult.with.first.args.first.nameString == "self"}) then {
-                        gct.at "fresh:{val.nameString}" put(meths)
-                        def key = "fresh:{val.nameString}"
-                    } elseif {(receiver.nameString == "self")} then {
-                        gct.at "fresh:{val.nameString}" put(meths)
-                    } else {
-                        ProgrammingError.raise 
-                            "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
-                    }
-                } else {
-                    ProgrammingError.raise
-                        "fresh method result of an unexpected kind: {freshMethResult.pretty(0)}"
-                }
-            }
+        if (val.isFreshMethod) then {
+            addFreshMethod (val) to (freshmeths) for (gct)
         }
     }
     return gct
+}
+
+method addFreshMethod (val) to (freshlist) for (gct) is confidential {
+    freshlist.push(val.nameString)
+    def freshMethResult = val.body.last
+    if (freshMethResult.isObject) then {
+        def subScope = freshMethResult.scope
+        gct.at "fresh:{val.nameString}" put (subScope.keysAsList)
+        if (util.verbosity >= 50) then {
+            subScope.elements.keysDo { name ->
+                def subSubScope = subScope.getScope(name)
+                if (subSubScope.isUniversal.not) then {
+                    print "scope for {name} = { subScope.getScope(name).asDebugString }"
+                }
+            }
+        }
+    } elseif {freshMethResult.isCall} then {
+        // we know that freshMethResult.value.isMember and 
+        // freshMethResult.value.nameString == "clone"
+        def receiver = freshMethResult.value.in
+        if ((receiver.nameString == "prelude").andAlso{
+          freshMethResult.with.first.args.first.nameString == "self"}) then {
+            gct.at "fresh:{val.nameString}" put(gct.at "public")
+        } elseif {(receiver.nameString == "self")} then {
+            gct.at "fresh:{val.nameString}" put(gct.at "public")
+        } else {
+            ProgrammingError.raise 
+                "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
+        }
+    } else {
+        ProgrammingError.raise
+            "fresh method result of an unexpected kind: {freshMethResult.pretty(0)}"
+    }
 }
 
