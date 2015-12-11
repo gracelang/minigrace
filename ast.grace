@@ -1,5 +1,5 @@
-// #pragma noTypeChecks
 import "util" as util
+import "identifierKinds" as k
 
 // This module contains classes and pseudo-classes for all the AST nodes used
 // in the parser. Because of the limitations of the class syntax, classes that
@@ -133,8 +133,7 @@ class baseNode.new {
         // conection between the node and the symbol table that defines its scope.
         symbolTable := st
     }
-    method declarationKindWithAncestors(as) { self.kind }     
-        // the kind of identifiers defined within me
+
     method shallowCopyFieldsFrom(other) {
         register := other.register
         line := other.line
@@ -293,9 +292,7 @@ class blockNode.new(params', body') {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(as) {
-        "parameter"
-    }
+    method declarationKindWithAncestors(as) { k.parameter }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
         (body.size > 0).andAlso { body.last.returnsObject }
@@ -547,7 +544,7 @@ class methodTypeNode.new(name', signature', rtype') {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(as) { "typedec" }
+    method declarationKindWithAncestors(as) { k.typedec }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitMethodType(self) up(as)) then {
             def newChain = as.extend(self)
@@ -635,6 +632,8 @@ class typeLiteralNode.new(methods', types') {
     method asString {
         "typeliteral: methods = {methods}, types = {types}"
     }
+    method declarationKindWithAncestors(as) { k.typedec }
+
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitTypeLiteral(self) up(as)) then {
             def newChain = as.extend(self)
@@ -712,9 +711,7 @@ class typeDecNode.new(name', typeValue) {
         symbolTable := st
         st.node := self
     }
-    method declarationKindWithAncestors(as) {
-        "parameter"
-    }
+    method declarationKindWithAncestors(as) { k.typeparam }
     method isConfidential {
         if (annotations.size == 0) then { return false }
         findAnnotation(self, "confidential")
@@ -812,9 +809,7 @@ def methodNode = object {
             symbolTable := st
             st.node := self
         }
-        method declarationKindWithAncestors(as) {
-            "parameter"
-        }
+        method declarationKindWithAncestors(as) { k.parameter }
         method isConfidential {
             if (annotations.size == 0) then { return false }
             findAnnotation(self, "confidential")
@@ -1152,11 +1147,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     var annotations is public := list.empty
     def nameString:String is public = name.value
 
-    var data is public := false
-
-    method declarationKindWithAncestors(as) {
-        "method"
-    }
+    method declarationKindWithAncestors(as) { k.methdec }
     method scope:=(st) {
         // sets up the 2-way conection between this node and the
         // symbol table that defines the scope that it opens.
@@ -1318,7 +1309,6 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     }
     method shallowCopyFieldsFrom(other) {
         super.shallowCopyFieldsFrom(other)
-        data := other.data
         self
     }
 }
@@ -1368,7 +1358,6 @@ def objectNode = object {
         var value is public := body
         var superclass is public := superclass'
         var classname is public := "object"
-        var data is public := false
 
         method scope:=(st) {
             // sets up the 2-way conection between this node
@@ -1440,7 +1429,6 @@ def objectNode = object {
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
-            data := other.data
             classname := other.classname
             self
         }
@@ -1637,9 +1625,8 @@ class typeParametersNode.new(params') {
         params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
         s ++ ">"
     }
-    method declarationKindWithAncestors(as) {
-        "typeparam"
-    }
+    method declarationKindWithAncestors(as) { k.typeparam }
+
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitTypeParameters(self) up(as)) then {
             def newChain = as.extend(self)
@@ -2041,7 +2028,6 @@ def defDecNode = object {
         var dtype is public := dtype'
         def nameString:String is public = name.value
         var annotations is public := list.empty
-        var data is public := false
         var startToken is public := false
 
         method isPublic {
@@ -2052,11 +2038,7 @@ def defDecNode = object {
         }
         method isWritable { false }
         method isReadable { isPublic }
-    //    method isFieldDec { 
-    //        if (parent.kind == "object") then { true }
-    //            elseif {parent.kind == "class"} then { true }
-    //            else { false }
-    //    }
+
         method returnsObject {
             value.returnsObject
         }
@@ -2067,6 +2049,8 @@ def defDecNode = object {
         method usesAsType(aNode) {
             aNode == dtype
         }
+        method declarationKindWithAncestors(as) { k.defdec }
+
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitDefDec(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -2140,7 +2124,6 @@ def defDecNode = object {
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
-            data := other.data
             startToken := other.startToken
             self
         }
@@ -2173,14 +2156,12 @@ class varDecNode.new(name', val', dtype') {
         if (findAnnotation(self, "readable")) then { return true }
         false
     }
-//    method isFieldDec { 
-//        if (parent.kind == "object") then { true }
-//            elseif {parent.kind == "class"} then { true }
-//            else { false }
-//    }
+
     method usesAsType(aNode) {
         aNode == dtype
     }
+    method declarationKindWithAncestors(as) { k.vardec }
+
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitVarDec(self) up(as)) then {
             def newChain = as.extend(self)
@@ -2278,7 +2259,7 @@ class importNode.new(path', name', dtype') {
     }
     method isWritable { false }
     method isReadable { isPublic }
-    method declarationKindWithAncestors(as) { "defdec" }
+    method declarationKindWithAncestors(as) { k.defdec }
     method usesAsType(aNode) {
         aNode == dtype
     }
@@ -2518,7 +2499,7 @@ def signaturePart = object {
                 }
             }
         }
-        method declarationKindWithAncestors(as) { "parameter" }
+        method declarationKindWithAncestors(as) { k.parameter }
         method map(blk) ancestors(as) {
             var n := shallowCopy
             def newChain = as.extend(n)

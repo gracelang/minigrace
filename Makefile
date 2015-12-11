@@ -21,7 +21,7 @@ CREATE_L1 := $(shell if [ ! -e l1 ] ; then mkdir -p l1 ; fi)
 
 # COMPILER_MODULES are the parts of the compiler that should go into the modules
 # directory on an install (in addition to ALL_LIBRARY_MODULES)
-COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace stringMap.grace
+COMPILER_MODULES = StandardPrelude.grace collectionsPrelude.grace ast.grace util.grace identifierKinds.grace stringMap.grace
 
 DIALECT_DEPENDENCIES = modules/mirrors.gct modules/mirrors.gso errormessages.gct errormessages.gso ast.gct ast.gso util.gct util.gso modules/gUnit.gct modules/gUnit.gso modules/math.gso
 DIALECTS_NEED = modules/dialect util ast modules/gUnit modules/math
@@ -33,13 +33,14 @@ LIBRARY_WO_OBJECTDRAW = $(sort $(filter-out $(OBJECTDRAW), $(LIBRARY_MODULES)))
 # and depends on the contents of the modules directory.  So LIBRARY_MODULES may or
 # may not contain OBJECTDRAW, depending on whether this is the first or subsequent make.
 
+MGFLAGS = -XnoChecks
 MGSOURCEFILES = buildinfo.grace $(REALSOURCEFILES)
 JSSOURCEFILES = $(SOURCEFILES:%.grace=js/%.js)
 KG=known-good/$(ARCH)/$(STABLE)
 OBJECTDRAW = objectdraw.grace rtobjectdraw.grace stobjectdraw.grace animation.grace
 OBJECTDRAW_REAL = $(filter-out %tobjectdraw.grace, $(OBJECTDRAW))
 PRELUDESOURCEFILES = collectionsPrelude.grace StandardPrelude.grace
-REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace genjson.grace)
+REALSOURCEFILES = $(sort compiler.grace errormessages.grace util.grace ast.grace identifierKinds.grace lexer.grace parser.grace genjs.grace genc.grace stringMap.grace xmodule.grace identifierresolution.grace genjson.grace)
 SOURCEFILES = $(MGSOURCEFILES) $(PRELUDESOURCEFILES)
 STABLE=1560723984934899b9bf4496f3b68ced32fab99c
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
@@ -196,7 +197,7 @@ js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
 js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoTypeChecks --dir js $(<F)
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js (MGFLAGS) --dir js $(<F)
 
 js/dom.gct: stubs/dom.gct
 	cd js; ln -fs ../stubs/dom.gct .
@@ -223,13 +224,13 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
-	./minigrace --target js -XnoChecks --dir js --make $(VERBOSITY) $<
+	./minigrace --target js $(MGFLAGS) --dir js --make $(VERBOSITY) $<
 
 js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
 
 js/%.gct js/%.js: %.grace ./minigrace
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoChecks --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js $(MGFLAGS) --dir js $<
 
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
@@ -297,7 +298,7 @@ $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
 
 $(MGSOURCEFILES:%.grace=js/%.js): js/%.js: %.grace js/StandardPrelude.gct minigrace
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js -XnoChecks --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js $(MGFLAGS) --dir js $<
 
 $(MGSOURCEFILES:%.grace=modules/%.gso): modules/%.gso: %.gso
 	cd modules && ln -sf ../$< .

@@ -8,19 +8,9 @@ import "xmodule" as xmodule
 import "stringMap" as map
 import "mirrors" as mirrors
 import "errormessages" as errormessages
+import "identifierKinds" as k
 
 def emptySequence = sequence.empty
-
-// TODO: eliminate these kind strings and make them objects.
-
-method isAssignable(kindString) {
-    kindString == "vardec"
-}
-method isParameter(kindString) {
-    if (kindString == "parameter") then { return true }
-    if (kindString == "typeparam") then { return true }
-    return false
-}
 
 def completed = Singleton.named "completed"
 def inProgress = Singleton.named "inProgress"
@@ -39,6 +29,8 @@ method newScopeKind(variety') {
     s.hasParent := false
     s
 }
+type DeclKind = k.T
+
 factory method newScopeIn(parent') kind(variety') {
     def elements = map.new
     def elementScopes = map.new
@@ -54,19 +46,19 @@ factory method newScopeIn(parent') kind(variety') {
     def hash is public = serialNumber.hash
     
     if (isObjectScope) then {
-        addName "self" as "defdec"
+        addName "self" as(k.defdec)
         at "self" putScope(self)
     }
     method isEmpty { elements.size == 0 }
     method addName(n) {
-        elements.put(n, "method")
+        elements.put(n, k.methdec)
         elementLines.put(n, util.linenum)
     }
-    method addName(n)as(k) {
-        elements.put(n, k)
+    method addName(n)as(kind:DeclKind) {
+        elements.put(n, kind)
         elementLines.put(n, util.linenum)
     }
-    method addNode(nd) as(kind) {
+    method addNode(nd) as(kind:DeclKind) {
         def ndName = nd.value
         checkShadowing(nd) as(kind)
         def oldKind = elements.get(ndName) ifAbsent {
@@ -74,10 +66,10 @@ factory method newScopeIn(parent') kind(variety') {
             elementLines.put(ndName, nd.line)
             return
         }
-        if (kind == "inherited") then { 
+        if (kind == k.inherited) then {
             return  // don't overwrite new id with inherited id
         }
-        if (oldKind == "inherited")  then {
+        if (oldKind == k.inherited)  then {
             elements.put(ndName, kind)
             elementLines.put(ndName, nd.line)
             return
@@ -110,7 +102,9 @@ factory method newScopeIn(parent') kind(variety') {
         elements.asList
     }
     method kind(n) {
-        elements.get(n)
+        def kd:DeclKind = elements.get(n)
+        if (DeclKind.match(kd).not) then { print "kind of {n} is {k}" }
+        kd
     }
     method at(n) putScope(scp) {
         elementScopes.put(n, scp)
@@ -158,11 +152,11 @@ factory method newScopeIn(parent') kind(variety') {
             result := "{result} {each.key}➞{each.value.asDebugString}"
             referencedScopes.add (each.value)
         }
-        result ++ "]\n"
+        result := result ++ "]\n____________\n"
         referencedScopes.asList
             .sortBy { a, b -> a.serialNumber.compare(b.serialNumber) }
                 .do { each -> result := result ++ each.asString }
-        result
+        result ++ "____________\n"
     }
     method hasDefinitionInNest(nm) {
         self.do { s ->
@@ -176,14 +170,14 @@ factory method newScopeIn(parent') kind(variety') {
         self.do {s->
             if (s.contains(nm)) then {
                 def kd = s.kind(nm)
-                if (kd == "inherited") then {
-                    return "method"
+                if (kd == k.inherited) then {
+                    return k.methdec
                 } else {
                     return kd
                 }
             }
         }
-        return "undefined"
+        return k.undefined
     }
     method thatDefines(name) ifNone(action) {
         self.do { s->
@@ -212,8 +206,7 @@ factory method newScopeIn(parent') kind(variety') {
         false
     }
     method isMethodScope {
-        if (variety == "method") then { return true }
-        false
+        variety == "method"
     }
     method findDeepMethod(name) {
         // APB: I moved this method from the top-level (where it operated
@@ -314,7 +307,7 @@ factory method newScopeIn(parent') kind(variety') {
                 more := " on line {priorScope.elementLines.get(name)}"
             }
         }
-        if (newKind == "vardec") then {
+        if (newKind == k.vardec) then {
             def suggs = list.empty
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
@@ -322,7 +315,7 @@ factory method newScopeIn(parent') kind(variety') {
                 ) then {
                 suggs.push(sugg)
             }
-            if (priorKind == "vardec") then {
+            if (priorKind == k.vardec) then {
                 more := more ++ ". To assign to the existing variable, remove 'var'"
             }
             errormessages.syntaxError("'{name}' cannot be "
@@ -354,8 +347,8 @@ def universalScope = object {
     method hasParent { false }
     method parent { ProgrammingError.raise "universal scope has no parent" }
     method addName(n) { ProgrammingError.raise "can't add to the universal scope" }
-    method addName(n)as(k) { ProgrammingError.raise "can't add to the universal scope" }
-    method addNode(n)as(k) { ProgrammingError.raise "can't add to the universal scope" }
+    method addName(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
+    method addNode(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
     method contains(n) { true }
     method do(b) { b.apply(self) }
     method kind(n) { "unknown" }
@@ -570,7 +563,7 @@ method rewriteIdentifier(node) ancestors(as) {
     util.setPosition(node.line, node.linePos)
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
-            if (nodeScope.kindInNest(nmGets) == "method") then {
+            if (nodeScope.kindInNest(nmGets) == k.methdec) then {
                 def meth = nodeScope.findDeepMethod(nmGets)
                 def meth2 = ast.memberNode.new(nm, meth.in)
                 return meth2
@@ -582,7 +575,7 @@ method rewriteIdentifier(node) ancestors(as) {
     }
     def nodeKind = definingScope.kind(nm)
     if (node.isAssigned) then {
-        if (isAssignable(nodeKind).not) then {
+        if (nodeKind.isAssignable.not) then {
             reportAssignmentTo(node) declaredInScope(definingScope)
         }
     }
@@ -603,17 +596,17 @@ method rewriteIdentifier(node) ancestors(as) {
         def m = ast.memberNode.new(nm, p) scope(nodeScope)
         return m
     }
-    if (isParameter(nodeKind)) then { return node }
-    if (nodeKind == "typedec") then { return node }
+    if (nodeKind.isParameter) then { return node }
+    if (nodeKind == k.typedec) then { return node }
 
     // TODO Compatability Kludge — remove when possible
     if (node.inTypePositionWithAncestors(as)) then { return node }
     // the latter is necessary until .gct files distinguish types
 
     if (definingScope == moduleScope) then {
-        if (nodeKind == "defdec") then { return node }
-        if (nodeKind == "typedec") then { return node }
-        if (nodeKind == "vardec") then { return node }
+        if (nodeKind == k.defdec) then { return node }
+        if (nodeKind == k.typedec) then { return node }
+        if (nodeKind == k.vardec) then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
         return ast.memberNode.new(nm, 
@@ -622,9 +615,9 @@ method rewriteIdentifier(node) ancestors(as) {
     }
     if (nodeScope.isObjectScope.not
             .andAlso{nodeScope.isInSameObjectAs(definingScope)}) then {
-        if (nodeKind == "method") then { return node }
-        if (nodeKind == "defdec") then { return node }
-        if (nodeKind == "vardec") then { return node }
+        if (nodeKind == k.methdec) then { return node }
+        if (nodeKind == k.defdec) then { return node }
+        if (nodeKind == k.vardec) then { return node }
     }
     if (v == "method") then { return node }
         // node is defined in the closest enclosing method.
@@ -636,13 +629,13 @@ method rewriteIdentifier(node) ancestors(as) {
     def deepMeth = nodeScope.findDeepMethod(nm)
     return deepMeth
 }
-method checkForAmbiguityOf(node)definedIn(definingScope)as(declKind) {
+method checkForAmbiguityOf(node)definedIn(definingScope)as(kind) {
     def currentScope = node.scope
     if (currentScope != definingScope) then { return done }
     // TODO This isn't quite right:  currentScope might be a block (or method)
     // node might be defined by inheritance in the object containing currentScope,
     // and also in an enclosing scope.
-    if (declKind != "inherited") then { return done }
+    if (kind != k.inherited) then { return done }
     def name = node.value
     def conflictingScope = currentScope.parent.thatDefines(name) ifNone {
         return
@@ -726,7 +719,7 @@ method reportAssignmentTo(node) declaredInScope(scp) {
     if (scp.elementLines.contains(name)) then {
         more := " on line {scp.elementLines.get(name)}"
     }
-    if (kind == "defdec") then {
+    if (kind == k.defdec) then {
         if (reserved.contains(name)) then {
             errormessages.syntaxError("'{name}' is a reserved name and "
                 ++ "cannot be re-bound.") atLine(node.line)
@@ -746,15 +739,15 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             ++ "because it was declared with 'def'{more}. "
             ++ "To make it a variable, use 'var' in the declaration")
             atLine(node.line) withSuggestions(suggestions)
-    } elseif { kind == "typedec" } then {
+    } elseif { kind == k.typedec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a type{more}.")
             atLine(node.line)
-    } elseif (isParameter(kind)) then {
+    } elseif { kind.isParameter } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a parameter{more}.")
             atLine(node.line)
-    } elseif { kind == "method" } then {
+    } elseif { kind == k.methdec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a method{more}.")
             atLine(node.line)
@@ -811,26 +804,26 @@ method setupContext(values) {
     // define the built-in names
     util.setPosition(0, 0)
 
-    builtInsScope.addName "Type" as "typedec"
-    builtInsScope.addName "Object" as "typedec"
-    builtInsScope.addName "Unknown" as "typedec"
-    builtInsScope.addName "String" as "typedec"
-    builtInsScope.addName "Number" as "typedec"
-    builtInsScope.addName "Boolean" as "typedec"
-    builtInsScope.addName "Block" as "typedec"
-    builtInsScope.addName "Done" as "typedec"
-    builtInsScope.addName "done" as "defdec"
-    builtInsScope.addName "true" as "defdec"
-    builtInsScope.addName "false" as "defdec"
-    builtInsScope.addName "super" as "defdec"
-    builtInsScope.addName "outer" as "defdec"
+    builtInsScope.addName "Type" as(k.typedec)
+    builtInsScope.addName "Object" as(k.typedec)
+    builtInsScope.addName "Unknown" as(k.typedec)
+    builtInsScope.addName "String" as(k.typedec)
+    builtInsScope.addName "Number" as(k.typedec)
+    builtInsScope.addName "Boolean" as(k.typedec)
+    builtInsScope.addName "Block" as(k.typedec)
+    builtInsScope.addName "Done" as(k.typedec)
+    builtInsScope.addName "done" as(k.defdec)
+    builtInsScope.addName "true" as(k.defdec)
+    builtInsScope.addName "false" as(k.defdec)
+    builtInsScope.addName "super" as(k.defdec)
+    builtInsScope.addName "outer" as(k.defdec)
     builtInsScope.addName "readable"
     builtInsScope.addName "writable"
     builtInsScope.addName "public"
     builtInsScope.addName "confidential"
     builtInsScope.addName "override"
     builtInsScope.addName "parent"
-    builtInsScope.addName "..." as "defdec"
+    builtInsScope.addName "..." as(k.defdec)
 
     preludeScope.addName "asString"
     preludeScope.addName "::"
@@ -842,20 +835,20 @@ method setupContext(values) {
     preludeScope.addName "while()do"
     preludeScope.addName "print"
     preludeScope.addName "native()code"
-    preludeScope.addName "Exception" as "defdec"
-    preludeScope.addName "Error" as "defdec"
-    preludeScope.addName "RuntimeError" as "defdec"
-    preludeScope.addName "NoSuchMethod" as "defdec"
-    preludeScope.addName "ProgrammingError" as "defdec"
-    preludeScope.addName "TypeError" as "defdec"
-    preludeScope.addName "ResourceException" as "defdec"
-    preludeScope.addName "EnvironmentException" as "defdec"
-    preludeScope.addName "π" as "defdec"
-    preludeScope.addName "infinity" as "defdec"
+    preludeScope.addName "Exception" as(k.defdec)
+    preludeScope.addName "Error" as(k.defdec)
+    preludeScope.addName "RuntimeError" as(k.defdec)
+    preludeScope.addName "NoSuchMethod" as(k.defdec)
+    preludeScope.addName "ProgrammingError" as(k.defdec)
+    preludeScope.addName "TypeError" as(k.defdec)
+    preludeScope.addName "ResourceException" as(k.defdec)
+    preludeScope.addName "EnvironmentException" as(k.defdec)
+    preludeScope.addName "π" as(k.defdec)
+    preludeScope.addName "infinity" as(k.defdec)
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
-    preludeScope.addName "PrimitiveArray" as "defdec"
-    preludeScope.addName "primitiveArray" as "defdec"
+    preludeScope.addName "PrimitiveArray"
+    preludeScope.addName "primitiveArray"
     preludeScope.addName "become"
     preludeScope.addName "unbecome"
     preludeScope.addName "clone"
@@ -874,9 +867,9 @@ method setupContext(values) {
     
     builtInsScope.addName "graceObject"
     builtInsScope.at "graceObject" putScope(graceObjectScope)
-    builtInsScope.addName "prelude" as "defdec"
+    builtInsScope.addName "prelude" as(k.defdec)
     builtInsScope.at "prelude" putScope(preludeScope)
-    builtInsScope.addName "_prelude" as "defdec"
+    builtInsScope.addName "_prelude" as(k.defdec)
     builtInsScope.at "_prelude" putScope(preludeScope)
 
     // Historical - should be removed eventually
@@ -936,17 +929,17 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def factoryMeth = o.constructor
             def surroundingScope = as.parent.scope
             checkForReservedName(classNameNode)
-            surroundingScope.addNode(classNameNode) as "defdec"
+            surroundingScope.addNode(classNameNode) as(k.defdec)
             classNameNode.isDeclaredByParent := true
             def outerObjectScope = newScopeIn(surroundingScope) kind "object"
             surroundingScope.at(classNameNode.nameString) putScope(outerObjectScope)
             checkForReservedName(factoryMeth)
-            outerObjectScope.addNode(factoryMeth) as "method"
+            outerObjectScope.addNode(factoryMeth) as(k.methdec)
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
             if (o.generics != false) then { 
                 o.generics.do { each ->
-                    factoryScope.addNode(each) as "typeparam"
+                    factoryScope.addNode(each) as(k.typeparam)
                     each.isDeclaredByParent := true
                 }
             }
@@ -969,14 +962,16 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                 if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
                     checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(as)
-                    if (isParameter(kind).andAlso {scope.variety == "object"}) then {
-                        // this is a hack for declaring the parameters of the factory 
-                        // method of a class.  The class's symbol table is that of the
-                        // fresh object; the factory method's parameters need to go in
-                        // the _enclosing_ scope.
-                        scope := scope.parent
-                        if (scope.variety != "method") then {
-                            ProgrammingError.raise "object scope not in method scope"
+                    if (kind.isParameter) then {
+                        if (scope.variety == "object") then {
+                            // this is a hack for declaring the parameters of the factory
+                            // method of a class.  The class's symbol table is that of the
+                            // fresh object; the factory method's parameters need to go in
+                            // the _enclosing_ scope.
+                            scope := scope.parent
+                            if (scope.variety != "method") then {
+                                ProgrammingError.raise "object scope not in method scope"
+                            }
                         }
                     }
                     scope.addNode(o) as (kind)
@@ -1010,13 +1005,14 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             as.parent.superclass := o.value    // value = the expression from inheritsNode
             // cache the inherits expression in the object or class that contains it
+            util.log 80 verbose "{as.parent} inherits {o.value}"
             true
         }
         method visitMethod(o) up(as) {
             def surroundingScope = as.parent.scope
             def ident = o.value
             checkForReservedName(ident)
-            surroundingScope.addNode(ident) as "method"
+            surroundingScope.addNode(ident) as(k.methdec)
             ident.isDeclaredByParent := true
             o.scope := newScopeIn(surroundingScope) kind "method"
             if (o.returnsObject) then { 
@@ -1041,7 +1037,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitTypeDec(o) up(as) {
             def enclosingScope = as.parent.scope
-            enclosingScope.addNode(o.name) as "typedec"
+            enclosingScope.addNode(o.name) as(k.typedec)
             o.name.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any <generic parameters>.
@@ -1077,35 +1073,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         inherits ast.baseVisitor
         method visitClass(o) up (as) {
             collectInheritedNames(o)
-            // TODO: while the `data` attribute is still used by the code generators,
-            // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            o.data := o.scope
             true
         }
         method visitObject(o) up (as) {
             collectInheritedNames(o)
-            // TODO: while the `data` attribute is still used by the code generators,
-            // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            o.data := o.scope
             true
         }
         method visitModule(o) up (as) {
             collectInheritedNames(o)
-            // TODO: while the `data` attribute is still used by the code generators,
-            // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            o.data := o.scope
-            true
-        }
-        method visitDefDec(o) up (as) {
-            // TODO: while the `data` attribute is still used by the code generators,
-            // put there a redundant reference to the symbolTable.  Remove when this is fixed.
-            if (o.value.isObject) then {
-                o.data := o.value.scope
-            }
             true
         }
     }
-    
+        
     def returnedObjectVis = object {
         inherits ast.baseVisitor
         method visitDefDec(o) up (as) {
@@ -1130,7 +1109,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 }
 
 method collectInheritedNames(node) {
-    // node is an object or class.
+    // node is an object or class; put the names that it inherits into its scope.
+    // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
     if (nodeScope.inheritedNames == completed) then { 
         return
@@ -1143,10 +1123,13 @@ method collectInheritedNames(node) {
     nodeScope.inheritedNames := inProgress
     if (node.superclass == false) then { 
         superScope := graceObjectScope
+        util.log 80 verbose "node = {node} has no superclass, inheriting graceObjectScope = {graceObjectScope.asDebugString}"
     } else {
         superScope := nodeScope.scopeReferencedBy(node.superclass)
         // If superScope is the universal scope, then we have no information
         // about the inherited attributes
+        util.log 80 verbose "node = {node}, superScope = {superScope.asDebugString}"
+        util.log 80 verbose (superScope)
         if (superScope.isUniversal.not) then {
             if (superScope.node != ast.nullNode) then {
                 // superScope.node == nullNode when superScope describes 
@@ -1157,7 +1140,7 @@ method collectInheritedNames(node) {
     }
     superScope.elements.keysDo { each ->
         if (each != "self") then {
-            nodeScope.addName(each) as "inherited"
+            nodeScope.addName(each) as(k.inherited)
         }
     }
     nodeScope.inheritedNames := completed
@@ -1222,7 +1205,7 @@ method transformInherits(inhNode) ancestors(as) {
     }
     newInhNode.providedNames.do { each ->
         if (each != "self") then {
-            currentScope.addName(each) as "inherited"
+            currentScope.addName(each) as(k.inherited)
         }
     }
     newInhNode
