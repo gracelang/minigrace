@@ -93,7 +93,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
                     ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
             } else {
-                util.log 60 verbose "No source, but found {moduleFileGct} and {binaryFile}"
+                util.log 60 verbose "no source, but found {moduleFileGct} and {binaryFile}"
             }
         }
         if (needsDynamic.not) then {
@@ -453,7 +453,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
     if (freshMethResult.isObject) then {
         def subScope = freshMethResult.scope
         gct.at "fresh:{val.nameString}" put (subScope.keysAsList)
-        if (util.verbosity >= 50) then {
+        if (util.verbosity >= 70) then {
             subScope.elements.keysDo { name ->
                 def subSubScope = subScope.getScope(name)
                 if (subSubScope.isUniversal.not) then {
