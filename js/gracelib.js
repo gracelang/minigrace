@@ -118,21 +118,26 @@ function string_lessThanOrEqual (argcv, that) {
     if (self <= other) return GraceTrue;
     return GraceFalse;
 }
-function string_at(argcv, other) {
-    var o = callmethod(other, 'asString', [0]);
-    var idx = parseInt(o._value);
+function string_at(argcv, where) {
+    var idx = where._value;
     var s = this._value;
-    if (idx > s.length) {
-        var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
-        throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString('"' + msgstr + '".at(' + idx + ') but string.size = ' + s.length))
-    };
-    if (idx < 1) {
-        var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
-        throw new GraceExceptionPacket(BoundsErrorObject,
-            new GraceString('"' + msgstr + '".at(' + idx + ') but strings are indexed from 1'))
-    };
-    return new GraceString(s.charAt(idx-1));
+    var jrv = s[idx-1];   // don't use charAt(): [] gives undefined for non-integers
+    if (jrv) return new GraceString(jrv);
+
+    // now deal with the error conditions:
+    var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
+    if (where.className == "number") {
+        if (idx > s.length) {
+            throw new GraceExceptionPacket(BoundsErrorObject,
+                new GraceString('"' + msgstr + '".at(' + idx + ') but string.size = ' + s.length))
+        };
+        if (idx < 1) {
+            throw new GraceExceptionPacket(BoundsErrorObject,
+                new GraceString('"' + msgstr + '".at(' + idx + ') but strings are indexed from 1'))
+        };
+    }
+    throw new GraceExceptionPacket(ProgrammingErrorObject,
+        new GraceString("argument to 'at' on string \"" + msgstr + "\" is not an integer"))
 }
 
 function string_curriedAt(idx) {
@@ -455,9 +460,9 @@ GraceString.prototype = {
             // We could adapt the Russian Peasant algorithm for multiplication by addition,
             // but this simpler algorithm will usually use fewer string operations.
             var n;
-            if ((num.className !== 'number') || (! isFinite(n = parseInt(num._value)))) {
+            if ((num.className !== 'number') || (! Number.isInteger(n = num._value))) {
                 throw new GraceExceptionPacket(TypeErrorObject,
-                    new GraceString("argument to string * method must be a (finite) number"));
+                    new GraceString("argument to string * method must be an integer"));
             }
             var output = this._value;
             var requiredLength = output.length * n;
@@ -574,9 +579,7 @@ GraceNum.prototype = {
             return callmethod(t, "++", [1], other);
         },
         "..": function(argcv, other) {
-            var o = callmethod(other, "asString", [0]);
-            var ub = parseInt(o._value);
-            return callmethod(GraceRangeClass(), "from()to", [1, 1], this, new GraceNum(ub));
+            return callmethod(GraceRangeClass(), "from()to", [1, 1], this, other);
         },
         "compare": function(argcv, that) {
             var self = this._value;
@@ -1126,19 +1129,33 @@ GracePrimitiveArray.prototype = {
         "size": function(argcv) {
             return new GraceNum(this._value.length);
         },
-        "at": function(argcv, other) {
-            var o = callmethod(other, "asString", [0]);
-            var idx = parseInt(o._value);
-            return this._value[idx];
+        "at": function(argcv, where) {
+            var idx = where._value;
+            var result = this._value[idx];
+            if (result) return result;
+            if (Number.isInteger(value))
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString("index " + idx +
+                        " in primitive array of size " + this._value.length));
+            throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("error in 'at' " +
+                        " on primitive array of size " + this._value.length));
         },
-        "[]": function(argcv, other) {
-            var o = callmethod(other, "asString", [0]);
-            var idx = parseInt(o._value);
-            return this._value[idx];
+        "[]": function(argcv, where) {
+            var idx = where._value;
+            var result = this._value[idx];
+            if (result) return result;
+            if (Number.isInteger(value))
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('index ' + idx +
+                        ' in primitive array of size ' + this._value.length));
+            throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("error in '[ ]' " +
+                        " on primitive array of size " + this._value.length));
         },
         "at()put": function(argcv, idx, val) {
             this._value[idx._value] = val;
-            return GraceDone;
+            return this;
         },
         "[]:=": function(argcv, idx, val) {
             this._value[idx._value] = val;
@@ -1191,7 +1208,7 @@ GracePrimitiveArray.prototype = {
             return GraceFalse;
         },
         "==": function(argcv, other) {
-            if (this == other)
+            if (this === other)
                 return GraceTrue;
             return GraceFalse;
         },
@@ -1630,24 +1647,22 @@ GraceStringIterator.prototype = {
 
 function GraceIterator(obj) {
     this._value = obj;
-    
-    this._keys = [];
-    for(i in obj)
-        this._keys.push(i);
-    
-    this._trueIndex = 0;
-    this._index = this._keys[this._trueIndex];
+    this._keys = Object.keys(obj);
+    this._keyIndex = 0;
     this._max = this._keys.length;
 }
 GraceIterator.prototype = Grace_allocObject();
 GraceIterator.prototype.methods.hasNext = function() {
-    return ((this._trueIndex < this._max) ? GraceTrue : GraceFalse);
+    return ((this._keyIndex < this._max) ? GraceTrue : GraceFalse);
 }
 GraceIterator.prototype.methods.next = function() {
-    var rv = this._value[this._index];
-    this._trueIndex++;
-    this._index = this._keys[this._trueIndex];
-    return rv;
+    if (this._keyIndex < this._max) {
+        var result = this._value[this._keyIndex];
+        this._keyIndex++;
+        return result;
+    }
+    var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
+    throw new GraceExceptionPacket(ie, "on primitiveArray " + this._value);
 }
 
 var stdout = Grace_allocObject();
