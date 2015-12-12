@@ -337,22 +337,7 @@ class enumerable.trait<T> {
         existing
     }
     method ==(other) {
-        // there are 6 copies of this method!  Do we need traits!
-        match (other)
-            case {o: Iterable ->
-                def selfIter = self.iterator
-                def otherIter = other.iterator
-                while {selfIter.hasNext && otherIter.hasNext} do {
-                    if (selfIter.next != otherIter.next) then {
-                        return false
-                    }
-                }
-                def result = selfIter.hasNext == otherIter.hasNext
-                return result
-            }
-            case {_ ->
-                return false
-            }
+        isEqual (self) toIterable (other)
     }
     method do(block1:Block1<T,Done>) -> Done {
         def selfIterator = self.iterator
@@ -465,7 +450,7 @@ def emptySequence is confidential = object {
     method ==(other) {
         match (other)
             case {o: Iterable ->
-                o.size == 0
+                o.isEmpty
             }
             case {_ ->
                 false
@@ -598,21 +583,7 @@ factory method sequence<T> {
                 }
             }
             method ==(other) {
-                // there are 6 copies of this method!  Do we need traits!
-                match (other)
-                    case {o: Iterable ->
-                        def selfIter = self.iterator
-                        def otherIter = other.iterator
-                        while {selfIter.hasNext && otherIter.hasNext} do {
-                            if (selfIter.next != otherIter.next) then {
-                                return false
-                            }
-                        }
-                        return selfIter.hasNext == otherIter.hasNext
-                    }
-                    case {_ ->
-                        return false
-                    }
+                isEqual (self) toIterable (other)
             }
             method iterator {
                 object {
@@ -639,6 +610,21 @@ factory method sequence<T> {
                 asList.sortBy(sortBlock:Block2).asSequence
             }
         }
+    }
+}
+
+method isEqual(left) toIterable(right) {
+    if (Iterable.match(right)) then {
+        def leftIter = left.iterator
+        def rightIter = right.iterator
+        while {leftIter.hasNext && rightIter.hasNext} do {
+            if (leftIter.next != rightIter.next) then {
+                return false
+            }
+        }
+        leftIter.hasNext == rightIter.hasNext
+    } else { 
+        false
     }
 }
 
@@ -862,21 +848,7 @@ factory method list<T> {
                 }
 
                 method ==(other) {
-                // there are 6 copies of this method!  Do we need traits!
-                    match (other)
-                        case {o: Iterable ->
-                            def selfIter = self.iterator
-                            def otherIter = other.iterator
-                            while {selfIter.hasNext && otherIter.hasNext} do {
-                                if (selfIter.next != otherIter.next) then {
-                                    return false
-                                }
-                            }
-                            return selfIter.hasNext == otherIter.hasNext
-                        }
-                        case {_ ->
-                            return false
-                        }
+                    isEqual (self) toIterable (other)
                 }
 
                 method iterator {
@@ -1097,21 +1069,7 @@ factory method list<T> {
             }
 
             method ==(other) {
-                // there are 6 copies of this method!  Do we need traits!
-                match (other)
-                    case {o: Iterable ->
-                        def selfIter = self.iterator
-                        def otherIter = other.iterator
-                        while {selfIter.hasNext && otherIter.hasNext} do {
-                            if (selfIter.next != otherIter.next) then {
-                                return false
-                            }
-                        }
-                        return selfIter.hasNext == otherIter.hasNext
-                    }
-                    case {_ ->
-                        return false
-                    }
+                isEqual (self) toIterable (other)
             }
             method iterator {
                 object {
@@ -1370,20 +1328,18 @@ factory method set<T> {
                 }
             }
             method ==(other) {
-                match (other)
-                    case {o: Iterable ->
-                        var oSize := 0
-                        o.do { each ->
-                            oSize := oSize + 1
-                            if (! self.contains(each)) then {
-                                return false
-                            }
+                if (Iterable.match(other)) then {
+                    var otherSize := 0
+                    other.do { each ->
+                        otherSize := otherSize + 1
+                        if (! self.contains(each)) then {
+                            return false
                         }
-                        return oSize == self.size
                     }
-                    case {_ ->
-                        return false
-                    }
+                    otherSize == self.size
+                } else { 
+                    false
+                }
             }
             method copy {
                 outer.withAll(self)
@@ -1865,21 +1821,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
-                // there are 6 copies of this method!  Do we need traits!
-                match (other)
-                    case {o: Iterable ->
-                        def selfIter = self.iterator
-                        def otherIter = other.iterator
-                        while {selfIter.hasNext && otherIter.hasNext} do {
-                            if (selfIter.next != otherIter.next) then {
-                                return false
-                            }
-                        }
-                        return selfIter.hasNext == otherIter.hasNext
-                    }
-                    case {_ ->
-                        return false
-                    }
+                isEqual (self) toIterable (other)
             }
             method sorted { self }
 
@@ -1980,21 +1922,7 @@ factory method range {
                 sequence.withAll(self, other)
             }
             method ==(other) {
-                // there are 6 copies of this method!  Do we need traits!
-                match (other)
-                    case {o: Iterable ->
-                        def selfIter = self.iterator
-                        def otherIter = other.iterator
-                        while {selfIter.hasNext && otherIter.hasNext} do {
-                            if (selfIter.next != otherIter.next) then {
-                                return false
-                            }
-                        }
-                        return selfIter.hasNext == otherIter.hasNext
-                    }
-                    case {_ ->
-                        return false
-                    }
+                isEqual (self) toIterable (other)
             }
             method sorted { self.reversed }
 
