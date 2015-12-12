@@ -1,6 +1,6 @@
 "use strict";
 
-if(typeof(process) != "undefined") {
+if(typeof(process) !== "undefined") {
     var fs = require("fs");
     var child_process = require('child_process');
 }
@@ -57,7 +57,7 @@ GraceObject.prototype = {
             return new GraceString(s + "}");
         },
         "asString": function object_asString (argcv) {
-            if (!this.className || this.className.length == 0)
+            if (!this.className || this.className.length === 0)
                 return new GraceString("an object");
             var firstChar = this.className[0];
             var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
@@ -126,7 +126,7 @@ function string_at(argcv, where) {
 
     // now deal with the error conditions:
     var msgstr = (s.length <= 20) ? s : (s.substr(0, 17) + "…");
-    if (where.className == "number") {
+    if (where.className === "number") {
         if (idx > s.length) {
             throw new GraceExceptionPacket(BoundsErrorObject,
                 new GraceString('"' + msgstr + '".at(' + idx + ') but string.size = ' + s.length))
@@ -136,7 +136,7 @@ function string_at(argcv, where) {
                 new GraceString('"' + msgstr + '".at(' + idx + ') but strings are indexed from 1'))
         };
     }
-    throw new GraceExceptionPacket(ProgrammingErrorObject,
+    throw new GraceExceptionPacket(TypeErrorObject,
         new GraceString("argument to 'at' on string \"" + msgstr + "\" is not an integer"))
 }
 
@@ -204,7 +204,7 @@ GraceString.prototype = {
             var os = "";
             var sl = what._value.length;
             var i;
-            while ((i = s.indexOf(what._value)) != -1) {
+            while ((i = s.indexOf(what._value)) !== -1) {
                 os += s.substr(0, i);
                 os += wth._value;
                 s = s.substr(i + sl);
@@ -441,7 +441,7 @@ GraceString.prototype = {
             return  ( (unicode.isCategory(s, "Zs") ) ? GraceTrue : GraceFalse);
         },
         "startsWithPeriod": function string_startsWithPeriod (argcv) {
-            if (this._value.charCodeAt(0) == 46) return GraceTrue; else return GraceFalse;
+            if (this._value.charCodeAt(0) === 46) return GraceTrue; else return GraceFalse;
         },
         "startsWithDigit": function string_startsWithDigit (argcv) {
             var s = this._value.charCodeAt(0);
@@ -658,7 +658,7 @@ GraceNum.prototype = {
                 before = '-';
                 mine = -mine;
             }
-            while (mine != 0) {
+            while (mine !== 0) {
                 var r = mine % base;
                 str = symbols[r] + str;
                 mine = (mine - r) / base;
@@ -764,10 +764,10 @@ GraceBoolean.prototype = {
             return new GraceString("" + this._value)
         },
         "==": function(argcv, other) {
-            if (this == other)
+            if (this === other)
                 return GraceTrue;
-            if (this.prototype == other.prototype
-                    && this._value == other._value)
+            if (this.prototype === other.prototype
+                    && this._value === other._value)
                 return GraceTrue;
             return GraceFalse;
         },
@@ -802,13 +802,14 @@ function PrimitiveGraceList(jsList) {
 }
 function prim_list_index(argcv, where) {
     var idx = where._value;
-    if (idx === undefined)
-        throw new GraceExceptionPacket(TypeErrorObject,
-            new GraceString("argument to 'at' is not a Number"));
-    if (! (idx > 0 && idx <= this._value.length))
+    var result = this._value[idx-1];
+    if (result !== undefined) return result;     // fast path
+    // Now investigate the cause of the problem:
+    if (idx <= 0 || idx > this._value.length)
         throw new GraceExceptionPacket(BoundsErrorObject,
             new GraceString('index ' + idx + ' but list has size ' + this._value.length));
-    return this._value[idx-1];
+    throw new GraceExceptionPacket(TypeErrorObject,
+        new GraceString("argument to 'at' is not an integer"));
 }
 function prim_list_update(argcv, where, val) {
     var idx = where._value;
@@ -851,7 +852,7 @@ PrimitiveGraceList.prototype = {
         "remove": function (argcv, val) {
             var list = this._value;
             var index = -1;
-            for (var i = 0; i < list.length && index == -1; i++)
+            for (var i = 0; i < list.length && index === -1; i++)
                 if (Grace_isTrue(callmethod(val, "==", [1], list[i])))
                     index = i;
             if (index > -1)
@@ -997,7 +998,7 @@ PrimitiveGraceList.prototype = {
             return GraceFalse;
         },
         "==": function(argcv, other) {
-            if (argcv[0] != 1)
+            if (argcv[0] !== 1)
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for ==(1)"));
             var collections = callmethod(var___95__prelude, "collections", [0]);
@@ -1240,7 +1241,7 @@ GracePrimitiveArray.prototype = {
             this._value.length = length._value
             function compareFun(a, b) {
                 var res = callmethod(compareBlock, "apply", [2], a, b);
-                if (res.className == "number") return res._value;
+                if (res.className === "number") return res._value;
                 throw new GraceExceptionPacket(TypeErrorObject,
                        new GraceString("compare block in primitiveArray.sort method " +
                                        "did not return a number"));
@@ -1271,7 +1272,7 @@ function Grace_isTrue(o) {
         return false;
     if (o._value === true)
         return true;
-    if (o.superobj != null)
+    if (o.superobj !== null)
         return Grace_isTrue(o.superobj);
 }
 
@@ -1325,7 +1326,7 @@ function GraceSuccessfulMatch(result, bindings) {
     this.superobj = new GraceBoolean(true);
     this.data = {};
     this.data['result'] = result;
-    if (bindings == undefined)
+    if (bindings === undefined)
         bindings = GraceEmptySequence();
     this.data['bindings'] = bindings;
     this._value = this.superobj._value;
@@ -1370,7 +1371,7 @@ GraceType.prototype = {
                 if (!other.methods[m]) {
                     var tmp = other;
                     var found = false;
-                    while (tmp.superobj != null) {
+                    while (tmp.superobj !== null) {
                         tmp = tmp.superobj;
                         if (tmp.methods[m]) {
                             found = true;
@@ -1459,11 +1460,12 @@ function GraceBlock_apply(argcv) {
     var args = Array.prototype.slice.call(arguments, 1);
         // makes a copy of arguments, without element at index 0
     var len = args.length;
-    var plural = (len == 1) ? "" : "s";
-    if (args.length != this.numParams)
+    if (args.length !== this.numParams) {
+        var plural = (len === 1) ? "" : "s";
         throw new GraceExceptionPacket(ProgrammingErrorObject,
             new GraceString("block applied to " + len + " argument" +
                 plural + " where " + this.numParams + " expected."));
+    }
     superDepth = this.receiver;
     if (this.pattern) {
         var match = callmethod(this.pattern, "match", [1], args[0]);
@@ -1487,7 +1489,7 @@ function GraceBlock_apply(argcv) {
 
 function GraceBlock_match(argcv, o) {
     if (!this.pattern) {
-        if (argcv.length != 1 || argcv[0] != 1) {
+        if (argcv.length !== 1 || argcv[0] !== 1) {
             throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("Block is not a matching block"));
         }
@@ -1506,7 +1508,7 @@ function GraceBlock_match(argcv, o) {
 function classType(obj) {
     var t = new GraceType(capitalize(obj.className));
     var o = obj;
-    while (o != null) {
+    while (o !== null) {
         for (var m in o.methods)
             t.typeMethods.push(m);
         o = o.superobj;
@@ -1670,7 +1672,7 @@ stdout.methods.write = function(junk, s) {
     minigrace.stdout_write(s._value);
 }
 stdout.methods.isatty = function() {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             return Boolean(process.stdout.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
@@ -1689,7 +1691,7 @@ stdin.methods.iterator = function() {
     return callmethod(new GraceString(minigrace.stdin_read()), "iterator", [0]);
 }
 stdin.methods.isatty = function() {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             return Boolean(process.stdin.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
@@ -1703,7 +1705,7 @@ stderr.methods.write = function(junk, s) {
     return GraceDone;
 }
 stderr.methods.isatty = function() {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
         } else {
             return GraceFalse;
@@ -1756,7 +1758,7 @@ function fileExists(path) {
         var gctpath = path.substr(0, path.length - 4);
         return typeof(gctCache[gctpath]) !== "undefined";
     }
-    if (extn == ".js") {
+    if (extn === ".js") {
         return eval("typeof(gracecode_" + baseName + ")") !== "undefined";
     }
     return false;
@@ -1776,14 +1778,14 @@ function gracecode_io() {
     };
     this._error = stderr;
     this.methods.exists = function(argcv, path) {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             return (fs.existsSync(safeJsString(path)) ? GraceTrue : GraceFalse);
         }
         if (fileExists(path._value)) return GraceTrue;
         return GraceFalse;
     };
     this.methods.system = function(argcv, systemString) {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             try {
                 var result = child_process.execSync(safeJsString(systemString),
                                             {stdio: [process.stdin, process.stdout, process.stderr]});
@@ -1795,7 +1797,7 @@ function gracecode_io() {
         return GraceFalse;
     };
     this.methods.spawn = function() {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             var cmd = safeJsString(arguments[1]);
             var args = [];
             for(var i = 2; i < arguments.length; i++)
@@ -1806,14 +1808,14 @@ function gracecode_io() {
             o.methods['terminated'] = function () { return GraceTrue; };
             o.methods['wait'] = function () { return new GraceNum(result.status); };
             o.methods['status'] = function () { return new GraceNum(result.status); };
-            o.methods['success'] = function () { return result.status == 0 ? GraceTrue : GraceFalse; };
+            o.methods['success'] = function () { return result.status === 0 ? GraceTrue : GraceFalse; };
             return o;
         }
         return GraceFalse;
     };
     this.methods.open = function(argcv, path, mode) {
         path = callmethod(path, "asString", [0])._value;
-        if (typeof(process) != "undefined") {
+        if (typeof(process) !== "undefined") {
             var m = mode._value;
             var o = new Grace_allocObject();
             try {
@@ -1830,7 +1832,7 @@ function gracecode_io() {
             o.methods['write'] = function (argvc, data) { fs.writeSync(f, safeJsString(data)); };
             o.methods['close'] = function () { fs.closeSync(f); };
             o.methods['getline'] = function () { var s = a[i]; i++; return new GraceString(s); };
-            o.methods['eof'] = function () { return (i == a.length) ? GraceTrue : GraceFalse; };
+            o.methods['eof'] = function () { return (i === a.length) ? GraceTrue : GraceFalse; };
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(path);};
             return o;
@@ -1840,12 +1842,12 @@ function gracecode_io() {
         o.methods['close'] = function io_close () {};
         var slash = path.lastIndexOf("/");
         if (slash >= 0) path = path.substring(slash+1);
-        if (path.substr(path.length - 4) == ".gct") {
+        if (path.substr(path.length - 4) === ".gct") {
             var gctpath = path.substr(0, path.length - 4);
-            if (mode._value == "w")
+            if (mode._value === "w")
                 gctCache[gctpath] = "";
-            else if (mode._value == "r") {
-                if (typeof gctCache[gctpath] == "undefined")
+            else if (mode._value === "r") {
+                if (typeof gctCache[gctpath] === "undefined")
                     throw new GraceExceptionPacket(EnvironmentExceptionObject,
                            new GraceString("Can't open file '" + gctpath +
                                            ".gct' for 'r'.  File does not exist."))
@@ -1867,13 +1869,13 @@ function gracecode_io() {
         return o;
     };
     this.methods.realpath = function io_browser_realpath (argcv, x) {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             return new GraceString(fs.realpathSync(safeJsString(x)));
         }
         return x;
     };
     this.methods.listdir = function (argcv, x) {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             var list = [];
 	    list.push(new GraceString("."));
 	    list.push(new GraceString(".."));
@@ -1893,7 +1895,7 @@ function gracecode_io() {
 function gracecode_sys() {
     var startTime = (new Date).getTime()/1000;
     this.methods.argv = function() {
-        if(typeof(process) != "undefined") {
+        if(typeof(process) !== "undefined") {
             var list = [];
             process.argv.forEach(function(val, index, array) {
 		        if(index > 1)
@@ -1923,7 +1925,7 @@ function gracecode_sys() {
     this.methods.environ = function() {
         var o = Grace_allocObject(GraceObject, "environmentObject");
         o.methods['at'] = function environ_at(argcv, key) {
-            if(typeof(process) != "undefined") {
+            if(typeof(process) !== "undefined") {
                 var str = safeJsString(key);
                 if(str in process.env)
                     return new GraceString(process.env[str]);
@@ -1932,7 +1934,7 @@ function gracecode_sys() {
         };
         o.methods['[]'] = o.methods['at'];
         o.methods['at()put'] = function environ_at_put(argcv, key, value) {
-            if(typeof(process) != "undefined") {
+            if(typeof(process) !== "undefined") {
                 var kstr = safeJsString(key);
                 var vstr = safeJsString(value);
                 process.env[kstr] = vstr;
@@ -1941,7 +1943,7 @@ function gracecode_sys() {
         };
         o.methods['[]:='] = o.methods['at()put'];
         o.methods['contains'] = function environ_contains(argcv, searchkey) {
-            if(typeof(process) != "undefined") {
+            if(typeof(process) !== "undefined") {
                 return (safeJsString(searchkey) in process.env) ? GraceTrue : GraceFalse;
             } else {
             return GraceFalse;
@@ -1963,7 +1965,7 @@ function gracecode_imports() {
         var req = new XMLHttpRequest();
         req.open('GET', 'https://' + path._value, false);
         req.send(null);
-        if (req.status == 200) {
+        if (req.status === 200) {
             return new GraceString(req.responseText);
         }
         throw new GraceExceptionPacket(EnvironmentExceptionObject,
@@ -1996,7 +1998,7 @@ if (typeof gctCache !== "undefined")
 
 function gracecode_unicode() {
     this.methods.isLetter = function unicode_isLetter(argcv, s) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return (  (unicode.isCategory(s, "Ll")
@@ -2005,7 +2007,7 @@ function gracecode_unicode() {
                 || unicode.isCategory(s, "Lm")) ? GraceTrue : GraceFalse);
     };
     this.methods.isNumber = function unicode_isNumber(argcv, s) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return (  (unicode.isCategory(s, "Nd")
@@ -2013,13 +2015,13 @@ function gracecode_unicode() {
                 || unicode.isCategory(s, "Nl")) ? GraceTrue : GraceFalse);
     };
     this.methods.isSymbolMathematical = function unicode_isSymbolMathematical(argcv, s) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return ((unicode.isCategory(s, "Sm")) ? GraceTrue : GraceFalse);
     };
     this.methods.isSeparator = function unicode_isSeparator(argcv, s) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return (  (unicode.isCategory(s, "Zs")
@@ -2027,7 +2029,7 @@ function gracecode_unicode() {
                 || unicode.isCategory(s, "Zl")) ? GraceTrue : GraceFalse);
     };
     this.methods.isControl = function unicode_isControl(argcv, s) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return  ( (unicode.isCategory(s, "Cf")
@@ -2036,7 +2038,7 @@ function gracecode_unicode() {
                 || unicode.isCategory(s, "Cs")) ? GraceTrue : GraceFalse);
     };
     this.methods.inCategory = function unicode_inCategory(argcv, s, c) {
-        if (typeof s._value == "number")
+        if (typeof s._value === "number")
             s = String.fromCharCode(s._value);
         else s = s._value;
         return ((unicode.isCategory(s, c._value)) ? GraceTrue : GraceFalse);
@@ -2081,8 +2083,8 @@ GraceUnicodePattern.prototype = {
                 cc = cc.charCodeAt(0);
             for (var i=0; i<this.pos.length; i++) {
                 var t = this.pos[i];
-                if (typeof t._value == "number") {
-                    if (cc == t._value) {
+                if (typeof t._value === "number") {
+                    if (cc === t._value) {
                         success = true;
                         break;
                     }
@@ -2094,12 +2096,12 @@ GraceUnicodePattern.prototype = {
                 }
             }
             if (this.neg) {
-                if (this.pos.length == 0)
+                if (this.pos.length === 0)
                     success = true;
                 for (var i=0; i<this.neg.length; i++) {
                     var t = this.neg[i];
-                    if (typeof t._value == "number") {
-                        if (cc == t._value) {
+                    if (typeof t._value === "number") {
+                        if (cc === t._value) {
                             success = false;
                             break;
                         }
@@ -2128,7 +2130,7 @@ var loadDate = Date.now();
 var previousElapsed = Math.round(loadDate/10)/100;
 
 function gracecode_util() {
-    if (util_module != false)
+    if (util_module !== false)
         return util_module;
 
     this.methods.vtag = function(argcv) {
@@ -2208,7 +2210,7 @@ function gracecode_util() {
             var curarg = 1;
             var var_moduleName = arguments[curarg];
             curarg++;
-            if (argcv[0] != 1)
+            if (argcv[0] !== 1)
                 callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for isAlready(1)"));
             setModuleName("util");
             var returnTarget = invocationCount;
@@ -2237,7 +2239,7 @@ function gracecode_util() {
                 }
                 return if1246;
             } catch(e) {
-                if ((e.exctype == 'return') && (e.target == returnTarget)) {
+                if ((e.exctype === 'return') && (e.target === returnTarget)) {
                     return e.returnvalue;
                 } else {
                     throw e;
@@ -2282,7 +2284,7 @@ function gracecode_util() {
     var var_requiredModules = obj_requiredModules;
     var util_requiredmodules = function(argcv) {    // method requiredModules
         var curarg = 1;
-        if (argcv[0] != 0)
+        if (argcv[0] !== 0)
             callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for requiredModules"));
         return var_requiredModules;
     };
@@ -2356,7 +2358,7 @@ function gracecode_util() {
 
         if (callmethod(this._lines, "size", [0])._value >= errlinenum._value) {
             var line = callmethod(this._lines, "at", [1], new GraceNum(errlinenum._value))._value;
-            if(spacePos._value != false) {
+            if(spacePos._value !== false) {
                 minigrace.stderr_write("  " + errlinenum._value + ": " + line.substring(0, spacePos._value - 1) + " "
                     + line.substring(spacePos._value - 1) + "\n");
             } else {
@@ -2495,7 +2497,7 @@ function gracecode_util() {
     return this;
 }
 
-if (typeof(process) == "undefined" && typeof gctCache !== "undefined")
+if (typeof(process) === "undefined" && typeof gctCache !== "undefined")
     gctCache['util'] = "path:\n util\nclasses:\npublic:\n recurse\n recurse:=\n dynamicModule\n dynamicModule:=\n importDynamic\n importDynamic:=\n jobs\n jobs:=\n cLines\n cLines:=\n lines\n lines:=\n filename\n filename:=\n errno\n errno:=\n parseargs\n previousElapsed\n previousElapsed:=\n log_verbose\n outprint\n syntaxError\n generalError\n type_error\n semantic_error\n warning\n verbosity\n outfile\n infile\n modname\n runmode\n buildtype\n interactive\n gracelibPath\n setline\n setPosition\n linenum\n linepos\n vtag\n noexec\n target\n extensions\n sourceDir\n execDir\n splitPath\n file()on()orPath()otherwise\n file()onPath()otherwise\n requiredModules\n processExtension\n printhelp\n debug\n hex\nconfidential:\nfresh-methods:\nmodules:\n stringMap\n buildinfo\n sys\n io\n";
 
 var interactive_module = false;
@@ -2519,7 +2521,7 @@ GraceMirrorMethod.prototype.methods['partcount'] = function(argcv) {
     var count = 1;
     var place = 1;
     while(place < this.name.length) {
-        if(this.name[place] == "(") {
+        if(this.name[place] === "(") {
             count++;
             place++;
         }
@@ -2556,7 +2558,7 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     var theFunction = this.obj.methods[this.name];
     var requiredLen = theFunction.paramCounts.length;
     var providedLen = callmethod(argList, "size", [0])._value;
-    if (providedLen != requiredLen) {
+    if (providedLen !== requiredLen) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                    new GraceString("wrong number of argument lists in 'request'" ));
     }
@@ -2594,7 +2596,7 @@ GraceMirror.prototype = {
         methods: function mirror_methods(argcv) {
             var meths = [];
             var current = this.subject;
-            while (current != null) {
+            while (current !== null) {
                 for (var k in current.methods)
                     meths.push(new GraceMirrorMethod(current, k));
                 current = current.superobj;
@@ -2605,7 +2607,7 @@ GraceMirror.prototype = {
         methodNames: function mirror_methodName(argcv) {
             var meths = callmethod(GraceSetClass(), "empty", [0])
             var current = this.subject;
-            while (current != null) {
+            while (current !== null) {
                 for (var k in current.methods)
                     callmethod(meths, "add", [1], new GraceString(k));
                 current = current.superobj;
@@ -2621,7 +2623,7 @@ GraceMirror.prototype = {
         getMethod: function mirror_getMethod (argcv, methName) {
             var name = methName._value;
             var current = this.subject;
-            while (current != null) {
+            while (current !== null) {
                 if (current.methods[name]) {
                     return (new GraceMirrorMethod(this.subject, name));
                 }
@@ -2684,18 +2686,18 @@ function safeJsString (obj) {
 function findMethod (obj, methname) {
     var s = obj;
     var meth = s.methods[methname];
-    while ((typeof(meth) != "function") && (s.superobj != null)) {
+    while ((typeof(meth) !== "function") && (s.superobj !== null)) {
         s = s.superobj;
         meth = s.methods[methname];
     }
-    if (typeof(meth) != "function") meth = null;
+    if (typeof(meth) !== "function") meth = null;
     return meth;
 }
 
 
 function GraceCallStackToString() {
     var errorLine = this.lineNumber;
-    if (typeof(errorLine) == "undefined" || errorLine == 0) {
+    if (typeof(errorLine) === "undefined" || errorLine === 0) {
        var errorString = this.className + "." + this.methname + " in " + this.moduleName;
     } else {
        var errorString = this.className + "." + this.methname + " at line " + errorLine + " of " + this.moduleName;
@@ -2707,29 +2709,29 @@ function callmethod(obj, methname, argcv) {
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
-    if (overrideReceiver != null)
+    if (overrideReceiver !== null)
         isSuper = true;
     superDepth = obj;
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
-    if (typeof(meth) != "function") {
+    if (typeof(meth) !== "function") {
         var s = obj;
         isSuper = true;
-        while (s.superobj != null) {
+        while (s.superobj !== null) {
             s = s.superobj;
             meth = s.methods[methname];
-            if (typeof(meth) == "function") {
+            if (typeof(meth) === "function") {
                 superDepth = s;
                 break;
             }
         }
     }
-    if (typeof(meth) != "function") {
+    if (typeof(meth) !== "function") {
         var objDesc = "";
-        if (obj.definitionLine && obj.definitionModule != "unknown")
+        if (obj.definitionLine && obj.definitionModule !== "unknown")
             objDesc = " in object at " + obj.definitionModule
                 + ":" + obj.definitionLine;
-        else if (obj.definitionModule != "unknown")
+        else if (obj.definitionModule !== "unknown")
             objDesc = " in " + obj.definitionModule + " module";
         callStack.push(obj.className + "." + methname
                 + " (defined nowhere"
@@ -2748,7 +2750,7 @@ function callmethod(obj, methname, argcv) {
     onOuter = false;
     var oldSourceObject = sourceObject;
     sourceObject = superDepth;
-    if (overrideReceiver != null) {
+    if (overrideReceiver !== null) {
         obj = overrideReceiver;
         overrideReceiver = null;
     }
@@ -2770,37 +2772,37 @@ function callmethod(obj, methname, argcv) {
 }
 
 function callmethodChecked(obj, methname, argcv) {
-    if (typeof obj == 'undefined')
+    if (typeof obj === 'undefined')
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("Requested method '" + methname + "' on uninitialised value."));
-    if (!obj || obj === undefined || !obj.methods)
+    if (! obj.methods)
         debugger
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
-    if (overrideReceiver != null)
+    if (overrideReceiver !== null)
         isSuper = true;
     superDepth = obj;
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
-    if (typeof(meth) != "function") {
+    if (typeof(meth) !== "function") {
         var s = obj;
         isSuper = true;
-        while (s.superobj != null) {
+        while (s.superobj !== null) {
             s = s.superobj;
             meth = s.methods[methname];
-            if (typeof(meth) == "function") {
+            if (typeof(meth) === "function") {
                 superDepth = s;
                 break;
             }
         }
     }
-    if (typeof(meth) != "function") {
+    if (typeof(meth) !== "function") {
         var objDesc = "";
-        if (obj.definitionLine && obj.definitionModule != "unknown")
+        if (obj.definitionLine && obj.definitionModule !== "unknown")
             objDesc = " in object at " + obj.definitionModule
                 + ":" + obj.definitionLine;
-        else if (obj.definitionModule != "unknown")
+        else if (obj.definitionModule !== "unknown")
             objDesc = " in " + obj.definitionModule + " module";
         callStack.push(obj.className + "." + methname
                 + " (defined nowhere"
@@ -2819,7 +2821,7 @@ function callmethodChecked(obj, methname, argcv) {
     onOuter = false;
     var oldSourceObject = sourceObject;
     sourceObject = superDepth;
-    if (overrideReceiver != null) {
+    if (overrideReceiver !== null) {
         obj = overrideReceiver;
         overrideReceiver = null;
     }
@@ -2828,7 +2830,7 @@ function callmethodChecked(obj, methname, argcv) {
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++)
-            if (typeof args[i] == 'undefined')
+            if (typeof args[i] === 'undefined')
                 throw new GraceExceptionPacket(
                            ProgrammingErrorObject,
                            new GraceString("Uninitialised value used as argument to '"
@@ -2854,7 +2856,7 @@ function catchCase(obj, cases, finallyblock) {
     try {
         return callmethod(obj, "apply")
     } catch (e) {
-        if (e.exctype == 'graceexception') {
+        if (e.exctype === 'graceexception') {
             for (var i = 0; i<cases.length; i++) {
                 var ret = callmethod(cases[i], "match", [1], e);
                 if (Grace_isTrue(ret))
@@ -2865,7 +2867,7 @@ function catchCase(obj, cases, finallyblock) {
             throw e;
         }
     } finally {
-        if (finallyblock != false)
+        if (finallyblock !== false)
             ret = callmethod(finallyblock, "apply");
     }
     return ret;
@@ -2878,7 +2880,7 @@ function matchCase(obj, cases, elsecase) {
         if (Grace_isTrue(ret))
             return callmethod(ret, "result", [0]);
     }
-    if (elsecase != false)
+    if (elsecase !== false)
         return callmethod(elsecase, "apply", [0]);
     callmethod(ProgrammingErrorObject, "raise", [1],
                new GraceString ("non-exhaustive match in match()case()…."));
@@ -2967,19 +2969,19 @@ GraceException.prototype = {
             return new GraceException(nm._value, this)
         },
         "raise": function(argcv, msg) {
-            if (argcv[0] != 1)
+            if (argcv[0] !== 1)
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raise(1)"));
             throw new GraceExceptionPacket(this, msg, new GraceObject())
         },
         "raiseWith": function(argcv, msg, data) {
-            if (argcv[0] != 2)
+            if (argcv[0] !== 2)
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raiseWith(1)"));
             throw new GraceExceptionPacket(this, msg, data)
         },
         "raise()with": function(argcv, msg, data) {
-            if ((argcv[0] != 1) && (argcv[1] != 1))
+            if ((argcv[0] !== 1) && (argcv[1] !== 1))
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("wrong number of arguments for raise(1)with(1)"));
             throw new GraceExceptionPacket(this, msg, data)
@@ -2987,11 +2989,11 @@ GraceException.prototype = {
         "match": function(argcv, other) {
             if (!other.exception)
                 return new GraceFailedMatch(other);
-            if (other.exception.name == this.name)
+            if (other.exception.name === this.name)
                 return new GraceSuccessfulMatch(other);
             var exc = other.exception;
             while (exc) {
-                if (exc.name == this.name)
+                if (exc.name === this.name)
                     return new GraceSuccessfulMatch(other);
                 exc = exc.parent;
             }
@@ -3003,9 +3005,9 @@ GraceException.prototype = {
         "==": function(argcv, o) {
             if (o === this) return GraceTrue; // not just for efficiency, but
                                               // also to avoid infinite regress
-            if (o.className != 'Exception') return GraceFalse;
-            if (o.name != this.name) return GraceFalse;
-            if (o.parent != this.parent) return GraceFalse;
+            if (o.className !== 'Exception') return GraceFalse;
+            if (o.name !== this.name) return GraceFalse;
+            if (o.parent !== this.parent) return GraceFalse;
             return GraceTrue;
         },
         "&": function(argcv, o) {
@@ -3015,7 +3017,7 @@ GraceException.prototype = {
             return new GraceString(this.name);
         },
         "parent": function(argcv) {
-            if (this.parent == false)
+            if (this.parent === false)
                 return this
             else
                 return this.parent;
@@ -3033,7 +3035,7 @@ function do_import(modname, moduleCodeFunc) {
     if (importedModules[modname]) {
         return importedModules[modname];
     }
-    if (moduleCodeFunc == undefined)
+    if (moduleCodeFunc === undefined)
         throw new GraceExceptionPacket(ImportErrorObject,
             new GraceString("Could not find code for module '" + modname + "'"));
     var origSuperDepth = superDepth;
@@ -3042,7 +3044,7 @@ function do_import(modname, moduleCodeFunc) {
     try {
         var f = Function.prototype.call.call(moduleCodeFunc, superDepth);
           // Almost like moduleCodeFunc.call(superDepth), which executes
-          // moduleCodeFunc with this == superDepth.  The difference is that we
+          // moduleCodeFunc with this === superDepth.  The difference is that we
           // ensure that the `call` function is the one from Function.prototype
         return f;
     } finally {
@@ -3052,24 +3054,24 @@ function do_import(modname, moduleCodeFunc) {
 }
 
 function dbgp(o, d) {
-    if (d == undefined)
+    if (d === undefined)
         d = 0;
     var ind = "";
     for (var i=0; i<d; i++)
         ind += "  ";
-    if (typeof(o) == "undefined") {
+    if (typeof(o) === "undefined") {
         return "undefined";
     }
-    if (typeof(o) == "function") {
+    if (typeof(o) === "function") {
         return "function";
     }
-    if (typeof(o) == "number") {
+    if (typeof(o) === "number") {
         return "" + o;
     }
-    if (typeof(o) == "boolean") {
+    if (typeof(o) === "boolean") {
         return "" + o;
     }
-    if (typeof(o) == "string") {
+    if (typeof(o) === "string") {
         return '"' + o + '"';
     }
     var s = "Object{\n";
@@ -3166,7 +3168,7 @@ Grace_prelude.methods['π'] = function π (argcv) {
     return new GraceNum(3.141592653589793);
 }
 Grace_prelude.methods['while()do'] = function(argcv, c, b) {
-    if (c.className == "Boolean" || c.className == "Number")
+    if (c.className === "boolean" || c.className === "number")
         throw new GraceExceptionPacket(TypeErrorObject,
             new GraceString("expected Block for first argument of "
                             + "while()do, got " + c.className + "."));
@@ -3179,7 +3181,7 @@ Grace_prelude.methods['while()do'] = function(argcv, c, b) {
         var diff;
         while (Grace_isTrue(callmethod(c, "apply", [0]))) {
             count++;
-            if (count % 100000 == 0 && ((diff=new Date()-startTime) > 5000)) {
+            if (count % 100000 === 0 && ((diff=new Date()-startTime) > 5000)) {
                 var totTime = runningTime + diff;
                 var totIterations = runningCount + count;
                 if (confirm("A while loop is taking a long time to run. Do you want to stop the program? " + totIterations + " iterations of the loop have taken "
@@ -3259,7 +3261,7 @@ Grace_prelude.methods['become'] = function(argcv, a, b) {
 }
 
 Grace_prelude.methods['inBrowser'] = function(argcv) {
-    if (typeof global == "undefined") return GraceTrue
+    if (typeof global === "undefined") return GraceTrue
         else return GraceFalse;
 }
 
