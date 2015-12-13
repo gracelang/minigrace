@@ -903,6 +903,7 @@ method setupContext(values) {
 }
 method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
+        inherits ast.baseVisitor
 
         method visitBind(o) up(as) {
             o.scope := as.parent.scope
