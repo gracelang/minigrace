@@ -12,6 +12,7 @@ var minIndentLevel := 0
 var statementIndent := 0
 var tokens := false
 var values := list.empty
+def moduleObject = ast.moduleNode.body(values) named "module"
 var comments := list.empty
 var auto_count := 0
 def noBlocks = false
@@ -3262,10 +3263,13 @@ method reconcileComments {
     // stack, and puts them in that node's comments attribute.
 
     pushcomments
-    if (values.size == 0 ) then { return }
-    def node = values.last
+    def node = if (values.isEmpty) then {
+        moduleObject 
+    } else {
+        values.last
+    }
     if (node.kind == "lbrace") then {
-        // lbrace nodes not AST nodes.  They are used to mark the stack for
+        // lbrace nodes are not AST nodes.  They are used to mark the stack for
         // nested expressions.  Hence, no comments should be attached to them.
         return
     }
@@ -3447,5 +3451,5 @@ method parse(toks) {
     blank
     statement
     blank
-    return values
+    return moduleObject
 }

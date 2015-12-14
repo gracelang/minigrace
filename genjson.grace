@@ -268,7 +268,7 @@ method saveToken(token) {
     lastToken := token
 }
 
-method generate(values, outfile) {
+method generate(moduleObject, outfile) {
     util.log_verbose "generating JSON."
     def chunkLocations = list.empty
     if (lastToken.kind == "comment") then {
@@ -316,7 +316,7 @@ method generate(values, outfile) {
     chunk.put("y", chunkLocations.at(chunkIndex).top)
     var body := JSArray.new
     chunk.put("body", body)
-    for (values) do {v->
+    for (moduleObject.values) do {v->
         if (v.kind == "dialect") then {
             overall.put("dialect", v.value)
         } else {

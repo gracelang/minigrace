@@ -1314,17 +1314,25 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
 }
 def moduleNode = object {
     method body(b) named(n) scope(s) {
-        def result = new(b)
+        def result = body(b)
         result.classname := n
         result.scope := s
         result
     }
-    factory method new(body) {
-        inherits objectNode.new(body, false)
+    method body(b) named(n) {
+        def result = body(b)
+        result.classname := n
+        result
+    }
+    factory method body(b) {
+        inherits objectNode.new(b, false)
         def kind is public = "module"
+        line := 0       // because the module is always implicit
+        linePos := 0
         method classname { "module" }
         method isModule { true }
         method returnsObject { false }
+        method values { value }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitModule(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1337,7 +1345,7 @@ def moduleNode = object {
             }
         }
         method shallowCopy {
-            moduleNode.new(emptySeq).shallowCopyFieldsFrom(self)
+            moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)
         }
     }
 }
@@ -1430,6 +1438,8 @@ def objectNode = object {
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
             classname := other.classname
+            value := other.value
+            superclass := other.superclass
             self
         }
         method asString {

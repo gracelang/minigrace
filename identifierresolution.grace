@@ -24,7 +24,6 @@ def reserved = sequence.with("self", "super", "outer", "true", "false")
 
 method newScopeKind(variety') {
     // for the top of the scope chain
-    // TODO: switch the dependency between this and the next method.
     def s = newScopeIn(object {})kind(variety')
     s.hasParent := false
     s
@@ -208,11 +207,9 @@ factory method newScopeIn(parent') kind(variety') {
     method isMethodScope {
         variety == "method"
     }
-    method findDeepMethod(name) {
-        // APB: I moved this method from the top-level (where it operated
-        // on the now-defunct 'scope' module variable) to this class.
-        //
-        // TODO: figure out what the purpose of this method is, and make it work!
+    method resolveOuterMethod(name) {
+        // replace name by outer.outer. ... .name,
+        // depending on where name is declared.
         var mem := ast.identifierNode.new("self", false) scope(self)
         self.do { s->
             if (s.contains(name)) then {
@@ -564,7 +561,7 @@ method rewriteIdentifier(node) ancestors(as) {
     if (node.isAssigned) then {
         if (nodeScope.hasDefinitionInNest(nmGets)) then {
             if (nodeScope.kindInNest(nmGets) == k.methdec) then {
-                def meth = nodeScope.findDeepMethod(nmGets)
+                def meth = nodeScope.resolveOuterMethod(nmGets)
                 def meth2 = ast.memberNode.new(nm, meth.in)
                 return meth2
             }
@@ -626,8 +623,7 @@ method rewriteIdentifier(node) ancestors(as) {
         // defined in the enclosing method scope have to go in a closure
         // In that case, leaving the id untouched may be wrong
     if (v == "block") then { return node }
-    def deepMeth = nodeScope.findDeepMethod(nm)
-    return deepMeth
+    return nodeScope.resolveOuterMethod(nm)
 }
 method checkForAmbiguityOf(node)definedIn(definingScope)as(kind) {
     def currentScope = node.scope
@@ -800,7 +796,7 @@ method processGCT(gct, importedModuleScope) {
     }
 }
 
-method setupContext(values) {
+method setupContext(moduleObject) {
     // define the built-in names
     util.setPosition(0, 0)
 
@@ -875,7 +871,7 @@ method setupContext(values) {
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
         var hadDialect := false
-        for (values) do {val->
+        for (moduleObject.values) do {val->
             if (val.kind == "dialect") then {
                 hadDialect := true
                 xmodule.checkExternalModule(val)
@@ -1161,10 +1157,6 @@ method transformInherits(inhNode) ancestors(as) {
     var newInhNode
     if (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
-        if (superCall.isAppliedOccurenceOfIdentifier) then {
-            superCall := rewriteIdentifier(superCall) ancestors(as)
-        }
-        // TODO: try removing the above — it may not be necessary
         superCall.with.push(ast.callWithPart.new("object",
             [ast.identifierNode.new("self", false) scope(currentScope)]))
         def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
@@ -1182,10 +1174,6 @@ method transformInherits(inhNode) ancestors(as) {
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
             )
         ) scope(currentScope)
-        if (inhNode.value.in.value == "StandardPrelude") then {
-            return inhNode
-        }
-        // TODO — eliminate the above; it can't ever apply!
         newInhNode := ast.inheritsNode.new(newcall) scope(currentScope)
     } else {
         if (util.extensions.contains "ObjectInheritance") then {
@@ -1217,12 +1205,11 @@ method rewriteMatches(topNode) {
     } ancestors (ast.ancestorChain.empty)
 }
 
-method resolve(values) {
+method resolve(moduleObject) {
     util.log_verbose "rewriting tree."
-    setupContext(values)
+    setupContext(moduleObject)
     util.setPosition(0, 0)
-    def moduleObject = ast.moduleNode.body(values) 
-        named "module" scope (moduleScope)
+    moduleObject.scope := moduleScope
     def preludeObject = ast.moduleNode.body([moduleObject]) 
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
@@ -1255,8 +1242,7 @@ method resolve(values) {
         util.log_verbose "done"
         sys.exit(0)
     }
-    def resolvedModule = resolveIdentifiers(patternMatchModule)
-    return resolvedModule.value
+    resolveIdentifiers(patternMatchModule)
 }
 
 

@@ -1541,7 +1541,7 @@ method processImports(values') {
         }
     }
 }
-method compile(vl, of, mn, rm, bt, glPath) {
+method compile(moduleObject, of, mn, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
     if (util.extensions.contains "noChecks") then {
@@ -1564,7 +1564,7 @@ method compile(vl, of, mn, rm, bt, glPath) {
         emitPositions := false
         requestCall := "callmethod"
     }
-    values := vl
+    values := moduleObject.values
     outfile := of
     var slashPos := 0
     (range.from (mn.size) downTo 1).do { ix ->

@@ -38,7 +38,8 @@ if (util.target == "json") then {
     }
 }
 
-var values := parser.parse(tokens)
+var moduleObject := parser.parse(tokens)
+var values := moduleObject.values
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the source's AST and quits.
@@ -87,15 +88,13 @@ if (util.target == "imports") then {
     util.outfile.close
     sys.exit(0)
 }
-values := identifierresolution.resolve(values)
+moduleObject := identifierresolution.resolve(moduleObject)
 if ((util.target == "processed-ast") || (util.target == "ast")) then {
     util.outprint "====================================="
     util.outprint "module-level symbol table"
-    util.outprint (values.first.scope.asStringWithParents)
+    util.outprint (moduleObject.scope.asStringWithParents)
     util.outprint "====================================="
-    for (values) do { v ->
-        util.outprint(v.pretty(0))
-    }
+    util.outprint(moduleObject.pretty(0))
     util.outfile.close
     sys.exit(0)
 }
@@ -103,15 +102,15 @@ if ((util.target == "processed-ast") || (util.target == "ast")) then {
 // Perform the actual compilation
 match(util.target)
     case { "c" ->
-        genc.compile(values, util.outfile, util.modname, util.runmode,
+        genc.compile(moduleObject, util.outfile, util.modname, util.runmode,
             util.buildtype, buildinfo)
     }
     case { "js" ->
-        genjs.compile(values, util.outfile, util.modname, util.runmode,
+        genjs.compile(moduleObject, util.outfile, util.modname, util.runmode,
             util.buildtype, util.gracelibPath)
     }
     case { "json" ->
-        genjson.generate(values, util.outfile)
+        genjson.generate(moduleObject, util.outfile)
     }
     case { _ ->
         io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")

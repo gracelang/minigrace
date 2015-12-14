@@ -1918,11 +1918,12 @@ method linkExecutable(fnBase, buildinfo) {
     }
 }
 
-method compile(vl, outfile, mn, rm, bt, buildinfo) {
+method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
     util.log_verbose "generating C code."
     var argv := sys.argv
     var cmd
-    values := vl
+    values := moduleObject.values
+    util.log 60 verbose "about to compile to c from {values}"
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -2133,7 +2134,7 @@ method compile(vl, outfile, mn, rm, bt, buildinfo) {
     for (output) do { x ->
         outprint(x)
     }
-    
+
     xmodule.writeGCT(modname)
         fromValues(values) modules(imports.static ++ imports.other)
         
