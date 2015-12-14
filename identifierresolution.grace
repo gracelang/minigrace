@@ -1084,10 +1084,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             collectInheritedNames(o)
             true
         }
-    }
-        
-    def returnedObjectVis = object {
-        inherits ast.baseVisitor
         method visitDefDec(o) up (as) {
             if (o.returnsObject) then {
                 o.scope.at(o.nameString)
@@ -1105,7 +1101,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     }
 
     topNode.accept(symbolTableVis) from(topChain)
-    topNode.accept(returnedObjectVis) from(topChain)
     topNode.accept(inheritanceVis) from(topChain)
 }
 
