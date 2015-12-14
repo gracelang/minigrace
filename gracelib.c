@@ -1202,6 +1202,11 @@ Object BuiltinList_length(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     return alloc_Float64(sself->size);
 }
+Object BuiltinList_isEmpty(Object self, int nparts, int *argcv,
+                          Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    return alloc_Boolean(sself->size == 0);
+}
 Object BuiltinList_asString(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1303,7 +1308,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
         add_Method(BuiltinList, "length", &BuiltinList_length);
         add_Method(BuiltinList, "size", &BuiltinList_length);
-        add_Method(BuiltinList, "iter", &BuiltinList_iter);
+        add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
         add_Method(BuiltinList, "contains", &BuiltinList_contains);
         add_Method(BuiltinList, "==", &Object_Equals);
