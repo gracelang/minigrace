@@ -55,7 +55,8 @@ util.lines := input
 //    print "{linenum}    {code}"
 //}
 def tokens = lexer.new.lexinput(input)
-def nodes = parser.parse(tokens)
+def module = parser.parse(tokens)
+def nodes = module.values
 
 testSuiteNamed "comment tests" with {
     test "pre-comment on def" by {

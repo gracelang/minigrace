@@ -25,10 +25,10 @@ def input = list.with(
 
 util.lines := input
 def tokens = lexer.new.lexinput(input)
-def nodes = parser.parse(tokens)
+def module = parser.parse(tokens)
 
 util.outDir := "./"
-xmodule.writeGCT("test_179_output")fromValues(nodes)modules(list.empty)
+xmodule.writeGCT("test_179_output")fromValues(module.values)modules(list.empty)
 def gct = xmodule.parseGCT("test_179_output")
 def gctText = xmodule.gctAsString(gct)
 

@@ -20,8 +20,6 @@ def input = list.with(
 
 util.lines := input
 def tokens = lexer.new.lexinput(input)
-def nodes = parser.parse(tokens)
+def module = parser.parse(tokens)
 
-for (nodes) do { n->
-    print(n.pretty(0))
-}
+print(module.pretty 0 )
