@@ -2574,6 +2574,36 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     return callmethod.apply(null, allArgs);
 }
 
+GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList) {
+    if (! argList) {
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("'request' requires one argument (a list of arguments)"));
+    }
+    var theFunction = this.obj.methods[this.name];
+    var paramcv = theFunction.paramCounts;
+    var providedLen = callmethod(argList, "size", [0])._value;
+    // Don't check that providedLen is correct: the preamble
+    // of the requested method will do that.
+    var l = theFunction.variableArities.length;
+    if (l > 1) {
+        var vararg = theFunction.variableArities;
+        for (var ix = 0; ix < l; ix++) {
+            if (vararg[ix]) {
+                    throw new GraceExceptionPacket(ProgrammingErrorObject,
+                        new GraceString("'requestWithArgs' cannot be used to request a method with multiple  argument lists if one has variable arity."));
+            }
+        }
+    } else {
+        paramcv = [providedLen];
+    }
+    var allArgs = [this.obj, this.name, paramcv];
+    for (var ix = 1; ix <= providedLen; ix++) {
+        var arg = callmethod(argList, "at", [1], new GraceNum(ix));
+        allArgs.push(arg);
+    }
+    return callmethod.apply(null, allArgs);
+}
+
 function methodMirror_hash (argcv, argList) {
     return callmethod(new GraceString(this.name), "hash", [0]);
 }

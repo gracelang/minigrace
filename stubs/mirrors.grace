@@ -13,8 +13,9 @@ type MethodMirror = Object & type {
     paramcounts -> List<Number>
     isVariableArity -> List<Boolean>
     request(args:List<ArgList>) -> Unknown
+    requestWithArgs(args:List<Object>) -> Unknown
 }
-type ArgList = List<Unknown>
+type ArgList = List<Object>
 
 method loadDynamicModule(name:String) -> Done { }
 factory method reflect(obj:Unknown) -> Mirror {
@@ -26,6 +27,7 @@ factory method reflect(obj:Unknown) -> Mirror {
         method paramcounts -> List<Number>  { }
         method isVariableArity -> List<Boolean> { }
         method request(args:List<ArgList>) -> Unknown { }
+        method requestWithArgs(args:List<Object>) -> Unknown { }
     }
 }
 

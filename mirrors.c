@@ -89,6 +89,7 @@ Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
     int i = 0;
     int size = 0;
     int cargcv[cparts];
+    gc_pause();
     Object partsiter = callmethod(partsl, "iterator", 0, NULL, NULL);
     while (istrue(callmethod(partsiter, "hasNext", 0, NULL, NULL))) {
         Object argsl = callmethod(partsiter, "next", 0, NULL, NULL);
@@ -108,15 +109,41 @@ Object MirrorMethod_request(Object self, int nparts, int *argcv, Object *argv,
             i++;
         }
     }
+    gc_unpause();
     Object rv = callmethod(s->obj, s->method->name, cparts, cargcv,
             cargv);
     return rv;
 }
+Object MirrorMethod_request_with_args(Object self, int nparts, int *argcv, Object *argv,
+                            int flags) {
+    // The single argument is a Grace Iterable containing all
+    // of the arguments for this request,
+    struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
+    Object args = argv[0];
+    int cparts = s->method->type->nparts;
+    int *cargcv = s->method->type->argcv;
+    int size = 0;
+    int i;
+    for (i = 0; i < cparts; i++) { size = size + cargcv[i]; }
+    Object cargv[size];
+    gc_pause();
+    Object argsiter = callmethod(args, "iterator", 0, NULL, NULL);
+    i = 0;
+    while (istrue(callmethod(argsiter, "hasNext", 0, NULL, NULL))) {
+        Object arg = callmethod(argsiter, "next", 0, NULL, NULL);
+        cargv[i] = arg;
+        i++;
+        if (i == size) break;
+    }
+    gc_unpause();
+    return callmethod(s->obj, s->method->name, cparts, cargcv, cargv);
+}
 
 Object alloc_MirrorMethod(Method *method, Object obj) {
     if (MirrorMethodClass == NULL) {
-        MirrorMethodClass = alloc_class("MirrorMethod", 5);
+        MirrorMethodClass = alloc_class("MirrorMethod", 6);
         add_Method(MirrorMethodClass, "request", &MirrorMethod_request);
+        add_Method(MirrorMethodClass, "requestWithArgs", &MirrorMethod_request_with_args);
         add_Method(MirrorMethodClass, "name", &MirrorMethod_name);
         add_Method(MirrorMethodClass, "asString", &MirrorMethod_asString);
         add_Method(MirrorMethodClass, "partcount", &MirrorMethod_partcount);
