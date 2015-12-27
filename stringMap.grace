@@ -80,7 +80,7 @@ class new {
         return false
     }
     method findPosition(x) is confidential {
-        def h = x.hashcode
+        def h = x.hash
         def s = inner.size
         var t := h % s
         var jump := 5
