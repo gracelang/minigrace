@@ -162,38 +162,39 @@ method accept(t) {
     sym.kind == t
 }
 
-// True if the current token is a t, and it is on the same logical
-// line (either because it's on the same physical line, or because
-// it's on an indented continuation line).
-method acceptSameLine(t) {
+method acceptSameLine (t) {
+    // True if the current token is a t, and it is on the same logical
+    // line (either because it's on the same physical line, or because
+    // it's on an indented continuation line).
+
     (sym.kind == t) && 
         ((lastLine == sym.line) || (sym.indent > lastIndent))
 }
-
-// True if the current token is a t, and it is on the same logical
-// line as a provided token.
 method accept(t)onLineOf(other) {
+    // True if the current token is a t, and it is on the same logical
+    // line as other (either because it's on the same physical
+    // line, or because it's on an indented continuation line).
     (sym.kind == t) && ((other.line == sym.line) ||
         (sym.indent > other.indent))
 }
-// True if the current token is a t, and it is on the same logical
-// line as a provided token.
 method accept(t)onLineOfLastOr(other) {
+    // True if the current token is a t, and it is on the same logical
+    // line as the other token.
     (sym.kind == t) && (((other.line == sym.line) ||
         (sym.indent > other.indent)) || (lastToken.line == sym.line))
 }
-// True if there is a token on the same logical line
 method tokenOnSameLine {
+    // True if there is a token on the current logical line
     (lastLine == sym.line) || (sym.indent > lastIndent)
 }
-// Check if block did consume at least one token.
-method didConsume(ablock) {
+method didConsume(aParsingBlock) {
+    // True if executing aParsingBlock consumes at least one token.
     var sz := tokens.size
-    ablock.apply
+    aParsingBlock.apply
     tokens.size != sz
 }
-// Expect block to consume at least one token, or call fallback code.
 method ifConsume(ablock)then(tblock) {
+    // If ablock consumes at least one token, execute tblock.
     var sz := tokens.size
     ablock.apply
     if (tokens.size != sz) then {
@@ -234,6 +235,11 @@ method pushidentifier {
     }
     values.push(o)
     next
+}
+method pushIdentifierFromString(s) atPosition(l, p) {
+    util.setPosition(l, p)
+    var o := ast.identifierNode.new(s, false)
+    values.push(o)
 }
 
 method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
@@ -2273,10 +2279,87 @@ method inheritsdec {
         }
         util.setPosition(btok.line, btok.linePos)
         def inhNode = ast.inheritsNode.new(values.pop)
+        while { inheritsModifier(inhNode) onLineOf(btok) } do { }
         values.push(inhNode)
     }
 }
 
+method inheritsModifier(node) onLineOf(startToken) {
+    // accept an alias or excludes modifier on an `inherits` clause
+    if (! accept "identifier" onLineOf(startToken) ) then { 
+        return false
+    }
+    if (sym.value == "alias") then { 
+        acceptAlias(node) 
+    } elseif {sym.value == "exclude"} then {
+        acceptExclude(node)
+    } else {
+        false
+    }
+}
+
+method acceptAlias(node) {
+    // alias isn't a real keyword, but is treated as one
+    // in this context
+    next
+    if (acceptMethodName) then {
+        def newMeth = values.pop
+        if (accept "op" && (sym.value == "=")) then {
+            next
+            if (acceptMethodName) then {
+                def oldMeth = values.pop
+                node.addAlias (newMeth) for (oldMeth)
+                return true
+            }
+        }
+    }
+    errormessages.syntaxError ("An alias modifier must take the form " ++
+        "'newMethodName = oldMethodName'") atPosition (
+        lastToken.line, lastToken.linePos + lastToken.size)
+}
+method acceptExclude(node) {
+    // exclude isn't a real keyword, but is treated as one
+    // in this context
+    next
+    if (acceptMethodName) then {
+        def excludedMeth = values.pop
+        node.addExclusion (excludedMeth)
+        return true
+    }
+    errormessages.syntaxError "An exclude modifier must name the excluded method"
+        atPosition (lastToken.line, lastToken.linePos + lastToken.size)
+}
+
+method acceptMethodName {
+    var mName := ""
+    var moreId := true
+    def startLine = sym.line
+    def startPos = sym.linePos
+    while { moreId
+        .andAlso{accept "identifier"}
+          .andAlso{sym.value != "alias"}
+            .andAlso{sym.value != "exclude"}
+    } do {
+        mName := mName ++ sym.value
+        next
+        if (accept "lparen") then {
+            next
+            if (! accept "rparen") then {
+                errormessages.syntaxError "a '(' in a method name must be followed by a ')'"
+            }
+            next
+            mName := mName ++ "()"
+        } else {
+            moreId := false
+        }
+    }
+    if (mName != "") then {
+        pushIdentifierFromString(mName) atPosition(startLine, startPos)
+        true 
+    } else {
+        false
+    }
+}
 
 method doobject {
     // Accept an object literal.

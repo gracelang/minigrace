@@ -2401,6 +2401,8 @@ def inheritsNode = object {
         def kind is public = "inherits"
         var value is public := expr
         var providedNames is public := list.empty
+        var aliases is public := list.empty
+        var exclusions is public := list.empty
         
         method isInherits { true }
         method inheritsFromMember { value.isMember }
@@ -2424,21 +2426,42 @@ def inheritsNode = object {
             }
             var s := super.pretty(depth) ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
+            aliases.do { a ->
+                s := "{s} alias {a.key} = {a.value} "
+            }
+            exclusions.do { e ->
+                s := "{s} exclude {e} "
+            }
             if (providedNames.isEmpty.not) then {
                 s := s ++ "\n{spc}Provided names: {providedNames}"
             }
             s
         }
         method toGrace(depth : Number) -> String {
-            "inherits {self.value.toGrace(0)}"
+            var s := "inherits {self.value.toGrace(0)}"
+            aliases.do { a ->
+                s := "{s} alias {a.key} = {a.value} "
+            }
+            exclusions.do { e ->
+                s := "{s} exclude {e} "
+            }
+            s
         }
         method nameString { value.toGrace(0) }
+        method addAlias (newName) for (oldName) {
+            aliases.push(newName::oldName)
+        }
+        method addExclusion(methName) {
+            exclusions.push(methName)
+        }
         method shallowCopy {
             inheritsNode.new(nullNode).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
             providedNames := other.providedNames
+            aliases := other.aliases
+            exclusions := other.exclusions
             self
         }
     }

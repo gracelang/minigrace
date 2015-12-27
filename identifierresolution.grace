@@ -1002,7 +1002,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             as.parent.superclass := o.value    // value = the expression from inheritsNode
             // cache the inherits expression in the object or class that contains it
-            util.log 80 verbose "{as.parent} inherits {o.value}"
             true
         }
         method visitMethod(o) up(as) {
@@ -1115,13 +1114,10 @@ method collectInheritedNames(node) {
     nodeScope.inheritedNames := inProgress
     if (node.superclass == false) then { 
         superScope := graceObjectScope
-        util.log 80 verbose "node = {node} has no superclass, inheriting graceObjectScope = {graceObjectScope.asDebugString}"
     } else {
         superScope := nodeScope.scopeReferencedBy(node.superclass)
         // If superScope is the universal scope, then we have no information
         // about the inherited attributes
-        util.log 80 verbose "node = {node}, superScope = {superScope.asDebugString}"
-        util.log 80 verbose (superScope)
         if (superScope.isUniversal.not) then {
             if (superScope.node != ast.nullNode) then {
                 // superScope.node == nullNode when superScope describes 
@@ -1141,7 +1137,8 @@ method collectInheritedNames(node) {
 
 method transformInherits(inhNode) ancestors(as) {
     // inhNode is an inheritsNode.  Transform it to deal with 
-    // superobject initialization and inherited names
+    // superobject initialization and inherited names, including 
+    // inheritance modifiers
     def superObject = inhNode.value
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
@@ -1186,6 +1183,19 @@ method transformInherits(inhNode) ancestors(as) {
     }
     superScope.elements.keysDo { each ->
         newInhNode.providedNames.add(each)
+    }
+    inhNode.aliases.do { a -> 
+        def oldName = a.value.nameString
+        if (superScope.contains(oldName)) then {
+            newInhNode.providedNames.add(a.key.nameString)
+        } else {
+            errormessages.syntaxError "can't define alias for {oldName.nameString} because it's not present in the inherited object" atRange(oldName.line, oldName.linePos, oldName.linePos + oldName.nameString.size - 1)
+        }
+    }
+    inhNode.exclusions.do { exId ->
+        newInhNode.providedNames.remove(exId.nameString) ifAbsent {
+            errormessages.syntaxError "can't exclude {exId.nameString} because it is not present in the inherited object" atRange(exId.line, exId.linePos, exId.linePos + exId.nameString.size - 1)
+        }
     }
     newInhNode.providedNames.do { each ->
         if (each != "self") then {
