@@ -641,6 +641,14 @@ method new {
                 method iterator {
                     iter
                 }
+                
+                method do(action) {
+                    var n := first
+                    while { n != false } do {
+                        action.apply(n)
+                        n := n.next
+                    }
+                }
             }
 
             var mode := "d"
