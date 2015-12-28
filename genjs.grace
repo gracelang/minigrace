@@ -341,12 +341,6 @@ method compileobject(o, outerRef, inheritingObject) {
     auto_count := auto_count + 1
     def selfr = "obj" ++ myc
     o.register := selfr
-    var superobj := false
-    for (o.value) do {e->
-        if (e.kind == "inherits") then {
-            superobj := e.value
-        }
-    }
     out "var {selfr} = Grace_allocObject();"
     out "{selfr}.definitionModule = \"{modname}\";"
     out "{selfr}.definitionLine = {o.line};"
@@ -1576,12 +1570,8 @@ method compile(moduleObject, of, mn, rm, bt, glPath) {
     def imported = list.empty
     for (values) do { o ->
         if (o.kind == "inherits") then {
-            def sup = compilenode(o.value)
-            out("this.superobj = {sup};")
-            out("this.data = {sup}.data;")
-            out("this._value = {sup}._value;")
-        }
-        if (o.kind != "method") then {
+            compileInherits(o)
+        } elseif {o.kind != "method"} then {
             compilenode(o)
         }
         if ((o.kind == "import").orElse{o.kind == "dialect"}) then {
@@ -1628,6 +1618,23 @@ method compile(moduleObject, of, mn, rm, bt, glPath) {
     outfile.close
     util.log_verbose "done."
     if (buildtype == "run") then { runJsCode(of, glPath) }
+}
+
+method compileInherits(o) {
+    // o is an inherits node: compile it.
+    def sup = compilenode(o.value)
+    out "this.superobj = {sup};"
+    out "this.data = {sup}.data;"
+    out "delete {sup}.data;"    // to avoid a reduant reference
+    out "this._value = {sup}._value;"
+    // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
+    // this breaks inheritance from booleans
+    o.aliases.do { each ->
+        out "this.methods['{each.newName.nameString}'] = findMethod({sup}, '{each.oldName.nameString}');"
+    }
+    o.exclusions.do { each ->
+        out "delete {sup}.methods['{each.nameString}'];"
+    }
 }
 
 method runJsCode(of, glPath) {

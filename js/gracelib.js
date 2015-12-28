@@ -3384,6 +3384,7 @@ if (typeof global !== "undefined") {
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
     global.ErrorObject = ErrorObject;
     global.ExceptionObject = ExceptionObject;
+    global.findMethod = findMethod;
     global.getLineNumber = getLineNumber;
     global.getModuleName = getModuleName;
     global.Grace_allocObject = Grace_allocObject;
