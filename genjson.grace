@@ -140,24 +140,21 @@ method generateNode(n) {
             }
             ret.put("body", body)
         } case { "if" ->
-            if (n.elseblock.size > 0) then {
+            if (n.elseblock.body.isEmpty.not) then {
                 def mn = ast.callNode.new(
                     ast.memberNode.new("if()then()else",
                         ast.identifierNode.new("prelude", false)),
-                    [ast.callWithPart.new("if", [n.value]),
-                        ast.callWithPart.new("then",
-                            [ast.blockNode.new([], n.thenblock)]),
-                        ast.callWithPart.new("else",
-                            [ast.blockNode.new([], n.elseblock)])
+                    [ast.callWithPart.request "if" withArgs( [n.value] ),
+                        ast.callWithPart.request "then" withArgs( [n.thenblock] ),
+                        ast.callWithPart.request "else" withArgs( [n.elseblock] )
                         ])
                 return generateNode(mn)
             } else {
                 def mn = ast.callNode.new(
                     ast.memberNode.new("if()then",
                         ast.identifierNode.new("prelude", false)),
-                    [ast.callWithPart.new("if", [n.value]),
-                        ast.callWithPart.new("then",
-                            [ast.blockNode.new([], n.thenblock)])
+                    [ast.callWithPart.request "if" withArgs( [n.value] ),
+                        ast.callWithPart.request "then" withArgs( [n.thenblock] )
                         ])
                 return generateNode(mn)
             }
