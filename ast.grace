@@ -2427,7 +2427,7 @@ def inheritsNode = object {
             var s := super.pretty(depth) ++ "\n"
             s := s ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
-                s := "{s} alias {a.key} = {a.value} "
+                s := "{s} {a} "
             }
             exclusions.do { e ->
                 s := "{s} exclude {e} "
@@ -2440,7 +2440,7 @@ def inheritsNode = object {
         method toGrace(depth : Number) -> String {
             var s := "inherits {self.value.toGrace(0)}"
             aliases.do { a ->
-                s := "{s} alias {a.key} = {a.value} "
+                s := "{s} {a} "
             }
             exclusions.do { e ->
                 s := "{s} exclude {e} "
@@ -2449,7 +2449,7 @@ def inheritsNode = object {
         }
         method nameString { value.toGrace(0) }
         method addAlias (newName) for (oldName) {
-            aliases.push(newName::oldName)
+            aliases.push(aliasNew(newName) old(oldName))
         }
         method addExclusion(methName) {
             exclusions.push(methName)
@@ -2464,6 +2464,22 @@ def inheritsNode = object {
             exclusions := other.exclusions
             self
         }
+    }
+}
+type AliasPair = {
+    newName
+    oldName
+}
+
+class aliasNew(n) old(o) {
+    method newName {n}
+    method oldName {o}
+    method asString { "alias {n.nameString} = {o.nameString}" }
+    method hash { (n.hash * 1171) + o.hash }
+    method == (other) {
+        match (other)
+            case { that:AliasPair -> (n == that.newName) && (o == that.oldName) }
+            case { _ -> false }
     }
 }
 class blankNode.new {
