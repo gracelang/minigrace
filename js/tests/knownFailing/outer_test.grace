@@ -12,8 +12,7 @@ def collFact = object {
     method trait<T> {
         object {
             method withAll'(elts) -> Unknown { abstract }
-            method with'(*a:T) -> Unknown { self.withAll(a) }
-            method empty' -> Unknown { self.with() }
+            method empty' -> Unknown { self.withAll( [] ) }
         }
     }
 }
@@ -21,10 +20,9 @@ def collFact = object {
 
 class collectionFactory.trait<T> {
     method withAll(elts) -> Unknown { abstract }
-    method with(*a:T) -> Unknown { self.withAll(a) }
-    method empty -> Unknown { self.with() }
+    method empty -> Unknown { self.withAll( [] ) }
 }
 
-collFact.trait.with'(1, 2, 3)
+collFact.trait.withAll'( [1, 2, 3] )
 
-collectionFactory.trait.with(1, 2, 3)
+collectionFactory.trait.withAll( [1, 2, 3] )
