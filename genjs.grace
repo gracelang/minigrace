@@ -383,9 +383,7 @@ method compileobject(o, outerRef, inheritingObject) {
         } elseif (e.kind == "object") then {
             compileobject(e, selfr, false)
         } elseif (e.kind == "inherits") then {
-            def so = compilenode(e.value)
-            out("{selfr}.superobj = {so};")
-            out("{selfr}._value = {so}._value;")
+            compileInherits(e)
         } else {
             compilenode(e)
         }
@@ -476,23 +474,6 @@ method compiletypeliteral(o) {
     }
     // TODO: types in the type literal
     o.register := "type{myc}"
-}
-method compilefor(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var over := compilenode(o.value)
-    var blk := o.body
-    var blko := compilenode(blk)
-    out("var it" ++ myc ++ " = " ++ over ++ ".methods[\"iterator\"].call("
-        ++ over ++ ", [0]);")
-    out("while (Grace_isTrue(it" ++ myc ++ ".methods[\"hasNext\"].call("
-        ++ "it" ++ myc ++ ", [0]))) \{")
-    out("  var fv" ++ myc ++ " = it" ++ myc ++ ".methods[\"next\"].call("
-        ++ "it" ++ myc ++ ", [0]);")
-    out("  " ++ blko ++ ".methods[\"apply\"].call("
-        ++ blko ++ ", [1], fv" ++ myc ++ ");")
-    out("\}")
-    o.register := over
 }
 method compilemethod(o, selfobj) {
     var isSequenceDefined := false
@@ -891,23 +872,6 @@ method compilemethodtypes(func, o) {
             pi := pi + 1
         }
     }
-}
-method compilewhile(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var cond := compilenode(o.value)
-    out("var wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
-    out("while (wcond" ++ myc ++ ") \{")
-    increaseindent
-    var tret := "null"
-    for (o.body) do { l->
-        tret := compilenode(l)
-    }
-    cond := compilenode(o.value)
-    out("wcond" ++ myc ++ " = Grace_isTrue(" ++ cond ++ ");")
-    decreaseindent
-    out("\}")
-    o.register := cond // "%while" ++ myc
 }
 method compileif(o) {
     var myc := auto_count
@@ -1436,8 +1400,6 @@ method compilenode(o) {
         compilearray(o)
     } elseif (oKind == "bind") then {
         compilebind(o)
-    } elseif (oKind == "while") then {
-        compilewhile(o)
     } elseif (oKind == "if") then {
         compileif(o)
     } elseif (oKind == "catchcase") then {
@@ -1454,8 +1416,6 @@ method compilenode(o) {
         compiletypeliteral(o)
     } elseif (oKind == "member") then {
         compilemember(o)
-    } elseif (oKind == "for") then {
-        compilefor(o)
     } elseif { oKind == "call" } then {
         if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
             if (o.nameString == "print") then {
@@ -1585,9 +1545,7 @@ method compile(moduleObject, of, mn, rm, bt, glPath) {
     topLevelTypes.add "Type"
     topLevelTypes.add "Unknown"
     topLevelTypes.add "Object"
-    if (util.extensions.contains("noStrict")) then {
-        util.log_verbose("noStrict")
-    } else {
+    if (! util.extensions.contains "noStrict") then {
         out "\"use strict\";"
     }
     if (isPrelude.not) then {

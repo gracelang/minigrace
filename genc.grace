@@ -614,30 +614,6 @@ method compiletypeliteral(o) {
     // TODO: types in the type literal
     o.register := "type{myc}"
 }
-method compilefor(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    out("  int forframe{myc} = gc_frame_new();")
-    var over := compilenode(o.value)
-    out("  gc_frame_newslot({over});")
-    var blk := o.body
-    var obj := compilenode(blk)
-    out("  gc_frame_newslot({obj});")
-    out("  params[0] = {over};")
-    out("  partcv[0] = 1;")
-    out("  Object iter{myc} = callmethod({over}, \"iterator\", 1, partcv, params);")
-    out("  gc_frame_newslot(iter{myc});")
-    out("  int forvalslot{myc} = gc_frame_newslot(NULL);")
-    out("  while(1) \{")
-    out("    Object cond{myc} = callmethod(iter{myc}, \"hasNext\", 0, NULL, NULL);")
-    out("    if (!istrue(cond{myc})) break;")
-    out("    params[0] = callmethod(iter{myc}, \"next\", 0, NULL, NULL);")
-    out("    gc_frame_setslot(forvalslot{myc}, params[0]);")
-    out("    callmethod({obj}, \"apply\", 1, partcv, params);")
-    out("  \}")
-    out("  gc_frame_end(forframe{myc});")
-    o.register := "done"
-}
 method compilemethod(o, selfobj, pos) {
     // How to deal with closures:
     // Calculate body, find difference of usedvars/declaredvars, if closure
@@ -1055,30 +1031,6 @@ method compilemethodtypes(litname, o) {
             pi := pi + 1
         }
     }
-}
-method compilewhile(o) {
-    var myc := auto_count
-    auto_count := auto_count + 1
-    var numslots := countbindings(o.body)
-    out("  int while_cond{myc} = gc_frame_newslot(undefined);")
-    out("struct StackFrameObject *whiletmpstackframe{myc} = stackframe;")
-    out("  while (1) \{")
-    out("  int while_frame{myc} = gc_frame_new();")
-    out("stackframe = alloc_StackFrame({numslots}, whiletmpstackframe{myc});")
-    out("gc_frame_newslot((Object)stackframe);")
-    def cond = compilenode(o.value)
-    out("    gc_frame_setslot(while_cond{myc}, {cond});")
-    out("    if (!istrue({cond})) break;")
-    var tret := "null"
-    var slot := 0
-    definebindings(o.body, 0)
-    for (o.body) do { l->
-        tret := compilenode(l)
-    }
-    out("  gc_frame_end(while_frame{myc});")
-    out("  \}")
-    out("stackframe = whiletmpstackframe{myc};")
-    o.register := "done"
 }
 method compileifexpr(o) {
     var myc := auto_count
@@ -1733,8 +1685,6 @@ method compilenode(o) {
         compilearray(o)
     } elseif { oKind == "bind" } then {
         compilebind(o)
-    } elseif { oKind == "while" } then {
-        compilewhile(o)
     } elseif { oKind == "if" } then {
         compileif(o)
     } elseif { oKind == "matchcase" } then {
@@ -1751,8 +1701,6 @@ method compilenode(o) {
         compiletypeliteral(o)
     } elseif { oKind == "member" } then {
         compilemember(o)
-    } elseif { oKind == "for" } then {
-        compilefor(o)
     } elseif { oKind == "call" } then {
         if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
             if (o.nameString == "print") then {
