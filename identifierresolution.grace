@@ -1127,8 +1127,8 @@ method collectInheritedNames(node) {
 
 
 method transformInherits(inhNode) ancestors(as) {
-    // inhNode is an inheritsNode.  Transform it to deal with 
-    // superobject initialization and inherited names, including 
+    // inhNode is (a shallow copy of) an inheritsNode.  Transform it to deal
+    // with superobject initialization and inherited names, including
     // inheritance modifiers
     def superObject = inhNode.value
     def currentScope = inhNode.scope
@@ -1150,49 +1150,44 @@ method transformInherits(inhNode) ancestors(as) {
             superCall.value.target
         ) scope(currentScope)
         def newcall = ast.callNode.new(newmem, superCall.with) scope(currentScope)
-        newInhNode := ast.inheritsNode.new(newcall) scope(currentScope)
+        inhNode.value := newcall
     } elseif {inhNode.inheritsFromMember} then {
         def newmem = ast.memberNode.new(inhNode.value.value ++ "()object",
             inhNode.value.in
         )
-        def newcall = ast.callNode.new(newmem, list.with(
-            ast.callWithPart.new(inhNode.value.value, []) scope(currentScope),
-            ast.callWithPart.new("object",
+        def newcall = ast.callNode.new(newmem, [
+            ast.callWithPart.request(inhNode.value.value) withArgs( [] ) scope(currentScope),
+            ast.callWithPart.request "object" withArgs (
                 [ast.identifierNode.new("self", false) scope(currentScope)]) scope(currentScope)
-            )
+            ]
         ) scope(currentScope)
-        newInhNode := ast.inheritsNode.new(newcall) scope(currentScope)
-    } else {
-        if (util.extensions.contains "ObjectInheritance") then {
-            newInhNode := inhNode
-        } else {
+        inhNode.value := newcall
+    } elseif {! util.extensions.contains "ObjectInheritance"} then {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
             atRange(inhNode.line, superObject.linePos,
                 superObject.linePos + superObject.nameString.size - 1)
     }
-    }
     superScope.elements.keysDo { each ->
-        newInhNode.providedNames.add(each)
+        inhNode.providedNames.add(each)
     }
     inhNode.aliases.do { a ->
-        def oldName = a.value.nameString
-        if (superScope.contains(oldName)) then {
-            newInhNode.providedNames.add(a.key.nameString)
+        if (superScope.contains(a.oldName.nameString)) then {
+            inhNode.providedNames.add(a.newName.nameString)
         } else {
-            errormessages.syntaxError "can't define alias for {oldName.nameString} because it's not present in the inherited object" atRange(oldName.line, oldName.linePos, oldName.linePos + oldName.nameString.size - 1)
+            errormessages.syntaxError "can't define alias for {a.oldName.nameString} because it is not present in the inherited object"
+                atRange(a.oldName.line, a.oldName.linePos, a.oldName.linePos + a.oldName.nameString.size - 1)
         }
     }
     inhNode.exclusions.do { exId ->
-        newInhNode.providedNames.remove(exId.nameString) ifAbsent {
-            errormessages.syntaxError "can't exclude {exId.nameString} because it is not present in the inherited object" atRange(exId.line, exId.linePos, exId.linePos + exId.nameString.size - 1)
+        inhNode.providedNames.remove(exId.nameString) ifAbsent {
+            errormessages.syntaxError "can't exclude {exId.nameString} because it is not present in the inherited object" 
+                atRange(exId.line, exId.linePos, exId.linePos + exId.nameString.size - 1)
         }
     }
-    newInhNode.providedNames.do { each ->
-        if (each != "self") then {
+    inhNode.providedNames.filter { each -> each != "self" }.do { each ->
         currentScope.addName(each) as(k.inherited)
     }
-    }
-    newInhNode
+    inhNode
 }
 
 method rewriteMatches(topNode) {
