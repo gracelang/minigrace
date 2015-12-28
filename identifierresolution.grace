@@ -1210,6 +1210,7 @@ method resolve(moduleObject) {
     def preludeChain = ast.ancestorChain.with(preludeObject)
 
     def patternMatchModule = rewriteMatches(moduleObject)
+    util.log_verbose "pattern-match rewriting done."
 
     if (util.target == "patterns") then {
         util.outprint "====================================="
@@ -1221,6 +1222,7 @@ method resolve(moduleObject) {
     }
 
     buildSymbolTableFor(patternMatchModule) ancestors(preludeChain)
+    util.log_verbose "symbol tables built."
 
     if (util.target == "symbols") then {
         util.outprint "====================================="
