@@ -8,7 +8,6 @@ import "ast" as ast
 import "parser" as parser
 import "genc" as genc
 import "genjs" as genjs
-import "genjson" as genjson
 import "buildinfo" as buildinfo
 import "identifierresolution" as identifierresolution
 import "mirrors" as mirrors
@@ -29,13 +28,6 @@ if (util.target == "lex") then {
     }
     util.outfile.close
     sys.exit(0)
-}
-
-// JSON wants to keep hold of the last token in the file
-if (util.target == "json") then {
-    if (tokens.size > 0) then {
-        genjson.saveToken(tokens.last)
-    }
 }
 
 var moduleObject := parser.parse(tokens)
@@ -62,9 +54,6 @@ if (util.target == "c") then {
     genc.processImports(values)
 }
 if (util.target == "js") then {
-    genjs.processImports(values)
-}
-if (util.target == "json") then {
     genjs.processImports(values)
 }
 if (util.extensions.contains("Plugin")) then {
@@ -108,9 +97,6 @@ match(util.target)
     case { "js" ->
         genjs.compile(moduleObject, util.outfile, util.modname, util.runmode,
             util.buildtype, util.gracelibPath)
-    }
-    case { "json" ->
-        genjson.generate(moduleObject, util.outfile)
     }
     case { _ ->
         io.error.write("minigrace: no such target '" ++ util.target ++ "'\n")
