@@ -1877,7 +1877,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 38,
+        ConcatString = alloc_class3("ConcatString", 37,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -1913,7 +1913,6 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "endsWith", &ConcatString_endsWith);
         add_Method(ConcatString, "replace()with", &ConcatString_replace_with);
         add_Method(ConcatString, "hash", &String_hashcode);
-        add_Method(ConcatString, "hashcode", &String_hashcode);
         add_Method(ConcatString, "indices", &String_indices);
         add_Method(ConcatString, "asNumber", &String_asNumber);
         add_Method(ConcatString, "match", &literal_match);
@@ -2126,7 +2125,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 38);
+        String = alloc_class("String", 37);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2160,7 +2159,6 @@ Object alloc_String(const char *data) {
         add_Method(String, "endsWith", &String_endsWith);
         add_Method(String, "replace()with", &String_replace_with);
         add_Method(String, "hash", &String_hashcode);
-        add_Method(String, "hashcode", &String_hashcode);
         add_Method(String, "indices", &String_indices);
         add_Method(String, "asNumber", &String_asNumber);
         add_Method(String, "match", &literal_match);
