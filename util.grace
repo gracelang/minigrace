@@ -221,6 +221,7 @@ method parseargs(buildinfo) {
             case { "symbols" -> io.open(outDir ++ modnamev ++ ".symbols", "w") }
             case { "patterns" -> io.open(outDir ++ modnamev ++ ".patterns", "w") }
             case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
+            case { "imports" -> io.output }
             case { _ -> 
                 io.error.write("minigrace: unrecognized target '{targetv}'.\n")
                 sys.exit(1)
@@ -244,7 +245,6 @@ method parseargs(buildinfo) {
             gracelibPathv := gracelib.directory
         }
     }
-    log 50 verbose "gracelibPath = {gracelibPathv}"
     if (infilev == io.input) then {
         if (infilev.isatty) then {
             print("minigrace {buildinfo.gitgeneration} / "
