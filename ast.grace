@@ -2487,41 +2487,39 @@ class blankNode.new {
     }
 }
 def signaturePart = object {
-    method new(*values) scope(s) {
-        var result
-        if (values.size == 1) then {
-            result := new(values[1])
-        } elseif { values.size == 2 } then {
-            result := new(values[1], values[2])
-        } else {
-            ProgrammingError.raise "wrong number of arguments for signaturePart()scope()"
-        }
+    method new {
+        partName "" params( [] ) variableParam(false)
+    }
+    method partName(n) scope(s) {
+        def result = partName(n) params([]) variableParam(false)
         result.scope := s
         result
     }
-    factory method new(*values) {
-        //  all parameters are optional
-        //     values[1]: this part of the method-name
-        //     values[2]: the sequence of paremeters
-        //     values[3]: false if there is no variable arity parameter,
-        //          otherwise the identifier representing it.
-
+    method partName(n) params(ps) scope(s) {
+        def result = partName(n) params(ps) variableParam(false)
+        result.scope := s
+        result
+    }
+    method partName(n) params(ps) variableParam(v) scope(s) {
+        def result = partName(n) params(ps) variableParam(v)
+        result.scope := s
+        result
+    }
+    method partName(n) {
+        partName(n) params([]) variableParam(false)
+    }
+    method partName(n) params(ps) {
+        partName(n) params(ps) variableParam(false)
+    }
+    factory method partName(n) params(ps) variableParam(v) {
         inherits baseNode.new
         def kind is public = "signaturepart"
-        var name is public := ""
-        var params is public := list.empty
-        var vararg is public := false
+        var name is public := n
+        var params is public := ps
+        var vararg is public := v
         var generics is public := false
         var lineLength is public := 0
-        if (values.size > 0) then {
-            name := values[1]
-        }
-        if (values.size > 1) then {
-            params := values[2]
-        }
-        if (values.size > 2) then {
-            vararg := values[3]
-        }
+
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitSignaturePart(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -2534,11 +2532,11 @@ def signaturePart = object {
         }
         method declarationKindWithAncestors(as) { k.parameter }
         method map(blk) ancestors(as) {
-            var n := shallowCopy
-            def newChain = as.extend(n)
-            n.params := listMap(params, blk) ancestors(newChain)
-            n.vararg := maybeMap(vararg, blk) ancestors(newChain)
-            blk.apply(n, as)
+            var nd := shallowCopy
+            def newChain = as.extend(nd)
+            nd.params := listMap(params, blk) ancestors(newChain)
+            nd.vararg := maybeMap(vararg, blk) ancestors(newChain)
+            blk.apply(nd, as)
         }
         method pretty(depth) {
             var spc := ""
@@ -2556,7 +2554,8 @@ def signaturePart = object {
             s
         }
         method shallowCopy {
-            signaturePart.new(name).shallowCopyFieldsFrom(self)
+            signaturePart.partName(name) params(params) variableParam(vararg)
+                .shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
@@ -2570,27 +2569,20 @@ def signaturePart = object {
 }
 
 def callWithPart = object {
-    method new(name, argList) scope (s) {
-        def result = new(name, argList)
+    method new {
+        request "" withArgs( [] )
+    }
+    method request(name) withArgs(argList) scope (s) {
+        def result = request(name) withArgs(argList)
         result.scope := s
         result
     }
-    factory method new(*values) {
-        // requested as
-        // - callWithPart.new(request:String), or
-        // - callWithPart.new(request:String, arguments:List)
-        // The first is equivalent to the second with an empty list of arguments
+    factory method request(rPart:String) withArgs(xs) {
         inherits baseNode.new
         def kind is public = "callwithpart"
-        var name is public := ""
-        var args is public := list.empty
+        var name is public := rPart
+        var args is public := xs
         var lineLength is public := 0
-        if (values.size > 0) then {
-            name := values[1]
-        }
-        if (values.size > 1) then {
-            args := values[2]
-        }
 
         method map(blk) ancestors(as) {
             var n := shallowCopy
@@ -2611,7 +2603,7 @@ def callWithPart = object {
             s
         }
         method shallowCopy {
-            callWithPart.new(name).shallowCopyFieldsFrom(self)
+            callWithPart.request(name) withArgs(args).shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)

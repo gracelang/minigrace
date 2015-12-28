@@ -172,7 +172,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)]) scope(o.scope)
+    var c := ast.callNode.new(o, [ast.callWithPart.request(o.value) withArgs( [] )]) scope(o.scope)
     var r := compilenode(c)
     o.register := r
 }
@@ -324,7 +324,7 @@ method compileclass(o) {
     def defDec = ast.defDecNode.new(o.name, metaObj, false)
         scope(metaObjectScope.parent)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.nameString) scope(metaObjectScope.parent)],
+        def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.nameString) scope(metaObjectScope.parent)],
             [o.name], false) scope(metaObjectScope.parent)
         compilenode(meth)
     }
@@ -460,7 +460,7 @@ method compiletypedec(o) {
     out "var {varf(tName)} = {val};"
     o.register := "type{myc}"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(enclosing)],
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(enclosing)],
             [o.name], ast.typeType) scope(enclosing))
     }
 }
@@ -977,12 +977,12 @@ method compilebind(o) {
             != ":="}) then {
             dest.value := nm ++ ":="
         }
-        def c = ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])]) 
+        def c = ast.callNode.new(dest, [ast.callWithPart.request(dest.value) withArgs( [o.value] )])
                         scope(currentScope)
         o.register := compilenode(c)
     } elseif (dest.kind == "index") then {
         var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
-        def c = ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])  scope(currentScope)])
+        def c = ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )  scope(currentScope)])
                         scope(currentScope)
         o.register := compilenode(c)
     }
@@ -1004,7 +1004,7 @@ method compiledefdec(o) {
     var val := compilenode(o.value)
     out("var " ++ varf(nm) ++ " = " ++ val ++ ";")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(currentScope)],
             [o.name], false) scope(currentScope))
         if (ast.findAnnotation(o, "parent")) then {
             out("this.superobj = {val};")
@@ -1041,12 +1041,12 @@ method compilevardec(o) {
         out "myframe.addVar(\"{escapestring(nm)}\", function() \{return {varf(nm)}});"
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value) scope(currentScope)],
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value) scope(currentScope)],
             [o.name], false) scope(currentScope))
         def assignID = ast.identifierNode.new(o.name.value ++ ":=", false) scope(currentScope)
         def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
         compilenode(ast.methodNode.new(assignID,
-            [ast.signaturePart.new(assignID.value, [tmpID])  scope(currentScope)],
+            [ast.signaturePart.partName(assignID.value) params( [tmpID] ) scope(currentScope)],
             [ast.bindNode.new(o.name, tmpID)], false)  scope(currentScope))
         out("this.methods[\"{nm}\"].debug = \"var\";")
     }
@@ -1318,7 +1318,7 @@ method compileimport(o) {
     out "    new GraceString('could not find module {o.path}'));"
     out("var " ++ varf(nm) ++ " = do_import(\"{fn}\", {formatModname(o.path)});")
     def methodIdent = o.value
-    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.nameString) scope(currentScope)],
+    def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.partName(o.nameString) scope(currentScope)],
         [methodIdent], o.dtype) scope(currentScope))
     accessor.line := o.line
     accessor.linePos := o.linePos
@@ -1682,7 +1682,7 @@ method runJsCode(of, glPath) {
             sys.environ.at "GRACE_MODULE_PATH" put "{libPath}:{gmp}"
         }
     }
-    def runExitCode = io.spawn("grace", of.pathname).wait
+    def runExitCode = io.spawn("grace", [of.pathname]).wait
     if (runExitCode < 0) then {
         io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
         sys.exit(4)

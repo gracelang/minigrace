@@ -391,7 +391,7 @@ method rewritematchblockterm(arg) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [arg.value, ast.arrayNode.new(subpats)])]
+            [ast.callWithPart.request "new" withArgs( [arg.value, ast.arrayNode.new(subpats)] )]
         )
         return [callpat, bindings]
     }
@@ -403,7 +403,7 @@ method rewritematchblockterm(arg) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [ast.stringNode.new(arg.value)])]
+            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
         if (arg.dtype != false) then {
             if (arg.dtype.kind == "identifier") then {
@@ -414,7 +414,7 @@ method rewritematchblockterm(arg) {
                             ast.identifierNode.new("prelude", false)
                         )
                     ),
-                    [ast.callWithPart.new("new", [varpat, arg.dtype])]
+                    [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )]
                 ), [arg]]
             }
             def tmp = rewritematchblockterm(arg.dtype)
@@ -429,7 +429,7 @@ method rewritematchblockterm(arg) {
                         ast.identifierNode.new("prelude", false)
                     )
                 ),
-                [ast.callWithPart.new("new", [varpat, tmp[1]])]
+                [ast.callWithPart.request "new" withArgs( [varpat, tmp[1]] )]
             )
             return [bindingpat, bindings]
         }
@@ -462,27 +462,18 @@ method rewritematchblock(blk) {
                     ast.identifierNode.new("prelude", false)
                 )
             ),
-            [ast.callWithPart.new("new", [ast.stringNode.new(arg.value)])]
+            [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
         if (arg.dtype != false) then {
             match (arg.dtype.kind)
-                case { "identifier" ->
+                case { "identifier" | "op" ->
                     pattern := ast.callNode.new(
                         ast.memberNode.new("new",
                             ast.memberNode.new("AndPattern",
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.new("new", [varpat, arg.dtype])])
-                } case { "op" ->
-                    pattern := ast.callNode.new(
-                        ast.memberNode.new("new",
-                            ast.memberNode.new("AndPattern",
-                                ast.identifierNode.new("prelude", false)
-                                )
-                            ),
-                        [ast.callWithPart.new("new", [varpat, arg.dtype])])
-                    // TODO: the above two cases are adentical — consolidate!
+                        [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )])
                 } case { _ ->
                     def tmp = rewritematchblockterm(arg.dtype)
                     def bindingpat = ast.callNode.new(
@@ -491,7 +482,7 @@ method rewritematchblock(blk) {
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.new("new", [varpat, tmp[1]])]
+                        [ast.callWithPart.request "new" withArgs( [varpat, tmp[1]] )]
                     )
                     pattern := bindingpat
                     for (tmp[2]) do {p->
@@ -1151,11 +1142,10 @@ method transformInherits(inhNode) ancestors(as) {
         if (definingScope.variety == "built-in") then { return inhNode }
     }
     def superScope = currentScope.scopeReferencedBy(superObject)
-    var newInhNode
     if (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
-        superCall.with.push(ast.callWithPart.new("object",
-            [ast.identifierNode.new("self", false) scope(currentScope)]))
+        superCall.with.push(ast.callWithPart.request "object" 
+            withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
         def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
             superCall.value.target
         ) scope(currentScope)
@@ -1176,15 +1166,15 @@ method transformInherits(inhNode) ancestors(as) {
         if (util.extensions.contains "ObjectInheritance") then {
             newInhNode := inhNode
         } else {
-            errormessages.syntaxError "inheritance must be from a freshly-created object"
-                atRange(inhNode.line, superObject.linePos,
-                    superObject.linePos + superObject.nameString.size - 1)
-        }
+        errormessages.syntaxError "inheritance must be from a freshly-created object"
+            atRange(inhNode.line, superObject.linePos,
+                superObject.linePos + superObject.nameString.size - 1)
+    }
     }
     superScope.elements.keysDo { each ->
         newInhNode.providedNames.add(each)
     }
-    inhNode.aliases.do { a -> 
+    inhNode.aliases.do { a ->
         def oldName = a.value.nameString
         if (superScope.contains(oldName)) then {
             newInhNode.providedNames.add(a.key.nameString)
@@ -1199,8 +1189,8 @@ method transformInherits(inhNode) ancestors(as) {
     }
     newInhNode.providedNames.do { each ->
         if (each != "self") then {
-            currentScope.addName(each) as(k.inherited)
-        }
+        currentScope.addName(each) as(k.inherited)
+    }
     }
     newInhNode
 }

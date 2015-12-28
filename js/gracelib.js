@@ -1796,12 +1796,15 @@ function gracecode_io() {
         }
         return GraceFalse;
     };
-    this.methods.spawn = function() {
+    this.methods.spawn = function(argcv, gCmd, gArgList) {
         if(typeof(process) !== "undefined") {
-            var cmd = safeJsString(arguments[1]);
+            var cmd = safeJsString(gCmd);
             var args = [];
-            for(var i = 2; i < arguments.length; i++)
-            args.push(safeJsString(arguments[i]));
+            var iter = callmethod(gArgList, "iterator", [0]);
+            while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
+                var arg = callmethod(iter, "next", [0]);
+                args.push(safeJsString(arg));
+            }
             var result = child_process.spawnSync(cmd, args,
                     {stdio: [process.stdin, process.stdout, process.stderr]});
             var o = new Grace_allocObject();

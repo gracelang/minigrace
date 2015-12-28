@@ -127,9 +127,7 @@ method system (command:String) -> Boolean { }
     // executes command in a sub-process and answers true if it exits with 0
 method exists (path:String) -> Boolean { }
 method newer (path1:String, path2:String) -> Boolean { }
-method spawn (executable:String, *args:String) -> Process { }
-    // forks and execv's executable, with args
-method spawnv (executable:String, args:Sequence<String>) -> Process { }
+method spawn (executable:String, args:Iterable<String>) -> Process { }
     // forks and execv's executable, with args
 method realpath (path:String) -> String { }
     // answers the canonicalized absolute pathname

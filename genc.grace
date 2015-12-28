@@ -177,7 +177,7 @@ method compilearray(o) {
 method compilemember(o) {
     // Member in value position is actually a nullary method call.
     util.setline(o.line)
-    var c := ast.callNode.new(o, [ast.callWithPart.new(o.value)])
+    var c := ast.callNode.new(o, [ast.callWithPart.request(o.value) withArgs( [] )])
     var r := compilenode(c)
     o.register := r
 }
@@ -383,7 +383,7 @@ method compileclass(o, includeConstant) {
     if (includeConstant) then {
         def con = ast.defDecNode.new(o.name, cobj, false)
         if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-            def meth = ast.methodNode.new(o.name, [ast.signaturePart.new(o.name.value)], [o.name], false)
+            def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value)], [o.name], false)
             compilenode(meth)
         }
         for (o.annotations) do {a->
@@ -541,7 +541,7 @@ method compileblock(o) {
     out("  Object {obj} = alloc_Block(NULL, NULL, \"{modname}\", {linenum});")
     out("  gc_frame_newslot({obj});")
     var id := ast.identifierNode.new("_apply", false)
-    var applymeth := ast.methodNode.new(id, [ast.signaturePart.new(id, o.params)], o.body, false)
+    var applymeth := ast.methodNode.new(id, [ast.signaturePart.partName(id) params(o.params)], o.body, false)
     applymeth.selfclosure := true
     compilemethod(applymeth, obj, 0)
     if (false != o.matchingPattern) then {
@@ -551,10 +551,11 @@ method compileblock(o) {
     if (false != o.extraRuntimeData) then {
         def erdid = ast.identifierNode.new("extraRuntimeData", false)
         def erdmeth = ast.methodNode.new(erdid,
-            [ast.signaturePart.new(erdid, [])],
+            [ast.signaturePart.partName(erdid)],
             [o.extraRuntimeData], false)
         compilemethod(erdmeth, obj, 2)
     }
+    // TODO: get rid of extraRuntimeData — it doesn't appear to be used.
     o.register := obj
     inBlock := origInBlock
 }
@@ -578,7 +579,7 @@ method compiletype(o) {     // dead code!
     }
     if (compilationDepth == 1) then {
         def idd = ast.identifierNode.new(o.value, false)
-        compilenode(ast.methodNode.new(idd, [ast.signaturePart.new(o.value)],
+        compilenode(ast.methodNode.new(idd, [ast.signaturePart.partName(o.value)],
             [idd], false))
     }
 }
@@ -597,7 +598,7 @@ method compiletypedec(o) {
     out("  *var_{idName} = {o.value.register};")
     o.register := "done"
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)],
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)],
             [o.name], false))  // TODO: should be TypeType
     }
 }
@@ -1193,12 +1194,12 @@ method compilebind(o) {
         o.register := val
     } elseif { dest.kind == "member" } then {
         dest.value := dest.value ++ ":="
-        c := ast.callNode.new(dest, [ast.callWithPart.new(dest.value, [o.value])])
+        c := ast.callNode.new(dest, [ast.callWithPart.request(dest.value) withArgs( [o.value] )])
         r := compilenode(c)
         o.register := r
     } elseif { dest.kind == "index" } then {
         var imem := ast.memberNode.new("[]:=", dest.value)
-        c := ast.callNode.new(imem, [ast.callWithPart.new(imem.value, [dest.index, o.value])])
+        c := ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )])
         r := compilenode(c)
         o.register := r
     }
@@ -1217,7 +1218,7 @@ method compiledefdec(o) {
     out("  if ({val} == undefined)")
     out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
         if (ast.findAnnotation(o, "parent")) then {
             out("  ((struct UserObject *)self)->super = {val};")
         }
@@ -1241,10 +1242,10 @@ method compilevardec(o) {
         out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
     }
     if (compilationDepth == 1) then {
-        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.new(o.name)], [o.name], false))
+        compilenode(ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name)], [o.name], false))
         def assignID = ast.identifierNode.new(o.name.value ++ ":=", false)
         def tmpID = ast.identifierNode.new("_var_assign_tmp", false)
-        compilenode(ast.methodNode.new(assignID, [ast.signaturePart.new(assignID, [tmpID])],
+        compilenode(ast.methodNode.new(assignID, [ast.signaturePart.partName(assignID) params( [tmpID] )],
             [ast.bindNode.new(o.name, tmpID)], false))
     }
     o.register := "done"
@@ -1588,7 +1589,7 @@ method compileimport(o) {
         def methodIdent = o.value
         methodIdent.line := o.line
         methodIdent.linePos := o.linePos
-        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.new(o.name)],
+        def accessor = (ast.methodNode.new(methodIdent, [ast.signaturePart.partName(o.name)],
                         [methodIdent], o.dtype))
         accessor.line := o.line
         accessor.linePos := o.linePos
@@ -1923,7 +1924,6 @@ method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
     var argv := sys.argv
     var cmd
     values := moduleObject.values
-    util.log 60 verbose "about to compile to c from {values}"
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -2162,7 +2162,7 @@ method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
             } else {
                 cmd := ofpnBase
             }
-            def runExitCode = io.spawn(cmd).wait
+            def runExitCode = io.spawn(cmd, []).wait
             if (runExitCode < 0) then {
                 io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
                 sys.exit(4)

@@ -3146,20 +3146,6 @@ Object alloc_Process(pid_t pid) {
 }
 Object io_spawn(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
-    char *args[argcv[0] + 1];
-    int i;
-    for (i=0; i<argcv[0]; i++)
-        args[i] = grcstring(argv[i]);
-    args[i] = NULL;
-    pid_t pid;
-    if (!(pid = fork())) {
-        execvp(args[0], args);
-        exit(127);
-    }
-    return alloc_Process(pid);
-}
-Object io_spawnv(Object self, int nparts, int *argcv,
-        Object *argv, int flags) {
     int size = integerfromAny(callmethod(argv[1], "size", 0, NULL, NULL));
     char *args[size + 2];
     args[0] = grcstring(argv[0]);
@@ -3202,7 +3188,7 @@ void io__mark(struct IOModuleObject *o) {
 Object module_io_init() {
     if (iomodule != NULL)
         return iomodule;
-    IOModule = alloc_class2("io", 13, (void*)&io__mark);
+    IOModule = alloc_class2("io", 12, (void*)&io__mark);
     add_Method(IOModule, "input", &io_input);
     add_Method(IOModule, "output", &io_output);
     add_Method(IOModule, "error", &io_error);
@@ -3211,7 +3197,6 @@ Object module_io_init() {
     add_Method(IOModule, "exists", &io_exists);
     add_Method(IOModule, "newer", &io_newer);
     add_Method(IOModule, "spawn", &io_spawn);
-    add_Method(IOModule, "spawnv", &io_spawnv);
     add_Method(IOModule, "realpath", &io_realpath);
     add_Method(IOModule, "listdir", &io_listdir);
     add_Method(IOModule, "asString", &Module_asString);

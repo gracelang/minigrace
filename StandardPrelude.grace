@@ -23,8 +23,6 @@ class FailedMatch.new(result') {
 }
 
 method abstract {
-    // this is copied from collectionsPrelude, because there is
-    // no simple way to delegate to it.
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
@@ -54,20 +52,12 @@ method for (cs) and (ds) do (action) -> Done {
     }
 }
 
-method min(a, b, *xs) {
-    var result := if (a < b) then { a } else { b }
-    xs.do { x -> 
-        if (x < result) then { result := x }
-    }
-    result
+method min(a, b) {
+    if (a < b) then { a } else { b }
 }
 
-method max(a, b, *xs) {
-    var result := if (a > b) then { a } else { b }
-    xs.do { x -> 
-        if (x > result) then { result := x }
-    }
-    result
+method max(a, b) {
+    if (a > b) then { a } else { b }
 }
 
 class BasicPattern.new {
@@ -381,7 +371,7 @@ import "collectionsPrelude" as coll
 // the above definition of TypeIntersection has been executed.
 
 // We should just be able to put "is public" on the above import, but this is
-// not fully implemented.  So intead we create an alias:
+// not fully implemented.  So instead we create an alias:
 def collections is public = coll
 
 type Block0<R> = collections.Block0<R>

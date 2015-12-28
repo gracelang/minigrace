@@ -97,7 +97,7 @@ method findNextTokenIndentedAt(tok) {
     nextTok
 }
 
-method findNextValidToken(*validFollowTokens) {
+method findNextValidToken(validFollowTokens) {
     // Tokens that cannot start an expression.
     def invalidTokens = set.with("dot", "comma", "colon", "rparen",
             "rbrace", "rsquare", "arrow", "bind");
@@ -285,7 +285,7 @@ method doannotation {
     if(didConsume({expression(noBlocks)}).not) then {
         def suggestions = list.empty
         var suggestion := errormessages.suggestion.new
-        def nextTok = findNextValidToken("bind")
+        def nextTok = findNextValidToken( ["bind"] )
         if(nextTok == sym) then {
             suggestion.insert(" «annotation»")afterToken(lastToken)
         } else {
@@ -304,7 +304,7 @@ method doannotation {
         if(didConsume({expression(noBlocks)}).not) then {
             def suggestions = list.empty
             var suggestion := errormessages.suggestion.new
-            def nextTok = findNextValidToken("bind")
+            def nextTok = findNextValidToken( ["bind"] )
             if(nextTok == sym) then {
                 suggestion.insert(" «annotation»")afterToken(lastToken)
             } else {
@@ -360,7 +360,7 @@ method typeexpression {
         next
         if(didConsume({typeexpression}).not) then {
             def suggestion = errormessages.suggestion.new
-            def nextTok = findNextValidToken("rparen")
+            def nextTok = findNextValidToken( ["rparen"] )
             if (nextTok == sym) then {
                 suggestion.insert("«type expression»")afterToken(lastToken)
             } else {
@@ -429,7 +429,7 @@ method block {
                     if(didConsume({expression(blocksOK)}).not) then {
                         def suggestions = list.empty
                         var suggestion := errormessages.suggestion.new
-                        def nextTok = findNextValidToken("arrow", "rbrace")
+                        def nextTok = findNextValidToken( ["arrow", "rbrace"] )
                         if(nextTok == sym) then {
                             suggestion.insert(" «expression»")afterToken(lastToken)
                         } else {
@@ -504,7 +504,7 @@ method block {
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rbrace")
+                    def nextTok = findNextValidToken( ["rbrace"] )
                     if(nextTok == sym) then {
                         suggestion.insert(" «expression»")afterToken(lastToken)
                     } else {
@@ -609,7 +609,7 @@ method doif {
             // Look ahead for a rparen.
             var nextTok := findNextToken({ t -> (t.line == lastToken.line) && (t.kind == "rparen") })
             if(nextTok == false) then {
-                nextTok := findNextValidToken("rparen")
+                nextTok := findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression») then \{")afterToken(lastToken)
                 } else {
@@ -748,7 +748,7 @@ method doif {
                     var nextTok := findNextToken({ t -> (t.line == lastToken.line) && 
                         ((t.kind == "rparen") || (t.kind == "rbrace"))})
                     if(nextTok == false) then {
-                        nextTok := findNextValidToken("rparen")
+                        nextTok := findNextValidToken( ["rparen"] )
                         if(nextTok == sym) then {
                             suggestion.insert("«expression») then \{")afterToken(lastToken)
                         } else {
@@ -968,7 +968,7 @@ method prefixop {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
                 } else {
@@ -989,7 +989,7 @@ method prefixop {
             if(didConsume({term}).not) then {
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
                 } else {
@@ -1011,7 +1011,7 @@ method prefixop {
         postfixsquare
         val := values.pop
         var mem := ast.memberNode.new("prefix" ++ op, val)
-        var call := ast.callNode.new(mem, [ast.callWithPart.new(mem.value)])
+        var call := ast.callNode.new(mem, [ast.callWithPart.request(mem.value) withArgs( [] )])
         values.push(call)
     }
 }
@@ -1112,7 +1112,7 @@ method trycatch {
         next
         if(didConsume({expression(blocksOK)}).not) then {
             def suggestion = errormessages.suggestion.new
-            def nextTok = findNextValidToken("rparen")
+            def nextTok = findNextValidToken( ["rparen"] )
             if(nextTok == sym) then {
                 suggestion.insert("«expression»")afterToken(lastToken)
             } else {
@@ -1141,7 +1141,7 @@ method trycatch {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
                 } else {
@@ -1199,7 +1199,7 @@ method trycatch {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
                 } else {
@@ -1274,7 +1274,7 @@ method matchcase {
     next
     if(didConsume({expression(blocksOK)}).not) then {
         def suggestion = errormessages.suggestion.new
-        def nextTok = findNextValidToken("rparen")
+        def nextTok = findNextValidToken( ["rparen"] )
         if(nextTok == sym) then {
             suggestion.insert("«expression»")afterToken(lastToken)
         } else {
@@ -1302,7 +1302,7 @@ method matchcase {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
                 } else {
@@ -1391,7 +1391,7 @@ method expression(acceptBlocks) {
         next
         if(didConsume({expression(acceptBlocks)}).not) then {
             def suggestion = errormessages.suggestion.new
-            def nextTok = findNextValidToken("rparen")
+            def nextTok = findNextValidToken( ["rparen"] )
             if(nextTok == sym) then {
                 suggestion.insert("«expression»")afterToken(lastToken)
             } else {
@@ -1429,7 +1429,7 @@ method postfixsquare {
         if(didConsume({expression(blocksOK)}).not) then {
             def suggestions = list.empty
             var suggestion := errormessages.suggestion.new
-            def nextTok = findNextValidToken("rsquare")
+            def nextTok = findNextValidToken( ["rsquare"] )
             if(nextTok == sym) then {
                 suggestion.insert("«index»")afterToken(lastToken)
             } else {
@@ -1561,7 +1561,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             next
             if(didConsume(recurse).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«{name}»")afterToken(lastToken)
                 } else {
@@ -1597,7 +1597,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             if(didConsume({term}).not) then {
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken("comma", "rparen", "rsquare", "rbrace")
+                def nextTok = findNextValidToken( ["comma", "rparen", "rsquare", "rbrace"] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «{name}»")afterToken(lastToken)
                 } else {
@@ -1789,7 +1789,7 @@ method parenthesizedArg(part) {
                 checkBadTypeLiteral
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «type name»")afterToken(lastToken)
                 } else {
@@ -1811,7 +1811,7 @@ method parenthesizedArg(part) {
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken("rparen")
+                def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                 } else {
@@ -1844,7 +1844,7 @@ method parenthesizedArg(part) {
                     checkBadTypeLiteral
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rparen")
+                    def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
                         suggestion.insert(" «type name»")afterToken(lastToken)
                     } else {
@@ -1989,7 +1989,7 @@ method callmprest(meth, signature, tok) {
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rparen")
+                    def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
                         suggestion.insert("«expression»")afterToken(lastToken)
                     } else {
@@ -2010,7 +2010,7 @@ method callmprest(meth, signature, tok) {
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rparen")
+                    def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
                         suggestion.insert(" «expression»")afterToken(lastToken)
                     } else {
@@ -2203,7 +2203,7 @@ method doarray {
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rsquare")
+                    def nextTok = findNextValidToken( ["rsquare"] )
                     if(nextTok == sym) then {
                         suggestion.insert(" «expression»")afterToken(lastToken)
                     } else {
@@ -2264,7 +2264,7 @@ method inheritsdec {
         if(didConsume({expression(noBlocks)}).not) then {
             def suggestions = list.empty
             var suggestion := errormessages.suggestion.new
-            def nextTok = findNextValidToken("rsquare")
+            def nextTok = findNextValidToken( ["rsquare"] )
             if(nextTok == sym) then {
                 suggestion.insert(" «parent»")afterToken(lastToken)
             } else {
@@ -2810,7 +2810,7 @@ method methodsignature(sameline) {
     var meth := values.pop
     meth.isBindingOccurrence := true
     var signature := list.empty
-    def part = ast.signaturePart.new(meth.value)
+    def part = ast.signaturePart.partName(meth.value)
     part.line := meth.line
     part.linePos := meth.linePos
     signature.push(part)
@@ -3054,7 +3054,7 @@ method doreturn {
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken("rbrace")
+                def nextTok = findNextValidToken( ["rbrace"] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                     suggestions.push(suggestion)
@@ -3270,7 +3270,7 @@ method statement {
                 if(didConsume({expression(blocksOK)}).not) then {
                     def suggestions = list.empty
                     var suggestion := errormessages.suggestion.new
-                    def nextTok = findNextValidToken("rbrace")
+                    def nextTok = findNextValidToken( ["rbrace"] )
                     if(nextTok == sym) then {
                         suggestion.insert(" «expression»")afterToken(lastToken)
                     } else {
@@ -3463,7 +3463,7 @@ method checkUnexpectedTokenAfterStatement {
                     suggestions.push(suggestion)
                 }
             }
-            def nextTok = findNextValidToken("rbrace")
+            def nextTok = findNextValidToken( ["rbrace"] )
             if(nextTok == sym) then {
                 suggestion := errormessages.suggestion.new
                 suggestion.addLine(lastToken.line, util.lines[lastToken.line].substringFrom(1)to(lastToken.linePos + lastToken.size - 1))

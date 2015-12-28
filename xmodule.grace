@@ -199,7 +199,7 @@ method compileModule (nm) inFile (sourceFile)
     cmd := cmd ++ util.commandLineExtensions
     cmd := "{cmd} --target {util.target} --noexec \"{sourceFile}\""
     util.log 50 verbose "executing sub-compile {cmd}"
-    def exitCode = io.spawn("bash", "-c", cmd).status
+    def exitCode = io.spawn("bash", ["-c", cmd]).status
     if (exitCode != 0) then {
         errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
     }
@@ -457,7 +457,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
             subScope.elements.keysDo { name ->
                 def subSubScope = subScope.getScope(name)
                 if (subSubScope.isUniversal.not) then {
-                    print "scope for {name} = { subScope.getScope(name).asDebugString }"
+                    util.log 80 verbose "scope for {name} = { subScope.getScope(name).asDebugString }"
                 }
             }
         }

@@ -8,8 +8,8 @@ def RequestError = ProgrammingError.refine "RequestError"
 def ConcurrentModification = ProgrammingError.refine "ConcurrentModification"
 def SizeUnknown = Exception.refine "SizeUnknown"
 
-method abstract {
-    // repeated in StandardPrelude
+method abstract is confidential {
+    // copied from StandardPrelude
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
@@ -429,7 +429,7 @@ class indexable.trait<T> {
     }
 }
 
-method max(a,b) is confidential {       // repeated from standard prelude
+method max(a,b) is confidential {       // copied from standard prelude
     if (a > b) then { a } else { b }
 }
 

@@ -318,7 +318,7 @@ method dameraulevenshtein(s, t) {
             def delcost = oneago[y] + 1
             def addcost = thisrow[y - 1] + 1
             def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
-            thisrow[y] := min(delcost, addcost, subcost)
+            thisrow[y] := min(delcost, min(addcost, subcost))
             if (((x > 1) && (y > 1)).andAlso{(s[x] == t[y - 1])
                 && (s[x - 1] == t[y]) && (s[x] != t[y])}) then {
                 thisrow[y] := min(thisrow[y], twoago[y - 2] + 1)
@@ -332,17 +332,6 @@ method dameraulevenshtein(s, t) {
     }
 
     thisrow[t.size]
-}
-
-// Return the minimum number from the given arguments.
-method min(*n) {
-    if(n.size > 0) then {
-        var m := n[1]
-        for (n) do { i ->
-            if(i < m) then { m := i }
-        }
-        m
-    }
 }
 
 // Methods to actually display an error message and suggestions, then exit.
