@@ -2443,7 +2443,7 @@ def inheritsNode = object {
                 s := "{s} {a} "
             }
             exclusions.do { e ->
-                s := "{s} exclude {e} "
+                s := "{s} exclude {e.nameString} "
             }
             s
         }
