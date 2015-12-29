@@ -1213,7 +1213,7 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
 }
-method compilecatchcase(o) {
+method compiletrycatch(o) {
     def myc = auto_count
     auto_count := auto_count + 1
     def cases = o.cases
@@ -1242,7 +1242,7 @@ method compilecatchcase(o) {
         out("  params[{idx}] = {e};")
     }
     out "  setline({o.line});"
-    out("  Object catchres{myc} = catchCase({mainblock}, params, {cases.size},"
+    out("  Object catchres{myc} = tryCatch({mainblock}, params, {cases.size},"
         ++ "{finally});")
     out("  gc_frame_end(frame{myc});")
     o.register := "catchres" ++ myc
@@ -1690,8 +1690,8 @@ method compilenode(o) {
         compileif(o)
     } elseif { oKind == "matchcase" } then {
         compilematchcase(o)
-    } elseif { oKind == "catchcase" } then {
-        compilecatchcase(o)
+    } elseif { oKind == "trycatch" } then {
+        compiletrycatch(o)
     } elseif { oKind == "class" } then {
         compileclass(o, true)
     } elseif { oKind == "object" } then {

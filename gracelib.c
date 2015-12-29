@@ -3792,7 +3792,7 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     graceRaise(ProgrammingErrorObject, "non-exhaustive match in match()case()….");
     return done;        // will never happen, but keeps C compiler quiet
 }
-Object catchCase(Object block, Object *caseList, int ncases,
+Object tryCatch(Object block, Object *caseList, int ncases,
         Object finally) {
     int old_error_jump_set = error_jump_set;
     error_jump_set = 1;
@@ -3842,6 +3842,11 @@ Object catchCase(Object block, Object *caseList, int ncases,
     callmethod(finally, "apply", 0, NULL, NULL);
     finally_stack[start_calldepth] = NULL;
     return rv;
+}
+Object catchCase(Object block, Object *caseList, int ncases,
+        Object finally) {
+    // for backward compatibility, until the new name is in STABLE.
+    return tryCatch(block, caseList, ncases, finally);
 }
 Object gracelib_print(Object receiver, int nparams,
         Object *args) {

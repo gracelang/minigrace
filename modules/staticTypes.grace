@@ -843,7 +843,7 @@ rule { req : MatchCase ->
     }
 }
 
-rule { req : CatchCase ->
+rule { req : TryCatch ->
     match(req.value) case { bl : BlockLiteral ->
         def params = bl.params
         if(params.size > 0) then {

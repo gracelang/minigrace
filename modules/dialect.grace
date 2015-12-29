@@ -275,7 +275,7 @@ class aNodePattern.forKind(kind : String) -> Pattern {
 def If is public = aNodePattern.forKind("if")
 def BlockLiteral is public = aNodePattern.forKind("block")
 def MatchCase is public = aNodePattern.forKind("matchcase")
-def CatchCase is public = aNodePattern.forKind("catchcase")
+def TryCatch is public = aNodePattern.forKind("trycatch")
 def MethodSignature is public = aNodePattern.forKind("methodtype")
 def TypeLiteral is public = aNodePattern.forKind("typeliteral")
 def TypeDeclaration is public = aNodePattern.forKind("typedec")
@@ -379,7 +379,7 @@ def astVisitor = object {
         checkMatch(node)
     }
 
-    method visitCatchCase(node) -> Boolean {
+    method visitTryCatch(node) -> Boolean {
         checkMatch(node)
     }
 

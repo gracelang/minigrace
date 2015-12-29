@@ -1035,7 +1035,7 @@ method compileindex(o) {
         out "var {o.register} = callmethod({of}, \"[]\", [1], {index})"
     }
 }
-method compilecatchcase(o) {
+method compiletrycatch(o) {
     def myc = auto_count
     auto_count := auto_count + 1
     def cases = o.cases
@@ -1049,8 +1049,8 @@ method compilecatchcase(o) {
     if (false != o.finally) then {
         finally := compilenode(o.finally)
     }
-    noteLineNumber(o.line)comment("compilecatchcase")
-    out("var catchres{myc} = catchCase({mainblock},cases{myc},{finally});")
+    noteLineNumber(o.line)comment("compiletrycatch")
+    out("var catchres{myc} = tryCatch({mainblock},cases{myc},{finally});")
     out("setModuleName(\"{modname}\");")
     o.register := "catchres" ++ myc
 }
@@ -1396,8 +1396,8 @@ method compilenode(o) {
         compilebind(o)
     } elseif (oKind == "if") then {
         compileif(o)
-    } elseif (oKind == "catchcase") then {
-        compilecatchcase(o)
+    } elseif (oKind == "trycatch") then {
+        compiletrycatch(o)
     } elseif (oKind == "matchcase") then {
         compilematchcase(o)
     } elseif (oKind == "class") then {

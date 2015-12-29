@@ -108,6 +108,7 @@ Object alloc_done();
 Object alloc_ellipsis();
 Object alloc_MatchFailed();
 Object matchCase(Object, Object*, int, Object);
+Object tryCatch(Object, Object*, int, Object);
 Object catchCase(Object, Object*, int, Object);
 Object alloc_Integer32(int);
 Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),

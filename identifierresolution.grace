@@ -1039,7 +1039,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitTypeParameters(o) up(as) { o.scope := as.parent.scope ; true }
         method visitIf(o) up(as) { o.scope := as.parent.scope ; true }
         method visitMatchCase(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitCatchCase(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitTryCatch(o) up(as) { o.scope := as.parent.scope ; true }
         method visitSignaturePart(o) up(as) { o.scope := as.parent.scope ; true }
         method visitArray(o) up(as) { o.scope := as.parent.scope ; true }
         method visitMember(o) up(as) { o.scope := as.parent.scope ; true }

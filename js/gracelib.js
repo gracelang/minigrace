@@ -2846,7 +2846,7 @@ function callmethodChecked(obj, methname, argcv) {
     return ret;
 }
 
-function catchCase(obj, cases, finallyblock) {
+function tryCatch(obj, cases, finallyblock) {
     setModuleName("try()catch()...finally()");
     setLineNumber(0);
     var ret
@@ -3340,7 +3340,6 @@ if (typeof global !== "undefined") {
     global.callmethodChecked = callmethodChecked;
     global.callmethodsuper = callmethodsuper;
     global.callStack = callStack;
-    global.catchCase = catchCase;
     global.classType = classType;
     global.dbg = dbg;
     global.dbgp = dbgp;
@@ -3401,6 +3400,7 @@ if (typeof global !== "undefined") {
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
+    global.tryCatch = tryCatch;
     global.type_Boolean = type_Boolean;
     global.type_Block = type_Block;
     global.type_Done = type_Done;

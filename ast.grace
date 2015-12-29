@@ -386,16 +386,16 @@ class blockNode.new(params', body') {
         self
     }
 }
-class catchCaseNode.new(block, cases', finally') {
+class tryCatchNode.new(block, cases', finally') {
     inherits baseNode.new
-    def kind is public = "catchcase"
+    def kind is public = "trycatch"
     var value is public := block
     var cases is public := cases'
     var finally is public := finally'
     method isSimple { false }  // needs parens when used as reciever
 
     method accept(visitor : ASTVisitor) from(as) {
-        if (visitor.visitCatchCase(self) up(as)) then {
+        if (visitor.visitTryCatch(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
             for (self.cases) do { mx ->
@@ -434,17 +434,17 @@ class catchCaseNode.new(block, cases', finally') {
         for (0..(depth - 1)) do { i ->
             spc := spc ++ "    "
         }
-        var s := "catch " ++ self.value.toGrace(0) ++ " "
+        var s := "try " ++ self.value.toGrace(depth + 1) ++ " "
         for (self.cases) do { case ->
-            s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
+            s := s ++ "\n" ++ spc ++ "    " ++ "catch " ++ case.toGrace(depth + 1)
         }
         if (self.finally != false) then {
-            s := s ++ "\n" ++ spc ++ "    " ++ "finally " ++ self.finally.toGrace(depth + 2)
+            s := s ++ "\n" ++ spc ++ "    " ++ "finally " ++ self.finally.toGrace(depth + 1)
         }
         s
     }
     method shallowCopy {
-        catchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
+        tryCatchNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
 }
 class matchCaseNode.new(matchee', cases', elsecase') {
@@ -2721,7 +2721,7 @@ type ASTVisitor = {
      visitIf(o) up(as) -> Boolean
      visitBlock(o) up(as) -> Boolean
      visitMatchCase(o) up(as) -> Boolean
-     visitCatchCase(o) up(as) -> Boolean
+     visitTryCatch(o) up(as) -> Boolean
      visitMethodType(o) up(as) -> Boolean
      visitSignaturePart(o) up(as) -> Boolean
      visitTypeLiteral(o) up(as) -> Boolean
@@ -2755,7 +2755,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitIf(o) up(as) { visitIf(o) }
     method visitBlock(o) up(as) { visitBlock(o) }
     method visitMatchCase(o) up(as) { visitMatchCase(o) }
-    method visitCatchCase(o) up(as) { visitCatchCase(o) }
+    method visitTryCatch(o) up(as) { visitTryCatch(o) }
     method visitMethodType(o) up(as) { visitMethodType(o) }
     method visitSignaturePart(o) up(as) { visitSignaturePart(o) }
     method visitTypeDec(o) up(as) { visitTypeDec(o) }
@@ -2787,7 +2787,7 @@ factory method baseVisitor -> ASTVisitor {
     method visitIf(o) -> Boolean { true }
     method visitBlock(o) -> Boolean { true }
     method visitMatchCase(o) -> Boolean { true }
-    method visitCatchCase(o) -> Boolean { true }
+    method visitTryCatch(o) -> Boolean { true }
     method visitMethodType(o) -> Boolean { true }
     method visitSignaturePart(o) -> Boolean { true }
     method visitTypeDec(o) -> Boolean { true }
@@ -2829,7 +2829,7 @@ factory method pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitIf(o) up(as) { visitation.apply (o, as) }
     method visitBlock(o) up(as) { visitation.apply (o, as) }
     method visitMatchCase(o) up(as) { visitation.apply (o, as) }
-    method visitCatchCase(o) up(as) { visitation.apply (o, as) }
+    method visitTryCatch(o) up(as) { visitation.apply (o, as) }
     method visitMethodType(o) up(as) { visitation.apply (o, as) }
     method visitSignaturePart(o) up(as) { visitation.apply (o, as) }
     method visitTypeDec(o) up(as) { visitation.apply (o, as) }

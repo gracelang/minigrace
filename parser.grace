@@ -1241,7 +1241,7 @@ method trycatch {
         finally := values.pop
     }
     util.setPosition(catchTok.line, catchTok.linePos)
-    values.push(ast.catchCaseNode.new(mainblock, cases, finally))
+    values.push(ast.tryCatchNode.new(mainblock, cases, finally))
     minIndentLevel := localmin
 }
 method matchcase {
