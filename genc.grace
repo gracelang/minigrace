@@ -515,6 +515,7 @@ method compileobject(o, outerRef) {
             superobj := compilenode(e.value)
             out "  struct UserObject *{selfr}_uo = (struct UserObject *){selfr};"
             out "  {selfr}_uo->super = {superobj};"
+            implementAliasesAndExclusionsFor(o) inheriting(e, superobj)
             pos := pos - 1
         } else {
             compilenode(e)
@@ -1867,6 +1868,13 @@ method linkExecutable(fnBase, buildinfo) {
     }
 }
 
+method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
+    // o is an object node, and e an inherits node.  e has already been
+    // compiled into register superobj.
+    
+    // This has not yet been implemented.
+}
+
 method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
     util.log_verbose "generating C code."
     var argv := sys.argv
@@ -2022,8 +2030,8 @@ method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
             def superobj = compilenode(o.value)
             out("  self = setsuperobj(self, {superobj});")
             out("  *selfslot = self;")
-        }
-        if ((o.kind != "method") && (o.kind != "type")) then {
+            implementAliasesAndExclusionsFor(moduleObject) inheriting(o, superobj)
+        } elseif {(o.kind != "method") && (o.kind != "type")} then {
             compilenode(o)
         }
     }
