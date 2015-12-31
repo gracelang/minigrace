@@ -530,7 +530,7 @@ class methodTypeNode.new(name', signature', rtype') {
     var value is public := name'
     var signature is public := signature'
     var rtype is public := rtype'
-    var generics is public := false
+    var typeParams is public := false
     def nameString:String is public = value
 
     method parametersDo(b) {
@@ -548,8 +548,8 @@ class methodTypeNode.new(name', signature', rtype') {
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitMethodType(self) up(as)) then {
             def newChain = as.extend(self)
-            if (false != generics) then {
-                generics.accept(visitor) from(newChain)
+            if (false != typeParams) then {
+                typeParams.accept(visitor) from(newChain)
             }
             if (rtype != false) then {
                 rtype.accept(visitor) from(newChain)
@@ -564,7 +564,7 @@ class methodTypeNode.new(name', signature', rtype') {
         def newChain = as.extend(n)
         n.rtype := maybeMap(rtype, blk) ancestors(newChain)
         n.signature := listMap(signature, blk) ancestors(newChain)
-        n.generics := maybeMap(generics, blk) ancestors(newChain)
+        n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
@@ -577,9 +577,9 @@ class methodTypeNode.new(name', signature', rtype') {
         if (rtype != false) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
-        if (false != generics) then {
+        if (false != typeParams) then {
             s := "{s}\n{spc}TypeParams:\n" 
-            s := s ++ generics.pretty(depth + 2)
+            s := s ++ typeParams.pretty(depth + 2)
         }
         s := "{s}\n{spc}Signature:"
         for (signature) do { part ->
@@ -589,8 +589,15 @@ class methodTypeNode.new(name', signature', rtype') {
     }
     method toGrace(depth : Number) -> String {
         var s := ""
+        var firstPart := true
         for (self.signature) do { part ->
             s := s ++ part.name
+            if (firstPart) then {
+                firstPart := false
+                if (false != typeParams) then {
+                    typeParams.toGrace(depth + 1)
+                }
+            }
             if ((part.params.size > 0) || (part.vararg != false)) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
@@ -703,7 +710,7 @@ class typeDecNode.new(name', typeValue) {
     var value is public := typeValue
     def nameString:String is public = name.value
     var annotations is public := list.empty
-    var generics is public := false
+    var typeParams is public := false
 
     method scope:=(st) {
         // sets up the 2-way conection between this node
@@ -724,8 +731,8 @@ class typeDecNode.new(name', typeValue) {
         if (visitor.visitTypeDec(self) up(as)) then {
             def newChain = as.extend(self)
             name.accept(visitor) from(newChain)
-            if (generics != false) then {
-                generics.accept(visitor) from(newChain)
+            if (typeParams != false) then {
+                typeParams.accept(visitor) from(newChain)
             }
             annotations.do { each -> each.accept(visitor) from(newChain) }
             value.accept(visitor) from(newChain)
@@ -735,7 +742,7 @@ class typeDecNode.new(name', typeValue) {
         var n := shallowCopy
         def newChain = as.extend(n)
         n.name := name.map(blk) ancestors(newChain)
-        n.generics := maybeMap(generics, blk) ancestors(newChain)
+        n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         n.value := value.map(blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
         blk.apply(n, as)
@@ -747,8 +754,8 @@ class typeDecNode.new(name', typeValue) {
         }
         var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1) ++ "\n"
-        if (false != generics) then {
-            s := "{s}{spc}Type parameters:\n{generics.pretty(depth + 2)}\n"
+        if (false != typeParams) then {
+            s := "{s}{spc}Type parameters:\n{typeParams.pretty(depth + 2)}\n"
         }
         s := s ++ spc ++ "Value:"
         s := s ++ value.pretty(depth+2)
@@ -765,10 +772,10 @@ class typeDecNode.new(name', typeValue) {
         }
         var s := ""
         s := "type {self.name}"
-        if (false != generics) then {
-            generics.toGrace(0)
+        if (false != typeParams) then {
+            typeParams.toGrace(0)
         }
-        s ++ " = " ++ value(toGrace(depth + 2))
+        s ++ " = " ++ value.toGrace(depth + 2)
     }
     method shallowCopy {
         typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
@@ -796,7 +803,7 @@ def methodNode = object {
         var body is public := body'
         var dtype is public := dtype'
         var varargs is public := false
-        var generics is public := false
+        var typeParams is public := false
         var selfclosure is public := false
         def nameString:String is public = value.value
         var annotations is public := list.empty
@@ -831,8 +838,8 @@ def methodNode = object {
             if (visitor.visitMethod(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.value.accept(visitor) from(newChain)
-                if (false != generics) then {
-                    generics.accept(visitor) from(newChain)
+                if (false != typeParams) then {
+                    typeParams.accept(visitor) from(newChain)
                 }
                 for (self.signature) do { part ->
                     for (part.params) do { p ->
@@ -857,7 +864,7 @@ def methodNode = object {
             var n := shallowCopy
             def newChain = as.extend(n)
             n.body := listMap(body, blk) ancestors(newChain)
-            n.generics := maybeMap(generics, blk) ancestors(newChain)
+            n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
             n.signature := listMap(signature, blk) ancestors(newChain)
             n.annotations := listMap(annotations, blk) ancestors(newChain)
             n.dtype := maybeMap(dtype, blk) ancestors(newChain)
@@ -888,9 +895,9 @@ def methodNode = object {
                 }
             }
             s := s ++ "\n"
-            if (false != generics) then {
+            if (false != typeParams) then {
                 s := "{s}{spc}Generics:"
-                generics.do {g->
+                typeParams.do {g->
                     s := "{s}\n{spc}  {g.pretty(0)}"
                 }
                 s := s ++ "\n"
@@ -920,12 +927,8 @@ def methodNode = object {
             var firstPart := true
             for (self.signature) do { part ->
                 s := s ++ part.name
-                if (firstPart.andAlso{false != generics}) then {
-                    s := s ++ "<"
-                    for (1..(generics.size - 1)) do {ix ->
-                        s := s ++ generics.at(ix).toGrace(depth + 1)
-                    }
-                    s := s ++ generics.last.toGrace(depth + 1) ++ ">"
+                if (firstPart.andAlso{false != typeParams}) then {
+                    s := s ++ typeParams.toGrace(depth + 1)
                 }
                 firstPart := false
                 if ((part.params.size > 0) || (part.vararg != false)) then {
@@ -1142,7 +1145,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     var constructor is public := constructor'
     var signature is public := signature'
     var dtype is public := dtype'
-    var generics is public := false
+    var typeParams is public := false
     var superclass is public := superclass'
     var annotations is public := list.empty
     def nameString:String is public = name.value
@@ -1179,8 +1182,8 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
             def newChain = as.extend(self)
             self.name.accept(visitor) from(newChain)
             self.constructor.accept(visitor) from(newChain)
-            if (false != generics) then {
-                generics.do { each ->
+            if (false != typeParams) then {
+                typeParams.do { each ->
                     each.accept(visitor) from(newChain)
                 }
             }
@@ -1207,7 +1210,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         n.value := listMap(value, blk) ancestors(newChain)
         n.name := name.map(blk) ancestors(newChain)
         n.signature := listMap(signature, blk) ancestors(newChain)
-        n.generics := maybeMap(generics, blk) ancestors(newChain)
+        n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
         n.superclass := maybeMap(superclass, blk) ancestors(newChain)
         n.constructor := constructor.map(blk) ancestors(newChain)
@@ -1247,9 +1250,9 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
                 s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
             }
         }
-        if (generics != false) then {
+        if (typeParams != false) then {
             s := s ++ "\n" ++ spc ++ "Type Parameters:\n" ++
-                generics.pretty(depth + 2)
+                typeParams.pretty(depth + 2)
         }
         if (annotations.size > 0) then {
             s := s ++ "\n" ++ spc ++ "Annotations:"
@@ -1273,7 +1276,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         }
         var s := "class {self.name.toGrace(0)}"
         if (self.name.kind != "generic") then {
-            // TODO generics + new-style constructors aren't possible at the moment
+            // TODO typeParams + new-style constructors aren't possible at the moment
             s := s ++ "."
             for (self.signature) do { part ->
                 s := s ++ part.name
@@ -1315,13 +1318,13 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
 def moduleNode = object {
     method body(b) named(n) scope(s) {
         def result = body(b)
-        result.classname := n
+        result.name := n
         result.scope := s
         result
     }
     method body(b) named(n) {
         def result = body(b)
-        result.classname := n
+        result.name := n
         result
     }
     factory method body(b) {
@@ -1329,7 +1332,7 @@ def moduleNode = object {
         def kind is public = "module"
         line := 0       // because the module is always implicit
         linePos := 0
-        method classname { "module" }
+        var imports is public := list.empty
         method isModule { true }
         method returnsObject { false }
         method values { value }
@@ -1347,12 +1350,17 @@ def moduleNode = object {
         method shallowCopy {
             moduleNode.body(emptySeq).shallowCopyFieldsFrom(self)
         }
+        method shallowCopyFieldsFrom(other) {
+            super.shallowCopyFieldsFrom(other)
+            imports := other.imports
+            self
+        }
     }
 }
 def objectNode = object {
     method body(b) named(n) scope(s) {
         def result = new(b, false)
-        result.classname := n
+        result.name := n
         result.scope := s
         result
     }
@@ -1365,7 +1373,7 @@ def objectNode = object {
         def kind is public = "object"
         var value is public := body
         var superclass is public := superclass'
-        var classname is public := "object"
+        var name is public := "object"
 
         method scope:=(st) {
             // sets up the 2-way conection between this node
@@ -1389,10 +1397,10 @@ def objectNode = object {
             }
         }
         method nameString { 
-            if (classname == "object") then {
+            if (name == "object") then {
                 "object_on_line_{line}"
             } else {
-                classname
+                name
             }
         }
         method map(blk) ancestors(as) {
@@ -1409,6 +1417,7 @@ def objectNode = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth)
+            s := "{s}\n{spc}Name: {self.name}"
             if (self.superclass != false) then {
                 s := s ++ "\n" ++ spc ++ "Superclass:"
                 s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
@@ -1437,7 +1446,7 @@ def objectNode = object {
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
-            classname := other.classname
+            name := other.name
             value := other.value
             superclass := other.superclass
             self
@@ -1570,23 +1579,21 @@ def memberNode = object {
         }
     }
 }
-class genericNode.new(base, params') {
+class genericNode.new(base, arguments) {
+    // represents an application of a parameterized type to some arguments.
     inherits baseNode.new
     def kind is public = "generic"
-    var value is public := base        // APB: in a generic call, value is the called node
-                            // e.g. in List<Number>, value is Identifier‹List›
-    var params is public := params'
+    var value is public := base        
+        // in a generic application, `value` is the applied type
+        // e.g. in List<Number>, value is Identifier‹List›
+    var args is public := arguments
     method nameString { value.nameString }
-    method asString { 
-        var s := "generic {base}<"
-        params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
-        s ++ ">"
-    }
+    method asString { toGrace 0 }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitGeneric(self) up(as)) then {
             def newChain = as.extend(self)
             self.value.accept(visitor) from(newChain)
-            for (self.params) do { p ->
+            for (self.args) do { p ->
                 p.accept(visitor) from(newChain)
             }
         }
@@ -1595,34 +1602,23 @@ class genericNode.new(base, params') {
         var n := shallowCopy
         def newChain = as.extend(n)
         n.value := value.map(blk) ancestors(newChain)
-        n.params := listMap(params, blk) ancestors(newChain)
+        n.args := listMap(args, blk) ancestors(newChain)
         blk.apply(n, as)
     }
     method pretty(depth) {
-        var s := "{super.pretty(depth)}‹{self.value.value}›<"
-        for (self.params.indices) do { i ->
-            s := s ++ self.params[i].pretty(depth+2)
-            if (i < self.params.size) then {
-                s := s ++ ", "
-            }
-        }
-        s := s ++ ">"
-        s
-
+        var s := "{super.pretty(depth)}({value.pretty(depth)})<"
+        args.do { each -> s := s ++ each.pretty(depth+2) }
+            separatedBy { s := s ++ ", " }
+        s ++ ">"
     }
     method toGrace(depth : Number) -> String {
-        var s := self.value.value ++ "<"
-        for (self.params.indices) do { i ->
-            s := s ++ self.params[i].toGrace(0)
-            if (i < self.params.size) then {
-                s := s ++ ", "
-            }
-        }
-        s := s ++ ">"
-        s
+        var s := nameString ++ "<"
+        args.do { each -> s := s ++ each.toGrace(0) }
+            separatedBy { s := s ++ ", " }
+        s ++ ">"
     }
     method shallowCopy {
-        genericNode.new(value, emptySeq).shallowCopyFieldsFrom(self)
+        genericNode.new(value, args).shallowCopyFieldsFrom(self)
     }
 }
 
@@ -1630,11 +1626,7 @@ class typeParametersNode.new(params') {
     inherits baseNode.new
     def kind is public = "typeparams"
     var params is public := params'
-    method asString { 
-        var s := "typeparams <"
-        params.do { each -> s := "{s}{each}" } separatedBy { s := s ++ ", " }
-        s ++ ">"
-    }
+    method asString { toGrace 0 }
     method declarationKindWithAncestors(as) { k.typeparam }
 
     method accept(visitor : ASTVisitor) from(as) {
@@ -1660,10 +1652,16 @@ class typeParametersNode.new(params') {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        spc ++ super.pretty(depth) ++ self.asString
+        var s := spc ++ super.pretty(depth) ++ "<"
+        params.do { each -> s := s ++ each.pretty(depth+2) }
+            separatedBy { s := s ++ ", " }
+        s ++ ">"
     }
-    method toGrace(depth : Number) -> String {
-        self.asString
+    method toGrace(depth:Number) -> String {
+        var s := "<"
+        params.do { each -> s := "{s}{each.toGrace(depth)}" }
+            separatedBy { s := s ++ ", " }
+        s ++ ">"
     }
     method shallowCopy {
         typeParametersNode.new(emptySeq).shallowCopyFieldsFrom(self)
@@ -2533,16 +2531,18 @@ def signaturePart = object {
         var name is public := n
         var params is public := ps
         var vararg is public := v
-        var generics is public := false
+        var typeParams is public := false
         var lineLength is public := 0
 
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitSignaturePart(self) up(as)) then {
                 def newChain = as.extend(self)
                 params.do { p -> p.accept(visitor) from(newChain) }
-                if (false != vararg) then { vararg.accept(visitor) from(newChain) }
-                if (false != generics) then {
-                    generics.do { g -> g.accept(visitor) from(newChain) }
+                if (false != vararg) then { 
+                    vararg.accept(visitor) from(newChain) 
+                }
+                if (false != typeParams) then {
+                    typeParams.accept(visitor) from(newChain)
                 }
             }
         }
@@ -2552,6 +2552,7 @@ def signaturePart = object {
             def newChain = as.extend(nd)
             nd.params := listMap(params, blk) ancestors(newChain)
             nd.vararg := maybeMap(vararg, blk) ancestors(newChain)
+            nd.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
             blk.apply(nd, as)
         }
         method pretty(depth) {
@@ -2566,6 +2567,9 @@ def signaturePart = object {
             }
             if (vararg != false) then {
                 s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
+            }
+            if (false != typeParams) then {
+                s := "{s}\n  {spc}TypeParams: {typeParams.pretty(depth + 1)}"
             }
             s
         }

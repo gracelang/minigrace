@@ -313,7 +313,7 @@ method compileclass(o) {
             scope(innerObjectScope)]
     var factorytMeth := ast.methodNode.new(o.constructor, signature, mbody,
         false) scope(factoryScope)
-    factorytMeth.generics := o.generics
+    factorytMeth.typeParams := o.typeParams
     factorytMeth.isFresh := true
     def asStringBody = [ast.stringNode.new("class {o.nameString}") scope(innerObjectScope)]
     // TODO: should be a new scope
@@ -552,20 +552,20 @@ method compilemethod(o, selfobj) {
                 ++ msgSuffix ++ "\"));")
         }
     }
-    if (o.generics != false) then {
+    if (o.typeParams != false) then {
         def sz = o.signature.size
         out "// Start type arguments"
-        o.generics.do {g->
+        o.typeParams.do {g->
             out "var {varf(g.value)} = var_Unknown;"
         }
         out "if (argcv.length == {1 + sz}) \{"
         if (emitArgChecks) then {
-            out "  if (argcv[{sz}] != {o.generics.size}) \{"
+            out "  if (argcv[{sz}] != {o.typeParams.size}) \{"
             out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
             out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
             out "  \}"
         }
-        o.generics.do { g ->
+        o.typeParams.do { g ->
             out("  {varf(g.value)} = arguments[curarg++];")
         }
         out "\}"
@@ -739,20 +739,20 @@ method compilefreshmethod(o, selfobj) {
         }
     }
     out "var inheritingObject = arguments[curarg++];"
-    if (o.generics != false) then {
+    if (o.typeParams != false) then {
         def sz = o.signature.size + 1
         out "// Start type arguments"
-        o.generics.do {g->
+        o.typeParams.do {g->
             out "var {varf(g.value)} = var_Unknown;"
         }
         out "if (argcv.length == {1 + sz}) \{"
         if (emitArgChecks) then {
-            out "  if (argcv[{sz}] != {o.generics.size}) \{"
+            out "  if (argcv[{sz}] != {o.typeParams.size}) \{"
             out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             out "        new GraceString(\"wrong number of type arguments\"));"
             out "  \}"
         }
-        o.generics.do { g ->
+        o.typeParams.do { g ->
             out("  {varf(g.value)} = arguments[curarg++];")
         }
         out "\}"
@@ -807,7 +807,7 @@ method compilefreshmethod(o, selfobj) {
     var tailObject := false
     if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
         tailObject := o.body.pop    // remove tail object
-        tailObject.classname := o.nameString
+        tailObject.name := o.nameString
     }
     var ret := "GraceDone"
     for (o.body) do { l ->
@@ -1495,7 +1495,7 @@ method processImports(values') {
         }
     }
 }
-method compile(moduleObject, of, mn, rm, bt, glPath) {
+method compile(moduleObject, of, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
     if (util.extensions.contains "noChecks") then {
@@ -1520,11 +1520,7 @@ method compile(moduleObject, of, mn, rm, bt, glPath) {
     }
     values := moduleObject.values
     outfile := of
-    var slashPos := 0
-    (range.from (mn.size) downTo 1).do { ix ->
-        if (mn.at(ix) == "/") then { slashPos := ix }
-    }
-    modname := mn.substringFrom (slashPos+1) to (mn.size)
+    modname := moduleObject.name
     runmode := rm
     buildtype := bt
     if (util.extensions.contains("Debug")) then {
@@ -1594,8 +1590,10 @@ method compile(moduleObject, of, mn, rm, bt, glPath) {
         out "'{imp}',"
     }
     out "];"
-    xmodule.writeGCT(modname)
-        fromValues(values)modules(imports.other)
+    
+    moduleObject.imports := imports.other
+    xmodule.writeGctForModule(moduleObject)
+
     def gct = xmodule.parseGCT(modname)
     def gctText = xmodule.gctAsString(gct)
     out "if (typeof gctCache !== \"undefined\")"

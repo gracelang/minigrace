@@ -925,8 +925,8 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             outerObjectScope.addNode(factoryMeth) as(k.methdec)
             factoryMeth.isDeclaredByParent := true
             def factoryScope = newScopeIn(outerObjectScope) kind "method"
-            if (o.generics != false) then { 
-                o.generics.do { each ->
+            if (o.typeParams != false) then {
+                o.typeParams.do { each ->
                     factoryScope.addNode(each) as(k.typeparam)
                     each.isDeclaredByParent := true
                 }
@@ -1027,7 +1027,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             enclosingScope.addNode(o.name) as(k.typedec)
             o.name.isDeclaredByParent := true
             o.scope := newScopeIn(enclosingScope) kind "typedec"
-            // this scope will be the home for any <generic parameters>.
+            // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
             // For now we don't distinguish between type decs and type params
             true

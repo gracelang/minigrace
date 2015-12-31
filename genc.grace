@@ -373,17 +373,16 @@ method compileclass(o, includeConstant) {
     var signature := o.signature
     util.setPosition(o.line, o.linePos)
     def obj = ast.objectNode.new(o.value, o.superclass)
-    obj.classname := o.name.value
+    obj.name := o.name.value
     var mbody := [obj]
     var newmeth := ast.methodNode.new(o.constructor, signature, mbody, false)
-    newmeth.generics := o.generics
+    newmeth.typeParams := o.typeParams
     newmeth.isFresh := true
-    var obody := [newmeth]
-    var cobj := ast.objectNode.new(obody, false)
+    var cobj := ast.objectNode.body([newmeth]) named(o.name ++ o.constructor.nameString)
     if (includeConstant) then {
         def con = ast.defDecNode.new(o.name, cobj, false)
-        if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-            def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.name.value)], [o.name], false)
+        if ((compilationDepth == 1) && (o.name.kind != "generic")) then {
+            def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.nameString)], [o.name], false)
             compilenode(meth)
         }
         for (o.annotations) do {a->
@@ -429,10 +428,10 @@ method compileobject(o, outerRef) {
     out("  Object " ++ selfr ++ " = alloc_userobj2({numMethods},"
         ++ "{numFields}, objclass{myc});")
     out("  gc_frame_newslot({selfr});")
-    if (o.classname != "object") then {
+    if (o.name != "object") then {
         out("if (objclass{myc} == NULL) \{")
         out("  glfree({selfr}->class->name);")
-        out("  {selfr}->class->name = \"{o.classname}\";")
+        out("  {selfr}->class->name = \"{o.name}\";")
         out("\}")
     }
     compileobjouter(selfr, outerRef)
@@ -693,9 +692,9 @@ method compilemethod(o, selfobj, pos) {
     slot := slot + 1
     numslots := numslots + 1
     out "  if (methodInheritingObject) curarg++;"
-    if (o.generics != false) then {
-        out("// Start generics")
-        o.generics.do {g->
+    if (o.typeParams != false) then {
+        out("// Start typeParams")
+        o.typeParams.do {g->
             var gn := escapeident(g.value)
             declaredvars.push(gn)
             out("  Object *var_{gn} = &(stackframe->slots[{slot}]);")
@@ -703,20 +702,20 @@ method compilemethod(o, selfobj, pos) {
             numslots := numslots + 1
         }
         out("  if (nparts == 1 + {o.signature.size} + (methodInheritingObject != NULL)) \{")
-        out("    if (argcv[nparts-1] < {o.generics.size}) \{")
+        out("    if (argcv[nparts-1] < {o.typeParams.size}) \{")
         out("      graceRaise(RequestError(), \"insufficient generic parameters\");")
         out("    \}")
-        o.generics.do {g->
+        o.typeParams.do {g->
             var gn := escapeident(g.value)
             out("    *var_{gn} = args[curarg++];")
         }
         out("  \} else \{")
-        o.generics.do {g->
+        o.typeParams.do {g->
             var gn := escapeident(g.value)
             out("    *var_{gn} = Unknown;")
         }
         out("  \}")
-        out("// End generics")
+        out("// End typeParams")
     }
     var ret := "done"
     numslots := numslots + countbindings(o.body)
@@ -729,12 +728,12 @@ method compilemethod(o, selfobj, pos) {
     }
     if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
         tailObject := o.body.pop       // remove tail object
-        if (tailObject.classname == "object") then {
+        if (tailObject.name == "object") then {
             var selfName := selfobj
             if (selfName.startsWith "var_") then {
                 selfName := selfName.substringFrom 5 to(selfName.size)
             }
-            tailObject.classname := selfobj ++ "." ++ o.nameString
+            tailObject.name := selfobj ++ "." ++ o.nameString
         }
     }
     for (o.body) do { l ->
@@ -1875,7 +1874,7 @@ method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
     // This has not yet been implemented.
 }
 
-method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
+method compile(moduleObject, outfile, rm, bt, buildinfo) {
     util.log_verbose "generating C code."
     var argv := sys.argv
     var cmd
@@ -1891,7 +1890,7 @@ method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
             }
         }
     }
-    modname := mn
+    modname := moduleObject.name
     escmodname := escapeident(modname)
     runmode := rm
     buildtype := bt
@@ -2091,8 +2090,8 @@ method compile(moduleObject, outfile, mn, rm, bt, buildinfo) {
         outprint(x)
     }
 
-    xmodule.writeGCT(modname)
-        fromValues(values) modules(imports.static ++ imports.other)
+    moduleObject.imports := imports.static ++ imports.other
+    xmodule.writeGctForModule(moduleObject)
         
     outfile.close
 

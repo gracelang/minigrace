@@ -34,12 +34,10 @@ var moduleObject := parser.parse(tokens)
 var values := moduleObject.values
 
 if (util.target == "parse") then {
-    // Parse mode pretty-prints the source's AST and quits.
-    util.log_verbose "target = parse, outfile = {util.outfile}."
-    for (values) do { v ->
-        util.outprint(v.pretty(0))
-    }
-    util.log_verbose "done writing {util.outfile}."
+    // Parse mode pretty-prints the parse tree and quits.
+    util.log 60 verbose "target = parse, outfile = {util.outfile}."
+    util.outprint(moduleObject.pretty(0))
+    util.log 60 verbose "done writing {util.outfile}."
     util.outfile.close
     sys.exit(0)
 }
@@ -71,7 +69,7 @@ if (util.target == "imports") then {
     for (values) do {v->
         v.accept(vis)
     }
-    for (imps) do {im->
+    for (imps.asList.sort) do {im->
         util.outprint(im)
     }
     util.outfile.close
@@ -91,11 +89,11 @@ if ((util.target == "processed-ast") || (util.target == "ast")) then {
 // Perform the actual compilation
 match(util.target)
     case { "c" ->
-        genc.compile(moduleObject, util.outfile, util.modname, util.runmode,
+        genc.compile(moduleObject, util.outfile, util.runmode,
             util.buildtype, buildinfo)
     }
     case { "js" ->
-        genjs.compile(moduleObject, util.outfile, util.modname, util.runmode,
+        genjs.compile(moduleObject, util.outfile, util.runmode,
             util.buildtype, util.gracelibPath)
     }
     case { _ ->

@@ -251,10 +251,10 @@ method writeGCT(modname, dict) is confidential {
     gctCache.at(modname) put(dict)
 }
 
-method writeGCT(modname) fromValues(values) modules(modules) {
-    writeGCT(modname,
-        generateGCT(modname) fromValues(values) modules(modules))
+method writeGctForModule(moduleObject) {
+    writeGCT(moduleObject.name, generateGctForModule(moduleObject))
 }
+
 method gctAsString(gctDict) {
     var ret := ""
     gctDict.bindings.asList.sortBy(keyCompare).do { b ->
@@ -342,68 +342,10 @@ def typeVisitor = object {
         return false
     }
 }
-method generateGCT(path) fromValues(values) modules(modules) is confidential {
-    def meths = list.empty
-    def confidentials = list.empty
-    var theDialect := false
-    def types = list.empty
-    def gct = dictionary.empty
-    for (values) do { v->
-        if (v.kind == "vardec") then {
-            if (v.isReadable) then {
-                meths.push(v.name.value)
-            }
-            if (v.isWritable) then {
-                meths.push(v.name.value ++ ":=")
-            }
-        } elseif {(v.kind == "method").orElse {v.kind == "typedec"}} then {
-            if (v.isPublic) then {
-                meths.push(v.nameString)
-                if (v.kind=="typedec") then {
-                    types.push(v.name.value)
-                    methodtypes := list.empty
-                    v.accept(typeVisitor)
-                    var typename := v.name.toGrace(0)
-                    if(v.generics != false) then {
-                        typename := typename ++ "<"
-                        v.generics.params.do {
-                            each -> typename := "{typename}{each.value}"
-                        } separatedBy { typename := typename ++ ", " }
-                        typename := typename ++ ">"
-                    }
-                    gct.at "methodtypes-of:{typename}" put(methodtypes)
-                }
-            } else {
-                confidentials.push(v.nameString)
-            }
-        } elseif (v.kind == "defdec") then {
-            if (v.isPublic) then {
-                meths.push(v.name.value)
-            }
-            if (ast.findAnnotation(v, "parent")) then {
-                if (false != v.data) then {
-                    for (v.data.elements) do {m->
-                        meths.push(m)
-                    }
-                }
-            }
-        } elseif (v.kind == "class") then {
-            meths.push(v.name.value)
-        } elseif (v.kind == "dialect") then {
-            theDialect := v.value
-        } elseif (v.kind == "inherits") then {
-            v.providedNames.do { each -> meths.push(each) }
-        }
-    }
-    gct.at "modules" put(modules.asList.sort)
-    gct.at "path" put(list.with(path))
-    gct.at "public" put(meths.sort)
-    gct.at "confidential" put(confidentials.sort)
-    if (false != theDialect) then {
-        gct.at "dialect" put(list.with(theDialect))
-    }
+method generateGctForModule(moduleObject) is confidential {
+    def gct = buildGctFor(moduleObject)
     def classes = list.empty
-    for (values) do {val->
+    for (moduleObject.values) do {val->
         if (val.kind == "class") then {
             gct.at "constructors-of:{val.name.value}"
                 put(list.with(val.constructor.value))
@@ -435,16 +377,75 @@ method generateGCT(path) fromValues(values) modules(modules) is confidential {
         }
     }
     gct.at "classes" put(classes)
-    gct.at "types" put(types)
 
     def freshmeths = list.empty
     gct.at "fresh-methods" put(freshmeths)
-    for (values) do {val->
+    for (moduleObject.values) do {val->
         if (val.isFreshMethod) then {
             addFreshMethod (val) to (freshmeths) for (gct)
         }
     }
     return gct
+}
+
+method buildGctFor(module) {
+    def meths = list.empty
+    def confidentials = list.empty
+    var theDialect := false
+    def types = list.empty
+    def gct = dictionary.empty
+    for (module.values) do { v->
+        if (v.kind == "vardec") then {
+            if (v.isReadable) then {
+                meths.push(v.name.value)
+            }
+            if (v.isWritable) then {
+                meths.push(v.name.value ++ ":=")
+            }
+        } elseif {v.kind == "method"} then {
+            if (v.isPublic) then {
+                meths.push(v.nameString)
+            } else {
+                confidentials.push(v.nameString)
+            }
+        } elseif {v.kind == "typedec"} then {
+            if (v.isPublic) then {
+                meths.push(v.nameString)
+                types.push(v.name.value)
+                methodtypes := list.empty
+                v.accept(typeVisitor)
+                var typename := v.name.toGrace(0)
+                if (v.typeParams != false) then {
+                    typename := typename ++ v.typeParams
+                }
+                gct.at "methodtypes-of:{typename}" put(methodtypes)
+            } else {
+                confidentials.push(v.nameString)
+            }
+        } elseif {v.kind == "defdec"} then {
+            if (v.isPublic) then {
+                meths.push(v.nameString)
+            }
+            if (ast.findAnnotation(v, "parent")) then {
+                v.scope.elements.keysDo { m -> meths.push(m) }
+            }
+        } elseif (v.kind == "class") then {
+            meths.push(v.name.value)
+        } elseif (v.kind == "dialect") then {
+            theDialect := v.value
+        } elseif (v.kind == "inherits") then {
+            meths.addAll(v.providedNames)
+        }
+    }
+    gct.at "modules" put(module.imports.asList.sorted)
+    gct.at "path" put(list.with(module.name))
+    gct.at "public" put(meths.sort)
+    gct.at "types" put(types)
+    gct.at "confidential" put(confidentials.sort)
+    if (false != theDialect) then {
+        gct.at "dialect" put(list.with(theDialect))
+    }
+    gct
 }
 
 method addFreshMethod (val) to (freshlist) for (gct) is confidential {

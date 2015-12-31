@@ -2,6 +2,23 @@
 import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages
+import "stringMap" as map
+
+def keywords = map.new
+keywords.put("alias", true)
+keywords.put("class", true)
+keywords.put("def", true)
+keywords.put("dialect", true)
+keywords.put("exclude", true)
+keywords.put("factory", true)
+keywords.put("import", true)
+keywords.put("inherits", true)
+keywords.put("is", true)
+keywords.put("method", true)
+keywords.put("object", true)
+keywords.put("return", true)
+keywords.put("type", true)
+keywords.put("var", true)
 
 method padl(s, l, w) {
     if (s.size >= l) then {
@@ -13,7 +30,6 @@ method padl(s, l, w) {
     }
     return s'
 }
-
 
 method new {
     var lineNumber := 1
@@ -203,20 +219,11 @@ method new {
             var tok := 0
             if ((mode != "n") || (accum.size > 0)) then {
                 if (mode == "i") then {
-                    tok := IdentifierToken.new(accum)
-                    if ((accum == "object") || (accum == "method")
-                        || (accum == "var") || (accum == "type")
-                        || (accum == "import") || (accum == "class")
-                        || (accum == "return") || (accum == "def")
-                        || (accum == "inherits") || (accum == "is")
-                        || (accum == "dialect") || (accum == "factory")) then {
-                        tok := KeywordToken.new(accum)
+                    tok := if (keywords.contains(accum)) then {
+                        KeywordToken.new(accum)
+                    } else {
+                        IdentifierToken.new(accum)
                     }
-                    tokens.push(tok)
-                    isDone := true
-                }
-                if (mode == "I") then {
-                    tok := IdentifierToken.new(accum)
                     tokens.push(tok)
                     isDone := true
                 } elseif (mode == "\"") then {
@@ -225,10 +232,6 @@ method new {
                     isDone := true
                 } elseif (mode == "q") then {
                     tok := MultiLineStringToken.new(accum)
-                    tokens.push(tok)
-                    isDone := true
-                } elseif (mode == "x") then {
-                    ProgrammingError.raise "obsolete Octet-token mode in lexer\n"
                     tokens.push(tok)
                     isDone := true
                 } elseif (mode == ",") then {
@@ -259,8 +262,7 @@ method new {
                     tok := LSquareToken.new
                     tokens.push(tok)
                     isDone := true
-                }
-                if (mode == "]") then {
+                } elseif (mode == "]") then {
                     tok := RSquareToken.new
                     tokens.push(tok)
                     isDone := true
@@ -504,7 +506,7 @@ method new {
 
         // True if c (with codepoint ordval) is a valid operator character.
         method isoperatorchar(c, ordval) {
-            if ((c == "-") || (c == "&") || (c == "|") || (c == ":")
+            if ((c == "-") || (c == "&") || (c == "|") || (c == ":") || (c == "$")
                 || (c == "%") || (c == "^") || (c == "@") || (c == "?")
                 || (c == "*") || (c == "/") || (c == "+") || (c == "!")
                 ) then {
