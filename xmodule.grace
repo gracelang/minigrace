@@ -344,56 +344,17 @@ def typeVisitor = object {
 }
 method generateGctForModule(moduleObject) is confidential {
     def gct = buildGctFor(moduleObject)
-    def classes = list.empty
-    for (moduleObject.values) do {val->
-        if (val.kind == "class") then {
-            gct.at "constructors-of:{val.name.value}"
-                put(list.with(val.constructor.value))
-            gct.at "methods-of:{val.name.value}.{val.constructor.value}"
-                put(val.scope.keysAsList.sort)
-            classes.push(val.name.value)
-        } elseif { (val.kind == "defdec").andAlso {
-                val.value.kind == "object" } } then {
-            // TODO: try "val.returnsObject" in above condition?
-            def ob = val.value
-            var isClass := false
-            def obConstructors = list.empty
-            for (ob.value) do {nd->
-                if (nd.kind == "method") then {
-                    if (nd.isFresh) then {
-                        isClass := true
-                        def factMethNm = nd.nameString
-                        obConstructors.push(factMethNm)
-                        gct.at "methods-of:{val.name.value}.{factMethNm}"
-                            put(ob.scope.getScope(factMethNm).keysAsList.sort)
-                    }
-                }
-            }
-            if (obConstructors.size > 0) then {
-                gct.at "constructors-of:{val.name.value}"
-                    put(obConstructors)
-                classes.push(val.name.value)
-            }
-        }
-    }
-    gct.at "classes" put(classes)
-
-    def freshmeths = list.empty
-    gct.at "fresh-methods" put(freshmeths)
-    for (moduleObject.values) do {val->
-        if (val.isFreshMethod) then {
-            addFreshMethod (val) to (freshmeths) for (gct)
-        }
-    }
+    addFreshMethodsOf (moduleObject) to (gct)
     return gct
 }
 
 method buildGctFor(module) {
-    def meths = list.empty
-    def confidentials = list.empty
-    var theDialect := false
-    def types = list.empty
     def gct = dictionary.empty
+    def classes = list.empty
+    def confidentials = list.empty
+    def meths = list.empty
+    def types = list.empty
+    var theDialect := false
     for (module.values) do { v->
         if (v.kind == "vardec") then {
             if (v.isReadable) then {
@@ -429,23 +390,63 @@ method buildGctFor(module) {
             if (ast.findAnnotation(v, "parent")) then {
                 v.scope.elements.keysDo { m -> meths.push(m) }
             }
+            if (v.returnsObject) then {
+                def ob = v.value
+                var isClass := false
+                def obConstructors = list.empty
+                for (ob.value) do {nd->
+                    if (nd.kind == "method") then {
+                        if (nd.isFresh) then {
+                            isClass := true
+                            def factMethNm = nd.nameString
+                            obConstructors.push(factMethNm)
+                            gct.at "methods-of:{v.name.value}.{factMethNm}"
+                                put(ob.scope.getScope(factMethNm).keysAsList.sort)
+                        }
+                    }
+                }
+                if (obConstructors.size > 0) then {
+                    gct.at "constructors-of:{v.name.value}"
+                        put(obConstructors)
+                    classes.push(v.name.value)
+                }
+            }
         } elseif (v.kind == "class") then {
             meths.push(v.name.value)
+            classes.push(v.name.value)
+            gct.at "constructors-of:{v.name.value}"
+                put(list.with(v.constructor.value))
+            gct.at "methods-of:{v.name.value}.{v.constructor.value}"
+                put(v.scope.keysAsList.sort)
         } elseif (v.kind == "dialect") then {
             theDialect := v.value
         } elseif (v.kind == "inherits") then {
             meths.addAll(v.providedNames)
         }
     }
+    gct.at "classes" put(classes.sort)
+    gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(module.imports.asList.sorted)
     gct.at "path" put(list.with(module.name))
     gct.at "public" put(meths.sort)
-    gct.at "types" put(types)
-    gct.at "confidential" put(confidentials.sort)
+    gct.at "types" put(types.sort)
     if (false != theDialect) then {
         gct.at "dialect" put(list.with(theDialect))
     }
     gct
+}
+
+method addFreshMethodsOf (moduleObject) to (gct) is confidential {
+    // adds information about the methods made available via fresh methods.
+    // This is done in a separate pass after public information is in the gct,
+    // because of the special treatment of prelude.clone
+    def freshmeths = list.empty
+    for (moduleObject.values) do { val->
+        if (val.isFreshMethod) then {
+            addFreshMethod (val) to (freshmeths) for (gct)
+        }
+    }
+    gct.at "fresh-methods" put(freshmeths)
 }
 
 method addFreshMethod (val) to (freshlist) for (gct) is confidential {
