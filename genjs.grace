@@ -309,7 +309,7 @@ method compileclass(o) {
 
     var signature := o.signature
     var mbody := [ast.objectNode.body(o.value) 
-            named "{o.nameString}.{o.constructor}" 
+            named "{o.nameString}.{o.constructor.nameString}"
             scope(innerObjectScope)]
     var factorytMeth := ast.methodNode.new(o.constructor, signature, mbody,
         false) scope(factoryScope)
@@ -320,7 +320,7 @@ method compileclass(o) {
     def asStringMeth = ast.methodNode.new(
         ast.identifierNode.new("asString", false), [], asStringBody, false) scope(innerObjectScope)
     def metaBody = [factorytMeth, asStringMeth]
-    def metaObj = ast.objectNode.body(metaBody) named "metaclass {o.nameString}" scope(metaObjectScope)
+    def metaObj = ast.objectNode.body(metaBody) named "{o.nameString} class" scope(metaObjectScope)
     def defDec = ast.defDecNode.new(o.name, metaObj, false)
         scope(metaObjectScope.parent)
     if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
