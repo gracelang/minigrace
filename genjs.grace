@@ -1591,11 +1591,15 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out "  gctCache['{escapestring(basename(modname))}'] = \"{escapestring(gctText)}\";"
     out "if (typeof originalSourceLines !== \"undefined\") \{"
     out "  originalSourceLines[\"{modname}\"] = ["
-    for (util.cLines) do {l->
-        out "    \"{l}\","
+    def sourceLines = util.cLines
+    def numberOfLines = util.cLines.size
+    var ln := 1
+    while {ln < numberOfLines} do {
+        out "    \"{sourceLines.at(ln)}\","
+        ln := ln + 1
     }
-    out "  ];"
-    out "\};"
+    out "    \"{sourceLines.at(numberOfLines)}\" ];"
+    out "\}"
     out "if (typeof global !== \"undefined\")"
     out "  global.{generatedModuleName} = {generatedModuleName};"
     out "if (typeof window !== \"undefined\")"
