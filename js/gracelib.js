@@ -1528,6 +1528,8 @@ var var_String = classType(GraceEmptyString);
 var var_Number = classType(new GraceNum(1));
 var var_Boolean = classType(GraceTrue);
 var var_Object = classType(new GraceObject);
+    var_Object.name = "Object";
+    // type Object is an exception to the normal naming rule
 var var_Type = classType(var_Boolean);
 var type_String = var_String;
 var type_Number = var_Number;
@@ -2423,7 +2425,7 @@ function gracecode_util() {
     this._linepos = new GraceNum(1);
     this._lines = new GraceList([]);
     this._cLines = new GraceList([]);
-    this._suggestion = Grace_allocObject(GraceObject, "suggestion class");
+    this._suggestion = Grace_allocObject(GraceObject, "class suggestion");
 
     this._suggestion.methods['new'] = function(argcv, line, code) {
         var suggestion = Grace_allocObject(GraceObject, "suggestion");
@@ -2613,15 +2615,15 @@ function gracecode_mirrors() {
     this.methods['loadDynamicModule'] = function(argcv, v) {
         var moduleFunc;
         var modName = v._value;
-        var slash = modName.lastIndexOf("/");
-        if (slash >= 0) modName = modName.substring(slash+1);
-        try {
-            moduleFunc = eval("gracecode_" + modName);
-        } catch (e) {
-            throw new GraceExceptionPacket(ImportErrorObject,
-                       new GraceString("Can't find module " + v._value));
-        }
-        return do_import(v._value, moduleFunc);
+            var slash = modName.lastIndexOf("/");
+            if (slash >= 0) modName = modName.substring(slash+1);
+            try {
+                moduleFunc = eval("gracecode_" + modName);
+            } catch (e) {
+                throw new GraceExceptionPacket(ImportErrorObject,
+                           new GraceString("Can't find module " + v._value));
+            }
+            return do_import(v._value, moduleFunc);
     };
     this.methods['reflect'] = function(argcv, o) {
         return new GraceMirror(o);
@@ -3237,7 +3239,7 @@ Grace_prelude.methods['inBrowser'] = function(argcv) {
     return (typeof global === "undefined") ? GraceTrue : GraceFalse;
 };
 
-var PrimitiveArrayClass = Grace_allocObject(GraceObject, "primitiveArray class");
+var PrimitiveArrayClass = Grace_allocObject(GraceObject, "class primitiveArray");
 PrimitiveArrayClass.methods['new'] = function(argcv, n) {
     return new GracePrimitiveArray(n._value);
 };
