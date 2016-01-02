@@ -2613,8 +2613,9 @@ GraceMirror.prototype = {
 
 function gracecode_mirrors() {
     this.methods['loadDynamicModule'] = function(argcv, v) {
-        var moduleFunc;
         var modName = v._value;
+        var moduleFunc;
+        if (typeof process === "undefined") {
             var slash = modName.lastIndexOf("/");
             if (slash >= 0) modName = modName.substring(slash+1);
             try {
@@ -2623,7 +2624,15 @@ function gracecode_mirrors() {
                 throw new GraceExceptionPacket(ImportErrorObject,
                            new GraceString("Can't find module " + v._value));
             }
-            return do_import(v._value, moduleFunc);
+        } else {
+            minigrace.loadModule(modName, "./");try {
+            moduleFunc = eval("gracecode_" + modName);
+            } catch (e) {
+                throw new GraceExceptionPacket(ImportErrorObject,
+                    new GraceString("Error initializing module " + v._value));
+            }
+        }
+        return do_import(modName, moduleFunc);
     };
     this.methods['reflect'] = function(argcv, o) {
         return new GraceMirror(o);
