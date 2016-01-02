@@ -14,7 +14,7 @@ class outputEvaluation {
     }
 }
 
-def oc23 = outputEvaluation.con 23
-def mc23 = monadicExpressions.con 23
-print(oc23)
-print(mc23)
+print(simpleExpressions.con 23)
+print(monadicExpressions.con 23)
+print(outputEvaluation.con 23)
+

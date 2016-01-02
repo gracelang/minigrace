@@ -85,7 +85,7 @@ function Grace_allocObject(superConstructor, givenName) {
     // object returned here has its OWN methods object,
     // whereas the one returned from new GraceObject shares its prototype's methods.
     // Changing the 'methods' object has different effects in the two cases!
-    var sup = superConstructor ? new superConstructor() : new GraceObject();
+    var sup = superConstructor ? new superConstructor() : null;
     var resultObj = {
         methods: {},
         superobj: sup,

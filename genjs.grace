@@ -82,7 +82,7 @@ method forceLineNumber(n)comment(c) {
     // Used at the start of a method
     noteLineNumber(n)comment(c)
     if (emitPositions) then {
-        output.push "{indent}setLineNumber({priorLineSeen})    // {priorLineComment};"
+        output.push "{indent}setLineNumber({priorLineSeen});    // {priorLineComment}"
     }
     priorLineEmitted := priorLineSeen
 }
@@ -90,7 +90,7 @@ method forceLineNumber(n)comment(c) {
 method out(s) {
     // output code, but first output code to set the line number
     if (emitPositions && (priorLineSeen != priorLineEmitted)) then {
-        output.push "{indent}setLineNumber({priorLineSeen})    // {priorLineComment};"
+        output.push "{indent}setLineNumber({priorLineSeen});    // {priorLineComment}"
         priorLineEmitted := priorLineSeen
     }
     output.push(indent ++ s)
@@ -185,7 +185,7 @@ method compileobjouter(selfr, outerRef) {
     out("{selfr}.outer = {outerRef};")
     out("var reader_{emod}_{nmi}{myc} = function() \{")
     out("  return this.outer;")
-    out("\}")
+    out("\};")
     out("{selfr}.methods[\"{nm}\"] = reader_{emod}_{nmi}{myc};")
 }
 method compileobjtype(o, selfr, pos) {
@@ -229,7 +229,7 @@ method compileobjdefdec(o, selfr, pos) {
     out "{selfr}.data[\"{nm}\"] = {val};"
     out "var reader_{emod}_{nmi}{myc} = function() \{"
     out "  return this.data[\"{nm}\"];"
-    out "\}"
+    out "\};"
     out "reader_{emod}_{nmi}{myc}.def = true;"
     if (o.isReadable.not) then {
         out "reader_{emod}_{nmi}{myc}.confidential = true;"
@@ -341,7 +341,12 @@ method compileobject(o, outerRef, inheritingObject) {
     auto_count := auto_count + 1
     def selfr = "obj" ++ myc
     o.register := selfr
-    out "var {selfr} = Grace_allocObject();"
+    def superObject = if (false == o.superclass) then {
+        out "var {selfr} = Grace_allocObject(GraceObject, \"{o.name}\");"
+    } else {
+        out "var {selfr} = Grace_allocObject(null, \"{o.name}\");"
+        // inheritance will be compiled later, when the inherits node is found
+    }
     out "{selfr}.definitionModule = \"{modname}\";"
     out "{selfr}.definitionLine = {o.line};"
     if (inheritingObject) then {
@@ -349,6 +354,8 @@ method compileobject(o, outerRef, inheritingObject) {
         out "while (inho{myc}.superobj) inho{myc} = inho{myc}.superobj;"
         out "inho{myc}.superobj = {selfr};"
         out "{selfr}.data = inheritingObject.data;"
+        out "if (inheritingObject.hasOwnProperty('_value'))"
+        out "    {selfr}._value = inheritingObject._value;"
     }
     compileobjouter(selfr, outerRef)
     out("var obj_init_{myc} = function () \{")
@@ -384,7 +391,7 @@ method compileobject(o, outerRef, inheritingObject) {
     }
     out "superDepth = origSuperDepth;"
     decreaseindent
-    out "\}"
+    out "\};"
     if (inheritingObject) then {
         out "obj_init_{myc}.apply(inheritingObject, []);"
     } else {
@@ -541,7 +548,7 @@ method compilemethod(o, selfobj) {
             out "onSelf = true"
             out "var {pName} = callmethod(var_sequenceClass, \"fromPrimitiveArray\", [2], {pName}_array, new GraceNum({pName}_len));"
         } elseif { emitArgChecks } then {
-            out "if (argcv[{partnr - 1}] != {part.params.size})"
+            out "if (argcv[{partnr - 1}] !== {part.params.size})"
             def msgSuffix = if (o.signature.size < 2) then { 
                 textualSignature
             } else { 
@@ -560,7 +567,7 @@ method compilemethod(o, selfobj) {
         }
         out "if (argcv.length == {1 + sz}) \{"
         if (emitArgChecks) then {
-            out "  if (argcv[{sz}] != {o.typeParams.size}) \{"
+            out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
             out "    throw new GraceExceptionPacket(ProgrammingErrorObject, "
             out "        new GraceString(\"wrong number of type arguments for {textualSignature}\"));"
             out "  \}"
@@ -644,7 +651,7 @@ method compilemethod(o, selfobj) {
         out("\}")
     }
     decreaseindent
-    out("\}")
+    out "\};"
     usedvars := oldusedvars
     declaredvars := olddeclaredvars
     if (haveTypedParams) then {
@@ -653,24 +660,8 @@ method compilemethod(o, selfobj) {
     if (o.isConfidential) then {
         out "  func{myc}.confidential = true;"
     }
-    out "func{myc}.paramCounts = ["
-    increaseindent
-    for (paramCounts) do {p->
-        out("  {p},")
-    }
-    decreaseindent
-    out "];"
-    out "func{myc}.variableArities = ["
-    increaseindent
-    for (variableArities) do {p->
-        if (p) then {
-            out "  true,"
-        } else {
-            out "  false,"
-        }
-    }
-    decreaseindent
-    out "];"
+    out "func{myc}.paramCounts = {paramCounts};"
+    out "func{myc}.variableArities = {variableArities};"
     out("{selfobj}.methods[\"{name}\"] = func{myc};")
     out "func{myc}.definitionLine = {o.line};"
     out "func{myc}.definitionModule = \"{modname}\";"
@@ -747,7 +738,7 @@ method compilefreshmethod(o, selfobj) {
         }
         out "if (argcv.length == {1 + sz}) \{"
         if (emitArgChecks) then {
-            out "  if (argcv[{sz}] != {o.typeParams.size}) \{"
+            out "  if (argcv[{sz}] !== {o.typeParams.size}) \{"
             out "    callmethod(ProgrammingErrorObject, \"raise\", [1], "
             out "        new GraceString(\"wrong number of type arguments\"));"
             out "  \}"
@@ -828,7 +819,7 @@ method compilefreshmethod(o, selfobj) {
     out("  \}")
     out("\}")
     decreaseindent
-    out("\}")
+    out "\};"
     if (haveTypedParams) then {
         compilemethodtypes("func{myc}", o)
     }
@@ -1316,7 +1307,7 @@ method compilePrint(o) {
             args.push(r)
         }
     }
-    if(args.size != 1) then {
+    if (args.size != 1) then {
         errormessages.syntaxError "method print takes a single argument"
             atRange(o.line, o.linePos, o.linePos + 4)
     } else {
@@ -1545,8 +1536,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("function {formatModname(modname)} () \{")
     increaseindent
     out("setModuleName(\"{modname}\");")
-    out("if (callStack.length == 0)")
-    out("  callStack = [\"execution environment\"]")
+    out("if (callStack.length === 0)")
+    out("  callStack = [\"execution environment\"];")
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
@@ -1623,8 +1614,9 @@ method compileInherits(o) {
     def sup = compilenode(o.value)
     out "this.superobj = {sup};"
     out "this.data = {sup}.data;"
-    out "delete {sup}.data;"    // to avoid a reduant reference
-    out "this._value = {sup}._value;"
+    out "delete {sup}.data;"    // to avoid a redundant reference
+    out "if ({sup}.hasOwnProperty('_value'))"
+    out "    this._value = {sup}._value;"
     // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
     // this breaks inheritance from booleans
     o.aliases.do { each ->

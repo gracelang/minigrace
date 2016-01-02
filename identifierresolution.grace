@@ -751,10 +751,6 @@ method resolveIdentifiers(topNode) {
             // TODO — opNodes don't contain identifiers!
         } elseif { node.isInherits } then {
             transformInherits(node) ancestors(as)
-        } elseif { node.isObject.orElse{ node.isClass }} then {
-            // TODO Compatability Kludge — remove when possible
-            node.superclass := false
-            node
         } else {
             node
         } 
