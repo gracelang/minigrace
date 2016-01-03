@@ -102,10 +102,6 @@ method outUnnumbered(s) {
     output.push(indent ++ s)
 }
 
-method outprint(s) {
-    util.outprint(s)
-}
-
 method escapeident(vn) {
     var nm := ""
     for (vn) do {c->
@@ -200,7 +196,7 @@ method compileobjtype(o, selfr, pos) {
     out(selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
     out("    var reader_{emod}_{nmi}{myc} = function() \{")
     out("    return this.data[\"" ++ nm ++ "\"];")
-    out("  \}")
+    out("  \};")
     out("  reader_{emod}_{nmi}{myc}.def = true;")
     var isReadable := false
     for (o.annotations) do {ann->
@@ -243,10 +239,9 @@ method compileobjdefdec(o, selfr, pos) {
             if (o.dtype.value != "Unknown") then {
                 linenum := o.line
                 noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-                out "  [1], {val})))"
-                out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"value of def '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {val})))"
+                out "  throw new GraceExceptionPacket(TypeErrorObject,"
+                out "      new GraceString(\"value of def '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -264,13 +259,13 @@ method compileobjvardec(o, selfr, pos) {
     out(selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
     out("var reader_" ++ emod ++ "_" ++ nmi ++ myc ++ " = function() \{")
     out("  return this.data[\"" ++ nm ++ "\"];")
-    out("\}")
+    out("\};")
     out(selfr ++ ".methods[\"" ++ nm ++ "\"] = reader_" ++ emod ++
         "_" ++ nmi ++ myc ++ ";")
     out(selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
     out("var writer_" ++ emod ++ "_" ++ nmi ++ myc ++ " = function(argcv, o) \{")
     out("  this.data[\"" ++ nm ++ "\"] = o;")
-    out("\}")
+    out("\};")
     out(selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ emod ++
         "_" ++ nmi ++ myc ++ ";")
     if (o.isReadable.not) then {
@@ -287,10 +282,9 @@ method compileobjvardec(o, selfr, pos) {
                 }
                 linenum := o.line
                 noteLineNumber(o.line)comment("typecheck in compileobjvardec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-                out "  [1], {val})))"
-                out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {val})))"
+                out "  throw new GraceExceptionPacket(TypeErrorObject,"
+                out "      new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -332,7 +326,7 @@ method compileclass(o) {
         defDec.annotations.push(a)
     }
     compilenode(defDec)
-    out "var {selfr} = {metaObj.register}  // end of compling class {o.nameString}"
+    out "var {selfr} = {metaObj.register};  // end of compling class {o.nameString}"
 }
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
@@ -369,23 +363,28 @@ method compileobject(o, outerRef, inheritingObject) {
         }
     }
     for (o.value) do { e ->
-        out("sourceObject = {selfr};")
         if (e.kind == "method") then {
         } elseif (e.kind == "vardec") then {
+            out "sourceObject = {selfr};"
             compileobjvardec(e, selfr, pos)
             out("{selfr}.mutable = true;")
             pos := pos + 1
         } elseif (e.kind == "defdec") then {
+            out "sourceObject = {selfr};"
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
         } elseif (e.kind == "typedec") then {
+            out "sourceObject = {selfr};"
             compiletypedec(e)
             pos := pos + 1
         } elseif (e.kind == "object") then {
+            out "sourceObject = {selfr};"
             compileobject(e, selfr, false)
         } elseif (e.kind == "inherits") then {
+            out "sourceObject = {selfr};"
             compileInherits(e)
         } else {
+            out "sourceObject = {selfr};"
             compilenode(e)
         }
     }
@@ -637,7 +636,9 @@ method compilemethod(o, selfobj) {
         if (debugMode) then {
             out "stackFrames.pop();"
         }
-        out("return " ++ ret ++ ";")
+        if (ret != "undefined") then {
+            out("return " ++ ret ++ ";")
+        }
         decreaseindent
         out("\} catch(e) \{")
         if (debugMode) then {
@@ -870,7 +871,9 @@ method compileif(o) {
     for (thenList) do { l->
         tret := compilenode(l)
     }
-    out("if" ++ myc ++ " = " ++ tret ++ ";")
+    if (tret != "undefined") then {
+        out("if" ++ myc ++ " = " ++ tret ++ ";")
+    }
     decreaseindent
     def elseList = o.elseblock.body
     if (elseList.size > 0) then {
@@ -879,7 +882,9 @@ method compileif(o) {
         for (elseList) do { l->
             fret := compilenode(l)
         }
-        out("if" ++ myc ++ " = " ++ fret ++ ";")
+        if (fret != "undefined") then {
+            out("if" ++ myc ++ " = " ++ fret ++ ";")
+        }
         decreaseindent
     }
     out("\}")
@@ -965,10 +970,9 @@ method compiledefdec(o) {
             if (o.dtype.value != "Unknown") then {
                 linenum := o.line
                 noteLineNumber(o.line)comment("compiledefdec")
-                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-                out "  [1], {varf(nm)})))"
-                out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                out "          new GraceString(\"value of def '{snm}' is not of type {o.dtype.toGrace(0)}\"))"
+                out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {varf(nm)})))"
+                out "  throw new GraceExceptionPacket(TypeErrorObject,"
+                out "      new GraceString(\"value of def '{snm}' is not of type {o.dtype.toGrace(0)}\"));"
             }
         }
     }
@@ -1005,10 +1009,9 @@ method compilevardec(o) {
                 if (val != "false") then {
                     linenum := o.line
                     noteLineNumber(o.line)comment("compilevardec")
-                    out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\","
-                    out "  [1], {varf(nm)})))"
-                    out "    throw new GraceExceptionPacket(TypeErrorObject,"
-                    out "          new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"))";
+                    out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {varf(nm)})))"
+                    out "  throw new GraceExceptionPacket(TypeErrorObject,"
+                    out "      new GraceString(\"initial value of var '{o.name.value}' is not of type {o.dtype.toGrace(0)}\"));"
                 }
             }
         }
@@ -1021,9 +1024,9 @@ method compileindex(o) {
     o.register := "idxres" ++ auto_count
     auto_count := auto_count + 1
     if (emitArgChecks) then {
-        out "var {o.register} = callmethodChecked({of}, \"[]\", [1], {index})"
+        out "var {o.register} = callmethodChecked({of}, \"[]\", [1], {index});"
     } else {
-        out "var {o.register} = callmethod({of}, \"[]\", [1], {index})"
+        out "var {o.register} = callmethod({of}, \"[]\", [1], {index});"
     }
 }
 method compiletrycatch(o) {
@@ -1295,7 +1298,7 @@ method compilereturn(o) {
     if (inBlock) then {
         out("throw new ReturnException(" ++ reg ++ ", returnTarget);")
     } else {
-        out("  return " ++ reg)
+        out("return " ++ reg ++ ";")
     }
     o.register := "undefined"
 }
@@ -1576,11 +1579,8 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("\}")
     
     def generatedModuleName = formatModname(modname)
-    out "{generatedModuleName}.imports = ["
-    for (imported) do {imp->
-        out "'{imp}',"
-    }
-    out "];"
+    def importList = imported.map{ each -> "'{each}'" }.asList.sort
+    out "{generatedModuleName}.imports = {importList};"
     
     moduleObject.imports := imports.other
     xmodule.writeGctForModule(moduleObject)
@@ -1606,7 +1606,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out "  window.{generatedModuleName} = {generatedModuleName};"
 
     for (output) do { o ->
-        outprint(o)
+        util.outprint(o)
     }
     outfile.close
     util.log_verbose "done."
