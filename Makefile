@@ -114,6 +114,14 @@ clean:
 	cd js/sample/graphics && $(MAKE) clean
 	cd js/sample/dialects && $(MAKE) clean
 
+checkjs:
+	jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js
+    
+checkgenjs: l1/minigrace
+	if [ ! -e js/ast.js ] ;\
+then l1/minigrace --dir js --target js --verbose ast.grace ; fi
+	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
+
 # must be a pattern rule to get the "simultaneous build" semantics.  But the
 # pattern rule seems to induce a bogus circular depencency of l1/collectionsPrelude
 # on l1/minigrace.  So we must omit this rule, and incldue just the one for .gct
