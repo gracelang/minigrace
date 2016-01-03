@@ -215,6 +215,17 @@ method accept (t) onLineOfLastOr (other) {
     (sym.kind == t) && (((other.line == sym.line) ||
         (sym.indent > other.indent)) || (lastToken.line == sym.line))
 }
+method acceptArgumentOnLineOf(tok) {
+    // True if the current token can start an argument to a request
+    if (accept "string" onLineOf(tok)) then { return true }
+    if (accept "num" onLineOf(tok)) then { return true }
+    if (accept "lbrace" onLineOf(tok)) then { return true }
+    if (acceptAfterSpaces "lsquare" onLineOf(tok)) then { return true }
+    if (accept "identifier" onLineOf(tok)) then { 
+        return (sym.value == "true") || (sym.value == "false")
+    }
+    return false
+}
 method tokenOnSameLine {
     // True if there is a token on the current logical line
     (lastLine == sym.line) || (sym.indent > lastIndent)
@@ -1742,10 +1753,7 @@ method callrest(acceptBlocks) {
         parenthesizedArg(part)
     } elseif { acceptBlocks.not && {accept("lbrace")onLineOf(tok)} } then {
         values.push(meth)
-    } elseif { accept "string" onLineOf(tok) || accept "num" onLineOf(tok)
-        || accept "lbrace" onLineOf(tok) || acceptAfterSpaces "lsquare" onLineOf(tok)
-        || (accept "identifier" onLineOf(tok) && ((sym.value == "true")
-                                   || (sym.value == "false")))} then {
+    } elseif { acceptArgumentOnLineOf(tok) } then {
         tok := sym
         hadcall := true
         part.name := methn
@@ -1969,8 +1977,7 @@ method callmprest(meth, signature, tok) {
         methname := methname ++ nxt.value
         part.name := nxt.value
         var isTerm := false
-        if ((accept("lparen")).not && (accept("lbrace")).not
-            && accept("string").not && accept("num").not) then {
+        if ((accept "lparen").not && acceptArgumentOnLineOf(lastToken).not ) then {
             def suggestion = errormessages.suggestion.new
             if(sym.kind == "identifier") then {
                 suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value})")
@@ -1999,15 +2006,10 @@ method callmprest(meth, signature, tok) {
                 }
             }
         }
-        if (accept("lbrace")onLineOfLastOr(tok)
-            || accept("string")onLineOfLastOr(tok)
-            || accept("num")onLineOfLastOr(tok)
-            || (accept("identifier")onLineOfLastOr(tok)
-                && ((sym.value == "true")
-                    || (sym.value == "false")))) then {
+        if (acceptArgumentOnLineOf(lastToken)) then {
             isTerm := true
         } else {
-            next
+            next    // skip over the `(`
         }
         var isEmpty := false
         if (accept "rparen") then {
