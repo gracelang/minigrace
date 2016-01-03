@@ -1977,7 +1977,11 @@ method callmprest(meth, signature, tok) {
         methname := methname ++ nxt.value
         part.name := nxt.value
         var isTerm := false
-        if ((accept "lparen").not && acceptArgumentOnLineOf(lastToken).not ) then {
+        if (accept "lparen") then {
+            next    // skip over the `(`
+        } elseif { acceptArgumentOnLineOf(lastToken) } then {
+            isTerm := true
+        } else {
             def suggestion = errormessages.suggestion.new
             if(sym.kind == "identifier") then {
                 suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value})")
@@ -2006,15 +2010,7 @@ method callmprest(meth, signature, tok) {
                 }
             }
         }
-        if (acceptArgumentOnLineOf(lastToken)) then {
-            isTerm := true
-        } else {
-            next    // skip over the `(`
-        }
-        var isEmpty := false
-        if (accept "rparen") then {
-            isEmpty := true
-        }
+        def isEmpty = accept "rparen"
         if (isTerm) then {
             term
         } else {
