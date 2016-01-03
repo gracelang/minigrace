@@ -323,6 +323,31 @@ def aGraceLangTest = object {
             assert(str)shouldBe("false\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\n")
         }
         
+        method h021_identity (x) { x }
+        method h021_sum (x) and (y) { x + y }
+
+        method test_021_request_num {
+            assert(h021_identity 67) shouldBe (67)
+            assert(h021_sum 6 and 4) shouldBe (10)
+        }
+        
+        method h022_concat(l) { l.fold{acc, each -> acc ++ each} startingWith "" }
+
+        method test_022_request_list {
+            assert(h022_concat ["hello", " ", "world"]) shouldBe "hello world"
+        }
+        
+        method h023_sum (x) and (y) {
+            var sum := 0
+            x.do { each -> sum := sum + each }
+            y.do { each -> sum := sum + each }
+            sum
+        }
+        
+        method test_023_request_two_lists {
+            assert (h023_sum [1, 2] and [3, 4]) shouldBe 10
+        }
+
         method test_028_stringescape {
             var x := "test\"quotes\"hello\"\"world"
             out(x)
