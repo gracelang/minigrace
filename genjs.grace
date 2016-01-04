@@ -1617,8 +1617,8 @@ method compileInherits(o) {
     // o is an inherits node: compile it.
     def sup = compilenode(o.value)
     out "this.superobj = {sup};"
-    out "this.data = {sup}.data;"
-    out "delete {sup}.data;"    // to avoid a redundant reference
+    out "if ({sup}.data) this.data = {sup}.data;"
+    // out "delete {sup}.data;"    // to avoid a redundant reference
     out "if ({sup}.hasOwnProperty('_value'))"
     out "    this._value = {sup}._value;"
     // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
