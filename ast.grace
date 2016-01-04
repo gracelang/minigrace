@@ -951,8 +951,9 @@ def methodNode = object {
             }
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
-                s := s ++ self.annotations.reduce("", { a,b ->
-                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
+                s := s ++ self.annotations.fold{ a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
+                        startingWith ""
             }
             s := s ++ " \{"
             if (comments != false) then {
@@ -2119,8 +2120,9 @@ def defDecNode = object {
             }
             if (self.annotations.size > 0) then {
                 s := s ++ " is "
-                s := s ++ self.annotations.reduce("", { a,b ->
-                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
+                s := s ++ self.annotations.fold{ a,b ->
+                    if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
+                        startingWith ""
             }
             if (self.value != false) then {
                 s := s ++ " = " ++ self.value.toGrace(depth)
@@ -2226,8 +2228,9 @@ class varDecNode.new(name', val', dtype') {
         }
         if (self.annotations.size > 0) then {
             s := s ++ " is "
-            s := s ++ self.annotations.reduce("", { a,b ->
-                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) })
+            s := s ++ self.annotations.fold{ a,b ->
+                if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
+                    startingWith ""
         }
         if (self.value != false) then {
             s := s ++ " := " ++ self.value.toGrace(depth)

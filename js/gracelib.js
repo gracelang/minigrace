@@ -1115,7 +1115,7 @@ PrimitiveGraceList.prototype = {
             return callmethod(collSet, "withAll", [1], self);
         }
     },
-    className: "list",
+    className: "builtinList",
     definitionModule: "unknown",
     definitionLine: 0,
     superobj: new GraceObject()

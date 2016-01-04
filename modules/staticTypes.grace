@@ -586,6 +586,7 @@ def anObjectType = object {
     addTo(list) name("prepended") params(dynamic) returns(list)
     addTo(list) name("++") params(list) returns (list)
     addTo(list) name("reduce") params(dynamic, fold) returns (dynamic)
+    addTo(list) name("fold()startingWith") params(fold, dynamic) returns (dynamic)
 
     scope.types.at("Unknown") put(dynamic)
     scope.types.at("Done") put(done)

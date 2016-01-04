@@ -613,8 +613,12 @@ factory method sequence<T> {
     }
 }
 
+type MinimalyIterable = type {
+    iterator -> Iterator
+}
+
 method isEqual(left) toIterable(right) {
-    if (Iterable.match(right)) then {
+    if (MinimalyIterable.match(right)) then {
         def leftIter = left.iterator
         def rightIter = right.iterator
         while {leftIter.hasNext && rightIter.hasNext} do {

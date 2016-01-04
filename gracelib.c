@@ -46,11 +46,12 @@ Object String_do(Object self, int nparts, int *argcv,
 FILE *debugfp;
 int debug_enabled = 0;
 
-Object String_size(Object , int, int*, Object *, int flags);
-Object String_at(Object , int, int*, Object *, int flags);
-Object String_replace_with(Object , int, int*, Object *, int flags);
-Object String_substringFrom_to(Object , int, int*, Object *, int flags);
-Object String_startsWith(Object , int, int*, Object *, int flags);
+Object String_size(Object, int, int*, Object*, int flags);
+Object String_at(Object, int, int*, Object*, int flags);
+Object String_replace_with(Object, int, int*, Object*, int flags);
+Object String_substringFrom_to(Object, int, int*, Object*, int flags);
+Object String_startsWith(Object, int, int*, Object*, int flags);
+Object prelude_clone(Object, int, int*, Object*, int flags);
 Object makeEscapedString(char *);
 Object makeQuotedString(char *);
 void ConcatString__FillBuffer(Object s, char *c, int len);
@@ -273,6 +274,7 @@ static Object RequestErrorObject;
 static Object ResourceExceptionObject;
 static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
+static Object IteratorExhaustedObject;
 
 Object ProgrammingError() { return ProgrammingErrorObject; }
 Object RequestError() { return RequestErrorObject; }
@@ -414,7 +416,7 @@ void grace_run_shutdown_functions() {
 
 int istrue(Object o) {
     if (o == undefined)
-        gracedie("Undefined value used in boolean test.");
+        graceRaise(RequestErrorObject, "Undefined value used in boolean test.");
     if (o == NULL || o == BOOLEAN_FALSE)
         return 0;
     if (o == BOOLEAN_TRUE)
@@ -560,7 +562,7 @@ Object Singleton_asString(Object receiver, int nparts, int *argcv,
 Object Object_bind(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        gracedie("binary operator :: requires an argument");
+        graceRaise(RequestErrorObject, "binary operator :: requires an argument");
     Object other = args[0];
     Object params[2];
     int partcv[] = {1, 1};
@@ -648,7 +650,7 @@ Object alloc_FailedMatch(Object result, Object bindings) {
 Object literal_match(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        gracedie("match requires an argument");
+        graceRaise(RequestErrorObject, "match requires an argument");
     Object other = argv[0];
     int partcv[] = {1};
     if (!istrue(callmethod(self, "==", 1, partcv, argv)))
@@ -658,13 +660,13 @@ Object literal_match(Object self, int nparts, int *argcv,
 Object literal_or(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        gracedie("| requires an argument");
+        graceRaise(RequestErrorObject, "| requires an argument");
     return alloc_OrPattern(self, argv[0]);
 }
 Object literal_and(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        gracedie("& requires an argument");
+        graceRaise(RequestErrorObject, "& requires an argument");
     return alloc_AndPattern(self, argv[0]);
 }
 
@@ -867,7 +869,7 @@ Object ExceptionPacket_printBacktrace(Object self, int argc, int *argcv,
 }
 Object alloc_ExceptionPacket(Object msg, Object exception) {
     if (!ExceptionPacket) {
-        ExceptionPacket = alloc_class3("ExceptionPacket", 10,
+        ExceptionPacket = alloc_class3("exception", 10,
                 (void*)&ExceptionPacket__mark,
                 (void*)&ExceptionPacket__release);
         add_Method(ExceptionPacket, "message", &ExceptionPacket_message);
@@ -992,7 +994,7 @@ Object alloc_Exception(char *name, Object parent) {
 Object Float64_Point(Object self, int nparts, int *argcv,
                      Object *args, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        gracedie("binary operator @ requires a single argument");
+        graceRaise(RequestErrorObject, "binary operator @ requires a single argument");
     Object other = args[0];
     assertClass(other, Number);
     Object params[2];
@@ -1043,8 +1045,12 @@ Object BuiltinListIter_next(Object self, int nparts, int *argcv,
     Object *arr = (Object*)(self->data + sizeof(int));
     struct BuiltinListObject *lst = (struct BuiltinListObject*)(*arr);
     int rpos = *pos;
-    *pos  = *pos + 1;
-    return lst->items[rpos];
+    if (*pos < lst->size) {
+        *pos  = *pos + 1;
+        return lst->items[rpos];
+    }
+    graceRaise(IteratorExhaustedObject, "on primitive list");
+    return alloc_Boolean(0); // will never execute, but keeps the compiler quiet
 }
 Object BuiltinListIter_havemore(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1078,7 +1084,17 @@ Object BuiltinList_pop(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     sself->size--;
     if (sself->size < 0)
-        gracedie("popped from negative value: %i", sself->size);
+        graceRaise(BoundsErrorObject, "Attempt to pop from list of size %i",
+                ++sself->size);
+    return sself->items[sself->size];
+}
+Object BuiltinList_removeLast(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    sself->size--;
+    if (sself->size < 0)
+        graceRaise(BoundsErrorObject, "Attempt to removeLast from list of size %i",
+                ++sself->size);
     return sself->items[sself->size];
 }
 Object BuiltinList_push(Object self, int nparts, int *argcv,
@@ -1096,14 +1112,18 @@ Object BuiltinList_push(Object self, int nparts, int *argcv,
     }
     sself->items[sself->size] = other;
     sself->size++;
-    return alloc_Boolean(1);
+    return self;
 }
 Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     Object idx = args[0];
     Object val = args[1];
+    int partcv[] = {1};
     int index = integerfromAny(idx);
+    if (index == sself->size + 1) {
+        return BuiltinList_push(self, 1, partcv, &val, 0);
+    }
     if (index > sself->size) {
         graceRaise(BoundsErrorObject, "index out of bounds: %i > %i",
                 index, sself->size);
@@ -1114,7 +1134,7 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
     }
     index--;
     sself->items[index] = val;
-    return val;
+    return self;
 }
 Object BuiltinList_contains(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1130,6 +1150,38 @@ Object BuiltinList_contains(Object self, int nparts, int *argcv,
             return b;
     }
     return alloc_Boolean(0);
+}
+Object BuiltinList_equals(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    Object other = args[0];
+    int partcv[] = {1, 1};
+    Object requestArgs[2];
+    requestArgs[0] = self;
+    requestArgs[1] = other;
+    Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
+    return callmethod(collections, "isEqual()toIterable", 2, partcv, requestArgs);
+}
+Object BuiltinList_map(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    Object functionBlock = args[0];
+    int partcv[] = {1, 1};
+    Object requestArgs[2];
+    requestArgs[0] = self;
+    requestArgs[1] = functionBlock;
+    Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
+    return callmethodself(collections, "lazySequenceOver()mappedBy", 2,
+                partcv, requestArgs);
+}
+Object BuiltinList_filter(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    Object predicate1 = args[0];
+    int partcv[] = {1, 1};
+    Object requestArgs[2];
+    requestArgs[0] = self;
+    requestArgs[1] = predicate1;
+    Object collections = callmethod(_prelude, "collections", 0, NULL, NULL);
+    return callmethodself(collections, "lazySequenceOver()filteredBy", 2,
+                partcv, requestArgs);
 }
 Object BuiltinList_reduce(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1176,6 +1228,35 @@ Object BuiltinList_do(Object self, int nparts, int *argcv,
         each = sself->items[index];
         int partcv[] = {1};
         callmethod(functionBlock, "apply", 1, partcv, &each);
+    }
+    return done;
+}
+Object BuiltinList_do_separatedBy(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object functionBlock = args[0];
+    Object separatorBlock = args[1];
+    Object each;
+    int index;
+    for (index=0; index<sself->size; index++) {
+        each = sself->items[index];
+        int partcv[] = {1};
+        if (index > 0) callmethod(separatorBlock, "apply", 0, NULL, NULL);
+        callmethod(functionBlock, "apply", 1, partcv, &each);
+    }
+    return done;
+}
+Object BuiltinList_keyAndValuesDo(Object self, int nparts, int *argcv,
+                           Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    Object functionBlock = args[0];
+    Object requestArgs[2];
+    int index;
+    int partcv[] = {2};
+    for (index=0; index<sself->size; index++) {
+        requestArgs[0] = alloc_Float64(index+1);
+        requestArgs[1] = sself->items[index];
+        callmethod(functionBlock, "apply", 1, partcv, requestArgs);
     }
     return done;
 }
@@ -1246,14 +1327,42 @@ Object BuiltinList_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size == 0)
-        gracedie("empty list has no first element");
+        graceRaise(BoundsErrorObject, "empty list has no first element");
     return sself->items[0];
+}
+Object BuiltinList_second(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size < 2)
+        graceRaise(BoundsErrorObject, "list of size %i has no second element", sself->size);
+    return sself->items[1];
+}
+Object BuiltinList_third(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size < 3)
+        graceRaise(BoundsErrorObject, "list of size %i has no third element", sself->size);
+    return sself->items[2];
+}
+Object BuiltinList_fourth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size < 4)
+        graceRaise(BoundsErrorObject, "list of size %i has no fourth element", sself->size);
+    return sself->items[3];
+}
+Object BuiltinList_fifth(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    if (sself->size < 5)
+        graceRaise(BoundsErrorObject, "list of size %i has no fifth element", sself->size);
+    return sself->items[4];
 }
 Object BuiltinList_last(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size == 0)
-        gracedie("empty list has no last element");
+        graceRaise(BoundsErrorObject, "empty list has no last element");
     return sself->items[sself->size-1];
 }
 Object BuiltinList_prepended(Object self, int nparts, int *argcv,
@@ -1285,6 +1394,28 @@ Object BuiltinList_concat(Object self, int nparts, int *argcv,
     }
     return nl;
 }
+Object BuiltinList_copy(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    int i;
+    Object nl = alloc_BuiltinList();
+    int partcv[] = {1};
+    for (i = 0; i < sself->size; i++) {
+        BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
+    }
+    return nl;
+}
+Object BuiltinList_reversed(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    int i;
+    Object nl = alloc_BuiltinList();
+    int partcv[] = {1};
+    for (i = sself->size - 1; i >= 0; i--) {
+        BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
+    }
+    return nl;
+}
 void BuiltinList__release(Object o) {
     struct BuiltinListObject *s = (struct BuiltinListObject *)o;
     glfree(s->items);
@@ -1297,9 +1428,11 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("BuiltinList", 23, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("builtinList", 40, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
+        add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
+        add_Method(BuiltinList, "basicAsString", &BuiltinList_asString);
         add_Method(BuiltinList, "::", &Object_bind);
         add_Method(BuiltinList, "at", &BuiltinList_index);
         add_Method(BuiltinList, "[]", &BuiltinList_index);
@@ -1307,21 +1440,36 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "[]:=", &BuiltinList_indexAssign);
         add_Method(BuiltinList, "push", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
+        add_Method(BuiltinList, "add", &BuiltinList_push);
+        add_Method(BuiltinList, "addLast", &BuiltinList_push);
+        add_Method(BuiltinList, "removeLast", &BuiltinList_pop);
         add_Method(BuiltinList, "length", &BuiltinList_length);
         add_Method(BuiltinList, "size", &BuiltinList_length);
         add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
         add_Method(BuiltinList, "contains", &BuiltinList_contains);
-        add_Method(BuiltinList, "==", &Object_Equals);
+        add_Method(BuiltinList, "==", &BuiltinList_equals);
         add_Method(BuiltinList, "!=", &Object_NotEquals);
+        add_Method(BuiltinList, "≠", &Object_NotEquals);
         add_Method(BuiltinList, "indices", &BuiltinList_indices);
+        add_Method(BuiltinList, "keys", &BuiltinList_indices);
         add_Method(BuiltinList, "first", &BuiltinList_first);
+        add_Method(BuiltinList, "second", &BuiltinList_second);
+        add_Method(BuiltinList, "third", &BuiltinList_third);
+        add_Method(BuiltinList, "fourth", &BuiltinList_fourth);
+        add_Method(BuiltinList, "fifth", &BuiltinList_fifth);
         add_Method(BuiltinList, "last", &BuiltinList_last);
         add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
+        add_Method(BuiltinList, "map", &BuiltinList_map);
+        add_Method(BuiltinList, "filter", &BuiltinList_filter);
         add_Method(BuiltinList, "fold()startingWith", &BuiltinList_fold_startingWith);
         add_Method(BuiltinList, "do", &BuiltinList_do);
+        add_Method(BuiltinList, "do()separatedBy", &BuiltinList_do_separatedBy);
+        add_Method(BuiltinList, "keysAndValuesDo", &BuiltinList_keyAndValuesDo);
+        add_Method(BuiltinList, "copy", &BuiltinList_copy);
+        add_Method(BuiltinList, "reversed", &BuiltinList_reversed);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
@@ -1475,7 +1623,7 @@ Object alloc_PrimitiveArray(int size) {
 Object PrimitiveArrayClassObject_new(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (argcv[0] != 1)
-        gracedie("array construction requires size argument");
+        graceRaise(RequestErrorObject, "array construction requires size argument");
     return alloc_PrimitiveArray(integerfromAny(args[0]));
 }
 Object PrimitiveArrayClassObject;
@@ -1878,7 +2026,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("ConcatString", 37,
+        ConcatString = alloc_class3("concatString", 37,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -2051,7 +2199,7 @@ Object String_substringFrom_to(Object self,
 Object String_do(Object self, int nparts, int *argcv,
                  Object *args, int flags) {
     if (nparts != 1 || argcv[0] != 1)
-        gracedie("string.do requires exactly one argument");
+        graceRaise(RequestErrorObject, "string.do requires exactly one argument");
     Object block = args[0];
     Object iter = callmethod(self, "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
@@ -2324,7 +2472,7 @@ Object Octets_at(Object receiver, int nparts, int *argcv,
     int size = self->blen;
     int i = integerfromAny(args[0]);
     if (i >= size)
-        gracedie("Octets index out of bounds: %i/%i", i, size);
+        graceRaise(BoundsErrorObject, "Octets index %i >= size %i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
 Object Octets_Equals(Object receiver, int nparts, int *argcv,
@@ -4502,7 +4650,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         addmethod2(GraceDefaultObject, "::", &Object_bind);
     }
     if (c == NULL) {
-        c = alloc_class3("Object", numMethods + 1,
+        c = alloc_class3("object", numMethods + 1,
                 (void*)&UserObj__mark, (void*)&UserObj__release);
     }
     numFields++;
@@ -4720,6 +4868,8 @@ void gracelib_argv(char **argv) {
     gc_root(TypeErrorObject);
     EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ExceptionObject);
     gc_root(EnvironmentExceptionObject);
+    IteratorExhaustedObject = alloc_Exception("IteratorExhausted", ProgrammingErrorObject);
+    gc_root(IteratorExhaustedObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -4875,7 +5025,7 @@ Object grace_userobj_outer(Object self, int nparts, int *argcv,
 Object grace_while_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        gracedie("while-do requires exactly two arguments");
+        graceRaise(RequestErrorObject, "while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
         graceRaise(TypeErrorObject, "expected a Block for first (condition) "
                 "argument of while()do (defined in standardPrelude), got %s",
@@ -4889,7 +5039,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
 Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        gracedie("for-do requires exactly two arguments");
+        graceRaise(RequestErrorObject, "for-do requires exactly two arguments");
     Object coll = argv[0];
     Object blk = argv[1];
     int partcv[] = {1};
@@ -4900,11 +5050,11 @@ Object grace_for_do(Object self, int nparts, int *argcv,
 Object grace_octets(Object self, int npart, int *argcv,
         Object *argv, int flags) {
     if (argcv[0] != 1)
-        gracedie("octets requires exactly one argument");
+        graceRaise(RequestErrorObject, "octets requires exactly one argument");
     char *str = grcstring(argv[0]);
     int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL, NULL));
     if (slen % 2 != 0)
-        gracedie("octets requires an even-length string");
+        graceRaise(RequestErrorObject, "octets requires an even-length string");
     int len = slen / 2;
     char buf[len];
     int i, j;
@@ -4912,7 +5062,7 @@ Object grace_octets(Object self, int npart, int *argcv,
         int c1 = HEXVALC(str[j]);
         int c2 = HEXVALC(str[j+1]);
         if (c1 < 0 || c2 < 0)
-            gracedie("octets requires only hexadecimal digits [0-9a-f]");
+            graceRaise(RequestErrorObject, "octets accepts only hexadecimal digits [0-9a-f]");
         buf[i] = 16 * c1 + c2;
     }
     return alloc_Octets(buf, len);
