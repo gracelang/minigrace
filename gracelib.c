@@ -1153,17 +1153,18 @@ Object BuiltinList_fold_startingWith(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     Object initialValue = args[1];
     Object functionBlock = args[0];
+    int partcv[] = {2};
+    Object requestArgs[2];
     Object each;
-    Object accum = initialValue;
-    int slot = gc_frame_newslot(accum);
+    requestArgs[0] = initialValue;
+    int slot = gc_frame_newslot(requestArgs[0]);
     int index;
     for (index=0; index<sself->size; index++) {
-        each = sself->items[index];
-        int partcv[] = {2};
-        accum = callmethod(functionBlock, "apply", 1, partcv, &accum);
-        gc_frame_setslot(slot, accum);
+        requestArgs[1] = sself->items[index];
+        requestArgs[0] = callmethod(functionBlock, "apply", 1, partcv, requestArgs);
+        gc_frame_setslot(slot, requestArgs[0]);
     }
-    return accum;
+    return requestArgs[0];
 }
 Object BuiltinList_do(Object self, int nparts, int *argcv,
                            Object *args, int flags) {
