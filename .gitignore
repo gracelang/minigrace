@@ -32,7 +32,6 @@ js/errormessages.js
 js/rtobjectdraw.js
 js/genc.js
 js/genjs.js
-js/genjson.js
 js/gUnit.js
 js/identifierresolution.js
 js/lexer.js
