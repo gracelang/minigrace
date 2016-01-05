@@ -14,17 +14,17 @@ function wrapDOMFunction(obj, fn) {
         for (var i=0; i<args.length; i++)
             args[i] = wrapGraceObject(args[i]);
         return wrapDOMObject(obj[fn].apply(obj, args));
-    }
+    };
 }
 
 function wrapDOMField(o, obj, k) {
     o.methods[k + ":="] = function(argcv, val) {
         obj[k] = wrapGraceObject(val);
         return var_done;
-    }
+    };
     return function() {
         return wrapDOMObject(obj[k]);
-    }
+    };
 }
 function wrapDOMObject(obj) {
     switch(typeof obj) {
@@ -37,16 +37,16 @@ function wrapDOMObject(obj) {
         case "undefined":
             return domNoObject;
     }
-    if (obj == null) {
+    if (obj === null) {
       return domNoObject;
     }
     if (obj._graceWrapper)
         return obj._graceWrapper;
-    var o = Grace_allocObject();
+    var o = Grace_allocObject(GraceObject, "wrappedDomObject");
     o._wrappedDOMObject = obj;
     o.methods.asString = function() {
         return new GraceString("DOMObject(" + obj + ")");
-    }
+    };
     for (var k in obj) {
         switch(typeof obj[k]) {
             case "function":
@@ -57,7 +57,7 @@ function wrapDOMObject(obj) {
             case "number":
             case "object":
                 o.methods[k] = wrapDOMField(o, obj, k);
-                break
+                break;
         }
     }
     o.methods._methods = function() {
@@ -66,7 +66,7 @@ function wrapDOMObject(obj) {
             l.push(new GraceString(m));
         }
         return new GraceList(l);
-    }
+    };
     try {
         obj._graceWrapper = o;
     } catch(e) {}
@@ -94,12 +94,12 @@ function wrapGraceObject(o) {
             for (var i=0; i<arguments.length; i++) {
                 args.push(wrapDOMObject(arguments[i]));
             }
-            var ret
+            var ret;
             minigrace.trapErrors(function() {
                 ret = wrapGraceObject(o.real.apply(o.receiver, args));
             });
-            return ret
-        }
+            return ret;
+        };
         o._wrappedDOMObject = f;
     }
     if (o._wrappedDOMObject)
@@ -132,8 +132,8 @@ function gracecode_dom() {
                 "asin": wrapDOMFunction(Math, "asin"),
                 "acos": wrapDOMFunction(Math, "acos"),
                 "atan": wrapDOMFunction(Math, "atan"),
-                "atan2": wrapDOMFunction(Math, "atan2"),
-            }}
+                "atan2": wrapDOMFunction(Math, "atan2")
+            }};
         };
         return win;
     };
@@ -144,17 +144,17 @@ function gracecode_dom() {
         return name._value in unwrapDOMObject(object) ? GraceTrue : GraceFalse;
     };
     this.methods["doesObject()haveProperty"].paramCounts = [1, 1];
-    this.methods["doesObject()haveProperty"].variableArities = [false, false]
+    this.methods["doesObject()haveProperty"].variableArities = [false, false];
 
     this.methods["for()waiting()do"] = function(argcv, iterable, delay, block) {
-        var ret = Grace_allocObject();
+        var ret = Grace_allocObject(GraceObject, "dom.for()waiting()do");
         ret.methods.then = function(argcv, block) {
             this.data["then"] = block;
-        }
+        };
         var iter = callmethod(iterable, "iterator", [0]);
         var func = function() {
             minigrace.trapErrors(function() {
-                if (Grace_isTrue(callmethod(iter, "havemore", [0]))) {
+                if (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
                     var val = callmethod(iter, "next", [0]);
                     callmethod(block, "apply", [1], val);
                     setTimeout(func, delay._value);
@@ -163,7 +163,7 @@ function gracecode_dom() {
                         callmethod(ret.data.then, "apply", [0]);
                 }
             });
-        }
+        };
         func();
         return ret;
     };
@@ -171,10 +171,10 @@ function gracecode_dom() {
     this.methods["for()waiting()do"].variableArities = [false, false, false];
 
     this.methods["while()waiting()do"] = function(argcv, cond, delay, block) {
-        var ret = Grace_allocObject();
+        var ret = Grace_allocObject(GraceObject, "dom.while()waiting()do");
         ret.methods.then = function(argcv, block) {
             this.data["then"] = block;
-        }
+        };
         var func = function() {
             minigrace.trapErrors(function() {
                 if (Grace_isTrue(callmethod(cond, "apply", [0]))) {
@@ -185,7 +185,7 @@ function gracecode_dom() {
                         callmethod(ret.data.then, "apply", [0]);
                 }
             });
-        }
+        };
         func();
         return ret;
     };
@@ -283,7 +283,7 @@ function gracecode_dom() {
 
     this.methods.noObject = function (argcv) {
         return domNoObject;
-    }
+    };
     this.methods.noObject.paramcounts = [ 0 ];
     this.methods.noObject.variableArities = [ false ];
 
