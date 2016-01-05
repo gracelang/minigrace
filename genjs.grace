@@ -382,7 +382,7 @@ method compileobject(o, outerRef, inheritingObject) {
             compileobject(e, selfr, false)
         } elseif (e.kind == "inherits") then {
             out "sourceObject = {selfr};"
-            compileInherits(e)
+            compileInherits(e, selfr)
         } else {
             out "sourceObject = {selfr};"
             compilenode(e)
@@ -1560,7 +1560,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
     def imported = list.empty
     for (values) do { o ->
         if (o.kind == "inherits") then {
-            compileInherits(o)
+            compileInherits(o, "this")
         } elseif {o.kind != "method"} then {
             compilenode(o)
         }
@@ -1613,18 +1613,18 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
-method compileInherits(o) {
-    // o is an inherits node: compile it.
+method compileInherits(o, selfr) {
+    // o is an inherits node: compile it.  selfr is the name of enclosing object
     def sup = compilenode(o.value)
-    out "this.superobj = {sup};"
-    out "if ({sup}.data) this.data = {sup}.data;"
+    out "{selfr}.superobj = {sup};"
+    out "if ({sup}.data) {selfr}.data = {sup}.data;"
     // out "delete {sup}.data;"    // to avoid a redundant reference
     out "if ({sup}.hasOwnProperty('_value'))"
-    out "    this._value = {sup}._value;"
+    out "    {selfr}._value = {sup}._value;"
     // out "delete {sup}._value;"  // to avoid an inconsistent copy of built-in values
     // this breaks inheritance from booleans
     o.aliases.do { each ->
-        out "this.methods['{each.newName.nameString}'] = findMethod({sup}, '{each.oldName.nameString}');"
+        out "{selfr}.methods['{each.newName.nameString}'] = findMethod({sup}, '{each.oldName.nameString}');"
     }
     o.exclusions.do { each ->
         out "delete {sup}.methods['{each.nameString}'];"
