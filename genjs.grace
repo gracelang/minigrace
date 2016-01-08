@@ -18,7 +18,6 @@ var output := []
 var usedvars := []
 var declaredvars := []
 var bblock := "entry"
-var linenum := 0
 
 var values := []
 var outfile
@@ -237,7 +236,6 @@ method compileobjdefdec(o, selfr, pos) {
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
-                linenum := o.line
                 noteLineNumber(o.line)comment("typecheck in compileobjdefdec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {val})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
@@ -280,7 +278,6 @@ method compileobjvardec(o, selfr, pos) {
                 if (val == "undefined") then {
                     return true
                 }
-                linenum := o.line
                 noteLineNumber(o.line)comment("typecheck in compileobjvardec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {val})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
@@ -585,7 +582,6 @@ method compilemethod(o, selfobj) {
         for (part.params) do { p ->
             paramnr := paramnr + 1
             if (emitTypeChecks && (p.dtype != false)) then {
-                linenum := o.line
                 noteLineNumber(o.line)comment("argument check in compilemethod")
                 def dtype = compilenode(p.dtype)
                 out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
@@ -630,13 +626,23 @@ method compilemethod(o, selfobj) {
         out("try \{")
         increaseindent
         var ret := "GraceDone"
+        var lastLine := o.line
         for (o.body) do { l ->
             ret := compilenode(l)
+            lastLine := l.line
         }
         if (debugMode) then {
             out "stackFrames.pop();"
         }
         if (ret != "undefined") then {
+            if (emitTypeChecks && (o.dtype != false)) then {
+                def dtype = compilenode(o.dtype)
+                noteLineNumber (lastLine) comment "return value"
+                out "if (!Grace_isTrue(callmethod({dtype}, \"match\", [1], {ret})))"
+                out "    throw new GraceExceptionPacket(TypeErrorObject," 
+                out "        new GraceString(\"result of method {textualSignature} does not have \" + "
+                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+            }
             out("return " ++ ret ++ ";")
         }
         decreaseindent
@@ -758,7 +764,6 @@ method compilefreshmethod(o, selfobj) {
         for (part.params) do { p ->
             paramnr := paramnr + 1
             if (emitTypeChecks && (p.dtype != false)) then {
-                linenum := o.line
                 noteLineNumber(o.line)comment("argument check in compilefreshmethod")
                 def dtype = compilenode(p.dtype)
                 out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
@@ -968,7 +973,6 @@ method compiledefdec(o) {
     if (emitTypeChecks) then {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
-                linenum := o.line
                 noteLineNumber(o.line)comment("compiledefdec")
                 out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {varf(nm)})))"
                 out "  throw new GraceExceptionPacket(TypeErrorObject,"
@@ -1007,7 +1011,6 @@ method compilevardec(o) {
         if (o.dtype != false) then {
             if (o.dtype.value != "Unknown") then {
                 if (val != "false") then {
-                    linenum := o.line
                     noteLineNumber(o.line)comment("compilevardec")
                     out "if (!Grace_isTrue(callmethod({compilenode(o.dtype)}, \"match\", [1], {varf(nm)})))"
                     out "  throw new GraceExceptionPacket(TypeErrorObject,"
@@ -1101,6 +1104,7 @@ method compileop(o) {
     auto_count := auto_count + 1
 }
 method compilecall(o) {
+    noteLineNumber (o.line) comment "compilenode {o.kind}"
     var args := []
     var obj := ""
     var len := 0
@@ -1351,8 +1355,7 @@ method compileNativeCode(o) {
 
 method compilenode(o) {
     compilationDepth := compilationDepth + 1
-    linenum := o.line
-    noteLineNumber(o.line)comment("compilenode {o.kind}")
+    noteLineNumber(o.line)comment "compilenode {o.kind}"
     def oKind = o.kind
     if (oKind == "num") then {
         o.register := "new GraceNum(" ++ o.value ++ ")"
