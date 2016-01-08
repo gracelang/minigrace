@@ -1602,7 +1602,11 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "    \"{sourceLines.at(ln)}\","
         ln := ln + 1
     }
-    out "    \"{sourceLines.at(numberOfLines)}\" ];"
+    if (numberOfLines <= 0) then {
+        out " ];"
+    } else {
+        out "    \"{sourceLines.at(numberOfLines)}\" ];"
+    }
     out "\}"
     out "if (typeof global !== \"undefined\")"
     out "  global.{generatedModuleName} = {generatedModuleName};"
