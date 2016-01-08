@@ -350,7 +350,7 @@ factory method testRecordFor(testName)message(testMsg) {
 
 def testSuite is public = object {
     inherits collections.collectionFactory.trait
-    factory method withAll(initialContents) -> TestSuite {
+    factory method withAll(initialContents) {
         inherits collections.enumerable.trait
         var name is public := ""
         def tests = list.empty
@@ -420,7 +420,7 @@ def testSuite is public = object {
         }
     }
     
-    method fromTestMethodsIn(aTestClass) -> TestCase {
+    method fromTestMethodsIn(aTestClass) {
         def newSuite = self.empty
         def example = aTestClass.forMethod("null")
         newSuite.name := className(aTestClass)
