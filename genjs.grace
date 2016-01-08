@@ -263,6 +263,7 @@ method compileobjvardec(o, selfr, pos) {
     out(selfr ++ ".data[\"" ++ nm ++ "\"] = " ++ val ++ ";")
     out("var writer_" ++ emod ++ "_" ++ nmi ++ myc ++ " = function(argcv, o) \{")
     out("  this.data[\"" ++ nm ++ "\"] = o;")
+    out "  return GraceDone;"
     out("\};")
     out(selfr ++ ".methods[\"" ++ nm ++ ":=\"] = writer_" ++ emod ++
         "_" ++ nmi ++ myc ++ ";")
