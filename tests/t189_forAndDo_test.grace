@@ -1,16 +1,5 @@
 dialect "minitest"
 
-method for (cs) and (ds) do (action) -> Done {
-    def dIter = ds.iterator
-    cs.do { c -> 
-        if (dIter.hasNext) then {
-            action.apply(c, dIter.next)
-        } else {
-            return
-        }
-    }
-}
-
 testSuiteNamed "for and" with {
     test "same size" by {
         def result = list.empty
