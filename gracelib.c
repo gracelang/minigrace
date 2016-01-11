@@ -2398,6 +2398,9 @@ Object makeQuotedString(char *p) {
         } else if (p[ip] == '\n') {
             buf[op++] = '\\';
             buf[op] = 'n';
+        } else if (p[ip] == '\t') {
+            buf[op++] = '\\';
+            buf[op] = 't';
         } else {
             buf[op] = p[ip];
         }

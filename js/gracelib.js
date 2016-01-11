@@ -188,6 +188,7 @@ GraceString.prototype = {
             var tmp = s.replace(/\\/g, '\\\\');
             tmp = tmp.replace(/"/g, '\\"');
             tmp = tmp.replace(/\n/g, '\\n');
+            tmp = tmp.replace(/\t/g, '\\t');
             return new GraceString(tmp);
         },
         "_escape": function(argcv) {

@@ -1819,23 +1819,8 @@ def stringNode = object {
             "{super.pretty(depth)}({self.value})"
         }
         method toGrace(depth : Number) -> String {
-            var s := "\""
-            for (self.value) do { c ->
-                // TODO: what escapes are missing?
-                if (c == "\n") then {
-                    s := s ++ "\\n"
-                } elseif (c == "\t") then {
-                    s := s ++ "\\t"
-                } elseif (c == "\"") then {
-                    s := s ++ "\\\""
-                } elseif (c == "\\") then {
-                    s := s ++ "\\\\"
-                } else {
-                    s := s ++ c
-                }
-            }
-            s := s ++ "\""
-            s
+            def q = "\""
+            q ++ value.quoted ++ q
         }
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
