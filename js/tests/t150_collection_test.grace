@@ -537,7 +537,7 @@ class sequenceTest.forMethod(m) {
             def input = sequence.with(5, 3, 11, 7, 2)
             def output = input.sortedBy {l, r ->
                 if (l == r) then {0}
-                    elseif (l < r) then {1}
+                    elseif {l < r} then {1}
                     else {-1}
                 }
             assert (input) shouldBe (sequence.with(5, 3, 11, 7, 2))

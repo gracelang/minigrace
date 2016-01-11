@@ -602,7 +602,7 @@ factory method sequence<T> {
             method sorted {
                 asList.sortBy { l, r ->
                     if (l == r) then {0}
-                        elseif (l < r) then {-1}
+                        elseif {l < r} then {-1}
                         else {1}
                 }.asSequence
             }
@@ -886,7 +886,7 @@ factory method list<T> {
                     mods := mods + 1
                     sortBy { l, r ->
                         if (l == r) then {0}
-                            elseif (l < r) then {-1}
+                            elseif {l < r} then {-1}
                             else {1}
                     }
                 }
@@ -1114,7 +1114,7 @@ factory method list<T> {
             method sort {
                 sortBy { l, r ->
                     if (l == r) then {0}
-                        elseif (l < r) then {-1}
+                        elseif {l < r} then {-1}
                         else {1}
                 }
             }

@@ -244,15 +244,15 @@ factory method newScopeIn(parent') kind(variety') {
             }
             errormessages.syntaxError "No method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
-        } elseif (nd.kind == "member") then {
+        } elseif {nd.kind == "member"} then {
             def receiverScope = self.scopeReferencedBy(nd.in)
             if (nd.value == "outer") then {
                 return receiverScope.parent
             }
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
-        } elseif (nd.kind == "call") then {
+        } elseif {nd.kind == "call"} then {
             return scopeReferencedBy(nd.value)
-        } elseif (nd.kind == "op") then {
+        } elseif {nd.kind == "op"} then {
             def receiverScope = self.scopeReferencedBy(nd.left)
             return receiverScope.scopeReferencedBy(nd.asIdentifier)
         }

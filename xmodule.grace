@@ -321,21 +321,21 @@ def typeVisitor = object {
             if ((leftkind=="identifier") || (leftkind=="member")) then {
                 var typeIdent := op.left.toGrace(0)
                 methodtypes.push("{op.value} {typeIdent}")
-            } elseif(leftkind=="typeliteral") then {
+            } elseif { leftkind=="typeliteral" } then {
                 literalCount := literalCount + 1
                 methodtypes.push("{op.value} {literalCount}")
                 visitTypeLiteral(op.left)
-            } elseif (leftkind=="op") then {
+            } elseif { leftkind=="op" } then {
                 visitOp(op.left)
             }
             if ((rightkind=="identifier") || (rightkind=="member")) then {
                 var typeIdent := op.right.toGrace(0)
                 methodtypes.push("{op.value} {typeIdent}")
-            } elseif(rightkind=="typeliteral") then {
+            } elseif { rightkind=="typeliteral" } then {
                 literalCount := literalCount + 1
                 methodtypes.push("{op.value} {literalCount}")
                 visitTypeLiteral(op.right)
-            } elseif (rightkind=="op") then {
+            } elseif { rightkind=="op" } then {
                 visitOp(op.right)
             }
         }
@@ -411,16 +411,16 @@ method buildGctFor(module) {
                     classes.push(v.name.value)
                 }
             }
-        } elseif (v.kind == "class") then {
+        } elseif { v.kind == "class" } then {
             meths.push(v.name.value)
             classes.push(v.name.value)
             gct.at "constructors-of:{v.name.value}"
                 put(list.with(v.constructor.value))
             gct.at "methods-of:{v.name.value}.{v.constructor.value}"
                 put(v.scope.keysAsList.sort)
-        } elseif (v.kind == "dialect") then {
+        } elseif { v.kind == "dialect" } then {
             theDialect := v.value
-        } elseif (v.kind == "inherits") then {
+        } elseif { v.kind == "inherits" } then {
             meths.addAll(v.providedNames)
         }
     }

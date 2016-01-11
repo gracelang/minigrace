@@ -168,19 +168,19 @@ def aGraceLangTest = object {
         method test_009_elseif {
             if (false) then {
                 out("Fail 1 then")
-            } elseif (true) then {
+            } elseif {true} then {
                 out("OK 1 elseif")
             }
             if (true.not) then {
                 out("Fail 2 then")
-            } elseif (true && false) then {
+            } elseif {true && false} then {
                 out("Fail 2 elseif1")
-            } elseif (false || true) then {
+            } elseif {false || true} then {
                 out("OK 2 elseif2")
             }
             if (false && false) then {
                 out("Fail 3 then")
-            } elseif (false || false) then {
+            } elseif {false || false} then {
                 out("Fail 3 elseif")
             } else {
                 out("OK 3 else")

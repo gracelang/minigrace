@@ -1,5 +1,5 @@
 if (true) then {
     print("Here")
-} elseif (true) {
+} elseif {true} {
     print("Failure.")
 }

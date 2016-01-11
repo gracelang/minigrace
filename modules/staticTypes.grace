@@ -250,7 +250,7 @@ def anObjectType = object {
                     if(meth.name == meth'.name) then {
                         if(meth.isSpecialisationOf(meth')) then {
                             combine.push(meth)
-                        } elseif(meth'.isSpecialisationOf(meth)) then {
+                        } elseif { meth'.isSpecialisationOf(meth) } then {
                             combine.push(meth')
                         } else {
                             TypeError.raise("cannot produce intersection of " ++
@@ -284,7 +284,7 @@ def anObjectType = object {
                     if(meth.name == meth'.name) then {
                         if(meth.isSpecialisationOf(meth')) then {
                             combine.push(meth)
-                        } elseif(meth'.isSpecialisationOf(meth)) then {
+                        } elseif { meth'.isSpecialisationOf(meth) } then {
                             combine.push(meth')
                         } else {
                             TypeError.raise("cannot produce union of " ++

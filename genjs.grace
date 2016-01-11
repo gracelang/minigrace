@@ -119,11 +119,11 @@ method escapestring(s) {
     for (s) do {c->
         if (c == "\"") then {
             os := os ++ "\\\""
-        } elseif (c == "\\") then {
+        } elseif { c == "\\" } then {
             os := os ++ "\\\\"
-        } elseif (c == "\n") then {
+        } elseif { c == "\n" } then {
             os := os ++ "\\n"
-        } elseif ((c.ord < 32) || (c.ord > 126)) then {
+        } elseif { (c.ord < 32) || (c.ord > 126) } then {
             var uh := util.hex(c.ord)
             while {uh.size < 4} do {
                 uh := "0" ++ uh
@@ -362,23 +362,23 @@ method compileobject(o, outerRef, inheritingObject) {
     }
     for (o.value) do { e ->
         if (e.kind == "method") then {
-        } elseif (e.kind == "vardec") then {
+        } elseif { e.kind == "vardec" } then {
             out "sourceObject = {selfr};"
             compileobjvardec(e, selfr, pos)
             out("{selfr}.mutable = true;")
             pos := pos + 1
-        } elseif (e.kind == "defdec") then {
+        } elseif { e.kind == "defdec" } then {
             out "sourceObject = {selfr};"
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
-        } elseif (e.kind == "typedec") then {
+        } elseif { e.kind == "typedec" } then {
             out "sourceObject = {selfr};"
             compiletypedec(e)
             pos := pos + 1
-        } elseif (e.kind == "object") then {
+        } elseif { e.kind == "object" } then {
             out "sourceObject = {selfr};"
             compileobject(e, selfr, false)
-        } elseif (e.kind == "inherits") then {
+        } elseif { e.kind == "inherits" } then {
             out "sourceObject = {selfr};"
             compileInherits(e, selfr)
         } else {
@@ -908,11 +908,11 @@ method compileidentifier(o) {
     }
     if (name == "self") then {
         o.register := "this"
-    } elseif (name == "...") then {
+    } elseif { name == "..." } then {
         o.register := "ellipsis"
-    } elseif (name == "true") then {
+    } elseif { name == "true" } then {
         o.register := "GraceTrue"
-    } elseif (name == "false") then {
+    } elseif { name == "false" } then {
         o.register := "GraceFalse"
     } else {
         usedvars.push(name)
@@ -930,7 +930,7 @@ method compilebind(o) {
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
         o.register := "GraceDone"
-    } elseif (dest.kind == "member") then {
+    } elseif { dest.kind == "member" } then {
         var nm := dest.value
         // we could use endsWith(), but it's not yet in the C string library 
         if ((nm.size < 2).orElse{nm.substringFrom(nm.size - 1)to(nm.size)
@@ -940,7 +940,7 @@ method compilebind(o) {
         def c = ast.callNode.new(dest, [ast.callWithPart.request(dest.value) withArgs( [o.value] )])
                         scope(currentScope)
         o.register := compilenode(c)
-    } elseif (dest.kind == "index") then {
+    } elseif { dest.kind == "index" } then {
         var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
         def c = ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )  scope(currentScope)])
                         scope(currentScope)
@@ -1146,9 +1146,9 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
-    } elseif ((o.value.kind == "member").andAlso {
+    } elseif { (o.value.kind == "member").andAlso {
         o.value.in.kind == "member"}.andAlso {
-            o.value.in.value == "outer"}) then {
+            o.value.in.value == "outer"} } then {
         def ot = compilenode(o.value.in)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
@@ -1160,13 +1160,13 @@ method compilecall(o) {
         out("onOuter = true;");
         out("onSelf = true;");
         out(call)
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self") && (o.value.value == "outer")}
-        ) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+            && (o.value.in.value == "self") && (o.value.value == "outer")}
+        } then {
         out("var call{auto_count} = " ++ requestCall ++ "(superDepth, "
             ++ "\"outer\", [0]);")
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "self")}) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+            && (o.value.in.value == "self")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(this"
             ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1176,8 +1176,8 @@ method compilecall(o) {
         call := call ++ ");"
         out("onSelf = true;");
         out(call)
-    } elseif ((o.value.kind == "member") && {(o.value.in.kind == "identifier")
-        && (o.value.in.value == "prelude")}) then {
+    } elseif { (o.value.kind == "member") && {(o.value.in.kind == "identifier")
+            && (o.value.in.value == "prelude")} } then {
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(var_prelude, \""
             ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
@@ -1186,7 +1186,7 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
-    } elseif (o.value.kind == "member") then {
+    } elseif { o.value.kind == "member" } then {
         obj := compilenode(o.value.in)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
             ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
@@ -1368,45 +1368,45 @@ method compilenode(o) {
             ++ os ++ "\");")
         o.register := "string" ++ auto_count
         auto_count := auto_count + 1
-    } elseif (oKind == "index") then {
+    } elseif { oKind == "index" } then {
         compileindex(o)
-    } elseif (oKind == "dialect") then {
+    } elseif { oKind == "dialect" } then {
         compiledialect(o)
-    } elseif (oKind == "import") then {
+    } elseif { oKind == "import" } then {
         compileimport(o)
-    } elseif (oKind == "return") then {
+    } elseif { oKind == "return" } then {
         compilereturn(o)
-    } elseif (oKind == "generic") then {
+    } elseif { oKind == "generic" } then {
         o.register := compilenode(o.value)
-    } elseif (oKind == "identifier") then {
+    } elseif { oKind == "identifier" } then {
         compileidentifier(o)
-    } elseif (oKind == "defdec") then {
+    } elseif { oKind == "defdec" } then {
         compiledefdec(o)
-    } elseif (oKind == "vardec") then {
+    } elseif { oKind == "vardec" } then {
         compilevardec(o)
-    } elseif (oKind == "block") then {
+    } elseif { oKind == "block" } then {
         compileblock(o)
-    } elseif (oKind == "method") then {
+    } elseif { oKind == "method" } then {
         compilemethod(o, "this")
-    } elseif (oKind == "array") then {
+    } elseif { oKind == "array" } then {
         compilearray(o)
-    } elseif (oKind == "bind") then {
+    } elseif { oKind == "bind" } then {
         compilebind(o)
-    } elseif (oKind == "if") then {
+    } elseif { oKind == "if" } then {
         compileif(o)
-    } elseif (oKind == "trycatch") then {
+    } elseif { oKind == "trycatch" } then {
         compiletrycatch(o)
-    } elseif (oKind == "matchcase") then {
+    } elseif { oKind == "matchcase" } then {
         compilematchcase(o)
-    } elseif (oKind == "class") then {
+    } elseif { oKind == "class" } then {
         compileclass(o)
-    } elseif (oKind == "object") then {
+    } elseif { oKind == "object" } then {
         compileobject(o, "this", false)
-    } elseif (oKind == "typedec") then {
+    } elseif { oKind == "typedec" } then {
         compiletypedec(o)
-    } elseif (o.kind == "typeliteral") then {
+    } elseif { o.kind == "typeliteral" } then {
         compiletypeliteral(o)
-    } elseif (oKind == "member") then {
+    } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
         if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {

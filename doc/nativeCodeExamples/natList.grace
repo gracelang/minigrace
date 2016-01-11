@@ -282,7 +282,7 @@ factory method list<T> {
         method sort {
             sortBy { l, r ->
                 if (l == r) then {0} 
-                    elseif (l < r) then {-1} 
+                    elseif {l < r} then {-1}
                     else {1}
             }
         }

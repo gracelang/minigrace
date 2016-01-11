@@ -108,7 +108,7 @@ method test(name:String) by(block:Block) {
         currentTestSuiteForDialect.add(testCaseNamed(name)
             setupIn(currentSetupBlockForTesting)
             asTestNumber(currentTestInThisEvaluation))
-    } elseif(currentTestInThisEvaluation == currentTestBlockForTesting) then {
+    } elseif { currentTestInThisEvaluation == currentTestBlockForTesting } then {
             block.apply()
     }
 }

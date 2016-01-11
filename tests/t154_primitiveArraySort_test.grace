@@ -7,14 +7,14 @@ a.at 4 put 1
 a.at 5 put 0
 print(a)
 a.sortInitial 4 by {l, r ->
-    if (l == r) then {0} elseif (l < r) then {-1} else {1}
+    if (l == r) then {0} elseif {l < r} then {-1} else {1}
 }
 print(a)
 
 def b = primitiveArray.new(0)
 print(b)
 b.sortInitial 0 by {l, r ->
-    if (l == r) then {0} elseif (l < r) then {-1} else {1}
+    if (l == r) then {0} elseif {l < r} then {-1} else {1}
 }
 print(b)
 
@@ -28,14 +28,14 @@ c.at 5 put "z"
 c.at 6 put "t"
 print(c)
 c.sortInitial 7 by {l, r ->
-    if (l == r) then {0} elseif (l.ord < r.ord) then {-1} else {1}
+    if (l == r) then {0} elseif {l.ord < r.ord} then {-1} else {1}
 }
 print(c)
 
 try {
     a.sortInitial 6 by {l, r ->
         if (l == r) then {"equal"} 
-            elseif (l < r) then {"less"}
+            elseif {l < r} then {"less"}
             else {"greater"}
     }
 } catch {ex:TypeError -> print "Correctly raised TypeError"}
