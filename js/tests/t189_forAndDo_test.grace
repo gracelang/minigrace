@@ -9,7 +9,7 @@ testSuiteNamed "for and" with {
             result.add(a::b)
         }
         assert (result) shouldBe
-            (list.with(1::"one", 2::"two", 3::"three", 4::"four", 5::"five"))
+            [1::"one", 2::"two", 3::"three", 4::"four", 5::"five"]
     }
     
     test "first smaller" by {
@@ -19,8 +19,7 @@ testSuiteNamed "for and" with {
         for (as) and (bs) do { a, b ->
             result.add(a::b)
         }
-        assert (result) shouldBe
-            (list.with(1::"one", 2::"two", 3::"three"))
+        assert (result) shouldBe [1::"one", 2::"two", 3::"three"]
     }
     
     test "second smaller" by {
@@ -30,8 +29,7 @@ testSuiteNamed "for and" with {
         for (as) and (bs) do { a, b ->
             result.add(a::b)
         }
-        assert (result) shouldBe
-            (list.with(1::"one", 2::"two", 3::"three"))
+        assert (result) shouldBe [1::"one", 2::"two", 3::"three"]
     }
     
     test "first empty" by {
@@ -41,7 +39,7 @@ testSuiteNamed "for and" with {
         for (as) and (bs) do { a, b ->
             result.add(a::b)
         }
-        assert (result) shouldBe (list.empty)
+        assert (result) shouldBe []
     }
     
     test "second empty" by {
@@ -51,7 +49,7 @@ testSuiteNamed "for and" with {
         for (as) and (bs) do { a, b ->
             result.add(a::b)
         }
-        assert (result) shouldBe (list.empty)
+        assert (result) shouldBe []
     }
     
     test "both empty" by {
@@ -61,6 +59,6 @@ testSuiteNamed "for and" with {
         for (as) and (bs) do { a, b ->
             result.add(a::b)
         }
-        assert (result) shouldBe (list.empty)
+        assert (result) shouldBe []
     }
 }
