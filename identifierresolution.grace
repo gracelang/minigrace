@@ -993,6 +993,14 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitMethod(o) up(as) {
             def surroundingScope = as.parent.scope
+            if (surroundingScope.isObjectScope.not) then {
+                // This check needs to be here so long as the parser accepts
+                // class declarations as statments, rather than as method
+                // declarations.  Why does it do so?  Because of the old
+                // "dotted" class syntax, wherein a class decl was actually a def.
+                errormessages.syntaxError("class declarations are permitted only" ++
+                    " inside an object") atRange(o.line, o.linePos, o.linePos + 4)
+            }
             def ident = o.value
             checkForReservedName(ident)
             surroundingScope.addNode(ident) as(k.methdec)
