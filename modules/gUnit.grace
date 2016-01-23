@@ -425,8 +425,13 @@ def testSuite is public = object {
         def example = aTestClass.forMethod("null")
         newSuite.name := className(aTestClass)
         for (mirror.reflect(example).methods) do { each ->
-            if (each.name.substringFrom(1)to(4)=="test") then {
-                newSuite.add(aTestClass.forMethod(each.name))
+            if (each.name.startsWith "test") then {
+                if (! each.name.endsWith "()object") then {
+                    // we should also check that there are no arguments
+                    // but a mirror on a method with no arguments currently
+                    // has a partcount of 1!
+                    newSuite.add(aTestClass.forMethod(each.name))
+                }
             }
         }
         newSuite
