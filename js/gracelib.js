@@ -5,14 +5,6 @@ if(typeof(process) !== "undefined") {
     var child_process = require('child_process');
 }
 
-// Polyfill, from developer.mozilla.org.  Some travis installations of node
-// seem to be missing this method.
-Number.isInteger = Number.isInteger || function(value) {
-  return typeof value === "number" && 
-    isFinite(value) && 
-    Math.floor(value) === value;
-};
-
 var lineNumber = 0;
 var moduleName = "null";
 
