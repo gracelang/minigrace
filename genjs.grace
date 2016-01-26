@@ -1440,9 +1440,6 @@ method processImports(values') {
     }
     util.log_verbose "checking imports."
     for (values') do { v ->
-        if (v.isImport) then {
-            xmodule.checkExternalModule(v)
-        }
         if (v.isDialect) then {
             var nm := v.value
             xmodule.checkExternalModule(v)

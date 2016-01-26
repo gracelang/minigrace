@@ -32,7 +32,8 @@ def imports = util.requiredModules
 def emptySequence = sequence.empty
 
 method checkExternalModule(node) {
-    checkimport(node.moduleName, node.path, node.line, node.linePos + 8, node.isDialect)
+    checkimport(node.moduleName, node.path, 
+        node.line, node.linePos + 1, node.isDialect)
 }
 
 method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
@@ -127,7 +128,12 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             if (moduleFileJs.newer(moduleFileGrace).not) then {
                 util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
+            if (moduleFileGrace.exists) then {
+                compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
+            } else {
+                errormessages.syntaxError "Can't find dialect {nm}"
+                    atRange(line, linePos, linePos + nm.size - 1)
+            }
         }
         imports.other.add(nm)
     }
