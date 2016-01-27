@@ -1,16 +1,16 @@
-#pragma DefaultVisibility=public
+import "ast" as ast
+import "buildinfo" as buildinfo
+import "genc" as genc
+import "genjs" as genjs
+import "identifierresolution" as identifierresolution
 import "io" as io
+import "lexer" as lexer
+import "mirrors" as mirrors
+import "parser" as parser
 import "sys" as sys
 import "unicode" as unicode
 import "util" as util
-import "lexer" as lexer
-import "ast" as ast
-import "parser" as parser
-import "genc" as genc
-import "genjs" as genjs
-import "buildinfo" as buildinfo
-import "identifierresolution" as identifierresolution
-import "mirrors" as mirrors
+import "xmodule" as xmodule
 
 util.parseargs(buildinfo)
 
@@ -48,12 +48,10 @@ if (util.target == "grace") then {
     util.outfile.close
     sys.exit(0)
 }
-if (util.target == "c") then {
-    genc.processImports(values)
-}
-if (util.target == "js") then {
-    genjs.processImports(values)
-}
+
+xmodule.checkDialect(moduleObject)
+xmodule.doParseCheck(moduleObject)
+
 if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
@@ -85,6 +83,8 @@ if ((util.target == "processed-ast") || (util.target == "ast")) then {
     util.outfile.close
     sys.exit(0)
 }
+
+xmodule.doAstCheck(moduleObject)
 
 // Perform the actual compilation
 match(util.target)

@@ -27,9 +27,117 @@ method builtInModules {
     }
 }
 
+def currentDialect = object {
+    var name is public := "standardGrace"
+    var moduleObject is public := _prelude
+    // TODO: this isn't quite right: should be the prelude
+    // on the GRACE_MODULE_PATH of this compilation
+    var hasParseChecker is public := false
+    var hasAstChecker is public := false
+    var hasAtStart is public := false
+    var hasAtEnd is public := false
+}
+
+type LinePos = {
+    line -> Number
+    linePos -> Number
+}
+
+type RangeSuggestions = {
+    line -> Number
+    posStart -> Number
+    posEnd -> Number
+    suggestions
+}
+
 def dynamicCModules is public = set.with("mirrors", "curl", "unicode")
 def imports = util.requiredModules
 def emptySequence = sequence.empty
+
+method checkDialect(moduleObject) {
+    moduleObject.values.do { node ->
+        if (node.isDialect) then {
+            def nm = node.moduleName
+            currentDialect.name := nm
+            checkExternalModule(node)
+            util.log 50 verbose "loading dialect for checkers."
+            try {
+                def dobj = mirrors.loadDynamicModule(node.path)
+                currentDialect.moduleObject := dobj
+                def mths = mirrors.reflect(dobj).methods
+                for (mths) do { m ->
+                    if (m.name == "checker") then {
+                        currentDialect.hasParseChecker := true
+                    }
+                    if (m.name == "astChecker") then {
+                        currentDialect.hasAstChecker := true
+                    }
+                    if (m.name == "atModuleEnd") then {
+                        currentDialect.hasAtEnd := true
+                    }
+                    if (m.name == "atModuleStart") then {
+                        currentDialect.hasAtStart := true
+                    }
+                }
+            } catch { e : RuntimeError ->
+                util.setPosition(node.line, 1)
+                e.printBacktrace
+                errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(node.line)
+            }
+            return  // there is at most one dialect
+        }
+    }
+}
+
+method doParseCheck(moduleObj) {
+    if (currentDialect.hasParseChecker.not) then { return }
+    def CheckerFailure = Exception.refine "CheckerFailure"
+    try {
+        currentDialect.moduleObject.checker(moduleObj.values)
+    } catch { e : CheckerFailure ->
+        match (e.data)
+            case { lp : LinePos ->
+                errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+            }
+            case { rs : RangeSuggestions ->
+                errormessages.error("{e.exception}: {e.message}.")
+                    atRange(rs.line, rs.posStart,
+                        rs.posEnd)
+                    withSuggestions(rs.suggestions)
+            }
+            case { _ -> }
+        errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+    } catch { e : Exception ->      // some unknwown Grace exception
+        e.printBacktrace
+        errormessages.error("Unexpected exception raised by parse checker for dialect '{currentDialect.name}'.\n"
+            ++ "{e.exception}: {e.message}")
+    }
+}
+
+method doAstCheck(moduleObj) {
+    if (currentDialect.hasAstChecker.not) then { return }
+    def CheckerFailure = Exception.refine "CheckerFailure"
+    try {
+        currentDialect.moduleObject.astChecker(moduleObj)
+    } catch { e : CheckerFailure ->
+        match (e.data)
+            case { lp : LinePos ->
+                errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+            }
+            case { rs : RangeSuggestions ->
+                errormessages.error("{e.exception}: {e.message}.")
+                    atRange(rs.line, rs.posStart,
+                        rs.posEnd)
+                    withSuggestions(rs.suggestions)
+            }
+            case { _ -> }
+        errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+    } catch { e : Exception ->      // some unknwown Grace exception
+        e.printBacktrace
+        errormessages.error("Unexpected exception raised by AST checker for dialect '{currentDialect.name}'.\n"
+            ++ "{e.exception}: {e.message}")
+    }
+}
 
 method checkExternalModule(node) {
     checkimport(node.moduleName, node.path, 

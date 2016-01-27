@@ -29,9 +29,6 @@ var compilationDepth := 0
 def importedModules = set.empty
 def topLevelTypes = set.empty
 def imports = util.requiredModules
-var dialectHasAtModuleEnd := false
-var dialectHasAtModuleStart := false
-var dialectHasChecker := false
 var debugMode := false
 var priorLineSeen := 0
 var priorLineComment := ""
@@ -920,33 +917,15 @@ method compileidentifier(o) {
     }
 }
 method compilebind(o) {
-    var dest := o.dest
-    var val := ""
-    def currentScope = o.scope
-    if (dest.kind == "identifier") then {
-        val := o.value
-        val := compilenode(val)
-        var nm := dest.value
+    def lhs = o.dest
+    if (lhs.isIdentifier) then {
+        def val = compilenode(o.value)
+        def nm = lhs.value
         usedvars.push(nm)
         out "{varf(nm)} = {val};"
         o.register := "GraceDone"
-    } elseif { dest.kind == "member" } then {
-        ProgrammingError.raise "memberNode {o} found in bind"
-        var nm := dest.value
-        // we could use endsWith(), but it's not yet in the C string library 
-        if ((nm.size < 2).orElse{nm.substringFrom(nm.size - 1)to(nm.size)
-            != ":="}) then {
-            dest.value := nm ++ ":="
-        }
-        def c = ast.callNode.new(dest, [ast.callWithPart.request(dest.value) withArgs( [o.value] )])
-                        scope(currentScope)
-        o.register := compilenode(c)
-    } elseif { dest.kind == "index" } then {
-        ProgrammingError.raise "indexNode {o} found in bind"
-        var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
-        def c = ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )  scope(currentScope)])
-                        scope(currentScope)
-        o.register := compilenode(c)
+    } else {
+        ProgrammingError.raise "bindNode {o} does not bind an indentifer"
     }
 }
 method compiledefdec(o) {
@@ -1261,7 +1240,7 @@ method compiledialect(o) {
     var fn := escapestring(o.value)
     out "var_prelude = do_import(\"{fn}\", {formatModname(o.value)});"
     out "this.outer = var_prelude;"
-    if (dialectHasAtModuleStart) then {
+    if (xmodule.currentDialect.hasAtStart) then {
         out "callmethod(var_prelude, \"atModuleStart\", [1], "
         out "  new GraceString(\"{escapestring(modname)}\"));"
     }
@@ -1429,69 +1408,6 @@ method compilenode(o) {
     o.register
 }
 
-method processImports(values') {
-    type LinePos = {
-        line -> Number
-        linePos -> Number
-    }
-    type RangeSuggestions = {
-        line -> Number
-        posStart -> Number
-        posEnd -> Number
-        suggestions
-    }
-    util.log_verbose "checking imports."
-    for (values') do { v ->
-        if (v.isDialect) then {
-            var nm := v.value
-            xmodule.checkExternalModule(v)
-            util.log 50 verbose "loading dialect for checkers."
-            def CheckerFailure = Exception.refine "CheckerFailure"
-            def DialectError = ProgrammingError.refine "DialectError"
-            var dobj
-            try {
-                dobj := mirrors.loadDynamicModule(nm)
-                def mths = mirrors.reflect(dobj).methods
-                for (mths) do { m->
-                    if (m.name == "checker") then {
-                        dialectHasChecker := true
-                    }
-                    if (m.name == "atModuleEnd") then {
-                        dialectHasAtModuleEnd := true
-                    }
-                    if (m.name == "atModuleStart") then {
-                        dialectHasAtModuleStart := true
-                    }
-                }
-            } catch { e : RuntimeError ->
-                util.setPosition(v.line, 1)
-                e.printBacktrace
-                errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(v.line)
-            } 
-            try {
-                if (dialectHasChecker) then { dobj.checker(values') }
-            } catch { e : CheckerFailure ->
-                match (e.data)
-                    case { lp : LinePos ->
-                        util.setPosition(e.data.line, e.data.linePos)
-                        errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
-                    }
-                    case { rs : RangeSuggestions ->
-                        errormessages.error("{e.exception}: {e.message}.")
-                            atRange(rs.line, rs.posStart,
-                                rs.posEnd)
-                            withSuggestions(rs.suggestions)
-                    }
-                    case { _ -> }
-                errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
-            } catch { e : Exception ->      // some unknwown Grace exception
-                e.printBacktrace
-                errormessages.error("Unexpected exception raised by checker for dialect '{nm}'.\n"
-                    ++ "{e.exception}: {e.message}") atLine(v.line)
-            }
-        }
-    }
-}
 method compile(moduleObject, of, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
@@ -1571,7 +1487,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
             imported.push(o.path)
         }
     }
-    if (dialectHasAtModuleEnd) then {
+    if (xmodule.currentDialect.hasAtEnd) then {
         out("callmethod(var_prelude, \"atModuleEnd\", [1], this);")
     }
     if (debugMode) then {

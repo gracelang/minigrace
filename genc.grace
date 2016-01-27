@@ -40,9 +40,6 @@ var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = map.new
 def imports = util.requiredModules
-var dialectHasAtModuleEnd := false
-var dialectHasAtModuleStart := false
-var dialectHasChecker := false
 
 method out(s) {
     output.push(s)
@@ -1130,32 +1127,20 @@ method compileidentifier(o) {
     }
 }
 method compilebind(o) {
-    var dest := o.dest
-    var val := ""
-    var c := ""
-    var r := ""
-    if (dest.kind == "identifier") then {
-        val := o.value
-        val := compilenode(val)
-        var nm := escapeident(dest.value)
+    def lhs = o.dest
+    if (lhs.isIdentifier) then {
+        def val = compilenode(o.value)
+        def nm = escapeident(lhs.value)
         usedvars.push(nm)
         out("  *var_{nm} = {val};")
         out("  if ({val} == undefined)")
         out("    callmethod(done, \"assignment\", 0, NULL, NULL);")
+        // APB: not clear what the above test is trying to accomplish
         auto_count := auto_count + 1
-        o.register := val
-    } elseif { dest.kind == "member" } then {
-        dest.value := dest.value ++ ":="
-        c := ast.callNode.new(dest, [ast.callWithPart.request(dest.value) withArgs( [o.value] )])
-        r := compilenode(c)
-        o.register := r
-    } elseif { dest.kind == "index" } then {
-        var imem := ast.memberNode.new("[]:=", dest.value)
-        c := ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )])
-        r := compilenode(c)
-        o.register := r
+        o.register := "done"
+    } else {
+        ProgrammingError.raise "bindNode {o} does not bind an indentifer"
     }
-    o.register := "done"
 }
 method compiledefdec(o) {
     var nm
@@ -1503,7 +1488,7 @@ method compiledialect(o) {
     globals.push("Object {modg}_init();")
     globals.push("Object {modg};")
     auto_count := auto_count + 1
-    if (dialectHasAtModuleEnd) then {
+    if (xmodule.currentDialect.hasAtEnd) then {
         out("  partcv[0] = 1;")
         out("  params[0] = alloc_String(\"{escapestring(modname)}\");")
         out("  callmethodflags(prelude, \"atModuleStart\", "
@@ -1719,71 +1704,6 @@ method compilenode(o) {
     out "// compiled {oKind} node returning {o.register} (depth = {compilationDepth})"
     compilationDepth := compilationDepth - 1
     o.register
-}
-
-method processImports(values') {
-    type LinePos = {
-        line -> Number
-        linePos -> Number
-    }
-    type RangeSuggestions = {
-        line -> Number
-        posStart -> Number
-        posEnd -> Number
-        suggestions
-    }
-    if (util.runmode == "make") then {
-        for (values') do { v ->
-            if (v.kind == "dialect") then {
-                var nm := v.value
-                util.log 50 verbose "loading dialect {nm} for checker."
-                def CheckerFailure = Exception.refine "CheckerFailure"
-                var dobj
-                try {
-                    dobj := mirrors.loadDynamicModule(nm)
-                    def mths = mirrors.reflect(dobj).methods
-                    for (mths) do { m->
-                        if (m.name == "checker") then {
-                            dialectHasChecker := true
-                        }
-                        if (m.name == "atModuleEnd") then {
-                            dialectHasAtModuleEnd := true
-                        }
-                        if (m.name == "atModuleStart") then {
-                            dialectHasAtModuleStart := true
-                        }
-                    }
-                } catch { e : RuntimeError ->
-                    util.setPosition(v.line, 1)
-                    errormessages.error("Dialect error.  \n" ++ 
-                        "Dialect '{nm}' {e.message}.")atLine(v.line)
-                } 
-                try {
-                    if (dialectHasChecker) then { dobj.checker(values') }
-                } catch { e : CheckerFailure ->
-                    match (e.data)
-                        case { lp : LinePos ->
-                            util.setPosition(e.data.line, e.data.linePos)
-                            errormessages.error("{e.exception}: {e.message}.")
-                                atPosition(lp.line, lp.linePos)
-                        }
-                        case { rs : RangeSuggestions ->
-                            errormessages.error("{e.exception}: {e.message}.")
-                                atRange(rs.line, rs.posStart, rs.posEnd)
-                                withSuggestions(rs.suggestions)
-                        }
-                        case { _ ->
-                            errormessages.error("{e.exception}: {e.message}.")
-                                atPosition(util.linenum, 0)
-                        }
-                } catch { e : Exception ->
-                    e.printBacktrace
-                    errormessages.error("Unexpected exception raised by checker for dialect '{nm}'.\n"
-                        ++ "{e.exception}: {e.message}.") atLine(v.line)
-                }
-            }
-        }
-    }
 }
 
 method compileDynamicModule(fnBase, buildinfo) {
@@ -2034,7 +1954,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
             compilenode(o)
         }
     }
-    if (dialectHasAtModuleEnd) then {
+    if (xmodule.currentDialect.hasAtEnd) then {
         out("  partcv[0] = 1;")
         out("  params[0] = self;")
         out("  callmethodflags(prelude, \"atModuleEnd\", "

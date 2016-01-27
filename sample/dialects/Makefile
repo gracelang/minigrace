@@ -1,4 +1,4 @@
-DIALECTS = requireTypes fsm objectAssociations dialect grapl loopInvariant whileLiteral staticTypes dbc
+DIALECTS = ../../modules/requireTypes fsm objectAssociations ../../modules/dialect grapl loopInvariant whileLiteral ../../modules/staticTypes dbc
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample
 
 DIALECT_MODULES = $(addsuffix .gso,$(DIALECTS))
@@ -17,10 +17,10 @@ dialect.gso: $(DIALECT_DEPENDENCIES:%=$(GM)%.gso)
 whileLiteral.gso: whileLiteral.grace dialect.gso
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
-staticTypes.gso: staticTypes.grace dialect.gso
+../../modules/staticTypes.gso: ../../modules/staticTypes.grace ../../modules/dialect.gso
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
-requireTypes.gso: requireTypes.grace dialect.gso
+../../modules/requireTypes.gso: ../../modules/requireTypes.grace ../../modules/dialect.gso
 	GRACE_MODULE_PATH="$(GM)" ../../minigrace $(VERBOSITY) --noexec --dir . $<
 
 $(GM)%.gct $(GM)%.gso $(GM)%.gcn:
