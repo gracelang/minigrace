@@ -931,6 +931,7 @@ method compilebind(o) {
         out "{varf(nm)} = {val};"
         o.register := "GraceDone"
     } elseif { dest.kind == "member" } then {
+        ProgrammingError.raise "memberNode {o} found in bind"
         var nm := dest.value
         // we could use endsWith(), but it's not yet in the C string library 
         if ((nm.size < 2).orElse{nm.substringFrom(nm.size - 1)to(nm.size)
@@ -941,6 +942,7 @@ method compilebind(o) {
                         scope(currentScope)
         o.register := compilenode(c)
     } elseif { dest.kind == "index" } then {
+        ProgrammingError.raise "indexNode {o} found in bind"
         var imem := ast.memberNode.new("[]:=", dest.value) scope(currentScope)
         def c = ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, o.value] )  scope(currentScope)])
                         scope(currentScope)

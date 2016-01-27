@@ -751,6 +751,8 @@ method resolveIdentifiers(topNode) {
             // TODO — opNodes don't contain identifiers!
         } elseif { node.isInherits } then {
             transformInherits(node) ancestors(as)
+        } elseif { node.isBind } then {
+            transformBind(node) ancestors(as)
         } else {
             node
         } 
@@ -1127,6 +1129,26 @@ method collectInheritedNames(node) {
         }
     }
     nodeScope.inheritedNames := completed
+}
+
+method transformBind(bindNode) ancestors(as) {
+    // bindNode is (a shallow copy of) a bindNode.  If it is 
+    // binding a "member", transform it into a
+    // a request on a setter method
+    def dest = bindNode.dest
+    def currentScope = bindNode.scope
+    if ( dest.kind == "member" ) then {
+        dest.value := dest.value ++ ":="
+        ast.callNode.new(dest,
+            ( [ast.callWithPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
+            scope(currentScope)
+    } elseif { dest.kind == "index" } then {
+        def imem = ast.memberNode.new("[]:=", dest.value) scope(currentScope)
+        ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, bindNode.value] )  scope(currentScope)])
+                        scope(currentScope)
+    } else {
+        bindNode
+    }
 }
 
 
