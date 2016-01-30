@@ -1,4 +1,3 @@
-#pragma PrimitiveLists
 import "io" as io
 import "ast" as ast
 import "util" as util
@@ -2108,7 +2107,7 @@ method defdec {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestion = errormessages.suggestion.new
-                def nextTok = findNextValidToken()
+                def nextTok = findNextValidToken( [ ] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                 } else {
@@ -2180,7 +2179,7 @@ method vardec {
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestions = list.empty
                 var suggestion := errormessages.suggestion.new
-                def nextTok = findNextValidToken()
+                def nextTok = findNextValidToken( [ ] )
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                 } else {

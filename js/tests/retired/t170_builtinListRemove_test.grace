@@ -1,4 +1,3 @@
-#pragma PrimitiveLists
 def l = []
 l.push(3)
 l.push(5)

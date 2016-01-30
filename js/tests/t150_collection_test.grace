@@ -269,9 +269,15 @@ class rangeTest.forMethod(m) {
 class sequenceTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
-        def oneToFive = sequence.with(1, 2, 3, 4, 5)
-        def evens = sequence.with(2, 4, 6, 8)
-        def empty = sequence.empty
+        var oneToFive
+        var evens
+        var empty
+
+        method setup {
+            oneToFive := sequence.with(1, 2, 3, 4, 5)
+            evens := sequence.with(2, 4, 6, 8)
+            empty := sequence.empty
+        }
 
         method testSequenceTypeCollection {
             def witness = sequence<Number>.with(1,3)
@@ -560,9 +566,15 @@ class sequenceTest.forMethod(m) {
 class listTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
-        def oneToFive = list.with(1, 2, 3, 4, 5)
-        def evens = list.with(2, 4, 6, 8)
-        def empty = list.empty
+        var oneToFive
+        var evens
+        var empty
+        
+        method setup {
+            oneToFive := list [1, 2, 3, 4, 5]
+            evens := list [2, 4, 6, 8]
+            empty := list.empty
+        }
 
         method testListTypeCollection {
             def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
@@ -681,11 +693,11 @@ class listTest.forMethod(m) {
             assert (oneToFive) shouldBe (list.with(1, 2, 4, 5))
         }
         method testListRemoveMultiplePresent {
-            assert (oneToFive.remove(1, 4, 5)) shouldBe (list.with(2, 3))
+            assert (oneToFive.remove 1 .remove 4 .remove 5) shouldBe (list.with(2, 3))
             assert (oneToFive) shouldBe (list.with(2, 3))
         }
         method testListRemoveAbsentException {
-            assert {oneToFive.remove(1, 7, 5)} shouldRaise (NoSuchObject)
+            assert {oneToFive.remove 7} shouldRaise (NoSuchObject)
         }
         method testListRemoveLast {
             assert (oneToFive.removeLast) shouldBe 5
@@ -703,14 +715,10 @@ class listTest.forMethod(m) {
         }
         method testListRemoveAbsentActionBlock {
             var absent := false
-            assert (oneToFive.remove 9 ifAbsent {absent := true}) 
-                shouldBe (list.with(1, 2, 3, 4, 5))
-            assert (absent) description "9 was found in list 1..5"
-        }
-        method testListRemoveSomeAbsent {
-            var absent := false
-            assert (oneToFive.remove(1, 9, 2) ifAbsent {absent := true})
-                shouldBe (list.with(3, 4, 5))
+            assert (oneToFive.remove 9 ifAbsent {
+                absent := true
+                oneToFive
+            }) shouldBe (list.with(1, 2, 3, 4, 5))
             assert (absent) description "9 was found in list 1..5"
         }
         method testListIndexOfPresent {
@@ -760,17 +768,6 @@ class listTest.forMethod(m) {
             assert (evens.size) shouldBe (5)
             assert (evens.first) shouldBe (0)
             assert (evens.second) shouldBe (2)
-        }
-        method testListAddFirstMultiple {
-            assert (evens.addFirst(-4, -2, 0)) shouldBe (list.with(-4, -2, 0, 2, 4, 6, 8))
-            assert (evens.size) shouldBe 7
-            assert (evens.first) shouldBe (-4)
-            assert (evens.second) shouldBe (-2)
-            assert (evens.third) shouldBe 0
-            assert (evens.fourth) shouldBe 2
-            assert (evens.fifth) shouldBe 4
-            assert (evens.last) shouldBe 8
-            assert (evens.at(3)) shouldBe 0
         }
         method testListRemoveFirst {
             def removed = oneToFive.removeFirst
@@ -1022,9 +1019,15 @@ class listTest.forMethod(m) {
 class setTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
 
-        def oneToFive = set.with(1, 2, 3, 4, 5)
-        def evens = set.with(2, 4, 6, 8)
-        def empty = set.empty
+        var oneToFive
+        var evens
+        var empty
+        
+        method setup {
+            oneToFive := set [1, 2, 3, 4, 5]
+            evens := set [2, 4, 6, 8]
+            empty := set [ ]
+        }
 
         method testSetTypeCollection {
             def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
@@ -1043,11 +1046,6 @@ class setTest.forMethod(m) {
             assert(oneToFive.size) shouldBe 5
             assert(empty.size) shouldBe 0
             assert(evens.size) shouldBe 4
-        }
-
-        method testSetSizeAfterRemove {
-            oneToFive.remove(1, 3, 5)
-            assert(oneToFive.size) shouldBe 2
         }
 
         method testSetEmptyDo {
@@ -1111,8 +1109,9 @@ class setTest.forMethod(m) {
             assert (evens) shouldBe (set.with(2, 4, 6))
         }
         method testSetRemoveMultiple {
-            assert (evens.remove(4, 6, 8)) shouldBe (set.with(2))
-            assert (evens) shouldBe (set.with(2))
+            assert (evens.remove 4 .remove 6 .remove 8) shouldBe (set.with 2)
+            assert (evens.size) shouldBe 1
+            assert (evens) shouldBe (set.with 2)
         }
         method testSetRemove5 {
             assert {evens.remove(5)} shouldRaise (NoSuchObject)
@@ -1123,10 +1122,10 @@ class setTest.forMethod(m) {
             assert (oneToFive) shouldBe (set.with(1, 2, 3, 4, 5, 11, 12, 13))
         }
         method testSetPushAndExpand {
-            evens.add(10)
-            evens.add(12)
-            evens.add(14)
-            evens.add(16, 18, 20)
+            evens.add 10
+            evens.add 12
+            evens.add 14
+            evens.add 16 .add 18 .add 20
             assert (evens) shouldBe (set.with(2, 4, 6, 8, 10, 12, 14, 16, 18, 20))
         }
         method testEmptyIterator {
@@ -1134,7 +1133,7 @@ class setTest.forMethod(m) {
         }
         method testEvensIterator {
             def ei = evens.iterator
-            assert (evens.size == 4) description "evens doesn't contain 4 elements!"
+            assert (evens.size == 4) description "evens.size = {evens.size}, should be 4"
             assert (ei.hasNext) description "the evens iterator has no elements"
             def copySet = set.with(ei.next, ei.next, ei.next, ei.next)
             deny (ei.hasNext) description "the evens iterator has more than 4 elements"
@@ -1213,8 +1212,9 @@ class setTest.forMethod(m) {
 
         method testSetCopy {
             def evensCopy = evens.copy
-            evens.remove(2, 4)
+            evens.remove 2 .remove 4
             assert (evens.size) shouldBe 2
+            assert (evens) shouldBe (set.with(6, 8))
             assert (evensCopy) shouldBe (set.with(2, 4, 6, 8))
         }
         method testSetUnion {
@@ -1241,12 +1241,17 @@ class setTest.forMethod(m) {
 
 class dictionaryTest.forMethod(m) {
         inherits gU.testCaseNamed(m)
-        def oneToFive = dictionary.with("one"::1, "two"::2, "three"::3,
-            "four"::4, "five"::5)
-        def evens = dictionary.with("two"::2, "four"::4, "six"::6, "eight"::8)
-        def empty = dictionary.empty
 
+        var oneToFive
+        var evens
+        var empty
 
+        method setup {
+            oneToFive := dictionary ["one"::1, "two"::2, "three"::3,
+                "four"::4, "five"::5]
+            evens := dictionary ["two"::2, "four"::4, "six"::6, "eight"::8]
+            empty := dictionary.empty
+        }
         method testDictionaryTypeCollection {
             assert (oneToFive) hasType (Collection<Binding<String,Number>>)
         }
@@ -1272,7 +1277,7 @@ class dictionaryTest.forMethod(m) {
         }
 
         method testDictionaryContentsAfterMultipleRemove {
-            oneToFive.removeKey("one", "two", "three")
+            oneToFive.removeKey "one" .removeKey "two" .removeKey "three"
             assert(oneToFive.size) shouldBe 2
             deny(oneToFive.containsKey "one") description "\"one\" still present"
             deny(oneToFive.containsKey "two") description "\"two\" still present"
@@ -1353,26 +1358,27 @@ class dictionaryTest.forMethod(m) {
         }
         method testDictionaryRemoveValue4 {
             assert (evens.size == 4) description "evens doesn't contain 4 elements"
-            evens.removeValue(4)
+            assert (evens.size == 4) description "initial size of evens isn't 4"
+            evens.removeValue 4
             assert (evens.size == 3)
-                description "after removing 4, 3 elements should remain"
+                description "after removing 4, 3 elements should remain in evens"
             assert (evens.containsKey "two") description "Can't find key \"two\""
             assert (evens.containsKey "six") description "Can't find key \"six\""
             assert (evens.containsKey "eight") description "Can't find key \"eight\""
             deny (evens.containsKey "four") description "Found key \"four\""
-            assert (evens.removeValue(4).values.onto(set)) shouldBe (set.with(2, 6, 8))
+            assert (evens.removeValue 4 ifAbsent { }.values.onto(set)) shouldBe (set.with(2, 6, 8))
             assert (evens.values.onto(set)) shouldBe (set.with(2, 6, 8))
             assert (evens.keys.onto(set)) shouldBe (set.with("two", "six", "eight"))
         }
         method testDictionaryRemoveMultiple {
-            evens.removeValue(4, 6, 8)
-            assert (evens) shouldBe (dictionary.at"two"put(2))
+            evens.removeValue 4 .removeValue 6 .removeValue 8
+            assert (evens) shouldBe (dictionary.at "two" put 2)
         }
         method testDictionaryRemove5 {
-            assert {evens.removeKey(5)} shouldRaise (NoSuchObject)
+            assert {evens.removeKey 5} shouldRaise (NoSuchObject)
         }
         method testDictionaryRemoveKeyFive {
-            assert {evens.removeKey("Five")} shouldRaise (NoSuchObject)
+            assert {evens.removeKey "Five"} shouldRaise (NoSuchObject)
         }
         method testDictionaryChaining {
             oneToFive.at "eleven" put(11).at "twelve" put(12).at "thirteen" put(13)
@@ -1400,7 +1406,7 @@ class dictionaryTest.forMethod(m) {
 
         method testDictionaryDoSeparatedBy {
             var s := ""
-            evens.removeValue(2, 4)
+            evens.removeValue 2 .removeValue 4
             evens.do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
             assert ((s == "6, 8") || (s == "8, 6"))
                 description "{s} should be \"8, 6\" or \"6, 8\""
@@ -1421,7 +1427,8 @@ class dictionaryTest.forMethod(m) {
         }
 
         method testDictionaryAsStringNonEmpty {
-            evens.removeValue(6, 8)
+            evens.removeValue(6)
+            evens.removeValue(8)
             assert ((evens.asString == "dict⟬two::2, four::4⟭") ||
                         (evens.asString == "dict⟬four::4, two::2⟭"))
                         description "evens.asString = {evens.asString}"

@@ -402,10 +402,48 @@ def collectionFactory is public = collections.collectionFactory
 def collection is public = collections.collection
 def enumerable is public = collections.enumerable
 def indexable is public = collections.indexable
-def sequence is public = collections.sequence
-def list is public = collections.list
-def set is public = collections.set
-def dictionary is public = collections.dictionary
+
+method sequence<T>(*args) {
+    def as = args.size
+    if (as == 0) then {
+        collections.sequence<T>
+    } elseif (as == 1) then { 
+        collections.sequence<T>.withAll(args.first)
+    } else {
+        RequestError.raise "sequence given {as} arguments; needs zero or one"
+    }
+}
+method list<T>(*args) {
+    def as = args.size
+    if (as == 0) then {
+        collections.list<T>
+    } elseif (as == 1) then { 
+        collections.list<T>.withAll(args.first)
+    } else {
+        RequestError.raise "list given {as} arguments; needs zero or one"
+    }
+}
+method set<T>(*args) {
+    def as = args.size
+    if (as == 0) then {
+        collections.set<T>
+    } elseif (as == 1) then { 
+        collections.set<T>.withAll(args.first)
+    } else {
+        RequestError.raise "set given {as} arguments; needs zero or one"
+    }
+}
+method dictionary<K, T>(* args) {
+    def as = args.size
+    if (as == 0) then {
+        collections.dictionary<K, T>
+    } elseif (as == 1) then { 
+        collections.dictionary<K, T>.withAll(args.first)
+    } else {
+        RequestError.raise "dictionary given {as} arguments; needs zero or one"
+    }
+}
+
 def binding is public = collections.binding
 def range is public = collections.range
 

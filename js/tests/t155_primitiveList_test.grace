@@ -137,6 +137,14 @@ class primitiveListTest.forMethod(m) {
             assert (oneToFive.size) shouldBe (4)
             assert (oneToFive) shouldBe [2, 3, 4, 5]
         }
+        method testListRemoveValue {
+            def l = [3, 5, 7]
+            assert (l) shouldBe (list [3, 5, 7])
+            l.remove 3
+            assert (l) shouldBe (list [5, 7])
+            l.remove 5.remove 7
+            assert (l) shouldBe (list.empty)
+        }
         method testListChaining {
             oneToFive.at(1)put(11).at(2)put(12).at(3)put(13)
             assert(oneToFive.at(1))shouldBe(11)

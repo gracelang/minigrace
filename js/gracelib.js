@@ -860,7 +860,7 @@ PrimitiveGraceList.prototype = {
             }
             if (index > -1)
                 list.splice(index, 1);
-            return new GraceNum(index + 1);
+            return this;
         },
         "removeFirst": function (argcv, val) {
             var list = this._value;

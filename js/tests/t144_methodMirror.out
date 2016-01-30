@@ -3,7 +3,7 @@ a1 = a1, a2 = a2, b1 = b1
 no params
 method variableArity requested with 4 arguments
 method variable()and()and requested with [4, 1, 6] arguments
-a1 = 1, a2 = 2, as = ⟨3, 4⟩, b = ho, c = ⟨1, 2, 3, 4, 5, 6⟩
+a1 = 1, a2 = 2, as = [3, 4], b = ho, c = [1, 2, 3, 4, 5, 6]
 method example has [1] parameters and [false] variable arity parameter lists
 method example()and has [2, 1] parameters and [false, false] variable arity parameter lists
 method noParams has [0] parameters and [false] variable arity parameter lists
@@ -18,7 +18,7 @@ method variableArity requested with 4 arguments
 method variableArity requested with 1 arguments
 method variableArity requested with 0 arguments
 method variable()and()and requested with [4, 1, 6] arguments
-a1 = 1, a2 = 2, as = ⟨3, 4⟩, b = ho, c = ⟨1, 2, 3, 4, 5, 6⟩
+a1 = 1, a2 = 2, as = [3, 4], b = ho, c = [1, 2, 3, 4, 5, 6]
 
 requests using `requestWithArgs`
 a = a

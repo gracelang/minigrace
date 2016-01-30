@@ -148,17 +148,7 @@ method compilearray(o) {
         r := compilenode(a)
         vals.push(r)
     }
-    if (util.extensions.contains "PrimitiveLists") then {
-        out "var array{myc} = new PrimitiveGraceList(["
-    } else {
-        out "var array{myc} = new GraceList(["
-    }
-    increaseindent
-    for (vals) do {v->
-        out(v ++ ",")
-    }
-    decreaseindent
-    out "]);"
+    out "var array{myc} = new PrimitiveGraceList({vals});"
     o.register := "array" ++ myc
 }
 method compilemember(o) {

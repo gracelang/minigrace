@@ -49,7 +49,7 @@ type Iterable<T> = Object & type {
 }
 
 type Expandable<T> = Iterable<T> & type {
-    add(*x: T) -> SelfType
+    add(x: T) -> SelfType
     addAll(xs: Iterable<T>) -> SelfType
 }
 
@@ -87,18 +87,18 @@ type Sequence<T> = Enumerable<T> & type {
 }
 
 type List<T> = Sequence<T> & type {
-    add(*x: T) -> List<T>
+    add(x: T) -> List<T>
     addAll(xs: Iterable<T>) -> List<T>
-    addFirst(*x: T) -> List<T>
+    addFirst(x: T) -> List<T>
     addAllFirst(xs: Iterable<T>) -> List<T>
-    addLast(*x: T) -> List<T>    // same as add
+    addLast(x: T) -> List<T>    // same as add
     at(ix:Number) put(v:T) -> List<T>
     []:= (ix:Number, v:T) -> Done
     removeFirst -> T
     removeAt(n: Number) -> T
     removeLast -> T
-    remove(*v:T)
-    remove(*v:T) ifAbsent(action:Block0<Done>)
+    remove(v:T)
+    remove(v:T) ifAbsent(action:Block0<Done>)
     removeAll(vs: Iterable<T>)
     removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Unknown>)
     pop -> T
@@ -113,10 +113,10 @@ type List<T> = Sequence<T> & type {
 
 type Set<T> = Collection<T> & type {
     size -> Number
-    add(*elements:T) -> SelfType
+    add(x:T) -> SelfType
     addAll(elements: Iterable<T>) -> SelfType
-    remove(*elements: T) -> Set<T>
-    remove(*elements: T) ifAbsent(block: Block0<Done>) -> Set<T>
+    remove(x: T) -> Set<T>
+    remove(x: T) ifAbsent(block: Block0<Done>) -> Set<T>
     includes(booleanBlock: Block1<T,Boolean>) -> Boolean
     find(booleanBlock: Block1<T,Boolean>) ifNone(notFoundBlock: Block0<T>) -> T
     copy -> Set<T>
@@ -141,9 +141,9 @@ type Dictionary<K,T> = Collection<T> & type {
     at(k:K) -> T
     [] (k:K) -> T
     removeAllKeys(keys: Iterable<K>) -> Dictionary<K,T>
-    removeKey(*keys:K) -> Dictionary<K,T>
+    removeKey(key:K) -> Dictionary<K,T>
     removeAllValues(removals: Iterable<T>) -> Dictionary<K,T>
-    removeValue(*removals:T) -> Dictionary<K,T>
+    removeValue(v:T) -> Dictionary<K,T>
     keys -> Enumerable<K>
     values -> Enumerable<T>
     bindings -> Enumerable<Binding<K,T>>
@@ -178,10 +178,10 @@ class collectionFactory.trait<T> {
     method empty -> Unknown { self.with() }
 }
 
-factory method lazySequenceOver<T,R>(source: Iterable<T>)
+class lazySequenceOver<T,R>(source: Iterable<T>)
         mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
     inherits enumerable.trait<T>
-    factory method iterator {
+    class iterator {
         def sourceIterator = source.iterator
         method asString { "an iterator over a lazy map sequence" }
         method hasNext { sourceIterator.hasNext }
@@ -192,10 +192,10 @@ factory method lazySequenceOver<T,R>(source: Iterable<T>)
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-factory method lazySequenceOver<T>(source: Iterable<T>)
+class lazySequenceOver<T>(source: Iterable<T>)
         filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
     inherits enumerable.trait<T>
-    factory method iterator {
+    class iterator {
         var cache
         var cacheLoaded := false
         def sourceIterator = source.iterator
@@ -228,7 +228,7 @@ factory method lazySequenceOver<T>(source: Iterable<T>)
     method asDebugString { "a lazy sequence filtering {source}" }
 }
 
-factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
+class iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method next {
         if (left.hasNext) then {
             left.next
@@ -243,7 +243,7 @@ factory method iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method asDebugString { "iteratorConcat of {left} and {right}" }
     method asString { "an iterator over a concatenation" }
 }
-factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
+class lazyConcatenation<T>(left, right) -> Enumerable<T>{
     inherits enumerable.trait<T>
     method iterator {
         iteratorConcat(left.iterator, right.iterator)
@@ -254,6 +254,9 @@ factory method lazyConcatenation<T>(left, right) -> Enumerable<T>{
 }
 
 class collection.trait<T> {
+    
+    method asString { "a collection trait" }
+
     method do { abstract }
     method iterator { abstract }
     method isEmpty {
@@ -402,7 +405,7 @@ class indexable.trait<T> {
     method [](ix) { at(ix) }
     method indices { range.from 1 to(size) }
     method indexOf(sought:T)  {
-        indexOf(sought) ifAbsent { NoSuchObject.raise "{sought} not in collection" }
+        indexOf(sought) ifAbsent { NoSuchObject.raise "collection does not contain {sought}" }
     }
     method indexOf(sought:T) ifAbsent(action:Block0)  {
         keysAndValuesDo { ix, v ->
@@ -465,54 +468,51 @@ def emptySequence is confidential = object {
     method sortedBy(sortBlock:Block2){ self }
 }
 
-factory method sequence<T> {
+class sequence<T> {
     inherits collectionFactory.trait<T>
+
+    method asString { "a sequence factory" }
 
     method empty is override {
         // this is an optimization: there need be just one empty sequence
         emptySequence
     }
 
-    method withAll(*a: Iterable) {
+    method withAll(arg: Iterable) {
         var forecastSize := 0
         var sizeUncertain := false
         // size might be uncertain if one of the arguments is a lazy collection.
-        for (a) do { arg ->
-            try {
-                forecastSize := forecastSize + arg.size
-            } catch { _:SizeUnknown ->
-                forecastSize := forecastSize + 8
-                sizeUncertain := true
-            }
+        try {
+            forecastSize := arg.size
+        } catch { _:SizeUnknown ->
+            forecastSize := 8
+            sizeUncertain := true
         }
         var inner := _prelude.PrimitiveArray.new(forecastSize)
         var innerSize := inner.size
         var ix := 0
         if (sizeUncertain) then {
             // less-than-optimal path
-            for (a) do { arg ->
-                for (arg) do { elt ->
-                    if (innerSize <= ix) then {
-                        def newInner = _prelude.PrimitiveArray.new(innerSize*2)
-                        for (0..(innerSize-1)) do { i ->
-                            newInner.at(i)put(inner.at(i))
-                        }
-                        inner := newInner
-                        innerSize := inner.size
+            for (arg) do { elt ->
+                if (innerSize <= ix) then {
+                    def newInner = _prelude.PrimitiveArray.new(innerSize*2)
+                    for (0..(innerSize-1)) do { i ->
+                        newInner.at(i)put(inner.at(i))
                     }
-                    inner.at(ix)put(elt)
-                    ix := ix + 1
+                    inner := newInner
+                    innerSize := inner.size
                 }
+                inner.at(ix)put(elt)
+                ix := ix + 1
             }
         } else {
             // common, fast path
-            for (a) do { arg ->
-                for (arg) do { elt ->
-                    inner.at(ix)put(elt)
-                    ix := ix + 1
-                }
+            for (arg) do { elt ->
+                inner.at(ix)put(elt)
+                ix := ix + 1
             }
         }
+        if (ix == 0) then { return emptySequence }
         self.fromPrimitiveArray(inner, ix)
     }
     method fromPrimitiveArray(pArray, sz) is confidential {
@@ -561,7 +561,7 @@ factory method sequence<T> {
                 outer.fromPrimitiveArray(freshArray, size)
             }
             method ++(other: Iterable) {
-                sequence.withAll(self, other)
+                sequence.withAll(lazyConcatenation(self, other))
             }
             method asString {
                 var s := "⟨"
@@ -632,8 +632,10 @@ method isEqual(left) toIterable(right) {
     }
 }
 
-factory method list<T> {
+class list<T> {
     inherits collectionFactory.trait<T>
+    
+    method asString { "a list factory" }
 
     method withAll(a: Iterable<T>) -> List<T> {
         if (engine == "js") then {
@@ -697,14 +699,10 @@ factory method list<T> {
                         return GraceDone;›
                 }
 
-                method add(*x) {
+                method add(x:T) {
                     mods := mods + 1
-                    if (x.size == 1) then {
-                        native "js" code ‹var v = callmethod(var_x, "first", [0]);
-                        superDepth.data.jsArray.push(v);
+                    native "js" code ‹superDepth.data.jsArray.push(var_x);
                         return this;›
-                    }
-                    addAll(x)
                 }
 
                 method push(x) {
@@ -755,32 +753,42 @@ factory method list<T> {
                 // end of native methods
 
 
-                method addLast(*x) { addAll(x) }    // compatibility
+                method addLast(x) { push(x) }    // compatibility
                 method addAll(l) {
                     for (l) do { each -> push(each) }
                     self
                 }
 
-                method addFirst(*l) { addAllFirst(l) }
-
+                method addFirst(elem) {
+                    mods := mods + 1
+                    native "js" code ‹superDepth.data.jsArray.unshift(var_elem);›
+                    self
+                }                
 
                 method removeFirst {
                     removeAt(1)
                 }
 
 
-                method remove(*v:T) {
-                    removeAll(v)
+                method remove(elt:T) {
+                    def ix = self.indexOf(elt) ifAbsent {
+                        NoSuchObject.raise "list does not contain object {elt}"
+                    }
+                    removeAt(ix)
+                    self
                 }
 
 
-                method remove(*v:T) ifAbsent(action:Block0<Done>) {
-                    removeAll(v) ifAbsent (action)
+                method remove(elt:T) ifAbsent(action:Block0<Done>) {
+                    def ix = self.indexOf(elt) ifAbsent {
+                        return action.apply
+                    }
+                    removeAt(ix)
+                    self
                 }
-
 
                 method removeAll(vs: Iterable<T>) {
-                    removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
+                    removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
                 }
 
 
@@ -950,8 +958,12 @@ factory method list<T> {
                 }
                 done
             }
-            method add(*x) {
-                addAll(x)
+            method add(x) {
+                mods := mods + 1
+                if (size == inner.size) then { expandTo(inner.size * 2) }
+                inner.at(size)put(x)
+                size := size + 1
+                self
             }
             method addAll(l) {
                 mods := mods + 1
@@ -971,7 +983,7 @@ factory method list<T> {
                 size := size + 1
                 self
             }
-            method addLast(*x) { addAll(x) }    // compatibility
+            method addLast(x) { push(x) }    // compatibility
             method removeLast {
                 mods := mods + 1
                 def result = inner.at(size - 1)
@@ -995,7 +1007,18 @@ factory method list<T> {
                 size := size + increase
                 self
             }
-            method addFirst(*l) { addAllFirst(l) }
+            method addFirst(elt:T) {
+                mods := mods + 1
+                if ((size + 1) > inner.size) then {
+                    expandTo(size * 2)
+                }
+                for (range.from (size-1) downTo 0) do {i->
+                    inner.at (i+1) put (inner.at(i) )
+                }
+                inner.at(0)put(elt)
+                size := size + 1
+                self
+            }
             method removeFirst {
                 removeAt(1)
             }
@@ -1009,14 +1032,27 @@ factory method list<T> {
                 size := size - 1
                 return removed
             }
-            method remove(*v:T) {
-                removeAll(v)
+
+            method remove(elt:T) {
+                def ix = self.indexOf(elt) ifAbsent {
+                    NoSuchObject.raise "list does not contain {elt}"
+                }
+                removeAt(ix)
+                self
             }
-            method remove(*v:T) ifAbsent(action:Block0<Done>) {
-                removeAll(v) ifAbsent (action)
+
+            method remove(elt:T) ifAbsent(action:Block0<Done>) {
+                def ix = self.indexOf(elt) ifAbsent {
+                    action.apply
+                    return self
+                }
+                removeAt(ix)
+                self
             }
+
             method removeAll(vs: Iterable<T>) {
-                removeAll(vs) ifAbsent { NoSuchObject.raise "object not in list" }
+                removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
+                self
             }
             method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Done>)  {
                 for (vs) do { each ->
@@ -1130,8 +1166,11 @@ factory method list<T> {
         }
     }
 }
-factory method set<T> {
+
+class set<T> {
     inherits collectionFactory.trait<T>
+
+    method asString { "a set factory" }
 
     method withAll(a: Iterable<T>) -> Set<T> {
         object {
@@ -1170,7 +1209,18 @@ factory method set<T> {
                 self    // for chaining
             }
 
-            method add(*elements) { addAll(elements) }
+            method add(x:T) {
+                if (! contains(x)) then {
+                    mods := mods + 1
+                    def t = findPositionForAdd(x)
+                    inner.at(t)put(x)
+                    size := size + 1
+                    if (size > (inner.size / 2)) then {
+                        expand
+                    }
+                }
+                self    // for chaining
+            }
 
             method removeAll(elements) {
                 for (elements) do { x ->
@@ -1194,12 +1244,23 @@ factory method set<T> {
                 self    // for chaining
             }
 
-            method remove(*elements)ifAbsent(block) {
-                removeAll(elements) ifAbsent(block)
+            method remove (elt:T) ifAbsent (block) {
+                var t := findPosition(elt)
+                if (inner.at(t) == elt) then {
+                    inner.at(t) put (removed)
+                    mods := mods + 1
+                    size := size - 1
+                } else {
+                    block.apply
+                }
+                self    // for chaining
             }
 
-            method remove(*elements) {
-                removeAll(elements)
+            method remove(elt:T) {
+                remove (elt) ifAbsent {
+                    NoSuchObject.raise "set does not contain {elt}"
+                }
+                self    // for chaining
             }
 
             method contains(x) {
@@ -1397,352 +1458,395 @@ type Binding<K,T> = {
     == -> Boolean
 }
 
-class binding.key(k)value(v) {
-    method key {k}
-    method value {v}
-    method asString { "{k}::{v}" }
-    method hashcode { (k.hashcode * 1021) + v.hashcode }
-    method hash { (k.hash * 1021) + v.hash }
-    method == (other) {
-        match (other)
-            case {o:Binding -> (k == o.key) && (v == o.value) }
-            case {_ -> return false }
-    }
-}
+def binding = object {
+    method asString { "binding class" }
 
-factory method dictionary<K,T> {
-    inherits collectionFactory.trait<T>
-    method at(k:K)put(v:T) {
-            self.empty.at(k)put(v)
-    }
-    method withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
-        object {
-            inherits collection.trait<T>
-            var mods is readable := 0
-            var numBindings := 0
-            var inner := _prelude.PrimitiveArray.new(8)
-            def unused = object {
-                var unused := true
-                def key is public = self
-                def value is public = self
-                method asString { "unused" }
-            }
-            def removed = object {
-                var removed := true
-                def key is public = self
-                def value is public = self
-                method asString { "removed" }
-            }
-            for (0..(inner.size-1)) do {i->
-                inner.at(i)put(unused)
-            }
-            for (initialBindings) do { b -> at(b.key)put(b.value) }
-            method size { numBindings }
-            method at(key')put(value') {
-                mods := mods + 1
-                var t := findPositionForAdd(key')
-                if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
-                    numBindings := numBindings + 1
-                }
-                inner.at(t)put(binding.key(key')value(value'))
-                if ((size * 2) > inner.size) then { expand }
-                self    // for chaining
-            }
-            method []:=(k, v) {
-                at(k)put(v)
-                done
-            }
-            method at(k) {
-                var b := inner.at(findPosition(k))
-                if (b.key == k) then {
-                    return b.value
-                }
-                NoSuchObject.raise "dictionary does not contain entry with key {k}"
-            }
-            method at(k) ifAbsent(action) {
-                var b := inner.at(findPosition(k))
-                if (b.key == k) then {
-                    return b.value
-                }
-                return action.apply
-            }
-            method [](k) { at(k) }
-            method containsKey(k) {
-                var t := findPosition(k)
-                if (inner.at(t).key == k) then {
-                    return true
-                }
-                return false
-            }
-            method removeAllKeys(keys) {
-                mods := mods + 1
-                for (keys) do { k ->
-                    var t := findPosition(k)
-                    if (inner.at(t).key == k) then {
-                        inner.at(t)put(removed)
-                        numBindings := numBindings - 1
-                    } else {
-                        NoSuchObject.raise "dictionary does not contain entry with key {k}"
-                    }
-                }
-                return self
-            }
-            method removeKey(*keys) {
-                removeAllKeys(keys)
-            }
-            method removeAllValues(removals) {
-                mods := mods + 1
-                for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if (removals.contains(a.value)) then {
-                        inner.at(i)put(removed)
-                        numBindings := numBindings - 1
-                    }
-                }
-                return self
-            }
-            method removeValue(*removals) {
-                removeAllValues(removals)
-            }
-            method containsValue(v) {
-                self.valuesDo{ each ->
-                    if (v == each) then { return true }
-                }
-                return false
-            }
-            method contains(v) { containsValue(v) }
-            method findPosition(x) is confidential {
-                def h = x.hash
-                def s = inner.size
-                var t := h % s
-                var jump := 5
-                while {inner.at(t) != unused} do {
-                    if (inner.at(t).key == x) then {
-                        return t
-                    }
-                    if (jump != 0) then {
-                        t := (t * 3 + 1) % s
-                        jump := jump - 1
-                    } else {
-                        t := (t + 1) % s
-                    }
-                }
-                return t
-            }
-            method findPositionForAdd(x) is confidential {
-                def h = x.hash
-                def s = inner.size
-                var t := h % s
-                var jump := 5
-                while {(inner.at(t) != unused).andAlso{inner.at(t) != removed}} do {
-                    if (inner.at(t).key == x) then {
-                        return t
-                    }
-                    if (jump != 0) then {
-                        t := (t * 3 + 1) % s
-                        jump := jump - 1
-                    } else {
-                        t := (t + 1) % s
-                    }
-                }
-                return t
-            }
-            method asString {
-                // do()separatedBy won't work, because it iterates over values,
-                // and we need an iterator over bindings.
-                var s := "dict⟬"
-                var firstElement := true
-                for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if ((a != unused) && (a != removed)) then {
-                        if (! firstElement) then {
-                            s := s ++ ", "
-                        } else {
-                            firstElement := false
-                        }
-                        s := s ++ "{a.key}::{a.value}"
-                    }
-                }
-                s ++ "⟭"
-            }
-            method asDebugString {
-                var s := "dict⟬"
-                for (0..(inner.size-1)) do {i->
-                    if (i > 0) then { s := s ++ ", " }
-                    def a = inner.at(i)
-                    if ((a != unused) && (a != removed)) then {
-                        s := s ++ "{i}→{a.key}::{a.value}"
-                    } else {
-                        s := s ++ "{i}→{a.asDebugString}"
-                    }
-                }
-                s ++ "⟭"
-            }
-            method keys -> Enumerable<K> {
-                def sourceDictionary = self
-                object {
-                    inherits enumerable.trait<K>
-                    factory method iterator {
-                        def sourceIterator = sourceDictionary.bindingsIterator
-                        method hasNext { sourceIterator.hasNext }
-                        method next { sourceIterator.next.key }
-                        method asString {
-                            "an iterator over keys of {sourceDictionary}"
-                        }
-                    }
-                    def size is public = sourceDictionary.size
-                    method asDebugString {
-                        "a lazy sequence over keys of {sourceDictionary}"
-                    }
-                }
-            }
-            method values -> Enumerable<T> {
-                def sourceDictionary = self
-                object {
-                    inherits enumerable.trait<T>
-                    factory method iterator {
-                        def sourceIterator = sourceDictionary.bindingsIterator
-                        // should be request on outer
-                        method hasNext { sourceIterator.hasNext }
-                        method next { sourceIterator.next.value }
-                        method asString {
-                            "an iterator over values of {sourceDictionary}"
-                        }
-                    }
-                    def size is public = sourceDictionary.size
-                    method asDebugString {
-                        "a lazy sequence over values of {sourceDictionary}"
-                    }
-                }
-            }
-            method bindings -> Enumerable<T> {
-                def sourceDictionary = self
-                object {
-                    inherits enumerable.trait<T>
-                    method iterator { sourceDictionary.bindingsIterator }
-                    // should be request on outer
-                    def size is public = sourceDictionary.size
-                    method asDebugString {
-                        "a lazy sequence over bindings of {sourceDictionary}"
-                    }
-                }
-            }
-            method iterator -> Iterator<T> { values.iterator }
-            factory method bindingsIterator -> Iterator<Binding<K, T>> {
-                // this should be confidential, but can't be until `outer` is fixed.
-                def imods:Number = mods
-                var count := 1
-                var idx := 0
-                var elt
-                method hasNext { size >= count }
-                method next {
-                    if (imods != mods) then {
-                        ConcurrentModification.raise (outer.asString)
-                    }
-                    if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
-                    while {
-                        elt := inner.at(idx)
-                        (elt == unused) || (elt == removed)
-                    } do {
-                        idx := idx + 1
-                    }
-                    count := count + 1
-                    idx := idx + 1
-                    elt
-                }
-            }
-            method expand is confidential {
-                def c = inner.size
-                def n = c * 2
-                def oldInner = inner
-                inner := _prelude.PrimitiveArray.new(n)
-                for (0..(n - 1)) do {i->
-                    inner.at(i)put(unused)
-                }
-                numBindings := 0
-                for (0..(c - 1)) do {i->
-                    def a = oldInner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        self.at(a.key)put(a.value)
-                    }
-                }
-            }
-            method keysAndValuesDo(block2) {
-                 for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        block2.apply(a.key, a.value)
-                    }
-                }
-            }
-            method keysDo(block1) {
-                 for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        block1.apply(a.key)
-                    }
-                }
-            }
-            method valuesDo(block1) {
-                 for (0..(inner.size-1)) do {i->
-                    def a = inner.at(i)
-                    if ((a != unused).andAlso{a != removed}) then {
-                        block1.apply(a.value)
-                    }
-                }
-            }
-            method do(block1) { valuesDo(block1) }
-
-            method ==(other) {
-                match (other)
-                    case {o:Dictionary ->
-                        if (self.size != o.size) then {return false}
-                        self.keysAndValuesDo { k, v ->
-                            if (o.at(k)ifAbsent{return false} != v) then {
-                                return false
-                            }
-                        }
-                        return true
-                    }
-                    case {_ ->
-                        return false
-                    }
-            }
-
-            method copy {
-                def newCopy = dictionary.empty
-                self.keysAndValuesDo{ k, v ->
-                    newCopy.at(k)put(v)
-                }
-                newCopy
-            }
-
-            method asDictionary {
-                self
-            }
-
-            method ++(other) {
-                def newDict = self.copy
-                other.keysAndValuesDo {k, v ->
-                    newDict.at(k) put(v)
-                }
-                return newDict
-            }
-
-            method --(other) {
-                def newDict = dictionary.empty
-                keysAndValuesDo { k, v ->
-                    if (! other.containsKey(k)) then {
-                        newDict.at(k) put(v)
-                    }
-                }
-                return newDict
-            }
+    class key(k)value(v) {
+        method key {k}
+        method value {v}
+        method asString { "{k}::{v}" }
+        method hashcode { (k.hashcode * 1021) + v.hashcode }
+        method hash { (k.hash * 1021) + v.hash }
+        method == (other) {
+            match (other)
+                case {o:Binding -> (k == o.key) && (v == o.value) }
+                case {_ -> return false }
         }
     }
 }
 
-factory method range {
+class dictionary<K,T> {
+    inherits collectionFactory.trait<T>
+
+    method asString { "a dictionary factory" }
+
+    method at(k:K)put(v:T) {
+            self.empty.at(k)put(v)
+    }
+    class withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
+        inherits collection.trait<T>
+        var mods is readable := 0
+        var numBindings := 0
+        var inner := _prelude.PrimitiveArray.new(8)
+        def unused = object {
+            var unused := true
+            def key is public = self
+            def value is public = self
+            method asString { "unused" }
+        }
+        def removed = object {
+            var removed := true
+            def key is public = self
+            def value is public = self
+            method asString { "removed" }
+        }
+        for (0..(inner.size-1)) do {i->
+            inner.at(i)put(unused)
+        }
+        for (initialBindings) do { b -> at(b.key)put(b.value) }
+        method size { numBindings }
+        method at(key')put(value') {
+            mods := mods + 1
+            var t := findPositionForAdd(key')
+            if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
+                numBindings := numBindings + 1
+            }
+            inner.at(t)put(binding.key(key')value(value'))
+            if ((size * 2) > inner.size) then { expand }
+            self    // for chaining
+        }
+        method []:=(k, v) {
+            at(k)put(v)
+            done
+        }
+        method at(k) {
+            var b := inner.at(findPosition(k))
+            if (b.key == k) then {
+                return b.value
+            }
+            NoSuchObject.raise "dictionary does not contain entry with key {k}"
+        }
+        method at(k) ifAbsent(action) {
+            var b := inner.at(findPosition(k))
+            if (b.key == k) then {
+                return b.value
+            }
+            action.apply
+        }
+        method [](k) { at(k) }
+        method containsKey(k) {
+            var t := findPosition(k)
+            if (inner.at(t).key == k) then {
+                return true
+            }
+            false
+        }
+        method removeAllKeys(keys) {
+            mods := mods + 1
+            for (keys) do { k ->
+                var t := findPosition(k)
+                if (inner.at(t).key == k) then {
+                    inner.at(t)put(removed)
+                    numBindings := numBindings - 1
+                } else {
+                    NoSuchObject.raise "dictionary does not contain entry with key {k}"
+                }
+            }
+            self
+        }
+        method removeKey(k:K) {
+            mods := mods + 1
+            var t := findPosition(k)
+            if (inner.at(t).key == k) then {
+                inner.at(t)put(removed)
+                numBindings := numBindings - 1
+            } else {
+                NoSuchObject.raise "dictionary does not contain entry with key {k}"
+            }
+            self
+        }
+        method removeAllValues(removals) {
+            mods := mods + 1
+            for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if (removals.contains(a.value)) then {
+                    inner.at(i)put(removed)
+                    numBindings := numBindings - 1
+                }
+            }
+            self
+        }
+        method removeValue(v) {
+            // remove all bindings with value v
+            mods := mods + 1
+            def initialNumBindings = numBindings
+            for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if (v == a.value) then {
+                    inner.at (i) put (removed)
+                    numBindings := numBindings - 1
+                }
+            }
+            if (numBindings == initialNumBindings) then {
+                NoSuchObject.raise "dictionary does not contain entry with value {v}"
+            }
+            self
+        }
+        method removeValue(v) ifAbsent (action:Block0<Unknown>) {
+            // remove all bindings with value v
+            mods := mods + 1
+            def initialNumBindings = numBindings
+            for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if (v == a.value) then {
+                    inner.at (i) put (removed)
+                    numBindings := numBindings - 1
+                }
+            }
+            if (numBindings == initialNumBindings) then {
+                action.apply
+            }
+            self
+        }
+        method containsValue(v) {
+            self.valuesDo{ each ->
+                if (v == each) then { return true }
+            }
+            false
+        }
+        method contains(v) { containsValue(v) }
+
+        method findPosition(x) is confidential {
+            def h = x.hash
+            def s = inner.size
+            var t := h % s
+            var jump := 5
+            while {inner.at(t) != unused} do {
+                if (inner.at(t).key == x) then {
+                    return t
+                }
+                if (jump != 0) then {
+                    t := (t * 3 + 1) % s
+                    jump := jump - 1
+                } else {
+                    t := (t + 1) % s
+                }
+            }
+            return t
+        }
+        method findPositionForAdd(x) is confidential {
+            def h = x.hash
+            def s = inner.size
+            var t := h % s
+            var jump := 5
+            while {(inner.at(t) != unused).andAlso{inner.at(t) != removed}} do {
+                if (inner.at(t).key == x) then {
+                    return t
+                }
+                if (jump != 0) then {
+                    t := (t * 3 + 1) % s
+                    jump := jump - 1
+                } else {
+                    t := (t + 1) % s
+                }
+            }
+            return t
+        }
+        method asString {
+            // do()separatedBy won't work, because it iterates over values,
+            // and we need an iterator over bindings.
+            var s := "dict⟬"
+            var firstElement := true
+            for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if ((a != unused) && (a != removed)) then {
+                    if (! firstElement) then {
+                        s := s ++ ", "
+                    } else {
+                        firstElement := false
+                    }
+                    s := s ++ "{a.key}::{a.value}"
+                }
+            }
+            s ++ "⟭"
+        }
+        method asDebugString {
+            var s := "dict⟬"
+            for (0..(inner.size-1)) do {i->
+                if (i > 0) then { s := s ++ ", " }
+                def a = inner.at(i)
+                if ((a != unused) && (a != removed)) then {
+                    s := s ++ "{i}→{a.key}::{a.value}"
+                } else {
+                    s := s ++ "{i}→{a.asDebugString}"
+                }
+            }
+            s ++ "⟭"
+        }
+        method keys -> Enumerable<K> {
+            def sourceDictionary = self
+            object {
+                inherits enumerable.trait<K>
+                class iterator {
+                    def sourceIterator = sourceDictionary.bindingsIterator
+                    method hasNext { sourceIterator.hasNext }
+                    method next { sourceIterator.next.key }
+                    method asString {
+                        "an iterator over keys of {sourceDictionary}"
+                    }
+                }
+                def size is public = sourceDictionary.size
+                method asDebugString {
+                    "a lazy sequence over keys of {sourceDictionary}"
+                }
+            }
+        }
+        method values -> Enumerable<T> {
+            def sourceDictionary = self
+            object {
+                inherits enumerable.trait<T>
+                class iterator {
+                    def sourceIterator = sourceDictionary.bindingsIterator
+                    // should be request on outer
+                    method hasNext { sourceIterator.hasNext }
+                    method next { sourceIterator.next.value }
+                    method asString {
+                        "an iterator over values of {sourceDictionary}"
+                    }
+                }
+                def size is public = sourceDictionary.size
+                method asDebugString {
+                    "a lazy sequence over values of {sourceDictionary}"
+                }
+            }
+        }
+        method bindings -> Enumerable<T> {
+            def sourceDictionary = self
+            object {
+                inherits enumerable.trait<T>
+                method iterator { sourceDictionary.bindingsIterator }
+                // should be request on outer
+                def size is public = sourceDictionary.size
+                method asDebugString {
+                    "a lazy sequence over bindings of {sourceDictionary}"
+                }
+            }
+        }
+        method iterator -> Iterator<T> { values.iterator }
+        class bindingsIterator -> Iterator<Binding<K, T>> {
+            // this should be confidential, but can't be until `outer` is fixed.
+            def imods:Number = mods
+            var count := 1
+            var idx := 0
+            var elt
+            method hasNext { size >= count }
+            method next {
+                if (imods != mods) then {
+                    ConcurrentModification.raise (outer.asString)
+                }
+                if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
+                while {
+                    elt := inner.at(idx)
+                    (elt == unused) || (elt == removed)
+                } do {
+                    idx := idx + 1
+                }
+                count := count + 1
+                idx := idx + 1
+                elt
+            }
+        }
+        method expand is confidential {
+            def c = inner.size
+            def n = c * 2
+            def oldInner = inner
+            inner := _prelude.PrimitiveArray.new(n)
+            for (0..(n - 1)) do {i->
+                inner.at(i)put(unused)
+            }
+            numBindings := 0
+            for (0..(c - 1)) do {i->
+                def a = oldInner.at(i)
+                if ((a != unused).andAlso{a != removed}) then {
+                    self.at(a.key)put(a.value)
+                }
+            }
+        }
+        method keysAndValuesDo(block2) {
+             for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if ((a != unused).andAlso{a != removed}) then {
+                    block2.apply(a.key, a.value)
+                }
+            }
+        }
+        method keysDo(block1) {
+             for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if ((a != unused).andAlso{a != removed}) then {
+                    block1.apply(a.key)
+                }
+            }
+        }
+        method valuesDo(block1) {
+             for (0..(inner.size-1)) do {i->
+                def a = inner.at(i)
+                if ((a != unused).andAlso{a != removed}) then {
+                    block1.apply(a.value)
+                }
+            }
+        }
+        method do(block1) { valuesDo(block1) }
+
+        method ==(other) {
+            match (other)
+                case {o:Dictionary ->
+                    if (self.size != o.size) then {return false}
+                    self.keysAndValuesDo { k, v ->
+                        if (o.at(k)ifAbsent{return false} != v) then {
+                            return false
+                        }
+                    }
+                    return true
+                }
+                case {_ ->
+                    return false
+                }
+        }
+
+        method copy {
+            def newCopy = dictionary.empty
+            self.keysAndValuesDo{ k, v ->
+                newCopy.at(k)put(v)
+            }
+            newCopy
+        }
+
+        method asDictionary {
+            self
+        }
+
+        method ++(other) {
+            def newDict = self.copy
+            other.keysAndValuesDo {k, v ->
+                newDict.at(k) put(v)
+            }
+            return newDict
+        }
+
+        method --(other) {
+            def newDict = dictionary.empty
+            keysAndValuesDo { k, v ->
+                if (! other.containsKey(k)) then {
+                    newDict.at(k) put(v)
+                }
+            }
+            return newDict
+        }
+    }
+}
+
+class range {
     method from(lower)to(upper) -> Sequence<Number> {
         object {
             inherits indexable.trait<Number>
@@ -1822,7 +1926,7 @@ factory method range {
                 from(upper)downTo(lower)
             }
             method ++(other) {
-                sequence.withAll(self, other)
+                sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
                 isEqual (self) toIterable (other)
@@ -1923,7 +2027,7 @@ factory method range {
                 from(lower)to(upper)
             }
             method ++(other) {
-                sequence.withAll(self, other)
+                sequence.withAll(lazyConcatenation(self, other))
             }
             method ==(other) {
                 isEqual (self) toIterable (other)
