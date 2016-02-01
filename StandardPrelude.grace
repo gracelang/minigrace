@@ -375,7 +375,8 @@ def collections is public = coll
 
 type Block0<R> = collections.Block0<R>
 type Block1<T,R> = collections.Block1<T,R>
-type Block2<S,T,R> = collections.Block1<T,R>
+type Fun<T,R> = collections.Block1<T,R>
+type Block2<S,T,R> = collections.Block2<S,T,R>
 
 type Collection<T> = collections.Collection<T>
 type Iterable<T> = collections.Iterable<T>
