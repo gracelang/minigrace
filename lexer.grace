@@ -682,7 +682,6 @@ method new {
                "%".ord, "^".ord, "@".ord, "?".ord,
                "*".ord, "/".ord, "+".ord, "!".ord
                 )
-            def iGTLT = unicode.pattern("i".ord, "<".ord, ">".ord)
             def mainBlock = { c->
                 var ct := ""
                 var ordval := c.ord // String.ord gives the codepoint
@@ -794,10 +793,16 @@ method new {
                             }
                         }
                     }
-                    if ((mode == "i") && (c == "<")) then {
-                        newmode := "<"
-                    } elseif { iGTLT.match(mode)
-                        && (c == ">") } then {
+                    if (c == "<") then {
+                        if (mode == "i") then {
+                            newmode := "<"
+                        } elseif {(mode == "n") && (tokens.last.kind == "op")} then {
+                            newmode := "<"
+                        } else {
+                            newmode := "o"
+                        }
+                    } elseif { (c == ">") && 
+                            ((mode == "i") || (mode == "<") || (mode == ">")) } then {
                         if (mode == ">") then {
                             modechange(tokens, mode, accum)
                         }
