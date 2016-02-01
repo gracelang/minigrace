@@ -1,4 +1,3 @@
-#pragma PrimitiveLists
 import "errormessages" as errormessages
 import "ast" as ast
 

@@ -1,5 +1,4 @@
 #pragma DefaultVisibility=public
-#pragma PrimitiveLists
 import "io" as io
 import "sys" as sys
 import "ast" as ast

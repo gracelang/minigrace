@@ -1,6 +1,5 @@
 #pragma NativePrelude
 #pragma DefaultVisibility=public
-#pragma PrimitiveLists
 
 var isStandardPrelude := true
 

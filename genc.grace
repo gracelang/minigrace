@@ -1,5 +1,4 @@
 #pragma DefaultVisibility=public
-#pragma PrimitiveLists
 import "ast" as ast
 import "errormessages" as errormessages
 import "io" as io

@@ -1,5 +1,4 @@
 #pragma noTypeChecks
-#pragma PrimitiveLists
 // until [] means a real list, it won't match type List
 dialect "dialect"
 
@@ -1279,12 +1278,6 @@ method checker(nodes) {
 
 // Helper methods.
 
-// Loop over the elements of two collections at once.
-method for(a) and(b) do(bl) -> Done {
-    for(a.indices) do { i ->
-        bl.apply(a.at(i), b.at(i))
-    }
-}
 
 // For loop with break.
 method for(a) doWithBreak(bl) -> Done {

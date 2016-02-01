@@ -1,4 +1,3 @@
-#pragma PrimitiveLists
 import "gUnit" as gU
 
 var str := ""
