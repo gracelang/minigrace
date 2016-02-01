@@ -204,7 +204,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
-js/collectionsPrelude.gct: collectionsPrelude.grace minigrace
+js/collectionsPrelude%js, js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js $(MGFLAGS) --dir js $(<F)
 
 js/dom.gct: stubs/dom.gct
