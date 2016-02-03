@@ -4190,12 +4190,13 @@ Object Type_methodNames(Object self, int nparts, int *argcv,
     int i;
     int tmp = 1;
     Object mn;
+    int partcv[] = {1};
     gc_pause();
-    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
-    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    Object emptyList = alloc_BuiltinList();
+    Object result = callmethod(grace_prelude(), "set", 1, partcv, &emptyList);
     for (i=0; i < t->nummethods; i++) {
         mn = alloc_String(t->methods[i].name);
-        callmethod(result, "add", 1, &tmp, &mn);
+        callmethod(result, "add", 1, partcv, &mn);
     }
     gc_unpause();
     return result;

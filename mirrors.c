@@ -43,9 +43,9 @@ Object MirrorMethod_asString(Object self, int nparams, int *argcv, Object *argv,
         int flags) {
     struct MirrorMethodObject *s = (struct MirrorMethodObject*)self;
     char buf[strlen(s->method->name) + 12];
-    strcpy(buf, "<Method \"");
+    strcpy(buf, "mirror on `");
     strcat(buf, s->method->name);
-    strcat(buf, "\">");
+    strcat(buf, "`");
     return alloc_String(buf);
 }
 
@@ -70,7 +70,7 @@ Object MirrorMethod_paramcounts(Object self, int nparams, int *argcv,
     if (!s->method->type)
         return alloc_done();
     gc_pause();
-    Object l = alloc_List();
+    Object l = alloc_BuiltinList();
     int cargcv[] = {1};
     Object carg;
     for (i=0; i<s->method->type->nparts; i++) {
@@ -141,11 +141,12 @@ Object MirrorMethod_request_with_args(Object self, int nparts, int *argcv, Objec
 
 Object alloc_MirrorMethod(Method *method, Object obj) {
     if (MirrorMethodClass == NULL) {
-        MirrorMethodClass = alloc_class("MirrorMethod", 6);
+        MirrorMethodClass = alloc_class("MirrorMethod", 7);
         add_Method(MirrorMethodClass, "request", &MirrorMethod_request);
         add_Method(MirrorMethodClass, "requestWithArgs", &MirrorMethod_request_with_args);
         add_Method(MirrorMethodClass, "name", &MirrorMethod_name);
         add_Method(MirrorMethodClass, "asString", &MirrorMethod_asString);
+        add_Method(MirrorMethodClass, "asDebugString", &MirrorMethod_asString);
         add_Method(MirrorMethodClass, "partcount", &MirrorMethod_partcount);
         add_Method(MirrorMethodClass, "paramcounts", &MirrorMethod_paramcounts);
     }
@@ -176,7 +177,7 @@ Object Mirror_methods(Object self, int nparams, int *argcv, Object *args,
     ClassData c = o->class;
     Method *m;
     gc_pause();
-    Object l = alloc_List();
+    Object l = alloc_BuiltinList();
     Object arg;
     int tmp = 1;
     int i;
@@ -196,15 +197,15 @@ Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
     int i;
     Object mn;
     ClassData c;
-    int tmp = 1;
+    int partcv[] = {1};
     gc_pause();
-    Object graceSetClass = callmethod(grace_prelude(), "set", 0, NULL, NULL);
-    Object result = callmethod(graceSetClass, "empty", 0, NULL, NULL);
+    Object emptyList = alloc_BuiltinList();
+    Object result = callmethod(grace_prelude(), "set", 1, partcv, &emptyList);
     while (current != NULL) {
         c = current->class;
         for (i=0; i < c->nummethods; i++) {
             mn = alloc_String(c->methods[i].name);
-            callmethod(result, "add", 1, &tmp, &mn);
+            callmethod(result, "add", 1, partcv, &mn);
         }
         if (current->flags & OFLAG_USEROBJ) {
             current = ((struct UserObject *) current)->super;
@@ -212,15 +213,23 @@ Object Mirror_methodNames(Object self, int nparams, int *argcv, Object *args,
             current = NULL;
         }
     }
+    gc_unpause();
     return result;
 }
 
+Object Mirror_asString() {
+    return alloc_String("an object mirror");
+}
+
+
 Object alloc_mirror(Object obj) {
     if (MirrorClass == NULL) {
-        MirrorClass = alloc_class("Mirror", 3);
+        MirrorClass = alloc_class("Mirror", 5);
         add_Method(MirrorClass, "methods", &Mirror_methods);
         add_Method(MirrorClass, "methodNames", &Mirror_methodNames);
         add_Method(MirrorClass, "getMethod", &Mirror_getMethod);
+        add_Method(MirrorClass, "asString", &Mirror_asString);
+        add_Method(MirrorClass, "asDebugString", &Mirror_asString);
     }
     Object o = alloc_obj(sizeof(Object), MirrorClass);
     struct MirrorObject *p = (struct MirrorObject*)o;
@@ -251,8 +260,9 @@ Object mirrors_asString() {
 Object module_mirrors_init() {
     if (mirrors_module != NULL)
         return mirrors_module;
-    ClassData c = alloc_class("mirrors", 3);
+    ClassData c = alloc_class("mirrors", 4);
     add_Method(c, "asString", &mirrors_asString);
+    add_Method(c, "asDebugString", &mirrors_asString);
     add_Method(c, "reflect", &mirrors_reflect);
     add_Method(c, "loadDynamicModule", &mirrors_loadDynamicModule);
     Object o = alloc_newobj(0, c);
