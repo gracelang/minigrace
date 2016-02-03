@@ -153,39 +153,41 @@ def aGraceLangTest = object {
         }
 
         method test_101_super {
-            class A.new(v') {
-                var v := v'
-                method foo {
-                    out "A's foo: {self.v}"
+            object {
+                class aa(v') {
+                    var v := v'
+                    method foo {
+                        out "A's foo: {self.v}"
+                    }
+                    method baz {
+                        out "A's baz"
+                    }
                 }
-                method baz {
-                    out "A's baz"
+                class bb(x) {
+                    inherits aa(x)
+                    method bar {
+                        out "B's bar"
+                    }
+                    method baz {
+                        out "B's baz invokes..."
+                        super.baz
+                    }
                 }
-            }
-            class B.new(x) {
-                inherits A.new(x)
-                method bar {
-                    out "B's bar"
+                class cc(y) {
+                    inherits bb(y)
+                    method baz {
+                        out "C's baz invokes..."
+                        super.baz
+                    }
                 }
-                method baz {
-                    out "B's baz invokes..."
-                    super.baz
-                }
-            }
-            class C.new(y) {
-                inherits B.new(y)
-                method baz {
-                    out "C's baz invokes..."
-                    super.baz
-                }
-            }
+                
+                var b := cc "ARGUMENT"
+                b.foo
+                b.bar
+                b.baz
             
-            var b := C.new("ARGUMENT")
-            b.foo
-            b.bar
-            b.baz
-            
-            assert(str)shouldBe("A's foo: ARGUMENT\nB's bar\nC's baz invokes...\nB's baz invokes...\nA's baz\n")
+                assert(str)shouldBe("A's foo: ARGUMENT\nB's bar\nC's baz invokes...\nB's baz invokes...\nA's baz\n")
+            }
         }
 
         method test_102_outersuper {
@@ -280,48 +282,52 @@ def aGraceLangTest = object {
         
 
         method test_105_classstatement {
-            class X.new(y) {
-                out(y)
-                object {
+            object {
+                class x(y) {
                     out(y)
+                    object {
+                        out(y)
+                    }
                 }
+                
+                x(5)
+                
+                
+                assert(str)shouldBe("5\n5\n")
             }
-            
-            X.new(5)
-            
-            
-            assert(str)shouldBe("5\n5\n")
         }
 
         method test_107_downcall {
+            object {
             
-            class A.new {
-              method a {
-                b
-              }
-              method b {
-                out("A")
-              }
+                class aa {
+                  method a {
+                    b
+                  }
+                  method b {
+                    out("A")
+                  }
+                }
+                
+                class bb {
+                  inherits aa
+                  method b {
+                    out("B")
+                  }
+                }
+                
+                bb.a
+                
+                assert(str)shouldBe("B\n")
             }
-            
-            class B.new {
-              inherits A.new
-              method b {
-                out("B")
-              }
-            }
-            
-            B.new.a
-            
-            assert(str)shouldBe("B\n")
         }
 
         method test_108_classouter {
             
-            class A.new {
-              method b {
-                t108_a
-              }
+            def A = object {
+                class new {
+                    method b { t108_a }
+                }
             }
             
             A.new.b
@@ -342,10 +348,11 @@ def aGraceLangTest = object {
         }
 
         method test_112_nonnewconstructor {
-            class aCat.named(name') {
-                def name = name'
-                method describe {
-                    out "A cat called {name}"
+            def aCat = object {
+                class named(name) {
+                    method describe {
+                        out "A cat called {name}"
+                    }
                 }
             }
             
@@ -358,23 +365,24 @@ def aGraceLangTest = object {
         }
 
         method test_113_mpmnconstructor {
-            
-            class aCat.named(aName) coloured (aColour) {
-                def colour = aColour
-                def name = aName
-                var miceEaten := 0
-                method describe {
-                    out "{name} is a {colour} cat"
+            object {
+                class named(aName) coloured (aColour) {
+                    def colour = aColour
+                    def name = aName
+                    var miceEaten := 0
+                    method describe {
+                        out "{name} is a {colour} cat"
+                    }
                 }
+                
+                def myCat = named "Timothy" coloured ("black")
+                def yourCat = named "Gregory" coloured ("tortoiseshell")
+                
+                myCat.describe
+                yourCat.describe
+                
+                assert(str)shouldBe("Timothy is a black cat\nGregory is a tortoiseshell cat\n")
             }
-            
-            def myCat = aCat.named "Timothy" coloured ("black")
-            def yourCat = aCat.named "Gregory" coloured ("tortoiseshell")
-            
-            myCat.describe
-            yourCat.describe
-            
-            assert(str)shouldBe("Timothy is a black cat\nGregory is a tortoiseshell cat\n")
         }
 
         method test_114_inheritsboolean {
@@ -530,15 +538,17 @@ def aGraceLangTest = object {
             }
             x.bar("hello", 17, 42)baz("world", -1, 0, 1)
             
-            class Foo.with(a, *b)varargs(c, *d) {
-                method bar {
-                    out(a)
-                    for (b) do { e ->
-                        out("In b: {e}")
-                    }
-                    out(c)
-                    for (d) do { e ->
-                        out("In d: {e}")
+            def Foo = object {
+                class with(a, *b)varargs(c, *d) {
+                    method bar {
+                        out(a)
+                        for (b) do { e ->
+                            out("In b: {e}")
+                        }
+                        out(c)
+                        for (d) do { e ->
+                            out("In d: {e}")
+                        }
                     }
                 }
             }

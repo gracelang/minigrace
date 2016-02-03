@@ -2461,14 +2461,34 @@ method doobject {
     }
 }
 
-// Accept a class declaration
-// Class declarations are currently of the form:
-//   class classname.methodName (param1, param2) {
-//     inherits foo.new(...)
-//     var x
-//     method y(z) { ... }
-//   }
 method doclass {
+    // Accepts a class declaration with or without a `dot`
+    // Class declarations were formerly of the form:
+    //
+    //   class objName.methodName (param1, param2) {
+    //     inherits <expr>
+    //     var x
+    //     method y(z) { ... }
+    // }
+    // Now they are of the form:
+    //
+    // class methodName (param1, param2) {
+    //     inherits <expr>
+    //     var x
+    //     method y(z) { ... }
+    // }
+    // The old "dotted" form is compiled into a special classNode
+    // The current form is compiled into a methodNode that contains
+    // an objectNode, i.e., it is treated as syntactic sugar for
+    //
+    // method methodName (param1, param2) {
+    //     object {
+    //         inherits <expr>
+    //         var x
+    //         method y(z) { ... }
+    //     }
+    // }
+
     if (accept("keyword") && (sym.value == "class")) then {
         def btok = sym
         next
@@ -2490,25 +2510,16 @@ method doclass {
             errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
-        def cname = if (tokens.first.kind == "dot") then {
-            pushidentifier // A class must have a name
-            def cname' = values.pop
-            cname'.isBindingOccurrence := true
-            if (!accept("dot")) then {
-                def suggestion = errormessages.suggestion.new
-                suggestion.replaceToken(sym) with(".")
-                errormessages.syntaxError "A class must have a dot after the object name."
-                    atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
-                    withSuggestion(suggestion)
-            }
-            next
-            cname'
-        } else {
-            false
+        var objName := false
+        if (tokens.first.kind == "dot") then {
+            pushidentifier // the name of the class object
+            objName := values.pop
+            objName.isBindingOccurrence := true
+            next    // skip over the dot
         }
         def s = methodsignature(false)
-        var csig := s.sig
-        var methodName := s.m
+        def csig = s.sig
+        def methodName = s.m
         methodName.isBindingOccurrence := true
         def dtype = s.rtype
         def anns = doannotation
@@ -2538,11 +2549,11 @@ method doclass {
         }
         next
         util.setline(btok.line)
-        def o = if (false == cname) then {
+        def o = if (false == objName) then {
             ast.methodNode.new(methodName, csig,
                 [ast.objectNode.body(body) named(methodName.nameString)], dtype)
         } else {
-            ast.classNode.new(cname, csig, body, false, methodName, dtype)
+            ast.classNode.new(objName, csig, body, false, methodName, dtype)
         }
         o.typeParams := s.typeParams
         if (false != anns) then {
@@ -2586,7 +2597,7 @@ method dofactoryMethod {
                 lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
         }
         var s := methodsignature(false)
-        var csig := s.sig
+        def csig = s.sig
         var methodName := s.m
         methodName.isBindingOccurrence := true
         def dtype = s.rtype

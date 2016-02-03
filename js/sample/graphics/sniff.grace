@@ -34,15 +34,15 @@ var rightCentre
 var above
 var Δ
 
-class point.x(x')y(y') {
+class x(x')y(y') {
     def x is public = x'
     def y is public = y'
-    method left(dx) { point.x(x - dx)y(y) }
-    method right(dx) { point.x(x + dx)y(y) }
-    method up(dy) { point.x(x)y(y - dy) }
-    method down(dy) { point.x(x)y(y + dy) }
+    method left(dx) { x(x - dx)y(y) }
+    method right(dx) { x(x + dx)y(y) }
+    method up(dy) { x(x)y(y - dy) }
+    method down(dy) { x(x)y(y + dy) }
 }
-class drawable.new {
+class drawable {
     initialise
     registeredObjects.push(self)
     above := self
@@ -102,16 +102,16 @@ class drawable.new {
         normaliseAngle
     }
     method touchingEdge {
-        if (isPointOver(point.x(x)y(0))) then {
+        if (isPointOver(x(x)y(0))) then {
             return true
         }
-        if (isPointOver(point.x(x)y(canvasHeight))) then {
+        if (isPointOver(x(x)y(canvasHeight))) then {
             return true
         }
-        if (isPointOver(point.x(0)y(y))) then {
+        if (isPointOver(x(0)y(y))) then {
             return true
         }
-        if (isPointOver(point.x(canvasWidth)y(y))) then {
+        if (isPointOver(x(canvasWidth)y(y))) then {
             return true
         }
         return false
@@ -119,16 +119,16 @@ class drawable.new {
     method bounce {
         var dx := 0
         var dy := 0
-        if (isPointOver(point.x(x)y(0))) then {
+        if (isPointOver(x(x)y(0))) then {
             bounceFrom(top)
         }
-        if (isPointOver(point.x(x)y(canvasHeight))) then {
+        if (isPointOver(x(x)y(canvasHeight))) then {
             bounceFrom(bottom)
         }
-        if (isPointOver(point.x(0)y(y))) then {
+        if (isPointOver(x(0)y(y))) then {
             bounceFrom(left)
         }
-        if (isPointOver(point.x(canvasWidth)y(y))) then {
+        if (isPointOver(x(canvasWidth)y(y))) then {
             bounceFrom(right)
         }
         while { touchingEdge } do {
@@ -163,7 +163,7 @@ class drawable.new {
         }
     }
     method touching(other) {
-        other.isPointOver(point.x(x)y(y))
+        other.isPointOver(x(x)y(y))
     }
     method face(other) {
         if ((other.x != x) || (other.y != y)) then {
@@ -178,7 +178,7 @@ class drawable.new {
 
 method rectangle {
     object {
-        inherits drawable.new
+        inherits drawable
         var width := 100
         var height := 50
         var colour := "blue"
@@ -206,7 +206,7 @@ method rectangle {
 
 method circle {
     object {
-        inherits drawable.new
+        inherits drawable
         var radius := 25
         var colour := "green"
         method draw(ctx) {
@@ -229,7 +229,7 @@ method circle {
 
 method image {
     object {
-        inherits drawable.new
+        inherits drawable
         var width := 64
         var height := 64
         def imgTag = dom.document.createElement("img")
@@ -272,7 +272,7 @@ method image {
 
 method value(b) {
     object {
-        inherits drawable.new
+        inherits drawable
         var colour := "blue"
         var label := ""
         method draw(ctx) {
@@ -288,7 +288,7 @@ method value(b) {
 }
 
 def mouse = object {
-    var position is public := point.x(0)y(0)
+    var position is public := x(0)y(0)
     method x {
         position.x
     }
@@ -322,16 +322,16 @@ method initialise {
     canvas := document.getElementById("standard-canvas")
     canvasWidth := canvas.width
     canvasHeight := canvas.height
-    centre := point.x(canvasWidth / 2)y(canvasHeight / 2)
-    leftCentre := point.x(0)y(canvasHeight / 2)
-    rightCentre := point.x(canvasWidth)y(canvasHeight / 2)
+    centre := x(canvasWidth / 2)y(canvasHeight / 2)
+    leftCentre := x(0)y(canvasHeight / 2)
+    rightCentre := x(canvasWidth)y(canvasHeight / 2)
     mouse.position := centre
     // Save the listener functions so that we can remove them
     // later on.
     mouseMoveListener := { ev ->
         def x = (ev.clientX - canvas.offsetLeft) / canvas.offsetWidth * canvasHeight
         def y = (ev.clientY - canvas.offsetTop - 7) / canvas.offsetHeight * canvasHeight
-        mouse.position := point.x(x)y(y)
+        mouse.position := x(x)y(y)
     }
     canvas.addEventListener("mousemove", mouseMoveListener)
     mouseDownListener := { ev ->
@@ -341,7 +341,7 @@ method initialise {
             ev.preventDefault
             stop
         }
-        def p = point.x(x)y(y)
+        def p = x(x)y(y)
         for (registeredObjects) do {obj->
             if (obj.isPointOver(p)) then {
                 obj.mousedown
@@ -358,7 +358,7 @@ method random(n) {
     (n * math.random).truncated
 }
 method randomPoint {
-    point.x(canvasWidth / 10 + random(canvasWidth * 0.8))
+    x(canvasWidth / 10 + random(canvasWidth * 0.8))
         y(canvasHeight / 10 + random(canvasHeight * 0.8))
 }
 method start {

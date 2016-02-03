@@ -351,26 +351,24 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("3 4\n6 7\n")
         }
+        
+        class cons(hd', tl') {
+            method hd { hd' }
+            def tl is public = tl'
+            method extract { [hd', tl'] }
+        }
 
         method test_097_classparamclosure {
-            class ConsGood.new(hd', tl') {
-                def hd = hd'
-                def tl = tl'
-                def brand = "Cons"
-                method extract {
-                    return ([hd', tl'])
-                }
-            }
-            
-            def a = ConsGood.new(3, 4)
-            def b = ConsGood.new(6, 7)
+            def a = cons(3, 4)
+            def b = cons(6, 7)
             def ae = a.extract
-            out "{ae[1]} {ae[2]}"
             def be = b.extract
-            out "{be[1]} {be[2]}"
-            
-            
-            assert(str)shouldBe("3 4\n6 7\n")
+            assert (ae) shouldBe [3, 4]
+            assert (a.hd) shouldBe 3
+            assert (a.tl) shouldBe 4
+            assert (be) shouldBe [6, 7]
+            assert (b.hd) shouldBe 6
+            assert (b.tl) shouldBe 7
         }
 
         method test_098_defobjouter {

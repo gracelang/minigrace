@@ -30,10 +30,10 @@ method m -> Done { //post-comment (sameline) method m
     //Comment on request of print (should not be captured)
 }
 
-//pre-comment one class person.new
-//pre-comment two class person.new
-class person.new(name', age') -> Person {
-   // post-comment on class person.new
+//pre-comment one class person
+//pre-comment two class person
+class person(name', age') -> Person {
+   // post-comment on class person
    def name:String is public = name'
    // post-comment on def name'
    def age:Number is public = age'

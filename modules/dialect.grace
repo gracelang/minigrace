@@ -13,12 +13,12 @@ def CheckerFailure is public = Error.refine("CheckerFailure")
 def MapException = Exception.refine("MapException")
 
 
-class anEntry.from(key') to(value') is confidential {
+class entryFrom(key') to(value') is confidential {
     def key is public = key'
     var value is public := value'
 }
 
-class aMutableMap.empty {
+class aMutableMap {
 
     def entries = []
 
@@ -40,7 +40,7 @@ class aMutableMap.empty {
             }
         }
 
-        entries.push(anEntry.from(key) to(value))
+        entries.push(entryFrom(key) to(value))
     }
 
     method keys -> List {
@@ -113,7 +113,7 @@ class aMutableMap.empty {
 def rules = []
 
 // The cached type assignments.
-def cache = aMutableMap.empty
+def cache = aMutableMap
 
 // Creates a new type rule.
 method rule(block) -> Done {
@@ -168,8 +168,8 @@ method when(pat)error(msg) {
 
 // Scope
 
-class aStack.ofKind(kind : String) is confidential {
-    def stack is public = [aMutableMap.empty]
+class stackOfKind(kind : String) is confidential {
+    def stack is public = [aMutableMap]
 
     method at(name : String) put(value) -> Done {
         stack.last.at(name) put(value)
@@ -191,18 +191,18 @@ class aStack.ofKind(kind : String) is confidential {
 }
 
 def scope is public = object {
-    def variables is public = aStack.ofKind("variable")
-    def methods is public = aStack.ofKind("method")
-    def types is public = aStack.ofKind("type")
+    def variables is public = stackOfKind("variable")
+    def methods is public = stackOfKind("method")
+    def types is public = stackOfKind("type")
 
     method size -> Number {
         variables.stack.size
     }
 
     method enter(bl) {
-        variables.stack.push(aMutableMap.empty)
-        methods.stack.push(aMutableMap.empty)
-        types.stack.push(aMutableMap.empty)
+        variables.stack.push(aMutableMap)
+        methods.stack.push(aMutableMap)
+        types.stack.push(aMutableMap)
 
         def result = bl.apply
 
@@ -256,7 +256,7 @@ method check(nodes) -> Done {
 
 type AstNode = { kind -> String }
 
-class aNodePattern.forKind(kind : String) -> Pattern {
+class aPatternMatchingNode(kind : String) -> Pattern {
     inherits BasicPattern.new
 
     method match(obj : Object) {
@@ -271,39 +271,39 @@ class aNodePattern.forKind(kind : String) -> Pattern {
     }
 }
 
-def If is public = aNodePattern.forKind("if")
-def BlockLiteral is public = aNodePattern.forKind("block")
-def MatchCase is public = aNodePattern.forKind("matchcase")
-def TryCatch is public = aNodePattern.forKind("trycatch")
-def MethodSignature is public = aNodePattern.forKind("methodtype")
-def TypeLiteral is public = aNodePattern.forKind("typeliteral")
-def TypeDeclaration is public = aNodePattern.forKind("typedec")
-def TypeAnnotation is public = aNodePattern.forKind("dtype")
-def Method is public = aNodePattern.forKind("method")
-def Parameter is public = aNodePattern.forKind("parameter")
-def Request is public = aNodePattern.forKind("call")
-def Class is public = aNodePattern.forKind("class")
-def ObjectLiteral is public = aNodePattern.forKind("object")
-def ArrayLiteral is public = aNodePattern.forKind("array")
-def Member is public = aNodePattern.forKind("member")
-def Generic is public = aNodePattern.forKind("generic")
-def Identifier is public = aNodePattern.forKind("identifier")
-def OctetsLiteral is public = aNodePattern.forKind("octets")
-def StringLiteral is public = aNodePattern.forKind("string")
-def NumberLiteral is public = aNodePattern.forKind("num")
-def Operator is public = aNodePattern.forKind("op")
-def Index is public = aNodePattern.forKind("index")
-def Bind is public = aNodePattern.forKind("bind")
-def Def is public = aNodePattern.forKind("defdec")
-def Var is public = aNodePattern.forKind("vardec")
-def Import is public = aNodePattern.forKind("import")
-def Dialect is public = aNodePattern.forKind("dialect")
-def Return is public = aNodePattern.forKind("return")
-def Inherits is public = aNodePattern.forKind("inherits")
+def If is public = aPatternMatchingNode "if"
+def BlockLiteral is public = aPatternMatchingNode "block"
+def MatchCase is public = aPatternMatchingNode "matchcase"
+def TryCatch is public = aPatternMatchingNode "trycatch"
+def MethodSignature is public = aPatternMatchingNode "methodtype"
+def TypeLiteral is public = aPatternMatchingNode "typeliteral"
+def TypeDeclaration is public = aPatternMatchingNode "typedec"
+def TypeAnnotation is public = aPatternMatchingNode "dtype"
+def Method is public = aPatternMatchingNode "method"
+def Parameter is public = aPatternMatchingNode "parameter"
+def Request is public = aPatternMatchingNode "call"
+def Class is public = aPatternMatchingNode "class"
+def ObjectLiteral is public = aPatternMatchingNode "object"
+def ArrayLiteral is public = aPatternMatchingNode "array"
+def Member is public = aPatternMatchingNode "member"
+def Generic is public = aPatternMatchingNode "generic"
+def Identifier is public = aPatternMatchingNode "identifier"
+def OctetsLiteral is public = aPatternMatchingNode "octets"
+def StringLiteral is public = aPatternMatchingNode "string"
+def NumberLiteral is public = aPatternMatchingNode "num"
+def Operator is public = aPatternMatchingNode "op"
+def Index is public = aPatternMatchingNode "index"
+def Bind is public = aPatternMatchingNode "bind"
+def Def is public = aPatternMatchingNode "defdec"
+def Var is public = aPatternMatchingNode "vardec"
+def Import is public = aPatternMatchingNode "import"
+def Dialect is public = aPatternMatchingNode "dialect"
+def Return is public = aPatternMatchingNode "return"
+def Inherits is public = aPatternMatchingNode "inherits"
 
 // Special requests patterns.
 
-class aRequestPattern.forName(name : String) -> Pattern {
+class patternMatchingRequestOf(name : String) -> Pattern {
     inherits prelude.BasicPattern.new
 
     method match(obj : Object) {
@@ -324,7 +324,7 @@ class aRequestPattern.forName(name : String) -> Pattern {
 }
 
 def While is public = object {
-    inherits aRequestPattern.forName("while()do")
+    inherits patternMatchingRequestOf("while()do")
 
     method makeBindings(node) -> List is override {
         def sig = node.with
@@ -333,7 +333,7 @@ def While is public = object {
 }
 
 def For is public = object {
-    inherits aRequestPattern.forName("for()do")
+    inherits patternMatchingRequestOf "for()do"
 
     method makeBindings(node) -> List is override {
         [node.with[1].args[1], node.with[2].args[1]]
@@ -520,18 +520,22 @@ def astVisitor = object {
 
 }
 
-class aTypeAnnotation.fromNode(node) -> TypeAnnotation is confidential {
-    def kind is public = "dtype"
-    def value is public = node
-    def line is public = node.line
-    def linePos is public = node.linePos
+def aTypeAnnotation is confidential = object {
+    class fromNode(node) -> TypeAnnotation {
+        def kind is public = "dtype"
+        def value is public = node
+        def line is public = node.line
+        def linePos is public = node.linePos
+    }
 }
 
-class aParameter.fromNode(node) -> Parameter is confidential {
-    def kind is public = "parameter"
-    def value is public = node.value
-    def dtype is public = node.dtype
-    def line is public = node.line
-    def linePos is public = node.linePos
+def aParameter is confidential = object {
+    class fromNode(node) -> Parameter {
+        def kind is public = "parameter"
+        def value is public = node.value
+        def dtype is public = node.dtype
+        def line is public = node.line
+        def linePos is public = node.linePos
+    }
 }
 

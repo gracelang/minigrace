@@ -46,7 +46,7 @@ type MixPart = {
     parameters -> List<Param>
 }
 
-class aMixPart.withName(name' : String)
+class mixPartNamed(name' : String)
         parameters(parameters' : List<Param>) -> MixPart {
     def name : String is public = name'
     def parameters : List<Param> is public = parameters'
@@ -125,7 +125,7 @@ def aMethodType = object {
     }
 
     method member(name : String) ofType(rType : ObjectType) -> MethodType {
-        signature([aMixPart.withName(name) parameters([])]) returnType(rType)
+        signature([mixPartNamed(name) parameters([])]) returnType(rType)
     }
 
     method fromNode(node) -> MethodType {
@@ -140,7 +140,7 @@ def aMethodType = object {
                         ofType(anObjectType.fromDType(param.dtype)))
                 }
 
-                signature.push(aMixPart.withName(part.name) parameters(params))
+                signature.push(mixPartNamed(part.name) parameters(params))
             }
 
             def rType = match(meth) case { m : Method | Class ->
@@ -152,7 +152,7 @@ def aMethodType = object {
             return signature(signature)
                 returnType(anObjectType.fromDType(rType))
         } case { defd : Def | Var ->
-            def signature = [aMixPart.withName(defd.name.value) parameters([])]
+            def signature = [mixPartNamed(defd.name.value) parameters([])]
             def dtype = anObjectType.fromDType(defd.dtype)
             return signature(signature) returnType(dtype)
         } case { _ ->
@@ -455,7 +455,7 @@ def anObjectType = object {
 
     method blockTaking(params : List<Parameter>)
             returning(rType : ObjectType) -> ObjectType {
-        def signature = [aMixPart.withName("apply") parameters(params)]
+        def signature = [mixPartNamed("apply") parameters(params)]
         def meths = [aMethodType.signature(signature) returnType(rType)]
 
         fromMethods(meths) withName("Block")
@@ -467,7 +467,7 @@ def anObjectType = object {
 
     method addTo(oType : ObjectType) name(name' : String)
             returns(rType : ObjectType) -> Done is confidential {
-        def signature = [aMixPart.withName(name') parameters([])]
+        def signature = [mixPartNamed(name') parameters([])]
         oType.methods.push(aMethodType.signature(signature) returnType(rType))
     }
 
@@ -479,7 +479,7 @@ def anObjectType = object {
             parameters.push(aParam.ofType(ptype))
         }
 
-        def signature = [aMixPart.withName(name') parameters(parameters)]
+        def signature = [mixPartNamed(name') parameters(parameters)]
 
         oType.methods.push(aMethodType.signature(signature) returnType(rType))
     }
@@ -1023,7 +1023,7 @@ rule { defd : Def | Var ->
             if(defd.kind == "vardec") then {
                 def name' = name ++ ":="
                 def param = aParam.withName(name) ofType(defType)
-                def sig = [aMixPart.withName(name') parameters([param])]
+                def sig = [mixPartNamed(name') parameters([param])]
 
                 scope.methods.at(name')
                     put(aMethodType.signature(sig) returnType(anObjectType.done))

@@ -10,8 +10,8 @@ import "util" as util
 // the array is modified, the internal lines array is updated.
 // There is no sorting of the order of the lines at any point, so
 // lines must be added in ascending order.
-class suggestion.new() {
-
+def suggestion is public = object {
+  class new {
     def lineNumbers is confidential = []
     def lines is confidential = []
 
@@ -274,6 +274,7 @@ class suggestion.new() {
             }
         }
     }
+  }
 }
 
 method dameraulevenshtein(s, t) {

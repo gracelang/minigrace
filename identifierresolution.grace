@@ -1007,7 +1007,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             surroundingScope.addNode(ident) as(k.methdec)
             ident.isDeclaredByParent := true
             o.scope := newScopeIn(surroundingScope) kind "method"
-            if (o.returnsObject) then { 
+            if (o.returnsObject) then {
                 o.isFresh := true
             }
             true

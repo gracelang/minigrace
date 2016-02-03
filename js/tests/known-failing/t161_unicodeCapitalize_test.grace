@@ -1,30 +1,32 @@
 import "gUnit" as gU
 import "unicode" as unicode
 
-class stringTest.forMethod(m) {
-    inherits gU.testCaseNamed(m)
-    
-    def sharpS = "ß"
-    def capitalSharpS = unicode.create(0x1E9E)
-    def pileOfPoo = "💩"
+def stringTest = object {
+    class forMethod(m) {
+        inherits gU.testCaseNamed(m)
+        
+        def sharpS = "ß"
+        def capitalSharpS = unicode.create(0x1E9E)
+        def pileOfPoo = "💩"
 
-    method testStringToUpperSS {
-        assert (sharpS.toUpper) shouldBe (capitalSharpS)
-    }
-    
-    method testStringSizeSS {
-        assert (capitalSharpS.size) shouldBe 1
-    }
-    
-    method testStringSizePile {
-        assert (pileOfPoo.size) shouldBe 1
+        method testStringToUpperSS {
+            assert (sharpS.asUpper) shouldBe (capitalSharpS)
+        }
+        
+        method testStringSizeSS {
+            assert (capitalSharpS.size) shouldBe 1
+        }
+        
+        method testStringSizePile {
+            assert (pileOfPoo.size) shouldBe 1
+        }
     }
 }
 
 gU.testSuite.fromTestMethodsIn(stringTest).runAndPrintResults
 
 // This fails because the underlying support for unicode in Javascript is 
-// broken.  In particular,  .toUpper method in string turns "ß" into "SS" 
+// broken.  In particular,  .asUpper method in string turns "ß" into "SS" 
 // rather than capital "ẞ", which has been part of the Unicode standard
 // since 2008.
 //

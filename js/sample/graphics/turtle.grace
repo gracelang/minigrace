@@ -6,15 +6,15 @@ var canvas
 var ctx
 var trig
 
-class colour.r(r')g(g')b(b') {
+class r(r')g(g')b(b') {
     def r is readable = r'
     def g is readable = g'
     def b is readable = b'
 }
-def black = colour.r 0 g 0 b 0
-def blue = colour.r 0 g 0 b 255
-def green = colour.r 0 g 255 b 0
-def red = colour.r 255 g 0 b 0
+def black = r 0 g 0 b 0
+def blue = r 0 g 0 b 255
+def green = r 0 g 255 b 0
+def red = r 255 g 0 b 0
 
 var x := 150
 var y := 225
@@ -29,22 +29,20 @@ def steps = list.empty
 // Each discrete movement command is a stage
 def stages = list.empty
 
-def PI = 3.14159
-
 method drawTurtle(angle) {
     initialise
     def mctx = canvas.getContext("2d")
     def triangleSize = 30
-    def x' = x + trig.sin(angle / 180 * PI) * triangleSize / 2
-    def y' = y - trig.cos(angle / 180 * PI) * triangleSize / 2
+    def x' = x + trig.sin(angle / 180 * π) * triangleSize / 2
+    def y' = y - trig.cos(angle / 180 * π) * triangleSize / 2
     mctx.beginPath
     mctx.fillStyle := "rgb(0, 128, 0)"
     mctx.lineWidth := 3
     mctx.moveTo(x', y')
-    mctx.lineTo(x' - trig.cos((angle - 75) / 180 * PI) * triangleSize,
-              y' - trig.sin((angle - 75) / 180 * PI) * triangleSize)
-    mctx.lineTo(x' + trig.cos((angle + 75) / 180 * PI) * triangleSize,
-              y' + trig.sin((angle + 75) / 180 * PI) * triangleSize)
+    mctx.lineTo(x' - trig.cos((angle - 75) / 180 * π) * triangleSize,
+              y' - trig.sin((angle - 75) / 180 * π) * triangleSize)
+    mctx.lineTo(x' + trig.cos((angle + 75) / 180 * π) * triangleSize,
+              y' + trig.sin((angle + 75) / 180 * π) * triangleSize)
     mctx.lineTo(x', y')
     mctx.fill
     mctx.closePath
@@ -56,8 +54,8 @@ var drawingEnabled := true
 method move(dist, lineCol, lineWidth) {
     initialise
     def angle = turtleAngle
-    def y' = trig.cos(angle / 180 * PI) * dist
-    def x' = trig.sin(angle / 180 * PI) * dist
+    def y' = trig.cos(angle / 180 * π) * dist
+    def x' = trig.sin(angle / 180 * π) * dist
     def startX = x
     def startY = y
     def startAngle = turtleAngle
@@ -68,8 +66,8 @@ method move(dist, lineCol, lineWidth) {
     // One frame for each unit of distance
     for (1..dist) do {i->
         steps.push {
-            def y'' = trig.cos(angle / 180 * PI) * i
-            def x'' = trig.sin(angle / 180 * PI) * i
+            def y'' = trig.cos(angle / 180 * π) * i
+            def x'' = trig.sin(angle / 180 * π) * i
             mctx.beginPath
             mctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
             mctx.lineWidth := lineWidth
@@ -84,8 +82,8 @@ method move(dist, lineCol, lineWidth) {
         }
     }
     steps.push {
-        def y'' = trig.cos(angle / 180 * PI) * dist
-        def x'' = trig.sin(angle / 180 * PI) * dist
+        def y'' = trig.cos(angle / 180 * π) * dist
+        def x'' = trig.sin(angle / 180 * π) * dist
         ctx.beginPath
         ctx.strokeStyle := "rgb({lineCol.r}, {lineCol.g}, {lineCol.b})"
         ctx.lineWidth := lineWidth

@@ -1,4 +1,4 @@
-class equalityTest.trait {
+class equalityTest {
     method ==(other) {
         { print "    about to return false"
           return false
@@ -10,8 +10,8 @@ class equalityTest.trait {
 
 method values {
     object {
-        inherits equalityTest.trait
-// To reveal the issue, it's important that the == method that requests == on super.
+        inherits equalityTest
+// To reveal the issue, it's important that the == method requests == on super.
         method ==(other) {
             print "requesting super =="
             def result = (super == other)

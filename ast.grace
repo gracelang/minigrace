@@ -35,13 +35,13 @@ method maybeListMap(n, b) ancestors(as) is confidential {
 }
 
 def ancestorChain = object {
-    factory method empty {
+    class empty {
         method isEmpty { true }
         method asString { "ancestorChain ▫" }
         method extend(n) { cons(n) onto(self) }
     }
     method with(n) { empty.extend(n) }
-    factory method cons(p) onto(as) is confidential {
+    class cons(p) onto(as) is confidential {
         method forebears { as }
         method isEmpty { false }
         method parent { p }
@@ -82,7 +82,7 @@ type AstNode = type {
 
 type SymbolTable = Unknown
 
-class baseNode.new {
+class baseNode {
     // the superclass of all AST nodes
     var register is public := ""
     var line is public := util.linenum
@@ -175,7 +175,7 @@ class baseNode.new {
 }
 
 def nullNode is public = object {
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "null"
     method toGrace(depth) {
         "// null"
@@ -197,8 +197,9 @@ def fakeSymbolTable = object {
     method variety { "fake" }
 }
 
-class ifNode.new(cond, thenblock', elseblock') {
-    inherits baseNode.new
+def ifNode is public = object {
+  class new(cond, thenblock', elseblock') {
+    inherits baseNode
     def kind is public = "if"
     var value is public := cond
     var thenblock is public := thenblock'
@@ -271,9 +272,11 @@ class ifNode.new(cond, thenblock', elseblock') {
         handledIdentifiers := other.handledIdentifiers
         self
     }
+  }
 }
-class blockNode.new(params', body') {
-    inherits baseNode.new
+def blockNode is public = object {
+  class new(params', body') {
+    inherits baseNode
     def kind is public = "block"
     def value is public = "block"
     var params is public := params'
@@ -385,9 +388,11 @@ class blockNode.new(params', body') {
         extraRuntimeData := other.extraRuntimeData
         self
     }
+  }
 }
-class tryCatchNode.new(block, cases', finally') {
-    inherits baseNode.new
+def tryCatchNode is public = object {
+  class new(block, cases', finally') {
+    inherits baseNode
     def kind is public = "trycatch"
     var value is public := block
     var cases is public := cases'
@@ -446,9 +451,11 @@ class tryCatchNode.new(block, cases', finally') {
     method shallowCopy {
         tryCatchNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class matchCaseNode.new(matchee', cases', elsecase') {
-    inherits baseNode.new
+def matchCaseNode is public = object {
+  class new(matchee', cases', elsecase') {
+    inherits baseNode
     def kind is public = "matchcase"
     var value is public := matchee'
     var cases is public := cases'
@@ -507,8 +514,10 @@ class matchCaseNode.new(matchee', cases', elsecase') {
     method shallowCopy {
         matchCaseNode.new(nullNode, emptySeq, false).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class methodTypeNode.new(name', signature', rtype') {
+def methodTypeNode is public = object {
+  class new(name', signature', rtype') {
     // Represents the signature of a method in a type literal
     // [signature]
     //     object {
@@ -525,7 +534,7 @@ class methodTypeNode.new(name', signature', rtype') {
     //     object {
     //         ...
     //     }
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "methodtype"
     var value is public := name'
     var signature is public := signature'
@@ -621,9 +630,11 @@ class methodTypeNode.new(name', signature', rtype') {
     method shallowCopy {
         methodTypeNode.new(value, emptySeq, false).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class typeLiteralNode.new(methods', types') {
-    inherits baseNode.new
+def typeLiteralNode is public = object {
+  class new(methods', types') {
+    inherits baseNode
     def kind is public = "typeliteral"
     var methods is public := methods'
     var types is public := types'
@@ -701,10 +712,12 @@ class typeLiteralNode.new(methods', types') {
         value := other.value
         self
     }
+  }
 }
 
-class typeDecNode.new(name', typeValue) {
-    inherits baseNode.new
+def typeDecNode is public = object {
+  class new(name', typeValue) {
+    inherits baseNode
     def kind is public = "typedec"
     var name is public := name'
     var value is public := typeValue
@@ -780,6 +793,7 @@ class typeDecNode.new(name', typeValue) {
     method shallowCopy {
         typeDecNode.new(name, nullNode).shallowCopyFieldsFrom(self)
     }
+  }
 }
 
 def methodNode = object {
@@ -789,14 +803,14 @@ def methodNode = object {
         result
     }
     
-    factory method new(name', signature', body', dtype') {
+    class new(name', signature', body', dtype') {
         // Represents a method declaration
         // name' is the name of the method (an identifierNode),
         // signature is a sequence of signatureParts,
         // body is a sequence of statements and declarations,
         // dtype is the declared return type of the method, or false.
 
-        inherits baseNode.new
+        inherits baseNode
         def kind is public = "method"
         var value is public := name'
         var signature is public := signature'
@@ -982,7 +996,7 @@ def callNode = object {
         result.scope := s
         result
     }
-    factory method new(what, with') {
+    class new(what, with') {
         // requested as callNode.new(target:AstNode, parts:List)
         // Represents a method request with arguments.
         // The ‹target›.‹methodName› part is in `value`
@@ -1000,7 +1014,7 @@ def callNode = object {
         //     object {
         //         ...
         //     }
-        inherits baseNode.new
+        inherits baseNode
         def kind is public = "call"
         var value is public := what        // method being requested
         var with is public := with'        // arguments
@@ -1122,7 +1136,8 @@ def callNode = object {
         }
     }
 }
-class classNode.new(name', signature', body', superclass', constructor', dtype') {
+def classNode is public = object {
+  class new(name', signature', body', superclass', constructor', dtype') {
     // TODO  remove superclass as a parameter
     // [signature]
     //     object {
@@ -1139,7 +1154,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
     //     object {
     //         ...
     //     }
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "class"
     var value is public := body'
     var name is public := name'
@@ -1315,6 +1330,7 @@ class classNode.new(name', signature', body', superclass', constructor', dtype')
         super.shallowCopyFieldsFrom(other)
         self
     }
+  }
 }
 def moduleNode = object {
     method body(b) named(n) scope(s) {
@@ -1328,7 +1344,7 @@ def moduleNode = object {
         result.name := n
         result
     }
-    factory method body(b) {
+    class body(b) {
         inherits objectNode.new(b, false)
         def kind is public = "module"
         line := 0       // because the module is always implicit
@@ -1368,9 +1384,9 @@ def objectNode = object {
     method body(b) named(n) {
         body(b) named(n) scope(fakeSymbolTable)
     }
-    factory method new(body, superclass') {
+    class new(body, superclass') {
         // TODO  remove superclass as a parameter
-        inherits baseNode.new
+        inherits baseNode
         def kind is public = "object"
         var value is public := body
         var superclass is public := superclass'
@@ -1457,8 +1473,9 @@ def objectNode = object {
         }
     }
 }
-class arrayNode.new(values) {
-    inherits baseNode.new
+def arrayNode is public = object {
+  class new(values) {
+    inherits baseNode
     def kind is public = "array"
     var value is public := values
     method accept(visitor : ASTVisitor) from(as) {
@@ -1500,6 +1517,7 @@ class arrayNode.new(values) {
     method shallowCopy {
         arrayNode.new(emptySeq).shallowCopyFieldsFrom(self)
     }
+  }
 }
 def memberNode = object {
     method new(request, receiver) scope(s) {
@@ -1507,9 +1525,9 @@ def memberNode = object {
         result.scope := s
         result
     }
-    factory method new(request, receiver) {
+    class new(request, receiver) {
         // Represents a dotted request ‹receiver›.‹request›
-        inherits baseNode.new
+        inherits baseNode
         def kind is public = "member"
         var value is public := request  // NB: value is a String, not an Identifier
         var in is public := receiver
@@ -1580,9 +1598,10 @@ def memberNode = object {
         }
     }
 }
-class genericNode.new(base, arguments) {
+def genericNode is public = object {
+  class new(base, arguments) {
     // represents an application of a parameterized type to some arguments.
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "generic"
     var value is public := base        
         // in a generic application, `value` is the applied type
@@ -1621,10 +1640,12 @@ class genericNode.new(base, arguments) {
     method shallowCopy {
         genericNode.new(value, args).shallowCopyFieldsFrom(self)
     }
+  }
 }
 
-class typeParametersNode.new(params') {
-    inherits baseNode.new
+def typeParametersNode is public = object {
+  class new(params') {
+    inherits baseNode
     def kind is public = "typeparams"
     var params is public := params'
     method asString { toGrace 0 }
@@ -1667,6 +1688,7 @@ class typeParametersNode.new(params') {
     method shallowCopy {
         typeParametersNode.new(emptySeq).shallowCopyFieldsFrom(self)
     }
+  }
 }
 def identifierNode = object {
 
@@ -1676,8 +1698,8 @@ def identifierNode = object {
         result
     }
 
-    factory method new(name, dtype') {
-        inherits baseNode.new
+    class new(name, dtype') {
+        inherits baseNode
         def kind is public = "identifier"
         var value is public := name
         var wildcard is public := false
@@ -1803,8 +1825,8 @@ def stringNode = object {
         result
     }
 
-    factory method new(v) {
-        inherits baseNode.new
+    class new(v) {
+        inherits baseNode
         def kind is public = "string"
         var value is public := v
         method accept(visitor : ASTVisitor) from(as) {
@@ -1827,8 +1849,9 @@ def stringNode = object {
         }
     }
 }
-class numNode.new(val) {
-    inherits baseNode.new
+def numNode is public = object {
+  class new(val) {
+    inherits baseNode
     def kind is public = "num"
     var value is public := val
     method accept(visitor : ASTVisitor) from(as) {
@@ -1849,9 +1872,11 @@ class numNode.new(val) {
     method shallowCopy {
         numNode.new(value).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class opNode.new(op, l, r) {
-    inherits baseNode.new
+def opNode is public = object {
+  class new(op, l, r) {
+    inherits baseNode
     def kind is public = "op"
     def value is public = op     // a String
     var left is public := l
@@ -1914,10 +1939,12 @@ class opNode.new(op, l, r) {
     method shallowCopy {
         opNode.new(value, nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class indexNode.new(expr, index') {
+def indexNode is public = object {
+  class new(expr, index') {
     // an expression in square brackets
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "index"
     var value is public := expr
     var index is public := index'
@@ -1959,10 +1986,12 @@ class indexNode.new(expr, index') {
     method shallowCopy {
         indexNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class bindNode.new(dest', val') {
+def bindNode is public = object {
+  class new(dest', val') {
     // an assignment, or a request of a setter-method
-    inherits baseNode.new
+    inherits baseNode
     def kind is public = "bind"
     var dest is public := dest'
     var value is public := val'
@@ -2006,6 +2035,7 @@ class bindNode.new(dest', val') {
     method shallowCopy {
         bindNode.new(dest, value).shallowCopyFieldsFrom(self)
     }
+  }
 }
 def defDecNode = object {
     method new(name', val, dtype') scope(s) {
@@ -2014,8 +2044,8 @@ def defDecNode = object {
         result
     }
 
-    factory method new(name', val, dtype') {
-        inherits baseNode.new
+    class new(name', val, dtype') {
+        inherits baseNode
         def kind is public = "defdec"
         var name is public := name'
         var value is public := val
@@ -2124,8 +2154,9 @@ def defDecNode = object {
         }
     }
 }
-class varDecNode.new(name', val', dtype') {
-    inherits baseNode.new
+def varDecNode is public = object {
+  class new(name', val', dtype') {
+    inherits baseNode
     def kind is public = "vardec"
     var name is public := name'
     var value is public := val'
@@ -2225,9 +2256,11 @@ class varDecNode.new(name', val', dtype') {
     method shallowCopy {
         varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class importNode.new(path', name', dtype') {
-    inherits baseNode.new
+def importNode is public = object {
+  class new(path', name', dtype') {
+    inherits baseNode
     def kind is public = "import"
     var value is public := name'
     var path is public := path'
@@ -2298,9 +2331,11 @@ class importNode.new(path', name', dtype') {
     method shallowCopy {
         importNode.new(path, nullNode, false).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class dialectNode.new(path') {
-    inherits baseNode.new
+def dialectNode is public = object {
+  class new(path') {
+    inherits baseNode
     def kind is public = "dialect"
     var value is public := path'
     
@@ -2342,9 +2377,11 @@ class dialectNode.new(path') {
     method shallowCopy {
         dialectNode.new(value).shallowCopyFieldsFrom(self)
     }
+  }
 }
-class returnNode.new(expr) {
-    inherits baseNode.new
+def returnNode is public = object {
+  class new(expr) {
+    inherits baseNode
     def kind is public = "return"
     var value is public := expr
 
@@ -2375,6 +2412,7 @@ class returnNode.new(expr) {
     method shallowCopy {
         returnNode.new(nullNode).shallowCopyFieldsFrom(self)
     }
+  }
 }
 def inheritsNode = object {
     method new(expr) scope(s) {
@@ -2382,8 +2420,8 @@ def inheritsNode = object {
         result.scope := s
         result
     }
-    factory method new(expr) {
-        inherits baseNode.new
+    class new(expr) {
+        inherits baseNode
         def kind is public = "inherits"
         var value is public := expr
         var providedNames is public := list.empty
@@ -2468,24 +2506,26 @@ class aliasNew(n) old(o) {
             case { _ -> false }
     }
 }
-class blankNode.new {
-    inherits baseNode.new
-    def kind is public = "blank"
-    def value is public = "blank"
-    
-    method accept(visitor : ASTVisitor) from(as) {
-        visitor.visitBlank(self) up(as)
-    }
-    method map(blk) ancestors(as) {
-        var n := shallowCopy
-        def newChain = as.extend(n)
-        blk.apply(n, as)
-    }
-    method nameString { "" }
-    method asString { "blank" }
-    method toGrace(depth : Number) -> String { "" }
-    method shallowCopy {
-        blankNode.new.shallowCopyFieldsFrom(self)
+def blankNode is public = object {
+    class new {
+        inherits baseNode
+        def kind is public = "blank"
+        def value is public = "blank"
+
+        method accept(visitor : ASTVisitor) from(as) {
+            visitor.visitBlank(self) up(as)
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            blk.apply(n, as)
+        }
+        method nameString { "" }
+        method asString { "blank" }
+        method toGrace(depth : Number) -> String { "" }
+        method shallowCopy {
+            blankNode.new.shallowCopyFieldsFrom(self)
+        }
     }
 }
 def signaturePart = object {
@@ -2513,8 +2553,8 @@ def signaturePart = object {
     method partName(n) params(ps) {
         partName(n) params(ps) variableParam(false)
     }
-    factory method partName(n) params(ps) variableParam(v) {
-        inherits baseNode.new
+    class partName(n) params(ps) variableParam(v) {
+        inherits baseNode
         def kind is public = "signaturepart"
         var name is public := n
         var params is public := ps
@@ -2585,8 +2625,8 @@ def callWithPart = object {
         result.scope := s
         result
     }
-    factory method request(rPart:String) withArgs(xs) {
-        inherits baseNode.new
+    class request(rPart:String) withArgs(xs) {
+        inherits baseNode
         def kind is public = "callwithpart"
         var name is public := rPart
         var args is public := xs
@@ -2622,8 +2662,8 @@ def callWithPart = object {
 }
 
 def commentNode = object {
-    factory method new(val') {
-        inherits baseNode.new
+    class new(val') {
+        inherits baseNode
         def kind is public = "comment"
         var value:String is public := val'
         var isPartialLine:Boolean is public := false
@@ -2743,7 +2783,7 @@ type ASTVisitor = {
      visitComment(o) up(as) -> Boolean
 }
 
-factory method baseVisitor -> ASTVisitor {
+class baseVisitor -> ASTVisitor {
     method visitIf(o) up(as) { visitIf(o) }
     method visitBlock(o) up(as) { visitBlock(o) }
     method visitMatchCase(o) up(as) { visitMatchCase(o) }
@@ -2811,7 +2851,7 @@ factory method baseVisitor -> ASTVisitor {
     method asString { "an AST visitor" }
 }
 
-factory method pluggableVisitor(visitation:Block2) -> ASTVisitor {
+class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     // Manufactures a default visitor, given a 2-parameter block.
     // Typically, some of the methods will be overridden.
     // The block will be applied with the AST node as the first argument

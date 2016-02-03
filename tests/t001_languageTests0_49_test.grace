@@ -419,30 +419,15 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Value of i: 0\nValue of i: 1\nValue of i: 2\nValue of i: 3\nValue of i: 4\nValue of i: 5\n")
         }
-
-        method test_033_class {
-            class Cat.new(namex : String) {
-             def name : String = namex
-             method purr {out("Purr") }
-             method mew {out("Meow") }
-            }
-            
-            var c := Cat.new("Macavity")
-            
-            c.purr
-            c.mew
-            
-            assert(str)shouldBe("Purr\nMeow\n")
+        
+        class cat(namex : String) {
+            def name : String = namex
+            method purr {out("Purr") }
+            method mew {out("Meow") }
         }
 
-        method test_034_primechar {
-            class Cat.new(name' : String) {
-             def name : String = name'
-             method purr {out("Purr") }
-             method mew {out("Meow") }
-            }
-            
-            var c := Cat.new("Macavity")
+        method test_033_class {
+            var c := cat "Macavity"
             
             c.purr
             c.mew
@@ -573,31 +558,33 @@ def aGraceLangTest = object {
         }
 
         method test_047_inherits {
-            class A.new(v') {
-                var v := v'
-                method foo {
-                    out "A's foo: {self.v}"
+            def obj47 = object {
+                class a(v') {
+                    var v := v'
+                    method foo {
+                        out "a's foo: {self.v}"
+                    }
+                    method baz {
+                        out "a's baz"
+                    }
                 }
-                method baz {
-                    out "A's baz"
-                }
-            }
-            class B.new(x) {
-                inherits A.new(x)
-                method bar {
-                    out "B's bar"
-                }
-                method baz {
-                    out "B's baz"
+                class b(x) {
+                    inherits a(x)
+                    method bar {
+                        out "b's bar"
+                    }
+                    method baz {
+                        out "b's baz"
+                    }
                 }
             }
             
-            var b := B.new("ARGUMENT")
+            var b := obj47.b "ARGUMENT"
             b.foo
             b.bar
             b.baz
             
-            assert(str)shouldBe("A's foo: ARGUMENT\nB's bar\nB's baz\n")
+            assert(str)shouldBe("a's foo: ARGUMENT\nb's bar\nb's baz\n")
         }
 
         method test_048_blockreturn {
