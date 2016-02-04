@@ -1774,7 +1774,7 @@ def identifierNode = object {
             if (false != generics) then {
                 s := s ++ "\n" ++ spc ++ "Generics:"
                 for (generics) do {g->
-                    s := s ++ spc ++ "  " ++ g.pretty(depth + 2)
+                    s := s ++ "\n" ++ spc ++ "  " ++ g.pretty(depth + 2)
                 }
             }
             s
