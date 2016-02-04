@@ -2285,7 +2285,7 @@ method dodialect {
 method inheritsdec {
     // Accept "inherits x.new"
 
-    if (accept("keyword") && (sym.value == "inherits")) then {
+    if (accept("keyword") && ((sym.value == "inherits") || (sym.value == "uses"))) then {
         def btok = sym
         checkIndent
         next
@@ -2302,11 +2302,21 @@ method inheritsdec {
             suggestion := errormessages.suggestion.new
             suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
             suggestions.push(suggestion)
-            errormessages.syntaxError("The inherits keyword must be followed by an expression that creates the object being inherited.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
+            var msg := "The {btok.value} keyword must be followed by an expression that creates "
+            if (btok.value == "inherits") then { 
+                msg := msg ++ "the object being inherited."
+            } else {
+                msg := msg ++ "the trait being used."
+            }
+            errormessages.syntaxError(msg)
+                atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                withSuggestions(suggestions)
         }
         util.setPosition(btok.line, btok.linePos)
         def inhNode = ast.inheritsNode.new(values.pop)
+        if (btok.value == "uses") then {
+            inhNode.isUse := true
+        }
         while { inheritsModifier(inhNode) onLineOf(btok) } do { }
         values.push(inhNode)
     }
@@ -2327,8 +2337,6 @@ method inheritsModifier(node) onLineOf(startToken) {
 }
 
 method acceptAlias(node) {
-    // alias isn't a real keyword, but is treated as one
-    // in this context
     next
     if (acceptMethodName) then {
         def newMeth = values.pop

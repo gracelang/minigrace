@@ -18,6 +18,7 @@ keywords.put("object", true)
 keywords.put("return", true)
 keywords.put("trait", true)
 keywords.put("type", true)
+keywords.put("uses", true)
 keywords.put("var", true)
 
 method padl(s, l, w) {

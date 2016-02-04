@@ -2433,6 +2433,7 @@ def inheritsNode = object {
         var providedNames is public := list.empty
         var aliases is public := list.empty
         var exclusions is public := list.empty
+        var isUse is public := false  // this is a `uses trait` clause, not an inherits
         
         method isInherits { true }
         method inheritsFromMember { value.isMember }
@@ -2454,8 +2455,9 @@ def inheritsNode = object {
             for (0..depth) do { i ->
                 spc := spc ++ "  "
             }
-            var s := super.pretty(depth) ++ "\n"
-            s := s ++ spc ++ self.value.pretty(depth + 1)
+            var s := super.pretty(depth)
+            if (isUse) then { s := "{s} (uses)" }
+            s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
                 s := "{s} {a} "
             }
@@ -2468,7 +2470,8 @@ def inheritsNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := "inherits {self.value.toGrace(0)}"
+            var s := if (isUse) then { "uses " } else { "inherits " }
+            s := s ++ self.value.toGrace(0)
             aliases.do { a ->
                 s := "{s} {a} "
             }
@@ -2492,6 +2495,7 @@ def inheritsNode = object {
             providedNames := other.providedNames
             aliases := other.aliases
             exclusions := other.exclusions
+            isUse := other.isUse
             self
         }
     }
