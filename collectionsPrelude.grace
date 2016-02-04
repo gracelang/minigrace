@@ -172,7 +172,7 @@ type EmptyCollectionFactory<T> = type {
     empty -> Collection<T>
 }
 
-class collectionFactory.trait<T> {
+class collectionFactory.TRAIT<T> {
     method withAll(elts: Iterable<T>) -> Collection<T> { abstract }
     method with(*a:T) -> Unknown { self.withAll(a) }
     method empty -> Unknown { self.with() }
@@ -180,7 +180,7 @@ class collectionFactory.trait<T> {
 
 class lazySequenceOver<T,R>(source: Iterable<T>)
         mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
-    inherits enumerable.trait<T>
+    inherits enumerable.TRAIT<T>
     class iterator {
         def sourceIterator = source.iterator
         method asString { "an iterator over a lazy map sequence" }
@@ -194,7 +194,7 @@ class lazySequenceOver<T,R>(source: Iterable<T>)
 
 class lazySequenceOver<T>(source: Iterable<T>)
         filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
-    inherits enumerable.trait<T>
+    inherits enumerable.TRAIT<T>
     class iterator {
         var cache
         var cacheLoaded := false
@@ -244,7 +244,7 @@ class iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method asString { "an iterator over a concatenation" }
 }
 class lazyConcatenation<T>(left, right) -> Enumerable<T>{
-    inherits enumerable.trait<T>
+    inherits enumerable.TRAIT<T>
     method iterator {
         iteratorConcat(left.iterator, right.iterator)
     }
@@ -253,9 +253,9 @@ class lazyConcatenation<T>(left, right) -> Enumerable<T>{
     method size { left.size + right.size }  // may raise SizeUnknown
 }
 
-class collection.trait<T> {
+class collection.TRAIT<T> {
     
-    method asString { "a collection trait" }
+    method asString { "a collection TRAIT" }
 
     method do { abstract }
     method iterator { abstract }
@@ -315,8 +315,8 @@ class collection.trait<T> {
     }
 }
 
-class enumerable.trait<T> {
-    inherits collection.trait<T>
+class enumerable.TRAIT<T> {
+    inherits collection.TRAIT<T>
     method iterator { abstract }
     method size {
         // override if size is known
@@ -383,8 +383,8 @@ class enumerable.trait<T> {
     }
 }
 
-class indexable.trait<T> {
-    inherits collection.trait<T>
+class indexable.TRAIT<T> {
+    inherits collection.TRAIT<T>
     method at { abstract }
     method size { abstract }
     method isEmpty { size == 0 }
@@ -437,7 +437,7 @@ method max(a,b) is confidential {       // copied from standard prelude
 }
 
 def emptySequence is confidential = object {
-    inherits indexable.trait
+    inherits indexable.TRAIT
     method size { 0 }
     method isEmpty { true }
     method at(n) { BoundsError.raise "index {n} of empty sequence" }
@@ -469,7 +469,7 @@ def emptySequence is confidential = object {
 }
 
 class sequence<T> {
-    inherits collectionFactory.trait<T>
+    inherits collectionFactory.TRAIT<T>
 
     method asString { "a sequence factory" }
 
@@ -519,7 +519,7 @@ class sequence<T> {
         // constructs a sequence from the first sz elements of pArray
 
         object {
-            inherits indexable.trait
+            inherits indexable.TRAIT
             def size is public = sz
             def inner = pArray
 
@@ -633,7 +633,7 @@ method isEqual(left) toIterable(right) {
 }
 
 class list<T> {
-    inherits collectionFactory.trait<T>
+    inherits collectionFactory.TRAIT<T>
     
     method asString { "a list factory" }
 
@@ -641,7 +641,7 @@ class list<T> {
         if (engine == "js") then {
           if (native "js" code ‹var result = (this === superDepth) ? GraceTrue : GraceFalse›) then {
             return object {
-                inherits indexable.trait<T>
+                inherits indexable.TRAIT<T>
 
                 var mods is readable := 0
                 var sz := 0
@@ -913,7 +913,7 @@ class list<T> {
 
         object {
             // the new list object without native code
-            inherits indexable.trait<T>
+            inherits indexable.TRAIT<T>
 
             var mods is readable := 0
             var initialSize
@@ -1168,13 +1168,13 @@ class list<T> {
 }
 
 class set<T> {
-    inherits collectionFactory.trait<T>
+    inherits collectionFactory.TRAIT<T>
 
     method asString { "a set factory" }
 
     method withAll(a: Iterable<T>) -> Set<T> {
         object {
-            inherits collection.trait
+            inherits collection.TRAIT
             var mods is readable := 0
             var initialSize
             try { initialSize := max(a.size * 3 + 1, 8) }
@@ -1476,7 +1476,7 @@ def binding = object {
 }
 
 class dictionary<K,T> {
-    inherits collectionFactory.trait<T>
+    inherits collectionFactory.TRAIT<T>
 
     method asString { "a dictionary factory" }
 
@@ -1484,7 +1484,7 @@ class dictionary<K,T> {
             self.empty.at(k)put(v)
     }
     class withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
-        inherits collection.trait<T>
+        inherits collection.TRAIT<T>
         var mods is readable := 0
         var numBindings := 0
         var inner := _prelude.PrimitiveArray.new(8)
@@ -1686,7 +1686,7 @@ class dictionary<K,T> {
         method keys -> Enumerable<K> {
             def sourceDictionary = self
             object {
-                inherits enumerable.trait<K>
+                inherits enumerable.TRAIT<K>
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     method hasNext { sourceIterator.hasNext }
@@ -1704,7 +1704,7 @@ class dictionary<K,T> {
         method values -> Enumerable<T> {
             def sourceDictionary = self
             object {
-                inherits enumerable.trait<T>
+                inherits enumerable.TRAIT<T>
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     // should be request on outer
@@ -1723,7 +1723,7 @@ class dictionary<K,T> {
         method bindings -> Enumerable<T> {
             def sourceDictionary = self
             object {
-                inherits enumerable.trait<T>
+                inherits enumerable.TRAIT<T>
                 method iterator { sourceDictionary.bindingsIterator }
                 // should be request on outer
                 def size is public = sourceDictionary.size
@@ -1849,7 +1849,7 @@ class dictionary<K,T> {
 class range {
     method from(lower)to(upper) -> Sequence<Number> {
         object {
-            inherits indexable.trait<Number>
+            inherits indexable.TRAIT<Number>
             match (lower)
                 case {_:Number -> }
                 case {_ -> RequestError.raise ("lower bound {lower}" ++
@@ -1956,7 +1956,7 @@ class range {
     }
     method from(upper)downTo(lower) -> Sequence<Number> {
         object {
-            inherits indexable.trait
+            inherits indexable.TRAIT
             match (upper)
                 case {_:Number -> }
                 case {_ -> RequestError.raise ("upper bound {upper}" ++

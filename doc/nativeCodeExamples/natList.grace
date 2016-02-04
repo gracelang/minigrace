@@ -6,10 +6,10 @@
 
 
 factory method list<T> {
-    inherits collections.collectionFactory.trait
+    inherits collections.collectionFactory.TRAIT
 
     factory method withAll(a:Collection<T>) -> List<T> {
-        inherits collections.indexable.trait<T>
+        inherits collections.indexable.TRAIT<T>
         var sz := 0
         var jsArray := native "js" code ‹var result = [];›
         a.do { each ->
@@ -232,7 +232,7 @@ factory method list<T> {
 
         method iterator {
             object {
-                inherits iterable.trait
+                inherits iterable.TRAIT
                 var idx := 1
                 method asDebugString { "{asString}⟪{idx}⟫" }
                 method asString { "aListIterator" }

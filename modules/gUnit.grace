@@ -56,7 +56,7 @@ type TestSuite = TestCase & type {
 
 var numberOfErrorsToRerun is public := 10
 
-class assertion.trait {
+class assertion.TRAIT {
     def AssertionFailure is readable = Exception.refine "AssertionFailure"
     method countOneAssertion { abstract }
     
@@ -164,7 +164,7 @@ class assertion.trait {
 def noArguments = sequence.with(sequence.empty)
 
 factory method testCaseNamed(name') -> TestCase {
-    inherits assertion.trait
+    inherits assertion.TRAIT
 
     def size is public = 1
     var currentResult
@@ -349,9 +349,9 @@ factory method testRecordFor(testName)message(testMsg) {
 }
 
 def testSuite is public = object {
-    inherits collections.collectionFactory.trait
+    inherits collections.collectionFactory.TRAIT
     factory method withAll(initialContents) {
-        inherits collections.enumerable.trait
+        inherits collections.enumerable.TRAIT
         var name is public := ""
         def tests = list.empty
         for (initialContents) do { each -> self.add(each) }
