@@ -16,6 +16,7 @@ keywords.put("is", true)
 keywords.put("method", true)
 keywords.put("object", true)
 keywords.put("return", true)
+keywords.put("trait", true)
 keywords.put("type", true)
 keywords.put("var", true)
 

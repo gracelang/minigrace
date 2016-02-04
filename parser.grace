@@ -2489,85 +2489,88 @@ method doclass {
     //     }
     // }
 
-    if (accept("keyword") && (sym.value == "class")) then {
-        def btok = sym
-        next
-        def localMinIndentLevel = minIndentLevel
-        if(sym.kind != "identifier") then {
-            def suggestions = list.empty
-            if(sym.kind == "lbrace") then {
-                var suggestion := errormessages.suggestion.new
-                suggestion.insert(" «class name».new")afterToken(lastToken)
-                suggestions.push(suggestion)
-                suggestion := errormessages.suggestion.new
-                suggestion.replaceToken(lastToken)with("object")
-                suggestions.push(suggestion)
-            } else {
-                def suggestion = errormessages.suggestion.new
-                suggestion.insert(" «class name».new \{}")afterToken(lastToken)
-                suggestions.push(suggestion)
-            }
-            errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
-        }
-        var objName := false
-        if (tokens.first.kind == "dot") then {
-            pushidentifier // the name of the class object
-            objName := values.pop
-            objName.isBindingOccurrence := true
-            next    // skip over the dot
-        }
-        def s = methodsignature(false)
-        def csig = s.sig
-        def methodName = s.m
-        methodName.isBindingOccurrence := true
-        def dtype = s.rtype
-        def anns = doannotation
-        if (!accept("lbrace")) then {
+    def btok = sym
+    next
+    def localMinIndentLevel = minIndentLevel
+    if(sym.kind != "identifier") then {
+        def suggestions = list.empty
+        if(sym.kind == "lbrace") then {
+            var suggestion := errormessages.suggestion.new
+            suggestion.insert(" «class name».new")afterToken(lastToken)
+            suggestions.push(suggestion)
+            suggestion := errormessages.suggestion.new
+            suggestion.replaceToken(lastToken)with("object")
+            suggestions.push(suggestion)
+        } else {
             def suggestion = errormessages.suggestion.new
-            suggestion.insert(" \{")afterToken(lastToken)
-            errormessages.syntaxError("A class must have a '\{' after the method name.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
+            suggestion.insert(" «class name».new \{}")afterToken(lastToken)
+            suggestions.push(suggestion)
         }
-        next
-        if (sym.line == statementToken.line) then {
-            minIndentLevel := sym.linePos - 1
-        } else {
-            minIndentLevel := statementToken.indent + 1
-        }
-        def body = []
-        while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
-            ifConsume {methoddec} then {
-                body.push(values.pop)
-            }
-            ifConsume {inheritsdec} then {
-                body.push(values.pop)
-            }
-            ifConsume {statement} then {
-                body.push(values.pop)
-            }
-        }
-        next
-        util.setline(btok.line)
-        def o = if (false == objName) then {
-            ast.methodNode.new(methodName, csig,
-                [ast.objectNode.body(body) named(methodName.nameString)], dtype)
-        } else {
-            ast.classNode.new(objName, csig, body, false, methodName, dtype)
-        }
-        o.typeParams := s.typeParams
-        if (false != anns) then {
-            o.annotations.addAll(anns)
-        } else {
-            if (defaultMethodVisibility == "confidential") then {
-                o.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
-        values.push(o)
-        reconcileComments
-        minIndentLevel := localMinIndentLevel
+        errormessages.syntaxError("A class must have a name after the 'class'.")atPosition(
+            lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
     }
+    var objName := false
+    if (tokens.first.kind == "dot") then {
+        pushidentifier // the name of the class object
+        objName := values.pop
+        objName.isBindingOccurrence := true
+        next    // skip over the dot
+    }
+    def s = methodsignature(false)
+    def csig = s.sig
+    def methodName = s.m
+    methodName.isBindingOccurrence := true
+    def dtype = s.rtype
+    def anns = doannotation
+    if (!accept("lbrace")) then {
+        def suggestion = errormessages.suggestion.new
+        suggestion.insert(" \{")afterToken(lastToken)
+        errormessages.syntaxError("A class must have a '\{' after the method name.")atPosition(
+            lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
+    }
+    next
+    if (sym.line == statementToken.line) then {
+        minIndentLevel := sym.linePos - 1
+    } else {
+        minIndentLevel := statementToken.indent + 1
+    }
+    def body = []
+    while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
+        ifConsume {methoddec} then {
+            body.push(values.pop)
+        }
+        ifConsume {inheritsdec} then {
+            body.push(values.pop)
+        }
+        ifConsume {statement} then {
+            body.push(values.pop)
+        }
+    }
+    next
+    util.setline(btok.line)
+    def o = if (false == objName) then {
+        def objNode = ast.objectNode.body(body) named(methodName.nameString)
+        if (btok.value == "class") then {
+            objNode.inClass := true
+        } elseif { btok.value == "trait" } then {
+            objNode.inTrait := true
+        }
+        ast.methodNode.new(methodName, csig, [objNode], dtype)
+    } else {
+        ast.classNode.new(objName, csig, body, false, methodName, dtype)
+    }
+    o.typeParams := s.typeParams
+    if (false != anns) then {
+        o.annotations.addAll(anns)
+    } else {
+        if (defaultMethodVisibility == "confidential") then {
+            o.annotations.push(ast.identifierNode.new("confidential",
+                false))
+        }
+    }
+    values.push(o)
+    reconcileComments
+    minIndentLevel := localMinIndentLevel
 }
 
 // Accept a factory method declaration
@@ -3290,6 +3293,8 @@ method statement {
         } elseif { sym.value == "type" } then {
             typedec
         } elseif { sym.value == "class" } then {
+            doclass
+        } elseif { sym.value == "trait" } then {
             doclass
         } elseif { sym.value == "factory" } then {
             dofactoryMethod

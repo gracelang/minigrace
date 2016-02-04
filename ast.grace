@@ -1391,6 +1391,8 @@ def objectNode = object {
         var value is public := body
         var superclass is public := superclass'
         var name is public := "object"
+        var inClass is public := false
+        var inTrait is public := false
 
         method scope:=(st) {
             // sets up the 2-way conection between this node
@@ -1435,6 +1437,8 @@ def objectNode = object {
             }
             var s := super.pretty(depth)
             s := "{s}\n{spc}Name: {self.name}"
+            if (inTrait) then { s := s ++ " (trait)" }
+            if (inClass) then { s := s ++ " (class)" }
             if (self.superclass != false) then {
                 s := s ++ "\n" ++ spc ++ "Superclass:"
                 s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
@@ -1452,6 +1456,8 @@ def objectNode = object {
                 spc := spc ++ "    "
             }
             var s := "object \{"
+            if (inTrait) then { s := s ++ "   // trait" }
+            if (inClass) then { s := s ++ "   // class" }
             for (self.value) do { x ->
                 s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
             }
