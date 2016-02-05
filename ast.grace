@@ -95,7 +95,9 @@ class baseNode {
     method isMatchingBlock { false }
     method isFieldDec { false }
     method isInherits { false }
+    method isLegalInTrait { false }
     method isMember { false }
+    method isMethod { false }
     method isCall { false }
     method isComment { false }
     method isClass { false }
@@ -104,7 +106,8 @@ class baseNode {
     method isIdentifier { false }
     method isDialect { false }
     method isImport { false }
-    method canInherit {true }
+    method isTypeDec { false }
+    method canInherit { false }
     method returnsObject { false }
     method usesAsType(aNode) { false }
     method hash { line.hash * linePos.hash }
@@ -172,6 +175,7 @@ class baseNode {
     method addComments(cmtNodeList) {
         cmtNodeList.do { each -> addComment(each) }
     }
+    method statementName { kind }
 }
 
 def nullNode is public = object {
@@ -725,6 +729,8 @@ def typeDecNode is public = object {
     var annotations is public := list.empty
     var typeParams is public := false
 
+    method isLegalInTrait { true }
+    method isTypeDec { true }
     method scope:=(st) {
         // sets up the 2-way conection between this node
         // and the synmol table that defines the scope that I open.
@@ -823,6 +829,8 @@ def methodNode = object {
         var annotations is public := list.empty
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
 
+        method isMethod { true }
+        method isLegalInTrait { true }
         method isFreshMethod { isFresh }
         method scope:=(st) {
             // sets up the 2-way conection between this node
@@ -1134,6 +1142,7 @@ def callNode = object {
             isPattern := other.isPattern
             self
         }
+        method statementName { "request" }
     }
 }
 def classNode is public = object {
@@ -1173,7 +1182,7 @@ def classNode is public = object {
         symbolTable := st
         st.node := self
     }
-    method canInherit {true }
+    method canInherit { true }
     method returnsObject { true }
     method returnedObjectScope { scope }
 
@@ -1384,11 +1393,11 @@ def objectNode = object {
     method body(b) named(n) {
         body(b) named(n) scope(fakeSymbolTable)
     }
-    class new(body, superclass') {
+    class new(b, superclass') {
         // TODO  remove superclass as a parameter
         inherits baseNode
         def kind is public = "object"
-        var value is public := body
+        var value is public := b
         var superclass is public := superclass'
         var name is public := "object"
         var inClass is public := false
@@ -1400,9 +1409,10 @@ def objectNode = object {
             symbolTable := st
             st.node := self
         }
+        method body { value }
         method returnsObject { true }
         method returnedObjectScope { scope }
-        method canInherit {true }
+        method canInherit { true }
         method isObject { true }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitObject(self) up(as)) then {
@@ -1472,6 +1482,8 @@ def objectNode = object {
             name := other.name
             value := other.value
             superclass := other.superclass
+            inClass := other.inClass
+            inTrait := other.inTrait
             self
         }
         method asString {
@@ -1602,6 +1614,7 @@ def memberNode = object {
         method shallowCopy {
             memberNode.new(value, nullNode).shallowCopyFieldsFrom(self)
         }
+        method statementName { "expression" }
     }
 }
 def genericNode is public = object {
@@ -1818,6 +1831,7 @@ def identifierNode = object {
             inRequest := other.inRequest
             self
         }
+        method statementName { "expression" }
     }
 }
 
@@ -1853,32 +1867,34 @@ def stringNode = object {
         method shallowCopy {
             stringNode.new(value).shallowCopyFieldsFrom(self)
         }
+        method statementName { "expression" }
     }
 }
 def numNode is public = object {
-  class new(val) {
-    inherits baseNode
-    def kind is public = "num"
-    var value is public := val
-    method accept(visitor : ASTVisitor) from(as) {
-        visitor.visitNum(self) up(as)
+    class new(val) {
+        inherits baseNode
+        def kind is public = "num"
+        var value is public := val
+        method accept(visitor : ASTVisitor) from(as) {
+            visitor.visitNum(self) up(as)
+        }
+        method map(blk) ancestors(as) {
+            var n := shallowCopy
+            def newChain = as.extend(n)
+            blk.apply(n, as)
+        }
+        method pretty(depth) {
+            "{super.pretty(depth)}({self.value})"
+        }
+        method toGrace(depth : Number) -> String {
+            self.value.asString
+        }
+        method asString { "num {value}" }
+        method shallowCopy {
+            numNode.new(value).shallowCopyFieldsFrom(self)
+        }
+        method statementName { "expression" }
     }
-    method map(blk) ancestors(as) {
-        var n := shallowCopy
-        def newChain = as.extend(n)
-        blk.apply(n, as)
-    }
-    method pretty(depth) {
-        "{super.pretty(depth)}({self.value})"
-    }
-    method toGrace(depth : Number) -> String {
-        self.value.asString
-    }
-    method asString { "num {value}" }
-    method shallowCopy {
-        numNode.new(value).shallowCopyFieldsFrom(self)
-    }
-  }
 }
 def opNode is public = object {
   class new(op, l, r) {
@@ -2041,6 +2057,7 @@ def bindNode is public = object {
     method shallowCopy {
         bindNode.new(dest, value).shallowCopyFieldsFrom(self)
     }
+    method statementName { "assignment or assigment request" }
   }
 }
 def defDecNode = object {
@@ -2158,6 +2175,7 @@ def defDecNode = object {
             startToken := other.startToken
             self
         }
+        method statementName { "definition" }
     }
 }
 def varDecNode is public = object {
@@ -2262,6 +2280,8 @@ def varDecNode is public = object {
     method shallowCopy {
         varDecNode.new(name, value, dtype).shallowCopyFieldsFrom(self)
     }
+    method statementName { "variable declaration" }
+
   }
 }
 def importNode is public = object {
@@ -2435,6 +2455,7 @@ def inheritsNode = object {
         var exclusions is public := list.empty
         var isUse is public := false  // this is a `uses trait` clause, not an inherits
         
+        method isLegalInTrait { true }
         method isInherits { true }
         method inheritsFromMember { value.isMember }
         method inheritsFromCall { value.isCall }
@@ -2668,6 +2689,7 @@ def callWithPart = object {
             lineLength := other.lineLength
             self
         }
+        method statementName { "request" }
     }
 }
 
@@ -2680,6 +2702,7 @@ def commentNode = object {
         var isPreceededByBlankLine is public := false
         var endLine is public := util.linenum
         method isComment { true }
+        method isLegalInTrait { true }
         method asString { "comment ({line}–{endLine}): {value}" }
         method extendCommentUsing(cmtNode) {
             value := value ++ " " ++ cmtNode.value

@@ -885,6 +885,25 @@ method setupContext(moduleObject) {
         }
     }
 }
+
+method checkTraitBody(traitObjNode) {
+    util.log 70 verbose "checking trait object at line {traitObjNode.line}"
+    traitObjNode.body.do { node ->
+        if (node.isLegalInTrait.not) then {
+            def badThing = node.statementName
+            def article = articleFor (badThing)
+            errormessages.syntaxError("{article} {badThing} cannot appear in " ++
+                "a trait (defined on line {traitObjNode.line})")
+                atRange(node.line, node.linePos, node.linePos)
+        }
+    }
+}
+
+method articleFor(str) {
+    // the indefinite article to preceed str
+    if ("aeioAEIO".contains(str.first)) then { "an" } else { "a" }
+}
+
 method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
         inherits ast.baseVisitor
@@ -1021,6 +1040,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitObject(o) up(as) {
             def myParent = as.parent
             o.scope := newScopeIn(myParent.scope) kind "object"
+            if (o.inTrait) then { checkTraitBody(o) }
             true
         }
         method visitModule(o) up(as) { 
