@@ -1172,6 +1172,7 @@ def classNode is public = object {
     var dtype is public := dtype'
     var typeParams is public := false
     var superclass is public := superclass'
+    var usedTraits is public := list.empty
     var annotations is public := list.empty
     def nameString:String is public = name.value
 
@@ -1238,6 +1239,7 @@ def classNode is public = object {
         n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
         n.annotations := listMap(annotations, blk) ancestors(newChain)
         n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+        n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
         n.constructor := constructor.map(blk) ancestors(newChain)
         n.dtype := maybeMap(dtype, blk) ancestors(newChain)
         blk.apply(n, as)
@@ -1337,6 +1339,8 @@ def classNode is public = object {
     }
     method shallowCopyFieldsFrom(other) {
         super.shallowCopyFieldsFrom(other)
+        superclass := other.superclass
+        usedTraits := other.usedTraits
         self
     }
   }
@@ -1399,6 +1403,7 @@ def objectNode = object {
         def kind is public = "object"
         var value is public := b
         var superclass is public := superclass'
+        var usedTraits is public := list.empty
         var name is public := "object"
         var inClass is public := false
         var inTrait is public := false
@@ -1437,6 +1442,7 @@ def objectNode = object {
             def newChain = as.extend(n)
             n.value := listMap(value, blk) ancestors(newChain)
             n.superclass := maybeMap(superclass, blk) ancestors(newChain)
+            n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
             blk.apply(n, as)
         }
         method pretty(depth') {
@@ -1482,6 +1488,7 @@ def objectNode = object {
             name := other.name
             value := other.value
             superclass := other.superclass
+            usedTraits := other.usedTraits
             inClass := other.inClass
             inTrait := other.inTrait
             self
@@ -2518,6 +2525,9 @@ def inheritsNode = object {
             exclusions := other.exclusions
             isUse := other.isUse
             self
+        }
+        method statementName { 
+            if (isUse) then { "uses" } else { "inherits" }
         }
     }
 }

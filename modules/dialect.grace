@@ -442,9 +442,11 @@ def astVisitor = object {
         if(node.superclass != false) then {
             node.superclass.accept(self)
         }
+        
+        node.usedTraits.do { each -> each.accept(self) }
 
         for(node.value) do { stmt ->
-            stmt.accept(self)
+            if (stmt.isInherits.not) then { stmt.accept(self) }
         }
 
         return false

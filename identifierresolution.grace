@@ -998,17 +998,21 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitInherits(o) up(as) {
             o.scope := as.parent.scope
             if (as.parent.canInherit.not) then {
-                errormessages.syntaxError "inherits statements must be inside an object or class"
+                errormessages.syntaxError "{o.statementName} statements must be inside an object or class"
                     atRange(o.line, o.linePos, o.linePos + 7)
             }
-            if (as.parent.superclass != false) then {
-                errormessages.syntaxError ("there can be no more than one inherits " ++
-                    "statement in an object; there was a prior inherits statement " ++
-                    "on line {as.parent.superclass.line}")
-                    atRange(o.line, o.linePos, o.linePos + 7)
+            if (o.isUse) then { 
+                as.parent.usedTraits.add(o)
+            } else {
+                if (as.parent.superclass != false) then {
+                    errormessages.syntaxError ("there can be no more than one inherits " ++
+                        "statement in an object; there was a prior inherits statement " ++
+                        "on line {as.parent.superclass.line}")
+                        atRange(o.line, o.linePos, o.linePos + 7)
+                }
+                as.parent.superclass := o
+                // cache the inherits node in the object or class that contains it
             }
-            as.parent.superclass := o.value    // value = the expression from inheritsNode
-            // cache the inherits expression in the object or class that contains it
             true
         }
         method visitMethod(o) up(as) {
@@ -1131,7 +1135,7 @@ method collectInheritedNames(node) {
     if (node.superclass == false) then { 
         superScope := graceObjectScope
     } else {
-        superScope := nodeScope.scopeReferencedBy(node.superclass)
+        superScope := nodeScope.scopeReferencedBy(node.superclass.value)
         // If superScope is the universal scope, then we have no information
         // about the inherited attributes
         if (superScope.isUniversal.not) then {
