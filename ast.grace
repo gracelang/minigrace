@@ -1408,6 +1408,32 @@ def objectNode = object {
         var inClass is public := false
         var inTrait is public := false
 
+        method isTrait {
+            // answers true if this object qualifies to be a trait, whether
+            // or not it was declared with the trait syntax
+            if (inTrait) then { return true }
+            value.do { each -> 
+                if (each.isLegalInTrait.not) then { return false }
+            }
+            return true
+        }
+        
+        method providedNames -> Set<String> {
+            // answers the names of all of the methods of this object, including
+            // those inherited or obtained by using a trait
+            def result = set.empty
+            value.do {each ->
+                if (each.isMethod) then { 
+                    result.add(each.nameString)
+                } elseif { each.isTypeDec } then {
+                    result.add(each.nameString)
+                } elseif { each.isInherits } then { 
+                    result.addAll(each.providedNames) 
+                }
+            }
+            result
+        }
+
         method scope:=(st) {
             // sets up the 2-way conection between this node
             // and the symbol table that defines the scope that I open.
@@ -2457,7 +2483,7 @@ def inheritsNode = object {
         inherits baseNode
         def kind is public = "inherits"
         var value is public := expr
-        var providedNames is public := list.empty
+        var providedNames is public := set.empty
         var aliases is public := list.empty
         var exclusions is public := list.empty
         var isUse is public := false  // this is a `uses trait` clause, not an inherits
@@ -2493,7 +2519,7 @@ def inheritsNode = object {
                 s := "{s} exclude {e} "
             }
             if (providedNames.isEmpty.not) then {
-                s := s ++ "\n{spc}Provided names: {providedNames}"
+                s := s ++ "\n{spc}Provided names: {providedNames.asList.sort}"
             }
             s
         }

@@ -752,6 +752,8 @@ method resolveIdentifiers(topNode) {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
             transformBind(node) ancestors(as)
+        } elseif { node.isTypeDec } then {
+            node
         } else {
             node
         } 
@@ -1058,7 +1060,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := newScopeIn(enclosingScope) kind "typedec"
             // this scope will be the home for any type parameters.
             // If there are no parameters, it won't be used.
-            // For now we don't distinguish between type decs and type params
+            // For now, we don't distinguish between type decs and type params
             true
         }
         method visitTypeLiteral(o) up (as) {
@@ -1182,7 +1184,7 @@ method transformInherits(inhNode) ancestors(as) {
     def superObject = inhNode.value
     def currentScope = inhNode.scope
     if (currentScope.isObjectScope.not) then {
-        errormessages.syntaxError "inherits statements must be directly inside an object"
+        errormessages.syntaxError "{inhNode.statementName} statements must be directly inside an object"
                     atRange(inhNode.line, inhNode.linePos, inhNode.linePos + 7)
     }
     if (superObject.isAppliedOccurenceOfIdentifier) then {
@@ -1191,7 +1193,9 @@ method transformInherits(inhNode) ancestors(as) {
         if (definingScope.variety == "built-in") then { return inhNode }
     }
     def superScope = currentScope.scopeReferencedBy(superObject)
-    if (inhNode.inheritsFromCall) then {
+    if (inhNode.isUse) then {
+        // a `uses` statement; no transformation necessary
+    } elseif (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
         superCall.with.push(ast.callWithPart.request "object" 
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
@@ -1217,7 +1221,10 @@ method transformInherits(inhNode) ancestors(as) {
                 superObject.linePos + superObject.nameString.size - 1)
     }
     superScope.elements.keysDo { each ->
-        inhNode.providedNames.add(each)
+        if (graceObjectScope.contains(each).not) then {
+            // names like asString, asDebugString, ... need not be provided
+            inhNode.providedNames.add(each)
+        }
     }
     inhNode.aliases.do { a ->
         if (superScope.contains(a.oldName.nameString)) then {

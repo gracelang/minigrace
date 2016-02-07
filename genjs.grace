@@ -319,12 +319,15 @@ method compileobject(o, outerRef, inheritingObject) {
     auto_count := auto_count + 1
     def selfr = "obj" ++ myc
     o.register := selfr
-    def superObject = if (false == o.superclass) then {
-        out "var {selfr} = Grace_allocObject(GraceObject, \"{o.name}\");"
-    } else {
-        out "var {selfr} = Grace_allocObject(null, \"{o.name}\");"
-        // inheritance will be compiled later, when the inherits node is found
-    }
+    def superConstructor =
+        if (o.inTrait) then { 
+            "GraceTrait"
+        } elseif {false == o.superclass} then {
+            "GraceObject"
+        } else {
+            "null"  // inheritance will be compiled later, when the inherits node is found
+        }
+    out "var {selfr} = Grace_allocObject({superConstructor}, \"{o.name}\");"
     out "{selfr}.definitionModule = \"{modname}\";"
     out "{selfr}.definitionLine = {o.line};"
     if (inheritingObject) then {
@@ -430,12 +433,8 @@ method compiletypedec(o) {
     def myc = auto_count
     def enclosing = o.scope.parent
     auto_count := auto_count + 1
-    def tName = if (o.name.kind == "generic") then {
-                        o.name.value.value
-                    } else {
-                        o.name.value
-                    }
-    out("// Type decl {o.name.value}")
+    def tName = o.name.value
+    out "// Type decl {tName}"
     declaredvars.push(escapeident(tName))
     if (o.value.kind == "typeliteral") then {o.value.name := tName }
     def val = compilenode(o.value)
@@ -1500,6 +1499,14 @@ method compile(moduleObject, of, rm, bt, glPath) {
 
 method compileInherits(o, selfr) {
     // o is an inherits node: compile it.  selfr is the name of enclosing object
+    if (o.isUse) then { 
+        compileTrait(o, selfr)
+    } else {
+        compileSuper(o, selfr)
+    }
+}
+
+method compileSuper(o, selfr) {
     def sup = compilenode(o.value)
     out "{selfr}.superobj = {sup};"
     out "if ({sup}.data) {selfr}.data = {sup}.data;"
@@ -1513,6 +1520,21 @@ method compileInherits(o, selfr) {
     }
     o.exclusions.do { each ->
         out "delete {sup}.methods['{each.nameString}'];"
+    }
+}
+
+method compileTrait(o, selfr) {
+    def tObj = compilenode(o.value)
+    def tMethNames = o.providedNames.copy
+    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
+    o.aliases.do { each ->
+        def nn = each.newName.nameString
+        out("{selfr}.methods['{nn}'] = " ++
+            "{tObj}.methods['{each.oldName.nameString}']);  // alias")
+        tMethNames.remove(nn)
+    }
+    tMethNames.do { methName ->
+        out "{selfr}.methods['{methName}'] = {tObj}.methods['{methName}'];"
     }
 }
 

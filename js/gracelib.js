@@ -36,48 +36,88 @@ function object_notEquals (argcv, o) {
     return callmethod(b, "not", [0]);
 }
 
+function object_equals (argcv, o) {
+    return callmethod(Grace_prelude, "identical", [2], this, o);
+}
+function object_basicAsString (argcv) {
+    var s = "object {";
+    var firstTime = true;
+    for (var i in this.data) {
+        if (firstTime) firstTime = false; else s += ", ";
+        try {
+            s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
+        } catch (e) {
+            s += "" + i + " = ?";
+        }
+    }
+    return new GraceString(s + "}");
+}
+function object_asString (argcv) {
+    if (!this.className || this.className.length === 0)
+        return new GraceString("an object");
+    var firstChar = this.className[0];
+    var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
+    return new GraceString(article + this.className);
+}
+function object_asDebugString (argcv) {
+    return callmethod(this, "asString", [0]);
+}
+function object_debugValue (argcv) {
+    return new GraceString("object");
+}
+function object_debugIterator (argcv) {
+    return new GraceIterator(this.data);
+}
+function object_colonColon (argcv, other) {
+    return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
+}
+
 GraceObject.prototype = {
     methods: {
-        "==": function object_equals (argcv, o) {
-            return callmethod(Grace_prelude, "identical", [2], this, o);
-        },
-        "!=": object_notEquals,
-        "≠": object_notEquals,
-        "basicAsString": function object_asString (argcv) {
-            var s = "object {";
-            var firstTime = true;
-            for (var i in this.data) {
-                if (firstTime) firstTime = false; else s += ", ";
-                try {
-                    s += "" + i + " = " + callmethod(this.data[i], "asString", [0])._value;
-                } catch (e) {
-                    s += "" + i + " = ?";
-                }
-            }
-            return new GraceString(s + "}");
-        },
-        "asString": function object_asString (argcv) {
-            if (!this.className || this.className.length === 0)
-                return new GraceString("an object");
-            var firstChar = this.className[0];
-            var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
-            return new GraceString(article + this.className);
-        },
-        "asDebugString": function object_asDebugString (argcv) {
-            return callmethod(this, "asString", [0]);
-        },
-        "debugValue": function object_debugValue (argcv) {
-            return new GraceString("object");
-        },
-        "debugIterator": function object_debugIterator (argcv) {
-            return new GraceIterator(this.data);
-        },
-        "::": function object_colonColon (argcv, other) {
-            return callmethod(GraceBindingClass(), "key()value", [1, 1], this, other);
-        }
+        "==":               object_equals,
+        "!=":               object_notEquals,
+        "≠":                object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "asString":         object_asString,
+        "asDebugString":    object_asDebugString,
+        "debugValue":       object_debugValue,
+        "debugIterator":    object_debugIterator,
+        "::":               object_colonColon
     }
 //    data: {}  The prototype should NOT have a data object — data should go in the
 //    child (non-shared) object.
+};
+
+function GraceTrait() {       // constructor function
+    // gets its methods from the prototype.  Don't add to them!
+    this.superobj = null;
+    this.data = {};
+    this.className = "graceTrait";
+    this.mutable = false;
+    this.definitionModule = "unknown";
+    this.definitionLine = 0;
+}
+
+function trait_asString (argcv) {
+    if (!this.className || this.className.length === 0)
+        return new GraceString("a trait");
+    var firstChar = this.className[0];
+    var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
+    return new GraceString(article + this.className + " trait");
+}
+
+GraceTrait.prototype = {
+    methods: {
+        "==":               object_equals,
+        "!=":               object_notEquals,
+        "≠":                object_notEquals,
+        "basicAsString":    object_basicAsString,
+        "asString":         trait_asString,
+        "asDebugString":    object_asDebugString,
+        "debugValue":       object_debugValue,
+        "debugIterator":    object_debugIterator,
+        "::":               object_colonColon
+    }
 };
 
 function Grace_allocObject(superConstructor, givenName) {
