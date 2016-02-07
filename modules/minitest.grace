@@ -16,7 +16,7 @@ method numberOfErrorsToRerun:=(n:Number) {
 }
 
 def mtAssertion = object {
-    inherits gu.assertion.TRAIT
+    inherits gu.assertion
     var currentResult is writable := object {
         method countOneAssertion {
             print "countOneAssertion requested on dummy result"

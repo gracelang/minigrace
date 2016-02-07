@@ -56,7 +56,7 @@ type TestSuite = TestCase & type {
 
 var numberOfErrorsToRerun is public := 10
 
-class assertion.TRAIT {
+class assertion {
     def AssertionFailure is readable = Exception.refine "AssertionFailure"
     method countOneAssertion { abstract }
     
@@ -164,7 +164,7 @@ class assertion.TRAIT {
 def noArguments = sequence.with(sequence.empty)
 
 factory method testCaseNamed(name') -> TestCase {
-    inherits assertion.TRAIT
+    inherits assertion
 
     def size is public = 1
     var currentResult
