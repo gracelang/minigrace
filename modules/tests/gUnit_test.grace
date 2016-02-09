@@ -48,7 +48,7 @@ def gUnitTest = object {
 def theResult = gUnit.testResult
 
 def a = object {
-    inherits gUnit.assertion.TRAIT
+    inherits gUnit.assertion
     method countOneAssertion {
         theResult.countOneAssertion
     }
