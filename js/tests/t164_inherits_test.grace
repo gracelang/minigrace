@@ -1,5 +1,5 @@
 import "gUnit" as gu
-inherits gu.assertion.TRAIT
+inherits gu.assertion
 
 method countOneAssertion {
     print "one assertion in module"
@@ -8,7 +8,7 @@ method countOneAssertion {
 method b { "this is b" }
 
 def o = object {
-    inherits gu.assertion.TRAIT
+    inherits gu.assertion
     method countOneAssertion {
         print "one assertion in o"
     }
