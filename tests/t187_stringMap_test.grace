@@ -8,11 +8,15 @@ def stringMapTest = object {
     class forMethod(meth) {
         inherits gU.testCaseNamed(meth)
         
-        def m123 = map.new
-        m123.put("one", 1).put("two", 2).put("three", 3)
+        var m123
+        var m12
         
-        def m12 = map.new
-        m12.put("one", 1).put("two", 2)
+        method setup {
+            m123 := map.new
+            m123.put("one", 1).put("two", 2).put("three", 3)
+            m12 := map.new
+            m12.put("one", 1).put("two", 2)
+        }
 
         method testSize3 {
             assert (m123.size) shouldBe 3
@@ -82,6 +86,11 @@ def stringMapTest = object {
             def keys = set.empty
             m123.keysDo { k -> keys.add(k) }
             assert (keys) shouldBe (set.with("one", "two", "three"))
+        }
+        method testKeyAndValuesDo {
+            def pairs = set.empty
+            m123.keysAndValuesDo { k, v -> pairs.add (k::v) }
+            assert (pairs) shouldBe (set ["one"::1, "two"::2, "three"::3])
         }
         method randomStrings(n) {
             def result = list.empty
