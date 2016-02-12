@@ -102,7 +102,23 @@ class primitiveListTest.forMethod(m) {
             assert {evens.at 6 put 10} shouldRaise (BoundsError)
             assert {evens.at 0 put 0} shouldRaise (BoundsError)
             assert {evens.at(naN) put 0} shouldRaise (BoundsError)
+            assert (oneToFive.at 2 put 21) shouldBe (oneToFive)
         }
+
+        method testElementAssign {
+            def naN = "foo".asNumber
+            oneToFive[1] := 11
+            assert (oneToFive[1]) shouldBe 11
+            oneToFive[2] := 12
+            assert (oneToFive[2]) shouldBe 12
+            assert (oneToFive[3]) shouldBe 3
+            assert {evens[6] := 10} shouldRaise (BoundsError)
+            assert {evens[0] := 0} shouldRaise (BoundsError)
+            assert {evens[naN] := 0} shouldRaise (BoundsError)
+            assert (assign21at2.asString) shouldBe (done.asString)
+        }
+        
+        method assign21at2 { oneToFive[2] := 21 }
 
         method testListAtPutExtend {
             assert (empty.at 1 put 99) shouldBe (list.with 99)

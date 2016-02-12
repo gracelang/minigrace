@@ -1136,6 +1136,12 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
     sself->items[index] = val;
     return self;
 }
+
+Object BuiltinList_indexAssignReturnsDone(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    BuiltinList_indexAssign(self, nparts, argcv, args, flags);
+    return done;
+}
 Object BuiltinList_contains(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1437,7 +1443,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "at", &BuiltinList_index);
         add_Method(BuiltinList, "[]", &BuiltinList_index);
         add_Method(BuiltinList, "at()put", &BuiltinList_indexAssign);
-        add_Method(BuiltinList, "[]:=", &BuiltinList_indexAssign);
+        add_Method(BuiltinList, "[]:=", &BuiltinList_indexAssignReturnsDone);
         add_Method(BuiltinList, "push", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
         add_Method(BuiltinList, "add", &BuiltinList_push);

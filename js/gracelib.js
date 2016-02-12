@@ -983,7 +983,7 @@ PrimitiveGraceList.prototype = {
             return this;
         },
         "[]:=": function(argcv, where, val) {
-            prim_list_update(argcv, where, val);
+            prim_list_update.call(this, argcv, where, val);
             return GraceDone;
         },
         "asString": function(argcv) {
