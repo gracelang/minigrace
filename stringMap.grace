@@ -128,6 +128,28 @@ class new {
     method asDebugString {
         asString
     }
+    method keysAndValuesDo(action) {
+        // internal iterator over my keys and values.
+        native "js" code ‹var s = "";
+            var inner = this.data.inner;
+            var keys = Object.keys(inner);
+            for (var ix in keys) {
+                var key = keys[ix];
+                callmethod(var_action, "apply", [2], new GraceString(key), inner[key])
+            }
+            return GraceDone;›
+        var count := 1
+        var idx := 0
+        while {count <= size} do {
+            while {inner.at(idx) == unused} do {
+                idx := idx + 1
+            }
+            def a = inner.at(idx)
+            action.apply(a.key, a.value)
+            count := count + 1
+            idx := idx + 1
+        }
+    }
     method do(action) {
         // internal iterator over my values.
         native "js" code ‹
