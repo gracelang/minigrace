@@ -2131,6 +2131,7 @@ def defDecNode = object {
             if (findAnnotation(self, "public")) then { return true }
             findAnnotation(self, "readable")
         }
+        method isFieldDec { true }
         method isWritable { false }
         method isReadable { isPublic }
 
@@ -2254,6 +2255,7 @@ def varDecNode is public = object {
         if (findAnnotation(self, "readable")) then { return true }
         false
     }
+    method isFieldDec { true }
 
     method usesAsType(aNode) {
         aNode == dtype
