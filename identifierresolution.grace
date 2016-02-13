@@ -96,6 +96,9 @@ factory method newScopeIn(parent') kind(variety') {
         elements.keysDo { each -> result.addLast(each) }
         result
     }
+    method keysAndKindsDo(action) {
+        elements.keysAndValuesDo(action)
+    }
     method keysAndValuesAsList {
         elements.asList
     }
@@ -742,7 +745,9 @@ method reportAssignmentTo(node) declaredInScope(scp) {
 
 method resolveIdentifiers(topNode) {
     // Recursively replace bare identifiers with their fully-qualified
-    // equivalents.  Creates and returns a new AST
+    // equivalents.  Creates and returns a new AST; map works
+    // bottom-up, so by the time a node is mapped, all of its
+    // descendents have already been mapped.
 
     topNode.map { node, as ->
         if ( node.isAppliedOccurenceOfIdentifier ) then {
@@ -752,12 +757,44 @@ method resolveIdentifiers(topNode) {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
             transformBind(node) ancestors(as)
+        } elseif { node.isObject } then {
+            checkForTraitConficts (node)
         } elseif { node.isTypeDec } then {
             node
         } else {
             node
         } 
     } ancestors (ast.ancestorChain.empty)
+}
+
+method checkForTraitConficts(objNode) {
+    // This method doesn't do a transformation, only a check.
+    // But it's important that the check be done after the traits have
+    // been collected in the object, which happens in the buildSymbolTable
+    // visitor pass, so it is convenient to do this check during the
+    // resolution pass.
+    def traitMethod = map.new
+    objNode.usedTraits.do { t ->
+        t.providedNames.do { methName ->
+            def traitList = traitMethod.get(methName) ifAbsent { [] }
+            traitList.push(t)
+            traitMethod.put(methName, traitList)
+        }
+    }
+    traitMethod.keysDo { methName ->
+        def sources = traitMethod.get(methName)
+        if (sources.size > 1) then {    // a method has more than one source trait
+            if (objNode.localNames.contains(methName).not) then {
+                def sourceList = sources.map { s -> s.nameString }
+                // TODO:  clean up these names
+                def minSourceLine = sources.fold {a, s -> min(a,s.line) } 
+                      startingWith(infinity)
+                errormessages.error("Trait conflict: method `{methName}` is defined " ++
+                      "in multiple traits {sourceList}.") atRange (minSourceLine, 0, 0)
+            }
+        }
+    }
+    objNode
 }
 
 method processGCT(gct, importedModuleScope) {

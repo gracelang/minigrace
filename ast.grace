@@ -1407,6 +1407,7 @@ def objectNode = object {
         var name is public := "object"
         var inClass is public := false
         var inTrait is public := false
+        var myLocalNames := false
 
         method isTrait {
             // answers true if this object qualifies to be a trait, whether
@@ -1432,6 +1433,20 @@ def objectNode = object {
                 }
             }
             result
+        }
+        
+        method localNames -> Set<String> { 
+            // answers the names of all of the methods defined directly in
+            // this object.  Inherited names are _not_ included.
+            if (false == myLocalNames) then {
+                myLocalNames := set.empty
+                scope.keysAndKindsDo { methName, knd ->
+                    if (knd != k.inherited) then {
+                        myLocalNames.add(methName)
+                    }
+                }
+            }
+            myLocalNames
         }
 
         method scope:=(st) {
