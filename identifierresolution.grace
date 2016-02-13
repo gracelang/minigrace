@@ -85,7 +85,7 @@ factory method newScopeIn(parent') kind(variety') {
     method contains(n) {
         elements.contains(n)
     }
-    method do(b) {
+    method withSurroundingScopesDo(b) {
         var cur := self
         while {b.apply(cur); cur.hasParent} do {
             cur := cur.parent
@@ -133,7 +133,7 @@ factory method newScopeIn(parent') kind(variety') {
     }
     method asString {
         var result := "({variety} ST: "
-        self.do { each -> 
+        withSurroundingScopesDo { each ->
             result := result ++ each.serialNumber
             if (each.hasParent) then { result := result ++ "➞" }
         }
@@ -160,7 +160,7 @@ factory method newScopeIn(parent') kind(variety') {
         result ++ "____________\n"
     }
     method hasDefinitionInNest(nm) {
-        self.do { s ->
+        withSurroundingScopesDo { s ->
             if (s.contains(nm)) then {
                 return true
             }
@@ -168,7 +168,7 @@ factory method newScopeIn(parent') kind(variety') {
         return false
     }
     method kindInNest(nm) {
-        self.do {s->
+        withSurroundingScopesDo {s->
             if (s.contains(nm)) then {
                 def kd = s.kind(nm)
                 if (kd == k.inherited) then {
@@ -181,13 +181,13 @@ factory method newScopeIn(parent') kind(variety') {
         return k.undefined
     }
     method thatDefines(name) ifNone(action) {
-        self.do { s->
+        withSurroundingScopesDo { s->
             if (s.contains(name)) then { return s }
         }
         action.apply
     }
     method thatDefines(name) {
-        self.do { s->
+        withSurroundingScopesDo { s->
             if (s.contains(name)) then { return s }
         }
         print(self.asStringWithParents)
@@ -213,7 +213,7 @@ factory method newScopeIn(parent') kind(variety') {
         // replace name by outer.outer. ... .name,
         // depending on where name is declared.
         var mem := ast.identifierNode.new("self", false) scope(self)
-        self.do { s->
+        withSurroundingScopesDo { s->
             if (s.contains(name)) then {
                 if (s.variety == "dialect") then {
                     return ast.memberNode.new(name,
@@ -239,7 +239,7 @@ factory method newScopeIn(parent') kind(variety') {
         // Otherwise, it will be the empty scope.
         if (nd.kind == "identifier") then {
             def sought = nd.nameString
-            self.do {s->
+            withSurroundingScopesDo {s->
                 if (s.contains(sought)) then {
                     return s.getScope(sought)
                 }
@@ -264,7 +264,7 @@ factory method newScopeIn(parent') kind(variety') {
     method enclosingObjectScope {
         // Answer the closest enclosing scope that describes an
         // object, class or module.  Could answer self.
-        self.do { s ->
+        withSurroundingScopesDo { s ->
             if (s.isObjectScope) then { return s }
         }
         ProgrammingError "no object scope found!"
@@ -275,7 +275,7 @@ factory method newScopeIn(parent') kind(variety') {
         // Is this scope within the same context as encScope?
         // i.e. within the same method and object?
         if (encScope.isObjectScope) then { return false }
-        self.do { s ->
+        withSurroundingScopesDo { s ->
             if (s == encScope) then { return true }
             if (s.isObjectScope) then { return false }
             if (s.isMethodScope) then { return false }
@@ -1323,7 +1323,7 @@ method resolve(moduleObject) {
         util.outprint "====================================="
         util.outprint "top-level"
         util.outprint "Universal scope = {universalScope.asDebugString}"
-        patternMatchModule.scope.do { each ->
+        patternMatchModule.scope.withSurroundingScopesDo { each ->
             util.outprint (each.asString)
             util.outprint (each.elementScopesAsString)
             util.outprint "----------------"
