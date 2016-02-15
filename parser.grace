@@ -34,7 +34,7 @@ var sym := object {
 
 var lastToken := sym
 var previousCommentToken := lastToken
-var statementToken := lastToken
+var statementToken := lastToken     // the token starting the current statement
 var comment := false
 
 method noteBlank {
@@ -2398,75 +2398,84 @@ method acceptMethodName {
 }
 
 method doobject {
-    // Accept an object literal.
+    // Accept an object constructor.
     // this method is called doobject because "object" is a keyword
 
     if (accept("keyword") && (sym.value == "object")) then {
-        def btok = sym
-        def localMinIndentLevel = minIndentLevel
         next
-        if(sym.kind != "lbrace") then {
-            def suggestion = errormessages.suggestion.new
-            def nextTok = findNextToken({ t -> t.kind == "rbrace" })
-            if(nextTok == false) then {
-                suggestion.insert(" \{}")afterToken(lastToken)
-            } else {
-                suggestion.insert(" \{")afterToken(lastToken)
-            }
-            errormessages.syntaxError("An object literal must have a '\{' after the 'object'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-        }
-        values.push(object {
-            def kind is public = "lbrace"
-            var register is public := ""
-        })
-        next
-        if (sym.line == statementToken.line) then {
-            minIndentLevel := sym.linePos - 1
-        } else {
-            minIndentLevel := statementToken.indent + 1
-        }
-        var sz := values.size
-        while {(accept("rbrace")).not} do {
-            // An object body contains zero or more var declarations,
-            // const declarations, and method declarations. If anything
-            // else appears before the closing brace, it is a syntax error.
-            methoddec
-            inheritsdec
-            statement
-            if (sym.kind == "eof") then {
-                if(sym.kind != "rbrace") then {
-                    def suggestion = errormessages.suggestion.new
-                    suggestion.insert("}")afterToken(lastToken)
-                    errormessages.syntaxError("An object literal must end with a '}'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-                }
-            } elseif { (values.size == sz) && (lastToken.kind != "semicolon") } then {
-                def suggestion = errormessages.suggestion.new
-                suggestion.deleteToken(sym)
-                errormessages.syntaxError("An object literal can contain only definitions, variable and method declarations, and statements.")atRange(
-                    sym.line, sym.linePos, sym.linePos + sym.size - 1)withSuggestion(suggestion)
-            }
-            sz := values.size
-        }
-        next
-        var rbody := []
-        var n := values.pop
-        while {n.kind != "lbrace"} do {
-            rbody.push(n)
-            n := values.pop
-        }
-        var body := []
-        for (rbody.indices) do { x ->
-            // Reorder the list
-            var p := rbody.pop
-            body.push(p)
-        }
-        util.setline(btok.line)
-        var o := ast.objectNode.new(body, false)
-        values.push(o)
-        minIndentLevel := localMinIndentLevel
+        parseObjectConstructorBody "an object constructor" 
+            startingWith (lastToken) after "'object'"
     }
+}
+
+method parseObjectConstructorBody(constructName) startingWith (btok) after (prev) {
+    // Parse the body of an object constructor, leaving the node on the
+    // values stack.  Common code for parsing object, class, and factory method
+    // bodies; constructName says which, so that error messages are correct.
+    def localMinIndentLevel = minIndentLevel
+    def anns = doannotation
+    if (sym.kind != "lbrace") then {
+        def suggestion = errormessages.suggestion.new
+        def nextTok = findNextToken { t -> t.kind == "rbrace" }
+        if(nextTok == false) then {
+            suggestion.insert(" \{}")afterToken(lastToken)
+        } else {
+            suggestion.insert(" \{")afterToken(lastToken)
+        }
+        errormessages.syntaxError "{constructName} must have a '\{' after the {prev}."
+            atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+            withSuggestion(suggestion)
+    }
+    next
+    if (sym.line == statementToken.line) then {
+        minIndentLevel := sym.linePos - 2
+    } else {
+        minIndentLevel := statementToken.indent + 2
+    }
+    def body = []
+    var superObject := false
+    def usedTraits = []
+    var inPreamble := true  // => processing inherits and uses statements
+    while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
+        ifConsume {inheritsdec} then {
+            def parentNode = values.pop
+            if (inPreamble) then {
+                if (parentNode.isUse) then {
+                    usedTraits.add(parentNode)
+                } else {
+                    if (usedTraits.isEmpty) then {
+                        superObject := parentNode
+                    } else {
+                        errormessages.syntaxError("'inherits' must come " ++
+                            "before 'uses' in {constructName}")
+                            atPosition(parentNode.line, parentNode.linePos,
+                            parentNode.linePos + 4)
+                    }
+                }
+            } else {
+                errormessages.syntaxError("'{parentNode.statementName}' must " ++
+                    "come at the start of {constructName}")
+                    atPosition(parentNode.line, parentNode.linePos,
+                            parentNode.linePos + parentNode.statementName.size)
+            }
+        }
+        ifConsume {methoddec} then {
+            inPreamble := false
+            body.push(values.pop)
+        }
+        ifConsume {statement} then {
+            inPreamble := false
+            body.push(values.pop)
+        }
+    }
+    next
+    util.setPosition(btok.line, btok.linePos)
+    def objNode = ast.objectNode.new(body, superObject)
+    if (anns != false) then { objNode.annotations.addAll(anns) }
+    objNode.usedTraits := usedTraits
+    values.push(objNode)
+    reconcileComments
+    minIndentLevel := localMinIndentLevel
 }
 
 method doclass {
@@ -2485,7 +2494,8 @@ method doclass {
     //     var x
     //     method y(z) { ... }
     // }
-    // The old "dotted" form is compiled into a special classNode
+    // The old "dotted" form is compiled into a defDecNode that contains
+    // an objectNode that contains the class method and an asString method.
     // The current form is compiled into a methodNode that contains
     // an objectNode, i.e., it is treated as syntactic sugar for
     //
@@ -2529,60 +2539,39 @@ method doclass {
     def methodName = s.m
     methodName.isBindingOccurrence := true
     def dtype = s.rtype
-    def anns = doannotation
-    if (!accept("lbrace")) then {
-        def suggestion = errormessages.suggestion.new
-        suggestion.insert(" \{")afterToken(lastToken)
-        errormessages.syntaxError("A class must have a '\{' after the method name.")atPosition(
-            lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
-    }
-    next
-    if (sym.line == statementToken.line) then {
-        minIndentLevel := sym.linePos - 1
+    parseObjectConstructorBody "a class" startingWith (btok) after "method header"
+    def objNode = values.pop
+    util.setPosition(btok.line, btok.linePos)
+    def meth = ast.methodNode.new(methodName, csig, [objNode], dtype)
+    meth.typeParams := s.typeParams
+    meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
+    // see comment in dofactoryMethod
+    if (false != objName) then {   // deal with (deprecated) dotted class
+        objNode.name := objName.nameString ++ "." ++ methodName.nameString
+        def asStringBody = [ ast.stringNode.new("class {objName.nameString}") ]
+        def asStringMeth = ast.methodNode.new(
+            ast.identifierNode.new("asString", false), [], asStringBody, false)
+        def metaBody = [meth, asStringMeth]
+        def metaObj = ast.objectNode.body (metaBody) named "class {objName.nameString}"
+        def defDec = ast.defDecNode.new(objName, metaObj, false)
+        defDec.startToken := btok
+        defDec.annotations.add(ast.identifierNode.new("public", false))
+        values.push(defDec)
     } else {
-        minIndentLevel := statementToken.indent + 1
-    }
-    def body = []
-    while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
-        ifConsume {methoddec} then {
-            body.push(values.pop)
-        }
-        ifConsume {inheritsdec} then {
-            body.push(values.pop)
-        }
-        ifConsume {statement} then {
-            body.push(values.pop)
-        }
-    }
-    next
-    util.setline(btok.line)
-    def o = if (false == objName) then {
-        def objNode = ast.objectNode.body(body) named(methodName.nameString)
+        objNode.name := methodName.nameString
         if (btok.value == "class") then {
             objNode.inClass := true
         } elseif { btok.value == "trait" } then {
             objNode.inTrait := true
         }
-        ast.methodNode.new(methodName, csig, [objNode], dtype)
-    } else {
-        ast.classNode.new(objName, csig, body, false, methodName, dtype)
+        values.push(meth)
     }
-    o.typeParams := s.typeParams
-    if (false != anns) then {
-        o.annotations.addAll(anns)
-    } else {
-        if (defaultMethodVisibility == "confidential") then {
-            o.annotations.push(ast.identifierNode.new("confidential",
-                false))
-        }
-    }
-    values.push(o)
     reconcileComments
     minIndentLevel := localMinIndentLevel
 }
 
-// Accept a factory method declaration
 method dofactoryMethod {
+    // Accept a factory method declaration
     if ((accept("keyword") && (sym.value == "factory")).andAlso{
             tokens.first.kind == "keyword"}.andAlso{
             tokens.first.value == "method"}) then {
@@ -2590,7 +2579,7 @@ method dofactoryMethod {
         next
         next
         def localMinIndentLevel = minIndentLevel
-        if(sym.kind != "identifier") then {
+        if (sym.kind != "identifier") then {
             def suggestions = list.empty
             if(sym.kind == "lbrace") then {
                 var suggestion := errormessages.suggestion.new
@@ -2604,53 +2593,25 @@ method dofactoryMethod {
                 suggestion.insert(" «method name» \{}")afterToken(lastToken)
                 suggestions.push(suggestion)
             }
-            errormessages.syntaxError("A factory method must have a name after the 'method'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestions(suggestions)
+            errormessages.syntaxError "a factory method must have a name after the 'method'."
+                atPosition (lastToken.line, lastToken.linePos + lastToken.size + 1)
+                withSuggestions (suggestions)
         }
         var s := methodsignature(false)
         def csig = s.sig
         var methodName := s.m
         methodName.isBindingOccurrence := true
         def dtype = s.rtype
-        def anns = doannotation
-        if (!accept("lbrace")) then {
-            def suggestion = errormessages.suggestion.new
-            suggestion.insert(" \{")afterToken(lastToken)
-            errormessages.syntaxError("A factory method must have a '\{' after the name.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
-        }
-        next
-        if (sym.line == statementToken.line) then {
-            minIndentLevel := sym.linePos - 1
-        } else {
-            minIndentLevel := statementToken.indent + 1
-        }
-        def body = []
-        while {(accept("rbrace")).not} do {
-            ifConsume {methoddec} then {
-                body.push(values.pop)
-            }
-            ifConsume {inheritsdec} then {
-                body.push(values.pop)
-            }
-            ifConsume {statement} then {
-                body.push(values.pop)
-            }
-        }
-        next
-        util.setline(btok.line)
-        def obj = ast.objectNode.new(body, false)
-        def meth = ast.methodNode.new(methodName, csig,
-            list.with(obj), dtype)
+        parseObjectConstructorBody "a factory method" startingWith (btok) after "method header"
+        def objNode = values.pop
+        objNode.name := methodName
+        util.setPosition(btok.line, btok.linePos)
+        def meth = ast.methodNode.new(methodName, csig, [objNode], dtype)
         meth.typeParams := s.typeParams
-        if (false != anns) then {
-            meth.annotations.addAll(anns)
-        } else {
-            if (defaultMethodVisibility == "confidential") then {
-                meth.annotations.push(ast.identifierNode.new("confidential",
-                    false))
-            }
-        }
+        meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
+        // In a class or factory method declaration, there is just one place
+        // for annotations.  These might include annotations on the method (such
+        // as confidential), and annotations on the object (such as imutable)
         values.push(meth)
         reconcileComments
         minIndentLevel := localMinIndentLevel
@@ -2734,7 +2695,6 @@ method methoddec {
         }
         o.typeParams := m.typeParams
         if (anns != false) then { o.annotations.addAll(anns) }
-        adjustVisibilityOf(o) withSpecialDefault(defaultMethodVisibility) overriding("public")
         values.push(o)
         reconcileComments
     }
@@ -3539,7 +3499,7 @@ method checkUnexpectedTokenAfterStatement {
 
 
 method parse(toks) {
-    // Parse the given list of tokens, returning a list of AST nodes
+    // Parse the given list of tokens, toks, returning an AST moduleNode
     // corresponding to it.
 
     util.log_verbose "parsing."
@@ -3548,16 +3508,12 @@ method parse(toks) {
     if (util.extensions.contains("DefaultVisibility")) then {
         defaultDefVisibility := util.extensions.get("DefaultVisibility")
         defaultVarVisibility := util.extensions.get("DefaultVisibility")
-        defaultMethodVisibility := util.extensions.get("DefaultVisibility")
     }
     if (util.extensions.contains("DefaultDefVisibility")) then {
         defaultDefVisibility := util.extensions.get("DefaultDefVisibility")
     }
     if (util.extensions.contains("DefaultVarVisibility")) then {
         defaultVarVisibility := util.extensions.get("DefaultVarVisibility")
-    }
-    if (util.extensions.contains("DefaultMethodVisibility")) then {
-        defaultMethodVisibility := util.extensions.get("DefaultMethodVisibility")
     }
     if (toks.size == 0) then {
         return list.empty
@@ -3567,7 +3523,7 @@ method parse(toks) {
     if (sym.indent > 0) then {
         def sugg = errormessages.suggestion.new
         sugg.deleteRange(1, sym.indent) onLine(sym.line)
-        errormessages.syntaxError("The first line must not be indented.")
+        errormessages.syntaxError "the first line must not be indented."
             atRange(sym.line, 1, sym.indent)
             withSuggestion(sugg)
     }
@@ -3583,8 +3539,10 @@ method parse(toks) {
         if (tokens.size == oldlength) then {
             def suggestion = errormessages.suggestion.new
             suggestion.deleteToken(sym)
-            errormessages.syntaxError("Invalid statement. This is often caused by an extra '}', ')', or ']'.")atRange(
-                sym.line, sym.linePos, sym.linePos + sym.size - 1)withSuggestion(suggestion)
+            errormessages.syntaxError("invalid statement. This is often " ++
+                "caused by an extra '}', ')', or ']'.")
+                atRange(sym.line, sym.linePos, sym.linePos + sym.size - 1)
+                withSuggestion(suggestion)
         }
         oldlength := tokens.size
     }

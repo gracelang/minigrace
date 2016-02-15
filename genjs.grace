@@ -367,14 +367,18 @@ method compileobject(o, outerRef, inheritingObject) {
         } elseif { e.kind == "object" } then {
             out "sourceObject = {selfr};"
             compileobject(e, selfr, false)
-        } elseif { e.kind == "inherits" } then {
-            out "sourceObject = {selfr};"
-            compileInherits(e, selfr)
         } else {
             out "sourceObject = {selfr};"
             compilenode(e)
         }
     }
+    
+    // compile inherits
+    if (false != o.superclass) then {
+        out "sourceObject = {selfr};"
+        compileInherits(o.superclass, selfr)
+    }
+
     out "superDepth = origSuperDepth;"
     decreaseindent
     out "\};"

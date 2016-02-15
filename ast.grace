@@ -1387,7 +1387,7 @@ def moduleNode = object {
         }
     }
 }
-def objectNode = object {
+def objectNode is public = object {
     method body(b) named(n) scope(s) {
         def result = new(b, false)
         result.name := n
@@ -1398,21 +1398,22 @@ def objectNode = object {
         body(b) named(n) scope(fakeSymbolTable)
     }
     class new(b, superclass') {
-        // TODO  remove superclass as a parameter
         inherits baseNode
         def kind is public = "object"
         var value is public := b
         var superclass is public := superclass'
         var usedTraits is public := list.empty
-        var name is public := "object"
+        var name:String is public := "object"
         var inClass is public := false
         var inTrait is public := false
         var myLocalNames := false
+        var annotations is public := list.empty
 
         method isTrait {
             // answers true if this object qualifies to be a trait, whether
             // or not it was declared with the trait syntax
             if (inTrait) then { return true }
+            if (false != superclass) then { return false }
             value.do { each -> 
                 if (each.isLegalInTrait.not) then { return false }
             }
@@ -1423,13 +1424,17 @@ def objectNode = object {
             // answers the names of all of the methods of this object, including
             // those inherited or obtained by using a trait
             def result = set.empty
+            if (false != superclass) then { 
+                result.addAll(superclass.providedNames)
+            }
+            usedTraits.do { each ->
+                result.addAll(each.providedNames)
+            }
             value.do {each ->
                 if (each.isMethod) then { 
                     result.add(each.nameString)
                 } elseif { each.isTypeDec } then {
                     result.add(each.nameString)
-                } elseif { each.isInherits } then { 
-                    result.addAll(each.providedNames) 
                 }
             }
             result
@@ -1441,7 +1446,7 @@ def objectNode = object {
             if (false == myLocalNames) then {
                 myLocalNames := set.empty
                 scope.keysAndKindsDo { methName, knd ->
-                    if (knd != k.inherited) then {
+                    if (knd.isImplicit.not) then {
                         myLocalNames.add(methName)
                     }
                 }
@@ -1463,12 +1468,11 @@ def objectNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitObject(self) up(as)) then {
                 def newChain = as.extend(self)
-                if (self.superclass != false) then {
-                    self.superclass.accept(visitor) from(newChain)
+                if (superclass != false) then {
+                    superclass.accept(visitor) from(newChain)
                 }
-                for (self.value) do { x ->
-                    x.accept(visitor) from(newChain)
-                }
+                usedTraits.do { t -> t.accept(visitor) from(newChain) }
+                value.do { x -> x.accept(visitor) from(newChain) }
             }
         }
         method nameString { 
@@ -1497,13 +1501,17 @@ def objectNode = object {
             if (inTrait) then { s := s ++ " (trait)" }
             if (inClass) then { s := s ++ " (class)" }
             if (self.superclass != false) then {
-                s := s ++ "\n" ++ spc ++ "Superclass:"
-                s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 1)
-                s := s ++ "\n" ++ spc ++ "Body:"
-                depth := depth + 1
+                s := s ++ "\n" ++ spc ++ "Superclass: " ++ 
+                        self.superclass.pretty(depth + 1)
             }
-            for (self.value) do { x ->
-                s := s ++ "\n"++ spc ++ x.pretty(depth+1)
+            if (usedTraits.isEmpty.not) then {
+                s := s ++ "\n" ++ spc ++ "Traits:"
+                usedTraits.do { t -> 
+                    s := "{s}\n{spc}  {t.pretty(depth + 1)}"
+                }
+            }
+            value.do { x ->
+                s := s ++ "\n"++ spc ++ x.pretty(depth + 1)
             }
             s
         }
@@ -1515,7 +1523,11 @@ def objectNode = object {
             var s := "object \{"
             if (inTrait) then { s := s ++ "   // trait" }
             if (inClass) then { s := s ++ "   // class" }
-            for (self.value) do { x ->
+            if (false != superclass) then { 
+                s := s ++ "\n" ++ superclass.toGrace(depth + 1)
+            }
+            usedTraits.do { t -> s := s ++ "\n" ++ t.toGrace(depth + 1) }
+            value.do { x ->
                 s := s ++ "\n" ++ spc ++ "    " ++ x.toGrace(depth + 1)
             }
             s := s ++ "\n" ++ spc ++ "\}"
@@ -1532,6 +1544,7 @@ def objectNode = object {
             usedTraits := other.usedTraits
             inClass := other.inClass
             inTrait := other.inTrait
+            annotations := other.annotations
             self
         }
         method asString {
@@ -1653,7 +1666,10 @@ def memberNode = object {
         method asString { "{in}.{value}" }
         method asIdentifier {
             // make and return an identifiderNode for my request
-            def resultNode = identifierNode.new(value, false)
+            if (scope == fakeSymbolTable) then {
+                ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
+            }
+            def resultNode = identifierNode.new (value, false) scope (scope)
             resultNode.inRequest := true
             resultNode.line := line
             resultNode.linePos := linePos
@@ -2000,7 +2016,7 @@ def opNode is public = object {
     }
     method asIdentifier {
         // make an identifiderNode with the same properties as me
-        def resultNode = identifierNode.new(value, false)
+        def resultNode = identifierNode.new (value, false) scope (scope)
         resultNode.inRequest := true
         resultNode.line := line
         resultNode.linePos := linePos
@@ -2157,9 +2173,7 @@ def defDecNode = object {
                 for (self.annotations) do { ann ->
                     ann.accept(visitor) from(newChain)
                 }
-                if (self.value != false) then {
-                    self.value.accept(visitor) from(newChain)
-                }
+                value.accept(visitor) from(newChain)
             }
         }
         method map(blk) ancestors(as) {

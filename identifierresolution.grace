@@ -27,6 +27,9 @@ method newScopeKind(variety') {
     s.hasParent := false
     s
 }
+
+def keyOrdering = { a, b -> a.key.compare(b.key) }
+
 type DeclKind = k.T
 
 factory method newScopeIn(parent') kind(variety') {
@@ -44,7 +47,7 @@ factory method newScopeIn(parent') kind(variety') {
     def hash is public = serialNumber.hash
     
     if (isObjectScope) then {
-        addName "self" as(k.defdec)
+        addName "self" as(k.selfDef)
         at "self" putScope(self)
     }
     method isEmpty { elements.size == 0 }
@@ -67,7 +70,7 @@ factory method newScopeIn(parent') kind(variety') {
         if (kind == k.inherited) then {
             return  // don't overwrite new id with inherited id
         }
-        if (oldKind == k.inherited)  then {
+        if (oldKind.implicit)  then {
             elements.put(ndName, kind)
             elementLines.put(ndName, nd.line)
             return
@@ -114,8 +117,8 @@ factory method newScopeIn(parent') kind(variety') {
         if (elementScopes.contains(n)) then {
             return elementScopes.get(n)
         }
-        //    print("scope {self}: elements.contains({n}) = {elements.contains(n)}" ++
-        //        " but elementScopes.contains({n}) = {elementScopes.contains(n)}")
+        util.log 70 verbose ("scope {self}: elements.contains({n}) = {elements.contains(n)}" ++
+              " but elementScopes.contains({n}) = {elementScopes.contains(n)}")
         //  This occurs for names like `true` that are built-in, but for which there
         //  is no symbolTable describing their atttributes.
         //  TODO: add complete information for the built-in names.
@@ -137,8 +140,8 @@ factory method newScopeIn(parent') kind(variety') {
             result := result ++ each.serialNumber
             if (each.hasParent) then { result := result ++ "➞" }
         }
-        result := result ++  "):\n"
-        elements.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
+        result := result ++  "):\n    "
+        elements.asList.sortBy(keyOrdering).do { each ->
             result := "{result} {each.key}({kind(each.key)}) "
         }
         result ++ "\n"
@@ -149,7 +152,7 @@ factory method newScopeIn(parent') kind(variety') {
     method elementScopesAsString {
         def referencedScopes = set.empty
         var result := "\n    [elementScopes:"
-        elementScopes.asList.sortBy { a, b -> a.key.compare(b.key) }.do { each ->
+        elementScopes.asList.sortBy(keyOrdering).do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
             referencedScopes.add (each.value)
         }
@@ -237,6 +240,7 @@ factory method newScopeIn(parent') kind(variety') {
         // If nd references an object, then the returned
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
+        util.log 70 verbose "looking for scope referenced by {nd.pretty 0}"
         if (nd.kind == "identifier") then {
             def sought = nd.nameString
             withSurroundingScopesDo {s->
@@ -248,6 +252,7 @@ factory method newScopeIn(parent') kind(variety') {
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif {nd.kind == "member"} then {
             def receiverScope = self.scopeReferencedBy(nd.in)
+            util.log 70 verbose "receiverScope = {receiverScope}"
             if (nd.value == "outer") then {
                 return receiverScope.parent
             }
@@ -338,6 +343,7 @@ def builtInsScope = newScopeIn(emptyScope) kind("built-in")
 def preludeScope = newScopeIn(builtInsScope) kind("dialect")
 def moduleScope = newScopeIn(preludeScope) kind("module")
 def graceObjectScope = newScopeIn(emptyScope) kind("object")
+def booleanScope = newScopeIn(builtInsScope) kind "object"
 
 def universalScope = object {
     // The scope that defines every identifier,
@@ -692,12 +698,12 @@ method reportUndeclaredIdentifier(node) {
             suggestion.append " do \{ aVarName -> \}" onLine(node.line)
             suggestions.push(suggestion)
         }
-        errormessages.syntaxError "Unknown method '{nm}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
+        errormessages.syntaxError "unknown method '{nm}'. This may be a spelling mistake or an attempt to access a method in another scope.{extra}"
             atRange(node.line, node.linePos, node.linePos +
                 highlightLength - 1)
             withSuggestions(suggestions)
     }
-    errormessages.syntaxError("Unknown variable or method '{nm}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
+    errormessages.syntaxError("unknown variable or method '{nm}'. This may be a spelling mistake or an attempt to access a variable in another scope.")atRange(
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
 method reportAssignmentTo(node) declaredInScope(scp) {
@@ -716,13 +722,19 @@ method reportAssignmentTo(node) declaredInScope(scp) {
         if (scp.elementTokens.contains(name)) then {
             def tok = scp.elementTokens.get(name)
             def sugg = errormessages.suggestion.new
-            var eq := tok
-            while {(eq.kind != "op") || (eq.value != "=")} do {
-                eq := eq.next
+            if (tok.value == "def") then {
+                var eq := tok
+                while {(eq.kind != "op") || (eq.value != "=")} do {
+                    eq := eq.next
+                }
+                sugg.replaceToken(eq)with(":=")
+                sugg.replaceToken(tok)with("var")
+                suggestions.push(sugg)
+            } else {
+                errormessages.syntaxError("'{name}' cannot be changed " ++
+                    "because it was declared as a '{tok.value}'{more}.")
+                    atLine(node.line)
             }
-            sugg.replaceToken(eq)with(":=")
-            sugg.replaceToken(tok)with("var")
-            suggestions.push(sugg)
         }
         errormessages.syntaxError("'{name}' cannot be changed "
             ++ "because it was declared with 'def'{more}. "
@@ -773,17 +785,19 @@ method checkForTraitConficts(objNode) {
     // been collected in the object, which happens in the buildSymbolTable
     // visitor pass, so it is convenient to do this check during the
     // resolution pass.
-    def traitMethod = map.new
+    def traitMethods = map.new
     objNode.usedTraits.do { t ->
         t.providedNames.do { methName ->
-            def traitList = traitMethod.get(methName) ifAbsent { [] }
-            traitList.push(t)
-            traitMethod.put(methName, traitList)
+            def definingTraits = traitMethods.get(methName) ifAbsent { [] }
+            definingTraits.push(t)
+            traitMethods.put(methName, definingTraits)
         }
     }
-    traitMethod.keysDo { methName ->
-        def sources = traitMethod.get(methName)
+    traitMethods.keysDo { methName ->
+        def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
+            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
+            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names
@@ -888,12 +902,21 @@ method setupContext(moduleObject) {
     graceObjectScope.addName "asDebugString"
     graceObjectScope.addName "::"
     
+    booleanScope.addName "prefix!"
+    booleanScope.addName "&&"
+    booleanScope.addName "||"
+    booleanScope.addName "andAlso"
+    booleanScope.addName "orElse"
+    booleanScope.addName "not"
+    
     builtInsScope.addName "graceObject"
     builtInsScope.at "graceObject" putScope(graceObjectScope)
     builtInsScope.addName "prelude" as(k.defdec)
     builtInsScope.at "prelude" putScope(preludeScope)
     builtInsScope.addName "_prelude" as(k.defdec)
     builtInsScope.at "_prelude" putScope(preludeScope)
+    builtInsScope.at "true" putScope(booleanScope)
+    builtInsScope.at "false" putScope(booleanScope)
 
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
@@ -1037,20 +1060,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitInherits(o) up(as) {
             o.scope := as.parent.scope
             if (as.parent.canInherit.not) then {
-                errormessages.syntaxError "{o.statementName} statements must be inside an object or class"
+                errormessages.syntaxError("{o.statementName} statements must " ++
+                    "be inside an object or class; a trait cannot inherit")
                     atRange(o.line, o.linePos, o.linePos + 7)
-            }
-            if (o.isUse) then { 
-                as.parent.usedTraits.add(o)
-            } else {
-                if (as.parent.superclass != false) then {
-                    errormessages.syntaxError ("there can be no more than one inherits " ++
-                        "statement in an object; there was a prior inherits statement " ++
-                        "on line {as.parent.superclass.line}")
-                        atRange(o.line, o.linePos, o.linePos + 7)
-                }
-                as.parent.superclass := o
-                // cache the inherits node in the object or class that contains it
             }
             true
         }
@@ -1123,21 +1135,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitCommentNode(o) up(as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
     
+    def objectScopesVis = object {
+        // This traversal can't be completed in the buildSymbolTable visitor,
+        // because the visitation is top-down, and hence the scope of the
+        // dody of a def or method won't have been allocated when the 
+        // delcaration is visited.
 
-    def inheritanceVis = object {
         inherits ast.baseVisitor
-        method visitClass(o) up (as) {
-            collectInheritedNames(o)
-            true
-        }
-        method visitObject(o) up (as) {
-            collectInheritedNames(o)
-            true
-        }
-        method visitModule(o) up (as) {
-            collectInheritedNames(o)
-            true
-        }
         method visitDefDec(o) up (as) {
             if (o.returnsObject) then {
                 o.scope.at(o.nameString)
@@ -1154,7 +1158,24 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
     }
 
+    def inheritanceVis = object {
+        inherits ast.baseVisitor
+        method visitClass(o) up (as) {
+            collectInheritedNames(o)
+            true
+        }
+        method visitObject(o) up (as) {
+            collectInheritedNames(o)
+            true
+        }
+        method visitModule(o) up (as) {
+            collectInheritedNames(o)
+            true
+        }
+    }
+
     topNode.accept(symbolTableVis) from(topChain)
+    topNode.accept(objectScopesVis) from(topChain)
     topNode.accept(inheritanceVis) from(topChain)
 }
 
@@ -1162,6 +1183,9 @@ method collectInheritedNames(node) {
     // node is an object or class; put the names that it inherits into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
+    if (nodeScope == ast.fakeSymbolTable) then {
+        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
+    }
     if (nodeScope.inheritedNames == completed) then { 
         return
     }
@@ -1182,7 +1206,11 @@ method collectInheritedNames(node) {
                 // superScope.node == nullNode when superScope describes 
                 // an imported module.
                 collectInheritedNames(superScope.node)
+            } else {
+                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
             }
+        } else {
+            util.log 70 verbose "superscope of {node.nameString} is universal"
         }
     }
     superScope.elements.keysDo { each ->
