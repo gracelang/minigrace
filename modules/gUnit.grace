@@ -439,26 +439,10 @@ def testSuite is public = object {
 }
 
 method className(testClass) {
-    if (prelude.engine == "js") then {
-        def cName = testClass.asString
-        if (cName.startsWith "class ") then {
-            return cName.substringFrom 7 to (cName.size)
-        } else {
-            return "un-named"
-        }
+    def cName = testClass.asString
+    if (cName.startsWith "class ") then {
+        return cName.substringFrom 7 to (cName.size)
+    } else {
+        return "un-named"
     }
-    def description = testClass.forMethod("null").asString
-    // description looks like "self.wombat[0x0x7fa7d2603ce8]"
-    var answer := ""
-    description.do { ch ->
-        if (ch == ".") then { 
-            answer := ""
-        } elseif {ch == "["} then { 
-            return answer 
-        } else {
-            answer := answer ++ ch
-        }
-    }
-    if (answer == "forMethod") then { return "un-named" }
-    return answer
 }
