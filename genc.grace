@@ -17,7 +17,7 @@ import "xmodule" as xmodule
 var tmp
 var verbosity := 30
 var pad1 := 1
-var auto_count := 0
+var auto_count := 1
 var constants := []
 var globals := []
 var output := []
@@ -494,35 +494,36 @@ method compileobject(o, outerRef) {
         pos := pos + 1
     }
     pos := 1
-    for (o.value) do { e ->
+    
+    def content = list.empty
+    if (false != o.superclass) then { content.add(o.superclass) }
+    o.usedTraits.do { t -> content.add(t) }
+    o.value.do { e -> content.add(e) }
+
+    content.do { e ->
         out "  sourceObject = {selfr};"
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
             compileobjvardecdata(e, selfr, pos)
-            pos := pos + 1
         } elseif { e.kind == "defdec" } then {
             compileobjdefdecdata(e, selfr, pos)
-            pos := pos + 1
         } elseif { e.kind == "typedec" } then {
             compileobjdefdecdata(e, selfr, pos)
-            pos := pos + 1
         } elseif { e.kind == "class" } then {
+        } elseif { e.kind == "inherits" } then {
+            // The return value is irrelevant with factory inheritance,
+            // but we save it as super for the sake of "inherits true".
+            superobj := compilenode(e.value)
+            out "  struct UserObject *{selfr}_uo = (struct UserObject *){selfr};"
+            out "  {selfr}_uo->super = {superobj};"
+            implementAliasesAndExclusionsFor(o) inheriting(e, superobj)
+            pos := pos - 1
         } else {
             compilenode(e)
+            pos := pos - 1 // Compensate for below
         }
+        pos := pos + 1
     }
-    
-    // compile inheritance
-    
-    if (false != o.superclass) then {
-        superobj := compilenode(o.superclass.value)
-        out "  struct UserObject *{selfr}_uo = (struct UserObject *){selfr};"
-        out "  {selfr}_uo->super = {superobj};"
-        implementAliasesAndExclusionsFor(o) inheriting(o.superclass, superobj)
-    }
-    
-    // TODO: compile traits
-
     out("  objclass{myc} = {selfr}->class;")
     out("  objclass{myc}->definitionModule = modulename;")
     out("  objclass{myc}->definitionLine = {o.line};")

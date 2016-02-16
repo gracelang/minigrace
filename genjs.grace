@@ -349,7 +349,18 @@ method compileobject(o, outerRef, inheritingObject) {
             compilemethod(e, selfr)
         }
     }
-    for (o.value) do { e ->
+        
+    // compile inherits
+    if (false != o.superclass) then {
+        out "sourceObject = {selfr};"
+        compileInherits(o.superclass, selfr)
+    }
+    
+    // compile traits
+    o.usedTraits.do { t -> compileInherits(t, selfr) }
+
+    // compile body
+    o.value.do { e ->
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
             out "sourceObject = {selfr};"
@@ -372,13 +383,6 @@ method compileobject(o, outerRef, inheritingObject) {
             compilenode(e)
         }
     }
-    
-    // compile inherits
-    if (false != o.superclass) then {
-        out "sourceObject = {selfr};"
-        compileInherits(o.superclass, selfr)
-    }
-
     out "superDepth = origSuperDepth;"
     decreaseindent
     out "\};"
