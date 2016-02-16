@@ -437,7 +437,7 @@ def aGraceLangTest = object {
 
         method test_035_noparenmethoddec {
             def a = object {
-             method succeeded { return true }
+                method succeeded { return true }
             }
             if (a.succeeded) then {
                 out("OK")
