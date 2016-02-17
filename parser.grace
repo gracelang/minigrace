@@ -158,10 +158,16 @@ method findClosingBrace(token, inserted) {
     result
 }
 
-// True if the current token (next to be processed) is a t, where
-// t is "num", "string", "method", etc.
+
 method accept(t) {
+    // True if the current token has kind t, where
+    // t is "num", "string", "method", etc.
     sym.kind == t
+}
+
+method acceptKeyword (kw) {
+    if (sym.kind != "keyword") then { return false }
+    return sym.value == kw
 }
 
 method acceptSameLine (t) {
@@ -319,7 +325,7 @@ method checkAnnotation(ann) {
     ann
 }
 method doannotation {
-    if ((!accept("keyword")).orElse {sym.value != "is"}) then {
+    if (acceptKeyword "is" .not) then {
         return false
     }
     next
@@ -388,7 +394,7 @@ method dotypeterm {
         generic
         dotrest(noBlocks)
     } else {
-        if (accept("keyword").andAlso { sym.value == "type" }) then {
+        if (acceptKeyword "type") then {
             dotypeLiteral
         }
     }
@@ -1403,9 +1409,9 @@ method term {
         trycatch
     } elseif { accept "identifier" } then {
         identifier
-    } elseif { accept "keyword" && (sym.value == "object") } then {
+    } elseif { acceptKeyword "object" } then {
         doobject
-    } elseif { accept "keyword" && (sym.value == "type" ) } then {
+    } elseif { acceptKeyword "type" } then {
         dotypeLiteral
     } elseif { accept "lbrace" } then {
         block
@@ -2078,7 +2084,7 @@ method callmprest(meth, signature, tok) {
 
 // Accept a const declaration
 method defdec {
-    if (accept("keyword") && (sym.value == "def")) then {
+    if (acceptKeyword "def") then {
         def line = sym.line
         def pos = sym.linePos
         def defTok = sym
@@ -2151,7 +2157,7 @@ method defdec {
 
 // Accept a var declaration
 method vardec {
-    if (accept("keyword") && (sym.value == "var")) then {
+    if (acceptKeyword "var") then {
         def line = sym.line
         def pos = sym.linePos
         def varTok = sym
@@ -2262,7 +2268,7 @@ method doarray {
 
 // Accept "dialect "X""
 method dodialect {
-    if (accept("keyword") && (sym.value == "dialect")) then {
+    if (acceptKeyword "dialect") then {
         next
         if(sym.kind != "string") then {
             def suggestion = errormessages.suggestion.new
@@ -2285,7 +2291,7 @@ method dodialect {
 method inheritsdec {
     // Accept "inherits x.new"
 
-    if (accept("keyword") && ((sym.value == "inherits") || (sym.value == "uses"))) then {
+    if (accept "keyword" && ((sym.value == "inherits") || (sym.value == "uses"))) then {
         def btok = sym
         checkIndent
         next
@@ -2401,7 +2407,7 @@ method doobject {
     // Accept an object constructor.
     // this method is called doobject because "object" is a keyword
 
-    if (accept("keyword") && (sym.value == "object")) then {
+    if (acceptKeyword "object") then {
         next
         parseObjectConstructorBody "an object constructor" 
             startingWith (lastToken) after "'object'"
@@ -2571,7 +2577,7 @@ method doclass {
 
 method dofactoryMethod {
     // Accept a factory method declaration
-    if ((accept("keyword") && (sym.value == "factory")).andAlso{
+    if ((acceptKeyword "factory").andAlso{
             tokens.first.kind == "keyword"}.andAlso{
             tokens.first.value == "method"}) then {
         def btok = sym
@@ -2619,7 +2625,7 @@ method dofactoryMethod {
 
 // Accept a method declaration
 method methoddec {
-    if (accept("keyword") && (sym.value == "method")) then {
+    if (acceptKeyword "method") then {
         def btok = sym
         checkIndent
         statementToken := sym
@@ -2997,7 +3003,7 @@ method typeparameters {
 method doimport {
     // Accept an import statement, which has the form
     //      import ‹string› as ‹identifier›:‹type expression› is ‹annotation›
-    if (accept("keyword") && (sym.value == "import")) then {
+    if (acceptKeyword "import") then {
         def importline = sym.line
         next
         if(sym.kind != "string") then {
@@ -3055,7 +3061,7 @@ method doimport {
 
 method doreturn {
     // Accept a return statement; 'return' is followed by an optional expression.
-    if (accept("keyword") && (sym.value == "return")) then {
+    if (acceptKeyword "return") then {
         def retTok = sym
         next
         var retval
@@ -3124,7 +3130,7 @@ method domethodtype {
 method dotypeLiteral {
     // parses a type literal between braces, with optional leading 'type' keyword.
     def typeLiteralTok = sym
-    if (accept("keyword").andAlso { sym.value == "type" }) then {
+    if (acceptKeyword "type") then {
         next
         if (!accept("lbrace")) then {
             def suggestion = errormessages.suggestion.new
@@ -3141,7 +3147,7 @@ method dotypeLiteral {
         auto_count := auto_count + 1
         next
         while {accept("rbrace").not} do {
-            if (accept("keyword").andAlso { sym.value == "type" }) then {
+            if (acceptKeyword "type") then {
                 typedec
                 types.push(values.pop)
             } else {
@@ -3158,7 +3164,7 @@ method dotypeLiteral {
 
 method typedec {
     // Accept a declaration: 'type = <type expression>'
-    if (accept("keyword") && (sym.value == "type")) then {
+    if (acceptKeyword "type") then {
         def line = sym.line
         def pos = sym.linePos
         next
