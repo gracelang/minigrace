@@ -53,7 +53,7 @@ method next {
         lastIndent := lastToken.indent
         sym := tokens.poll
         if (sym.line > (lastLine + 1)) then { noteBlank }
-        pushcomments
+        pushComments
         util.setPosition(sym.line, sym.linePos)
     } else {
         errormessages.syntaxError("Unexpectedly found the end of the input. " 
@@ -375,7 +375,7 @@ method blank {
         if ( sym.line <= (lastToken.line + 1) ) then { return }
         if ( sym.line <= (previousCommentToken.line + 1) ) then { return }
     }
-    pushcomments
+    pushComments
     if ((values.size == 0) || 
             ((values.size > 0).andAlso { values.last.kind != "blank" })) then {
         if (blankLocation > 0) then {
@@ -3326,7 +3326,7 @@ method statement {
     }
 }
 
-method pushcomments {
+method pushComments {
     // Push a comment onto the comments stack as a commentNode. If
     // there are consecutive comments following, deal with them all.
     // Adjacent comments extend the first; a break of a blank line
@@ -3366,7 +3366,7 @@ method reconcileComments {
     // Finds comments associated with that node, remove thems from comments
     // stack, and puts them in that node's comments attribute.
 
-    pushcomments
+    pushComments
     def node = if (values.isEmpty) then {
         moduleObject 
     } else {
