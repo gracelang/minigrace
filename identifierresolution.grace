@@ -707,6 +707,8 @@ method reportUndeclaredIdentifier(node) {
         node.line, node.linePos, node.linePos + highlightLength - 1)withSuggestions(suggestions)
 }
 method reportAssignmentTo(node) declaredInScope(scp) {
+    // Report a syntax error for an illegal assignment
+
     def name = node.nameString
     def kind = scp.kind(name)
     var more := ""
@@ -714,11 +716,15 @@ method reportAssignmentTo(node) declaredInScope(scp) {
     if (scp.elementLines.contains(name)) then {
         more := " on line {scp.elementLines.get(name)}"
     }
-    if (kind == k.defdec) then {
-        if (reserved.contains(name)) then {
-            errormessages.syntaxError("'{name}' is a reserved name and "
-                ++ "cannot be re-bound.") atLine(node.line)
-        }
+    if (kind == k.selfDef) then {
+        errormessages.syntaxError("'{name}' cannot be re-bound; " ++
+              "it always refers to the current object.")
+              atRange(node.line, node.linePos, node.linePos + name.size - 1)
+    } elseif { reserved.contains(name) } then {
+        errormessages.syntaxError("'{name}' is a reserved name and " ++
+              "cannot be re-bound.")
+              atRange(node.line, node.linePos, node.linePos + name.size - 1)
+    } elseif { kind == k.defdec } then {
         if (scp.elementTokens.contains(name)) then {
             def tok = scp.elementTokens.get(name)
             def sugg = errormessages.suggestion.new
@@ -733,25 +739,26 @@ method reportAssignmentTo(node) declaredInScope(scp) {
             } else {
                 errormessages.syntaxError("'{name}' cannot be changed " ++
                     "because it was declared as a '{tok.value}'{more}.")
-                    atLine(node.line)
+                    atRange(node.line, node.linePos, node.linePos + name.size - 1)
             }
         }
         errormessages.syntaxError("'{name}' cannot be changed "
             ++ "because it was declared with 'def'{more}. "
             ++ "To make it a variable, use 'var' in the declaration")
-            atLine(node.line) withSuggestions(suggestions)
+            atRange(node.line, node.linePos, node.linePos + name.size - 1)
+            withSuggestions(suggestions)
     } elseif { kind == k.typedec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a type{more}.")
-            atLine(node.line)
+            atRange(node.line, node.linePos, node.linePos + name.size - 1)
     } elseif { kind.isParameter } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a parameter{more}.")
-            atLine(node.line)
+            atRange(node.line, node.linePos, node.linePos + name.size - 1)
     } elseif { kind == k.methdec } then {
         errormessages.syntaxError("'{name}' cannot be re-bound "
             ++ "because it is declared as a method{more}.")
-            atLine(node.line)
+            atRange(node.line, node.linePos, node.linePos + name.size - 1)
     }
 }
 
