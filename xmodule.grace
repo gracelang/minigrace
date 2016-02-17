@@ -141,7 +141,7 @@ method doAstCheck(moduleObj) {
 
 method checkExternalModule(node) {
     checkimport(node.moduleName, node.path, 
-        node.line, node.linePos + 1, node.isDialect)
+        node.line, node.linePos, node.isDialect)
 }
 
 method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
