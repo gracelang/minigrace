@@ -47,12 +47,29 @@ def stringMapTest = object {
         method testGetAbsent {
             assert {m123.get "foo"} shouldRaise (NoSuchObject)
         }
+        method testGetPresentValueOf {
+            // valueOf is a property of the JavaScript object prototype
+            m123.put("valueOf", 19)
+            assert (m123.get "valueOf") shouldBe 19
+        }
+        method testGetIfAbsentAbsentValueOf {
+            var absent := false
+            assert (m123.get "valueOf" ifAbsent { absent := true ; "absent" }) 
+                shouldBe "absent"
+            assert (absent) description "variable `absent` not set"
+        }
+        method testGetAbsentValueOf {
+            assert {m123.get "valueOf"} shouldRaise (NoSuchObject)
+        }
         method testGetIfAbsentPresent {
-            assert (m123.get "two" ifAbsent { failBecause "two is absent" }) shouldBe 2
+            assert (m123.get "two" ifAbsent { failBecause "two is absent" }) 
+                shouldBe 2
         }
         method testGetIfAbsent {
             var absent := false
-            assert (m123.get "foo" ifAbsent { absent := true ; "absent" }) shouldBe "absent"
+            assert (m123.get "foo" ifAbsent { absent := true ; "absent" }) 
+                shouldBe "absent"
+            assert (absent) description "variable `absent` not set"
         }
         method testContainsPresent {
             assert (m123.contains "two") description "m123 does not contain \"two\""

@@ -46,7 +46,7 @@ class new {
     method get(k) {
         // answers the value associated with the key k.  If there is none
         // raises the NoSuchObject exception.
-        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
+        native "js" code ‹if (this.data.inner.hasOwnProperty(var_k._value))
                 return this.data.inner[var_k._value];
             var nso = callmethod(var___95__prelude, "NoSuchObject", [0]);
             var exceptionMsg = new GraceString("no value for key " + var_k._value);
@@ -59,7 +59,7 @@ class new {
     method get(k) ifAbsent (absentBlock) {
         // answers the value associated with the key k.  If there is none
         // evaluates absentBlock and returns its result.
-        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
+        native "js" code ‹if (this.data.inner.hasOwnProperty(var_k._value))
                 return this.data.inner[var_k._value];
             return callmethod(var_absentBlock, "apply", [0]);›
         var t := findPosition(k)
@@ -70,7 +70,7 @@ class new {
     }
     method contains(k) {
         // true if I contain the key k
-        native "js" code ‹if ((typeof this.data.inner[var_k._value]) !== 'undefined')
+        native "js" code ‹if (this.data.inner.hasOwnProperty(var_k._value))
                 return GraceTrue;
             else return GraceFalse;›
         var t := findPosition(k)
