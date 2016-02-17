@@ -355,7 +355,7 @@ def universalScope = object {
     method addName(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
     method addNode(n)as(kd) { ProgrammingError.raise "can't add to the universal scope" }
     method contains(n) { true }
-    method do(b) { b.apply(self) }
+    method withSurroundingScopesDo(b) { b.apply(self) }
     method kind(n) { "unknown" }
     method at(n) putScope(scp) { }
     method getScope(n) { self }
@@ -661,12 +661,12 @@ method reportUndeclaredIdentifier(node) {
             thresh := ((nm.size / 3) + 1).truncated
         }
         if (errormessages.dameraulevenshtein(v, nm) <= thresh) then {
-            suggestion := errormessages.suggestion.new
-            suggestion.replaceRange(node.linePos, node.linePos + 
-                node.value.size - 1)with(v)onLine(node.line)
-            suggestions.push(suggestion)
+                suggestion := errormessages.suggestion.new
+                suggestion.replaceRange(node.linePos, node.linePos + 
+                    node.value.size - 1) with (v) onLine(node.line)
+                suggestions.push(suggestion)
+            }
         }
-    }
     nodeScope.elementScopes.keysDo { s ->
         if (nodeScope.elementScopes.get(s).contains(nm)) then {
             suggestion := errormessages.suggestion.new
