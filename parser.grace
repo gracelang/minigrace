@@ -2474,7 +2474,6 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     if (anns != false) then { objNode.annotations.addAll(anns) }
     objNode.usedTraits := usedTraits
     values.push(objNode)
-    reconcileComments
     minIndentLevel := localMinIndentLevel
 }
 
