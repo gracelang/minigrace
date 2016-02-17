@@ -9,7 +9,7 @@ def input = list.with(
     "  name -> String",
     "\}",
     "",
-    "class person.new(name', age') \{",
+    "class person(name', age') \{",
     "  def name is public = name'",
     "  def age is public = age'",
     "  method getShoeSize \{",
@@ -22,4 +22,4 @@ util.lines := input
 def tokens = lexer.new.lexinput(input)
 def module = parser.parse(tokens)
 
-print(module.pretty 0 )
+print (module.pretty 0)
