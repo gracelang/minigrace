@@ -569,14 +569,6 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
     if (freshMethResult.isObject) then {
         def subScope = freshMethResult.scope
         gct.at "fresh:{val.nameString}" put (subScope.keysAsList)
-        if (util.verbosity >= 70) then {
-            subScope.elements.keysDo { name ->
-                def subSubScope = subScope.getScope(name)
-                if (subSubScope.isUniversal.not) then {
-                    util.log 80 verbose "scope for {name} = { subScope.getScope(name).asDebugString }"
-                }
-            }
-        }
     } elseif {freshMethResult.isCall} then {
         // we know that freshMethResult.value.isMember and 
         // freshMethResult.value.nameString == "clone"
