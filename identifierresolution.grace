@@ -790,8 +790,6 @@ method resolveIdentifiers(topNode) {
             transformInherits(node) ancestors(as)
         } elseif { node.isBind } then {
             transformBind(node) ancestors(as)
-        } elseif { node.isObject } then {
-            checkForTraitConficts (node)
         } elseif { node.isTypeDec } then {
             node
         } else {
@@ -1159,7 +1157,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def objectScopesVis = object {
         // This traversal can't be completed in the buildSymbolTable visitor,
         // because the visitation is top-down, and hence the scope of the
-        // dody of a def or method won't have been allocated when the 
+        // body of a def or method won't have been allocated when the
         // delcaration is visited.
 
         inherits ast.baseVisitor
@@ -1182,15 +1180,15 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def inheritanceVis = object {
         inherits ast.baseVisitor
         method visitClass(o) up (as) {
-            collectInheritedNames(o)
+            collectInheritedAndUsedNames(o)
             true
         }
         method visitObject(o) up (as) {
-            collectInheritedNames(o)
+            collectInheritedAndUsedNames(o)
             true
         }
         method visitModule(o) up (as) {
-            collectInheritedNames(o)
+            collectInheritedAndUsedNames(o)
             true
         }
     }
@@ -1200,7 +1198,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     topNode.accept(inheritanceVis) from(topChain)
 }
 
-method collectInheritedNames(node) {
+method collectInheritedAndUsedNames(node) {
     // node is an object or class; put the names that it inherits into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
@@ -1211,22 +1209,35 @@ method collectInheritedNames(node) {
         return
     }
     if (nodeScope.inheritedNames == inProgress) then {
-        errormessages.syntaxError "cyclic inheritance"
+        errormessages.syntaxError "cyclic inheritance or trait use"
             atRange(node.line, node.linePos, node.linePos)
     }
-    var superScope
     nodeScope.inheritedNames := inProgress
-    if (node.superclass == false) then { 
-        superScope := graceObjectScope
+    gatherInheritedNames(node)
+    gatherUsedNames(node)
+    nodeScope.inheritedNames := completed
+}
+
+method gatherInheritedNames(node) is confidential {
+    var inhNode := node.superclass
+    def objScope = node.scope
+    var superScope
+    if (inhNode == false) then {
+        inhNode := ast.inheritsNode.new(false)
+        superScope := if (node.inTrait) then {
+            emptyScope
+        } else {
+            graceObjectScope
+        }
     } else {
-        superScope := nodeScope.scopeReferencedBy(node.superclass.value)
+        superScope := objScope.scopeReferencedBy(inhNode.value)
         // If superScope is the universal scope, then we have no information
         // about the inherited attributes
         if (superScope.isUniversal.not) then {
             if (superScope.node != ast.nullNode) then {
                 // superScope.node == nullNode when superScope describes 
                 // an imported module.
-                collectInheritedNames(superScope.node)
+                collectInheritedAndUsedNames(superScope.node)
             } else {
                 util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
             }
@@ -1236,10 +1247,85 @@ method collectInheritedNames(node) {
     }
     superScope.elements.keysDo { each ->
         if (each != "self") then {
-            nodeScope.addName(each) as(k.inherited)
+            objScope.addName(each) as(k.inherited)
+            inhNode.providedNames.add(each)
+        }
+    }    
+    inhNode.aliases.do { a ->
+        if (superScope.contains(a.oldName.nameString)) then {
+            inhNode.providedNames.add(a.newName.nameString)
+        } else {
+            errormessages.syntaxError("can't define alias {a.oldName.nameString} " ++
+                "because it is not present in the inherited object")
+                atRange(a.oldName.line, a.oldName.linePos, 
+                        a.oldName.linePos + a.oldName.nameString.size - 1)
         }
     }
-    nodeScope.inheritedNames := completed
+    inhNode.exclusions.do { exId ->
+        inhNode.providedNames.remove(exId.nameString) ifAbsent {
+            errormessages.syntaxError("can't exclude {exId.nameString} " ++
+                "because it is not present in the inherited object")
+                atRange(exId.line, exId.linePos, 
+                        exId.linePos + exId.nameString.size - 1)
+        }
+    }
+}
+
+method gatherUsedNames(objNode) is confidential {
+    def traitMethods = map.new
+    def objScope = objNode.scope
+    objNode.usedTraits.do { t ->
+        def traitScope = objScope.scopeReferencedBy(t.value)
+        collectInheritedAndUsedNames(traitScope.node)
+        traitScope.elements.keysDo { each ->
+            if (each != "self") then {
+                objScope.addName(each) as(k.fromTrait)
+                t.providedNames.add(each)
+            }
+        }
+        t.aliases.do { a ->
+            if (traitScope.contains(a.oldName.nameString)) then {
+                t.providedNames.add(a.newName.nameString)
+            } else {
+                errormessages.syntaxError("can't define alias {a.oldName.nameString} " ++
+                    "because it is not present in the used trait")
+                    atRange(a.oldName.line, a.oldName.linePos, 
+                            a.oldName.linePos + a.oldName.nameString.size - 1)
+            }
+        }
+        t.exclusions.do { exId ->
+            t.providedNames.remove(exId.nameString) ifAbsent {
+                errormessages.syntaxError("can't exclude {exId.nameString} " ++
+                    "because it is not present in the used trait")
+                    atRange(exId.line, exId.linePos, 
+                            exId.linePos + exId.nameString.size - 1)
+            }
+        }
+        t.providedNames.do { methName ->
+            def definingTraits = traitMethods.get(methName) ifAbsent { [] }
+            definingTraits.push(t)
+            traitMethods.put(methName, definingTraits)
+        }
+    }
+    checkForConflicts(objNode, traitMethods)
+}
+    
+method checkForConflicts(objNode, traitMethods) {
+    traitMethods.keysDo { methName ->
+        def sources = traitMethods.get(methName)
+        if (sources.size > 1) then {    // a method has more than one source trait
+            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
+            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
+            if (objNode.localNames.contains(methName).not) then {
+                def sourceList = sources.map { s -> s.nameString }
+                // TODO:  clean up these names for the error message
+                def minSourceLine = sources.fold {a, s -> min(a,s.line) } 
+                      startingWith(infinity)
+                errormessages.error("Trait conflict: method `{methName}` is defined " ++
+                      "in multiple traits {sourceList}.") atLine (minSourceLine)
+            }
+        }
+    }
 }
 
 method transformBind(bindNode) ancestors(as) {
@@ -1305,29 +1391,6 @@ method transformInherits(inhNode) ancestors(as) {
         errormessages.syntaxError "inheritance must be from a freshly-created object"
             atRange(inhNode.line, superObject.linePos,
                 superObject.linePos + superObject.nameString.size - 1)
-    }
-    superScope.elements.keysDo { each ->
-        if (graceObjectScope.contains(each).not) then {
-            // names like asString, asDebugString, ... need not be provided
-            inhNode.providedNames.add(each)
-        }
-    }
-    inhNode.aliases.do { a ->
-        if (superScope.contains(a.oldName.nameString)) then {
-            inhNode.providedNames.add(a.newName.nameString)
-        } else {
-            errormessages.syntaxError "can't define alias for {a.oldName.nameString} because it is not present in the inherited object"
-                atRange(a.oldName.line, a.oldName.linePos, a.oldName.linePos + a.oldName.nameString.size - 1)
-        }
-    }
-    inhNode.exclusions.do { exId ->
-        inhNode.providedNames.remove(exId.nameString) ifAbsent {
-            errormessages.syntaxError "can't exclude {exId.nameString} because it is not present in the inherited object" 
-                atRange(exId.line, exId.linePos, exId.linePos + exId.nameString.size - 1)
-        }
-    }
-    inhNode.providedNames.filter { each -> each != "self" }.do { each ->
-        currentScope.addName(each) as(k.inherited)
     }
     inhNode
 }

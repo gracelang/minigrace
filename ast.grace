@@ -1419,27 +1419,7 @@ def objectNode is public = object {
             }
             return true
         }
-        
-        method providedNames -> Set<String> {
-            // answers the names of all of the methods of this object, including
-            // those inherited or obtained by using a trait
-            def result = set.empty
-            if (false != superclass) then { 
-                result.addAll(superclass.providedNames)
-            }
-            usedTraits.do { each ->
-                result.addAll(each.providedNames)
-            }
-            value.do {each ->
-                if (each.isMethod) then { 
-                    result.add(each.nameString)
-                } elseif { each.isTypeDec } then {
-                    result.add(each.nameString)
-                }
-            }
-            result
-        }
-        
+                
         method localNames -> Set<String> { 
             // answers the names of all of the methods defined directly in
             // this object.  Inherited names are _not_ included.
