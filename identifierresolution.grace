@@ -45,7 +45,7 @@ factory method newScopeIn(parent') kind(variety') {
     stSerial := stSerial + 1
     def serialNumber is public = stSerial
     def hash is public = serialNumber.hash
-    
+
     if (isObjectScope) then {
         addName "self" as(k.selfDef)
         at "self" putScope(self)
@@ -74,7 +74,7 @@ factory method newScopeIn(parent') kind(variety') {
             elements.put(ndName, kind)
             elementLines.put(ndName, nd.line)
             return
-        } 
+        }
         var more := " in this scope"
         if (elementLines.contains(ndName)) then {
             more := " as a {oldKind}"
@@ -146,7 +146,7 @@ factory method newScopeIn(parent') kind(variety') {
         }
         result ++ "\n"
     }
-    
+
     method asDebugString { "(ST {serialNumber})" }
 
     method elementScopesAsString {
@@ -248,7 +248,7 @@ factory method newScopeIn(parent') kind(variety') {
                     return s.getScope(sought)
                 }
             }
-            errormessages.syntaxError "No method {sought}"
+            errormessages.syntaxError "no method {sought}"
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif {nd.kind == "member"} then {
             def receiverScope = self.scopeReferencedBy(nd.in)
@@ -293,7 +293,7 @@ factory method newScopeIn(parent') kind(variety') {
         def priorScope = thatDefines(name) ifNone {
             return
         }
-        def description = 
+        def description =
             if (priorScope == self) then {
                 "this"
             } else {
@@ -533,7 +533,7 @@ method rewriteIdentifier(node) ancestors(as) {
     // node is a (copy of an) ast node that represents an applied occurence of
     // an identifer id.   This implies that node is a leaf in the ast.
     // This method may or may not transform node into another ast.
-    // There is no spec for what this method should do.  The code below 
+    // There is no spec for what this method should do.  The code below
     // was developed by addding and removing particular cases until
     // the transformed AST was sufficiecntly similar to the one emitted by the
     // old identifier resolution pass for the C code generator to accept it.
@@ -547,7 +547,7 @@ method rewriteIdentifier(node) ancestors(as) {
     //  TODO: can't make references to fields direct because they might be overridden
     // - id is a self-method: transform into a request on self
     // - id is not declared: generate an error message
-    
+
     // Some clauses are flagged "TODO Compatability Kludge — remove when possible"
     // This means that APB put them there to produce an AST close enough to the
     // former identifier resolution pass to keep the C code generator (genc) happy.
@@ -605,7 +605,7 @@ method rewriteIdentifier(node) ancestors(as) {
         if (nodeKind == k.vardec) then { return node }
     }
     if (definingScope == nodeScope.enclosingObjectScope) then {
-        return ast.memberNode.new(nm, 
+        return ast.memberNode.new(nm,
             ast.identifierNode.new("self", false) scope(nodeScope)
         ) scope(nodeScope)
     }
@@ -637,7 +637,7 @@ method checkForAmbiguityOf(node)definedIn(definingScope)as(kind) {
     }
     def more = if (conflictingScope.elementLines.contains(name)) then {
         " at line {conflictingScope.elementLines.get(name)}"
-    } else { 
+    } else {
         ""
     }
     errormessages.syntaxError "{name} is defined both by inheritance and by an enclosing scope{more}."
@@ -671,11 +671,11 @@ method reportUndeclaredIdentifier(node) {
         s.elements.keysDo { v ->
             def matchExtent = errormessages.name (nm) matches (v) within (thresh)
             util.log 100 verbose "matching {nm} to {v} within {thresh}: {matchExtent}"
-            if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) && 
+            if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) &&
                   (nmSize <= v.size) && (v.size <= sizeLimit)).orElse {
                   (nmSize > 2) && (matchExtent == v.size) } ) then {
                 suggestion := errormessages.suggestion.new
-                suggestion.replaceRange(node.linePos, node.linePos + 
+                suggestion.replaceRange(node.linePos, node.linePos +
                     node.value.size - 1) with (v) onLine(node.line)
                 suggestions.push(suggestion)
             }
@@ -794,7 +794,7 @@ method resolveIdentifiers(topNode) {
             node
         } else {
             node
-        } 
+        }
     } ancestors (ast.ancestorChain.empty)
 }
 
@@ -820,7 +820,7 @@ method checkForTraitConficts(objNode) {
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names
-                def minSourceLine = sources.fold {a, s -> min(a,s.line) } 
+                def minSourceLine = sources.fold {a, s -> min(a,s.line) }
                       startingWith(infinity)
                 errormessages.error("Trait conflict: method `{methName}` is defined " ++
                       "in multiple traits {sourceList}.") atRange (minSourceLine, 0, 0)
@@ -920,14 +920,14 @@ method setupContext(moduleObject) {
     graceObjectScope.addName "asString"
     graceObjectScope.addName "asDebugString"
     graceObjectScope.addName "::"
-    
+
     booleanScope.addName "prefix!"
     booleanScope.addName "&&"
     booleanScope.addName "||"
     booleanScope.addName "andAlso"
     booleanScope.addName "orElse"
     booleanScope.addName "not"
-    
+
     builtInsScope.addName "graceObject"
     builtInsScope.at "graceObject" putScope(graceObjectScope)
     builtInsScope.addName "prelude" as(k.defdec)
@@ -1117,9 +1117,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             if (o.inTrait) then { checkTraitBody(o) }
             true
         }
-        method visitModule(o) up(as) { 
+        method visitModule(o) up(as) {
             // the module scope was set before the traversal started
-            true 
+            true
         }
         method visitTypeDec(o) up(as) {
             def enclosingScope = as.parent.scope
@@ -1153,7 +1153,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitBlank(o) up(as) { o.scope := as.parent.scope ; true }
         method visitCommentNode(o) up(as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
-    
+
     def objectScopesVis = object {
         // This traversal can't be completed in the buildSymbolTable visitor,
         // because the visitation is top-down, and hence the scope of the
@@ -1205,7 +1205,7 @@ method collectInheritedAndUsedNames(node) {
     if (nodeScope == ast.fakeSymbolTable) then {
         util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
     }
-    if (nodeScope.inheritedNames == completed) then { 
+    if (nodeScope.inheritedNames == completed) then {
         return
     }
     if (nodeScope.inheritedNames == inProgress) then {
@@ -1235,7 +1235,7 @@ method gatherInheritedNames(node) is confidential {
         // about the inherited attributes
         if (superScope.isUniversal.not) then {
             if (superScope.node != ast.nullNode) then {
-                // superScope.node == nullNode when superScope describes 
+                // superScope.node == nullNode when superScope describes
                 // an imported module.
                 collectInheritedAndUsedNames(superScope.node)
             } else {
@@ -1250,28 +1250,32 @@ method gatherInheritedNames(node) is confidential {
             objScope.addName(each) as(k.inherited)
             inhNode.providedNames.add(each)
         }
-    }    
+    }
     inhNode.aliases.do { a ->
-        if (superScope.contains(a.oldName.nameString)) then {
+        def old = a.oldName.nameString
+        if (superScope.contains(old)) then {
             inhNode.providedNames.add(a.newName.nameString)
         } else {
-            errormessages.syntaxError("can't define alias {a.oldName.nameString} " ++
+            errormessages.syntaxError("can't define an alias for {old} " ++
                 "because it is not present in the inherited object")
-                atRange(a.oldName.line, a.oldName.linePos, 
-                        a.oldName.linePos + a.oldName.nameString.size - 1)
+                atRange(a.oldName.line, a.oldName.linePos,
+                        a.oldName.linePos + old.size - 1)
         }
     }
     inhNode.exclusions.do { exId ->
         inhNode.providedNames.remove(exId.nameString) ifAbsent {
             errormessages.syntaxError("can't exclude {exId.nameString} " ++
                 "because it is not present in the inherited object")
-                atRange(exId.line, exId.linePos, 
+                atRange(exId.line, exId.linePos,
                         exId.linePos + exId.nameString.size - 1)
         }
     }
 }
 
 method gatherUsedNames(objNode) is confidential {
+    // for each of objNodes's used traits, gather the names
+    // introduced by that trait, as modified by alias and exclude. 
+
     def traitMethods = map.new
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
@@ -1284,20 +1288,21 @@ method gatherUsedNames(objNode) is confidential {
             }
         }
         t.aliases.do { a ->
-            if (traitScope.contains(a.oldName.nameString)) then {
+            def old = a.oldName.nameString
+            if (traitScope.contains(old)) then {
                 t.providedNames.add(a.newName.nameString)
             } else {
-                errormessages.syntaxError("can't define alias {a.oldName.nameString} " ++
-                    "because it is not present in the used trait")
-                    atRange(a.oldName.line, a.oldName.linePos, 
-                            a.oldName.linePos + a.oldName.nameString.size - 1)
+                errormessages.syntaxError("can't define an alias for " ++
+                    "{old} because it is not present in the used trait")
+                    atRange(a.oldName.line, a.oldName.linePos,
+                            a.oldName.linePos + old.size - 1)
             }
         }
         t.exclusions.do { exId ->
             t.providedNames.remove(exId.nameString) ifAbsent {
                 errormessages.syntaxError("can't exclude {exId.nameString} " ++
                     "because it is not present in the used trait")
-                    atRange(exId.line, exId.linePos, 
+                    atRange(exId.line, exId.linePos,
                             exId.linePos + exId.nameString.size - 1)
             }
         }
@@ -1309,8 +1314,11 @@ method gatherUsedNames(objNode) is confidential {
     }
     checkForConflicts(objNode, traitMethods)
 }
-    
+
 method checkForConflicts(objNode, traitMethods) {
+    // traitMethods is a dictionary with methodNames as keys, and
+    // a list of sources as values.  Multiple sources indicate a conflict.
+
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
@@ -1319,7 +1327,7 @@ method checkForConflicts(objNode, traitMethods) {
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names for the error message
-                def minSourceLine = sources.fold {a, s -> min(a,s.line) } 
+                def minSourceLine = sources.fold {a, s -> min(a,s.line) }
                       startingWith(infinity)
                 errormessages.error("Trait conflict: method `{methName}` is defined " ++
                       "in multiple traits {sourceList}.") atLine (minSourceLine)
@@ -1329,9 +1337,9 @@ method checkForConflicts(objNode, traitMethods) {
 }
 
 method transformBind(bindNode) ancestors(as) {
-    // bindNode is (a shallow copy of) a bindNode.  If it is 
-    // binding a "member", transform it into a
-    // a request on a setter method
+    // bindNode is (a shallow copy of) a bindNode.  If it is binding
+    // a "member", transform it into a request on a setter method
+
     def dest = bindNode.dest
     def currentScope = bindNode.scope
     if ( dest.kind == "member" ) then {
@@ -1369,7 +1377,7 @@ method transformInherits(inhNode) ancestors(as) {
         // a `uses` statement; no transformation necessary
     } elseif (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
-        superCall.with.push(ast.callWithPart.request "object" 
+        superCall.with.push(ast.callWithPart.request "object"
             withArgs ( [ast.identifierNode.new("self", false) scope(currentScope)] ))
         def newmem = ast.memberNode.new(superCall.value.value ++ "()object",
             superCall.value.target
@@ -1410,7 +1418,7 @@ method resolve(moduleObject) {
     setupContext(moduleObject)
     util.setPosition(0, 0)
     moduleObject.scope := moduleScope
-    def preludeObject = ast.moduleNode.body([moduleObject]) 
+    def preludeObject = ast.moduleNode.body([moduleObject])
         named "prelude" scope (preludeScope)
     def preludeChain = ast.ancestorChain.with(preludeObject)
 
