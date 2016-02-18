@@ -1437,13 +1437,14 @@ method expression(acceptBlocks) {
         statementToken := sym
         util.setPosition(sym.line, sym.linePos)
         next
-        if(didConsume({expression(acceptBlocks)}).not) then {
+        if (didConsume{expression(acceptBlocks)}.not) then {
             def suggestion = errormessages.suggestion.new
             def nextTok = findNextValidToken( ["rparen"] )
             if(nextTok == sym) then {
                 suggestion.insert("«expression»")afterToken(lastToken)
             } else {
-                suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression»")
+                suggestion.replaceTokenRange(sym, nextTok.prev)
+                      leading(true)trailing(false)with("«expression»")
             }
             errormessages.syntaxError("parentheses must contain a valid expression.")atPosition(
                 sym.line, sym.linePos)withSuggestion(suggestion)
@@ -1452,8 +1453,9 @@ method expression(acceptBlocks) {
             checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError("an expression beginning with a '(' must end with a ')'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            errormessages.syntaxError("an expression beginning with a '(' must end with a ')'.")
+                  atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+                  withSuggestion(suggestion)
         }
         statementToken := tmpStatementToken
         next
@@ -2098,10 +2100,12 @@ method defdec {
             } elseif { nextToken == sym } then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
-                suggestion.replaceTokenRange(sym, nextToken.prev)leading(false)trailing(true)with("«name» ")
+                suggestion.replaceTokenRange(sym, nextToken.prev)
+                      leading(false)trailing(true)with("«name» ")
             }
-            errormessages.syntaxError("a definition must have a name, '=', and a value after the 'def'.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError("a definition must have a name, '=', " ++
+                  "and a value after the 'def'.") atPosition(sym.line, sym.linePos)
+                  withSuggestion(suggestion)
         }
         pushidentifier
         var val := false
@@ -2117,10 +2121,12 @@ method defdec {
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                 } else {
-                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
+                    suggestion.replaceTokenRange(sym, nextTok.prev)
+                          leading(true)trailing(false)with(" «expression»")
                 }
-                errormessages.syntaxError("a definition must have a value after the '='.")atPosition(
-                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+                errormessages.syntaxError("a definition must have a value after the '='.")
+                      atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+                      withSuggestion(suggestion)
             }
             val := values.pop
         } elseif { accept "bind" } then {
@@ -2131,8 +2137,9 @@ method defdec {
             suggestion := errormessages.suggestion.new
             suggestion.replaceToken(defTok)with("var")
             suggestions.push(suggestion)
-            errormessages.syntaxError("a definition must use '=' instead of ':='. A variable declaration uses 'var' and ':='.")atRange(
-                sym.line, sym.linePos, sym.linePos + 1)withSuggestions(suggestions)
+            errormessages.syntaxError("a definition must use '=' instead of ':='. " ++
+                "A variable declaration uses 'var' and ':='.")atRange(
+                sym.line, sym.linePos, sym.linePos + 1) withSuggestions(suggestions)
         } else {
             def suggestions = list.empty
             var suggestion := errormessages.suggestion.new
@@ -2142,8 +2149,8 @@ method defdec {
             suggestion.replaceToken(defTok)with("var")
             suggestions.push(suggestion)
             errormessages.syntaxError("a definition must have '=' and a value after the name. "
-                ++ "A variable declaration does not require a value and uses 'var' instead of 'def'.")atPosition(
-                sym.line, sym.linePos)withSuggestions(suggestions)
+                ++ "A variable declaration does not require a value but uses 'var', not 'def'.")
+                atPosition(sym.line, sym.linePos) withSuggestions(suggestions)
         }
         util.setPosition(defTok.line, defTok.linePos)
         var o := ast.defDecNode.new(name, val, dtype)
@@ -2169,10 +2176,11 @@ method vardec {
             if((nextToken == false).orElse({nextToken == sym})) then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
-                suggestion.replaceTokenRange(sym, nextToken.prev)leading(false)trailing(true)with("«name» ")
+                suggestion.replaceTokenRange(sym, nextToken.prev)
+                      leading(false)trailing(true)with("«name» ")
             }
-            errormessages.syntaxError("a variable declaration must have a name after the 'var'.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError "a variable declaration must have a name after the 'var'."
+                  atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
         pushidentifier
         var val := false
@@ -2189,7 +2197,8 @@ method vardec {
                 if(nextTok == sym) then {
                     suggestion.insert(" «expression»")afterToken(lastToken)
                 } else {
-                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with(" «expression»")
+                    suggestion.replaceTokenRange(sym, nextTok.prev)
+                          leading(true)trailing(false)with(" «expression»")
                 }
                 suggestions.push(suggestion)
                 suggestion := errormessages.suggestion.new
@@ -2623,8 +2632,9 @@ method dofactoryMethod {
     }
 }
 
-// Accept a method declaration
 method methoddec {
+    // Accept a method declaration
+
     if (acceptKeyword "method") then {
         def btok = sym
         checkIndent
@@ -2705,13 +2715,15 @@ method methoddec {
     }
 }
 
-// Process the declaration of a multi-part method name. These follow
-// mostly the same rules as calls, but aren't strictly enforced to be on
-// a single line (because they are ended by "{" or "->"). 
-// tm is a methodNode.  This method
-// returns a replacement method name identifier and modifies tm.params in
-// place.
-method parsempmndecrest(tm, sameline) {
+
+method methodDecRest(tm, sameline) {
+    // Process the remainder of a method header. These follow
+    // mostly the same rules as calls, but aren't strictly enforced to be on
+    // a single line (because they are ended by "{"). 
+    //
+    // tm is a methodNode.  This method returns a replacement method name 
+    // identifier, and modifies tm.params in place.
+
     var methname := tm.value.value
     var signature := tm.signature
     var nxt
@@ -2726,8 +2738,9 @@ method parsempmndecrest(tm, sameline) {
         if ((accept("lparen")).not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("()")afterToken(lastToken)
-            errormessages.syntaxError("the declaration of a method with multiple parameter lists must have parentheses around each parameter list.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError("the declaration of a method with multiple " ++
+                  "parameter lists must have parentheses around each parameter list.")
+                  atPosition(sym.line, sym.linePos)withSuggestion(suggestion)
         }
         next
         var comma := false
@@ -2955,7 +2968,7 @@ method methodsignature(sameline) {
             // The presence of an identifier here means
             // a multi-part method name.
             var tm := ast.methodNode.new(meth, signature, [], false)
-            meth := parsempmndecrest(tm, sameline)
+            meth := methodDecRest(tm, sameline)
             varargs := varargs || tm.varargs
         }
     }
@@ -3188,8 +3201,9 @@ method typedec {
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)with("=")
             }
-            errormessages.syntaxError("a type declaration must have a '=' after the type name.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size + 1)withSuggestion(suggestion)
+            errormessages.syntaxError "a type declaration must have an '=' after the type name."
+                  atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                  withSuggestion(suggestion)
         }
         next
         // Special case for type Literals without leading 'type' keyword.
@@ -3221,13 +3235,15 @@ method checkIndent {
             def suggestions = list.empty
             var suggestion := errormessages.suggestion.new
             for(1..(minIndentLevel - (sym.linePos - 1))) do { _ ->
-                suggestion.insert(" ")atPosition(1)onLine(sym.line)
+                suggestion.insert " " atPosition 1 onLine(sym.line)
             }
             suggestions.push(suggestion)
             suggestion := errormessages.suggestion.new
             // Find the indent level for the opening brace.
             var tok := lastToken
-            while {(tok.linePos != (tok.indent + 1)) || (tok.indent >= minIndentLevel)} do { tok := tok.prev }
+            while {(tok.linePos != (tok.indent + 1)) || (tok.indent >= minIndentLevel)} do { 
+                tok := tok.prev 
+            }
             var line := ""
             for(1..(tok.indent)) do { _ ->
                 line := line ++ " "
@@ -3235,8 +3251,9 @@ method checkIndent {
             line := line ++ "}"
             suggestion.addLine(sym.line - 0.9, line)
             suggestions.push(suggestion)
-            errormessages.syntaxError("the indentation for this line must be at least {minIndentLevel}. This is often caused by a missing '}'.")atPosition(
-                sym.line, sym.linePos)withSuggestions(suggestions)
+            errormessages.syntaxError("the indentation for this line must be " ++
+                  "at least {minIndentLevel}. This is often caused by a missing '}'.")
+                  atPosition(sym.line, sym.linePos)withSuggestions(suggestions)
         }
     } elseif { sym.indent > minIndentLevel } then {
         minIndentLevel := sym.indent
