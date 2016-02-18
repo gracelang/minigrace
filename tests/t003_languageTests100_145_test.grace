@@ -223,44 +223,38 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("Hello\nworld\n")
         }
+        
+        class a_103 {
+            method foo { "world" }
+        }
+        
+        class b_103 {
+            inherits a_103
+            method bar { "hello {foo}" }
+        }
+        
+        class c_103 {
+            inherits b_103
+            method quux { "X " ++ bar }
+        }
+        
+        class d_103 {
+            inherits c_103
+            method foo is override { "Nyssa" }
+        }
+
+        type T_103 = {
+            foo -> String
+            quux -> String
+        }
 
         method test_103_inherits2 {
-            class A.new {
-                method foo {
-                    "world"
-                }
-            }
-            
-            class B.new {
-                inherits A.new
-                method bar {
-                    out "hello {foo}"
-                }
-            }
-            
-            class C.new {
-                inherits B.new
-                method quux {
-                    out "X"
-                    bar
-                }
-            }
-            
-            object {
-                inherits A.new
-            }
-            
-            def x = B.new
-            x.bar
-            type T = {
-                foo
-                quux
-            }
-            def y : T = C.new
-            y.quux
-            
-            
-            assert(str)shouldBe("hello world\nX\nhello world\n")
+            def x = b_103
+            assert (x.bar) shouldBe "hello world"
+            def y:T_103 = c_103
+            assert(y.quux) shouldBe "X hello world"
+            def z:T_103 = d_103
+            assert(z.quux) shouldBe "X hello Nyssa"
         }
 
         method test_104_objstatement {
