@@ -443,8 +443,8 @@ method newIf(cond, thenList, elseList) {
     ast.ifNode.new(cond, thenBlock, elseBlock)
 }
 
-// Accept a block
 method block {
+    // parse a block
     if (accept "lbrace") then {
         def btok = sym
         next
@@ -699,7 +699,7 @@ method doif {
         var v
         def localMin = minIndentLevel
         def localStatementIndent = statementIndent
-        var minInd := statementIndent + 1
+        var minInd := statementIndent + 2
         if (accept("identifier") && (sym.value == "then")) then {
             next
             if(sym.kind != "lbrace") then {
@@ -2633,7 +2633,7 @@ method dofactoryMethod {
 }
 
 method methoddec {
-    // Accept a method declaration
+    // Parse a method declaration
 
     if (acceptKeyword "method") then {
         def btok = sym
@@ -3255,8 +3255,16 @@ method checkIndent {
                   "at least {minIndentLevel}. This is often caused by a missing '}'.")
                   atPosition(sym.line, sym.linePos)withSuggestions(suggestions)
         }
-    } elseif { sym.indent > minIndentLevel } then {
+    } elseif { sym.indent > (minIndentLevel + 1) } then {
         minIndentLevel := sym.indent
+    } elseif { (sym.indent - lastIndent).abs == 1 } then {
+        def m1 = "the indentation for this line can't differ "
+        def m2 = "from that of the previous line by 1.\n  To start a block, or "
+        def m3 = "to signal a continuation line, increase the indent by 2 or more. "
+        def m4 = "To end a block, or end the continuation, decrease the indent "
+        def m5 = "to the prior level. Otherwise, use the same indent as the previous line."
+        def msg = m1 ++ m2 ++ m3 ++ m4 ++ m5
+        errormessages.syntaxError(msg) atPosition(sym.line, sym.linePos)
     }
 }
 
