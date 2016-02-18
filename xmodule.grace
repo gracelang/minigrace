@@ -20,9 +20,9 @@ method builtInModules {
     } else {
         list.with("imports",
                 "io",
-                "mirrors", 
-                "sys", 
-                "unicode", 
+                "mirrors",
+                "sys",
+                "unicode",
                 "util")
     }
 }
@@ -82,7 +82,8 @@ method checkDialect(moduleObject) {
             } catch { e : RuntimeError ->
                 util.setPosition(node.line, 1)
                 e.printBacktrace
-                errormessages.error("Dialect error: Dialect '{nm}' failed to load: {e}.")atLine(node.line)
+                errormessages.error "Dialect error: dialect '{nm}' failed to load.\n{e}."
+                    atLine(node.line)
             }
             return  // there is at most one dialect
         }
@@ -97,20 +98,22 @@ method doParseCheck(moduleObj) {
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
-                errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                errormessages.error "{e.exception}: {e.message}."
+                    atPosition(e.data.line, e.data.linePos)
             }
             case { rs : RangeSuggestions ->
                 errormessages.error("{e.exception}: {e.message}.")
-                    atRange(rs.line, rs.posStart,
-                        rs.posEnd)
+                    atRange(rs.line, rs.posStart, rs.posEnd)
                     withSuggestions(rs.suggestions)
             }
-            case { _ -> }
-        errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
+            case { _ ->
+                errormessages.error "{e.exception}: {e.message}." 
+                    atLine(util.linenum)
+            }
     } catch { e : Exception ->      // some unknwown Grace exception
         e.printBacktrace
-        errormessages.error("Unexpected exception raised by parse checker for dialect '{currentDialect.name}'.\n"
-            ++ "{e.exception}: {e.message}")
+        errormessages.error("Unexpected exception raised by parse checker for " ++
+            "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
     }
 }
 
@@ -122,25 +125,25 @@ method doAstCheck(moduleObj) {
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
-                errormessages.error("{e.exception}: {e.message}.")atPosition(e.data.line, e.data.linePos)
+                errormessages.error "{e.exception}: {e.message}."
+                    atPosition(e.data.line, e.data.linePos)
             }
             case { rs : RangeSuggestions ->
                 errormessages.error("{e.exception}: {e.message}.")
-                    atRange(rs.line, rs.posStart,
-                        rs.posEnd)
+                    atRange(rs.line, rs.posStart, rs.posEnd)
                     withSuggestions(rs.suggestions)
             }
             case { _ -> }
         errormessages.error("{e.exception}: {e.message}.")atPosition(util.linenum, 0)
     } catch { e : Exception ->      // some unknwown Grace exception
         e.printBacktrace
-        errormessages.error("Unexpected exception raised by AST checker for dialect '{currentDialect.name}'.\n"
-            ++ "{e.exception}: {e.message}")
+        errormessages.error("Unexpected exception raised by AST checker for " ++
+            "dialect '{currentDialect.name}'.\n{e.exception}: {e.message}")
     }
 }
 
 method checkExternalModule(node) {
-    checkimport(node.moduleName, node.path, 
+    checkimport(node.moduleName, node.path,
         node.line, node.linePos, node.isDialect)
 }
 
@@ -149,14 +152,12 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         imports.other.add(nm)
         return
     }
-    if (imports.isAlready(nm)) then { 
-        util.log 100 verbose("checking import of {nm}, but it's already imported\n" ++
-            "linkfiles = {imports.linkfiles}")
+    if (imports.isAlready(nm)) then {
         return
     }
     var noSource := false
     // noSource implies that the module is written in native code, like "unicode.c"
-    
+
     if (prelude.inBrowser) then {
         util.file(nm ++ ".js") onPath "" otherwise { _ ->
             errormessages.error "Please compile module {nm} before importing it."
@@ -193,16 +194,15 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         }
         if (noSource && binaryFile.exists.not) then {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
-                    errormessages.syntaxError(
-                        "Can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}."
-                        ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
-                }
+                errormessages.error(
+                    "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}.")
+                    atRange(line, linePos, linePos + binaryFile.base.size - 1)
+            }
             moduleFileGct.setDirectory(binaryFile.directory)
             if (moduleFileGct.exists.not) then {
-                errormessages.syntaxError("found {binaryFile} but neither {moduleFileGct} nor source."
-                    ) atRange(line, linePos, linePos + binaryFile.base.size - 1)
-            } else {
-                util.log 60 verbose "no source, but found {moduleFileGct} and {binaryFile}"
+                errormessages.error("I found {binaryFile}, but neither " ++
+                    "{moduleFileGct} nor source.")
+                    atRange(line, linePos, linePos + binaryFile.base.size - 1)
             }
         }
         if (needsDynamic.not) then {
@@ -220,7 +220,8 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             } elseif { binaryFile.newer(moduleFileGrace).not } then {
                 util.log 60 verbose "{binaryFile} not newer than {moduleFileGrace}"
             }
-            compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
+            compileModule (nm) inFile (moduleFileGrace.asString) 
+                forDialect (isDialect) atRange (line, linePos)
         }
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
@@ -237,9 +238,10 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 util.log 60 verbose "{moduleFileJs} not newer than {moduleFileGrace}"
             }
             if (moduleFileGrace.exists) then {
-                compileModule (nm) inFile (moduleFileGrace.asString) forDialect (isDialect) atRange (line, linePos)
+                compileModule (nm) inFile (moduleFileGrace.asString) 
+                    forDialect (isDialect) atRange (line, linePos)
             } else {
-                errormessages.syntaxError "Can't find dialect {nm}"
+                errormessages.error "Can't find dialect {nm}"
                     atRange(line, linePos, linePos + nm.size - 1)
             }
         }
@@ -249,7 +251,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
 }
 
 method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is confidential {
-    def gctData = gctCache.at(moduleName) ifAbsent { 
+    def gctData = gctCache.at(moduleName) ifAbsent {
         parseGCT(moduleName) sourceDir(directory)
     }
     if (gctData.containsKey "dialect") then {
@@ -259,8 +261,9 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
     def importedModules = gctData.at "modules" ifAbsent { emptySequence }
     def m = util.modname
     if (importedModules.contains(m)) then {
-        errormessages.syntaxError("Cyclic import detected: '{m}' is imported "
-            ++ "by '{moduleName}', which is imported by '{m}' (and so on).")atRange(line, linePos, linePos + moduleName.size)
+        errormessages.error("Cyclic import detected: '{m}' is imported "
+            ++ "by '{moduleName}', which is imported by '{m}' (and so on).")
+            atRange(line, linePos, linePos + moduleName.size)
     }
     importedModules.do { each ->
         checkimport(each, each, line, linePos, isDialect)
@@ -315,7 +318,8 @@ method compileModule (nm) inFile (sourceFile)
     util.log 50 verbose "executing sub-compile {cmd}"
     def exitCode = io.spawn("bash", ["-c", cmd]).status
     if (exitCode != 0) then {
-        errormessages.error("Failed to compile imported module {nm} ({exitCode}).") atRange(line, linePos, linePos + nm.size - 1)
+        errormessages.error "Failed to compile imported module {nm} ({exitCode})."
+            atRange(line, linePos, linePos + nm.size - 1)
     }
 }
 
@@ -331,7 +335,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
     def sought = filePath.fromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
       orPath(sys.environ.at "GRACE_MODULE_PATH") otherwise { l ->
-        util.log 60 verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
+        util.log 80 verbose "Can't find file {sought} for module {moduleName}; looked in {l}."
         gctCache.at(moduleName) put(gctData)
         return gctData
     }
@@ -570,7 +574,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
         def subScope = freshMethResult.scope
         gct.at "fresh:{val.nameString}" put (subScope.keysAsList)
     } elseif {freshMethResult.isCall} then {
-        // we know that freshMethResult.value.isMember and 
+        // we know that freshMethResult.value.isMember and
         // freshMethResult.value.nameString == "clone"
         def receiver = freshMethResult.value.in
         if ((receiver.nameString == "prelude").andAlso{
@@ -579,7 +583,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
         } elseif {(receiver.nameString == "self")} then {
             gct.at "fresh:{val.nameString}" put(gct.at "public")
         } else {
-            ProgrammingError.raise 
+            ProgrammingError.raise
                 "unrecognized fresh method tail-call: {freshMethResult.pretty(0)}"
         }
     } else {
