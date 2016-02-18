@@ -650,23 +650,37 @@ method checkForReservedName(node) {
             atRange(node.line, node.linePos, node.linePos + ns.size - 1)
     }
 }
+
+method isSameIgnoringCase(c1, c2) {
+    // necessary because the C library doesn't implement asLower or asUpper
+    if (c1 == c2) then { return true }
+    return (c1.ord - c2.ord).abs == 32
+}
+
 method reportUndeclaredIdentifier(node) {
     def nodeScope = node.scope
     def nm = node.nameString
+    def nmSize = nm.size
+    def sizeLimit = nmSize * 2
+        // below which we want the startChars to match
+    def thresh = ((nmSize / 3) + 1).truncated
     def suggestions = []
+    def startChar = nm.first
     var suggestion
-    nodeScope.elements.keysDo { v ->
-        var thresh := 1
-        if (nm.size > 2) then {
-            thresh := ((nm.size / 3) + 1).truncated
-        }
-        if (errormessages.dameraulevenshtein(v, nm) <= thresh) then {
+    nodeScope.withSurroundingScopesDo { s ->
+        s.elements.keysDo { v ->
+            def matchExtent = errormessages.name (nm) matches (v) within (thresh)
+            util.log 100 verbose "matching {nm} to {v} within {thresh}: {matchExtent}"
+            if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) && 
+                  (nmSize <= v.size) && (v.size <= sizeLimit)).orElse {
+                  (nmSize > 2) && (matchExtent == v.size) } ) then {
                 suggestion := errormessages.suggestion.new
                 suggestion.replaceRange(node.linePos, node.linePos + 
                     node.value.size - 1) with (v) onLine(node.line)
                 suggestions.push(suggestion)
             }
         }
+    }
     nodeScope.elementScopes.keysDo { s ->
         if (nodeScope.elementScopes.get(s).contains(nm)) then {
             suggestion := errormessages.suggestion.new

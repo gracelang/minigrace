@@ -277,63 +277,60 @@ def suggestion is public = object {
   }
 }
 
-method dameraulevenshtein(s, t) {
-    // Calculate the Damerau-Levenshtein distance between sequences.
+method name (p:String) matches (t:String) within (k:Number) {
+    // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen: 
+    // "A comparison of Approximate String Matching Algorithms"
+    // Software—Practice and Experience Vol 1(1), January 1988, pp.1–19
     //
-    // This distance is the number of additions, deletions, substitutions,
-    // and transpositions needed to transform the first sequence into the
-    // second. Although generally used with strings, any sequences of
-    // comparable objects will work.
+    // Implements the "Enhanced Dynamic Programming" (EDP) algorithm for
+    // approximate string matching.  If pattern p matches text t within
+    // an edit distance ≤ k, this method returns j, the index of the highest
+    // character of t involved in the match.  Its time compelxity is O(k*|p|).
     //
-    // Transpositions are exchanges of *consecutive* characters; all other
-    // operations are self-explanatory.
-    //
-    // This implementation is O(N*M) time and O(M) space, for N and M the
-    // lengths of the two sequences.
-    //
-    // >>> dameraulevenshtein("ba", "abc")
-    // 2
-    // >>> dameraulevenshtein("fee", "deed")
-    // 2
-    //
-    // codesnippet:D0DE4716-B6E6-4161-9219-2903BF8F547F
-    // Conceptually, this is based on a len(seq1) + 1 * len(seq2) + 1 matrix.
-    // However, only the current and two previous rows are needed at once,
-    // so we only store those.
-    if(s == t) then { return 0 }
-    if(s.size == 0) then { return t.size }
-    if(t.size == 0) then { return s.size }
+    // The algorithm builds a dynamic progarmming table D such that
+    // D[i,j] is the minimum edit distance between p[1] p[2] ... p[i]
+    // and any substring of t ending at t[j].   However, it isn't necessary
+    // to store the whole table D.  Because D[i,j] depends on only D[i-1, j],
+    // D[i-1, j-1] and D[i, j-1], we can store only the current
+    // column, which we do in h, and the value of D[i-1,j-1], which is 
+    // cached in c.  Moreover, since we are not interested in edit 
+    // distances > k, it's only necessary to evalue the elments of the table 
+    // around the diagonal.
 
-    def oneago = PrimitiveArray.new(t.size + 1)
-    def thisrow = PrimitiveArray.new(t.size + 1)
-    def twoago = PrimitiveArray.new(t.size + 1)
-
-    for(0..(oneago.size - 1)) do { i ->
-        oneago[i] := i
-        thisrow[i] := 0
-    }
-
-    for(1..s.size) do { x ->
-        thisrow[0] := x
-        for(1..t.size) do { y ->
-            def delcost = oneago[y] + 1
-            def addcost = thisrow[y - 1] + 1
-            def subcost = oneago[y-1] + if (s.at(x)!=t.at(y)) then {1} else {0}
-            thisrow[y] := min(delcost, min(addcost, subcost))
-            if (((x > 1) && (y > 1)).andAlso{(s[x] == t[y - 1])
-                && (s[x - 1] == t[y]) && (s[x] != t[y])}) then {
-                thisrow[y] := min(thisrow[y], twoago[y - 2] + 1)
+    
+    def m = p.size
+    def n = t.size
+    if (k >= m) then { return m }  // trivial case
+    var top := k + 1  // the location where the topmost diagonal under 
+                      // threshold intersects the current column
+    def h = list.empty
+    for (0..m) do { i -> h[i+1] := i+1 }
+    for (1..n) do { j ->
+        var c := 0
+        for (1..top) do { i ->
+            def e = if (p[i] == t[i]) then { 
+                c
+            } else {
+                min3(h[i], h[i+1], c) + 1
             }
+            c := h[i+1]
+            h[i+1] := e
         }
-
-        for (0..(oneago.size - 1)) do { j ->
-            twoago[j] := oneago[j]
-            oneago[j] := thisrow[j]
+        while { h[top+1] > k } do { top := top - 1 }
+        if (top == m) then { 
+            return j    // the last character of t that was used in the match
+        } else {
+            top := top + 1
         }
     }
-
-    thisrow[t.size]
+    return 0            // there was no match
 }
+
+method min3(a, b, c) is confidential {
+    def sf = if (a < b) then { a } else { b }
+    if (sf < c) then { sf } else { c }
+}
+
 
 // Methods to actually display an error message and suggestions, then exit.
 method syntaxError(message)atRange(errlinenum, startpos, endpos) {
@@ -390,7 +387,7 @@ method syntaxError(message)atPosition(errlinenum, errpos)withSuggestions(suggest
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.syntaxError(message, errlinenum, ":({errpos})", arr, errpos, suggestions)
+    util.syntaxError(message, errlinenum, ":({errpos})", arr, false, suggestions)
 }
 
 method error(message) atPosition(errlinenum, errpos)
@@ -400,7 +397,7 @@ method error(message) atPosition(errlinenum, errpos)
         arr := arr ++ "-"
     }
     arr := arr ++ "^"
-    util.generalError(message, errlinenum, ":({errpos})", arr, errpos, suggestions)
+    util.generalError(message, errlinenum, ":({errpos})", arr, false, suggestions)
 }
 
 method error(message) {
