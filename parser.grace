@@ -614,40 +614,45 @@ method doif {
     if (accept("identifier") && (sym.value == "if")) then {
         def btok = sym
         next
-        if(sym.kind != "lparen") then {
+        def opener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"})
+                        then { sym.value } else { "-missing-" }
+        def closer = if (opener == "(") then { ")" }
+                        else { if (opener == "\{") then { "\}" } else { "-nothing-" } }
+        if (opener == "-missing-") then {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rparen or then.
             def nextTok = findNextToken({ t -> (t.line == btok.line)
-                && ((t.kind == "rparen") || (t.kind == "lbrace")
+                && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
                 || ((t.kind == "identifier") && (t.value == "then"))) })
-            if(nextTok == false) then {
-                suggestion.insert(" («expression») then \{")afterToken(btok)
+            if (nextTok == false) then {
+                suggestion.insert(" («condition») then \{")afterToken(btok)
             } elseif { nextTok.kind == "rparen" } then {
                 if(nextTok == sym) then {
-                    suggestion.insert("(«expression»")beforeToken(sym)
+                    suggestion.insert("(«condition»")beforeToken(sym)
                 } else {
                     suggestion.insert("(")beforeToken(sym)
                 }
             } elseif { nextTok.kind == "lbrace" } then {
                 if(nextTok == sym) then {
-                    suggestion.insert(" («expression») then")afterToken(btok)
+                    suggestion.insert(" («condition») then")afterToken(btok)
                 } else {
                     suggestion.insert("(")beforeToken(sym)
                     suggestion.insert(") then")afterToken(nextTok.prev)andTrailingSpace(true)
                 }
             } elseif { nextTok.kind == "identifier" } then {
                 if(nextTok == sym) then {
-                    suggestion.insert("(«expression») ")beforeToken(sym)
+                    suggestion.insert("(«condition») ")beforeToken(sym)
                 } else {
                     suggestion.insert("(")beforeToken(sym)
                     suggestion.insert(")")afterToken(nextTok.prev)andTrailingSpace(true)
                 }
             }
-            errormessages.syntaxError("an if statement must have an expression in parentheses after the 'if'.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError("an if statement must have a condition " ++
+                "in parentheses or braces after the 'if'.")
+                atPosition(sym.line, sym.linePos)withSuggestion(suggestion)
         }
         next
-        if(didConsume({expression(blocksOK)}).not) then {
+        if (didConsume({expression(blocksOK)}).not) then {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rparen.
             var nextTok := findNextToken({ t -> (t.line == lastToken.line) && (t.kind == "rparen") })
@@ -656,28 +661,38 @@ method doif {
                 if(nextTok == sym) then {
                     suggestion.insert("«expression») then \{")afterToken(lastToken)
                 } else {
-                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(true)trailing(false)with("«expression») then \{")
+                    suggestion.replaceTokenRange(sym, nextTok.prev)
+                          leading(true)trailing(false)with("«expression») then \{")
                 }
-                errormessages.syntaxError("an if statement must have an expression in parentheses after the 'if'.")atPosition(
-                    sym.line, sym.linePos)withSuggestion(suggestion)
+                errormessages.syntaxError("an if statement must have a " ++
+                      "condition in parentheses or braces after the 'if'.")
+                      atPosition(sym.line, sym.linePos)
+                      withSuggestion(suggestion)
             } else {
                 if(nextTok == sym) then {
                     suggestion.insert("«expression»")afterToken(lastToken)
-                    errormessages.syntaxError("an if statement must have an expression in parentheses after the 'if'.")atPosition(
-                        sym.line, sym.linePos)withSuggestion(suggestion)
+                    errormessages.syntaxError("an if statement must have a " ++
+                        "condition in parentheses or braces after the 'if'.")
+                        atPosition(sym.line, sym.linePos)
+                        withSuggestion(suggestion)
                 } else {
-                    suggestion.replaceTokenRange(sym, nextTok.prev)leading(false)trailing(true)with("«expression»")
-                    errormessages.syntaxError("an if statement must have an expression in parentheses after the 'if'.")atRange(
-                        sym.line, sym.linePos, nextTok.linePos - 1)withSuggestion(suggestion)
+                    suggestion.replaceTokenRange(sym, nextTok.prev)
+                        leading(false)trailing(true)with("«expression»")
+                    errormessages.syntaxError("an if statement must have a " ++
+                        "condition in parentheses or braces after the 'if'.")
+                        atRange(sym.line, sym.linePos, nextTok.linePos - 1)
+                        withSuggestion(suggestion)
                 }
             }
         }
-        if(sym.kind != "rparen") then {
+        if (sym.value != closer) then {
             checkBadOperators
             def suggestion = errormessages.suggestion.new
             suggestion.insert(")")afterToken(lastToken)
-            errormessages.syntaxError("an expression beginning with a '(' must end with a ')'.")atPosition(
-                lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+            errormessages.syntaxError("an expression beginning with a "++
+                  "'{opener}' must end with a '{closer}'.")
+                  atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+                  withSuggestion(suggestion)
         }
         next
         var cond := values.pop
@@ -748,11 +763,11 @@ method doif {
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
                 statementToken := sym
                 next
-                def opener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"}) 
+                def elopener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"})
                                 then { sym.value } else { "-missing-" }
-                def closer = if (opener == "(") then { ")" }
-                                else { if (opener == "\{") then { "\}" } else { "-nothing-" } }
-                if (opener == "-missing-") then {
+                def elcloser = if (elopener == "(") then { ")" }
+                                else { if (elopener == "\{") then { "\}" } else { "-nothing-" } }
+                if (elopener == "-missing-") then {
                     def suggestion = errormessages.suggestion.new
                     // Look ahead for a rparen or then.
                     def nextTok = findNextToken({ t -> (t.line == statementToken.line)
@@ -781,8 +796,10 @@ method doif {
                             suggestion.insert(")")afterToken(nextTok.prev)andTrailingSpace(true)
                         }
                     }
-                    errormessages.syntaxError("an elseif statement must have an expression in parentheses or braces after the 'elseif'.")atPosition(
-                        sym.line, sym.linePos)withSuggestion(suggestion)
+                    errormessages.syntaxError("an elseif statement must have a " ++
+                          "condition in parentheses or braces after the 'elseif'.")
+                          atPosition(sym.line, sym.linePos)
+                          withSuggestion(suggestion)
                 }
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
@@ -812,12 +829,14 @@ method doif {
                         }
                     }
                 }
-                if(sym.value != closer) then {
+                if(sym.value != elcloser) then {
                     checkBadOperators
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert(")")afterToken(lastToken)
-                    errormessages.syntaxError("an expression beginning with a '{opener}' must end with a '{closer}'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+                    errormessages.syntaxError("an expression beginning with a " ++
+                        "'{elopener}' must end with a '{elcloser}'.")
+                        atPosition(lastToken.line, lastToken.linePos + lastToken.size)
+                        withSuggestion(suggestion)
                 }
                 next
                 econd := values.pop
@@ -982,8 +1001,9 @@ method doif {
                     suggestion.insert(" then \{")afterToken(lastToken)
                 }
             }
-            errormessages.syntaxError("an if statement must have 'then' after the expression in parentheses.")atPosition(
-                sym.line, sym.linePos)withSuggestion(suggestion)
+            errormessages.syntaxError("an if statement must have 'then' after " ++
+                  "the condition in parentheses.")
+                  atPosition(sym.line, sym.linePos) withSuggestion(suggestion)
         }
         minIndentLevel := localMin
         statementIndent := localStatementIndent
