@@ -1,33 +1,41 @@
-def InvariantFailure = Error.refine "InvariantFailure"
-def IllegalArguments = Exception.refine "IllegalArguments"
+def InvariantFailure = ProgrammingError.refine "InvariantFailure"
+def IllegalArguments = ProgrammingError.refine "IllegalArguments"
 
 type Predicate = { apply -> Boolean } 
 
 method assert( condition : Predicate ) {
- if (!condition.apply) then { InvariantFailure.raise } 
+    if (!condition.apply) then { InvariantFailure.raise }
 }
 
 method assume( condition : Predicate ) {
- if (!condition.apply) then { InvariantFailure.raise } 
+    if (!condition.apply) then { InvariantFailure.raise }
 }
 
-method require( precondition : Predicate ) 
-       do ( body : Block ) 
-       ensure ( postcondition : Block )  // should be something else
-{
- print "RDE"
- if (!precondition.apply) 
-   then {print "preX"; InvariantFailure.raise "Precondition Failure"} 
- var result 
- try {print "body"; result := body.apply; print "ydob"}
-   catch { _ -> print "ux"; InvariantFailure.raise "Unexpected Exception" }
-   finally {
-     print "fin"
-     if (!postcondition.apply(result)) 
-       then {print "postx"; InvariantFailure.raise "Postcondition Failure"} 
- }
- print "RES"
- return result 
+method require (precondition:Predicate)
+       do (body:Block)
+       ensure (postcondition:Predicate) {
+    print "RDE"
+    if (!precondition.apply) then {
+        print "preX"
+        InvariantFailure.raise "Precondition Failure"
+    }
+    var result 
+    try {
+        print "body"
+        result := body.apply
+        print "ydob"
+    } catch { _ -> 
+        print "ux"
+        InvariantFailure.raise "Unexpected Exception"
+    } finally {
+        print "fin"
+        if (!postcondition.apply(result)) then {
+            print "postX"
+            InvariantFailure.raise "Postcondition Failure"
+        }
+    }
+    print "RES"
+    return result 
 }
 
 
@@ -61,20 +69,22 @@ method loop (body : Block)
        until (condition : Block) 
        variant (variant :Block) { 
 
-   if (!invariant.apply) then {
-          InvariantFailure.raise "loop invariant failed before loop"}
-   var variantValue := variant.apply
-   while {!condition.apply} do {
-       body.apply
+    if (!invariant.apply) then {
+        InvariantFailure.raise "loop invariant failed before loop"
+    }
+    var variantValue := variant.apply
+    while {!condition.apply} do {
+        body.apply
         if (!invariant.apply) then {
-           InvariantFailure.raise "Loop invariant failed in loop"}
+           InvariantFailure.raise "Loop invariant failed in loop"
+        }
         def variantValue' = variant.apply
         if (variantValue' < 0) then {
-           InvariantFailure.raise "Loop variant has gone negative"}
-        if ((variantValue - variantValue') < 1) 
-                    then {
-           InvariantFailure.raise "Loop variant decreased by less than one"
-                    ++ "(from {variantValue} to {variantValue'})"}
+           InvariantFailure.raise "Loop variant has gone negative"
+        }
+        if ((variantValue - variantValue') < 1) then {
+           InvariantFailure.raise "Loop variant decreased by less than one" ++
+                    "(from {variantValue} to {variantValue'})"}
         variantValue := variantValue' 
-   }
+    }
 }

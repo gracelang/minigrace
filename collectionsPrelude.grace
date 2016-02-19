@@ -1781,7 +1781,7 @@ class dictionary<K,T> {
             }
         }
         method keysDo(block1) {
-             for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
                 if ((a != unused).andAlso{a != removed}) then {
                     block1.apply(a.key)
@@ -1789,7 +1789,7 @@ class dictionary<K,T> {
             }
         }
         method valuesDo(block1) {
-             for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
                 if ((a != unused).andAlso{a != removed}) then {
                     block1.apply(a.value)

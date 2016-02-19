@@ -18,7 +18,7 @@ class catFish {
 
 class fishCat {
     inherits fishClass
-    uses catTrait 
+    uses catTrait
 }
 
 class allTraits {
