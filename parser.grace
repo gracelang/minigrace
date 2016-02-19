@@ -284,11 +284,6 @@ method pushidentifier {
     values.push(o)
     next
 }
-method pushIdentifierFromString(s) atPosition(l, p) {
-    util.setPosition(l, p)
-    var o := ast.identifierNode.new(s, false)
-    values.push(o)
-}
 
 method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
     // If a compiler directive has set a special default visibility, then
@@ -2297,8 +2292,8 @@ method dodialect {
     }
 }
 
-method inheritsdec {
-    // Accept "inherits x.new"
+method inheritsOrUses {
+    // Parses "inherits «object expression»"
 
     if (accept "keyword" && ((sym.value == "inherits") || (sym.value == "uses"))) then {
         def btok = sym
@@ -2338,82 +2333,46 @@ method inheritsdec {
 }
 
 method inheritsModifier(node) onLineOf(startToken) {
-    // accept an alias or excludes modifier on an `inherits` clause
+    // parse an alias or excludes modifier on an `inherits` clause
     if (! accept "keyword" onLineOf(startToken) ) then { 
         return false
     }
     if (sym.value == "alias") then { 
-        acceptAlias(node) 
+        parseAlias(node) 
     } elseif {sym.value == "exclude"} then {
-        acceptExclude(node)
+        parseExclude(node)
     } else {
         false
     }
 }
 
-method acceptAlias(node) {
-    next
-    if (acceptMethodName) then {
-        def newMeth = values.pop
-        if (accept "op" && (sym.value == "=")) then {
-            next
-            if (acceptMethodName) then {
-                def oldMeth = values.pop
-                node.addAlias (newMeth) for (oldMeth)
-                return true
-            }
-        }
-    }
-    errormessages.syntaxError ("An alias modifier must take the form " ++
-        "'newMethodName = oldMethodName'") atPosition (
-        lastToken.line, lastToken.linePos + lastToken.size)
-}
-method acceptExclude(node) {
-    // exclude isn't a real keyword, but is treated as one
-    // in this context
-    next
-    if (acceptMethodName) then {
-        def excludedMeth = values.pop
-        node.addExclusion (excludedMeth)
-        return true
-    }
-    errormessages.syntaxError "an exclude modifier must name the excluded method"
-        atPosition (lastToken.line, lastToken.linePos + lastToken.size)
-}
-
-method acceptMethodName {
-    var mName := ""
-    var moreId := true
-    def startLine = sym.line
-    def startPos = sym.linePos
-    while { moreId
-        .andAlso{accept "identifier"}
-          .andAlso{sym.value != "alias"}
-            .andAlso{sym.value != "exclude"}
-    } do {
-        mName := mName ++ sym.value
+method parseAlias(node) {
+    next    // skip the alias keyword
+    def newSig = methodsignature(true)
+    def newMeth = newSig.m
+    if (accept "op" && (sym.value == "=")) then {
         next
-        if (accept "lparen") then {
-            next
-            if (! accept "rparen") then {
-                errormessages.syntaxError "a '(' in a method name must be followed by a ')'"
-            }
-            next
-            mName := mName ++ "()"
-        } else {
-            moreId := false
-        }
-    }
-    if (mName != "") then {
-        pushIdentifierFromString(mName) atPosition(startLine, startPos)
-        true 
+        def oldSig = methodsignature(true)
+        def oldMeth = oldSig.m
+        oldMeth.isBindingOccurrence := false
+        node.addAlias (newMeth) for (oldMeth)
     } else {
-        false
+        errormessages.syntaxError ("An alias modifier must take the form " ++
+            "'newMethodName = oldMethodName'") 
+            atPosition (lastToken.line, lastToken.linePos + lastToken.size)
     }
+    return true
+}
+method parseExclude(node) {
+    next    // skip the exclude keyword
+    def exSig = methodsignature(true)
+    def excludedMeth = exSig.m
+    node.addExclusion (excludedMeth)
+    return true
 }
 
 method doobject {
-    // Accept an object constructor.
+    // Parse an object constructor.
     // this method is called doobject because "object" is a keyword
 
     if (acceptKeyword "object") then {
@@ -2427,6 +2386,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     // Parse the body of an object constructor, leaving the node on the
     // values stack.  Common code for parsing object, class, and factory method
     // bodies; constructName says which, so that error messages are correct.
+    // btok is the keyword token that started the construct: class, object, or trait.
     def localMinIndentLevel = minIndentLevel
     def anns = doannotation
     if (sym.kind != "lbrace") then {
@@ -2452,20 +2412,18 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     def usedTraits = []
     var inPreamble := true  // => processing inherits and uses statements
     while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
-        ifConsume {inheritsdec} then {
+        if (didConsume {inheritsOrUses}) then {
             def parentNode = values.pop
             if (inPreamble) then {
                 if (parentNode.isUse) then {
                     usedTraits.add(parentNode)
+                } elseif { usedTraits.isEmpty } then {
+                    superObject := parentNode
                 } else {
-                    if (usedTraits.isEmpty) then {
-                        superObject := parentNode
-                    } else {
-                        errormessages.syntaxError("'inherits' must come " ++
-                            "before 'uses' in {constructName}")
-                            atPosition(parentNode.line, parentNode.linePos,
-                            parentNode.linePos + 4)
-                    }
+                    errormessages.syntaxError("'inherits' must come " ++
+                        "before 'uses' in {constructName}")
+                        atPosition(parentNode.line, parentNode.linePos,
+                        parentNode.linePos + 7)
                 }
             } else {
                 errormessages.syntaxError("'{parentNode.statementName}' must " ++
@@ -2473,14 +2431,16 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
                     atPosition(parentNode.line, parentNode.linePos,
                             parentNode.linePos + parentNode.statementName.size)
             }
-        }
-        ifConsume {methoddec} then {
+        } elseif { didConsume {methoddec} } then {
             inPreamble := false
             body.push(values.pop)
-        }
-        ifConsume {statement} then {
+        } elseif { didConsume {statement} } then {
             inPreamble := false
             body.push(values.pop)
+        } else {
+            errormessages.syntaxError("unexpected symbol '{sym.value}' in body " ++
+                "of of {constructName}")
+                atPosition(sym.line, sym.linePos, sym.linePos + sym.value.size - 1)
         }
     }
     next
@@ -2854,7 +2814,7 @@ method methodsignature(sameline) {
                     suggestion.replaceTokenRange(sym, tokens.first)with("]({sym.value})")
                     suggestions.push(suggestion)
                 }
-                errormessages.syntaxError("a declaration of a method named '[]' must have the parameter name in parentheses after the '[]'.")atPosition(
+                errormessages.syntaxError("a method named '[]' must have a single parameter in parentheses after the '[]'.")atPosition(
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
             } else {
                 def suggestion = errormessages.suggestion.new
@@ -3562,7 +3522,19 @@ method parse(toks) {
         blank
         methoddec
         blank
-        inheritsdec
+        ifConsume { inheritsOrUses } then {
+            def parentNode = values.pop
+            if (parentNode.isUse) then {
+                moduleObject.usedTraits.add(parentNode)
+            } elseif { moduleObject.usedTraits.isEmpty } then {
+                moduleObject.superclass := parentNode
+            } else {
+                errormessages.syntaxError("'inherits' must come " ++
+                    "before 'uses' in a module.")
+                    atPosition(parentNode.line, parentNode.linePos,
+                    parentNode.linePos + 7)
+            }
+        }
         blank
         statement
         blank

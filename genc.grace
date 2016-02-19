@@ -1949,13 +1949,22 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out("  self = setsuperobj(self, *var__prelude);")
         out("  *selfslot = self;")
     }
+
+    if (false != moduleObject.superclass) then {
+        def superobj = compilenode(moduleObject.superclass.value)
+        out("  self = setsuperobj(self, {superobj});")
+        out("  *selfslot = self;")
+        implementAliasesAndExclusionsFor(moduleObject) 
+            inheriting(moduleObject.superclass, superobj)
+    }
+    
+    moduleObject.usedTraits.do { t -> 
+        errormessages.error("I'm sorry, trait usage is not yet supported by " ++
+              "the C code generator.") atRange(t.line. t.linePos, t.linePos + 3)
+    }
+
     for (values) do { o ->
-        if (o.kind == "inherits") then {
-            def superobj = compilenode(o.value)
-            out("  self = setsuperobj(self, {superobj});")
-            out("  *selfslot = self;")
-            implementAliasesAndExclusionsFor(moduleObject) inheriting(o, superobj)
-        } elseif {(o.kind != "method") && (o.kind != "type")} then {
+        if ((o.kind != "method") && (o.kind != "type")) then {
             compilenode(o)
         }
     }

@@ -1432,24 +1432,28 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"
-        // var_prelude must be local to this function, because it has
-        // a different value in different modules.
+        // var_prelude must be local to this function, because its value
+        // varies from module to modules.
 
     if (debugMode) then {
         out "myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
     }
     compileobjouter("this", "var_prelude")
-    for (values) do { o ->
+    values.do { o ->
         if (o.kind == "method") then {
             compilenode(o)
         }
     }
     def imported = list.empty
-    for (values) do { o ->
-        if (o.kind == "inherits") then {
-            compileInherits(o, "this")
-        } elseif {o.kind != "method"} then {
+    if (false != moduleObject.superclass) then {
+        compileInherits(moduleObject.superclass, "this")
+    }
+    moduleObject.usedTraits.do { t -> 
+        compileInherits(t, "this")
+    }
+    values.do { o ->
+        if (o.kind != "method") then {
             compilenode(o)
         }
         if ((o.kind == "import").orElse{o.kind == "dialect"}) then {
