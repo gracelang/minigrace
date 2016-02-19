@@ -1773,7 +1773,7 @@ class dictionary<K,T> {
             }
         }
         method keysAndValuesDo(block2) {
-             for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
                 if ((a != unused).andAlso{a != removed}) then {
                     block2.apply(a.key, a.value)
