@@ -1400,7 +1400,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         emitPositions := false
         requestCall := "callmethod"
     }
-    values := moduleObject.values
+    values := moduleObject.value
     outfile := of
     modname := moduleObject.name
     runmode := rm
@@ -1440,25 +1440,38 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "stackFrames.push(myframe);"
     }
     compileobjouter("this", "var_prelude")
-    values.do { o ->
-        if (o.kind == "method") then {
-            compilenode(o)
+    def imported = []
+    if (isPrelude) then {  // compile components in non-standard order
+        moduleObject.value.do { o ->
+            if (o.isMethod) then {
+                compilenode(o)
+            }
+            if (o.isExternal) then {
+                imported.push(o.path)
+            }
         }
-    }
-    def imported = list.empty
-    if (false != moduleObject.superclass) then {
-        compileInherits(moduleObject.superclass, "this")
-    }
-    moduleObject.usedTraits.do { t -> 
-        compileInherits(t, "this")
-    }
-    values.do { o ->
-        if (o.kind != "method") then {
-            compilenode(o)
+        moduleObject.value.do { o ->
+            if (o.isMethod.not) then {
+                compilenode(o)
+            }
         }
-        if ((o.kind == "import").orElse{o.kind == "dialect"}) then {
+    } else {
+        moduleObject.externalsDo { o ->
+            compilenode(o)
             imported.push(o.path)
         }
+        if (false != moduleObject.superclass) then {
+            compileInherits(moduleObject.superclass, "this")
+        }
+        moduleObject.usedTraits.do { t -> 
+            compileInherits(t, "this")
+        }
+        moduleObject.methodsDo { o ->
+            compilenode(o)
+        }
+    }
+    moduleObject.executableComponentsDo { o ->
+        compilenode(o)
     }
     if (xmodule.currentDialect.hasAtEnd) then {
         out("callmethod(var_prelude, \"atModuleEnd\", [1], this);")

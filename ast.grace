@@ -742,7 +742,7 @@ def typeDecNode is public = object {
         st.node := self
     }
     
-    method isExecutable { false }
+    method isExecutable { true }
     method declarationKindWithAncestors(as) { k.typeparam }
     method isConfidential {
         if (annotations.size == 0) then { return false }
@@ -1459,14 +1459,6 @@ def objectNode is public = object {
             
             value.do { o ->
                 if (o.isMethod) then { action.apply(o) }
-            }
-        }
-        
-        method typesDo(action) {
-            // iterate over my type declarations
-            
-            value.do { o ->
-                if (o.isTypeDec) then { action.apply(o) }
             }
         }
         

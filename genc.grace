@@ -1803,7 +1803,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     util.log_verbose "generating C code."
     var argv := sys.argv
     var cmd
-    values := moduleObject.values
+    values := moduleObject.value
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -1931,6 +1931,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     out("  Object *selfslot = &(stackframe->slots[0]);")
     out("  *selfslot = self;")
     out("  setframeelementname(stackframe, 0, \"self\");")
+    out("// end of preamble")
     var tmpo := output
     output := []
     definebindings(values, 1)
@@ -1948,14 +1949,15 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     // this has the same effect as "inherits _prelude" in the source
         out("  self = setsuperobj(self, *var__prelude);")
         out("  *selfslot = self;")
-    }
-
-    if (false != moduleObject.superclass) then {
-        def superobj = compilenode(moduleObject.superclass.value)
-        out("  self = setsuperobj(self, {superobj});")
-        out("  *selfslot = self;")
-        implementAliasesAndExclusionsFor(moduleObject) 
-            inheriting(moduleObject.superclass, superobj)
+    } else {
+        moduleObject.externalsDo { o -> compilenode(o) }
+        if (false != moduleObject.superclass) then {
+            def superobj = compilenode(moduleObject.superclass.value)
+            out("  self = setsuperobj(self, {superobj});")
+            out("  *selfslot = self;")
+            implementAliasesAndExclusionsFor(moduleObject) 
+                inheriting(moduleObject.superclass, superobj)
+        }
     }
     
     moduleObject.usedTraits.do { t -> 
@@ -1963,8 +1965,14 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
               "the C code generator.") atRange(t.line. t.linePos, t.linePos + 3)
     }
 
-    for (values) do { o ->
-        if ((o.kind != "method") && (o.kind != "type")) then {
+    moduleObject.value.do { o ->
+        if (o.isExternal) then {
+            if (modname == "StandardPrelude") then {
+                compilenode(o)
+            } else {
+                // do nothing, because it was already compiled above
+            }
+        } elseif { (o.kind != "method") && (o.kind != "type") } then {
             compilenode(o)
         }
     }
