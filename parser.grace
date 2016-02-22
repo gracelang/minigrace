@@ -443,7 +443,7 @@ method block {
     if (accept "lbrace") then {
         def btok = sym
         next
-        var minInd := statementIndent + 1
+        var minInd := statementIndent + 2
         var startIndent := statementIndent
         var expr1
         var s := sym
@@ -593,7 +593,7 @@ method block {
             tmp := values.pop
             body.push(tmp)
         }
-        minIndentLevel := minInd - 1
+        minIndentLevel := minInd - 2
         statementIndent := startIndent
         next
         util.setPosition(btok.line, btok.linePos)
