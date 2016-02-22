@@ -98,6 +98,7 @@ class baseNode {
     method isLegalInTrait { false }
     method isMember { false }
     method isMethod { false }
+    method isExecutable { true }
     method isCall { false }
     method isComment { false }
     method isClass { false }
@@ -107,6 +108,7 @@ class baseNode {
     method isDialect { false }
     method isImport { false }
     method isTypeDec { false }
+    method isExternal { false }
     method canInherit { false }
     method returnsObject { false }
     method usesAsType(aNode) { false }
@@ -546,6 +548,7 @@ def methodTypeNode is public = object {
     var typeParams is public := false
     def nameString:String is public = value
 
+    method isExecutable { false }
     method parametersDo(b) {
         signature.do { part -> 
             part.params.do { each -> b.apply(each) }
@@ -655,6 +658,7 @@ def typeLiteralNode is public = object {
         "typeliteral: methods = {methods}, types = {types}"
     }
     method declarationKindWithAncestors(as) { k.typedec }
+    method isExecutable { false }
 
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitTypeLiteral(self) up(as)) then {
@@ -737,6 +741,8 @@ def typeDecNode is public = object {
         symbolTable := st
         st.node := self
     }
+    
+    method isExecutable { false }
     method declarationKindWithAncestors(as) { k.typeparam }
     method isConfidential {
         if (annotations.size == 0) then { return false }
@@ -830,6 +836,7 @@ def methodNode = object {
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
 
         method isMethod { true }
+        method isExecutable { false }
         method isLegalInTrait { true }
         method isFreshMethod { isFresh }
         method scope:=(st) {
@@ -1188,6 +1195,7 @@ def classNode is public = object {
     method returnedObjectScope { scope }
 
     method isClass { true }
+    method isExecutable { false }
     method isPublic {
         // assume that classes are public by default
         if (annotations.size == 0) then { return true }
@@ -1363,9 +1371,14 @@ def moduleNode = object {
         line := 0       // because the module is always implicit
         linePos := 0
         var imports is public := list.empty
+
         method isModule { true }
         method returnsObject { false }
-        method values { value }
+        method externalsDo(action) {
+            value.do { o -> 
+                if (o.isExternal) then { action.apply(o) }
+            }
+        }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitModule(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -1432,6 +1445,37 @@ def objectNode is public = object {
                 }
             }
             myLocalNames
+        }
+        
+        method parentsDo(action) {
+            // iterate over my superclass and my used traits
+
+            if (false != superclass) then { action.apply(superclass) }
+            usedTraits.do { t -> action.apply(t) }
+        }
+        
+        method methodsDo(action) {
+            // iterate over my method declarations
+            
+            value.do { o ->
+                if (o.isMethod) then { action.apply(o) }
+            }
+        }
+        
+        method typesDo(action) {
+            // iterate over my type declarations
+            
+            value.do { o ->
+                if (o.isTypeDec) then { action.apply(o) }
+            }
+        }
+        
+        method executableComponentsDo(action) {
+            // iterate over my executable code, including
+            // field declarations (since they may have initializers)
+            value.do { o ->
+                if (o.isExecutable) then { action.apply(o) }
+            }
         }
 
         method scope:=(st) {
@@ -1947,7 +1991,7 @@ def opNode is public = object {
     def value is public = op     // a String
     var left is public := l
     var right is public := r
-    method isSimple { false }  // needs parens when used as reciever
+    method isSimple { false }    // needs parens when used as reciever
     method nameString { value }
     method accept(visitor : ASTVisitor) from(as) {
         if (visitor.visitOp(self) up(as)) then {
@@ -2254,6 +2298,7 @@ def varDecNode is public = object {
     method usesAsType(aNode) {
         aNode == dtype
     }
+
     method declarationKindWithAncestors(as) { k.vardec }
 
     method accept(visitor : ASTVisitor) from(as) {
@@ -2337,6 +2382,8 @@ def importNode is public = object {
     var annotations is public := list.empty
     var dtype is public := dtype'
     method isImport { true }
+    method isExternal { true }
+    method isExecutable { false }
     method name { value }
     method nameString { value.nameString }
     method isPublic {
@@ -2410,6 +2457,8 @@ def dialectNode is public = object {
     var value is public := path'
     
     method isDialect { true }
+    method isExternal { true }
+    method isExecutable { false }
     method moduleName {
         var bnm := ""
         for (value) do {c->
@@ -2503,6 +2552,7 @@ def inheritsNode = object {
         method isInherits { true }
         method inheritsFromMember { value.isMember }
         method inheritsFromCall { value.isCall }
+        method isExecutable { false }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitInherits(self) up(as)) then {
                 def newChain = as.extend(self)
@@ -2578,6 +2628,7 @@ class aliasNew(n) old(o) {
     method oldName {o}
     method asString { "alias {n.nameString} = {o.nameString}" }
     method hash { (n.hash * 1171) + o.hash }
+    method isExecutable { false }
     method == (other) {
         match (other)
             case { that:AliasPair -> (n == that.newName) && (o == that.oldName) }
@@ -2589,6 +2640,8 @@ def blankNode is public = object {
         inherits baseNode
         def kind is public = "blank"
         def value is public = "blank"
+        method isExecutable { false }
+
 
         method accept(visitor : ASTVisitor) from(as) {
             visitor.visitBlank(self) up(as)
@@ -2750,6 +2803,7 @@ def commentNode = object {
         var endLine is public := util.linenum
         method isComment { true }
         method isLegalInTrait { true }
+        method isExecutable { false }
         method asString { "comment ({line}–{endLine}): {value}" }
         method extendCommentUsing(cmtNode) {
             value := value ++ " " ++ cmtNode.value

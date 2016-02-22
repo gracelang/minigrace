@@ -55,7 +55,7 @@ def imports = util.requiredModules
 def emptySequence = sequence.empty
 
 method checkDialect(moduleObject) {
-    moduleObject.values.do { node ->
+    moduleObject.value.do { node ->
         if (node.isDialect) then {
             def nm = node.moduleName
             currentDialect.name := nm
@@ -94,7 +94,7 @@ method doParseCheck(moduleObj) {
     if (currentDialect.hasParseChecker.not) then { return }
     def CheckerFailure = Exception.refine "CheckerFailure"
     try {
-        currentDialect.moduleObject.checker(moduleObj.values)
+        currentDialect.moduleObject.checker(moduleObj.value)
     } catch { e : CheckerFailure ->
         match (e.data)
             case { lp : LinePos ->
@@ -473,7 +473,10 @@ method buildGctFor(module) {
     def meths = list.empty
     def types = list.empty
     var theDialect := false
-    for (module.values) do { v->
+    module.parentsDo { p ->
+        meths.addAll(p.providedNames)
+    }
+    for (module.value) do { v->
         if (v.kind == "vardec") then {
             if (v.isReadable) then {
                 meths.push(v.name.value)
@@ -538,8 +541,6 @@ method buildGctFor(module) {
                 put(v.scope.keysAsList.sort)
         } elseif { v.kind == "dialect" } then {
             theDialect := v.value
-        } elseif { v.kind == "inherits" } then {
-            meths.addAll(v.providedNames)
         }
     }
     gct.at "classes" put(classes.sort)
@@ -559,7 +560,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
     def freshmeths = list.empty
-    for (moduleObject.values) do { val->
+    for (moduleObject.value) do { val->
         if (val.isFreshMethod) then {
             addFreshMethod (val) to (freshmeths) for (gct)
         }

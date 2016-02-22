@@ -940,7 +940,7 @@ method setupContext(moduleObject) {
     // Historical - should be removed eventually
     if (!util.extensions.contains("NativePrelude")) then {
         var hadDialect := false
-        for (moduleObject.values) do {val->
+        for (moduleObject.value) do {val->
             if (val.kind == "dialect") then {
                 hadDialect := true
                 xmodule.checkExternalModule(val)

@@ -31,7 +31,7 @@ if (util.target == "lex") then {
 }
 
 var moduleObject := parser.parse(tokens)
-var values := moduleObject.values
+var values := moduleObject.value
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the parse tree and quits.
