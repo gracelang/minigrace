@@ -34,7 +34,7 @@ class new {
         native "js" code ‹this.data.inner[var_k._value] = var_v;
                         return this;›
         var t := findPosition(k)
-        if (inner.at(t) == unused) then {
+        if (identical(inner.at(t), unused)) then {
             elems := elems + 1
         }
         inner.at(t)put(k::v)
@@ -53,7 +53,9 @@ class new {
             throw new GraceExceptionPacket(nso, exceptionMsg);›
         var t := findPosition(k)
         var c := inner.at(t)
-        if (c == unused) then { NoSuchObject.raise "no value for key {k}" }
+        if (identical(c, unused)) then { 
+            NoSuchObject.raise "no value for key {k}"
+        }
         return c.value
     }
     method get(k) ifAbsent (absentBlock) {
@@ -64,7 +66,7 @@ class new {
             return callmethod(var_absentBlock, "apply", [0]);›
         var t := findPosition(k)
         var c := inner.at(t)
-        if (c == unused) 
+        if (identical(c, unused))
             then { return absentBlock.apply }
             else { return c.value }
     }
@@ -84,7 +86,7 @@ class new {
         def s = inner.size
         var t := h % s
         var jump := 5
-        while {inner.at(t) != unused} do {
+        while { different(inner.at(t), unused) } do {
             if (inner.at(t).key == x) then {
                 return t
             }
@@ -141,7 +143,7 @@ class new {
         var count := 1
         var idx := 0
         while {count <= size} do {
-            while {inner.at(idx) == unused} do {
+            while { identical(inner.at(idx), unused) } do {
                 idx := idx + 1
             }
             def a = inner.at(idx)
@@ -163,7 +165,7 @@ class new {
         var count := 1
         var idx := 0
         while {count <= size} do {
-            while {inner.at(idx) == unused} do {
+            while { identical(inner.at(idx), unused) } do {
                 idx := idx + 1
             }
             action.apply (inner.at(idx).value)
@@ -184,7 +186,7 @@ class new {
         var count := 1
         var idx := 0
         while {count <= size} do {
-            while {inner.at(idx) == unused} do {
+            while { identical(inner.at(idx), unused) } do {
                 idx := idx + 1
             }
             action.apply (inner.at(idx).key)
@@ -228,7 +230,7 @@ class new {
         var count := 1
         var idx := 0
         while {count <= size} do {
-            while {inner.at(idx) == unused} do {
+            while { identical(inner.at(idx), unused) } do {
                 idx := idx + 1
             }
             result.add (inner.at(idx))

@@ -1167,6 +1167,21 @@ class list<T> {
     }
 }
 
+
+def unused = object {
+    var unused := true
+    def key is public = self
+    def value is public = self
+    method asString { "unused" }
+}
+
+def removed = object {
+    var removed := true
+    def key is public = self
+    def value is public = self
+    method asString { "removed" }
+}
+
 class set<T> {
     inherits collectionFactory.TRAIT<T>
 
@@ -1180,14 +1195,6 @@ class set<T> {
             try { initialSize := max(a.size * 3 + 1, 8) }
                 catch { _:SizeUnknown -> initialSize := 8 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
-            def unused = object {
-                var unused := true
-                method asString { "unused" }
-            }
-            def removed = object {
-                var removed := true
-                method asString { "removed" }
-            }
             var size is readable := 0
             for (0..(initialSize - 1)) do {i->
                 inner.at(i)put(unused)
@@ -1369,7 +1376,8 @@ class set<T> {
                                 IteratorExhausted.raise "iterator over {outer.asString}"
                             }
                             candidate := inner.at(idx)
-                            (candidate == unused).orElse{candidate == removed}
+                            (identical (candidate, unused) || 
+                                (identical(candidate,  removed)))
                         } do { }
                         count := count + 1
                         candidate
@@ -1488,18 +1496,6 @@ class dictionary<K,T> {
         var mods is readable := 0
         var numBindings := 0
         var inner := _prelude.PrimitiveArray.new(8)
-        def unused = object {
-            var unused := true
-            def key is public = self
-            def value is public = self
-            method asString { "unused" }
-        }
-        def removed = object {
-            var removed := true
-            def key is public = self
-            def value is public = self
-            method asString { "removed" }
-        }
         for (0..(inner.size-1)) do {i->
             inner.at(i)put(unused)
         }
@@ -1508,7 +1504,7 @@ class dictionary<K,T> {
         method at(key')put(value') {
             mods := mods + 1
             var t := findPositionForAdd(key')
-            if ((inner.at(t) == unused).orElse{inner.at(t) == removed}) then {
+            if ((identical(inner.at(t), unused)) || (identical(inner.at(t), removed))) then {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(binding.key(key')value(value'))
@@ -1621,7 +1617,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while {inner.at(t) != unused} do {
+            while { different(inner.at(t), unused) } do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
@@ -1639,7 +1635,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while {(inner.at(t) != unused).andAlso{inner.at(t) != removed}} do {
+            while {(different(inner.at(t), unused)) && (different(inner.at(t), removed))} do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
@@ -1659,7 +1655,7 @@ class dictionary<K,T> {
             var firstElement := true
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused) && (a != removed)) then {
+                if (different(a, unused) && different(a, removed)) then {
                     if (! firstElement) then {
                         s := s ++ ", "
                     } else {
@@ -1675,7 +1671,7 @@ class dictionary<K,T> {
             for (0..(inner.size-1)) do {i->
                 if (i > 0) then { s := s ++ ", " }
                 def a = inner.at(i)
-                if ((a != unused) && (a != removed)) then {
+                if (different(a, unused) && different(a, removed)) then {
                     s := s ++ "{i}→{a.key}::{a.value}"
                 } else {
                     s := s ++ "{i}→{a.asDebugString}"
@@ -1747,7 +1743,7 @@ class dictionary<K,T> {
                 if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
                 while {
                     elt := inner.at(idx)
-                    (elt == unused) || (elt == removed)
+                    (identical(elt, unused) || identical(elt, removed))
                 } do {
                     idx := idx + 1
                 }
@@ -1767,7 +1763,7 @@ class dictionary<K,T> {
             numBindings := 0
             for (0..(c - 1)) do {i->
                 def a = oldInner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if (different(a, unused) && (different(a, removed))) then {
                     self.at(a.key)put(a.value)
                 }
             }
@@ -1775,7 +1771,7 @@ class dictionary<K,T> {
         method keysAndValuesDo(block2) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if (different(a, unused) && (different(a, removed))) then {
                     block2.apply(a.key, a.value)
                 }
             }
@@ -1783,7 +1779,7 @@ class dictionary<K,T> {
         method keysDo(block1) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if (different(a, unused) && (different(a, removed))) then {
                     block1.apply(a.key)
                 }
             }
@@ -1791,7 +1787,7 @@ class dictionary<K,T> {
         method valuesDo(block1) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if (different(a, unused) && (different(a, removed))) then {
                     block1.apply(a.value)
                 }
             }
