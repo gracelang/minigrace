@@ -164,7 +164,6 @@ class baseNode {
     }
     method enclosingObject {
         def obj = scope.enclosingObjectScope.node
-        util.log 20 verbose "object enclosing {self} is {obj}"
         obj
     }
     method addComment(cmtNode) {

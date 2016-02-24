@@ -1551,7 +1551,7 @@ method compileSuper(o, selfr) {
 method compileTrait(o, selfr) {
     def tObj = compilenode(o.value)
     def tMethNames = o.providedNames.copy
-    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
+//    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
     o.aliases.do { each ->
         def nn = each.newName.nameString
         out("{selfr}.methods['{nn}'] = " ++

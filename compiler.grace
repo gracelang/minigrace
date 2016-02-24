@@ -35,9 +35,9 @@ var values := moduleObject.value
 
 if (util.target == "parse") then {
     // Parse mode pretty-prints the parse tree and quits.
-    util.log 60 verbose "target = parse, outfile = {util.outfile}."
+//    util.log 60 verbose "target = parse, outfile = {util.outfile}."
     util.outprint(moduleObject.pretty(0))
-    util.log 60 verbose "done writing {util.outfile}."
+//    util.log 60 verbose "done writing {util.outfile}."
     util.outfile.close
     sys.exit(0)
 }

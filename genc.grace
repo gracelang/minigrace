@@ -1713,7 +1713,7 @@ method compilenode(o) {
 
 method compileDynamicModule(fnBase, buildinfo) {
     // compile a dynamicly-linkable version as .gso
-    util.log 50 verbose "producing dynamic module {modname}.gso"
+//    util.log 50 verbose "producing dynamic module {modname}.gso"
     var dlbit := ""
     var exportDynamicBit := ""
     var cmd := "ld -ldl -o /dev/null 2>/dev/null"
@@ -1740,7 +1740,7 @@ method compileDynamicModule(fnBase, buildinfo) {
 }
 method compileStaticModule(fnBase, buildinfo) {
     // compile a statically-linkable version as .gcn
-    util.log 50 verbose "producing static module {modname}.gcn"
+//    util.log 50 verbose "producing static module {modname}.gcn"
     def cmd = "gcc -std=c99 -g -I\"{util.gracelibPath}\" -I\"{sys.execPath}/../include\" " ++
         "-I\"{sys.execPath}\" -I\"{buildinfo.includepath}\" -o \"{fnBase}.gcn\" -c \"{fnBase}.c\""
         // -c          => don't run linker
@@ -1779,7 +1779,7 @@ method linkExecutable(fnBase, buildinfo) {
         io.error.write("Unable to link: can't find file gracelib.o\n")
         sys.exit(3)
     }
-    util.log 50 verbose "linking with {cmd}"
+//    util.log 50 verbose "linking with {cmd}"
 
     for (imports.linkfiles) do { fn ->
         cmd := "{cmd} \"{fn}\""

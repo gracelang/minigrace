@@ -117,8 +117,8 @@ factory method newScopeIn(parent') kind(variety') {
         if (elementScopes.contains(n)) then {
             return elementScopes.get(n)
         }
-        util.log 70 verbose ("scope {self}: elements.contains({n}) = {elements.contains(n)}" ++
-              " but elementScopes.contains({n}) = {elementScopes.contains(n)}")
+//        util.log 70 verbose ("scope {self}: elements.contains({n}) = {elements.contains(n)}" ++
+//              " but elementScopes.contains({n}) = {elementScopes.contains(n)}")
         //  This occurs for names like `true` that are built-in, but for which there
         //  is no symbolTable describing their atttributes.
         //  TODO: add complete information for the built-in names.
@@ -240,7 +240,7 @@ factory method newScopeIn(parent') kind(variety') {
         // If nd references an object, then the returned
         // scope will have bindings for the methods of that object.
         // Otherwise, it will be the empty scope.
-        util.log 70 verbose "looking for scope referenced by {nd.pretty 0}"
+//        util.log 70 verbose "looking for scope referenced by {nd.pretty 0}"
         if (nd.kind == "identifier") then {
             def sought = nd.nameString
             withSurroundingScopesDo {s->
@@ -252,7 +252,7 @@ factory method newScopeIn(parent') kind(variety') {
                 atRange(nd.line, nd.linePos, nd.linePos + sought.size - 1)
         } elseif {nd.kind == "member"} then {
             def receiverScope = self.scopeReferencedBy(nd.in)
-            util.log 70 verbose "receiverScope = {receiverScope}"
+//            util.log 70 verbose "receiverScope = {receiverScope}"
             if (nd.value == "outer") then {
                 return receiverScope.parent
             }
@@ -815,8 +815,8 @@ method checkForTraitConficts(objNode) {
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
-            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
+//            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
+//            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names
@@ -968,7 +968,7 @@ method setupContext(moduleObject) {
 }
 
 method checkTraitBody(traitObjNode) {
-    util.log 70 verbose "checking trait object at line {traitObjNode.line}"
+//    util.log 70 verbose "checking trait object at line {traitObjNode.line}"
     traitObjNode.body.do { node ->
         if (node.isLegalInTrait.not) then {
             def badThing = node.statementName
@@ -1203,7 +1203,7 @@ method collectInheritedAndUsedNames(node) {
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
     if (nodeScope == ast.fakeSymbolTable) then {
-        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
+//        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
     }
     if (nodeScope.inheritedNames == completed) then {
         return
@@ -1239,10 +1239,10 @@ method gatherInheritedNames(node) is confidential {
                 // an imported module.
                 collectInheritedAndUsedNames(superScope.node)
             } else {
-                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
+//                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
             }
         } else {
-            util.log 70 verbose "superscope of {node.nameString} is universal"
+//            util.log 70 verbose "superscope of {node.nameString} is universal"
         }
     }
     superScope.elements.keysDo { each ->
@@ -1322,8 +1322,8 @@ method checkForConflicts(objNode, traitMethods) {
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
-            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
+//            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
+//            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names for the error message
