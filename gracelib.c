@@ -2746,14 +2746,10 @@ Object Float64_inBase(Object self, int nparts, int *argcv,
         *(--b) = before;
     return alloc_String(b);
 }
-Object Float64_truncate(Object self, int nparts, int *argcv,
+Object Float64_truncated(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     double *d = (double*)self->data;
-    double r;
-    if (*d < 0)
-        r = ceil(*d);
-    else
-        r = floor(*d);
+    double r = trunc(*d);
     if (*d == r)
         return self;
     return alloc_Float64(r);
@@ -2762,6 +2758,16 @@ Object Float64_round(Object self, int nparts, int *argcv,
                         Object *args, int flags) {
     double *d = (double*)self->data;
     return alloc_Float64(rint(*d));
+}
+Object Float64_ceiling(Object self, int nparts, int *argcv,
+                     Object *args, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(ceil(*d));
+}
+Object Float64_floor(Object self, int nparts, int *argcv,
+                     Object *args, int flags) {
+    double *d = (double*)self->data;
+    return alloc_Float64(floor(*d));
 }
 Object Float64_abs(Object self, int nparams, int *argcv,
                    Object *argv, int flags) {
@@ -2794,7 +2800,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 37, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 39, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2823,9 +2829,11 @@ Object alloc_Float64(double num) {
         add_Method(Number, "asInteger32", &Float64_asInteger32);
         add_Method(Number, "prefix-", &Float64_Negate);
         add_Method(Number, "inBase", &Float64_inBase);
-        add_Method(Number, "truncated", &Float64_truncate);
-        add_Method(Number, "truncate", &Float64_truncate);
+        add_Method(Number, "truncated", &Float64_truncated);
+        add_Method(Number, "truncate", &Float64_truncated);
         add_Method(Number, "rounded", &Float64_round);
+        add_Method(Number, "floor", &Float64_floor);
+        add_Method(Number, "ceiling", &Float64_ceiling);
         add_Method(Number, "abs", &Float64_abs);
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);

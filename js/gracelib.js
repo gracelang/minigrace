@@ -723,6 +723,12 @@ GraceNum.prototype = {
                 return new GraceNum(Math.ceil(this._value));
             return new GraceNum(Math.floor(this._value));
         },
+        "floor": function(argcv) {
+            return new GraceNum(Math.floor(this._value));
+        },
+        "ceiling": function(argcv) {
+            return new GraceNum(Math.ceil(this._value));
+        },
         "rounded": function(argcv) {
             return new GraceNum(Math.round(this._value));
         },
