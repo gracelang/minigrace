@@ -2547,8 +2547,19 @@ def inheritsNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitInherits(self) up(as)) then {
                 def newChain = as.extend(self)
-                self.value.accept(visitor) from(newChain)
+                value.accept(visitor) from(newChain)
+                aliases.do { a ->
+                    a.newName.accept(visitor) from(newChain)
+                    a.oldName.accept(visitor) from(newChain)
+                }
+                exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
+        }
+        method declarationKindWithAncestors(as) { 
+            // identifiers declared in an inherits statement are aliases for 
+            // methods.  We treat them as methods, because (unlike inherited names)
+            // they can't be overridden by local methods.
+            k.methdec
         }
         method map(blk) ancestors(as) {
             var n := shallowCopy
@@ -2565,8 +2576,9 @@ def inheritsNode = object {
             if (isUse) then { s := "{s} (uses)" }
             s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
-                s := "{s} {a} "
+                s := "{s}\n{a.pretty(depth)}"
             }
+            if (exclusions.isEmpty.not) then { s := "{s}\n{spc}" }
             exclusions.do { e ->
                 s := "{s} exclude {e} "
             }
@@ -2618,6 +2630,13 @@ class aliasNew(n) old(o) {
     method newName {n}
     method oldName {o}
     method asString { "alias {n.nameString} = {o.nameString}" }
+    method pretty(depth) {
+        var spc := ""
+        for (0..depth) do { i ->
+            spc := spc ++ "  "
+        }
+        "{spc}  alias {n.pretty(depth)} = {o.pretty(depth)}"
+    }
     method hash { (n.hash * 1171) + o.hash }
     method isExecutable { false }
     method == (other) {
