@@ -1555,7 +1555,7 @@ method compileTrait(o, selfr) {
     o.aliases.do { each ->
         def nn = each.newName.nameString
         out("{selfr}.methods['{nn}'] = " ++
-            "{tObj}.methods['{each.oldName.nameString}']);  // alias")
+            "{tObj}.methods['{each.oldName.nameString}'];  // alias")
         tMethNames.remove(nn)
     }
     tMethNames.do { methName ->
@@ -1575,7 +1575,7 @@ method runJsCode(of, glPath) {
     }
     def runExitCode = io.spawn("grace", [of.pathname]).wait
     if (runExitCode < 0) then {
-        io.error.write "minigrace: Program {modname} exited with error {-runExitCode}.\n"
+        io.error.write "minigrace: program {modname} exited with error {-runExitCode}.\n"
         sys.exit(4)
     }
 }
