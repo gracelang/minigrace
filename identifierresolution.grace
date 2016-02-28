@@ -1261,7 +1261,7 @@ method gatherUsedNames(objNode) is confidential {
         def traitScope = objScope.scopeReferencedBy(t.value)
         collectInheritedAndUsedNames(traitScope.node)
         traitScope.keysAndKindsDo { nm, kd ->
-            if (kd.isImplicit.not) then {
+            if (kd.forUsers) then {
                 objScope.addName(nm) as(k.fromTrait)
                 t.providedNames.add(nm)
             }

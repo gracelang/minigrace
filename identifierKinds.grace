@@ -5,6 +5,7 @@ type T = type {
     isParameter -> Boolean
     isAssignable -> Boolean
     isImplicit -> Boolean
+    forUsers -> Boolean
 }
 
 class kindConstant(name) {
@@ -12,6 +13,7 @@ class kindConstant(name) {
     method isParameter { false }
     method isAssignable { false }
     method isImplicit { false }
+    method forUsers { true }
 }
 
 def undefined = kindConstant "undefined"
@@ -21,6 +23,7 @@ def typedec = kindConstant "typedec"
 def selfDef = object {
     inherits kindConstant "selfDef"
     method isImplicit { true }
+    method forUsers { false }
 }
 def fromTrait = object {
     inherits kindConstant "fromTrait"
@@ -45,4 +48,5 @@ def typeparam = object {
 def graceObjectMethod = object {
     inherits kindConstant "graceObjectMethod"
     method isImplicit { true }
+    method forUsers { false }
 }
