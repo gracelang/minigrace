@@ -1437,9 +1437,9 @@ def objectNode is public = object {
             // this object.  Inherited names are _not_ included.
             if (false == myLocalNames) then {
                 myLocalNames := set.empty
-                scope.keysAndKindsDo { methName, knd ->
-                    if (knd.isImplicit.not) then {
-                        myLocalNames.add(methName)
+                value.do { node ->
+                    if (node.isFieldDec || node.isMethod) then {
+                        myLocalNames.add(node.nameString)
                     }
                 }
             }
