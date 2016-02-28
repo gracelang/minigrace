@@ -55,11 +55,25 @@ factory method newScopeIn(parent') kind(variety') {
         elements.put(n, k.methdec)
         elementLines.put(n, util.linenum)
     }
-    method addName(n)as(kind:DeclKind) {
-        elements.put(n, kind)
-        elementLines.put(n, util.linenum)
+    method addName (n) as (kind:DeclKind) {
+        def oldKind = elements.get(n) ifAbsent {
+            elements.put(n, kind)
+            elementLines.put(n, util.linenum)
+            return
+        }
+        if (kind.isImplicit) then {
+            return  // don't overwrite local id with id from trait or super
+        }
+        if (oldKind.isImplicit)  then {
+            elements.put(n, kind)
+            elementLines.put(n, util.linenum)
+            return
+        }
+        errormessages.syntaxError("'{n}' cannot be" ++ 
+            " redefined as {kind} because it is already declared as {oldKind}")
+            atRange(util.line, util.linePos, util.linePos + n.size - 1)
     }
-    method addNode(nd) as(kind:DeclKind) {
+    method addNode (nd) as (kind) {
         def ndName = nd.value
         checkShadowing(nd) as(kind)
         def oldKind = elements.get(ndName) ifAbsent {
@@ -67,10 +81,10 @@ factory method newScopeIn(parent') kind(variety') {
             elementLines.put(ndName, nd.line)
             return
         }
-        if (kind == k.inherited) then {
-            return  // don't overwrite new id with inherited id
+        if (kind.isImplicit) then {
+            return  // don't overwrite local id with id from trait or super
         }
-        if (oldKind.implicit)  then {
+        if (oldKind.isImplicit)  then {
             elements.put(ndName, kind)
             elementLines.put(ndName, nd.line)
             return
@@ -85,10 +99,10 @@ factory method newScopeIn(parent') kind(variety') {
             ++ more ++ " as well as here at line {nd.line}.")
             atRange(nd.line, nd.linePos, nd.linePos + ndName.size - 1)
     }
-    method contains(n) {
+    method contains (n) {
         elements.contains(n)
     }
-    method withSurroundingScopesDo(b) {
+    method withSurroundingScopesDo (b) {
         var cur := self
         while {b.apply(cur); cur.hasParent} do {
             cur := cur.parent
@@ -99,13 +113,10 @@ factory method newScopeIn(parent') kind(variety') {
         elements.keysDo { each -> result.addLast(each) }
         result
     }
-    method keysAndKindsDo(action) {
+    method keysAndKindsDo (action) {
         elements.keysAndValuesDo(action)
     }
-    method keysAndValuesAsList {
-        elements.asList
-    }
-    method kind(n) {
+    method kind (n) {
         def kd:DeclKind = elements.get(n)
         if (DeclKind.match(kd).not) then { print "kind of {n} is {k}" }
         kd
@@ -798,38 +809,6 @@ method resolveIdentifiers(topNode) {
     } ancestors (ast.ancestorChain.empty)
 }
 
-method checkForTraitConficts(objNode) {
-    // This method doesn't do a transformation, only a check.
-    // But it's important that the check be done after the traits have
-    // been collected in the object, which happens in the buildSymbolTable
-    // visitor pass, so it is convenient to do this check during the
-    // resolution pass.
-    def traitMethods = map.new
-    objNode.usedTraits.do { t ->
-        t.providedNames.do { methName ->
-            def definingTraits = traitMethods.get(methName) ifAbsent { [] }
-            definingTraits.push(t)
-            traitMethods.put(methName, definingTraits)
-        }
-    }
-    traitMethods.keysDo { methName ->
-        def sources = traitMethods.get(methName)
-        if (sources.size > 1) then {    // a method has more than one source trait
-//            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
-//            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
-            if (objNode.localNames.contains(methName).not) then {
-                def sourceList = sources.map { s -> s.nameString }
-                // TODO:  clean up these names
-                def minSourceLine = sources.fold {a, s -> min(a,s.line) }
-                      startingWith(infinity)
-                errormessages.error("Trait conflict: method `{methName}` is defined " ++
-                      "in multiple traits {sourceList}.") atRange (minSourceLine, 0, 0)
-            }
-        }
-    }
-    objNode
-}
-
 method processGCT(gct, importedModuleScope) {
     gct.at "classes" ifAbsent {emptySequence}.do { c ->
         def cmeths = []
@@ -913,13 +892,13 @@ method setupContext(moduleObject) {
     preludeScope.addName "different"
     preludeScope.addName "engine"
 
-    graceObjectScope.addName "=="
-    graceObjectScope.addName "!="
-    graceObjectScope.addName "≠"
-    graceObjectScope.addName "basicAsString"
-    graceObjectScope.addName "asString"
-    graceObjectScope.addName "asDebugString"
-    graceObjectScope.addName "::"
+    graceObjectScope.addName "==" as (k.graceObjectMethod)
+    graceObjectScope.addName "!=" as (k.graceObjectMethod)
+    graceObjectScope.addName "≠" as (k.graceObjectMethod)
+    graceObjectScope.addName "basicAsString" as (k.graceObjectMethod)
+    graceObjectScope.addName "asString" as (k.graceObjectMethod)
+    graceObjectScope.addName "asDebugString" as (k.graceObjectMethod)
+    graceObjectScope.addName "::" as (k.graceObjectMethod)
 
     booleanScope.addName "prefix!"
     booleanScope.addName "&&"
@@ -1203,7 +1182,7 @@ method collectInheritedAndUsedNames(node) {
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
     if (nodeScope == ast.fakeSymbolTable) then {
-//        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
+        util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
     }
     if (nodeScope.inheritedNames == completed) then {
         return
@@ -1281,10 +1260,10 @@ method gatherUsedNames(objNode) is confidential {
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
         collectInheritedAndUsedNames(traitScope.node)
-        traitScope.elements.keysDo { each ->
-            if (each != "self") then {
-                objScope.addName(each) as(k.fromTrait)
-                t.providedNames.add(each)
+        traitScope.keysAndKindsDo { nm, kd ->
+            if (kd.isImplicit.not) then {
+                objScope.addName(nm) as(k.fromTrait)
+                t.providedNames.add(nm)
             }
         }
         t.aliases.do { a ->
@@ -1301,7 +1280,7 @@ method gatherUsedNames(objNode) is confidential {
         t.exclusions.do { exId ->
             t.providedNames.remove(exId.nameString) ifAbsent {
                 errormessages.syntaxError("can't exclude {exId.nameString} " ++
-                    "because it is not present in the used trait")
+                    "because it is not available in the used trait")
                     atRange(exId.line, exId.linePos,
                             exId.linePos + exId.nameString.size - 1)
             }
@@ -1317,7 +1296,8 @@ method gatherUsedNames(objNode) is confidential {
 
 method checkForConflicts(objNode, traitMethods) {
     // traitMethods is a dictionary with methodNames as keys, and
-    // a list of sources as values.  Multiple sources indicate a conflict.
+    // a list of sources as values.  Multiple sources indicate a conflict,
+    // unless there is a local definition too.
 
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
