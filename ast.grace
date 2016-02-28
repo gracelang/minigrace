@@ -1522,8 +1522,6 @@ def objectNode is public = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth)
-            if (inTrait) then { s := s ++ " (trait)" }
-            if (inClass) then { s := s ++ " (class)" }
             s := "{s}\n{spc}Name: {self.name}"
             if (self.superclass != false) then {
                 s := s ++ "\n" ++ spc ++ "Superclass: " ++ 
