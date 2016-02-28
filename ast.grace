@@ -127,6 +127,7 @@ class baseNode {
         return self.dtype
     }
     method isSimple { true }  // needs no parens when used as reciever
+    method description { kind }
     method accept(visitor) {
         self.accept(visitor) from (ancestorChain.empty)
     }
@@ -152,11 +153,11 @@ class baseNode {
             spc := spc ++ "  "
         }
         if ((scope.node == self).andAlso{util.target == "symbols"}) then {
-            "{line}:{linePos} {self.kind}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
+            "{line}:{linePos} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } elseif {scope.variety == "fake"} then {
-            "{line}:{linePos} {self.kind}"
+            "{line}:{linePos} {description}"
         } else {
-            "{line}:{linePos} {self.kind} {scope.asDebugString}"
+            "{line}:{linePos} {description} {scope.asDebugString}"
         }
     }
     method deepCopy {
@@ -1420,7 +1421,16 @@ def objectNode is public = object {
         var inTrait is public := false
         var myLocalNames := false
         var annotations is public := list.empty
-
+        
+        method description -> String { 
+            if (isTrait) then { 
+                "{kind} (trait)" 
+            } elseif { inClass } then {
+                "{kind} (class)"
+            } else {
+                kind
+            }
+        }
         method isTrait {
             // answers true if this object qualifies to be a trait, whether
             // or not it was declared with the trait syntax
