@@ -42,3 +42,7 @@ def typeparam = object {
     inherits kindConstant "typeparam"
     method isParameter { true }
 }
+def graceObjectMethod = object {
+    inherits kindConstant "graceObjectMethod"
+    method isImplicit { true }
+}
