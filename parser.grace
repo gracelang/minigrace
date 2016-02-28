@@ -2387,6 +2387,7 @@ method parseExclude(node) {
     next    // skip the exclude keyword
     def exSig = methodsignature(true)
     def excludedMeth = exSig.m
+    excludedMeth.isBindingOccurrence := false
     node.addExclusion (excludedMeth)
     return true
 }
