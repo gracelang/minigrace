@@ -3418,6 +3418,7 @@ if (typeof global !== "undefined") {
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;
     global.GraceSuccessfulMatch = GraceSuccessfulMatch;
+    global.GraceTrait = GraceTrait;
     global.GraceTrue = GraceTrue;
     global.GraceType = GraceType;
     global.GraceUnicodePattern = GraceUnicodePattern;
