@@ -185,7 +185,7 @@ factory method newScopeIn(parent') kind(variety') {
         withSurroundingScopesDo {s->
             if (s.contains(nm)) then {
                 def kd = s.kind(nm)
-                if (kd == k.inherited) then {
+                if (kd.fromParent) then {
                     return k.methdec
                 } else {
                     return kd
@@ -635,13 +635,13 @@ method rewriteIdentifier(node) ancestors(as) {
     if (v == "block") then { return node }
     return nodeScope.resolveOuterMethod(nm)
 }
-method checkForAmbiguityOf(node)definedIn(definingScope)as(kind) {
+method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     def currentScope = node.scope
     if (currentScope != definingScope) then { return done }
     // TODO This isn't quite right:  currentScope might be a block (or method)
     // node might be defined by inheritance in the object containing currentScope,
     // and also in an enclosing scope.
-    if (kind != k.inherited) then { return done }
+    if (kind.fromParent.not) then { return }
     def name = node.value
     def conflictingScope = currentScope.parent.thatDefines(name) ifNone {
         return
@@ -651,7 +651,7 @@ method checkForAmbiguityOf(node)definedIn(definingScope)as(kind) {
     } else {
         ""
     }
-    errormessages.syntaxError "{name} is defined both by inheritance and by an enclosing scope{more}."
+    errormessages.syntaxError "{name} is both {kind} and defined in an enclosing scope{more}."
         atRange(node.line, node.linePos, node.linePos + name.size)
 }
 method checkForReservedName(node) {
@@ -948,13 +948,13 @@ method setupContext(moduleObject) {
 
 method checkTraitBody(traitObjNode) {
 //    util.log 70 verbose "checking trait object at line {traitObjNode.line}"
-    traitObjNode.body.do { node ->
+    traitObjNode.value.do { node ->
         if (node.isLegalInTrait.not) then {
             def badThing = node.statementName
             def article = articleFor (badThing)
             errormessages.syntaxError("{article} {badThing} cannot appear in " ++
                 "a trait (defined on line {traitObjNode.line})")
-                atRange(node.line, node.linePos, node.linePos)
+                atLine(node.line)
         }
     }
 }
@@ -1057,10 +1057,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         }
         method visitInherits(o) up(as) {
             o.scope := as.parent.scope
-            if (as.parent.canInherit.not) then {
-                errormessages.syntaxError("{o.statementName} statements must " ++
-                    "be inside an object or class; a trait cannot inherit")
-                    atRange(o.line, o.linePos, o.linePos + 7)
+            if (o.isUse) then {
+                if (as.parent.canUse.not) then {
+                    errormessages.syntaxError("uses statements must " ++
+                        "be inside an object, class, or trait")
+                        atRange(o.line, o.linePos, o.linePos + 3)
+                }
+            } else {
+                if (as.parent.canInherit.not) then {
+                    errormessages.syntaxError("inherits statements must " ++
+                        "be inside an object or class; a trait cannot inherit")
+                        atRange(o.line, o.linePos, o.linePos + 7)
+                }
             }
             true
         }
@@ -1201,13 +1209,11 @@ method gatherInheritedNames(node) is confidential {
     var inhNode := node.superclass
     def objScope = node.scope
     var superScope
+    var inheritedKind := k.inherited
     if (inhNode == false) then {
         inhNode := ast.inheritsNode.new(false)
-        superScope := if (node.inTrait) then {
-            emptyScope
-        } else {
-            graceObjectScope
-        }
+        superScope := graceObjectScope
+        inheritedKind := k.graceObjectMethod
     } else {
         superScope := objScope.scopeReferencedBy(inhNode.value)
         // If superScope is the universal scope, then we have no information
@@ -1226,7 +1232,7 @@ method gatherInheritedNames(node) is confidential {
     }
     superScope.elements.keysDo { each ->
         if (each != "self") then {
-            objScope.addName(each) as(k.inherited)
+            objScope.addName(each) as(inheritedKind)
             inhNode.providedNames.add(each)
         }
     }
