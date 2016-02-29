@@ -101,7 +101,10 @@ class baseNode {
     method isExecutable { true }
     method isCall { false }
     method isComment { false }
-    method isClass { false }
+    method isClass { false }    // is a method that returns a fresh object
+    method inClass { false }    // object in a syntactic class definiton
+    method isTrait { false }    // is a method that returns a trait object
+    method inTrait { false }    // object in a syntactic trait definition
     method isBind { false }
     method isObject { false }
     method isIdentifier { false }
@@ -115,7 +118,6 @@ class baseNode {
     method hash { line.hash * linePos.hash }
     method asString { "{kind} {nameString}" }
     method nameString { "?" }
-    method isFreshMethod { false }
     method isWritable { true }
     method isReadable { true }
     method isPublic { true }
@@ -838,7 +840,14 @@ def methodNode = object {
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
-        method isFreshMethod { isFresh }
+        method isClass { isFresh }
+        method isTrait {
+            if (isFresh) then {
+                body.last.isTrait
+            } else {
+                false
+            }
+        }
         method scope:=(st) {
             // sets up the 2-way conection between this node
             // and the synmol table that defines the scope that I open.
@@ -1191,6 +1200,7 @@ def classNode is public = object {
         st.node := self
     }
     method canInherit { true }
+    method canUse { true }
     method returnsObject { true }
     method returnedObjectScope { scope }
 
@@ -1488,7 +1498,8 @@ def objectNode is public = object {
         method body { value }
         method returnsObject { true }
         method returnedObjectScope { scope }
-        method canInherit { true }
+        method canInherit { inTrait.not }   // an object can inherit if not in a trait
+        method canUse { true }
         method isObject { true }
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitObject(self) up(as)) then {
@@ -2547,7 +2558,7 @@ def inheritsNode = object {
         var exclusions is public := list.empty
         var isUse is public := false  // this is a `uses trait` clause, not an inherits
         
-        method isLegalInTrait { true }
+        method isLegalInTrait { isUse }
         method isInherits { true }
         method inheritsFromMember { value.isMember }
         method inheritsFromCall { value.isCall }

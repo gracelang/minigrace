@@ -561,7 +561,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // because of the special treatment of prelude.clone
     def freshmeths = list.empty
     for (moduleObject.value) do { val->
-        if (val.isFreshMethod) then {
+        if (val.isClass) then {
             addFreshMethod (val) to (freshmeths) for (gct)
         }
     }
