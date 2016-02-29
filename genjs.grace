@@ -353,11 +353,11 @@ method compileobject(o, outerRef, inheritingObject) {
     // compile inherits
     if (false != o.superclass) then {
         out "sourceObject = {selfr};"
-        compileInherits(o.superclass, selfr)
+        compileInherits(o.superclass) in (o, selfr)
     }
     
     // compile traits
-    o.usedTraits.do { t -> compileInherits(t, selfr) }
+    o.usedTraits.do { t -> compileInherits(t) in (o, selfr) }
 
     // compile body
     o.value.do { e ->
@@ -1461,10 +1461,10 @@ method compile(moduleObject, of, rm, bt, glPath) {
             imported.push(o.path)
         }
         if (false != moduleObject.superclass) then {
-            compileInherits(moduleObject.superclass, "this")
+            compileInherits(moduleObject.superclass) in (moduleObject, "this")
         }
         moduleObject.usedTraits.do { t -> 
-            compileInherits(t, "this")
+            compileInherits(t) in (moduleObject, "this")
         }
         moduleObject.methodsDo { o ->
             compilenode(o)
@@ -1522,10 +1522,11 @@ method compile(moduleObject, of, rm, bt, glPath) {
     if (buildtype == "run") then { runJsCode(of, glPath) }
 }
 
-method compileInherits(o, selfr) {
-    // o is an inherits node: compile it.  selfr is the name of enclosing object
+method compileInherits(o) in (objNode, selfr) {
+    // o is an inherits node: compile it.  
+    // selfr is the name of enclosing object; objNode is the enclosing AST node
     if (o.isUse) then { 
-        compileTrait(o, selfr)
+        compileTrait(o) in (objNode, selfr)
     } else {
         compileSuper(o, selfr)
     }
@@ -1548,9 +1549,9 @@ method compileSuper(o, selfr) {
     }
 }
 
-method compileTrait(o, selfr) {
+method compileTrait(o) in (objNode, selfr) {
     def tObj = compilenode(o.value)
-    def tMethNames = o.providedNames.copy
+    def tMethNames = o.providedNames -- objNode.localNames
 //    util.log 70 verbose "tMethNames = {tMethNames.asList.sort}"
     o.aliases.do { each ->
         def nn = each.newName.nameString
