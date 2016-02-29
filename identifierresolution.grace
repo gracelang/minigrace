@@ -680,15 +680,17 @@ method reportUndeclaredIdentifier(node) {
     var suggestion
     nodeScope.withSurroundingScopesDo { s ->
         s.elements.keysDo { v ->
-            def matchExtent = errormessages.name (nm) matches (v) within (thresh)
-            util.log 100 verbose "matching {nm} to {v} within {thresh}: {matchExtent}"
-            if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) &&
-                  (nmSize <= v.size) && (v.size <= sizeLimit)).orElse {
-                  (nmSize > 2) && (matchExtent == v.size) } ) then {
-                suggestion := errormessages.suggestion.new
-                suggestion.replaceRange(node.linePos, node.linePos +
-                    node.value.size - 1) with (v) onLine(node.line)
-                suggestions.push(suggestion)
+            if ((nmSize - v.size).abs <= thresh) then {
+                util.log 100 verbose "matching {nm} to {v} within {thresh}"
+                def matchExtent = errormessages.name (nm) matches (v) within (thresh)
+                if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) &&
+                      (nmSize <= v.size) && (v.size <= sizeLimit)).orElse {
+                      (nmSize > 2) && (matchExtent == v.size) } ) then {
+                    suggestion := errormessages.suggestion.new
+                    suggestion.replaceRange(node.linePos, node.linePos +
+                        node.value.size - 1) with (v) onLine(node.line)
+                    suggestions.push(suggestion)
+                }
             }
         }
     }

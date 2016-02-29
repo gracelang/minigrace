@@ -301,8 +301,9 @@ method name (p:String) matches (t:String) within (k:Number) {
     def m = p.size
     def n = t.size
     if (k >= m) then { return m }  // trivial case
-    var top := k + 1  // the location where the topmost diagonal under 
-                      // threshold intersects the current column
+    def k' = min3(k, n-1, m-1)
+    var top := k' + 1  // the location where the topmost diagonal under
+                       // threshold intersects the current column
     def h = list.empty
     for (0..m) do { i -> h[i+1] := i+1 }
     for (1..n) do { j ->
@@ -316,7 +317,7 @@ method name (p:String) matches (t:String) within (k:Number) {
             c := h[i+1]
             h[i+1] := e
         }
-        while { h[top+1] > k } do { top := top - 1 }
+        while { h[top+1] > k' } do { top := top - 1 }
         if (top == m) then { 
             return j    // the last character of t that was used in the match
         } else {
