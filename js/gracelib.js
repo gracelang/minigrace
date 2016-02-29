@@ -613,7 +613,7 @@ GraceNum.prototype = {
             return callmethod(other, "reverseDivideNumber", [1], this);
         },
         "@": function(argcv, other) {
-            return callmethod(GracePoint2DClass(), "x()y", [1, 1], this, other);
+            return callmethod(Grace_prelude, "point2Dx()y", [1, 1], this, other);
         },
         "++": function(argcv, other) {
             var t = callmethod(this, "asString", [0]);
@@ -3311,13 +3311,6 @@ Grace_prelude.methods['engine'] = function prelude_engine(argcv) {
 //  Access methods declared in Grace's standard prelude
 //
 
-var _point2DClass;
-function GracePoint2DClass() {
-    if (!_point2DClass)
-        _point2DClass = callmethod(Grace_prelude, "point2D", [0]);
-    return _point2DClass;
-}
-
 var _bindingClass;
 function GraceBindingClass() {
     if (!_bindingClass)
@@ -3413,7 +3406,6 @@ if (typeof global !== "undefined") {
     global.GraceMirrorMethod = GraceMirrorMethod;
     global.GraceNum = GraceNum;
     global.GraceObject = GraceObject;
-    global.GracePoint2DClass = GracePoint2DClass;
     global.GracePrimitiveArray = GracePrimitiveArray;
     global.GraceString = GraceString;
     global.GraceStringIterator = GraceStringIterator;

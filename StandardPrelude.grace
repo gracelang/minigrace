@@ -347,22 +347,23 @@ type Point =  {
     // distance from self to other
 }
 
-class point2D.x(x')y(y') {
+class point2Dx (x') y (y') {
     def x is readable = x'
     def y is readable = y'
     method asString { "({x}@{y})" }
     method asDebugString { self.asString }
     method distanceTo(other:Point) { (((x - other.x)^2) + ((y - other.y)^2))^(0.5) }
-    method -(other:Point) { point2D.x (x - other.x) y (y - other.y) }
-    method +(other:Point) { point2D.x (x + other.x) y (y + other.y) }
-    method /(other:Number) { point2D.x (x / other) y (y / other) }
-    method *(other:Number) { point2D.x (x * other) y (y * other) }
+    method -(other:Point) { point2Dx (x - other.x) y (y - other.y) }
+    method +(other:Point) { point2Dx (x + other.x) y (y + other.y) }
+    method /(other:Number) { point2Dx (x / other) y (y / other) }
+    method *(other:Number) { point2Dx (x * other) y (y * other) }
     method length {((x^2) + (y^2))^0.5}
     method ==(other) {
         match (other)
             case {o:Point -> (x == o.x) && (y == o.y)}
             case {_ -> false}
     }
+    method prefix- { point2Dx (-x) y (-y) }
 }
 
 import "collectionsPrelude" as coll

@@ -477,13 +477,6 @@ Object grace_bindingClass() {
     return _bindingClass;
 }
 
-Object _point2DClass = NULL;
-Object grace_point2DClass() {
-    if (_point2DClass == NULL)
-        _point2DClass = callmethod(_prelude, "point2D", 0, NULL, NULL);
-    return _point2DClass;
-}
-
 Object gracebecome(Object subObject, Object superObject) {
     struct UserObject *sub = (struct UserObject *)subObject;
     struct UserObject *sup = (struct UserObject *)superObject;
@@ -1001,7 +994,7 @@ Object Float64_Point(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(grace_point2DClass(), "x()y", 2, partcv, params);
+    return callmethod(_prelude, "point2Dx()y", 2, partcv, params);
 }
 
 Object String_Contains(Object self, int nparts, int *argcv,
