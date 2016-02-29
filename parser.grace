@@ -2539,6 +2539,7 @@ method doclass {
     util.setPosition(btok.line, btok.linePos)
     def meth = ast.methodNode.new(methodName, csig, [objNode], dtype)
     meth.typeParams := s.typeParams
+    meth.usesClassSyntax := true
     meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
     // see comment in dofactoryMethod
     if (false != objName) then {   // deal with (deprecated) dotted class
@@ -2548,7 +2549,7 @@ method doclass {
             ast.identifierNode.new("asString", false), [], asStringBody, false)
         def metaBody = [meth, asStringMeth]
         def metaObj = ast.objectNode.body (metaBody) named "class {objName.nameString}"
-        def defDec = ast.defDecNode.new(objName, metaObj, false)
+        def defDec = ast.defDecNode.new(objName, metaObj, ast.unknownType)
         defDec.startToken := btok
         defDec.annotations.add(ast.identifierNode.new("public", false))
         values.push(defDec)

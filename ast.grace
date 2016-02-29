@@ -836,6 +836,7 @@ def methodNode = object {
         def nameString:String is public = value.value
         var annotations is public := list.empty
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
+        var usesClassSyntax is public := false
 
         method isMethod { true }
         method isExecutable { false }
