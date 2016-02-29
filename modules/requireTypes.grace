@@ -9,36 +9,34 @@ def staticVisitor = object {
     }
 
     method visitDefDec(v) is public {
-        if (v.decType.value=="Unknown") then {
+        if (false == v.dtype) then {
             CheckerFailure.raiseWith("no type given to declaration"
                 ++ " of def '{v.name.value}'", v.name)
         }
     }
     method visitVarDec(v) is public {
-        if (v.decType.value=="Unknown") then {
+        if (false == v.dtype) then {
             CheckerFailure.raiseWith("no type given to declaration"
                 ++ " of var '{v.name.value}'", v.name)
         }
     }
     method visitMethod(v) is public {
-        for (v.signature) do {s->
-            for (s.params) do {p->
-                if ((p.kind == "identifier").andAlso{p.wildcard.not}.andAlso{p.decType.value=="Unknown"}) then {
-                    CheckerFailure.raiseWith("no type given to declaration"
-                        ++ " of parameter '{p.value}'", p)
-                }
+        for (v.signature.do) do {p ->
+            if (p.isIdentifier.andAlso{p.wildcard.not && (false == p.dtype)}) then {
+                CheckerFailure.raiseWith("no type given to declaration"
+                    ++ " of parameter '{p.value}'", p)
             }
         }
-        if (v.decType.value=="Unknown") then {
+        if (false == v.dtype) then {
             CheckerFailure.raiseWith("no return type given to declaration"
                 ++ " of method '{v.value.value}'", v.value)
         }
     }
     method visitBlock(v) is public {
         for (v.params) do {p->
-            if ((p.kind == "identifier").andAlso{p.wildcard.not}.andAlso{p.decType.value=="Unknown"}) then {
+            if (p.isIdentifier.andAlso{p.wildcard.not && (false == p.dtype)}) then {
                 CheckerFailure.raiseWith("no type given to declaration"
-                    ++ " of parameter '{p.value}'", p)
+                    ++ " of block parameter '{p.value}'", p)
             }
         }
     }
