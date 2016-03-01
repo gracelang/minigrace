@@ -1796,7 +1796,10 @@ method implementAliasesAndExclusionsFor(o) inheriting(e, superobj) {
     // o is an object node, and e an inherits node.  e has already been
     // compiled into register superobj.
     
-    // This has not yet been implemented.
+    if (e.aliases.isEmpty && e.exclusions.isEmpty) then { return }
+
+    errormessages.error("I'm sorry, aliases and exclusions are not yet supported " ++
+        "by the C code generator.") atLine (e.line)
 }
 
 method compile(moduleObject, outfile, rm, bt, buildinfo) {
