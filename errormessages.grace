@@ -309,7 +309,7 @@ method name (p:String) matches (t:String) within (k:Number) {
     for (1..n) do { j ->
         var c := 0
         for (1..top) do { i ->
-            def e = if (p[i] == t[i]) then { 
+            def e = if (p[i] == t[j]) then { 
                 c
             } else {
                 min3(h[i], h[i+1], c) + 1
