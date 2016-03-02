@@ -273,45 +273,6 @@ method compileobjvardec(o, selfr, pos) {
         }
     }
 }
-method compileclass(o) {
-    // TODO: move this re-writing to identifier resolution
-    out "// start compiling class {o.nameString}"
-    util.setline(o.line)
-    def innerObjectScope = o.scope
-    def factoryScope = innerObjectScope.parent
-    def metaObjectScope = factoryScope.parent
-
-    def selfr = "obj" ++ auto_count
-    auto_count := auto_count + 1
-    o.register := selfr
-
-    var signature := o.signature
-    var mbody := [ast.objectNode.body(o.value) 
-            named "{o.nameString}.{o.constructor.nameString}"
-            scope(innerObjectScope)]
-    var factorytMeth := ast.methodNode.new(o.constructor, signature, mbody,
-        false) scope(factoryScope)
-    factorytMeth.typeParams := o.typeParams
-    factorytMeth.isFresh := true
-    def asStringBody = [ast.stringNode.new("class {o.nameString}") scope(innerObjectScope)]
-    // TODO: should be a new scope
-    def asStringMeth = ast.methodNode.new(
-        ast.identifierNode.new("asString", false), [], asStringBody, false) scope(innerObjectScope)
-    def metaBody = [factorytMeth, asStringMeth]
-    def metaObj = ast.objectNode.body(metaBody) named "class {o.nameString}" scope(metaObjectScope)
-    def defDec = ast.defDecNode.new(o.name, metaObj, false)
-        scope(metaObjectScope.parent)
-    if ((compilationDepth == 1) && {o.name.kind != "generic"}) then {
-        def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.nameString) scope(metaObjectScope.parent)],
-            [o.name], false) scope(metaObjectScope.parent)
-        compilenode(meth)
-    }
-    for (o.annotations) do {a->
-        defDec.annotations.push(a)
-    }
-    compilenode(defDec)
-    out "var {selfr} = {metaObj.register};  // end of compling class {o.nameString}"
-}
 method compileobject(o, outerRef, inheritingObject) {
     var origInBlock := inBlock
     inBlock := false
@@ -1348,8 +1309,6 @@ method compilenode(o) {
         compiletrycatch(o)
     } elseif { oKind == "matchcase" } then {
         compilematchcase(o)
-    } elseif { oKind == "class" } then {
-        compileclass(o)
     } elseif { oKind == "object" } then {
         compileobject(o, "this", false)
     } elseif { oKind == "typedec" } then {

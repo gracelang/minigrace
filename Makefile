@@ -83,7 +83,7 @@ c: minigrace gracelib.c gracelib.h unicode.c unicodedata.h unicode.gct c/Makefil
     rm -f *.gcn *.gso
 
 clean:
-	rm -f gracelib.o gracelib-basic.o
+	rm -f gracelib.o gracelib-basic.o standardInput{.grace,.gct,.gcn,.gso,.o,}
 	rm -fr unicode.gco unicode.gcn unicode.gso.dSYM
 	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
@@ -103,6 +103,7 @@ clean:
 	( cd known-good && $(MAKE) clean )
 	( cd js && for sf in $(SOURCEFILES:.grace=.js) ; do rm -f $$sf ; done )
 	( cd js && for sf in $(SOURCEFILES) ; do rm -f $$sf ; done )
+	cd js && rm -rf $(ALL_LIBRARY_MODULES:%.grace=%.js) standardInput.* *.gct util.*
 	rm -f js/minigrace.js
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js

@@ -513,17 +513,13 @@ method buildGctFor(module) {
             }
             if (v.returnsObject) then {
                 def ob = v.value
-                var isClass := false
                 def obConstructors = list.empty
                 for (ob.value) do {nd->
-                    if (nd.kind == "method") then {
-                        if (nd.isFresh) then {
-                            isClass := true
-                            def factMethNm = nd.nameString
-                            obConstructors.push(factMethNm)
-                            gct.at "methods-of:{v.name.value}.{factMethNm}"
-                                put(ob.scope.getScope(factMethNm).keysAsList.sort)
-                        }
+                    if (nd.isClass) then {
+                        def factMethNm = nd.nameString
+                        obConstructors.push(factMethNm)
+                        gct.at "methods-of:{v.name.value}.{factMethNm}"
+                            put(ob.scope.getScope(factMethNm).keysAsList.sort)
                     }
                 }
                 if (obConstructors.size > 0) then {
@@ -532,13 +528,6 @@ method buildGctFor(module) {
                     classes.push(v.name.value)
                 }
             }
-        } elseif { v.kind == "class" } then {
-            meths.push(v.name.value)
-            classes.push(v.name.value)
-            gct.at "constructors-of:{v.name.value}"
-                put(list.with(v.constructor.value))
-            gct.at "methods-of:{v.name.value}.{v.constructor.value}"
-                put(v.scope.keysAsList.sort)
         } elseif { v.kind == "dialect" } then {
             theDialect := v.value
         }
@@ -559,6 +548,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // adds information about the methods made available via fresh methods.
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
+    // TODO: doesn't this just duplicate what's in 'classes' ?
     def freshmeths = list.empty
     for (moduleObject.value) do { val->
         if (val.isClass) then {

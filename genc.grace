@@ -63,8 +63,7 @@ method countbindings(l) {
     var numslots := 0
     for (l) do { n ->
         def k = n.kind
-        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
-             || (k == "class")) then {
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")) then {
             numslots := numslots + 1
         } elseif { n.kind == "if" } then {
             numslots := numslots + countnodebindings(n)
@@ -76,8 +75,7 @@ method definebindings(l, slot') {
     var slot := slot'
     for (l) do { n ->
         def k = n.kind
-        if ((k == "vardec") || (k == "defdec") || (k == "typedec")
-             || (k == "class")) then {
+        if ((k == "vardec") || (k == "defdec") || (k == "typedec")) then {
             var tnm := ""
             var snm := ""
             if (n.name.kind == "generic") then {
@@ -219,9 +217,6 @@ method compileobjdefdecdata(o, selfr, pos) {
     if (false != o.value) then {
         if (o.value.kind == "object") then {
             compileobject(o.value, selfr)
-            val := o.value.register
-        } elseif { o.value.kind == "class" } then {
-            compileclass(o.value, false)
             val := o.value.register
         } else {
             val := compilenode(o.value)
@@ -365,30 +360,6 @@ method compileobjvardec(o, selfr, pos) {
     outprint("\}")
     out("  addmethodreal({selfr}, \"{enm}:=\", &writer_{escmodname}_{inm}_{myc});")
 }
-method compileclass(o, includeConstant) {
-    var signature := o.signature
-    util.setPosition(o.line, o.linePos)
-    def obj = ast.objectNode.new(o.value, o.superclass)
-    obj.name := o.name.value
-    var mbody := [obj]
-    var newmeth := ast.methodNode.new(o.constructor, signature, mbody, false)
-    newmeth.typeParams := o.typeParams
-    newmeth.isFresh := true
-    var cobj := ast.objectNode.body([newmeth]) named(o.name ++ o.constructor.nameString)
-    if (includeConstant) then {
-        def con = ast.defDecNode.new(o.name, cobj, false)
-        if ((compilationDepth == 1) && (o.name.kind != "generic")) then {
-            def meth = ast.methodNode.new(o.name, [ast.signaturePart.partName(o.nameString)], [o.name], false)
-            compilenode(meth)
-        }
-        for (o.annotations) do {a->
-            con.annotations.push(a)
-        }
-        o.register := compilenode(con)
-    } else {
-        o.register := compilenode(cobj)
-    }
-}
 method compileobject(o, outerRef) {
     var origInBlock := inBlock
     inBlock := false
@@ -469,25 +440,6 @@ method compileobject(o, outerRef) {
             compileobjtypemeth(e, selfr, pos)
             out("\}")
             out("adddatum2({selfr}, alloc_Undefined(), {pos});")
-        } elseif { e.kind == "class" } then {
-            def cd = ast.defDecNode.new(e.name,
-                e, false)
-            for (e.annotations) do {a->
-                cd.annotations.push(a)
-            }
-            if (util.extensions.contains("DefaultVisibility")) then {
-                if (util.extensions.get("DefaultVisibility") == "public") then
-                    {
-                    cd.annotations.push(ast.identifierNode.new("public",
-                        false))
-                    cd.annotations.push(ast.identifierNode.new("readable",
-                        false))
-                }
-            }
-            out("if (objclass{myc} == NULL) \{")
-            compileobjdefdecmeth(cd, selfr, pos)
-            out("\}")
-            compileobjdefdecdata(cd, selfr, pos)
         } else {
             pos := pos - 1
         }
@@ -509,7 +461,6 @@ method compileobject(o, outerRef) {
             compileobjdefdecdata(e, selfr, pos)
         } elseif { e.kind == "typedec" } then {
             compileobjdefdecdata(e, selfr, pos)
-        } elseif { e.kind == "class" } then {
         } elseif { e.kind == "inherits" } then {
             // The return value is irrelevant with factory inheritance,
             // but we save it as super for the sake of "inherits true".
@@ -1681,8 +1632,6 @@ method compilenode(o) {
         compilematchcase(o)
     } elseif { oKind == "trycatch" } then {
         compiletrycatch(o)
-    } elseif { oKind == "class" } then {
-        compileclass(o, true)
     } elseif { oKind == "object" } then {
         compileobject(o, "self")
     } elseif { oKind == "typedec" } then {

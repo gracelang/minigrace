@@ -430,28 +430,6 @@ def astVisitor = object {
         return false
     }
 
-    method visitClass(node) -> Boolean {
-        checkMatch(node)
-
-        for(node.signature) do { part ->
-            for(part.params) do { param ->
-                runRules(aParameter.fromNode(param))
-            }
-        }
-
-        if(node.superclass != false) then {
-            node.superclass.accept(self)
-        }
-        
-        node.usedTraits.do { each -> each.accept(self) }
-
-        for(node.value) do { stmt ->
-            if (stmt.isInherits.not) then { stmt.accept(self) }
-        }
-
-        return false
-    }
-
     method visitObject(node) -> Boolean {
         checkMatch(node)
     }

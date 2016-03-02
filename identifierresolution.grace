@@ -970,7 +970,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def symbolTableVis = object {
         inherits ast.baseVisitor
 
-        method visitBind(o) up(as) {
+        method visitBind (o) up (as) {
             o.scope := as.parent.scope
             def lValue = o.dest
             if (lValue.kind == "identifier") then {
@@ -978,7 +978,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             return true
         }
-        method visitCall(o) up(as) {
+        method visitCall (o) up (as) {
             o.scope := as.parent.scope
             def callee = o.value
             if (callee.kind == "identifier") then {
@@ -986,42 +986,18 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             return true
         }
-        method visitBlock(o) up(as) {
+        method visitBlock (o) up (as) {
             o.scope := newScopeIn(as.parent.scope) kind "block"
             true
         }
-        method visitClass(o) up(as) {
-            def classNameNode = o.name
-            def factoryMeth = o.constructor
-            def surroundingScope = as.parent.scope
-            checkForReservedName(classNameNode)
-            surroundingScope.addNode(classNameNode) as(k.defdec)
-            classNameNode.isDeclaredByParent := true
-            def outerObjectScope = newScopeIn(surroundingScope) kind "object"
-            surroundingScope.at(classNameNode.nameString) putScope(outerObjectScope)
-            checkForReservedName(factoryMeth)
-            outerObjectScope.addNode(factoryMeth) as(k.methdec)
-            factoryMeth.isDeclaredByParent := true
-            def factoryScope = newScopeIn(outerObjectScope) kind "method"
-            if (o.typeParams != false) then {
-                o.typeParams.do { each ->
-                    factoryScope.addNode(each) as(k.typeparam)
-                    each.isDeclaredByParent := true
-                }
-            }
-            def innerObjectScope = newScopeIn(factoryScope) kind "object"
-            outerObjectScope.at(factoryMeth.nameString) putScope(innerObjectScope)
-            o.scope := innerObjectScope
-            true
-        }
-        method visitDefDec(o) up(as) {
+        method visitDefDec (o) up (as) {
             o.scope := as.parent.scope
             if (false != o.startToken) then {
                 as.parent.scope.elementTokens.put(o.name.nameString, o.startToken)
             }
             true
         }
-        method visitIdentifier(o) up(as) {
+        method visitIdentifier (o) up (as) {
             var scope := as.parent.scope
             o.scope := scope
             if (o.isBindingOccurrence) then {
@@ -1048,7 +1024,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitImport(o) up(as) {
+        method visitImport (o) up (as) {
             o.scope := as.parent.scope
             xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
@@ -1057,7 +1033,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope.at(o.nameString) putScope(otherModule)
             true
         }
-        method visitInherits(o) up(as) {
+        method visitInherits (o) up (as) {
             o.scope := as.parent.scope
             if (o.isUse) then {
                 if (as.parent.canUse.not) then {
@@ -1074,7 +1050,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethod(o) up(as) {
+        method visitMethod (o) up (as) {
             def surroundingScope = as.parent.scope
             if (surroundingScope.isObjectScope.not) then {
                 // This check needs to be here so long as the parser accepts
@@ -1094,23 +1070,23 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             }
             true
         }
-        method visitMethodType(o) up(as) {
+        method visitMethodType (o) up (as) {
             o.scope := newScopeIn(as.parent.scope) kind "methodtype"
             // the scope for the parameters (including the type parameters,
             // if any) of this method.
             true
         }
-        method visitObject(o) up(as) {
+        method visitObject (o) up (as) {
             def myParent = as.parent
             o.scope := newScopeIn(myParent.scope) kind "object"
             if (o.inTrait) then { checkTraitBody(o) }
             true
         }
-        method visitModule(o) up(as) {
+        method visitModule(o) up (as) {
             // the module scope was set before the traversal started
             true
         }
-        method visitTypeDec(o) up(as) {
+        method visitTypeDec (o) up (as) {
             def enclosingScope = as.parent.scope
             enclosingScope.addNode(o.name) as(k.typedec)
             o.name.isDeclaredByParent := true
@@ -1120,27 +1096,27 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             // For now, we don't distinguish between type decs and type params
             true
         }
-        method visitTypeLiteral(o) up (as) {
+        method visitTypeLiteral (o) up (as) {
             o.scope := newScopeIn(as.parent.scope) kind "type"
             true
         }
-        method visitTypeParameters(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitIf(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitMatchCase(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitTryCatch(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitSignaturePart(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitArray(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitMember(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitGeneric(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitString(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitNum(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitOp(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitIndex(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitVarDec(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitReturn(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitDialect(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitBlank(o) up(as) { o.scope := as.parent.scope ; true }
-        method visitCommentNode(o) up(as) { o.scope := as.parent.scope ; true }
+        method visitTypeParameters(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitIf(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitMatchCase(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitTryCatch(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitSignaturePart(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitArray(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitMember(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitGeneric(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitString(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitNum(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitOp(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitIndex(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitVarDec(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitReturn(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitBlank(o) up (as) { o.scope := as.parent.scope ; true }
+        method visitCommentNode(o) up (as) { o.scope := as.parent.scope ; true }
     }   // end of symbolTableVis
 
     def objectScopesVis = object {
@@ -1150,14 +1126,14 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         // delcaration is visited.
 
         inherits ast.baseVisitor
-        method visitDefDec(o) up (as) {
+        method visitDefDec (o) up (as) {
             if (o.returnsObject) then {
                 o.scope.at(o.nameString)
                     putScope(o.returnedObjectScope)
             }
             true
         }
-        method visitMethod(o) up (as) {
+        method visitMethod (o) up (as) {
             if (o.returnsObject) then {
                 as.parent.scope.at(o.nameString)
                     putScope(o.returnedObjectScope)
@@ -1168,15 +1144,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
 
     def inheritanceVis = object {
         inherits ast.baseVisitor
-        method visitClass(o) up (as) {
+        method visitObject (o) up (as) {
             collectInheritedAndUsedNames(o)
             true
         }
-        method visitObject(o) up (as) {
-            collectInheritedAndUsedNames(o)
-            true
-        }
-        method visitModule(o) up (as) {
+        method visitModule (o) up (as) {
             collectInheritedAndUsedNames(o)
             true
         }

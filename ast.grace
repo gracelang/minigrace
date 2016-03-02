@@ -1162,208 +1162,6 @@ def callNode = object {
         method statementName { "request" }
     }
 }
-def classNode is public = object {
-  class new(name', signature', body', superclass', constructor', dtype') {
-    // TODO  remove superclass as a parameter
-    // [signature]
-    //     object {
-    //         name := ""
-    //         params := sequence.empty
-    //         vararg := false/identifier
-    //     }
-    //     object {
-    //         name := ""
-    //         params := sequence.empty
-    //         vararg := false/identifier
-    //     }
-    //     ...
-    //     object {
-    //         ...
-    //     }
-    inherits baseNode
-    def kind is public = "class"
-    var value is public := body'
-    var name is public := name'
-    var constructor is public := constructor'
-    var signature is public := signature'
-    var dtype is public := dtype'
-    var typeParams is public := false
-    var superclass is public := superclass'
-    var usedTraits is public := list.empty
-    var annotations is public := list.empty
-    def nameString:String is public = name.value
-
-    method declarationKindWithAncestors(as) { k.methdec }
-    method scope:=(st) {
-        // sets up the 2-way conection between this node and the
-        // symbol table that defines the scope that it opens.
-        symbolTable := st
-        st.node := self
-    }
-    method canInherit { true }
-    method canUse { true }
-    method returnsObject { true }
-    method returnedObjectScope { scope }
-
-    method isClass { true }
-    method isExecutable { false }
-    method isPublic {
-        // assume that classes are public by default
-        if (annotations.size == 0) then { return true }
-        findAnnotation(self, "confidential").not
-    }
-    method isWritable { false }
-    method isReadable { isPublic }
-    method usesAsType(aNode) {
-        aNode == dtype
-    }
-    method parametersDo(b) {
-        signature.do { part -> 
-            part.params.do { each -> b.apply(each) }
-        }
-    }
-    method accept(visitor : ASTVisitor) from(as) {
-        if (visitor.visitClass(self) up(as)) then {
-            def newChain = as.extend(self)
-            self.name.accept(visitor) from(newChain)
-            self.constructor.accept(visitor) from(newChain)
-            if (false != typeParams) then {
-                typeParams.do { each ->
-                    each.accept(visitor) from(newChain)
-                }
-            }
-            if (superclass != false) then {
-                superclass.accept(visitor) from(newChain)
-            }
-            for (signature) do { partNode ->
-                partNode.accept(visitor) from(newChain)
-            }
-            if (dtype != false) then {
-                dtype.accept(visitor) from(newChain)
-            }
-            for (annotations) do { ann ->
-                ann.accept(visitor) from(newChain)
-            }
-            for (value) do { each ->
-                each.accept(visitor) from(newChain)
-            }
-        }
-    }
-    method map(blk) ancestors(as) {
-        var n := shallowCopy
-        def newChain = as.extend(n)
-        n.value := listMap(value, blk) ancestors(newChain)
-        n.name := name.map(blk) ancestors(newChain)
-        n.signature := listMap(signature, blk) ancestors(newChain)
-        n.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
-        n.annotations := listMap(annotations, blk) ancestors(newChain)
-        n.superclass := maybeMap(superclass, blk) ancestors(newChain)
-        n.usedTraits := listMap(usedTraits, blk) ancestors(newChain)
-        n.constructor := constructor.map(blk) ancestors(newChain)
-        n.dtype := maybeMap(dtype, blk) ancestors(newChain)
-        blk.apply(n, as)
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := super.pretty(depth) ++ "\n"
-        s := "{s}{spc}Name: {self.name.pretty(0)}"
-        if (util.target == "symbols") then {
-            s := s ++ "\n{spc}Inner object symbols({scope.variety}): {scope.asString}"
-            s := s ++ "\n{spc}Factory method symbols({scope.parent.variety}): {scope.parent.asString}"
-            s := s ++ "\n{spc}Outer object symbols({scope.parent.parent.variety}): {scope.parent.parent.asString}"
-            s := s ++ "\n{spc}enclosing symbols({scope.parent.parent.parent.variety}): {scope.parent.parent.parent.asDebugString}"
-        }
-        if (self.superclass != false) then {
-            s := s ++ "\n" ++ spc ++ "Superclass:"
-            s := s ++ "\n  " ++ spc ++ self.superclass.pretty(depth + 2)
-        }
-        s := s ++ "\n"
-        s := "{s}{spc}Factory method: {constructor.pretty(0)}\n"
-        if(false != dtype) then {
-            s := "{s}{spc}Returns:\n  {spc}{dtype.pretty(depth + 2)}\n"
-        }
-        s := "{s}{spc}Signature:"
-        for (signature) do { part ->
-            s := "{s}\n  {spc}Part: {part.name}"
-            s := "{s}\n    {spc}Parameters:"
-            for (part.params) do { p ->
-                s := "{s}\n      {spc}{p.pretty(depth + 4)}"
-            }
-            if (part.vararg != false) then {
-                s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
-            }
-        }
-        if (typeParams != false) then {
-            s := s ++ "\n" ++ spc ++ "Type Parameters:\n" ++
-                typeParams.pretty(depth + 2)
-        }
-        if (annotations.size > 0) then {
-            s := s ++ "\n" ++ spc ++ "Annotations:"
-            for (annotations) do {a->
-                s := s ++ " {a.pretty(depth + 2)}"
-            }
-        }
-        s := s ++ "\n" ++ spc ++ "Body:"
-        for (self.value) do { x ->
-            s := s ++ "\n  "++ spc ++ x.pretty(depth+2)
-        }
-        if (false != comments) then {
-            s := s ++ comments.pretty(depth+2)
-        }
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := "class {self.name.toGrace(0)}"
-        if (self.name.kind != "generic") then {
-            // TODO typeParams + new-style constructors aren't possible at the moment
-            s := s ++ "."
-            for (self.signature) do { part ->
-                s := s ++ part.name
-                if ((part.params.size > 0) || (part.vararg != false)) then {
-                    s := s ++ "("
-                    for (part.params.indices) do { pnr ->
-                        var p := part.params[pnr]
-                        s := s ++ p.toGrace(depth + 1)
-                        if ((pnr < part.params.size) || (part.vararg != false)) then {
-                            s := s ++ ", "
-                        }
-                    }
-                    if (part.vararg != false) then {
-                        s := s ++ "*" ++ part.vararg.value
-                    }
-                    s := s ++ ")"
-                }
-            }
-        }
-        if(false != dtype) then {
-            s := "{s} -> {dtype.toGrace(depth + 1)}"
-        }
-        s := s ++ " \{"
-        for (self.value) do { mx ->
-            s := s ++ "\n" ++ spc ++ "    " ++ mx.toGrace(depth + 1)
-        }
-        s := s ++ "\n" ++ spc ++ "\}"
-        s
-    }
-    method shallowCopy {
-        classNode.new(name, emptySeq, emptySeq, false, nullNode, false)
-            .shallowCopyFieldsFrom(self)
-    }
-    method shallowCopyFieldsFrom(other) {
-        super.shallowCopyFieldsFrom(other)
-        superclass := other.superclass
-        usedTraits := other.usedTraits
-        self
-    }
-  }
-}
 def moduleNode = object {
     method body(b) named(n) scope(s) {
         def result = body(b)
@@ -2925,7 +2723,6 @@ type ASTVisitor = {
      visitTypeDec(o) up(as) -> Boolean
      visitMethod(o) up(as) -> Boolean
      visitCall(o) up(as) -> Boolean
-     visitClass(o) up(as) -> Boolean
      visitObject(o) up(as) -> Boolean
      visitModule(o) up(as) -> Boolean
      visitArray(o) up(as) -> Boolean
@@ -2959,7 +2756,6 @@ class baseVisitor -> ASTVisitor {
     method visitTypeParameters(o) up(as) { visitTypeParameters(o) }
     method visitMethod(o) up(as) { visitMethod(o) }
     method visitCall(o) up(as) { visitCall(o) }
-    method visitClass(o) up(as) { visitClass(o) }
     method visitObject(o) up(as) { visitObject(o) }
     method visitModule(o) up(as) { visitObject(o) }
     method visitArray(o) up(as) { visitArray(o) }
@@ -2991,7 +2787,6 @@ class baseVisitor -> ASTVisitor {
     method visitTypeParameters(o) -> Boolean { true }
     method visitMethod(o) -> Boolean { true }
     method visitCall(o) -> Boolean { true }
-    method visitClass(o) -> Boolean { true }
     method visitObject(o) -> Boolean { true }
     method visitModule(o) -> Boolean { true }
     method visitArray(o) -> Boolean { true }
@@ -3032,7 +2827,6 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitTypeLiteral(o) up(as) { visitation.apply (o, as) }
     method visitMethod(o) up(as) { visitation.apply (o, as) }
     method visitCall(o) up(as) { visitation.apply (o, as) }
-    method visitClass(o) up(as) { visitation.apply (o, as) }
     method visitObject(o) up(as) { visitation.apply (o, as) }
     method visitModule(o) up(as) { visitation.apply (o, as) }
     method visitArray(o) up(as) { visitation.apply (o, as) }
