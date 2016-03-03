@@ -232,12 +232,20 @@ GraceString.prototype = {
             return new GraceString(tmp);
         },
         "_escape": function(argcv) {
+            // Used by the genc compiler backend to help generate utf-8.
+            // This implementation is inadequate for any other purpose;
+            // it works only for the particular strings thrown at it
+            // by genc.  *Not* part of the documented string interface.
             var tmp = callmethod(this, "replace()with", [2],
                     new GraceString("\\"), new GraceString("\\\\"));
             tmp = callmethod(tmp, "replace()with", [2],
-                    new GraceString("\""), new GraceString("\\\""));
+                    new GraceString("\""), new GraceString("\\22"));
             tmp = callmethod(tmp, "replace()with", [2],
                     new GraceString("\n"), new GraceString("\\0a"));
+            tmp = callmethod(tmp, "replace()with", [2],
+                    new GraceString("\r"), new GraceString("\\0d"));
+            tmp = callmethod(tmp, "replace()with", [2],
+                    new GraceString("\u2028"), new GraceString("\\e2\\80\\a8"));
             return tmp;
         },
         "replace()with": function(argcv, what, wth) {
