@@ -11,7 +11,6 @@ JS_STUBS := dom.grace timer.grace
 DYNAMIC_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
 STATIC_STUBS := $(filter-out $(DYNAMIC_STUBS) $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))  # currently empty
 EXTERNAL_STUBS := $(filter-out $(INTERNAL_STUBS) $(JS_STUBS), $(STUBS))
-C_MODULES_BIN = $(C_MODULES_GSO)
 CFILES = ast.c buildinfo.c genc.c genjs.c lexer.c parser.c util.c stringMap.c xmodule.c identifierresolution.c  errormessages.c
 
 # The next 2 rules are here for their side effects: updating
@@ -50,7 +49,7 @@ VERBOSITY = --verbose
 WEB_DIRECTORY = public_html/minigrace/js/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
-all: minigrace-environment $(C_MODULES_BIN) $(WEBFILES)
+all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
 .PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
 
@@ -108,6 +107,7 @@ clean:
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js
 	rm -fr grace-web-editor
+	rm -fr selftest
 	rm -f tests/test-*.log js/tests/test-*.log
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
 	rm Makefile.conf
@@ -137,6 +137,7 @@ dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
 echo:
 	@echo MAKEFLAGS = $(MAKEFLAGS)
+	@echo CFLAGS = $(CFLAGS)
 	@echo MGSOURCEFILES = $(SOURCEFILES) "\n"
 	@echo SOURCEFILES = $(SOURCEFILES) "\n"
 	@echo JSSOURCEFILES = $(JSSOURCEFILES) "\n"
@@ -151,7 +152,7 @@ echo:
 	@echo INTERNAL_STUBS = $(INTERNAL_STUBS)
 	@echo EXTERNAL_STUBS = $(EXTERNAL_STUBS)
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
-	@echo C_MODULES_BIN = $(C_MODULES_BIN)
+	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 
 expWeb: expWebDeploy
@@ -194,7 +195,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
 	install -m 755 js/grace $(PREFIX)/bin/grace
-	install -m 755 $(C_MODULES_BIN) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
+	install -m 755 $(C_MODULES_GSO) $(STUB_GCTS) js/gracelib.js js/unicodedata.js $(MODULE_PATH)
 	install -m 755 gracelib.o $(OBJECT_PATH)
 	install -m 755 gracelib.o $(MODULE_PATH)
 	install -m 644 gracelib.h $(INCLUDE_PATH)
@@ -318,7 +319,7 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_BIN) gracelib.o modules/mirrors.gct modules/unicode.gct modules/unixFilePath.gct
+minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) gracelib.o modules/mirrors.gct modules/unicode.gct modules/unixFilePath.gct
 	l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
@@ -392,12 +393,21 @@ selfhost-stats: minigrace
 	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
 	rm -f tmp.grace
 
-selftest: minigrace
+selftest: minigrace-environment
 	rm -rf selftest
 	mkdir -p selftest
-	for f in $(SOURCEFILES) modules/unicode.gso gracelib.o gracelib.h ; do cp -fp ../$$f selftest ; done
-	( cd selftest && ../minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest compiler.grace )
-	rm -rf selftest
+	( cd selftest; ln -sf $(C_MODULES_GSO:%=../%) $(C_MODULES_GSO:%.gso=../%.gct) . )
+	./minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest --module minigrace compiler.grace
+	tests/harness selftest/minigrace tests
+
+selftest-js: minigrace-js-env
+#	rm -rf selftest-js
+	mkdir -p selftest-js
+	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
+	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
+	( cd selftest-js; ln -sf ../js/gracelib.js . )
+	./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace && \
+	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
 StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
