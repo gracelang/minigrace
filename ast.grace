@@ -841,7 +841,7 @@ def methodNode = object {
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
-        method isClass { isFresh }
+        method isClass { isFresh || usesClassSyntax }
         method isTrait {
             if (isFresh) then {
                 body.last.isTrait
