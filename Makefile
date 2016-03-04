@@ -87,7 +87,7 @@ clean:
 	cd modules && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd modules/tests && rm -fr *.gct *.gcn *.gso *.gso.dSYM *.js
 	cd js && rm -f $(SOURCEFILES:%.grace=%.js)
-	rm -f debugger.o 
+	rm -f debugger.o
 	rm -f StandardPrelude.{c,gcn,gct} js/StandardPrelude.js collectionsPrelude.{c,gcn,gct} js/collectionsPrelude.js
 	rm -rf l1 l2 buildinfo.grace
 	rm -f $(SOURCEFILES:.grace=.c) minigrace.c
@@ -117,7 +117,7 @@ clean:
 
 checkjs:
 	jsl -nologo -conf tools/jsl.gracelib.conf -process js/gracelib.js
-    
+
 checkgenjs: l1/minigrace
 	if [ ! -e js/ast.js ] ;\
 then l1/minigrace --dir js --target js --verbose ast.grace ; fi
@@ -174,6 +174,8 @@ fulltest: gencheck clean selftest test
 
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
+
+gracedoc: tools/gracedoc
 
 grace-web-editor/index.html: pull-web-editor
 
@@ -385,7 +387,7 @@ sample/dialects/requireTypes.gct sample/dialects/requireTypes.gso: $(DIALECT_DEP
 sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPENDENCIES) sample/dialects/staticTypes.grace
 	$(MAKE) -C sample/dialects  VERBOSITY=$(VERBOSITY) $(@F)
 
-samples: sample-dialects js/sample-dialects 
+samples: sample-dialects js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
 selfhost-stats: minigrace
@@ -476,6 +478,9 @@ test: minigrace-c-env modules/minitest.gso
 
 togracetest: minigrace
 	tests/harness minigrace tests tograce $(TESTS)
+
+tools/gracedoc: ./minigrace modules/gracedoc.grace ast.grace io.gct lexer.grace parser.grace sys.gct
+	./minigrace --verbose --make modules/gracedoc.grace
 
 # The dependency on unicodedata.h isn't captured by the pattern rule
 unicode.gso: unicode.c unicodedata.h gracelib.h
