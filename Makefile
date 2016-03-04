@@ -238,6 +238,8 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	./minigrace --target js --dir js --make $(VERBOSITY) $<
 
+js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
+
 js/timer.gct: stubs/timer.gct
 	cd js; ln -fs ../stubs/timer.gct .
 
