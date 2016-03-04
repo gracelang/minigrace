@@ -45,13 +45,13 @@ STABLE=1560723984934899b9bf4496f3b68ced32fab99c
 STUB_GCTS = $(STUBS:%.grace=stubs/%.gct)
 TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
-VERBOSITY = --verbose
+VERBOSITY =
 WEB_DIRECTORY = public_html/minigrace/js/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
-.PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest samples sample-% test test.js test.js.compile uninstall
+.PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -107,7 +107,7 @@ clean:
 	cd c && rm -f *.gcn *.gct *.c *.h *.grace minigrace unicode.gso gracelib.o
 	rm -f minigrace *.js
 	rm -fr grace-web-editor
-	rm -fr selftest
+	rm -fr selftest selftest-js
 	rm -f tests/test-*.log js/tests/test-*.log
 	cd stubs && rm -f *.gct *gcn *.gso *js *.c
 	rm Makefile.conf
@@ -170,7 +170,7 @@ fullclean: clean
 	rm -rf .git-generation-cache
 	rm -rf $$(ls -d known-good/*/* | grep -v $(STABLE))
 
-fulltest: gencheck clean selftest test
+fulltest: gencheck clean selftest selftest-js module-test-js
 
 gencheck:
 	X=$$(tools/git-calculate-generation) ; mv .git-generation-cache .git-generation-cache.$$$$ ; Y=$$(tools/git-calculate-generation) ; [ "$$X" = "$$Y" ] || exit 1 ; rm -rf .git-generation-cache ; mv .git-generation-cache.$$$$ .git-generation-cache
@@ -405,7 +405,7 @@ selftest: minigrace-environment
 	tests/harness selftest/minigrace tests
 
 selftest-js: minigrace-js-env
-#	rm -rf selftest-js
+	rm -rf selftest-js
 	mkdir -p selftest-js
 	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
 	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
