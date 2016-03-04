@@ -301,7 +301,7 @@ class directoryBuilderForFile(in) outTo (dir) as (pageType) {
             if (o.superclass != false) then {
                 o.superclass.accept(self)
             }
-            def classVis = directoryBuilderForFile (o.name.value.asString) outTo (outdir) as "class"
+            def classVis = directoryBuilderForFile (o.name) outTo (outdir) as "class"
             o.accept(classVis)
             classVis.generate
             return false
