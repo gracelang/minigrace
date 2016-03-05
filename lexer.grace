@@ -506,10 +506,10 @@ class new {
 
     // True if c (with codepoint ordval) is a valid operator character.
     method isoperatorchar(c, ordval) {
-        if ((c == "-") || (c == "&") || (c == "|") || (c == ":") || (c == "$")
-            || (c == "%") || (c == "^") || (c == "@") || (c == "?")
-            || (c == "*") || (c == "/") || (c == "+") || (c == "!")
-            ) then {
+        if ((c == "-") || (c == "&") || (c == "|") || (c == ":") ||
+            (c == "$") || (c == "#") || (c == "\\") || (c == "%") ||
+            (c == "^") || (c == "@") || (c == "?") || (c == "*") ||
+            (c == "/") || (c == "+") || (c == "!")) then {
             return true
         }
         if (unicode.isSymbolMathematical(ordval)) then {
