@@ -21,6 +21,8 @@ keywords.put("type", true)
 keywords.put("uses", true)
 keywords.put("var", true)
 
+def operatorChars = "-&|:$#\\%^@?*/+!"
+
 method padl(s, l, w) {
     if (s.size >= l) then {
         return s
@@ -506,17 +508,9 @@ class new {
 
     // True if c (with codepoint ordval) is a valid operator character.
     method isoperatorchar(c, ordval) {
-        if ((c == "-") || (c == "&") || (c == "|") || (c == ":") ||
-            (c == "$") || (c == "#") || (c == "\\") || (c == "%") ||
-            (c == "^") || (c == "@") || (c == "?") || (c == "*") ||
-            (c == "/") || (c == "+") || (c == "!")) then {
-            return true
-        }
-        if (unicode.isSymbolMathematical(ordval)) then {
-            return true
-        } elseif { unicode.iscategory(c, "So") } then {
-            return true
-        }
+        if (operatorChars.contains(c)) then { return true }
+        if (unicode.isSymbolMathematical(ordval)) then { return true }
+        if (unicode.iscategory(c, "So")) then { return true }
         return false
     }
 
@@ -678,11 +672,6 @@ class new {
         def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
         def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
             "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
-        def operatorChar = unicode.pattern("Sm", "So",
-            "-".ord, "&".ord, "|".ord, ":".ord,
-           "%".ord, "^".ord, "@".ord, "?".ord,
-           "*".ord, "/".ord, "+".ord, "!".ord
-            )
         def mainBlock = { c ->
             var ct := ""
             var ordval := c.ord // String.ord gives the codepoint
@@ -808,30 +797,20 @@ class new {
                         modechange(tokens, mode, accum)
                     }
                     newmode := ">"
-                } elseif { operatorChar.match(ordval) } then {
+                } elseif { isoperatorchar(c, ordval) } then {
                     newmode := "o"
                 }
                 if (selfModes.match(ordval)) then {
                     newmode := c
                 }
                 if (c == "#") then {
-                    if (mode != "p") then {
-                        if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
-                            if(tokens.size == 0) then {
-                                def suggestion = errormessages.suggestion.new
-                                suggestion.addLine(1, util.lines.at(lineNumber))
-                                suggestion.addLine(lineNumber, "")
-                                errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
-                                    lineNumber)withSuggestion(suggestion)
-                            } else {
-                                errormessages.syntaxError("Pragma directives must be at the start of the file.")atLine(
-                                    lineNumber)
-                            }
+                    if(util.lines.at(lineNumber).substringFrom(1)to(7) == "#pragma") then {
+                        if (atStart) then {
+                            mode := "p"
+                            newmode := "p"
                         } else {
-                            def suggestion = errormessages.suggestion.new
-                            suggestion.replaceChar(linePosition)with("//")onLine(lineNumber)
-                            errormessages.syntaxError("'#' is not allowed here. For a comment use '//'.")atRange(
-                                lineNumber, linePosition, linePosition)withSuggestion(suggestion)
+                            errormessages.syntaxError "pragmas must be at the start of the file."
+                                atLine(lineNumber)
                         }
                     }
                 }
