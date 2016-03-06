@@ -21,7 +21,7 @@ keywords.put("type", true)
 keywords.put("uses", true)
 keywords.put("var", true)
 
-def operatorChars = "-&|:$#\\%^@?*/+!"
+def operatorChars = "-&|:$#\\%^@?*/+!~"
 
 method padl(s, l, w) {
     if (s.size >= l) then {
