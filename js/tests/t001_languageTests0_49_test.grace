@@ -455,12 +455,16 @@ def aGraceLangTest = object {
                 method # (other) { "#" }
                 method % (other) { "%" }
                 method ~?! (other) { "~?!" }
+                method /\ (other) { "and" }
+                method \/ (other) { "or" }
             }
             assert (a -&|:$#\%^@?*/+!~ 3) shouldBe "OK"
             assert (a \ 4) shouldBe "backslash"
             assert (a # 4) shouldBe "#"
             assert (a % 5) shouldBe "%"
             assert (a ~?! 6) shouldBe "~?!"
+            assert (a /\ 4) shouldBe "and"
+            assert (a \/ 5) shouldBe "or"
         }
 
         method test_037_prefixop {

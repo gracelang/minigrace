@@ -572,7 +572,7 @@ method compilemethod(o, selfobj, pos) {
     // Calculate body, find difference of usedvars/declaredvars, if closure
     // then build as such. At top of method body bind var_x as usual, but
     // set to pointer from the additional closure parameter.
-    out "// method {o.nameString}"
+    out "// method \"{o.nameString}\""
     var origParamsUsed := paramsUsed
     paramsUsed := 1
     var origPartsUsed := partsUsed
