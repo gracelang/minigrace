@@ -19,7 +19,7 @@ method t029_foo(a)bar(b) {
 method t029_sumOf(a,b)isSumOf(c,d) {
     (a + b) == (c + d)
 }
-method t037_areturner(a) {
+method t037_identity(a) {
     a
 }
 method t039_concatStrings(a)and(b) {
@@ -447,23 +447,36 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("OK\n")
         }
+        
+        method test_036_operatorChars {
+            def a = object {
+                method -&|:$#\%^@?*/+!~ (other) { "OK" }
+                method \ (other) { "backslash" }
+                method # (other) { "#" }
+                method % (other) { "%" }
+                method ~?! (other) { "~?!" }
+            }
+            assert (a -&|:$#\%^@?*/+!~ 3) shouldBe "OK"
+            assert (a \ 4) shouldBe "backslash"
+            assert (a # 4) shouldBe "#"
+            assert (a % 5) shouldBe "%"
+            assert (a ~?! 6) shouldBe "~?!"
+        }
 
         method test_037_prefixop {
-            var a := object {
-                var value := true
+            def a = object {
                 method prefix! {
-                    self.value.not
+                    false
                 }
                 method prefix!! {
                     "OK"
                 }
             }
-            
-            out(!a)
-            out(!(t037_areturner(a)))
-            out(!!a)
-            
-            assert(str)shouldBe("false\nfalse\nOK\n")
+
+            assert (!a) shouldBe (false)
+            assert (!(t037_identity(a))) shouldBe (false)
+            assert (!(!a)) shouldBe (true)
+            assert (!!a) shouldBe "OK"
         }
 
         method test_038_stringarg {

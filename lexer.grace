@@ -547,11 +547,11 @@ class new {
                 cLine := ""
                 wasCR := false
             } elseif {c == "\\"} then {
-                line := line ++ "\\"
+                line := line ++ c
                 cLine := cLine ++ "\\\\"
                 wasCR := false
             } elseif {c == "\""} then {
-                line := line ++ "\""
+                line := line ++ c
                 cLine := cLine ++ "\\\""
                 wasCR := false
             } else {

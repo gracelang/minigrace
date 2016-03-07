@@ -598,7 +598,7 @@ method compilemethod(o, selfobj, pos) {
     out("  int pushcv[] = \{1\};")
     if (!o.selfclosure) then {
         out "  if (nparts < {o.signature.size} && args)"
-        out("    graceRaise(RequestError(), \"missing argument list for {name} (probably "
+        out("    graceRaise(RequestError(), \"missing argument list for {name.quoted} (probably "
             ++ "reflection error): got %i lists, expected "
             ++ "{o.signature.size}.\", nparts);")
     }
@@ -635,7 +635,7 @@ method compilemethod(o, selfobj, pos) {
         } else {
             if (!o.selfclosure) then {
                 out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-                out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name}\");"
+                out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name.quoted}\");"
             }
         }
     }
@@ -765,7 +765,7 @@ method compilemethod(o, selfobj, pos) {
         def part = o.signature[partnr]
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
-            out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
+            out("    graceRaise(RequestError(), \"insufficient arguments to method {name.quoted}\");")
         }
     }
     // We need to detect which parameters are used in a closure, and
@@ -1263,7 +1263,7 @@ method compileop(o) {
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
         out("  Object opresult{auto_count} = "
-            ++ "callmethod({left}, \"{o.value}\", 1, partcv, params);")
+            ++ "callmethod({left}, \"{o.value.quoted}\", 1, partcv, params);")
         o.register := "opresult" ++ auto_count
         auto_count := auto_count + 1
     }

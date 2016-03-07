@@ -1006,10 +1006,10 @@ method compileop(o) {
         auto_count := auto_count + 1
         if (emitArgChecks) then {
             out("var " ++ rnm ++ auto_count ++ " = callmethodChecked(" ++ left
-                ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+                ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
         } else {
             out("var " ++ rnm ++ auto_count ++ " = callmethod(" ++ left
-                ++ ", \"" ++ o.value ++ "\", [1], " ++ right ++ ");")
+                ++ ", \"" ++ escapestring(o.value) ++ "\", [1], " ++ right ++ ");")
         }
     }
     o.register := rnm ++ auto_count

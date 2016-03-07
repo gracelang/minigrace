@@ -1627,7 +1627,7 @@ def identifierNode = object {
         var isDeclaredByParent is public := false
 
         method nameString { value }     //  value changes when parsing "[]"
-        
+        method quoted { value.quoted }
         method isIdentifier { true }
 
         method isAppliedOccurenceOfIdentifier {
