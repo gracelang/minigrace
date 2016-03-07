@@ -23,7 +23,8 @@ var importDynamic := false
 var jobs := 2
 var cLines := list.empty
 var lines := list.empty
-var filename is readable := "standardInput.grace"
+def nullFile = filePath.null        // don't modify this one
+var filename is readable := nullFile
 var commandLineExtensions is readable := ""
 
 
@@ -36,9 +37,9 @@ def requiredModules is public = object {
     def other is public = set.empty
     method isAlready ( moduleName ) -> Boolean {
         if ( static.contains(moduleName) ) then {
-            true 
+            true
         } elseif { other.contains(moduleName ) } then {
-            true 
+            true
         } else {
             false
         }
@@ -60,8 +61,7 @@ method parseargs(buildinfo) {
                 match(arg)
                     case { "-o" ->
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -o requires an argument.\n")
-                            sys.exit(1)
+                            startupFailure "-o requires an argument."
                         }
                         outfilev := io.open(argv.at(ai + 1), "w")
                         skip := true
@@ -80,8 +80,7 @@ method parseargs(buildinfo) {
                     } case { "--vtag" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --vtag requires an argument.\n")
-                            sys.exit(1)
+                            startupFailure "--vtag requires an argument."
                         }
                         vtagv := argv.at(ai + 1)
                     } case { "--make" ->
@@ -110,8 +109,7 @@ method parseargs(buildinfo) {
                     } case { "--dir" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write "minigrace: --dir requires an argument.\n"
-                            sys.exit(1)
+                            startupFailure "--dir requires an argument."
                         }
                         outDirCache := argv.at(ai + 1)
                         dirFlag := true
@@ -126,22 +124,19 @@ method parseargs(buildinfo) {
                     } case { "--module" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --module requires an argument.\n")
-                            sys.exit(1)
+                            startupFailure "--module requires an argument."
                         }
                         modnamev := argv.at(ai + 1)
                     } case { "--gracelib" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: --gracelib requires an argument.\n")
-                            sys.exit(1)
+                            startupFailure "--gracelib requires an argument."
                         }
                         gracelibPathv := argv.at(ai + 1)
                     } case { "--target" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write "minigrace: --target requires an argument.\n"
-                            sys.exit(1)
+                            startupFailure "--target requires an argument."
                         }
                         targetv := argv.at(ai + 1)
 
@@ -152,14 +147,10 @@ method parseargs(buildinfo) {
                             }
                             sys.exit(0)
                         }
-                        if (targetv != "js") then {
-                            buildtypev := "source"
-                        }
                     } case { "-j" ->
                         skip := true
                         if(argv.size < (ai + 1)) then {
-                            io.error.write("minigrace: -j requires an argument.\n")
-                            sys.exit(1)
+                            startupFailure "-j requires an argument."
                         }
                         jobs := argv.at(ai + 1).asNumber
                     } case { "--version" ->
@@ -173,36 +164,28 @@ method parseargs(buildinfo) {
                             commandLineExtensions := "{commandLineExtensions} {arg}"
                             processExtension(ext)
                         } else {
-                            io.error.write("minigrace: invalid "
-                                ++ "argument {arg}.\n")
-                            sys.exit(1)
+                            startupFailure "invalid argument {arg}."
                         }
                     }
             } else {
                 if (skip) then {
                     skip := false
-                } else {
-                    filename := arg
+                } elseif { filename == nullFile } then {
+                    filename := filePath.fromString(arg)
+                    if (filename.extension != ".grace") then {
+                        startupFailure "filename '{filename}' does not end with '.grace'."
+                    }
                     try {
-                        infilev := io.open(filename, "r")
+                        infilev := io.open(filename.asString, "r")
                     } catch {
-                        ex:EnvironmentException -> 
-                            generalError ("Can't open file {filename}",
-                                0, 0, "", false, sequence.empty)
+                        ex:EnvironmentException ->
+                            startupFailure "can't open file {filename}"
                     }
                     if (modnamev == "standardInput") then {
-                        var accum := ""
-                        modnamev := ""
-                        for (filename) do { c->
-                            if (c == "/") then {
-                                accum := ""
-                            } elseif {c == "."} then {
-                                modnamev := accum
-                            } else {
-                                accum := accum ++ c
-                            }
-                        }
+                        modnamev := filename.base
                     }
+                } else {
+                    startupFailure "please provide a single Grace file."
                 }
             }
         }
@@ -222,9 +205,8 @@ method parseargs(buildinfo) {
             case { "patterns" -> io.open(outDir ++ modnamev ++ ".patterns", "w") }
             case { "grace" -> io.open(outDir ++ modnamev ++ "_new.grace", "w") }
             case { "imports" -> io.output }
-            case { _ -> 
-                io.error.write("minigrace: unrecognized target '{targetv}'.\n")
-                sys.exit(1)
+            case { _ ->
+                startupFailure "unrecognized target '{targetv}'."
             }
     }
     if ((buildtype == "run") && (gracelibPathv == false)) then {
@@ -238,9 +220,8 @@ method parseargs(buildinfo) {
             def gracelib = file (soughtLibrary)
                 onPath (sys.environ.at "GRACE_MODULE_PATH")
                 otherwise { locs ->
-                    io.error.write "minigrace: can't find {soughtLibrary.shortName}.\n"
-                    io.error.write "Looked in {locs}.\n"
-                    sys.exit(1)
+                    startupFailure("can't find {soughtLibrary.shortName};\n" ++
+                          "Looked in {locs}.")
                 }
             gracelibPathv := gracelib.directory
         }
@@ -267,7 +248,7 @@ method createDirectoryIfNecessary(d) is confidential {
 
 var previousElapsed := 0
 
-method log_verbose(s) { 
+method log_verbose(s) {
     log (defaultVerbosity + 1) verbose (s)
 }
 
@@ -302,6 +283,16 @@ method syntaxError(message, errlinenum, position, arr, spacePos, suggestions) {
     generalError("Syntax error: {message}", errlinenum, position, arr, spacePos,
         suggestions)
 }
+
+method startupFailure (message) {
+    // Terminates the compilation because of an error in the commmand line
+
+    io.error.write "{sys.argv.at(1)}: "
+    io.error.write (message)
+    io.error.write "\n"
+    sys.exit 1
+}
+
 
 method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
     if (vtagv) then {
@@ -420,14 +411,8 @@ method str(s) lastIndexOf(ch) {
     }
     return 0
 }
-var sourceDirCache := ""
-method sourceDir {
-    if (sourceDirCache == "") then {
-        sourceDirCache := filename.substringFrom 1 to (str(filename) lastIndexOf("/"))
-    }
-    if (sourceDirCache == "") then { sourceDirCache := "./" }
-    sourceDirCache
-}
+
+method sourceDir { filename.directory }
 
 var outDirCache := ""
 var dirFlag is readable := false
@@ -459,12 +444,12 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
     if (origin != "./") then { locations.addFirst "./" }
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
-    def originalDir = name.dir
+    def originalDir = name.directory
     if ((originalDir.size > 0).andAlso{originalDir.first == "/"}) then {
-        if (candidate.exists) then { 
-            return candidate 
-        } else { 
-            return action.apply "" 
+        if (candidate.exists) then {
+            return candidate
+        } else {
+            return action.apply ""
         }
     }
     locations.do { each ->
