@@ -51,7 +51,7 @@ method decreaseindent() {
 }
 
 method formatModname(name) {
-    "gracecode_" ++ basename(name)
+    "gracecode_" ++ escapeident (basename(name))
 }
 
 method basename(filepath) {
@@ -1179,7 +1179,7 @@ method compiledialect(o) {
 method compileimport(o) {
     out("// Import of {o.path} as {o.nameString}")
     def currentScope = o.scope
-    var nm := escapestring(o.nameString)
+    var nm := escapeident(o.nameString)
     var fn := escapestring(o.path)
     out("if (typeof {formatModname(o.path)} == 'undefined')")
     out "  throw new GraceExceptionPacket(EnvironmentExceptionObject, "
