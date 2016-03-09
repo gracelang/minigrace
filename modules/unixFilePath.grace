@@ -1,9 +1,9 @@
 import "io" as io
 
-factory method null {
+class null {
     // creates a unixFilePath with empty components
 
-    var dir is readable := ""
+    var dir := ""
     // the directory part; "" if in current directory
 
     var base is public := ""
@@ -25,7 +25,7 @@ factory method null {
     // the directory part; "./" if in current directory
         if (dir == "") then { "./" } else { dir }
     }
-    
+
     method directory:=(d) {
     // set the directory part
         var newDir := d
@@ -75,6 +75,14 @@ factory method null {
         p.extension := extension
         p
     }
+
+    method == (other) {
+    // am I equal to other?
+        if (directory != other.directory) then { return false }
+        if (base != other.base) then { return false }
+        if (extension != other.extension) then { return false }
+        return true
+    }
 }
 
 method withDirectory(d) {
@@ -103,8 +111,8 @@ method fromString(s) {
     while { (slashPosn == 0) && (ix > 0) } do {
         if (s.at(ix) == "/") then {
             slashPosn := ix
-        } else { 
-            ix := ix - 1 
+        } else {
+            ix := ix - 1
         }
     }
     p.directory := s.substringFrom 1 to (slashPosn)
@@ -133,7 +141,7 @@ method split(pathString) -> List<String> {
     def pss = pathString.size
     while { ox <= pss } do {
         while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
-            ox := ox + 1 
+            ox := ox + 1
         }
         var item := pathString.substringFrom(ix) to(ox-1)
         if (item.at(item.size) != "/") then { item := item ++ "/" }
