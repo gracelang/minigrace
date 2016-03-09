@@ -1037,13 +1037,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             o.scope := as.parent.scope
             if (o.isUse) then {
                 if (as.parent.canUse.not) then {
-                    errormessages.syntaxError("uses statements must " ++
+                    errormessages.syntaxError("use statements must " ++
                         "be inside an object, class, or trait")
                         atRange(o.line, o.linePos, o.linePos + 3)
                 }
             } else {
                 if (as.parent.canInherit.not) then {
-                    errormessages.syntaxError("inherits statements must " ++
+                    errormessages.syntaxError("inherit statements must " ++
                         "be inside an object or class; a trait cannot inherit")
                         atRange(o.line, o.linePos, o.linePos + 7)
                 }
@@ -1145,11 +1145,11 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     def inheritanceVis = object {
         inherits ast.baseVisitor
         method visitObject (o) up (as) {
-            collectInheritedAndUsedNames(o)
+            collectParentNames(o)
             true
         }
         method visitModule (o) up (as) {
-            collectInheritedAndUsedNames(o)
+            collectParentNames(o)
             true
         }
     }
@@ -1159,7 +1159,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
     topNode.accept(inheritanceVis) from(topChain)
 }
 
-method collectInheritedAndUsedNames(node) {
+method collectParentNames(node) {
     // node is an object or class; put the names that it inherits into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
@@ -1174,12 +1174,14 @@ method collectInheritedAndUsedNames(node) {
             atRange(node.line, node.linePos, node.linePos)
     }
     nodeScope.inheritedNames := inProgress
-    gatherInheritedNames(node)
-    gatherUsedNames(node)
+    def reusedMethods = map.new
+    gatherInheritedNames(node) into (reusedMethods)
+    gatherUsedNames(node) into (reusedMethods)
+    checkForConflicts(node, reusedMethods)
     nodeScope.inheritedNames := completed
 }
 
-method gatherInheritedNames(node) is confidential {
+method gatherInheritedNames(node) into (superMethods) is confidential {
     var inhNode := node.superclass
     def objScope = node.scope
     var superScope
@@ -1196,12 +1198,12 @@ method gatherInheritedNames(node) is confidential {
             if (superScope.node != ast.nullNode) then {
                 // superScope.node == nullNode when superScope describes
                 // an imported module.
-                collectInheritedAndUsedNames(superScope.node)
+                collectParentNames(superScope.node)
             } else {
-//                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
+                util.log 70 verbose "‹{node.nameString}›.superscope.node == nullNode"
             }
         } else {
-//            util.log 70 verbose "superscope of {node.nameString} is universal"
+            util.log 70 verbose "superscope of {node.nameString} is universal"
         }
     }
     superScope.elements.keysDo { each ->
@@ -1229,17 +1231,21 @@ method gatherInheritedNames(node) is confidential {
                         exId.linePos + exId.nameString.size - 1)
         }
     }
+    inhNode.providedNames.do { methName ->
+        def definingTraits = superMethods.get(methName) ifAbsent { [] }
+        definingTraits.push(inhNode)
+        superMethods.put(methName, definingTraits)
+    }
 }
 
-method gatherUsedNames(objNode) is confidential {
+method gatherUsedNames(objNode) into (traitMethods) is confidential {
     // for each of objNodes's used traits, gather the names
     // introduced by that trait, as modified by alias and exclude. 
 
-    def traitMethods = map.new
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
-        collectInheritedAndUsedNames(traitScope.node)
+        collectParentNames(traitScope.node)
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers) then {
                 objScope.addName(nm) as(k.fromTrait)
@@ -1252,7 +1258,7 @@ method gatherUsedNames(objNode) is confidential {
                 t.providedNames.add(a.newName.nameString)
             } else {
                 errormessages.syntaxError("can't define an alias for " ++
-                    "{old} because it is not present in the used trait")
+                    "{old} because it is not present in the trait")
                     atRange(a.oldName.line, a.oldName.linePos,
                             a.oldName.linePos + old.size - 1)
             }
@@ -1260,7 +1266,7 @@ method gatherUsedNames(objNode) is confidential {
         t.exclusions.do { exId ->
             t.providedNames.remove(exId.nameString) ifAbsent {
                 errormessages.syntaxError("can't exclude {exId.nameString} " ++
-                    "because it is not available in the used trait")
+                    "because it is not available in the trait")
                     atRange(exId.line, exId.linePos,
                             exId.linePos + exId.nameString.size - 1)
             }
@@ -1271,7 +1277,6 @@ method gatherUsedNames(objNode) is confidential {
             traitMethods.put(methName, definingTraits)
         }
     }
-    checkForConflicts(objNode, traitMethods)
 }
 
 method checkForConflicts(objNode, traitMethods) {
