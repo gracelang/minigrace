@@ -2355,7 +2355,7 @@ def inheritsNode = object {
         var providedNames is public := set.empty
         var aliases is public := list.empty
         var exclusions is public := list.empty
-        var isUse is public := false  // this is a `uses trait` clause, not an inherits
+        var isUse is public := false  // this is a `use trait` clause, not an inherits
         
         method isLegalInTrait { isUse }
         method isInherits { true }
@@ -2391,7 +2391,7 @@ def inheritsNode = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth)
-            if (isUse) then { s := "{s} (uses)" }
+            if (isUse) then { s := "{s} (use)" }
             s := s ++ "\n" ++ spc ++ self.value.pretty(depth + 1)
             aliases.do { a ->
                 s := "{s}\n{a.pretty(depth)}"
@@ -2406,7 +2406,7 @@ def inheritsNode = object {
             s
         }
         method toGrace(depth : Number) -> String {
-            var s := if (isUse) then { "uses " } else { "inherits " }
+            var s := if (isUse) then { "use " } else { "inherit " }
             s := s ++ self.value.toGrace(0)
             aliases.do { a ->
                 s := "{s} {a} "
@@ -2435,7 +2435,7 @@ def inheritsNode = object {
             self
         }
         method statementName { 
-            if (isUse) then { "uses" } else { "inherits" }
+            if (isUse) then { "use" } else { "inherit" }
         }
     }
 }

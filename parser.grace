@@ -2313,9 +2313,10 @@ method dodialect {
 }
 
 method inheritsOrUses {
-    // Parses "inherits «object expression»"
+    // Parses "inherit «object expression»"
 
-    if (accept "keyword" && ((sym.value == "inherits") || (sym.value == "uses"))) then {
+    if (! accept "keyword") then { return }
+    if ((sym.value == "inherits") || (sym.value == "inherit") || (sym.value == "use")) then {
         def btok = sym
         checkIndent
         next
@@ -2333,10 +2334,10 @@ method inheritsOrUses {
             suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
             suggestions.push(suggestion)
             var msg := "The {btok.value} keyword must be followed by an expression that creates "
-            if (btok.value == "inherits") then { 
-                msg := msg ++ "the object being inherited."
-            } else {
+            if (btok.value == "use") then {
                 msg := msg ++ "the trait being used."
+            } else {
+                msg := msg ++ "the object being inherited."
             }
             errormessages.syntaxError(msg)
                 atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
@@ -2344,7 +2345,7 @@ method inheritsOrUses {
         }
         util.setPosition(btok.line, btok.linePos)
         def inhNode = ast.inheritsNode.new(values.pop)
-        if (btok.value == "uses") then {
+        if (btok.value == "use") then {
             inhNode.isUse := true
         }
         while { inheritsModifier(inhNode) onLineOf(btok) } do { }
@@ -2431,7 +2432,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     def body = []
     var superObject := false
     def usedTraits = []
-    var inPreamble := true  // => processing inherits and uses statements
+    var inPreamble := true  // => processing inherit and use statements
     while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
         if (didConsume {inheritsOrUses}) then {
             def parentNode = values.pop
@@ -2441,8 +2442,8 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
                 } elseif { usedTraits.isEmpty } then {
                     superObject := parentNode
                 } else {
-                    errormessages.syntaxError("'inherits' must come " ++
-                        "before 'uses' in {constructName}")
+                    errormessages.syntaxError("'inherit' must come " ++
+                        "before 'use' in {constructName}")
                         atPosition(parentNode.line, parentNode.linePos,
                         parentNode.linePos + 7)
                 }
@@ -3551,8 +3552,8 @@ method parse(toks) {
             } elseif { moduleObject.usedTraits.isEmpty } then {
                 moduleObject.superclass := parentNode
             } else {
-                errormessages.syntaxError("'inherits' must come " ++
-                    "before 'uses' in a module.")
+                errormessages.syntaxError("'inherit' must come " ++
+                    "before 'use' in a module.")
                     atPosition(parentNode.line, parentNode.linePos,
                     parentNode.linePos + 7)
             }

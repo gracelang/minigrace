@@ -13,30 +13,30 @@ class fishTrait {
 
 class catFish {
     inherits catClass
-    uses catTrait
+    use catTrait
 }
 
 class fishCat {
     inherits fishClass
-    uses catTrait
+    use catTrait
 }
 
 class allTraits {
-    uses catTrait
-    uses fishTrait exclude move
+    use catTrait
+    use fishTrait exclude move
 }
 
 class allTraits2 {
-    uses fishTrait exclude move
-    uses catTrait
+    use fishTrait exclude move
+    use catTrait
 }
 
 //PPS: extra question for experts: if a syntatic class declaration is used to declare a trait,
 //can that trait be “used” or must it be “inherited” ? 
 
 class twoTraitsAndMove {
-    uses fishClass alias fishMove = move
-    uses catClass alias catMove = move
+    use fishClass alias fishMove = move
+    use catClass alias catMove = move
     method move {
         "{fishMove} {catMove}"
     }
@@ -45,9 +45,9 @@ class justInherits {
     inherits catClass
     method move { "young man's walk" }
 }
-class usesClasses {
-    uses catClass
-    uses fishClass exclude move
+class useClasses {
+    use catClass
+    use fishClass exclude move
 }
 
 //tests - choose one, the result in symmetric semantics is always the same
@@ -59,4 +59,4 @@ print(allTraits.move)
 print(allTraits2.move)
 print(twoTraitsAndMove.move)
 print(justInherits)
-print(usesClasses.move)
+print(useClasses.move)

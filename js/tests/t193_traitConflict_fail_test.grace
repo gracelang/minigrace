@@ -5,8 +5,8 @@ trait fishTrait {
     method move { "swim" } 
 }
 class allTraits {
-    uses catTrait
-    uses fishTrait
+    use catTrait
+    use fishTrait
 }
 
 print(allTraits.move)

@@ -1,9 +1,9 @@
 dialect "minitest"
 
 class twoTraitsExcludeMove {
-    uses fishClass alias fishMove = move
+    use fishClass alias fishMove = move
         exclude move
-    uses catClass
+    use catClass
         alias catMove = move
         exclude move
     method move {
@@ -12,8 +12,8 @@ class twoTraitsExcludeMove {
 }
 
 class twoTraitsAndMove {
-    uses fishClass alias fishMove = move
-    uses catClass
+    use fishClass alias fishMove = move
+    use catClass
         alias catMove = move
     method move {
         "{catMove} {fishMove}"

@@ -1339,7 +1339,7 @@ method transformInherits(inhNode) ancestors(as) {
     }
     def superScope = currentScope.scopeReferencedBy(superObject)
     if (inhNode.isUse) then {
-        // a `uses` statement; no transformation necessary
+        // a `use` statement; no transformation necessary
     } elseif (inhNode.inheritsFromCall) then {
         var superCall := inhNode.value
         superCall.with.push(ast.callWithPart.request "object"
