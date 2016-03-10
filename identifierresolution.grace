@@ -1187,7 +1187,8 @@ method gatherInheritedNames(node) into (superMethods) is confidential {
     var superScope
     var inheritedKind := k.inherited
     if (inhNode == false) then {
-        inhNode := ast.inheritsNode.new(false)
+        def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
+        inhNode := ast.inheritsNode.new(gO) scope(objScope)
         superScope := graceObjectScope
         inheritedKind := k.graceObjectMethod
     } else {
@@ -1287,8 +1288,8 @@ method checkForConflicts(objNode, traitMethods) {
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-//            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
-//            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
+            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
+            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
             if (objNode.localNames.contains(methName).not) then {
                 def sourceList = sources.map { s -> s.nameString }
                 // TODO:  clean up these names for the error message
