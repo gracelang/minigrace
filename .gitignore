@@ -74,6 +74,7 @@ stubs/StandardPrelude.grace
 stubs/collectionsPrelude.grace
 .git-generation-cache
 modules/tests/test.log
+modules/stobjectdraw.grace
 c/*.c
 c/*.grace
 c/*.gcn
