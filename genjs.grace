@@ -606,7 +606,7 @@ method compilemethod(o, selfobj) {
         compilemethodtypes("func{myc}", o)
     }
     if (o.isConfidential) then {
-        out "  func{myc}.confidential = true;"
+        out "func{myc}.confidential = true;"
     }
     out "func{myc}.paramCounts = {paramCounts};"
     out "func{myc}.variableArities = {variableArities};"
