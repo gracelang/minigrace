@@ -106,6 +106,7 @@ class baseNode {
     method isTrait { false }    // is a method that returns a trait object
     method inTrait { false }    // object in a syntactic trait definition
     method isBind { false }
+    method isBlock { false }
     method isObject { false }
     method isIdentifier { false }
     method isDialect { false }
@@ -295,6 +296,7 @@ def blockNode is public = object {
     for (params') do {p->
         p.accept(patternMarkVisitor) from(ancestorChain.with(self))
     }
+    method isBlock { true }
     method isEmpty { body.size == 0 }
     method isntEmpty { body.size > 0 }
     method scope:=(st) {
