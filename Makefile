@@ -300,7 +300,7 @@ $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace l
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: modules/%.gso
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace l1/minigrace
-	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --target js --dir js $<
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.gct): js/%.gct: js/%.js
 
