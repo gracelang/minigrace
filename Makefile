@@ -396,10 +396,13 @@ sample/dialects/staticTypes.gct sample/dialects/staticTypes.gso: $(DIALECT_DEPEN
 samples: sample-dialects js/sample-dialects
 # omitted for the time-being: js/sample-graphics
 
-selfhost-stats: minigrace
-	cat compiler.grace util.grace ast.grace parser.grace genc.grace > tmp.grace
-	GRACE_STATS=1 ./minigrace -XIgnoreShadowing < tmp.grace >/dev/null
-	rm -f tmp.grace
+selfhost-stats: minigrace-js-env
+	rm -rf selftest-js
+	mkdir -p selftest-js
+	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
+	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
+	( cd selftest-js; ln -sf ../js/gracelib.js . )
+	STATS=TRUE time ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace
 
 selftest: minigrace-environment
 	rm -rf selftest
