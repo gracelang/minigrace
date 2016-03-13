@@ -521,33 +521,35 @@ method compilemethod(o, selfobj) {
         out "\}"
         out "// End type arguments"
     }
-    out "// Start argument processing"
-    out "curarg = 1;"
-    for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
-        var paramnr := 0
-        for (part.params) do { p ->
-            paramnr := paramnr + 1
-            if (emitTypeChecks && (p.dtype != false)) then {
-                noteLineNumber(o.line)comment("argument check in compilemethod")
-                def dtype = compilenode(p.dtype)
-                out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
-                    "  [1], arguments[curarg])))")
-                out "    throw new GraceExceptionPacket(TypeErrorObject," 
-                out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
-                out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+    if (emitTypeChecks && o.needsArgChecks) then {
+        out "// Start argument checking"
+        out "curarg = 1;"
+        for (o.signature.indices) do { partnr ->
+            var part := o.signature[partnr]
+            var paramnr := 0
+            for (part.params) do { p ->
+                paramnr := paramnr + 1
+                if (emitTypeChecks && (p.dtype != false)) then {
+                    noteLineNumber(o.line)comment("argument check in compilemethod")
+                    def dtype = compilenode(p.dtype)
+                    out("if (!Grace_isTrue(callmethod({dtype}, \"match\"," ++
+                        "  [1], arguments[curarg])))")
+                    out "    throw new GraceExceptionPacket(TypeErrorObject," 
+                    out "        new GraceString(\"argument {paramnr} in {part.name} (arg list {partnr}), which corresponds to parameter {p.value}, does not have \" + "
+                    out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
+                }
+                out("curarg++;")
             }
-            out("curarg++;")
+            if (part.vararg != false) then {
+                def pName = varf(part.vararg.value)
+                out("var {pName} = new PrimitiveGraceList("
+                    ++ "Array.prototype.slice.call(arguments, curarg, "
+                    ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
+                out "curarg += argcv[{partnr - 1}] - {part.params.size};"
+            }
         }
-        if (part.vararg != false) then {
-            def pName = varf(part.vararg.value)
-            out("var {pName} = new PrimitiveGraceList("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out "curarg += argcv[{partnr - 1}] - {part.params.size};"
-        }
+        out "// End argument checking"
     }
-    out "// End argument processing"
 
     // Setting the location is deliberately delayed to this point, so that
     // argument checking errors are reported as errors at the request site

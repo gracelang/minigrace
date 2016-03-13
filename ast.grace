@@ -851,6 +851,17 @@ def methodNode = object {
                 false
             }
         }
+        method needsArgChecks {
+            signature.do { part -> 
+                part.params.do { p ->
+                    if ((p.dtype != false).andAlso { 
+                            p.dtype.nameString != "Unknown" }) then {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
         method scope:=(st) {
             // sets up the 2-way conection between this node
             // and the synmol table that defines the scope that I open.
