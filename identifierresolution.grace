@@ -646,13 +646,15 @@ method checkForAmbiguityOf (node) definedIn (definingScope) as (kind) {
     def conflictingScope = currentScope.parent.thatDefines(name) ifNone {
         return
     }
-    def more = if (conflictingScope.elementLines.contains(name)) then {
-        " at line {conflictingScope.elementLines.get(name)}"
-    } else {
-        ""
+    var more := ""
+    if (conflictingScope.elementLines.contains(name)) then {
+        def earlierDef = conflictingScope.elementLines.get(name)
+        if (earlierDef != 0) then {
+            more := " at line {earlierDef}"
+        }
     }
     errormessages.syntaxError "{name} is both {kind} and defined in an enclosing scope{more}."
-        atRange(node.line, node.linePos, node.linePos + name.size)
+        atRange(node.line, node.linePos, node.linePos + name.size - 1)
 }
 method checkForReservedName(node) {
     def ns = node.nameString
