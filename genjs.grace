@@ -313,7 +313,6 @@ method compileobject(o, outerRef, inheritingObject) {
         
     // compile inherits
     if (false != o.superclass) then {
-        out "sourceObject = {selfr};"
         compileInherits(o.superclass) in (o, selfr)
     }
     
@@ -324,23 +323,18 @@ method compileobject(o, outerRef, inheritingObject) {
     o.value.do { e ->
         if (e.kind == "method") then {
         } elseif { e.kind == "vardec" } then {
-            out "sourceObject = {selfr};"
             compileobjvardec(e, selfr, pos)
             out("{selfr}.mutable = true;")
             pos := pos + 1
         } elseif { e.kind == "defdec" } then {
-            out "sourceObject = {selfr};"
             compileobjdefdec(e, selfr, pos)
             pos := pos + 1
         } elseif { e.kind == "typedec" } then {
-            out "sourceObject = {selfr};"
             compiletypedec(e)
             pos := pos + 1
         } elseif { e.kind == "object" } then {
-            out "sourceObject = {selfr};"
             compileobject(e, selfr, false)
         } else {
-            out "sourceObject = {selfr};"
             compilenode(e)
         }
     }
@@ -387,7 +381,6 @@ method compileblock(o) {
     }
     out("block" ++ myc ++ ".real = function(" ++ paramList ++ ") \{")
     increaseindent
-    out("sourceObject = this;")
     var ret := "GraceDone"
     for (o.body) do {l->
         ret := compilenode(l)
