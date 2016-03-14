@@ -2251,7 +2251,6 @@ function gracecode_util() {
         meth_isAlready.variableArities = [false];
         obj_requiredModules.methods["isAlready"] = meth_isAlready;
         meth_isAlready.definitionModule = "util";
-        sourceObject = obj_requiredModules;
         var call1255 = callmethod(Grace_prelude, "set", [0]);
         var call1256 = callmethod(call1255,"empty", [0]);
         obj_requiredModules.data["static"] = call1256;
@@ -2260,7 +2259,6 @@ function gracecode_util() {
         };
         reader_util_static1257.def = true;
         obj_requiredModules.methods["static"] = reader_util_static1257;
-        sourceObject = obj_requiredModules;
         var call1258 = callmethod(Grace_prelude, "list", [0]);
         var call1259 = callmethod(call1258,"empty", [0]);
         obj_requiredModules.data["linkfiles"] = call1259;
@@ -2269,7 +2267,6 @@ function gracecode_util() {
         };
         reader_util_linkfiles1260.def = true;
         obj_requiredModules.methods["linkfiles"] = reader_util_linkfiles1260;
-        sourceObject = obj_requiredModules;
         var call1261 = callmethod(Grace_prelude, "set", [0]);
         var call1262 = callmethod(call1261,"empty", [0]);
         obj_requiredModules.data["other"] = call1262;
@@ -2278,7 +2275,6 @@ function gracecode_util() {
         };
         reader_util_other1263.def = true;
         obj_requiredModules.methods["other"] = reader_util_other1263;
-        sourceObject = obj_requiredModules;
         superDepth = origSuperDepth;
     };
     obj_init_requiredModules.apply(obj_requiredModules, []);
@@ -2786,8 +2782,6 @@ function callmethod(obj, methname, argcv) {
     }
     onSelf = false;
     onOuter = false;
-    var oldSourceObject = sourceObject;
-    sourceObject = superDepth;
     if (overrideReceiver !== null) {
         obj = overrideReceiver;
         overrideReceiver = null;
@@ -2802,7 +2796,6 @@ function callmethod(obj, methname, argcv) {
         superDepth = origSuperDepth;
         while (callStack.length > beforeSize)
             callStack.pop();
-        sourceObject = oldSourceObject;
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
@@ -2856,8 +2849,6 @@ function callmethodChecked(obj, methname, argcv) {
     }
     onSelf = false;
     onOuter = false;
-    var oldSourceObject = sourceObject;
-    sourceObject = superDepth;
     if (overrideReceiver !== null) {
         obj = overrideReceiver;
         overrideReceiver = null;
@@ -2886,7 +2877,6 @@ function callmethodChecked(obj, methname, argcv) {
         superDepth = origSuperDepth;
         while (callStack.length > beforeSize)
             callStack.pop();
-        sourceObject = oldSourceObject;
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
