@@ -756,7 +756,7 @@ Object GreaterThanPattern_match(Object self, int nparts, int *argcv, Object *arg
     Object target = argv[0];
     Object right = b->data[0];
     int tmp[1] = {1};
-    Object m = callmethod(target, "<", 1, argcv, &right);
+    Object m = callmethod(target, ">", 1, argcv, &right);
     if (istrue(m))
         return alloc_SuccessfulMatch(target, NULL);
     return alloc_FailedMatch(target, NULL);
