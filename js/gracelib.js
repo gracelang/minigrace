@@ -3265,13 +3265,14 @@ Grace_prelude.methods['clone'] = function prelude_clone (argcv, obj) {
 
 function clone (obj) {
 //   shallow copy, except up the superchain
-    var copy = new GraceObject();
+    var copy = new obj.constructor();
     copy.superobj = null;
     if (obj.superobj)
         copy.superobj = clone(obj.superobj);
     copy.className = obj.className;
     copy.methods = obj.methods;
     copy.mutable = obj.mutable;
+    copy.outer = obj.outer;
     copy.definitionModule = obj.definitionModule;
     copy.definitionLine = obj.definitionLine;
     for (var attr in obj.data) {
