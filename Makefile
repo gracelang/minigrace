@@ -402,7 +402,7 @@ selfhost-stats: minigrace-js-env
 	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
 	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
 	( cd selftest-js; ln -sf ../js/gracelib.js . )
-	STATS=TRUE time ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace
+	STATS=TRUE GRACE_MODULE_PATH=js:modules time ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace
 
 selftest: minigrace-environment
 	rm -rf selftest
