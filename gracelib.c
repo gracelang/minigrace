@@ -3498,27 +3498,6 @@ Object module_sys_init() {
     return o;
 }
 
-Object StringResourceHandler_loadResource(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    char *res = grcstring(args[0]);
-    char path[PATH_MAX];
-    if (!find_resource(res, path))
-        gracedie("Could not find resource '%s'.", res);
-    FILE *file = fopen(path, "r");
-    int bsize = 128;
-    int pos = 0;
-    char *buf = malloc(bsize);
-    pos += fread(buf, sizeof(char), bsize, file);
-    while (!feof(file)) {
-        bsize *= 2;
-        buf = realloc(buf, bsize);
-        pos += fread(buf+pos, sizeof(char), bsize-pos-1, file);
-    }
-    buf[pos] = 0;
-    Object str = alloc_String(buf);
-    free(buf);
-    return str;
-}
 Object alloc_done() {
     if (done != NULL)
         return done;
