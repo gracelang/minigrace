@@ -3360,11 +3360,12 @@ Object module_io_init() {
     add_Method(IOModule, "asDebugString", &Object_asString);
 
     Object o = alloc_obj(sizeof(Object) * 3, IOModule);
+    gc_root(o);
     struct IOModuleObject *so = (struct IOModuleObject*)o;
     so->_stdin = alloc_File_from_stream(stdin);
     so->_stdout = alloc_File_from_stream(stdout);
     so->_stderr = alloc_File_from_stream(stderr);
-    gc_root(o);
+    iomodule = o;
     return o;
 }
 ClassData EnvironObject;
@@ -4646,6 +4647,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
                 (void*)&UserObj__mark);
         GraceDefaultObject = alloc_obj(sizeof(struct UserObject) -
                 sizeof(struct Object), dc);
+        gc_root(GraceDefaultObject);
         GraceDefaultObject->flags |= FLAG_USEROBJ;
         struct UserObject *duo = (struct UserObject *)GraceDefaultObject;
         duo->super = NULL;
@@ -5210,6 +5212,7 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
     size_t *size = sz;
     int nfields = (*size - sizeof(struct UserObject)) / sizeof(Object) + 1;
     Object ret = alloc_userobj2(0, nfields, obj->class);
+    gc_frame_newslot(ret);
     struct UserObject *uret = (struct UserObject *)ret;
     memcpy(ret, obj, *size);
     if (uo->super)
