@@ -1519,10 +1519,10 @@ function GraceBlock_apply(argcv) {
         // makes a copy of arguments, without element at index 0
     var len = args.length;
     if (args.length !== this.numParams) {
-        var plural = (len === 1) ? "" : "s";
+        var plural = (this.numParams === 1) ? "" : "s";
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-            new GraceString("block applied to " + len + " argument" +
-                plural + " where " + this.numParams + " expected."));
+            new GraceString("block takes " + this.numParams + " argument" +
+                plural + " but given " + len + "."));
     }
     var match;
     superDepth = this.receiver;
@@ -2235,7 +2235,8 @@ function gracecode_util() {
         var meth_isAlready = function(argcv) {    // method isAlready(1)
             var var_moduleName = arguments[1];
             if (argcv[0] !== 1)
-                callmethod(ProgrammingErrorObject, "raise", [1], new GraceString("wrong number of arguments for isAlready(1)"));
+                callmethod(ProgrammingErrorObject, "raise", [1],
+                    new GraceString("wrong number of arguments for isAlready(1)"));
             setModuleName("util");
             onSelf = true;
             var staticv = callmethod(this, "static", [0]);
@@ -2548,7 +2549,7 @@ GraceMirrorMethod.prototype.methods['isVariableArity'] = function(argcv) {
 GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'request' requires one argument (a list of arg lists)"));
+                new GraceString("'request' requires one argument (a list of argument lists)"));
     }
     var theFunction = this.obj.methods[this.name];
     var requiredLen = theFunction.paramCounts.length;
@@ -2572,7 +2573,7 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
 GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList) {
     if (! argList) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("'request' requires one argument (a list of arguments)"));
+                new GraceString("'requestWithArgs' requires one argument (a list of arguments)"));
     }
     var theFunction = this.obj.methods[this.name];
     var paramcv = theFunction.paramCounts;
@@ -3275,6 +3276,7 @@ function clone (obj) {
     copy.outer = obj.outer;
     copy.definitionModule = obj.definitionModule;
     copy.definitionLine = obj.definitionLine;
+    copy.data = {};
     for (var attr in obj.data) {
         if (obj.data.hasOwnProperty(attr))
             copy.data[attr] = obj.data[attr];
@@ -3425,6 +3427,7 @@ if (typeof global !== "undefined") {
     global.setLineNumber = setLineNumber;
     global.setModuleName = setModuleName;
     global.StackFrame = StackFrame;
+    global.superDepth = "never initialized";
     global.tryCatch = tryCatch;
     global.type_Boolean = type_Boolean;
     global.type_Block = type_Block;
