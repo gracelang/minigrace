@@ -1892,11 +1892,11 @@ method parenthesizedArg(part) {
                     def suggestion = errormessages.suggestion.new
                     if(sym.next.kind == "identifier") then {
                         suggestion.deleteTokenRange(sym, sym.next)leading(true)trailing(false)
-                        errormessages.syntaxError("only variables and constants may be followed by a ':' and a type.")atRange(
+                        errormessages.syntaxError("only declarations may be followed by a ':' and a type.")atRange(
                             sym.line, sym.linePos, sym.next.linePos + sym.next.size - 1)withSuggestion(suggestion)
                     } else {
                         suggestion.deleteToken(sym)
-                        errormessages.syntaxError("only variables and constants may be followed by a ':' and a type.")atRange(
+                        errormessages.syntaxError("only declarations may be followed by a ':' and a type.")atRange(
                             sym.line, sym.linePos, sym.linePos)withSuggestion(suggestion)
                     }
                 }
