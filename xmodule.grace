@@ -196,13 +196,13 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             binaryFile := util.file(binaryFile) onPath (gmp) otherwise { l ->
                 errormessages.error(
                     "I can't find {pn.shortName} or {binaryFile.shortName}; looked in {l}.")
-                    atRange(line, linePos, linePos + binaryFile.base.size - 1)
+                    atLine(line)
             }
             moduleFileGct.setDirectory(binaryFile.directory)
             if (moduleFileGct.exists.not) then {
                 errormessages.error("I found {binaryFile}, but neither " ++
                     "{moduleFileGct} nor source.")
-                    atRange(line, linePos, linePos + binaryFile.base.size - 1)
+                    atLine(line)
             }
         }
         if (needsDynamic.not) then {
@@ -242,7 +242,7 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                     forDialect (isDialect) atRange (line, linePos)
             } else {
                 errormessages.error "Can't find dialect {nm}"
-                    atRange(line, linePos, linePos + nm.size - 1)
+                    atLine(line)
             }
         }
         imports.other.add(nm)
@@ -263,7 +263,7 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
     if (importedModules.contains(m)) then {
         errormessages.error("Cyclic import detected: '{m}' is imported "
             ++ "by '{moduleName}', which is imported by '{m}' (and so on).")
-            atRange(line, linePos, linePos + moduleName.size)
+            atLine(line)
     }
     importedModules.do { each ->
         checkimport(each, each, line, linePos, isDialect)
@@ -274,7 +274,7 @@ method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
     if ( prelude.inBrowser.orElse { util.recurse.not } ) then {
         errormessages.error "Please compile module {nm} before importing it."
-            atRange(line, linePos, linePos + nm.size - 1)
+            atLine(line)
     }
     var slashed := false
     for (sys.argv.first) do {letter ->
@@ -319,7 +319,7 @@ method compileModule (nm) inFile (sourceFile)
     def exitCode = io.spawn("bash", ["-c", cmd]).status
     if (exitCode != 0) then {
         errormessages.error "Failed to compile imported module {nm} ({exitCode})."
-            atRange(line, linePos, linePos + nm.size - 1)
+            atLine(line)
     }
 }
 
