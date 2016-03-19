@@ -152,7 +152,6 @@ echo:
 	@echo INTERNAL_STUBS = $(INTERNAL_STUBS)
 	@echo EXTERNAL_STUBS = $(EXTERNAL_STUBS)
 	@echo C_MODULES_GSO = $(C_MODULES_GSO)
-	@echo C_MODULES_GSO = $(C_MODULES_GSO)
 	@echo GRAPHIX:%.grace=js/%.js = $(GRAPHIX:%.grace=js/%.js)
 
 expWeb: expWebDeploy
@@ -411,11 +410,10 @@ selftest: minigrace-environment
 	./minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest --module minigrace compiler.grace
 	tests/harness selftest/minigrace tests
 
-selftest-js: minigrace-js-env
+selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	rm -rf selftest-js
 	mkdir -p selftest-js
-	( cd selftest-js; ln -sf $(C_MODULES_GSO:%=../%) . )
-	( cd selftest-js; ln -sf $(STUBS:%.grace=../js/%.gct) $(STUBS:%.grace=../js/%.js) . )
+	( cd selftest-js; ln -sf $(ALL_LIBRARY_MODULES:%.grace=../js/%.js) . )
 	( cd selftest-js; ln -sf ../js/gracelib.js . )
 	./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace && \
 	tests/harness selftest-js/minigrace tests
