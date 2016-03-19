@@ -1,9 +1,9 @@
 #!/usr/bin/env node
+
 "use strict";
 
 var path = require("path");
 var fs = require("fs");
-var fsPath = require("path")
 var util = require('util');
 
 global.minigrace = {};
@@ -33,9 +33,7 @@ function MiniGrace() {
     
     this.generated_output = "";
     
-    this.stdout_write = function(value) {
-        
-    }
+    this.stdout_write = function(value) { };
     
     this.stderr_write = function(value) {
         console.log(value);
@@ -43,7 +41,7 @@ function MiniGrace() {
     
     this.stdin_read = function() {
         return "";
-    }
+    };
 }
 
 MiniGrace.prototype.compile = function(grace_code) {
@@ -53,17 +51,17 @@ MiniGrace.prototype.compile = function(grace_code) {
     var old_stdin_read = this.stdin_read;
     this.stdin_read = function() {
         return grace_code;
-    }
+    };
     
     // Change stdout to store generated output.
     var old_stdout_write = this.stdout_write;
     this.stdout_write = function(value) {
         this.generated_output += value;
-    }
+    };
     this.generated_output = "";
     
     this.compileError = false;
-    extensionsMap = callmethod(var_HashMap, "new", [0])
+    extensionsMap = callmethod(var_HashMap, "new", [0]);
     if (this.vis == "standard") {
         // Do nothing
     } else {
@@ -81,10 +79,9 @@ MiniGrace.prototype.compile = function(grace_code) {
             // pass
         } else if (e.exctype == 'graceexception') {
             this.compileError = true;
-            this.stderr_write("Internal compiler error at line " + e.lineNumber
-                + " of " + e.moduleName
-                + ": " + e.exception.name + ": "
-                + e.message._value + "\n");
+            this.stderr_write("Internal compiler error at line " + 
+                e.lineNumber + " of " + e.moduleName + ": " + 
+                e.exception.name + ": " + e.message._value + "\n");
             for (i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  called from " + e.callStack[i] + "\n");
             }
@@ -96,7 +93,7 @@ MiniGrace.prototype.compile = function(grace_code) {
         this.stdin_read = old_stdin_read;
         this.stdout_write = old_stdout_write;
     }
-}
+};
 
 MiniGrace.prototype.trapErrors = function(func) {
     this.exception = null;
@@ -107,24 +104,25 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("" + e.exception.name + " at line "
-                + e.lineNumber + " of " + e.moduleName + ": "
-                + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
+            this.stderr_write("" + e.exception.name + " at line " +
+                e.lineNumber + " of " + e.moduleName + ": " +
+                e.message._value + "\n");
+            for (var i=e.callStack.length-1; i>=0; i--) {
                 this.stderr_write("  called from " + e.callStack[i] + "\n");
             }
             if (originalSourceLines[e.moduleName]) {
                 var lines = originalSourceLines[e.moduleName];
-                for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
+                for (i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
                     if (lines[i-1] != undefined) {
                         for (var j=0; j<4-i.toString().length; j++)
                             this.stderr_write(" ");
                         this.stderr_write("" + i + ": " + lines[i-1] + "\n");
                     }
+                }
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
                 this.stderr_write("Stack frames:\n");
-                for (var i=0; i<e.stackFrames.length; i++) {
+                for (i=0; i<e.stackFrames.length; i++) {
                     this.stderr_write("  " + e.stackFrames[i].methodName + "\n");
                     var stderr_write = this.stderr_write;
                     e.stackFrames[i].forEach(function(name, value) {
@@ -134,13 +132,13 @@ MiniGrace.prototype.trapErrors = function(func) {
                             if (typeof value == "undefined") {
                                 debugString = "‹undefined›";
                             } else {
-                                var debugString = callmethod(value,
+                                debugString = callmethod(value,
                                     "asDebugString", [0])._value;
                             }
                         } catch(e) {
-                            debugger
-                            debugString = "<[Error calling asDebugString"
-                                + ": " + e.message._value + "]>";
+                            debugger;
+                            debugString = "<[Error calling asDebugString: " +
+                                  e.message._value + "]>";
                         }
                         debugString = debugString.replace("\\", "\\\\");
                         debugString = debugString.replace("\n", "\\n");
@@ -151,15 +149,15 @@ MiniGrace.prototype.trapErrors = function(func) {
                 }
             }
         } else if (e != "SystemExit") {
-            this.stderr_write("Internal error around line "
-                + getLineNumber() + " of " + getModuleName() + ": " + e + "\n");
+            this.stderr_write("Internal error around line " + getLineNumber() + 
+                " of " + getModuleName() + ": " + e + "\n");
             throw e;
         }
     } finally {
         if (Grace_prelude.methods["while()do"])
             Grace_prelude.methods["while()do"].safe = false;
     }
-}
+};
 
 MiniGrace.prototype.run = function(fileName) {
     callStack = [];
@@ -167,20 +165,22 @@ MiniGrace.prototype.run = function(fileName) {
     var code = minigrace.generated_output;
     minigrace.stdout_write = function(value) {
         process.stdout.write(value, "utf-8");
-    }
+    };
     minigrace.stderr_write = function(value) {
         process.stderr.write(value, "utf-8");
-    }
+    };
     minigrace.stdin_read = function() {
         return "";
-    }
-    this.loadModule(fileName, "./");   
-        // defines a global gracecode_‹moduleName›
-    var theModule = global[graceModuleName(fileName)];
+    };
+    var modName = path.basename(fileName, ".js");
+    var dirName = path.dirname(fileName);
+    this.loadModule(modName, dirName);
+        // defines a global gracecode_‹modName›
+    var theModule = global[graceModuleName(modName)];
     this.trapErrors(function() {
         do_import(fileName, theModule);
-    }              )
-}
+    }              );
+};
 
 //  This method has been added to the ECMAScript 6 specification, but is not yet in node:
 
@@ -192,32 +192,48 @@ if ( ! String.prototype.endsWith) {
         position = position - suffix.length;
         var lastIndex = this.lastIndexOf(suffix, position);
         return lastIndex !== -1 && lastIndex === position;
-    }
+    };
 }
 
 function graceModuleName(fileName) {
     var prefix = "gracecode_";
     var base = path.basename(fileName, ".js");
-    return prefix + base;
-};
+    return prefix + escapeident(base);
+}
+
+function escapeident(id) {
+    // must correspond to escapeident(_) in genjs.grace
+    var nm = "";
+    for (var ix = 0; ix < id.length; ix++) {
+        var o = id.charCodeAt(ix);
+        if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
+            ((o >= 48) && (o <= 57))) {
+            nm = nm + id.charAt(ix);
+        } else {
+            nm = nm + "__" + o + "__";
+        }
+    }
+    return nm;
+}
 
 function findOnPath(fn, pathArray) {
     if (fn[0] === "/") {
-        if (fs.existsSync(fn)) { return fn };
+        if (fs.existsSync(fn)) { return fn; }
         throw new Error('file "' + fn + '" does not exist.');
     }
     var candidates = [];
     for (var ix = 0; ix < pathArray.length ; ix++) {
         var candidate = path.resolve(pathArray[ix], fn);  
             // path.resolve joins, normalizes, & makes absolute
-        if (fs.existsSync(candidate)) { return candidate };
+        if (fs.existsSync(candidate)) { return candidate; }
         candidates.push(candidate);
     }
     console.error('module "' + fn + '" not found.  Tried:');
-    for (var ix = 0; ix < candidates.length ; ix++) {
+    for (ix = 0; ix < candidates.length ; ix++) {
         console.error(candidates[ix]);
     }
     process.exit(2);
+    return "undefined";
 }
 
 function addToPathIfNecessary(dir) {
@@ -228,7 +244,7 @@ function addToPathIfNecessary(dir) {
 
 var graceModulePath = process.env.GRACE_MODULE_PATH;
 if (graceModulePath === undefined) {
-    var fallbackPath = "@MODULE_PATH@"
+    var fallbackPath = "@MODULE_PATH@";
     try {
         if (fs.statSync(fallbackPath).isDirectory) {
             graceModulePath = fallbackPath;
@@ -243,8 +259,8 @@ if (graceModulePath === undefined) {
 
 var pathdirs = graceModulePath.split(path.delimiter);
 
-addToPathIfNecessary("./")
-addToPathIfNecessary("../")
+addToPathIfNecessary("./");
+addToPathIfNecessary("../");
 
 MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
     var graceModule = graceModuleName(moduleName);
@@ -257,24 +273,26 @@ MiniGrace.prototype.loadModule = function(moduleName, referencingDir) {
         fileName = fileName + extn;
     }
     var found = findOnPath(fileName, [referencingDir].concat(pathdirs));
-    var sourceDir = fsPath.dirname(fs.realpathSync(found));
+    var sourceDir = path.dirname(fs.realpathSync(found));
     require(found);
     if (typeof global[graceModule] !== 'function') {
+        console.error("loaded file '" + found + "', but it did not define '" +
+                            graceModule + "'.");
         console.error('loadModule(' + moduleName + ', ' +
                             referencingDir + ') failed!');
         process.exit(2);
     }
-    var recursiveImports = global[graceModule].imports
+    var recursiveImports = global[graceModule].imports;
     for (var ix = 0; ix < recursiveImports.length; ix++) {
         MiniGrace.prototype.loadModule(recursiveImports[ix], sourceDir);
     }
-}
+};
 
 try {
-    require(findOnPath("gracelib.js", pathdirs))
-    require(findOnPath("unicodedata.js", pathdirs))
+    require(findOnPath("gracelib.js", pathdirs));
+    require(findOnPath("unicodedata.js", pathdirs));
     minigrace = new MiniGrace();
-    minigrace.loadModule("StandardPrelude", "./")
+    minigrace.loadModule("StandardPrelude", "./");
 
     // as as special case, do_import("StandardPrelude", …) adds to Grace_prelude,
     // rather than creating a new module object.
@@ -286,5 +304,3 @@ try {
     console.error(e.stack);
     process.exit(1);
 }
-
-
