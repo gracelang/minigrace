@@ -1418,17 +1418,17 @@ Object BuiltinList_reversed(Object self, int nparts, int *argcv,
 Object BuiltinList_asList(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "list", 1, partcv, self);
+    return callmethod(grace_prelude(), "list", 1, partcv, &self);
 }
 Object BuiltinList_asSet(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "set", 1, partcv, self);
+    return callmethod(grace_prelude(), "set", 1, partcv, &self);
 }
 Object BuiltinList_asSequence(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     int partcv[] = {1};
-    return callmethod(grace_prelude(), "sequence", 1, partcv, self);
+    return callmethod(grace_prelude(), "sequence", 1, partcv, &self);
 }
 void BuiltinList__release(Object o) {
     struct BuiltinListObject *s = (struct BuiltinListObject *)o;
