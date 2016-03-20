@@ -172,8 +172,7 @@ type EmptyCollectionFactory<T> = type {
 
 trait collectionFactory<T> {
     method withAll(elts: Iterable<T>) -> Collection<T> { abstract }
-    method with(*a:T) -> Unknown { self.withAll(a) }
-    method empty -> Unknown { self.with() }
+    method empty -> Unknown { withAll [] }
 }
 
 class lazySequenceOver<T,R>(source: Iterable<T>)

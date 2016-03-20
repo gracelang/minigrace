@@ -33,13 +33,13 @@ describe(vaAndAndMirror)
 
 print "\nrequests using `request`"
 
-exampleMirror.request(sequence.with(sequence.with "a"))
-exampleAndMirror.request(sequence.with(sequence.with ("a1", "a2"), sequence.with("b1")))
-noParamsMirror.request(sequence.with(sequence.empty))
-vaMirror.request(sequence.with(sequence.with(1,2,3,4)))
-vaMirror.request(sequence.with(sequence.with("hi")))
-vaMirror.request(sequence.with(sequence.empty))
-vaAndAndMirror.request(sequence.with(sequence.with(1,2,3,4),sequence.with("ho"),sequence.with(1,2,3,4,5,6)))
+exampleMirror.request [ [ "a" ] ]
+exampleAndMirror.request [ ["a1", "a2"], ["b1"] ]
+noParamsMirror.request [ [] ]
+vaMirror.request [ [ 1,2,3,4 ] ]
+vaMirror.request [ ["hi"] ]
+vaMirror.request [ [] ]
+vaAndAndMirror.request [ [1,2,3,4], ["ho"], [1,2,3,4,5,6] ]
 
 print "\nrequests using `requestWithArgs`"
 

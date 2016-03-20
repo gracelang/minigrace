@@ -22,14 +22,14 @@ describe(noParamsMirror)
 
 print "requests using `request`"
 
-exampleMirror.request(sequence.with(sequence.with(1)))
-exampleAndMirror.request(sequence.with(sequence.with ("a1", "a2"), sequence.with("b1")))
-noParamsMirror.request(sequence.with(sequence.empty))
+exampleMirror.request [ [ 1 ] ]
+exampleAndMirror.request[ ["a1", "a2"], ["b1"] ]
+noParamsMirror.request [ [] ]
 
 print "requests using `requestWithArgs`"
 
-exampleMirror.requestWithArgs( [1] )
-exampleAndMirror.requestWithArgs( ["a1", "a2", "b1"] )
-noParamsMirror.requestWithArgs( [] )
+exampleMirror.requestWithArgs [1]
+exampleAndMirror.requestWithArgs ["a1", "a2", "b1"]
+noParamsMirror.requestWithArgs []
 
 print "done"

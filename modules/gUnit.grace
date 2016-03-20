@@ -161,8 +161,6 @@ class assertion {
     }
 }
 
-def noArguments = sequence.with(sequence.empty)
-
 factory method testCaseNamed(name') -> TestCase {
     inherits assertion
 
@@ -210,7 +208,7 @@ factory method testCaseNamed(name') -> TestCase {
     
     method runTest {
         def methodImage = mirror.reflect(self).getMethod(name)
-        methodImage.request(noArguments)
+        methodImage.requestWithArgs(emptySequence)
     }
 
     method printBackTrace(exceptionPacket) limitedTo(testName) {

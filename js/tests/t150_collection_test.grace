@@ -224,7 +224,7 @@ class rangeTest.forMethod(m) {
             assert(rangeUp.asList) hasType (List)
         }
         method testRangeUpSequenceConversion {
-            assert(rangeUp.asSequence == sequence.with(3,4,5,6))
+            assert(rangeUp.asSequence == sequence [3,4,5,6])
             assert(rangeUp.asSequence) hasType (Sequence)
         }
         method testRangeDownListConversion {
@@ -232,7 +232,7 @@ class rangeTest.forMethod(m) {
             assert(rangeDown.asList) hasType (List)
         }
         method testRangeDownSequenceConversion {
-            assert(rangeDown.asSequence == sequence.with(10,9,8,7))
+            assert(rangeDown.asSequence == sequence [10,9,8,7])
             assert(rangeDown.asSequence) hasType (Sequence)
         }
         method testRangeDownAt {
@@ -274,21 +274,21 @@ class sequenceTest.forMethod(m) {
         var empty
 
         method setup {
-            oneToFive := sequence.with(1, 2, 3, 4, 5)
-            evens := sequence.with(2, 4, 6, 8)
+            oneToFive := sequence [1, 2, 3, 4, 5]
+            evens := sequence [2, 4, 6, 8]
             empty := sequence.empty
         }
 
         method testSequenceTypeCollection {
-            def witness = sequence<Number>.with(1,3)
+            def witness = sequence<Number> [1,3]
             assert (witness) hasType (Collection<Number>)
         }
         method testSequenceTypeSequence {
-            def witness = sequence<Number>.with(1,3)
+            def witness = sequence<Number> [1,3]
             assert (witness) hasType (Sequence<Number>)
         }
         method testSequenceTypeEnumerable {
-            def witness = sequence<Number>.with(1,3)
+            def witness = sequence<Number> [1,3]
             assert (witness) hasType (Enumerable<Number>)
         }
         method testEmptySequenceTypeCollection {
@@ -304,11 +304,11 @@ class sequenceTest.forMethod(m) {
             assert (witness) hasType (Enumerable)
         }
         method testFilteredSequenceTypeEnumerable {
-            def witness = sequence<Number>.with(1,3).filter{x -> true}
+            def witness = sequence<Number> [1,3].filter{x -> true}
             assert (witness) hasType (Enumerable<Number>)
         }
         method testSequenceNotTypeWithWombat {
-            def witness = sequence<Number>.with(1,3)
+            def witness = sequence<Number> [1,3]
             deny (witness) hasType (Collection<Number> & type { wombat })
         }
         method testSequenceSize {
@@ -328,21 +328,21 @@ class sequenceTest.forMethod(m) {
         }
 
         method testSequenceInequalityEmpty {
-            deny(empty == sequence.with(1))
-            assert(empty != sequence.with(1))
+            deny(empty == sequence [1])
+            assert(empty != sequence [1])
             deny(empty == 3)
             deny(empty == evens)
         }
 
         method testSequenceInequalityFive {
-            deny(oneToFive == sequence.with(1, 2, 3, 4, 6))
-            assert(oneToFive != sequence.with(1, 2, 3, 4, 6))
+            deny(oneToFive == sequence [1, 2, 3, 4, 6])
+            assert(oneToFive != sequence [1, 2, 3, 4, 6])
         }
 
         method testSequenceEqualityFive {
-            def isEqual = (oneToFive == sequence.with(1, 2, 3, 4, 5))
+            def isEqual = (oneToFive == sequence [1, 2, 3, 4, 5])
             assert(isEqual)
-            deny(oneToFive != sequence.with(1, 2, 3, 4, 5))
+            deny(oneToFive != sequence [1, 2, 3, 4, 5])
         }
 
         method testSequenceOneToFiveDo {
@@ -391,8 +391,8 @@ class sequenceTest.forMethod(m) {
         }
 
         method testSequenceConcatWithNonEmpty {
-            assert(oneToFive ++ evens) shouldBe(sequence.with(1, 2, 3, 4, 5, 2, 4, 6, 8))
-            assert(evens ++ oneToFive) shouldBe(sequence.with(2, 4, 6, 8, 1, 2, 3, 4, 5))
+            assert(oneToFive ++ evens) shouldBe(sequence [1, 2, 3, 4, 5, 2, 4, 6, 8])
+            assert(evens ++ oneToFive) shouldBe(sequence [2, 4, 6, 8, 1, 2, 3, 4, 5])
         }
 
         method testSequenceIndicesAndKeys {
@@ -423,7 +423,7 @@ class sequenceTest.forMethod(m) {
 
         method testSequenceDoSeparatedBySingleton {
             var s := "nothing"
-            sequence.with(1).do { each -> assert(each)shouldBe(1) }
+            sequence [1].do { each -> assert(each)shouldBe(1) }
                 separatedBy { s := "kilroy" }
             assert (s) shouldBe ("nothing")
         }
@@ -440,11 +440,11 @@ class sequenceTest.forMethod(m) {
         }
 
         method testSequenceReversedOneToFive {
-            assert (oneToFive.reversed) shouldBe (sequence.with(5, 4, 3, 2, 1))
+            assert (oneToFive.reversed) shouldBe (sequence [5, 4, 3, 2, 1])
         }
 
         method testSequenceReversedEvens {
-            assert (evens.reversed) shouldBe (sequence.with(8, 6, 4, 2))
+            assert (evens.reversed) shouldBe (sequence [8, 6, 4, 2])
             assert (evens.reversed.reversed) shouldBe (evens)
         }
 
@@ -511,7 +511,7 @@ class sequenceTest.forMethod(m) {
             assert (empty.asSet) hasType (Set)
         }
         method testSequenceToSetDuplicates {
-            def theSet = sequence.with(1,1,2,2,4).asSet
+            def theSet = sequence [1,1,2,2,4].asSet
             assert (theSet) shouldBe (set [1, 2, 4])
             assert (theSet) hasType (Set)
         }
@@ -527,27 +527,27 @@ class sequenceTest.forMethod(m) {
         }
         method testSequenceIteratorToSetDuplicates {
             def accum = set.empty
-            def iter = sequence.with(1, 1, 2, 2, 4).iterator
+            def iter = sequence [1, 1, 2, 2, 4].iterator
             while {iter.hasNext} do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])
         }
         method testSequenceSorted {
-            def input = sequence.with(5, 3, 11, 7, 2)
+            def input = sequence [5, 3, 11, 7, 2]
             def output = input.sorted
-            assert (output) shouldBe (sequence.with(2, 3, 5, 7, 11))
+            assert (output) shouldBe (sequence [2, 3, 5, 7, 11])
             assert (output.asString.startsWith (sequence.empty.asString.first)) description
                 ".sorted does not look like a sequence"
             assert (output) hasType (Sequence)
         }
         method testSequenceSortedBy {
-            def input = sequence.with(5, 3, 11, 7, 2)
+            def input = sequence [5, 3, 11, 7, 2]
             def output = input.sortedBy {l, r ->
                 if (l == r) then {0}
                     elseif {l < r} then {1}
                     else {-1}
                 }
-            assert (input) shouldBe (sequence.with(5, 3, 11, 7, 2))
-            assert (output) shouldBe (sequence.with(11, 7, 5, 3, 2))
+            assert (input) shouldBe (sequence [5, 3, 11, 7, 2])
+            assert (output) shouldBe (sequence [11, 7, 5, 3, 2])
             assert (output.asString.startsWith (sequence.empty.asString.first)) description
                 "sorted does not look like a sequence"
             assert (output) hasType (Sequence)
@@ -559,7 +559,7 @@ class sequenceTest.forMethod(m) {
         method lazyConcat {
             def s1 = oneToFive.filter{x -> (x % 2) == 1}
             def s2 = evens.filter{x -> true}
-            assert(s1 ++ s2) shouldBe (sequence.with(1, 3, 5, 2, 4, 6, 8))
+            assert(s1 ++ s2) shouldBe (sequence [1, 3, 5, 2, 4, 6, 8])
         }
 }
 
@@ -577,19 +577,19 @@ class listTest.forMethod(m) {
         }
 
         method testListTypeCollection {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = list<Number> [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection<Number>)
         }
         method testListTypeList {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = list<Number> [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (List<Number>)
         }
         method testListTypeSequence {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = list<Number> [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Sequence<Number>)
         }
         method testListTypeNotTypeWithWombat {
-            def witness = list<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = list<Number> [1, 2, 3, 4, 5, 6]
             deny (witness) hasType (List<Number> & type { wombat })
         }
 
@@ -933,7 +933,7 @@ class listTest.forMethod(m) {
         }
 
         method testListToSequence1to5 {
-            assert (oneToFive.asSequence) shouldBe (sequence.with(1, 2, 3, 4, 5))
+            assert (oneToFive.asSequence) shouldBe (sequence [1, 2, 3, 4, 5])
             assert (oneToFive.asSequence) hasType (Sequence)
         }
 
@@ -1030,15 +1030,15 @@ class setTest.forMethod(m) {
         }
 
         method testSetTypeCollection {
-            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = set<Number> [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection<Number>)
         }
         method testSetTypeSet {
-            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = set<Number> [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Set<Number>)
         }
         method testSetTypeNotSequence {
-            def witness = set<Number>.with(1, 2, 3, 4, 5, 6)
+            def witness = set<Number> [1, 2, 3, 4, 5, 6]
             deny (witness) hasType (Sequence<Number>)
         }
 
@@ -1516,11 +1516,11 @@ class dictionaryTest.forMethod(m) {
         }
         method testDictionarySortedOnValues {
             assert(evens.bindings.sortedBy{b1, b2 -> b1.value.compare(b2.value)})
-                shouldBe (sequence.with("two"::2, "four"::4, "six"::6, "eight"::8))
+                shouldBe (sequence ["two"::2, "four"::4, "six"::6, "eight"::8])
         }
         method testDictionarySortedOnKeys {
             assert(evens.bindings.sortedBy{b1, b2 -> b1.key.compare(b2.key)})
-                shouldBe (sequence.with("eight"::8, "four"::4, "six"::6, "two"::2))
+                shouldBe (sequence ["eight"::8, "four"::4, "six"::6, "two"::2])
         }
         method testDictionaryFailFastIteratorValues {
             def input = dictionary ["one"::1, "five"::5, "three"::3, "two"::2, "four"::4]

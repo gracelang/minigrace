@@ -287,7 +287,7 @@ class stringTest.forMethod(m) {
     }
     method testMap {
         assert(vowels.map { ch -> ch.ord })
-            shouldBe (sequence.with(97, 101, 105, 111, 117, 121)) 
+            shouldBe (sequence [97, 101, 105, 111, 117, 121]) 
     }
     method testFilter {
         assert(vowels.filter { ch -> ch < "j" }) shouldBe "aei"

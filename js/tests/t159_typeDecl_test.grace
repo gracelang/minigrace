@@ -19,7 +19,7 @@ showType(A')
 showType(B')
 showType(AB)
 
-def seq = sequence.with(2, 3, 4)
+def seq = sequence [2, 3, 4]
 match (seq)
     case { l:List -> print "{l} is a list — but shouldn't be!" }
     case { s:Sequence -> print "{s} is a sequence" }

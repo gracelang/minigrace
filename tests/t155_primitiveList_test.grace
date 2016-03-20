@@ -261,7 +261,7 @@ class primitiveListTest.forMethod(m) {
                 assert (accum.size) shouldBe (n)
                 n := n + 1
             }
-            assert(accum) shouldBe (dictionary.with(1::2, 2::4, 3::6, 4::8))
+            assert(accum) shouldBe (dictionary [1::2, 2::4, 3::6, 4::8])
         }
 
         method testListAsStringNonEmpty {

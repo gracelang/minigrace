@@ -16,7 +16,7 @@ def undiscovered = Singleton.named "undiscovered"
 
 var stSerial := 100
 
-def reserved = sequence.with("self", "super", "outer", "true", "false")
+def reserved = sequence ["self", "super", "outer", "true", "false"]
 // reserved names that cannot be re-assigned or re-declared
 
 method newScopeKind(variety') {
