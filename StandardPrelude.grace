@@ -404,52 +404,24 @@ def collection is public = collections.collection
 def enumerable is public = collections.enumerable
 def indexable is public = collections.indexable
 
-method sequence<T>(*args) {
-    def as = args.size
-    if (as == 0) then {
-        collections.sequence<T>
-    } elseif (as == 1) then { 
-        collections.sequence<T>.withAll(args.first)
-    } else {
-        RequestError.raise "sequence given {as} arguments; needs zero or one"
-    }
+method sequence<T>(arg) {
+    collections.sequence<T>.withAll(arg)
 }
 
 def emptySequence is public = collections.sequence.empty
 
-method list<T>(*args) {
-    def as = args.size
-    if (as == 0) then {
-        collections.list<T>
-    } elseif (as == 1) then { 
-        collections.list<T>.withAll(args.first)
-    } else {
-        RequestError.raise "list given {as} arguments; needs zero or one"
-    }
+method list<T>(arg) {
+    collections.list<T>.withAll(arg)
 }
 method emptyList { collections.list.empty }
 
-method set<T>(*args) {
-    def as = args.size
-    if (as == 0) then {
-        collections.set<T>
-    } elseif (as == 1) then { 
-        collections.set<T>.withAll(args.first)
-    } else {
-        RequestError.raise "set given {as} arguments; needs zero or one"
-    }
+method set<T>(arg) {
+    collections.set<T>.withAll(arg)
 }
 method emptySet { collections.set.empty }
 
-method dictionary<K, T>(* args) {
-    def as = args.size
-    if (as == 0) then {
-        collections.dictionary<K, T>
-    } elseif (as == 1) then { 
-        collections.dictionary<K, T>.withAll(args.first)
-    } else {
-        RequestError.raise "dictionary given {as} arguments; needs zero or one"
-    }
+method dictionary<K, T>(arg) {
+    collections.dictionary<K, T>.withAll(arg)
 }
 method emptyDictionary { collections.dictionary.empty }
 
