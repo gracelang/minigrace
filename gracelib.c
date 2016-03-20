@@ -1415,6 +1415,21 @@ Object BuiltinList_reversed(Object self, int nparts, int *argcv,
     }
     return nl;
 }
+Object BuiltinList_asList(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int partcv[] = {1};
+    return callmethod(grace_prelude(), "list", 1, partcv, self);
+}
+Object BuiltinList_asSet(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int partcv[] = {1};
+    return callmethod(grace_prelude(), "set", 1, partcv, self);
+}
+Object BuiltinList_asSequence(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int partcv[] = {1};
+    return callmethod(grace_prelude(), "sequence", 1, partcv, self);
+}
 void BuiltinList__release(Object o) {
     struct BuiltinListObject *s = (struct BuiltinListObject *)o;
     glfree(s->items);
@@ -1427,7 +1442,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("builtinList", 40, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("builtinList", 43, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
@@ -1469,6 +1484,9 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "keysAndValuesDo", &BuiltinList_keyAndValuesDo);
         add_Method(BuiltinList, "copy", &BuiltinList_copy);
         add_Method(BuiltinList, "reversed", &BuiltinList_reversed);
+        add_Method(BuiltinList, "asList", &BuiltinList_asList);
+        add_Method(BuiltinList, "asSet", &BuiltinList_asSet);
+        add_Method(BuiltinList, "asSequence", &BuiltinList_asSequence);
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, BuiltinList);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
