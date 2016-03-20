@@ -48,6 +48,11 @@ type Iterable<T> = Object & type {
         // returns a new iterator that yields those of my elements for which condition holds 
 }
 
+type Lineup<T> = Iterable<T> & type {
+    size -> Number
+        // the number of elements in the lineup
+}
+
 type Expandable<T> = Iterable<T> & type {
     add(x: T) -> SelfType
     addAll(xs: Iterable<T>) -> SelfType
@@ -164,7 +169,6 @@ type Iterator<T> = type {
 
 type CollectionFactory<T> = type {
     withAll (elts: Iterable<T>) -> Collection<T>
-    with (*elts:Object) -> Collection<T>
     empty -> Collection<T>
 }
 
@@ -172,14 +176,8 @@ type EmptyCollectionFactory<T> = type {
     empty -> Collection<T>
 }
 
-class collectionFactory.TRAIT<T> {
-    method withAll(elts: Iterable<T>) -> Collection<T> { abstract }
-    method with(*a:T) -> Unknown { self.withAll(a) }
-    method empty -> Unknown { self.with() }
-}
-
-class lazySequenceOver<T,R>(source: Iterable<T>)
-        mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
+class lazySequenceOver<T,R> (source: Iterable<T>)
+        mappedBy (function:Block1<T,R>) -> Enumerable<R> is confidential {
     inherits enumerable.TRAIT<T>
     class iterator {
         def sourceIterator = source.iterator
@@ -192,7 +190,7 @@ class lazySequenceOver<T,R>(source: Iterable<T>)
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-class lazySequenceOver<T>(source: Iterable<T>)
+class lazySequenceOver<T> (source: Iterable<T>)
         filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
     inherits enumerable.TRAIT<T>
     class iterator {
@@ -469,16 +467,15 @@ def emptySequence is confidential = object {
 }
 
 class sequence<T> {
-    inherits collectionFactory.TRAIT<T>
 
     method asString { "a sequence factory" }
 
-    method empty is override {
+    method empty {
         // this is an optimization: there need be just one empty sequence
         emptySequence
     }
 
-    method withAll(arg: Iterable) {
+    method withAll(arg: Iterable<T>) {
         var forecastSize := 0
         var sizeUncertain := false
         // size might be uncertain if one of the arguments is a lazy collection.
@@ -495,7 +492,7 @@ class sequence<T> {
             // less-than-optimal path
             for (arg) do { elt ->
                 if (innerSize <= ix) then {
-                    def newInner = _prelude.PrimitiveArray.new(innerSize*2)
+                    def newInner = _prelude.PrimitiveArray.new(innerSize * 2)
                     for (0..(innerSize-1)) do { i ->
                         newInner.at(i)put(inner.at(i))
                     }
@@ -633,9 +630,12 @@ method isEqual(left) toIterable(right) {
 }
 
 class list<T> {
-    inherits collectionFactory.TRAIT<T>
     
     method asString { "a list factory" }
+    
+    method empty -> List<T> {
+        withAll(emptySequence)
+    }
 
     method withAll(a: Iterable<T>) -> List<T> {
         if (engine == "js") then {
@@ -1183,42 +1183,35 @@ def removed = object {
 }
 
 class set<T> {
-    inherits collectionFactory.TRAIT<T>
 
     method asString { "a set factory" }
 
     method withAll(a: Iterable<T>) -> Set<T> {
-        object {
-            inherits collection.TRAIT
-            var mods is readable := 0
-            var initialSize
-            try { initialSize := max(a.size * 3 + 1, 8) }
-                catch { _:SizeUnknown -> initialSize := 8 }
-            var inner := _prelude.PrimitiveArray.new(initialSize)
-            var size is readable := 0
-            for (0..(initialSize - 1)) do {i->
-                inner.at(i)put(unused)
-            }
-            for (a) do { x-> add(x) }
+        def cap = try { max (a.size * 3 + 1, 8) }
+                        catch { _:SizeUnknown -> 8 }
+                        catch { _:NoSuchMethod -> 8 }
+        def result = ofCapacity (cap)
+        a.do { x -> result.add(x) }
+        result
+    }
+    
+    method empty -> Set<T> {
+        ofCapacity 8
+    }
 
-            method addAll(elements) {
-                mods := mods + 1
-                for (elements) do { x ->
-                    if (! contains(x)) then {
-                        def t = findPositionForAdd(x)
-                        inner.at(t)put(x)
-                        size := size + 1
-                        if (size > (inner.size / 2)) then {
-                            expand
-                        }
-                    }
-                }
-                self    // for chaining
-            }
+    class ofCapacity(cap) -> Set<T> is confidential {
+        inherits collection.TRAIT
+        var mods is readable := 0
+        var inner := _prelude.PrimitiveArray.new(cap)
+        var size is readable := 0
+        (0..(cap - 1)).do { i ->
+            inner.at (i) put (unused)
+        }
 
-            method add(x:T) {
+        method addAll(elements) {
+            mods := mods + 1
+            for (elements) do { x ->
                 if (! contains(x)) then {
-                    mods := mods + 1
                     def t = findPositionForAdd(x)
                     inner.at(t)put(x)
                     size := size + 1
@@ -1226,235 +1219,248 @@ class set<T> {
                         expand
                     }
                 }
-                self    // for chaining
             }
+            self    // for chaining
+        }
 
-            method removeAll(elements) {
-                for (elements) do { x ->
-                    remove (x) ifAbsent {
-                        NoSuchObject.raise "set does not contain {x}"
-                    }
-                }
-                self    // for chaining
-            }
-            method removeAll(elements)ifAbsent(block) {
+        method add(x:T) {
+            if (! contains(x)) then {
                 mods := mods + 1
-                for (elements) do { x ->
-                    var t := findPosition(x)
-                    if (inner.at(t) == x) then {
-                        inner.at(t) put (removed)
-                        size := size - 1
-                    } else {
-                        block.apply
-                    }
+                def t = findPositionForAdd(x)
+                inner.at(t)put(x)
+                size := size + 1
+                if (size > (inner.size / 2)) then {
+                    expand
                 }
-                self    // for chaining
             }
+            self    // for chaining
+        }
 
-            method remove (elt:T) ifAbsent (block) {
-                var t := findPosition(elt)
-                if (inner.at(t) == elt) then {
+        method removeAll(elements) {
+            for (elements) do { x ->
+                remove (x) ifAbsent {
+                    NoSuchObject.raise "set does not contain {x}"
+                }
+            }
+            self    // for chaining
+        }
+        method removeAll(elements)ifAbsent(block) {
+            mods := mods + 1
+            for (elements) do { x ->
+                var t := findPosition(x)
+                if (inner.at(t) == x) then {
                     inner.at(t) put (removed)
-                    mods := mods + 1
                     size := size - 1
                 } else {
                     block.apply
                 }
-                self    // for chaining
             }
+            self    // for chaining
+        }
 
-            method remove(elt:T) {
-                remove (elt) ifAbsent {
-                    NoSuchObject.raise "set does not contain {elt}"
-                }
-                self    // for chaining
+        method remove (elt:T) ifAbsent (block) {
+            var t := findPosition(elt)
+            if (inner.at(t) == elt) then {
+                inner.at(t) put (removed)
+                mods := mods + 1
+                size := size - 1
+            } else {
+                block.apply
             }
+            self    // for chaining
+        }
 
-            method contains(x) {
-                var t := findPosition(x)
-                if (inner.at(t) == x) then {
-                    return true
-                }
-                return false
+        method remove(elt:T) {
+            remove (elt) ifAbsent {
+                NoSuchObject.raise "set does not contain {elt}"
             }
-            method includes(booleanBlock) {
-                self.do { each ->
-                    if (booleanBlock.apply(each)) then { return true }
-                }
-                return false
-            }
-            method find(booleanBlock)ifNone(notFoundBlock) {
-                self.do { each ->
-                    if (booleanBlock.apply(each)) then { return each }
-                }
-                return notFoundBlock.apply
-            }
-            method findPosition(x) is confidential {
-                def h = x.hash
-                def s = inner.size
-                var t := h % s
-                var jump := 5
-                var candidate
-                while {
-                    candidate := inner.at(t)
-                    candidate != unused
-                } do {
-                    if (candidate == x) then {
-                        return t
-                    }
-                    if (jump != 0) then {
-                        t := (t * 3 + 1) % s
-                        jump := jump - 1
-                    } else {
-                        t := (t + 1) % s
-                    }
-                }
-                return t
-            }
-            method findPositionForAdd(x) is confidential {
-                def h = x.hash
-                def s = inner.size
-                var t := h % s
-                var jump := 5
-                var candidate
-                while {
-                    candidate := inner.at(t)
-                    (candidate != unused).andAlso{candidate != removed}
-                } do {
-                    if (candidate == x) then {
-                        return t
-                    }
-                    if (jump != 0) then {
-                        t := (t * 3 + 1) % s
-                        jump := jump - 1
-                    } else {
-                        t := (t + 1) % s
-                    }
-                }
-                return t
-            }
+            self    // for chaining
+        }
 
-            method asString {
-                var s := "set\{"
-                do {each -> s := s ++ each.asString }
-                    separatedBy { s := s ++ ", " }
-                s ++ "\}"
+        method contains(x) {
+            var t := findPosition(x)
+            if (inner.at(t) == x) then {
+                return true
             }
-            method extend(l) {
-                for (l) do {i->
-                    add(i)
+            return false
+        }
+        method includes(booleanBlock) {
+            self.do { each ->
+                if (booleanBlock.apply(each)) then { return true }
+            }
+            return false
+        }
+        method find(booleanBlock)ifNone(notFoundBlock) {
+            self.do { each ->
+                if (booleanBlock.apply(each)) then { return each }
+            }
+            return notFoundBlock.apply
+        }
+        method findPosition(x) is confidential {
+            def h = x.hash
+            def s = inner.size
+            var t := h % s
+            var jump := 5
+            var candidate
+            while {
+                candidate := inner.at(t)
+                candidate != unused
+            } do {
+                if (candidate == x) then {
+                    return t
+                }
+                if (jump != 0) then {
+                    t := (t * 3 + 1) % s
+                    jump := jump - 1
+                } else {
+                    t := (t + 1) % s
                 }
             }
-            method do(block1) {
-                var i := 0
-                var found := 0
-                var candidate
-                while {found < size} do {
-                    candidate := inner.at(i)
-                    if ((candidate != unused).andAlso{candidate != removed}) then {
-                        found := found + 1
-                        block1.apply(candidate)
-                    }
-                    i := i + 1
+            return t
+        }
+        method findPositionForAdd(x) is confidential {
+            def h = x.hash
+            def s = inner.size
+            var t := h % s
+            var jump := 5
+            var candidate
+            while {
+                candidate := inner.at(t)
+                (candidate != unused).andAlso{candidate != removed}
+            } do {
+                if (candidate == x) then {
+                    return t
+                }
+                if (jump != 0) then {
+                    t := (t * 3 + 1) % s
+                    jump := jump - 1
+                } else {
+                    t := (t + 1) % s
                 }
             }
-            method iterator {
-                object {
-                    var imods:Number := mods
-                    var count := 1
-                    var idx := -1
-                    method hasNext { size >= count }
-                    method next {
-                        var candidate
-                        def innerSize = inner.size
-                        while {
-                            idx := idx + 1
-                            if (imods != mods) then {
-                                ConcurrentModification.raise (outer.asString)
-                            }
-                            if (idx >= innerSize) then {
-                                IteratorExhausted.raise "iterator over {outer.asString}"
-                            }
-                            candidate := inner.at(idx)
-                            (identical (candidate, unused) || 
-                                (identical(candidate,  removed)))
-                        } do { }
-                        count := count + 1
-                        candidate
-                    }
-                }
-            }
+            return t
+        }
 
-            method expand is confidential {
-                def c = inner.size
-                def n = c * 2
-                def oldInner = inner
-                size := 0
-                inner := _prelude.PrimitiveArray.new(n)
-                for (0..(inner.size-1)) do {i->
-                    inner.at(i)put(unused)
-                }
-                for (0..(oldInner.size-1)) do {i->
-                    if ((oldInner.at(i) != unused).andAlso{oldInner.at(i) != removed}) then {
-                        add(oldInner.at(i))
-                    }
-                }
+        method asString {
+            var s := "set\{"
+            do {each -> s := s ++ each.asString }
+                separatedBy { s := s ++ ", " }
+            s ++ "\}"
+        }
+        method extend(l) {
+            for (l) do {i->
+                add(i)
             }
-            method ==(other) {
-                if (Iterable.match(other)) then {
-                    var otherSize := 0
-                    other.do { each ->
-                        otherSize := otherSize + 1
-                        if (! self.contains(each)) then {
-                            return false
+        }
+        method do(block1) {
+            var i := 0
+            var found := 0
+            var candidate
+            while {found < size} do {
+                candidate := inner.at(i)
+                if ((candidate != unused).andAlso{candidate != removed}) then {
+                    found := found + 1
+                    block1.apply(candidate)
+                }
+                i := i + 1
+            }
+        }
+        method iterator {
+            object {
+                var imods:Number := mods
+                var count := 1
+                var idx := -1
+                method hasNext { size >= count }
+                method next {
+                    var candidate
+                    def innerSize = inner.size
+                    while {
+                        idx := idx + 1
+                        if (imods != mods) then {
+                            ConcurrentModification.raise (outer.asString)
                         }
-                    }
-                    otherSize == self.size
-                } else { 
-                    false
+                        if (idx >= innerSize) then {
+                            IteratorExhausted.raise "iterator over {outer.asString}"
+                        }
+                        candidate := inner.at(idx)
+                        (identical (candidate, unused) || 
+                            (identical(candidate,  removed)))
+                    } do { }
+                    count := count + 1
+                    candidate
                 }
             }
-            method copy {
-                outer.withAll(self)
-            }
-            method ++ (other) {
-            // set union
-                copy.addAll(other)
-            }
-            method -- (other) {
-            // set difference
-                def result = set.empty
-                for (self) do {v->
-                    if (!other.contains(v)) then {
-                        result.add(v)
-                    }
-                }
-                result
-            }
-            method ** (other) {
-            // set intersection
-                (filter {each -> other.contains(each)}).asSet
-            }
-            method isSubset(s2: Set<T>) {
-                self.do{ each ->
-                    if (s2.contains(each).not) then { return false }
-                }
-                return true
-            }
+        }
 
-            method isSuperset(s2: Iterable<T>) {
-                s2.do{ each ->
-                    if (self.contains(each).not) then { return false }
+        method expand is confidential {
+            def c = inner.size
+            def n = c * 2
+            def oldInner = inner
+            size := 0
+            inner := _prelude.PrimitiveArray.new(n)
+            for (0..(inner.size-1)) do {i->
+                inner.at(i)put(unused)
+            }
+            for (0..(oldInner.size-1)) do {i->
+                if ((oldInner.at(i) != unused).andAlso{oldInner.at(i) != removed}) then {
+                    add(oldInner.at(i))
                 }
-                return true
             }
-            method onto(f: CollectionFactory<T>) -> Collection<T> {
-                f.withAll(self)
+        }
+        method ==(other) {
+            if (Iterable.match(other)) then {
+                var otherSize := 0
+                other.do { each ->
+                    otherSize := otherSize + 1
+                    if (! self.contains(each)) then {
+                        return false
+                    }
+                }
+                otherSize == self.size
+            } else { 
+                false
             }
-            method into(existing: Expandable<T>) -> Collection<T> {
-                do { each -> existing.add(each) }
-                existing
+        }
+        method copy {
+            outer.withAll(self)
+        }
+        method ++ (other) {
+        // set union
+            copy.addAll(other)
+        }
+        method -- (other) {
+        // set difference
+            def result = set.empty
+            for (self) do {v->
+                if (!other.contains(v)) then {
+                    result.add(v)
+                }
             }
+            result
+        }
+        method ** (other) {
+        // set intersection
+            (filter {each -> other.contains(each)}).asSet
+        }
+        method isSubset(s2: Set<T>) {
+            self.do{ each ->
+                if (s2.contains(each).not) then { return false }
+            }
+            return true
+        }
+
+        method isSuperset(s2: Iterable<T>) {
+            s2.do{ each ->
+                if (self.contains(each).not) then { return false }
+            }
+            return true
+        }
+        method onto(f: CollectionFactory<T>) -> Collection<T> {
+            f.withAll(self)
+        }
+        method into(existing: Expandable<T>) -> Collection<T> {
+            do { each -> existing.add(each) }
+            existing
         }
     }
 }
@@ -1484,22 +1490,26 @@ def binding = object {
 }
 
 class dictionary<K,T> {
-    inherits collectionFactory.TRAIT<T>
 
     method asString { "a dictionary factory" }
 
     method at(k:K)put(v:T) {
-            self.empty.at(k)put(v)
+        empty.at(k)put(v)
     }
-    class withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
+    method withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
+        def result = empty
+        for (initialBindings) do { b -> result.add(b) }
+        result
+    }
+
+    class empty -> Dictionary<K,T> {
         inherits collection.TRAIT<T>
         var mods is readable := 0
         var numBindings := 0
         var inner := _prelude.PrimitiveArray.new(8)
-        for (0..(inner.size-1)) do {i->
+        for (0..(inner.size-1)) do { i ->
             inner.at(i)put(unused)
         }
-        for (initialBindings) do { b -> at(b.key)put(b.value) }
         method size { numBindings }
         method at(key')put(value') {
             mods := mods + 1
@@ -1508,6 +1518,16 @@ class dictionary<K,T> {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(binding.key(key')value(value'))
+            if ((size * 2) > inner.size) then { expand }
+            self    // for chaining
+        }
+        method add(aBinding) {
+            mods := mods + 1
+            var t := findPositionForAdd (aBinding.key)
+            if ((identical(inner.at(t), unused)) || (identical(inner.at(t), removed))) then {
+                numBindings := numBindings + 1
+            }
+            inner.at(t)put(aBinding)
             if ((size * 2) > inner.size) then { expand }
             self    // for chaining
         }
