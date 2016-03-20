@@ -1155,19 +1155,13 @@ PrimitiveGraceList.prototype = {
             return new PrimitiveGraceList(l);
         },
         "asSet": function list_asSet(argcv, self) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            var collSet = callmethod(collections, "set", [0]);
-            return callmethod(collSet, "withAll", [1], self);
+            var collSet = callmethod(var___95__prelude, "set", [1], self);
         },
         "asList": function list_asSet(argcv, self) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            var collSet = callmethod(collections, "list", [0]);
-            return callmethod(collSet, "withAll", [1], self);
+            var collSet = callmethod(var___95__prelude, "list", [1], self);
         },
         "asSequence": function list_asSet(argcv, self) {
-            var collections = callmethod(var___95__prelude, "collections", [0]);
-            var collSet = callmethod(collections, "sequence", [0]);
-            return callmethod(collSet, "withAll", [1], self);
+            var collSeq = callmethod(var___95__prelude, "sequence", [1], self);
         }
     },
     className: "builtinList",
