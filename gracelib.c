@@ -118,7 +118,7 @@ ClassData AndPattern;
 ClassData GreaterThanPattern;
 ClassData LessThanPattern;
 ClassData ExceptionPacket;
-ClassData Exception;
+ClassData ExceptionClass;
 
 Object Dynamic;
 Object ObjectType = NULL;
@@ -264,9 +264,8 @@ static Object currentException;
 static jmp_buf *exceptionHandler_stack;
 static Object *finally_stack;
 static int exceptionHandlerDepth;
-static Object ExceptionObject;
+static Object ExceptionErrorObject;
 static Object BoundsErrorObject;
-static Object ErrorObject;
 static Object RuntimeErrorObject;
 static Object NoSuchMethodErrorObject;
 static Object ProgrammingErrorObject;
@@ -275,10 +274,6 @@ static Object ResourceExceptionObject;
 static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
 static Object IteratorExhaustedObject;
-
-Object ProgrammingError() { return ProgrammingErrorObject; }
-Object RequestError() { return RequestErrorObject; }
-Object NoSuchMethod() { return NoSuchMethodErrorObject; }
 
 static jmp_buf *return_stack;
 Object return_value;
@@ -416,7 +411,7 @@ void grace_run_shutdown_functions() {
 
 int istrue(Object o) {
     if (o == undefined)
-        graceRaise(RequestErrorObject, "Undefined value used in boolean test.");
+        graceRaise(RequestError(), "Undefined value used in boolean test.");
     if (o == NULL || o == BOOLEAN_FALSE)
         return 0;
     if (o == BOOLEAN_TRUE)
@@ -555,7 +550,7 @@ Object Singleton_asString(Object receiver, int nparts, int *argcv,
 Object Object_bind(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        graceRaise(RequestErrorObject, "binary operator :: requires an argument");
+        graceRaise(RequestError(), "binary operator :: requires an argument");
     Object other = args[0];
     Object params[2];
     int partcv[] = {1, 1};
@@ -643,7 +638,7 @@ Object alloc_FailedMatch(Object result, Object bindings) {
 Object literal_match(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        graceRaise(RequestErrorObject, "match requires an argument");
+        graceRaise(RequestError(), "match requires an argument");
     Object other = argv[0];
     int partcv[] = {1};
     if (!istrue(callmethod(self, "==", 1, partcv, argv)))
@@ -653,13 +648,13 @@ Object literal_match(Object self, int nparts, int *argcv,
 Object literal_or(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        graceRaise(RequestErrorObject, "| requires an argument");
+        graceRaise(RequestError(), "| requires an argument");
     return alloc_OrPattern(self, argv[0]);
 }
 Object literal_and(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        graceRaise(RequestErrorObject, "& requires an argument");
+        graceRaise(RequestError(), "& requires an argument");
     return alloc_AndPattern(self, argv[0]);
 }
 
@@ -960,23 +955,23 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
     return alloc_String(e->name);
 }
 Object alloc_Exception(char *name, Object parent) {
-    if (!Exception) {
-        Exception = alloc_class("Exception", 12);
-        add_Method(Exception, "match", &Exception_match);
-        add_Method(Exception, "refine", &Exception_refine);
-        add_Method(Exception, "raise", &Exception_raise);
-        add_Method(Exception, "raiseWith", &Exception_raiseWith);
-        add_Method(Exception, "parent", &Exception_parent);
-        add_Method(Exception, "==", &Object_Equals);
-        add_Method(Exception, "!=", &Object_NotEquals);
-        add_Method(Exception, "asString", &Exception_asString);
-        add_Method(Exception, "asDebugString", &Object_asDebugString);
-        add_Method(Exception, "::", &Object_bind);
-        add_Method(Exception, "|", &literal_or);
-        add_Method(Exception, "&", &literal_and);
+    if (!ExceptionClass) {
+        ExceptionClass = alloc_class("ExceptionClass", 12);
+        add_Method(ExceptionClass, "match", &Exception_match);
+        add_Method(ExceptionClass, "refine", &Exception_refine);
+        add_Method(ExceptionClass, "raise", &Exception_raise);
+        add_Method(ExceptionClass, "raiseWith", &Exception_raiseWith);
+        add_Method(ExceptionClass, "parent", &Exception_parent);
+        add_Method(ExceptionClass, "==", &Object_Equals);
+        add_Method(ExceptionClass, "!=", &Object_NotEquals);
+        add_Method(ExceptionClass, "asString", &Exception_asString);
+        add_Method(ExceptionClass, "asDebugString", &Object_asDebugString);
+        add_Method(ExceptionClass, "::", &Object_bind);
+        add_Method(ExceptionClass, "|", &literal_or);
+        add_Method(ExceptionClass, "&", &literal_and);
     }
     Object o = alloc_obj(sizeof (struct ExceptionObject)
-            - sizeof(struct Object), Exception);
+            - sizeof(struct Object), ExceptionClass);
     struct ExceptionObject *e = (struct ExceptionObject *)o;
     e->name = glmalloc(strlen(name) + 1);
     strcpy(e->name, name);
@@ -987,7 +982,7 @@ Object alloc_Exception(char *name, Object parent) {
 Object Float64_Point(Object self, int nparts, int *argcv,
                      Object *args, int flags) {
     if (nparts < 1 || (nparts >= 1 && argcv[0] < 1))
-        graceRaise(RequestErrorObject, "binary operator @ requires a single argument");
+        graceRaise(RequestError(), "binary operator @ requires a single argument");
     Object other = args[0];
     assertClass(other, Number);
     Object params[2];
@@ -1640,7 +1635,7 @@ Object alloc_PrimitiveArray(int size) {
 Object PrimitiveArrayClassObject_new(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (argcv[0] != 1)
-        graceRaise(RequestErrorObject, "array construction requires size argument");
+        graceRaise(RequestError(), "array construction requires size argument");
     return alloc_PrimitiveArray(integerfromAny(args[0]));
 }
 Object PrimitiveArrayClassObject;
@@ -2216,7 +2211,7 @@ Object String_substringFrom_to(Object self,
 Object String_do(Object self, int nparts, int *argcv,
                  Object *args, int flags) {
     if (nparts != 1 || argcv[0] != 1)
-        graceRaise(RequestErrorObject, "string.do requires exactly one argument");
+        graceRaise(RequestError(), "string.do requires exactly one argument");
     Object block = args[0];
     Object iter = callmethod(self, "iterator", 0, NULL, NULL);
     gc_frame_newslot(iter);
@@ -4817,6 +4812,76 @@ void gracelib_stats() {
     fprintf(stderr, "CPU time: %f\n", clocks);
     fprintf(stderr, "Elapsed time: %f\n", etime);
 }
+Object ExceptionError() {
+    if (ExceptionErrorObject == NULL) {
+        ExceptionErrorObject = alloc_Exception("Exception", NULL);
+        gc_root(ExceptionErrorObject);
+    }
+    return ExceptionErrorObject;
+}
+Object ProgrammingError() {
+    if (ProgrammingErrorObject == NULL) {
+        ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionError());
+        gc_root(ProgrammingErrorObject);
+    }
+    return ProgrammingErrorObject;
+}
+Object RequestError() {
+    if (RequestErrorObject == NULL) {
+        RequestErrorObject = alloc_Exception("RequestError", ProgrammingError());
+        gc_root(ProgrammingErrorObject);
+    }
+    return RequestErrorObject;
+}
+Object EnvironmentException() {
+    if (EnvironmentExceptionObject == NULL) {
+        EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ProgrammingError());
+        gc_root(ProgrammingErrorObject);
+    }
+    return EnvironmentExceptionObject;
+}
+Object IteratorExhausted() {
+    if (IteratorExhaustedObject == NULL) {
+        IteratorExhaustedObject = alloc_Exception("IteratorExhausted", ProgrammingError());
+        gc_root(ProgrammingErrorObject);
+    }
+    return IteratorExhaustedObject;
+}
+Object NoSuchMethod() {
+    if (NoSuchMethodErrorObject == NULL) {
+        NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingError());
+        gc_root(NoSuchMethodErrorObject);
+    }
+    return NoSuchMethodErrorObject;
+}
+Object RuntimeError() {
+    if (RuntimeErrorObject == NULL) {
+        RuntimeErrorObject = alloc_Exception("RuntimeError", ProgrammingError());
+        gc_root(RuntimeErrorObject);
+    }
+    return RuntimeErrorObject;
+}
+Object BoundsError() {
+    if (BoundsErrorObject == NULL) {
+        BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingError());
+        gc_root(BoundsErrorObject);
+    }
+    return BoundsErrorObject;
+}
+Object ResourceException() {
+    if (ResourceExceptionObject == NULL) {
+        ResourceExceptionObject = alloc_Exception("ResourceException", ProgrammingError());
+        gc_root(ResourceExceptionObject);
+    }
+    return ResourceExceptionObject;
+}
+Object TypeError() {
+    if (TypeErrorObject == NULL) {
+        TypeErrorObject = alloc_Exception("TypeError", ProgrammingError());
+        gc_root(TypeErrorObject);
+    }
+    return TypeErrorObject;
+}
 void gracelib_argv(char **argv) {
     ARGV = argv;
     if (getenv("GRACE_STACK") != NULL) {
@@ -4858,28 +4923,6 @@ void gracelib_argv(char **argv) {
     Unknown = alloc_Type("Unknown", 0);
     gc_root(Unknown);
     Dynamic = Unknown;
-    ExceptionObject = alloc_Exception("Exception", NULL);
-    gc_root(ExceptionObject);
-    ErrorObject = alloc_Exception("Error", ExceptionObject);
-    gc_root(ErrorObject);
-    RuntimeErrorObject = alloc_Exception("RuntimeError", ErrorObject);
-    gc_root(RuntimeErrorObject);
-    ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionObject);
-    gc_root(ProgrammingErrorObject);
-    RequestErrorObject = alloc_Exception("RequestError", ProgrammingErrorObject);
-    gc_root(ProgrammingErrorObject);
-    BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingErrorObject);
-    gc_root(BoundsErrorObject);
-    NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingErrorObject);
-    gc_root(NoSuchMethodErrorObject);
-    ResourceExceptionObject = alloc_Exception("ResourceException", ExceptionObject);
-    gc_root(ResourceExceptionObject);
-    TypeErrorObject = alloc_Exception("TypeError", ProgrammingErrorObject);
-    gc_root(TypeErrorObject);
-    EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ExceptionObject);
-    gc_root(EnvironmentExceptionObject);
-    IteratorExhaustedObject = alloc_Exception("IteratorExhausted", ProgrammingErrorObject);
-    gc_root(IteratorExhaustedObject);
 }
 void setline(int l) {
     linenumber = l;
@@ -5035,7 +5078,7 @@ Object grace_userobj_outer(Object self, int nparts, int *argcv,
 Object grace_while_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        graceRaise(RequestErrorObject, "while-do requires exactly two arguments");
+        graceRaise(RequestError(), "while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
         graceRaise(TypeErrorObject, "expected a Block for first (condition) "
                 "argument of while()do (defined in standardPrelude), got %s",
@@ -5049,7 +5092,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
 Object grace_for_do(Object self, int nparts, int *argcv,
         Object *argv, int flags) {
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
-        graceRaise(RequestErrorObject, "for-do requires exactly two arguments");
+        graceRaise(RequestError(), "for-do requires exactly two arguments");
     Object coll = argv[0];
     Object blk = argv[1];
     int partcv[] = {1};
@@ -5060,11 +5103,11 @@ Object grace_for_do(Object self, int nparts, int *argcv,
 Object grace_octets(Object self, int npart, int *argcv,
         Object *argv, int flags) {
     if (argcv[0] != 1)
-        graceRaise(RequestErrorObject, "octets requires exactly one argument");
+        graceRaise(RequestError(), "octets requires exactly one argument");
     char *str = grcstring(argv[0]);
     int slen = integerfromAny(callmethod(argv[0], "size", 0, NULL, NULL));
     if (slen % 2 != 0)
-        graceRaise(RequestErrorObject, "octets requires an even-length string");
+        graceRaise(RequestError(), "octets requires an even-length string");
     int len = slen / 2;
     char buf[len];
     int i, j;
@@ -5072,7 +5115,7 @@ Object grace_octets(Object self, int npart, int *argcv,
         int c1 = HEXVALC(str[j]);
         int c2 = HEXVALC(str[j+1]);
         if (c1 < 0 || c2 < 0)
-            graceRaise(RequestErrorObject, "octets accepts only hexadecimal digits [0-9a-f]");
+            graceRaise(RequestError(), "octets accepts only hexadecimal digits [0-9a-f]");
         buf[i] = 16 * c1 + c2;
     }
     return alloc_Octets(buf, len);
@@ -5157,35 +5200,31 @@ Object prelude_PrimitiveArray(Object self, int argc, int *argcv,
 }
 Object prelude_Exception(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-    return ExceptionObject;
-}
-Object prelude_Error(Object self, int argc, int *argcv, Object *argv,
-        int flags) {
-    return ErrorObject;
+    return ExceptionError();
 }
 Object prelude_RuntimeError(Object self, int argc, int *argcv, Object *argv,
         int flags) {
-    return RuntimeErrorObject;
+    return RuntimeError();
 }
 Object prelude_NoSuchMethod(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
-    return NoSuchMethodErrorObject;
+    return NoSuchMethod();
 }
 Object prelude_ProgrammingError(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
-    return ProgrammingErrorObject;
+    return ProgrammingError();
 }
 Object prelude_TypeError(Object self, int argc, int *argcv, Object *argv,
                                 int flags) {
-    return TypeErrorObject;
+    return TypeError();
 }
 Object prelude_ResourceException(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
-    return ResourceExceptionObject;
+    return ResourceException();
 }
 Object prelude_EnvironmentException(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
-    return EnvironmentExceptionObject;
+    return EnvironmentException();
 }
 Object prelude_become(Object self, int argc, int *argcv, Object *argv,
         int flags) {
@@ -5259,7 +5298,6 @@ Object grace_prelude() {
     add_Method(c, "while()do", &grace_while_do);
     add_Method(c, "for()do", &grace_for_do);
     add_Method(c, "Exception", &prelude_Exception);
-    add_Method(c, "Error", &prelude_Error);
     add_Method(c, "RuntimeError", &prelude_RuntimeError);
     add_Method(c, "NoSuchMethod", &prelude_NoSuchMethod);
     add_Method(c, "ProgrammingError", &prelude_ProgrammingError);
