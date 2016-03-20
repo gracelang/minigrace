@@ -139,8 +139,8 @@ class assertion {
     }
     method protocolOf(value) notCoveredBy (Q:Type) -> String is confidential {
         var s := ""
-        def vMethods = set.withAll(mirror.reflect(value).methodNames)
-        def qMethods = set.withAll(Q.methodNames)
+        def vMethods = set(mirror.reflect(value).methodNames)
+        def qMethods = set(Q.methodNames)
         def missing = (vMethods -- qMethods).filter{m -> 
             (! m.endsWith "()object") && (m != "outer")}.asSet
         if (missing.isEmpty.not) then {
@@ -310,7 +310,7 @@ factory method testResult {
     }
     
     method errors {
-        list.withAll(errorSet).sort
+        list(errorSet).sort
     }
     
     method erroredTestNames {
@@ -322,7 +322,7 @@ factory method testResult {
     }
     
     method failures {
-        list.withAll(failSet).sort
+        list(failSet).sort
     }
     
     method failedTestNames {

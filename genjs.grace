@@ -25,8 +25,8 @@ var runmode := "build"
 var buildtype := "bc"
 var inBlock := false
 var compilationDepth := 0
-def importedModules = set.empty
-def topLevelTypes = set.empty
+def importedModules = emptySet
+def topLevelTypes = emptySet
 def imports = util.requiredModules
 var debugMode := false
 var priorLineSeen := 0
@@ -360,7 +360,7 @@ method compileblock(o) {
         out "block{myc}.pattern = {pat};"
     }
     var paramList := ""
-    var paramTypes := list.empty
+    var paramTypes := emptyList
     var paramsAreTyped := false
     var first := true
     for (o.params) do { each ->
@@ -423,8 +423,8 @@ method compiletypeliteral(o) {
 method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
-    def paramCounts = list.empty
-    def variableArities = list.empty
+    def paramCounts = emptyList
+    def variableArities = emptyList
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)
@@ -616,8 +616,8 @@ method compilemethod(o, selfobj) {
     }
 }
 method compilefreshmethod(o, selfobj) {
-    def paramCounts = list.empty
-    def variableArities = list.empty
+    def paramCounts = emptyList
+    def variableArities = emptyList
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)

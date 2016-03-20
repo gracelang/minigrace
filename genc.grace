@@ -447,7 +447,7 @@ method compileobject(o, outerRef) {
     }
     pos := 1
     
-    def content = list.empty
+    def content = emptyList
     if (false != o.superclass) then { content.add(o.superclass) }
     o.usedTraits.do { t -> content.add(t) }
     o.value.do { e -> content.add(e) }

@@ -10,9 +10,9 @@ var indentFreePass := false
 var minIndentLevel := 0
 var statementIndent := 0
 var tokens := false
-var values := list.empty
+var values := emptyList
 var moduleObject
-var comments := list.empty
+var comments := emptyList
 var auto_count := 0
 def noBlocks = false
 def blocksOK = true
@@ -20,7 +20,6 @@ var braceIsType := false
 var defaultDefVisibility := "confidential"
 var defaultVarVisibility := "confidential"
 var defaultMethodVisibility := "public"
-def emptySequence = sequence.empty
 
 // sym is a module-level field containing the current token
 var sym := object {
@@ -98,8 +97,8 @@ method findNextTokenIndentedAt(tok) {
 
 method findNextValidToken(validFollowTokens) {
     // Tokens that cannot start an expression.
-    def invalidTokens = set.with("dot", "comma", "colon", "rparen",
-            "rbrace", "rsquare", "arrow", "bind");
+    def invalidTokens = set ["dot", "comma", "colon", "rparen",
+            "rbrace", "rsquare", "arrow", "bind"];
     var validToken := sym
     while {validToken.kind != "eof"} do {
         // If the token is a valid follow token, then return that token.
@@ -324,9 +323,9 @@ method doannotation {
         return false
     }
     next
-    def anns = list.empty
+    def anns = emptyList
     if(didConsume({expression(noBlocks)}).not) then {
-        def suggestions = list.empty
+        def suggestions = emptyList
         var suggestion := errormessages.suggestion.new
         def nextTok = findNextValidToken( ["bind"] )
         if(nextTok == sym) then {
@@ -345,7 +344,7 @@ method doannotation {
         anns.push(checkAnnotation(values.pop))
         next
         if(didConsume({expression(noBlocks)}).not) then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextValidToken( ["bind"] )
             if(nextTok == sym) then {
@@ -448,8 +447,8 @@ method block {
         var expr1
         var s := sym
         var tmp
-        var params := list.empty
-        var body := list.empty
+        var params := emptyList
+        var body := emptyList
         var havearrow := true
         var found := false
         var i := 0
@@ -470,7 +469,7 @@ method block {
                     next
                     braceIsType := true
                     if(didConsume({expression(blocksOK)}).not) then {
-                        def suggestions = list.empty
+                        def suggestions = emptyList
                         var suggestion := errormessages.suggestion.new
                         def nextTok = findNextValidToken( ["arrow", "rbrace"] )
                         if(nextTok == sym) then {
@@ -495,7 +494,7 @@ method block {
                     isMatchingBlock := true
                 }
                 if (isMatchingBlock && {accept("comma")}) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion
                     def arrow = findNextToken({ t -> t.kind == "arrow" })
                     if(arrow != false) then {
@@ -545,7 +544,7 @@ method block {
                 var lhs := values.pop
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rbrace"] )
                     if(nextTok == sym) then {
@@ -1050,7 +1049,7 @@ method prefixop {
             next
         } else {
             if(didConsume({term}).not) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
@@ -1082,7 +1081,7 @@ method prefixop {
 method generic {
     if (accept "lgeneric") then {
         def id = values.pop
-        def gens = list.empty
+        def gens = emptyList
         def startToken = sym
         next
         while {accept("identifier")} do {
@@ -1091,7 +1090,7 @@ method generic {
                 next
                 def memberIn = values.pop
                 if(sym.kind != "identifier") then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     suggestion.insert("«type name»")afterToken(lastToken)
                     suggestions.push(suggestion)
@@ -1222,7 +1221,7 @@ method trycatch {
             }
             next
         } else {
-            def suggestions = list.empty
+            def suggestions = emptyList
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if(nextTok == false) then {
@@ -1280,7 +1279,7 @@ method trycatch {
             }
             next
         } else {
-            def suggestions = list.empty
+            def suggestions = emptyList
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if(nextTok == false) then {
@@ -1383,7 +1382,7 @@ method matchcase {
             }
             next
         } else {
-            def suggestions = list.empty
+            def suggestions = emptyList
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
             if(nextTok == false) then {
@@ -1492,7 +1491,7 @@ method postfixsquare {
         next
         var expr := values.pop
         if(didConsume({expression(blocksOK)}).not) then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextValidToken( ["rsquare"] )
             if(nextTok == sym) then {
@@ -1589,7 +1588,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             // If: this is not the first operator, it is not the same
             // as the last operator, and the expression has not been
             // entirely arithmetic, raise a syntax error.
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             suggestion.insert(")")afterToken(sym)
             suggestion.insert("(")beforeToken(lastToken.prev)
@@ -1645,7 +1644,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
             next
         } else {
             if (!tokenOnSameLine) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 suggestion.deleteToken(lastToken)leading(true)trailing(false)
                 suggestions.push(suggestion)
@@ -1660,7 +1659,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
                     lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
             }
             if(didConsume({term}).not) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( ["comma", "rparen", "rsquare", "rbrace"] )
                 if(nextTok == sym) then {
@@ -1724,7 +1723,7 @@ method dotrest(acceptBlocks) {
                 callrest(acceptBlocks)
             }
         } else {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             suggestion.deleteToken(lastToken)
             suggestions.push(suggestion)
@@ -1848,7 +1847,7 @@ method parenthesizedArg(part) {
             next
             if(didConsume({expression(blocksOK)}).not) then {
                 checkBadTypeLiteral
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
@@ -1870,7 +1869,7 @@ method parenthesizedArg(part) {
             part.args.push(values.pop)
             next
             if(didConsume({expression(blocksOK)}).not) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
@@ -1903,7 +1902,7 @@ method parenthesizedArg(part) {
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
                     checkBadTypeLiteral
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
@@ -1940,7 +1939,7 @@ method parenthesizedArg(part) {
 method typeArgs {
     // Parse one or more type arguments, if present, and answer them as a list.
     def startToken = sym
-    def args = list.empty
+    def args = emptyList
     if (sym.kind != "lgeneric") then { return args }
     next
     while {didConsume{typeArg}} do {
@@ -2038,7 +2037,7 @@ method callmprest(meth, signature, tok) {
         } else {
             if(sym.kind != "rparen") then {
                 if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
@@ -2059,7 +2058,7 @@ method callmprest(meth, signature, tok) {
                 part.args.push(nxt)
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rparen"] )
                     if(nextTok == sym) then {
@@ -2145,7 +2144,7 @@ method defdec {
             }
             val := values.pop
         } elseif { accept "bind" } then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             suggestion.replaceToken(sym)with("=")
             suggestions.push(suggestion)
@@ -2156,7 +2155,7 @@ method defdec {
                 "A variable declaration uses 'var' and ':='.")atRange(
                 sym.line, sym.linePos, sym.linePos + 1) withSuggestions(suggestions)
         } else {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" = «expression»")afterToken(lastToken)
             suggestions.push(suggestion)
@@ -2206,7 +2205,7 @@ method vardec {
         if (accept "bind") then {
             next
             if(didConsume({expression(blocksOK)}).not) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( [ ] )
                 if(nextTok == sym) then {
@@ -2226,7 +2225,7 @@ method vardec {
             val := values.pop
         } else {
             if (accept("op") && (sym.value == "=")) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)with(":=")
                 suggestions.push(suggestion)
@@ -2259,7 +2258,7 @@ method doarray {
                 params.push(tmp)
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rsquare"] )
                     if(nextTok == sym) then {
@@ -2321,7 +2320,7 @@ method inheritsOrUses {
         checkIndent
         next
         if(didConsume({expression(noBlocks)}).not) then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextValidToken( ["rsquare"] )
             if(nextTok == sym) then {
@@ -2507,7 +2506,7 @@ method doclass {
     next
     def localMinIndentLevel = minIndentLevel
     if(sym.kind != "identifier") then {
-        def suggestions = list.empty
+        def suggestions = emptyList
         if(sym.kind == "lbrace") then {
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" «class name».new")afterToken(lastToken)
@@ -2577,7 +2576,7 @@ method dofactoryMethod {
         next
         def localMinIndentLevel = minIndentLevel
         if (sym.kind != "identifier") then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             if(sym.kind == "lbrace") then {
                 var suggestion := errormessages.suggestion.new
                 suggestion.insert(" «method name»")afterToken(lastToken)
@@ -2733,7 +2732,7 @@ method methodDecRest(tm, sameline) {
                 next
                 vararg := true
                 if(sym.kind != "identifier") then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     suggestion.insert("«parameter name»")afterToken(lastToken)
                     suggestions.push(suggestion)
@@ -2794,7 +2793,7 @@ method optionalTypeAnnotation {
             values.pop
         } else {
             checkBadTypeLiteral
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             suggestion.insert(" «type name»")afterToken(lastToken)
             suggestions.push(suggestion)
@@ -2819,7 +2818,7 @@ method methodsignature(sameline) {
     pushidentifier
     var meth := values.pop
     meth.isBindingOccurrence := true
-    var signature := list.empty
+    var signature := emptyList
     def part = ast.signaturePart.partName(meth.value)
     part.line := meth.line
     part.linePos := meth.linePos
@@ -2828,7 +2827,7 @@ method methodsignature(sameline) {
         if(sym.kind != "rsquare") then {
             if((sym.kind == "identifier") && ((tokens.size == 0).orElse
                 {tokens.first.kind == "rsquare"})) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 def suggestion = errormessages.suggestion.new
                 if(tokens.size == 0) then {
                     suggestion.replaceToken(sym)with("]({sym.value})")
@@ -2876,7 +2875,7 @@ method methodsignature(sameline) {
             if (accept "op") then {
                 next
                 if(sym.kind != "identifier") then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     suggestion.insert("«parameter name»")afterToken(lastToken)
                     suggestions.push(suggestion)
@@ -2974,7 +2973,7 @@ method methodsignature(sameline) {
 
 method typeparameters {
     next
-    def typeIds = list.empty
+    def typeIds = emptyList
     while {accept("identifier")} do {
         identifier
         def id = values.pop
@@ -3063,7 +3062,7 @@ method doreturn {
         var retval
         if ((tokenOnSameLine).andAlso{accept("rbrace").not}) then {
             if(didConsume({expression(blocksOK)}).not) then {
-                def suggestions = list.empty
+                def suggestions = emptyList
                 var suggestion := errormessages.suggestion.new
                 def nextTok = findNextValidToken( ["rbrace"] )
                 if(nextTok == sym) then {
@@ -3215,7 +3214,7 @@ method checkIndent {
     } elseif { sym.kind == "eof" } then {
     } elseif { sym.indent < minIndentLevel } then {
         if ((sym.linePos - 1) != minIndentLevel) then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion := errormessages.suggestion.new
             for(1..(minIndentLevel - (sym.linePos - 1))) do { _ ->
                 suggestion.insert " " atPosition 1 onLine(sym.line)
@@ -3297,7 +3296,7 @@ method statement {
                 }
                 next
                 if(didConsume({expression(blocksOK)}).not) then {
-                    def suggestions = list.empty
+                    def suggestions = emptyList
                     var suggestion := errormessages.suggestion.new
                     def nextTok = findNextValidToken( ["rbrace"] )
                     if(nextTok == sym) then {
@@ -3386,8 +3385,8 @@ method reconcileComments {
         return
     }
     def oLine = node.line
-    def preComments = list.empty
-    def postComments = list.empty
+    def preComments = emptyList
+    def postComments = emptyList
 
     var ix := comments.size
     while { ix > 0 } do {
@@ -3446,7 +3445,7 @@ method checkUnexpectedTokenAfterStatement {
         if ((sym.kind == "op") && (sym.value == "=")
             && (lastToken.kind == "identifier")) then {
             def sugg = errormessages.suggestion.new
-            def suggestions = list.empty
+            def suggestions = emptyList
             sugg.replaceToken(sym)leading(false)trailing(false)with(":=")
             suggestions.push(sugg)
             def sugg2 = errormessages.suggestion.new
@@ -3465,7 +3464,7 @@ method checkUnexpectedTokenAfterStatement {
                 withSuggestion(sugg)
         }
         if (sym.kind != "rbrace") then {
-            def suggestions = list.empty
+            def suggestions = emptyList
             var suggestion
             if ((values.size > 0).andAlso {
                     (values.last.kind == "identifier").orElse {
@@ -3529,7 +3528,7 @@ method parse(toks) {
         defaultVarVisibility := util.extensions.get("DefaultVarVisibility")
     }
     if (toks.size == 0) then {
-        return list.empty
+        return emptyList
     }
     tokens := toks
     next

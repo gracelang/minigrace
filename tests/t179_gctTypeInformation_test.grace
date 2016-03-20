@@ -3,7 +3,7 @@ import "parser" as parser
 import "util" as util
 import "xmodule" as xmodule
 
-def input = list.with(
+def input = list [
     "def x = 100",
     "method m \{",
     "    print(47)",
@@ -21,7 +21,7 @@ def input = list.with(
     "\} & type \{",
     "    m5(x:Z) -> Z",
     "\}"
-)
+]
 
 util.lines := input
 def tokens = lexer.new.lexinput(input)

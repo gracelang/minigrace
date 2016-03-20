@@ -3,7 +3,7 @@ import "parser" as parser
 import "ast" as ast
 import "util" as util
 
-def input = list.with(
+def input = list [
     "type Person = type \{",
     "  age -> Number",
     "  name -> String",
@@ -16,7 +16,7 @@ def input = list.with(
     "    return ((name.size * name.size) + age)",
     "  }",
     "}"
-)
+]
 
 util.lines := input
 def tokens = lexer.new.lexinput(input)

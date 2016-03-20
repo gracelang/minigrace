@@ -304,7 +304,7 @@ method name (p:String) matches (t:String) within (k:Number) {
     def k' = min3(k, n-1, m-1)
     var top := k' + 1  // the location where the topmost diagonal under
                        // threshold intersects the current column
-    def h = list.empty
+    def h = emptyList
     for (0..m) do { i -> h[i+1] := i+1 }
     for (1..n) do { j ->
         var c := 0

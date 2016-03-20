@@ -21,20 +21,20 @@ var recurse is readable := true
 var dynamicModule := false
 var importDynamic := false
 var jobs := 2
-var cLines := list.empty
-var lines := list.empty
+var cLines := emptyList
+var lines := emptyList
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
 
 
-def targets = set.with("lex", "parse", "grace", "ast", "processed-ast",
-    "patterns", "symbols", "imports", "c", "js")
+def targets = set ["lex", "parse", "grace", "ast", "processed-ast",
+    "patterns", "symbols", "imports", "c", "js"]
 
 def requiredModules is public = object {
-    def static is public = set.empty
-    def linkfiles is public = set.empty
-    def other is public = set.empty
+    def static is public = emptySet
+    def linkfiles is public = emptySet
+    def other is public = emptySet
     method isAlready ( moduleName ) -> Boolean {
         if ( static.contains(moduleName) ) then {
             true

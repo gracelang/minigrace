@@ -9,7 +9,7 @@ def full = Singleton.named "full"
 
 type OptionNumber =  Number | empty | full
 
-def items = list.with(6, 7, empty, 9, full)
+def items = list [6, 7, empty, 9, full]
 
 def block1 = { x:OptionNumber ->
     match(x)

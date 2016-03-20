@@ -12,7 +12,7 @@ if (meths.contains "testSuite") then {
 }
 testSuite {        
     test "remove" by {
-        assert (list.with(1).remove(1)) shouldBe  (list.empty)
+        assert (list [1].remove 1) shouldBe  (emptyList)
     }
 }
 

@@ -78,13 +78,13 @@ def stringMapTest = object {
             assert (sum) shouldBe 6
         }
         method testKeysDo {
-            def keys = set.empty
+            def keys = emptySet
             m123.keysDo { k -> keys.add(k) }
-            assert (keys) shouldBe (set.with("one", "two", "three"))
+            assert (keys) shouldBe (set ["one", "two", "three"])
         }
         method randomKeys(n) {
             def base = "A".ord
-            def result = list.empty
+            def result = emptyList
             (1..n).do { ix ->
                 var s := ""
                 repeat 8 times {
@@ -98,7 +98,7 @@ def stringMapTest = object {
         method testStringHash {
             def n = if (engine == "c") then { 500 } else { 10000 }
             def strings = randomKeys(n)
-            def hashes = dictionary.empty
+            def hashes = emptyDictionary
             var total := 0
             var minh := infinity
             var maxh := 0
@@ -110,7 +110,7 @@ def stringMapTest = object {
                 def h = s.hash
                 if (h > maxh) then { maxh := h }
                 if (h < minh) then { minh := h }
-                def allStrings = hashes.at(h % p) ifAbsent {list.empty}
+                def allStrings = hashes.at(h % p) ifAbsent {emptyList}
                 hashes.at(h % p) put (allStrings.add(s))
             }
             def duration = sys.elapsedTime - startTime

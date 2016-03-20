@@ -6,24 +6,24 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "unixFilePath" as filePath
 
-def gctCache = dictionary.empty
+def gctCache = emptyDictionary
 def keyCompare = { a, b -> a.key.compare(b.key) }
 
 method builtInModules {
     if (util.target == "c") then {
-        list.with("sys",
+        list [  "sys",
                 "io",
                 "imports",
                 "StandardPrelude",
                 "standardGrace",
-                "collectionsPrelude")
+                "collectionsPrelude" ]
     } else {
-        list.with("imports",
+        list [  "imports",
                 "io",
                 "mirrors",
                 "sys",
                 "unicode",
-                "util")
+                "util" ]
     }
 }
 
@@ -50,9 +50,8 @@ type RangeSuggestions = {
     suggestions
 }
 
-def dynamicCModules is public = set.with("mirrors", "curl", "unicode")
+def dynamicCModules is public = set ["mirrors", "curl", "unicode"]
 def imports = util.requiredModules
-def emptySequence = sequence.empty
 
 method checkDialect(moduleObject) {
     moduleObject.value.do { node ->
@@ -330,7 +329,7 @@ method parseGCT(moduleName) {
 }
 
 method parseGCT(moduleName) sourceDir(dir) is confidential {
-    def gctData = dictionary.empty
+    def gctData = emptyDictionary
     def sz = moduleName.size
     def sought = filePath.fromString(moduleName).setExtension ".gct"
     def filename = util.file(sought) on(dir)
@@ -346,7 +345,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         if (line.size > 0) then {
             if (line.at(1) != " ") then {
                 key := line.substringFrom 1 to(line.size-1)
-                gctData.at(key) put(list.empty)
+                gctData.at(key) put(emptyList)
             } else {
                 gctData.at(key).addLast(line.substringFrom 2 to(line.size))
             }
@@ -384,7 +383,7 @@ method gctAsString(gctDict) {
     return ret
 }
 
-var methodtypes := list.empty
+var methodtypes := emptyList
 def typeVisitor = object {
     inherits ast.baseVisitor
     var literalCount := 1
@@ -467,11 +466,11 @@ method generateGctForModule(moduleObject) is confidential {
 }
 
 method buildGctFor(module) {
-    def gct = dictionary.empty
-    def classes = list.empty
-    def confidentials = list.empty
-    def meths = list.empty
-    def types = list.empty
+    def gct = emptyDictionary
+    def classes = emptyList
+    def confidentials = emptyList
+    def meths = emptyList
+    def types = emptyList
     var theDialect := false
     module.parentsDo { p ->
         meths.addAll(p.providedNames)
@@ -494,7 +493,7 @@ method buildGctFor(module) {
             if (v.isPublic) then {
                 meths.push(v.nameString)
                 types.push(v.name.value)
-                methodtypes := list.empty
+                methodtypes := emptyList
                 v.accept(typeVisitor)
                 var typename := v.name.toGrace(0)
                 if (v.typeParams != false) then {
@@ -513,7 +512,7 @@ method buildGctFor(module) {
             }
             if (v.returnsObject) then {
                 def ob = v.value
-                def obConstructors = list.empty
+                def obConstructors = emptyList
                 for (ob.value) do {nd->
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
@@ -535,11 +534,11 @@ method buildGctFor(module) {
     gct.at "classes" put(classes.sort)
     gct.at "confidential" put(confidentials.sort)
     gct.at "modules" put(module.imports.asList.sorted)
-    gct.at "path" put(list.with(module.name))
+    gct.at "path" put [module.name]
     gct.at "public" put(meths.sort)
     gct.at "types" put(types.sort)
     if (false != theDialect) then {
-        gct.at "dialect" put(list.with(theDialect))
+        gct.at "dialect" put [theDialect]
     }
     gct
 }
@@ -549,7 +548,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
     // TODO: doesn't this just duplicate what's in 'classes' ?
-    def freshmeths = list.empty
+    def freshmeths = emptyList
     for (moduleObject.value) do { val->
         if (val.isClass) then {
             addFreshMethod (val) to (freshmeths) for (gct)

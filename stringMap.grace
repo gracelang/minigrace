@@ -215,7 +215,7 @@ class new {
     }
     method asList {
         // the contents of this stringMap as a list of bindings
-        def result = list.empty
+        def result = emptyList
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);

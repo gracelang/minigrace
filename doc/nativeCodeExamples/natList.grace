@@ -182,7 +182,7 @@ factory method list<T> {
         }
 
         method ++(o) {
-            def l = list.withAll(self)
+            def l = list(self)
             l.addAll(o)
         }
         

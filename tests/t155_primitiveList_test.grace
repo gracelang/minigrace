@@ -35,21 +35,21 @@ class primitiveListTest.forMethod(m) {
         }
 
         method testListInequalityEmpty {
-            deny(empty == list.with(1))
-            assert(empty != list.with(1))
+            deny(empty == list [1])
+            assert(empty != list [1])
             deny(empty == 3)
             deny(empty == evens)
         }
 
         method testListInequalityFive {
-            deny(oneToFive == list.with(1, 2, 3, 4, 6))
-            assert(oneToFive != list.with(1, 2, 3, 4, 6))
+            deny(oneToFive == list [1, 2, 3, 4, 6])
+            assert(oneToFive != list [1, 2, 3, 4, 6])
         }
 
         method testListEqualityFive {
-            def isEqual = (oneToFive == list.with(1, 2, 3, 4, 5))
+            def isEqual = (oneToFive == list [1, 2, 3, 4, 5])
             assert(isEqual)
-            deny(oneToFive != list.with(1, 2, 3, 4, 5))
+            deny(oneToFive != list [1, 2, 3, 4, 5])
         }
 
         method testListOneToFiveDo {
@@ -248,13 +248,13 @@ class primitiveListTest.forMethod(m) {
 
         method testListDoSeparatedBySingleton {
             var s := "nothing"
-            list.with(1).do { each -> assert(each)shouldBe(1) }
+            list [1].do { each -> assert(each)shouldBe(1) }
                 separatedBy { s := "kilroy" }
             assert (s) shouldBe ("nothing")
         }
 
         method testListKeysAndValuesDo {
-            def accum = dictionary.empty
+            def accum = emptyDictionary
             var n := 1
             evens.keysAndValuesDo { k, v ->
                 accum.at(k)put(v)
@@ -318,13 +318,13 @@ class primitiveListTest.forMethod(m) {
             def accum = set.empty
             def iter = oneToFive.iterator
             while { iter.hasNext } do { accum.add(iter.next) }
-            assert (accum) shouldBe (set.with(1, 2, 3, 4, 5))
+            assert (accum) shouldBe (set [1, 2, 3, 4, 5])
         }
         method testListIteratorToSetDuplicates {
             def accum = set.empty
             def iter = [1, 1, 2, 2, 4].iterator
             while { iter.hasNext } do { accum.add(iter.next) }
-            assert (accum) shouldBe (set.with(1, 2, 4))
+            assert (accum) shouldBe (set [1, 2, 4])
         }
         method testListIteratorRaisesExhausted {
             def iter = [1, 2, 3].iterator

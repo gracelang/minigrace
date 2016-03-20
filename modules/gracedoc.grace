@@ -135,12 +135,12 @@ method indent(n:Number) -> String {
 }
 
 method autoindent(input) {
-    def indentedtags = set.with("link", "td", "meta", "style", "title",
+    def indentedtags = set ["link", "td", "meta", "style", "title",
         "table", "div", "tr", "th", "iframe", "script", "section", "h1", "h2",
-        "h3", "h4", "h5", "h6", "ul", "li", "html", "body", "head", "hr")
-    def samelineclosingtags = set.with("a", "span", "td", "th", "li", "h1",
+        "h3", "h4", "h5", "h6", "ul", "li", "html", "body", "head", "hr" ]
+    def samelineclosingtags = set ["a", "span", "td", "th", "li", "h1",
         "h2", "h3", "h4", "h5", "h6", "title", "script", "b", "i", "em",
-        "strong")
+        "strong"]
     var stack:Number := 0
     def inputSize = input.length
     var output := ""

@@ -15,7 +15,7 @@ class SuccessfulMatch.new(result', bindings') {
 class FailedMatch.new(result') {
     inherits false
     method result { result' }
-    method bindings { sequence.empty }
+    method bindings { emptySequence }
     method asString {
         "FailedMatch(result = {result})"
     }
@@ -391,6 +391,7 @@ type Sequence<T> = collections.Sequence<T>
 type List<T> = collections.List<T>
 type Set<T> = collections.Set<T>
 type Dictionary<K,T> = collections.Dictionary<K,T>
+type Lineup<T> = collections.Lineup<T>
 
 def BoundsError is public = collections.BoundsError
 def IteratorExhausted is public = collections.IteratorExhausted
@@ -399,7 +400,6 @@ def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility
 def ConcurrentModification is public = collections.ConcurrentModification
 
-def collectionFactory is public = collections.collectionFactory
 def collection is public = collections.collection
 def enumerable is public = collections.enumerable
 def indexable is public = collections.indexable
@@ -414,6 +414,9 @@ method sequence<T>(*args) {
         RequestError.raise "sequence given {as} arguments; needs zero or one"
     }
 }
+
+def emptySequence is public = collections.sequence.empty
+
 method list<T>(*args) {
     def as = args.size
     if (as == 0) then {
@@ -424,6 +427,8 @@ method list<T>(*args) {
         RequestError.raise "list given {as} arguments; needs zero or one"
     }
 }
+method emptyList { collections.list.empty }
+
 method set<T>(*args) {
     def as = args.size
     if (as == 0) then {
@@ -434,6 +439,8 @@ method set<T>(*args) {
         RequestError.raise "set given {as} arguments; needs zero or one"
     }
 }
+method emptySet { collections.set.empty }
+
 method dictionary<K, T>(* args) {
     def as = args.size
     if (as == 0) then {
@@ -444,6 +451,7 @@ method dictionary<K, T>(* args) {
         RequestError.raise "dictionary given {as} arguments; needs zero or one"
     }
 }
+method emptyDictionary { collections.dictionary.empty }
 
 def binding is public = collections.binding
 def range is public = collections.range

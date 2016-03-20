@@ -58,14 +58,14 @@ testSuite {
         var v := 4
         def accum = list.empty
         do { accum.addLast(v) ; v := v - 1 } while { false }
-        assert (accum) shouldBe (list.with(4))
+        assert (accum) shouldBe (list [4])
     }   
 
     test "Do-While many" by {
         var v := 4
         def accum = list.empty
         do { accum.addLast(v) ; v := v - 1 } while { accum.size < 4}
-        assert (accum) shouldBe (list.with(4, 3, 2, 1))
+        assert (accum) shouldBe (list [4, 3, 2, 1])
     }
 
 }

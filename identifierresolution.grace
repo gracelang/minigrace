@@ -9,8 +9,6 @@ import "mirrors" as mirrors
 import "errormessages" as errormessages
 import "identifierKinds" as k
 
-def emptySequence = sequence.empty
-
 def completed = Singleton.named "completed"
 def inProgress = Singleton.named "inProgress"
 def undiscovered = Singleton.named "undiscovered"
@@ -109,7 +107,7 @@ factory method newScopeIn(parent') kind(variety') {
         }
     }
     method keysAsList {
-        def result = list.empty
+        def result = emptyList
         elements.keysDo { each -> result.addLast(each) }
         result
     }
@@ -161,7 +159,7 @@ factory method newScopeIn(parent') kind(variety') {
     method asDebugString { "(ST {serialNumber})" }
 
     method elementScopesAsString {
-        def referencedScopes = set.empty
+        def referencedScopes = emptySet
         var result := "\n    [elementScopes:"
         elementScopes.asList.sortBy(keyOrdering).do { each ->
             result := "{result} {each.key}➞{each.value.asDebugString}"
@@ -323,7 +321,7 @@ factory method newScopeIn(parent') kind(variety') {
             }
         }
         if (newKind == k.vardec) then {
-            def suggs = list.empty
+            def suggs = emptyList
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
                     onLine(ident.line)
@@ -463,7 +461,7 @@ method rewritematchblockterm(arg) {
 method rewritematchblock(blk) {
     def arg = blk.params[1]
     var pattern := false
-    var newparams := list.empty
+    var newparams := emptyList
     for (blk.params) do { p ->
         newparams.push(p)
     }

@@ -102,7 +102,7 @@ def stringMapTest = object {
         method testKeysDo {
             def keys = set.empty
             m123.keysDo { k -> keys.add(k) }
-            assert (keys) shouldBe (set.with("one", "two", "three"))
+            assert (keys) shouldBe (set ["one", "two", "three"])
         }
         method testKeyAndValuesDo {
             def pairs = set.empty

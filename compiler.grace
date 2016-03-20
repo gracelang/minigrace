@@ -56,7 +56,7 @@ if (util.extensions.contains("Plugin")) then {
     mirrors.loadDynamicModule(util.extensions.get("Plugin")).processAST(values)
 }
 if (util.target == "imports") then {
-    def imps = set.empty
+    def imps = emptySet
     def vis = object {
         inherits ast.baseVisitor
         method visitImport(o) -> Boolean {

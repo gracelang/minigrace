@@ -1,7 +1,7 @@
 dialect "minitest"
 
 testSuite {
-    def l = list.with(1, 3, 5, 2, 4)
+    def l = list [1, 3, 5, 2, 4]
 
     test "list is mutated by add" by {
         l.push(6)
