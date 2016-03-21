@@ -209,6 +209,9 @@ method parseargs(buildinfo) {
                 startupFailure "unrecognized target '{targetv}'."
             }
     }
+    if ((target != "c") && (target != "js")) then {
+        buildtypev == "debug"
+    }
     if ((buildtype == "run") && (gracelibPathv == false)) then {
         def extension = if (target == "c") then { ".o" } else { "." ++ target }
         def soughtLibrary = filePath.withDirectory(execDir)
@@ -221,7 +224,7 @@ method parseargs(buildinfo) {
                 onPath (sys.environ.at "GRACE_MODULE_PATH")
                 otherwise { locs ->
                     startupFailure("can't find {soughtLibrary.shortName};\n" ++
-                          "Looked in {locs}.")
+                          "looked in {locs}.")
                 }
             gracelibPathv := gracelib.directory
         }
