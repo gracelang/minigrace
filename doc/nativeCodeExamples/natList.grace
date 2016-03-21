@@ -5,10 +5,10 @@
 // return returns from the method
 
 
-factory method list<T> {
-    inherits collections.collectionFactory.TRAIT
+class list<T> {
+    method empty -> List<T>  { self.withAll [ ] }
 
-    factory method withAll(a:Collection<T>) -> List<T> {
+    class withAll(a:Iterable<T>) -> List<T> {
         inherits collections.indexable.TRAIT<T>
         var sz := 0
         var jsArray := native "js" code ‹var result = [];›
