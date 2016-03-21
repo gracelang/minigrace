@@ -1473,9 +1473,6 @@ class dictionary<K,T> {
 
     method asString { "a dictionary factory" }
 
-    method at(k:K)put(v:T) {
-        empty.at(k)put(v)
-    }
     method withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
         def result = empty
         for (initialBindings) do { b -> result.add(b) }
