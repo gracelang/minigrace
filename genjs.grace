@@ -1095,7 +1095,7 @@ method compilecall(o) {
     } elseif { o.value.kind == "member" } then {
         obj := compilenode(o.value.in)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "(" ++ obj
-            ++ ",\"" ++ escapestring(o.value.value) ++ "\", ["
+            ++ ", \"" ++ escapestring(o.value.value) ++ "\", ["
         call := call ++ partl ++ "]"
         for (args) do { arg ->
             call := call ++ ", " ++ arg
