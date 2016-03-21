@@ -846,7 +846,7 @@ var GraceTrue = new GraceBoolean(true);
 var GraceFalse = new GraceBoolean(false);
 
 function GraceList(jsList) {
-    var newList = callmethod(GraceListClass(), "empty", [0]);
+    var newList = callmethod(Grace_prelude, "emptyList", [0]);
     for (var ix = 0; ix < jsList.length; ix++) {
         callmethod(newList, "push", [1], jsList[ix]);
     }
@@ -1455,7 +1455,7 @@ GraceType.prototype = {
             return new GraceString("built-in type " + this.name);
         },
         "methodNames": function type_methodNames (argcv) {
-            var result = callmethod(GraceSetClass(), "empty", [0]);
+            var result = callmethod(Grace_prelude, "emptySet", [0]);
             for (var i=0; i<this.typeMethods.length; i++) {
                 var methName = this.typeMethods[i];
                 callmethod(result, "add", [1], new GraceString(methName));
@@ -2246,25 +2246,19 @@ function gracecode_util() {
         meth_isAlready.variableArities = [false];
         obj_requiredModules.methods["isAlready"] = meth_isAlready;
         meth_isAlready.definitionModule = "util";
-        var call1255 = callmethod(Grace_prelude, "set", [0]);
-        var call1256 = callmethod(call1255,"empty", [0]);
-        obj_requiredModules.data["static"] = call1256;
+        obj_requiredModules.data["static"] = callmethod(Grace_prelude, "emptySet", [0]);
         var reader_util_static1257 = function() {
             return this.data["static"];
         };
         reader_util_static1257.def = true;
         obj_requiredModules.methods["static"] = reader_util_static1257;
-        var call1258 = callmethod(Grace_prelude, "list", [0]);
-        var call1259 = callmethod(call1258,"empty", [0]);
-        obj_requiredModules.data["linkfiles"] = call1259;
+        obj_requiredModules.data["linkfiles"] = callmethod(Grace_prelude, "emptyList", [0]);
         var reader_util_linkfiles1260 = function() {
             return this.data["linkfiles"];
         };
         reader_util_linkfiles1260.def = true;
         obj_requiredModules.methods["linkfiles"] = reader_util_linkfiles1260;
-        var call1261 = callmethod(Grace_prelude, "set", [0]);
-        var call1262 = callmethod(call1261,"empty", [0]);
-        obj_requiredModules.data["other"] = call1262;
+        obj_requiredModules.data["other"] = callmethod(Grace_prelude, "emptySet", [0]);
         var reader_util_other1263 = function() {
             return this.data["other"];
         };
@@ -2292,7 +2286,7 @@ function gracecode_util() {
     };
     this.methods.splitPath = function util_splitPath(argcv, pathString) {
         var locations = pathString._value.split(':');
-        var result = callmethod(GraceListClass(), "empty", [0]);
+        var result = callmethod(Grace_prelude, "emptyList", [0]);
         var len = locations.length;
         for (var i = 0; i < len; i++)
             callmethod(result, "addLast", [1], new GraceString(locations[i]));
@@ -2624,7 +2618,7 @@ GraceMirror.prototype = {
             return l;
         },
         methodNames: function mirror_methodName(argcv) {
-            var meths = callmethod(GraceSetClass(), "empty", [0]);
+            var meths = callmethod(Grace_prelude, "emptySet", [0]);
             var current = this.subject;
             while (current !== null) {
                 for (var k in current.methods)
@@ -2675,7 +2669,7 @@ function gracecode_mirrors() {
             moduleFunc = eval("gracecode_" + modName);
             } catch (e) {
                 throw new GraceExceptionPacket(ImportErrorObject,
-                    new GraceString("Error initializing module " + v._value));
+                    new GraceString("error initializing module " + v._value));
             }
         }
         return do_import(modName, moduleFunc);
@@ -3316,32 +3310,11 @@ function GraceRangeClass() {
     return _rangeClass;
 }
 
-var _setClass;
-function GraceSetClass() {
-    if (!_setClass)
-        _setClass = callmethod(Grace_prelude, "set", [0]);
-    return _setClass;
-}
-
-var _sequenceClass;
-function GraceSequenceClass() {
-    if (!_sequenceClass)
-        _sequenceClass = callmethod(Grace_prelude, "sequence", [0]);
-    return _sequenceClass;
-}
-
 var _emptySequence;
 function GraceEmptySequence() {
     if (!_emptySequence)
-        _emptySequence = callmethod(GraceSequenceClass(), "empty", [0]);
+        _emptySequence = callmethod(Grace_prelude, "emptySequence", [0]);
     return _emptySequence;
-}
-
-var _listClass;
-function GraceListClass() {
-    if (!_listClass)
-        _listClass = callmethod(Grace_prelude, "list", [0]);
-    return _listClass;
 }
 
 
