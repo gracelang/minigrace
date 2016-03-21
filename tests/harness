@@ -175,7 +175,7 @@ do
             cat test-$$.out >> test.log
             echo "Expected output:" >> test.log
             cat ${tcase%_test.grace}.out >> test.log
-            echo "differnces: " >> test.log
+            echo "differences: " >> test.log
             diff test-$$.out ${tcase%_test.grace}.out >> test.log
             echo "==============" >> test.log
         fi
