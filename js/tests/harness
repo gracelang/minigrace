@@ -73,7 +73,7 @@ NUM_PASS=0
 NUM_UNEXPECTED_SUCCESS=0
 NUM_WRONG_OUTPUT=0
 NUM_COMPILE_ERROR=0
-echo "Beginning test run at $(date)" > test.log
+echo "Beginning test run at $(date)" > test.js.log
 for tcase in "${tests[@]}"
 do
     if ! [ -e "$tcase" ]
@@ -156,18 +156,18 @@ do
     fi
     if [ "$FAILED" = "true" ]
     then
-        cat test-$$.log >> test.log
+        cat test-$$.log >> test.js.log
         if [ -e test-$$.err ]
         then
-            echo "Errors:" >> test.log
-            cat test-$$.err >> test.log
+            echo "Errors:" >> test.js.log
+            cat test-$$.err >> test.js.log
         fi
         if [ -e test-$$.out ]
         then
-            echo "Got output:" >> test.log
-            cat test-$$.out >> test.log
-            echo "Expected output:" >> test.log
-            cat ${tcase%_test.grace}.out >> test.log
+            echo "Got output:" >> test.js.log
+            cat test-$$.out >> test.js.log
+            echo "Expected output:" >> test.js.log
+            cat ${tcase%_test.grace}.out >> test.js.log
         fi
     fi
     rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct} *_test.gct
@@ -178,18 +178,18 @@ do
 done
 
 echo
-echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.log
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.js.log
 if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
 then
-    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.log
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.js.log
 fi
 if [ $NUM_WRONG_OUTPUT -ne "0" ]
 then
-    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.log
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.js.log
 fi
 if [ $NUM_COMPILE_ERROR -ne "0" ]
 then
-    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.log
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.js.log
 fi
 NUM_FAIL=$((NUM_TESTS - NUM_PASS))
 if [ $NUM_FAIL -gt 0 ]
