@@ -1983,7 +1983,7 @@ def defDecNode = object {
         var name is public := name'
         var value is public := val
         var dtype is public := dtype'
-        def nameString:String is public = name.value
+        def nameString:String is public = name.nameString
         var annotations is public := emptyList
         var startToken is public := false
 
