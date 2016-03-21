@@ -1,6 +1,7 @@
 import "gUnit" as gU
 
-class primitiveListTest.forMethod(m) {
+def primitiveListTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = [1, 2, 3, 4, 5]
@@ -11,9 +12,9 @@ class primitiveListTest.forMethod(m) {
             def witness = [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection<Number>)
         }
-        method testListTypeIterable {
+        method testListTypeLineup {
             def witness = [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Iterable<Number>)
+            assert (witness) hasType (Lineup<Number>)
         }
         method testListSize {
             assert(oneToFive.size) shouldBe 5
@@ -27,8 +28,8 @@ class primitiveListTest.forMethod(m) {
         }
 
         method testListEqualityEmpty {
-            assert(empty == list.empty) description "empty list ≠ itself!"
-            assert(empty == sequence.empty) description "empty list ≠ empty sequence"
+            assert(empty == emptyList) description "empty list ≠ itself!"
+            assert(empty == emptySequence) description "empty list ≠ empty sequence"
         }
 
         method testListInequalityEmpty {
@@ -118,7 +119,7 @@ class primitiveListTest.forMethod(m) {
         method assign21at2 { oneToFive[2] := 21 }
 
         method testListAtPutExtend {
-            assert (empty.at 1 put 99) shouldBe (list.with 99)
+            assert (empty.at 1 put 99) shouldBe (list [99])
             oneToFive.at(6) put 6
             assert (oneToFive.at 6) shouldBe 6
             oneToFive.at(7) put 7
@@ -158,7 +159,7 @@ class primitiveListTest.forMethod(m) {
             l.remove 3
             assert (l) shouldBe (list [5, 7])
             l.remove 5.remove 7
-            assert (l) shouldBe (list.empty)
+            assert (l) shouldBe (list [ ])
         }
         method testListChaining {
             oneToFive.at(1)put(11).at(2)put(12).at(3)put(13)
@@ -259,7 +260,7 @@ class primitiveListTest.forMethod(m) {
         }
 
         method testListKeysAndValuesDo {
-            def accum = dictionary.empty
+            def accum = emptyDictionary
             var n := 1
             evens.keysAndValuesDo { k, v ->
                 accum.at(k)put(v)
@@ -278,15 +279,15 @@ class primitiveListTest.forMethod(m) {
         }
 
         method testListMapEmpty {
-            assert (empty.map{x -> x * x}.onto(list)) shouldBe (list.empty)
+            assert (empty.map{x -> x * x}.into(emptyList)) shouldBe (emptyList)
         }
 
         method testListMapEvens {
-            assert(evens.map{x -> x + 1}.onto(list)) shouldBe [3, 5, 7, 9]
+            assert(evens.map{x -> x + 1}.into(emptyList)) shouldBe [3, 5, 7, 9]
         }
 
         method testListMapEvensInto {
-            assert(evens.map{x -> x + 10}.into(list.withAll(evens)))
+            assert(evens.map{x -> x + 10}.into(list(evens)))
                 shouldBe [2, 4, 6, 8, 12, 14, 16, 18]
         }
 
@@ -299,35 +300,34 @@ class primitiveListTest.forMethod(m) {
         }
 
         method testListFilterOdd {
-            assert(oneToFive.filter{x -> (x % 2) == 1}.onto(list))
+            assert(oneToFive.filter{x -> (x % 2) == 1}.into(emptyList))
                 shouldBe [1, 3, 5]
         }
 
         method testListMapAndFilter {
-            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.onto(list))
+            assert(oneToFive.map{x -> x + 10}.filter{x -> (x % 2) == 1}.into(emptyList))
                 shouldBe [11, 13, 15]
         }
 
         method testListCopy {
             def evensCopy = evens.copy
-            evens.removeFirst
-            evens.removeFirst
-            assert (evens.size) shouldBe 2
+            evens.removeLast
+            evens.removeLast
+            assert (evens) shouldBe [2, 4]
             assert (evensCopy) shouldBe [2, 4, 6, 8]
-            assert (evensCopy.second) shouldBe 4
         }
         method testListIteratorEmpty {
             deny (empty.iterator.hasNext)
                 description "empty iterator has an element"
         }
         method testListIteratorNonEmpty {
-            def accum = set.empty
+            def accum = emptySet
             def iter = oneToFive.iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 3, 4, 5])
         }
         method testListIteratorToSetDuplicates {
-            def accum = set.empty
+            def accum = emptySet
             def iter = [1, 1, 2, 2, 4].iterator
             while { iter.hasNext } do { accum.add(iter.next) }
             assert (accum) shouldBe (set [1, 2, 4])
@@ -339,6 +339,22 @@ class primitiveListTest.forMethod(m) {
             assert (iter.next) shouldBe 3
             assert {iter.next} shouldRaise (IteratorExhausted)
         }
+        method testAsList {
+            def l = oneToFive.asList
+            assert (l) hasType (List)
+            assert (l) shouldBe (list [1, 2, 3, 4, 5])
+        }
+        method testAsSet {
+            def s = oneToFive.asSet
+            assert (s) hasType (Set)
+            assert (s) shouldBe (set [1, 2, 3, 4, 5])
+        } 
+        method testAsSequence {
+            def s = oneToFive.asSequence
+            assert (s) hasType (Sequence)
+            assert (s) shouldBe (sequence [1, 2, 3, 4, 5])
+        }
+    }
 }
 
 def listTests = gU.testSuite.fromTestMethodsIn(primitiveListTest)

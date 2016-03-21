@@ -3,18 +3,19 @@ import "gUnit" as gU
 // Some of these tests are commented out; these represent functionality that
 // is supported by JavaScript primitive lists, but not (yet) by the C version.
 
-class primitiveListTest.forMethod(m) {
+def primitiveListTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def oneToFive = [1, 2, 3, 4, 5]
         def evens = [2, 4, 6, 8]
         def empty = []
 
-//        method testListTypeCollection {
-//            def witness = [1, 2, 3, 4, 5, 6]
-//            assert (witness) hasType (Collection<Number>)
-//        }
-        method testListTypeIterable {
+        method testListTypeCollection {
+            def witness = [1, 2, 3, 4, 5, 6]
+            assert (witness) hasType (Collection<Number>)
+        }
+        method testListTypeLineup {
             def witness = [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Lineup<Number>)
         }
