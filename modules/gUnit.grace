@@ -445,7 +445,13 @@ def testSuite is public = object {
 method className(testClass) {
     def cName = testClass.asString
     if (cName.startsWith "class ") then {
-        return cName.substringFrom 7 to (cName.size)
+        cName.substringFrom 7 to (cName.size)
+    } elseif { cName.startsWith "a " } then {
+        cName.substringFrom 3 to (cName.size)
+    } elseif { cName.startsWith "an " } then {
+        cName.substringFrom 4 to (cName.size)
+    } elseif { cName.endsWith "]" } then {
+        cName.substringFrom 1 to (cName.size - 18)
     } else {
         return "un-named"
     }
