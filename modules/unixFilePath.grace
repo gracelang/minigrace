@@ -135,7 +135,7 @@ method fromString(s) {
 method split(pathString) -> List<String> {
     // splits pathString, assumed to be a Unix PATH containing items separated
     // by colons, into a List of items.  Ensures that each item ends with /
-    def locations = list.empty
+    def locations = emptyList
     var ix := 1
     var ox := 1
     def pss = pathString.size
