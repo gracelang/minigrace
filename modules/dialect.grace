@@ -5,13 +5,10 @@ inherits prelude.methods
 
 // Checker error
 
-def CheckerFailure is public = Error.refine("CheckerFailure")
+def CheckerFailure is public = Exception.refine "CheckerFailure"
 
 
 // Helper Map
-
-def MapException = Exception.refine("MapException")
-
 
 class entryFrom(key') to(value') is confidential {
     def key is public = key'
@@ -29,7 +26,7 @@ class aMutableMap {
     method at(key) {
         atKey(key) do { value -> return value }
 
-        MapException.raise("No such value at key {key}")
+        NoSuchObject.raise "no key {key} in aMutableMap"
     }
 
     method at(key) put(value) -> Done {
@@ -346,14 +343,6 @@ def astVisitor = object {
     method checkMatch(node) -> Boolean {
         runRules(node)
         return true
-    }
-
-    method visitFor(node) -> Boolean {
-        Error.raise("for is no longer special-cased")
-    }
-
-    method visitWhile(node) -> Boolean {
-        Error.raise("while is no longer special-cased")
     }
 
     method visitIf(node) -> Boolean {
