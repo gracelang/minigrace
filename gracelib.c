@@ -275,6 +275,77 @@ static Object TypeErrorObject;
 static Object EnvironmentExceptionObject;
 static Object IteratorExhaustedObject;
 
+Object ExceptionError() {
+    if (ExceptionErrorObject == NULL) {
+        ExceptionErrorObject = alloc_Exception("Exception", NULL);
+        gc_root(ExceptionErrorObject);
+    }
+    return ExceptionErrorObject;
+}
+Object ProgrammingError() {
+    if (ProgrammingErrorObject == NULL) {
+        ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionError());
+        gc_root(ProgrammingErrorObject);
+    }
+    return ProgrammingErrorObject;
+}
+Object RequestError() {
+    if (RequestErrorObject == NULL) {
+        RequestErrorObject = alloc_Exception("RequestError", ProgrammingError());
+        gc_root(RequestErrorObject);
+    }
+    return RequestErrorObject;
+}
+Object EnvironmentException() {
+    if (EnvironmentExceptionObject == NULL) {
+        EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ProgrammingError());
+        gc_root(EnvironmentExceptionObject);
+    }
+    return EnvironmentExceptionObject;
+}
+Object IteratorExhausted() {
+    if (IteratorExhaustedObject == NULL) {
+        IteratorExhaustedObject = alloc_Exception("IteratorExhausted", ProgrammingError());
+        gc_root(IteratorExhaustedObject);
+    }
+    return IteratorExhaustedObject;
+}
+Object NoSuchMethod() {
+    if (NoSuchMethodErrorObject == NULL) {
+        NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingError());
+        gc_root(NoSuchMethodErrorObject);
+    }
+    return NoSuchMethodErrorObject;
+}
+Object RuntimeError() {
+    if (RuntimeErrorObject == NULL) {
+        RuntimeErrorObject = alloc_Exception("RuntimeError", ProgrammingError());
+        gc_root(RuntimeErrorObject);
+    }
+    return RuntimeErrorObject;
+}
+Object BoundsError() {
+    if (BoundsErrorObject == NULL) {
+        BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingError());
+        gc_root(BoundsErrorObject);
+    }
+    return BoundsErrorObject;
+}
+Object ResourceException() {
+    if (ResourceExceptionObject == NULL) {
+        ResourceExceptionObject = alloc_Exception("ResourceException", ProgrammingError());
+        gc_root(ResourceExceptionObject);
+    }
+    return ResourceExceptionObject;
+}
+Object TypeError() {
+    if (TypeErrorObject == NULL) {
+        TypeErrorObject = alloc_Exception("TypeError", ProgrammingError());
+        gc_root(TypeErrorObject);
+    }
+    return TypeErrorObject;
+}
+
 static jmp_buf *return_stack;
 Object return_value;
 char (*callstack)[256];
@@ -307,7 +378,7 @@ void gracedie(char *msg, ...) {
         char buf[strlen(msg) * 4 + 1024];
         vsprintf(buf, msg, args);
         currentException = alloc_ExceptionPacket(alloc_String(buf),
-                RuntimeErrorObject);
+                RuntimeError());
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "RuntimeError at line %i of %s: ", linenumber, modulename);
@@ -365,7 +436,7 @@ void debug(char *msg, ...) {
 
 void assertClass(Object obj, ClassData cl) {
     if (obj->class != cl)
-        graceRaise(TypeErrorObject, "expected instance of %s; got %s", cl->name,
+        graceRaise(TypeError(), "expected instance of %s; got %s", cl->name,
                 obj->class->name);
 }
 
@@ -377,7 +448,7 @@ void *glmalloc(size_t s) {
     void *v = calloc(1, s + sizeof(size_t));
     if (v == NULL) {
         fprintf(stderr, "Out of memory (line %i of %s)", linenumber, modulename);
-        graceRaise(EnvironmentExceptionObject, "Out of memory");
+        graceRaise(EnvironmentException(), "Out of memory");
     }
     size_t *i = v;
     *i = s;
@@ -998,7 +1069,7 @@ Object String_Contains(Object self, int nparts, int *argcv,
     struct StringObject *needle = (struct StringObject*)args[0];
     if ((needle->class != String) && (needle->class != ConcatString)) {
         Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
-        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+        graceRaise(TypeError(), "argument %s to contains is not a string",
                    grcstring(nStr));
     }
     if (sself->size <= needle->size)
@@ -1037,7 +1108,7 @@ Object BuiltinListIter_next(Object self, int nparts, int *argcv,
         *pos  = *pos + 1;
         return lst->items[rpos];
     }
-    graceRaise(IteratorExhaustedObject, "on primitive list");
+    graceRaise(IteratorExhausted(), "on primitive list");
     return alloc_Boolean(0); // will never execute, but keeps the compiler quiet
 }
 Object BuiltinListIter_havemore(Object self, int nparts, int *argcv,
@@ -1072,7 +1143,7 @@ Object BuiltinList_pop(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     sself->size--;
     if (sself->size < 0)
-        graceRaise(BoundsErrorObject, "Attempt to pop from list of size %i",
+        graceRaise(BoundsError(), "Attempt to pop from list of size %i",
                 ++sself->size);
     return sself->items[sself->size];
 }
@@ -1081,7 +1152,7 @@ Object BuiltinList_removeLast(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     sself->size--;
     if (sself->size < 0)
-        graceRaise(BoundsErrorObject, "Attempt to removeLast from list of size %i",
+        graceRaise(BoundsError(), "Attempt to removeLast from list of size %i",
                 ++sself->size);
     return sself->items[sself->size];
 }
@@ -1113,11 +1184,11 @@ Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
         return BuiltinList_push(self, 1, partcv, &val, 0);
     }
     if (index > sself->size) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i > %i",
+        graceRaise(BoundsError(), "index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i <= 0",
+        graceRaise(BoundsError(), "index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1259,11 +1330,11 @@ Object BuiltinList_index(Object self, int nparts, int *argcv,
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     int index = integerfromAny(args[0]);
     if (index > sself->size) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i > %i",
+        graceRaise(BoundsError(), "index out of bounds: %i > %i",
                 index, sself->size);
     }
     if (index <= 0) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i <= 0",
+        graceRaise(BoundsError(), "index out of bounds: %i <= 0",
                 index);
     }
     index--;
@@ -1321,42 +1392,42 @@ Object BuiltinList_first(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size == 0)
-        graceRaise(BoundsErrorObject, "empty list has no first element");
+        graceRaise(BoundsError(), "empty list has no first element");
     return sself->items[0];
 }
 Object BuiltinList_second(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size < 2)
-        graceRaise(BoundsErrorObject, "list of size %i has no second element", sself->size);
+        graceRaise(BoundsError(), "list of size %i has no second element", sself->size);
     return sself->items[1];
 }
 Object BuiltinList_third(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size < 3)
-        graceRaise(BoundsErrorObject, "list of size %i has no third element", sself->size);
+        graceRaise(BoundsError(), "list of size %i has no third element", sself->size);
     return sself->items[2];
 }
 Object BuiltinList_fourth(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size < 4)
-        graceRaise(BoundsErrorObject, "list of size %i has no fourth element", sself->size);
+        graceRaise(BoundsError(), "list of size %i has no fourth element", sself->size);
     return sself->items[3];
 }
 Object BuiltinList_fifth(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size < 5)
-        graceRaise(BoundsErrorObject, "list of size %i has no fifth element", sself->size);
+        graceRaise(BoundsError(), "list of size %i has no fifth element", sself->size);
     return sself->items[4];
 }
 Object BuiltinList_last(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
     if (sself->size == 0)
-        graceRaise(BoundsErrorObject, "empty list has no last element");
+        graceRaise(BoundsError(), "empty list has no last element");
     return sself->items[sself->size-1];
 }
 Object BuiltinList_prepended(Object self, int nparts, int *argcv,
@@ -1500,11 +1571,11 @@ Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
     Object val = args[1];
     int index = integerfromAny(idx);
     if (index >= sself->size) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i >= %i",
+        graceRaise(BoundsError(), "index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i < 0",
+        graceRaise(BoundsError(), "index out of bounds: %i < 0",
                 index);
     }
     sself->items[index] = val;
@@ -1515,11 +1586,11 @@ Object PrimitiveArray_index(Object self, int nparts, int *argcv,
     struct PrimitiveArrayObject *sself = (struct PrimitiveArrayObject*)self;
     int index = integerfromAny(args[0]);
     if (index >= sself->size) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i >= %i",
+        graceRaise(BoundsError(), "index out of bounds: %i >= %i",
                 index, sself->size);
     }
     if (index < 0) {
-        graceRaise(BoundsErrorObject, "index out of bounds: %i < 0",
+        graceRaise(BoundsError(), "index out of bounds: %i < 0",
                 index);
     }
     return sself->items[index];
@@ -1819,7 +1890,7 @@ Object ConcatString_Contains(Object self, int nparts, int *argcv,
     struct ConcatStringObject *needle = (struct ConcatStringObject*)args[0];
     if ((needle->class != String) && (needle->class != ConcatString)) {
         Object nStr = callmethod(args[0], "asDebugString", 0, NULL, NULL);
-        graceRaise(TypeErrorObject, "argument %s to contains is not a string",
+        graceRaise(TypeError(), "argument %s to contains is not a string",
                    grcstring(nStr));
     }
     if (sself->size <= needle->size)
@@ -1853,7 +1924,7 @@ int String_Compare_int(Object self, Object other) {
         return 0;
     char *a = grcstring(self);
     if (other->class != String && other->class != ConcatString)
-        graceRaise(TypeErrorObject, "Argument to \"%s\".compare is not a string", a);
+        graceRaise(TypeError(), "Argument to \"%s\".compare is not a string", a);
     char *b = grcstring(other);
     return strcmp(a,b);
 }
@@ -2487,7 +2558,7 @@ Object Octets_at(Object receiver, int nparts, int *argcv,
     int size = self->blen;
     int i = integerfromAny(args[0]);
     if (i >= size)
-        graceRaise(BoundsErrorObject, "Octets index %i >= size %i", i, size);
+        graceRaise(BoundsError(), "Octets index %i >= size %i", i, size);
     return alloc_Float64((int)data[i]&255);
 }
 Object Octets_Equals(Object receiver, int nparts, int *argcv,
@@ -3177,7 +3248,7 @@ Object alloc_File_from_stream(FILE *stream) {
 Object alloc_File(const char *filename, const char *mode) {
     FILE *file = fopen(filename, mode);
     if (file == NULL) {
-        graceRaise(EnvironmentExceptionObject, "could not open file %s for %s.",
+        graceRaise(EnvironmentException(), "could not open file %s for %s.",
                 filename, mode);
     }
     gc_pause();
@@ -3704,7 +3775,7 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
         for (j = 0; j < argcv[i] && j < t->argcv[i]; j++) {
             if (t->types[k])
                 if (!istrue(callmethod(t->types[k], "match", 1, partcv, &argv[k]))) {
-                    graceRaise(TypeErrorObject, "expected %s for argument %s (%i) "
+                    graceRaise(TypeError(), "expected %s for argument %s (%i) "
                             "of %s (defined at %s:%i), got %s",
                             ((struct TypeObject *)t->types[k])->name,
                             (struct TypeObject *)t->names[k], k + 1,
@@ -3783,13 +3854,13 @@ start:
     int searchdepth = (callflags >> 24) & 0xff;
     if (m != NULL && m->flags & MFLAG_CONFIDENTIAL
             && !(callflags & CFLAG_SELF)) {
-        graceRaise(NoSuchMethodErrorObject,
+        graceRaise(NoSuchMethod(),
             "requested confidential method '%s' (defined at %s:%i) from outside.",
             name, m->definitionModule, m->definitionLine);
     }
     if (m != NULL && m->type != NULL && partc && argcv && argv) {
         if (!checkmethodcall(m, partc, argcv, argv))
-            graceRaise(TypeErrorObject, "bad argument in method request.");
+            graceRaise(TypeError(), "bad argument in method request.");
     }
     Object prevSourceObject = sourceObject;
     sourceObject = realself;
@@ -3838,7 +3909,7 @@ start:
         sprintf(buf, "no method '%s' in %s %s.", name,
                 self->class->name, grcstring(callmethod(self, "asString", 0, NULL, NULL)));
         currentException = alloc_ExceptionPacket(alloc_String(buf),
-                NoSuchMethodErrorObject);
+                NoSuchMethod());
         longjmp(error_jump, 1);
     }
     fprintf(stderr, "No method '%s' %s; ", name, objDesc);
@@ -3853,10 +3924,10 @@ start:
         fprintf(stderr, "  %s", c->methods[i].name);
     }
     fprintf(stderr, "\n");
-//    graceRaise(NoSuchMethodErrorObject, "no method %s in %s %s.", name, self->class->name,
+//    graceRaise(NoSuchMethodError(), "no method %s in %s %s.", name, self->class->name,
 //             grcstring(callmethod(self, "asString", 0, NULL, NULL)));
 //    The above would identify the receiver, but if it fails, we learn less, not more
-    graceRaise(NoSuchMethodErrorObject,
+    graceRaise(NoSuchMethod(),
                "no method '%s' in %s.", name, self->class->name);
     exit(1);
 }
@@ -3897,13 +3968,13 @@ Object callmethodflags(Object receiver, const char *name,
                 sizeof(return_stack[calldepth]));
     }
     if (receiver == undefined) {
-        graceRaise(ProgrammingErrorObject, "method %s requested on uninitialized variable", name);
+        graceRaise(ProgrammingError(), "method %s requested on uninitialized variable", name);
     }
     int n = 0;
     for (i = 0; i < nparts; i++) {
         for (j = 0; j < nparamsv[i]; j++) {
             if (args[n] == undefined)
-                graceRaise(ProgrammingErrorObject, "uninitialized variable used as argument %i to %s.", n+1, name);
+                graceRaise(ProgrammingError(), "uninitialized variable used as argument %i to %s.", n+1, name);
             n++;
         }
     }
@@ -3941,7 +4012,7 @@ Object matchCase(Object matchee, Object *cases, int ncases, Object elsecase) {
     }
     if (elsecase)
         return callmethod(elsecase, "apply", 1, partcv, &matchee);
-    graceRaise(ProgrammingErrorObject, "non-exhaustive match in match()case()….");
+    graceRaise(ProgrammingError(), "non-exhaustive match in match()case()….");
     return done;        // will never happen, but keeps C compiler quiet
 }
 Object tryCatch(Object block, Object *caseList, int ncases,
@@ -4812,76 +4883,6 @@ void gracelib_stats() {
     fprintf(stderr, "CPU time: %f\n", clocks);
     fprintf(stderr, "Elapsed time: %f\n", etime);
 }
-Object ExceptionError() {
-    if (ExceptionErrorObject == NULL) {
-        ExceptionErrorObject = alloc_Exception("Exception", NULL);
-        gc_root(ExceptionErrorObject);
-    }
-    return ExceptionErrorObject;
-}
-Object ProgrammingError() {
-    if (ProgrammingErrorObject == NULL) {
-        ProgrammingErrorObject = alloc_Exception("ProgrammingError", ExceptionError());
-        gc_root(ProgrammingErrorObject);
-    }
-    return ProgrammingErrorObject;
-}
-Object RequestError() {
-    if (RequestErrorObject == NULL) {
-        RequestErrorObject = alloc_Exception("RequestError", ProgrammingError());
-        gc_root(ProgrammingErrorObject);
-    }
-    return RequestErrorObject;
-}
-Object EnvironmentException() {
-    if (EnvironmentExceptionObject == NULL) {
-        EnvironmentExceptionObject = alloc_Exception("EnvironmentException", ProgrammingError());
-        gc_root(ProgrammingErrorObject);
-    }
-    return EnvironmentExceptionObject;
-}
-Object IteratorExhausted() {
-    if (IteratorExhaustedObject == NULL) {
-        IteratorExhaustedObject = alloc_Exception("IteratorExhausted", ProgrammingError());
-        gc_root(ProgrammingErrorObject);
-    }
-    return IteratorExhaustedObject;
-}
-Object NoSuchMethod() {
-    if (NoSuchMethodErrorObject == NULL) {
-        NoSuchMethodErrorObject = alloc_Exception("NoSuchMethod", ProgrammingError());
-        gc_root(NoSuchMethodErrorObject);
-    }
-    return NoSuchMethodErrorObject;
-}
-Object RuntimeError() {
-    if (RuntimeErrorObject == NULL) {
-        RuntimeErrorObject = alloc_Exception("RuntimeError", ProgrammingError());
-        gc_root(RuntimeErrorObject);
-    }
-    return RuntimeErrorObject;
-}
-Object BoundsError() {
-    if (BoundsErrorObject == NULL) {
-        BoundsErrorObject = alloc_Exception("BoundsError", ProgrammingError());
-        gc_root(BoundsErrorObject);
-    }
-    return BoundsErrorObject;
-}
-Object ResourceException() {
-    if (ResourceExceptionObject == NULL) {
-        ResourceExceptionObject = alloc_Exception("ResourceException", ProgrammingError());
-        gc_root(ResourceExceptionObject);
-    }
-    return ResourceExceptionObject;
-}
-Object TypeError() {
-    if (TypeErrorObject == NULL) {
-        TypeErrorObject = alloc_Exception("TypeError", ProgrammingError());
-        gc_root(TypeErrorObject);
-    }
-    return TypeErrorObject;
-}
 void gracelib_argv(char **argv) {
     ARGV = argv;
     if (getenv("GRACE_STACK") != NULL) {
@@ -5080,7 +5081,7 @@ Object grace_while_do(Object self, int nparts, int *argcv,
     if (nparts != 2 || argcv[0] != 1 || argcv[1] != 1)
         graceRaise(RequestError(), "while-do requires exactly two arguments");
     if (argv[0]->class == Boolean || argv[0]->class == Number) {
-        graceRaise(TypeErrorObject, "expected a Block for first (condition) "
+        graceRaise(TypeError(), "expected a Block for first (condition) "
                 "argument of while()do (defined in standardPrelude), got %s",
                 argv[0]->class->name);
     }
