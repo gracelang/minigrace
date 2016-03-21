@@ -1402,24 +1402,7 @@ method compilecall(o, tailcall) {
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
 }
-method compileoctets(o) {
-    var escval := ""
-    var l := o.value.size / 2
-    var i := 0
-    for (o.value) do {c->
-        if ((i % 2) == 0) then {
-            escval := escval ++ "\"\"\\x"
-        }
-        escval := escval ++ c
-        i := i + 1
-    }
-    out("  if (octlit{auto_count} == NULL) \{")
-    out("    octlit{auto_count} = alloc_Octets(\"{escval}\", {l});")
-    out("  \}")
-    globals.push("static Object octlit{auto_count};");
-    o.register := "octlit" ++ auto_count
-    auto_count := auto_count + 1
-}
+
 method compiledialect(o) {
     out("// Dialect \"{o.value}\"")
     var snm := ""

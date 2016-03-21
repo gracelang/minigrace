@@ -256,13 +256,6 @@ method pushnum {
     next
 }
 
-// Push the current token onto the output stack as an octet literal
-method pushoctets {
-    var o := ast.octetsNode.new(sym.value)
-    values.push(o)
-    next
-}
-
 // Push the current token onto the output stack as a string
 method pushstring {
     var o := ast.stringNode.new(sym.value)

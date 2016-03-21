@@ -1116,50 +1116,7 @@ method compilecall(o) {
     o.register := "call" ++ auto_count
     auto_count := auto_count + 1
 }
-method compileoctets(o) {
-    var escval := ""
-    var l := o.value.size / 2
-    var i := 0
-    for (o.value) do {c->
-        if ((i % 2) == 0) then {
-            escval := escval ++ "\\"
-        }
-        escval := escval ++ c
-        i := i + 1
-    }
-    out("%tmp" ++ auto_count ++ " = load %object** @.octlit"
-        ++ auto_count)
-    out("%cmp" ++ auto_count ++ " = icmp ne %object* %tmp"
-        ++ auto_count ++ ", null")
-    out("br i1 %cmp" ++ auto_count ++ ", label %octlit"
-        ++ auto_count ++ ".already, label %octlit"
-        ++ auto_count ++ ".define")
-    beginblock("octlit" ++ auto_count ++ ".already")
-    out("%alreadyoctets" ++ auto_count ++ " = load %object** @.octlit"
-        ++ auto_count)
-    out("br label %octlit" ++ auto_count ++ ".end")
-    beginblock("octlit" ++ auto_count ++ ".define")
-    out("%oct" ++ auto_count ++ " = getelementptr [" ++ l ++ " x i8]* @.oct" ++ constants.size ++ ", i32 0, i32 0")
-    out("%defoctets" ++ auto_count ++ " = call %object* "
-        ++ "@alloc_Octets(i8* "
-          ++ "%oct" ++ auto_count ++ ", i32 " ++ l ++ ")")
-    out("store %object* %defoctets" ++ auto_count ++ ", %object** "
-        ++ "@.octlit" ++ auto_count)
-    out("br label %octlit" ++ auto_count ++ ".end")
-    beginblock("octlit" ++ auto_count ++ ".end")
-    out(" %octets" ++ auto_count ++ " = phi %object* [%alreadyoctets"
-        ++ auto_count ++ ", %octlit" ++ auto_count ++ ".already], "
-        ++ "[%defoctets" ++ auto_count ++ ", %octlit" ++ auto_count
-        ++ ".define]")
-    var con := "@.oct" ++ constants.size ++ " = private unnamed_addr "
-        ++ "constant [" ++ l ++ " x i8] c\"" ++ escval ++ "\""
-    constants.push(con)
-    con := ("@.octlit" ++ auto_count
-        ++ " = private global %object* null")
-    constants.push(con)
-    o.register := "%octets" ++ auto_count
-    auto_count := auto_count + 1
-}
+
 method compiledialect(o) {
     out("// Dialect import of {o.value}")
     var fn := escapestring(o.value)
