@@ -680,7 +680,7 @@ method reportUndeclaredIdentifier(node) {
     var suggestion
     nodeScope.withSurroundingScopesDo { s ->
         s.elements.keysDo { v ->
-            if ((nmSize - v.size).abs <= thresh) then {
+            if ((nmSize - v.size).abs < thresh) then {
                 util.log 100 verbose "matching {nm} to {v} within {thresh}"
                 def matchExtent = errormessages.name (nm) matches (v) within (thresh)
                 if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) &&

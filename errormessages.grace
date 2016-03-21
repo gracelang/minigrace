@@ -278,7 +278,7 @@ def suggestion is public = object {
 }
 
 method name (p:String) matches (t:String) within (k:Number) {
-    // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen: 
+    // This is algorithm EDP from Jokinen, Jorma, Tarhio and Ukkinen:
     // "A comparison of Approximate String Matching Algorithms"
     // Software—Practice and Experience Vol 1(1), January 1988, pp.1–19
     //
@@ -292,12 +292,12 @@ method name (p:String) matches (t:String) within (k:Number) {
     // and any substring of t ending at t[j].   However, it isn't necessary
     // to store the whole table D.  Because D[i,j] depends on only D[i-1, j],
     // D[i-1, j-1] and D[i, j-1], we can store only the current
-    // column, which we do in h, and the value of D[i-1,j-1], which is 
-    // cached in c.  Moreover, since we are not interested in edit 
-    // distances > k, it's only necessary to evalue the elments of the table 
+    // column, which we do in h, and the value of D[i-1,j-1], which is
+    // cached in c.  Moreover, since we are not interested in edit
+    // distances > k, it's only necessary to evalue the elments of the table
     // around the diagonal.
 
-    
+
     def m = p.size
     def n = t.size
     if (k >= m) then { return m }  // trivial case
@@ -306,24 +306,26 @@ method name (p:String) matches (t:String) within (k:Number) {
                        // threshold intersects the current column
     def h = emptyList
     for (0..m) do { i -> h[i+1] := i+1 }
-    for (1..n) do { j ->
-        var c := 0
-        for (1..top) do { i ->
-            def e = if (p[i] == t[j]) then { 
-                c
-            } else {
-                min3(h[i], h[i+1], c) + 1
+    try {
+        for (1..n) do { j ->
+            var c := 0
+            for (1..top) do { i ->
+                def e = if (p[i] == t[j]) then {
+                    c
+                } else {
+                    min3(h[i], h[i+1], c) + 1
+                }
+                c := h[i+1]
+                h[i+1] := e
             }
-            c := h[i+1]
-            h[i+1] := e
+            while { (top >= 0).andAlso {h[top+1] > k'} } do { top := top - 1 }
+            if (top == m) then {
+                return j    // the last character of t that was used in the match
+            } else {
+                top := top + 1
+            }
         }
-        while { h[top+1] > k' } do { top := top - 1 }
-        if (top == m) then { 
-            return j    // the last character of t that was used in the match
-        } else {
-            top := top + 1
-        }
-    }
+    } catch { e:BoundsError -> return 0 }   // if the code is buggy, don't crash
     return 0            // there was no match
 }
 
