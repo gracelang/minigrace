@@ -23,7 +23,7 @@ describe(noParamsMirror)
 print "requests using `request`"
 
 exampleMirror.request [ [ 1 ] ]
-exampleAndMirror.request[ ["a1", "a2"], ["b1"] ]
+exampleAndMirror.request [ ["a1", "a2"], ["b1"] ]
 noParamsMirror.request [ [] ]
 
 print "requests using `requestWithArgs`"
