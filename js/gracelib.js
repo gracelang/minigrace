@@ -3134,11 +3134,10 @@ ellipsis.methods.asString = function ellipsis_asString() {
 };
 
 var ExceptionObject = new GraceException("Exception", false);
-var ErrorObject = new GraceException("Error", ExceptionObject);
 var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
 var EnvironmentExceptionObject = new GraceException("EnvironmentException", ExceptionObject);
 var ResourceExceptionObject = new GraceException("ResourceException", ExceptionObject);
-var RuntimeErrorObject = new GraceException("RuntimeError", ErrorObject);
+var RuntimeErrorObject = new GraceException("RuntimeError", ExceptionObject);
 var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionObject);
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
@@ -3160,9 +3159,6 @@ Grace_prelude.methods['false()object'] = function prelude_false_object (argcv) {
 };
 Grace_prelude.methods['Exception'] = function(argcv) {
     return ExceptionObject;
-};
-Grace_prelude.methods['Error'] = function(argcv) {
-    return ErrorObject;
 };
 Grace_prelude.methods['ProgrammingError'] = function(argcv) {
     return ProgrammingErrorObject;
@@ -3366,7 +3362,6 @@ if (typeof global !== "undefined") {
     global.dbgp = dbgp;
     global.do_import = do_import;
     global.EnvironmentExceptionObject = EnvironmentExceptionObject;
-    global.ErrorObject = ErrorObject;
     global.ExceptionObject = ExceptionObject;
     global.findMethod = findMethod;
     global.getLineNumber = getLineNumber;

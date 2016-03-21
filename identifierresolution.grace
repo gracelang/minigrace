@@ -873,7 +873,6 @@ method setupContext(moduleObject) {
     preludeScope.addName "print"
     preludeScope.addName "native()code"
     preludeScope.addName "Exception" as(k.defdec)
-    preludeScope.addName "Error" as(k.defdec)
     preludeScope.addName "RuntimeError" as(k.defdec)
     preludeScope.addName "NoSuchMethod" as(k.defdec)
     preludeScope.addName "ProgrammingError" as(k.defdec)

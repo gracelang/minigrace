@@ -626,18 +626,16 @@ def aGraceLangTest = object {
                 var x := 1
                 x.nonExistentMethod
             } catch {
-                e : ProgrammingError -> out "OK; Caught an error."
+                e : ProgrammingError -> assert (e.exception) shouldBe (ProgrammingError)
             }
             
             try {
-                Exception.raise "OK"
+                ProgrammingError.raise "OK"
             } catch {
-                e : Error -> out "Failed; caught Exception as Error."
+                e : ProgrammingError -> assert(true)
             } catch {
-                e : Exception -> out "{e.message}; Caught a manual exception."
+                e : Exception -> failBecause "ProgrammingError {e} caught as Exception"
             }
-            
-            assert(str)shouldBe("OK; Caught an error.\nOK; Caught a manual exception.\n")
         }
 
         method test_134_exceptionrefine {
