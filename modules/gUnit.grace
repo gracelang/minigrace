@@ -347,8 +347,8 @@ factory method testRecordFor(testName)message(testMsg) {
 }
 
 def testSuite is public = object {
-    inherits collections.collectionFactory.TRAIT
-    factory method withAll(initialContents) {
+
+    class withAll(initialContents) {
         inherits collections.enumerable.TRAIT
         var name is public := ""
         def tests = list.empty
@@ -417,6 +417,8 @@ def testSuite is public = object {
             }
         }
     }
+    
+    method empty { withAll [] }
     
     method fromTestMethodsIn(aTestClass) {
         def newSuite = self.empty
