@@ -210,9 +210,6 @@ js/ace/ace.js:
 js/collectionsPrelude%js, js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
 
-js/dom.gct: stubs/dom.gct
-	cd js; ln -fs ../stubs/dom.gct .
-
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
 	@awk '!/<!--\[!SH\[/ { print } /<!--\[!SH\[/ { gsub(/<!--\[!SH\[/, "") ; gsub(/\]!\]-->/, "") ; system($$0) }' < $< > $@
@@ -242,12 +239,6 @@ js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrac
 	./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
-
-js/timer.gct: stubs/timer.gct
-	cd js; ln -fs ../stubs/timer.gct .
-
-js/%.gct js/%.js: %.grace ./minigrace
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js $(MGFLAGS) --dir js $<
 
 js: js/index.html js/dom.gct $(COMPILER_MODULES:%.grace=js/%.js) $(LIBRARY_MODULES:%.grace=js/%.js) $(WEBFILES) $(JSSOURCEFILES) minigrace
 	ln -f minigrace js/minigrace
@@ -435,6 +426,9 @@ $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct 
 
 $(STUBS:%.grace=%.gct): %.gct: stubs/%.gct
 	ln -sf $< .
+
+$(STUBS:%.grace=js/%.gct): js/%.gct: stubs/%.gct
+	cd js && ln -sf ../$< .
 
 $(STUBS:%.grace=l1/%.gct): l1/%.gct: stubs/%.gct
 	cd l1 && ln -sf ../$< .
