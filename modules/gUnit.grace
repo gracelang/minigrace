@@ -420,10 +420,10 @@ def testSuite is public = object {
     
     method empty { withAll [] }
     
-    method fromTestMethodsIn(aTestClass) {
+    method fromTestMethodsIn(aTestClass) named (aName) {
         def newSuite = self.empty
         def example = aTestClass.forMethod("null")
-        newSuite.name := className(aTestClass)
+        newSuite.name := aName
         for (mirror.reflect(example).methods) do { each ->
             if (each.name.startsWith "test") then {
                 if (! each.name.endsWith "()object") then {
@@ -435,6 +435,10 @@ def testSuite is public = object {
             }
         }
         newSuite
+    }
+    
+    method fromTestMethodsIn(aTestClass) {
+        fromTestMethodsIn(aTestClass) named (className(aTestClass))
     }
 }
 
