@@ -349,6 +349,7 @@ def primitiveListTest = object {
             assert (s) hasType (Sequence)
             assert (s) shouldBe (sequence [1, 2, 3, 4, 5])
         }
+    }
 }
 
 def listTests = gU.testSuite.fromTestMethodsIn(primitiveListTest)

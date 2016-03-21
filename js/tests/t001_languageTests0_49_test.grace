@@ -625,8 +625,7 @@ def aGraceLangTest = object {
     }
 }
 
-def graceLangTest = gU.testSuite.fromTestMethodsIn(aGraceLangTest)
-def tests = gU.testSuite.with(graceLangTest)
-tests.runAndPrintResults
+def graceLangTest = gU.testSuite.fromTestMethodsIn(aGraceLangTest) named "t001"
+graceLangTest.runAndPrintResults
 
 

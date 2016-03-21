@@ -76,7 +76,7 @@ testSuiteNamed "comment tests" with {
     test "blanks" by {
         def blankNodes = nodes.filter { each -> each.kind == "blank" }
         def blankLineNums = blankNodes.map { each -> each.line }
-        def emptyLineNums = list.empty
+        def emptyLineNums = emptyList
         input.keysAndValuesDo { n, s ->
             if (s == "") then { emptyLineNums.push(n) }
         }

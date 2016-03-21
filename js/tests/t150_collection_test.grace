@@ -1,6 +1,7 @@
 import "gUnit" as gU
 
-class bindingTest.forMethod(m) {
+def bindingTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         method testStringification {
@@ -23,10 +24,11 @@ class bindingTest.forMethod(m) {
             assert (b.key) shouldBe "one"
             assert (b.value) shouldBe 1
         }
-
+    }
 }
 
-class rangeTest.forMethod(m) {
+def rangeTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         def rangeUp = range.from 3 to 6
@@ -263,10 +265,11 @@ class rangeTest.forMethod(m) {
             assert(rangeDown.asDictionary) shouldBe
                 (dictionary [1::10, 2::9, 3::8, 4::7])
         }
-
+    }
 }
 
-class sequenceTest.forMethod(m) {
+def sequenceTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         var oneToFive
@@ -556,14 +559,24 @@ class sequenceTest.forMethod(m) {
             assert(evens.asDictionary) shouldBe
                 (dictionary [1::2, 2::4, 3::6, 4::8])
         }
-        method lazyConcat {
+        method testSequenceLazyConcat {
             def s1 = oneToFive.filter{x -> (x % 2) == 1}
             def s2 = evens.filter{x -> true}
             assert(s1 ++ s2) shouldBe (sequence [1, 3, 5, 2, 4, 6, 8])
         }
+        method testSequenceExplicitLazyConcat {
+            def oneToFour = sequence (collections.lazyConcatenation([1,2], [3,4]))
+            assert (oneToFour) shouldBe (1..4)
+        }
+        method testSequenceMultipleConcat {
+            def oneToTwelve = sequence ((1..2) ++ (3..4) ++ (5..8) ++ (9..12))
+            assert (oneToTwelve) shouldBe (1..12)
+        }
+    }
 }
 
-class listTest.forMethod(m) {
+def listTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         var oneToFive
@@ -680,7 +693,7 @@ class listTest.forMethod(m) {
         }
 
         method testListAtPutExtend {
-            assert (empty.at 1 put 99) shouldBe (list.with 99)
+            assert (empty.at 1 put 99) shouldBe (list [99])
             oneToFive.at(6) put 6
             assert (oneToFive.at 6) shouldBe 6
             oneToFive.at(7) put 7
@@ -1014,9 +1027,11 @@ class listTest.forMethod(m) {
           input.removeAt(1)
           assert {iter4.next} shouldRaise (ConcurrentModification)
         }
+    }
 }
 
-class setTest.forMethod(m) {
+def setTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         var oneToFive
@@ -1237,9 +1252,11 @@ class setTest.forMethod(m) {
             input.remove(2)
             assert {iter3.next} shouldRaise (ConcurrentModification)
         }
+    }
 }
 
-class dictionaryTest.forMethod(m) {
+def dictionaryTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
 
         var oneToFive
@@ -1321,8 +1338,8 @@ class dictionaryTest.forMethod(m) {
             assert(oneToFive != evens)
         }
         method testDictionaryEqualityFive {
-            assert(oneToFive == dictionary.with("one"::1, "two"::2, "three"::3,
-                "four"::4, "five"::5))
+            assert(oneToFive == dictionary ["one"::1, "two"::2, "three"::3,
+                "four"::4, "five"::5])
         }
         method testDictionaryKeysAndValuesDo {
             def accum = emptyDictionary
@@ -1372,7 +1389,7 @@ class dictionaryTest.forMethod(m) {
         }
         method testDictionaryRemoveMultiple {
             evens.removeValue 4 .removeValue 6 .removeValue 8
-            assert (evens) shouldBe (dictionary.at "two" put 2)
+            assert (evens) shouldBe (emptyDictionary.at "two" put 2)
         }
         method testDictionaryRemove5 {
             assert {evens.removeKey 5} shouldRaise (NoSuchObject)
@@ -1504,11 +1521,11 @@ class dictionaryTest.forMethod(m) {
         }
         method testDictionaryValuesSingle {
             assert(dictionary ["one"::1].values) shouldBe
-                (sequence.with 1)
+                (sequence [1])
         }
         method testDictionaryKeysSingle {
             assert(dictionary ["one"::1].keys) shouldBe
-                (sequence.with "one")
+                (sequence ["one"])
         }
         method testDictionaryBindingsEvens {
             assert(evens.bindings.asSet) shouldBe
@@ -1567,9 +1584,11 @@ class dictionaryTest.forMethod(m) {
             input.removeKey("four")
             assert {iter4.next} shouldRaise (ConcurrentModification)
         }
+    }
 }
 
-class lazyEnumTest.forMethod(m) {
+def lazyEnumTest = object {
+    class forMethod(m) {
         inherits gU.testCaseNamed(m)
         def oneToFive = (1..5).filter{ x -> true }
         def empty = (1..5).filter{ x -> false }
@@ -1596,6 +1615,7 @@ class lazyEnumTest.forMethod(m) {
             o25List.addFirst 0
             assert {o25Iter.next} shouldRaise (ConcurrentModification)
         }
+    }
 }
 
 
