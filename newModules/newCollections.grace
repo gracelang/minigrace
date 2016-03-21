@@ -61,7 +61,6 @@ type Enumerable<T> = Collection<T> & type {
     values -> Collection<T>
     asDictionary -> Dictionary<Number,T>
     keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
-    onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
     into(existing: Expandable<Unknown>) -> Collection<Unknown>
     sortedBy(comparison:Block2<T,T,Number>) -> SelfType
     sorted -> SelfType
@@ -124,7 +123,6 @@ type Set<T> = Collection<T> & type {
     ++ (other:Set<T>) -> Set<T>
     removeAll(elems: Iterable<T>)
     removeAll(elems: Iterable<T>)ifAbsent(action:Block0<Done>) -> Set<T>
-    onto(resultFactory:EmptyCollectionFactory<T>) -> Collection<T>
     into(existing: Expandable<Unknown>) -> Collection<Unknown>
 }
 
@@ -158,16 +156,6 @@ type Dictionary<K,T> = Collection<T> & type {
 type Iterator<T> = type {
     hasNext -> Boolean
     next -> T
-}
-
-type CollectionFactory<T> = type {
-    withAll (elts: Iterable<T>) -> Collection<T>
-    with (*elts:Object) -> Collection<T>
-    empty -> Collection<T>
-}
-
-type EmptyCollectionFactory<T> = type {
-    empty -> Collection<T>
 }
 
 trait collectionFactory<T> {
@@ -326,9 +314,6 @@ trait enumerable<T> {
         }
         return result
     }
-    method onto(f: CollectionFactory<T>) -> Collection<T> {
-        f.withAll(self)
-    }
     method into(existing: Expandable<T>) -> Collection<T> {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
@@ -416,9 +401,6 @@ trait indexable<T> {
             result.at(k) put(v)
         }
         return result
-    }
-    method onto(f: CollectionFactory<T>) -> Collection<T> {
-        f.withAll(self)
     }
     method into(existing: Expandable<T>) -> Collection<T> {
         def selfIterator = self.iterator
@@ -1436,9 +1418,6 @@ class set<T> {
                     if (self.contains(each).not) then { return false }
                 }
                 return true
-            }
-            method onto(f: CollectionFactory<T>) -> Collection<T> {
-                f.withAll(self)
             }
             method into(existing: Expandable<T>) -> Collection<T> {
                 do { each -> existing.add(each) }
