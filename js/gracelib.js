@@ -948,6 +948,14 @@ PrimitiveGraceList.prototype = {
                                                         this._value.length));
             return result;
         },
+        "removeLast": function(argcv) {
+            var result = this._value.pop();
+            if (result === undefined)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString("'removeLast' requested on list with size " +
+                                                        this._value.length));
+            return this;
+        },
         "at": prim_list_index,
         "first": function list_first(argcv) {
             if (this._value.length < 1)
