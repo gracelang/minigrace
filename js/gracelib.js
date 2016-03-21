@@ -1154,14 +1154,14 @@ PrimitiveGraceList.prototype = {
             var l = this._value.concat(other._value);
             return new PrimitiveGraceList(l);
         },
-        "asSet": function list_asSet(argcv, self) {
-            var collSet = callmethod(var___95__prelude, "set", [1], self);
+        "asSet": function list_asSet(argcv) {
+            return callmethod(var___95__prelude, "set", [1], this);
         },
-        "asList": function list_asSet(argcv, self) {
-            var collSet = callmethod(var___95__prelude, "list", [1], self);
+        "asList": function list_asSet(argcv) {
+            return callmethod(var___95__prelude, "list", [1], this);
         },
-        "asSequence": function list_asSet(argcv, self) {
-            var collSeq = callmethod(var___95__prelude, "sequence", [1], self);
+        "asSequence": function list_asSet(argcv) {
+            return callmethod(var___95__prelude, "sequence", [1], this);
         }
     },
     className: "builtinList",
