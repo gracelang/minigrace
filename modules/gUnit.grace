@@ -252,8 +252,8 @@ factory method testCaseNamed(name') -> TestCase {
 
 
 factory method testResult {
-    var failSet := set.empty
-    var errorSet := set.empty
+    var failSet := emptySet
+    var errorSet := emptySet
     var runCount := 0
     var currentCountOfAssertions := 0
 
@@ -351,7 +351,7 @@ def testSuite is public = object {
     class withAll(initialContents) {
         inherits collections.enumerable.TRAIT
         var name is public := ""
-        def tests = list.empty
+        def tests = emptyList
         for (initialContents) do { each -> self.add(each) }
                 
         method add(e) { tests.push(e) }
