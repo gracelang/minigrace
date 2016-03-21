@@ -992,8 +992,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitDefDec (o) up (as) {
             o.scope := as.parent.scope
             if (false != o.startToken) then {
-                as.parent.scope.elementTokens.put(o.name.nameString, o.startToken)
+                as.parent.scope.elementTokens.put(o.nameString, o.startToken)
             }
+            if (o.value.isObject) then { o.value.name := o.nameString }
             true
         }
         method visitIdentifier (o) up (as) {
