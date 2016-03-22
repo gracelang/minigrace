@@ -190,8 +190,6 @@ gracelib-basic.o: gracelib.c gracelib.h
 gracelib.o: gracelib-basic.o debugger.o StandardPrelude.gcn collectionsPrelude.gcn
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn collectionsPrelude.gcn debugger.o
 
-modules/gUnit.gso: modules/mirrors.gso modules/math.gso
-
 install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(STUB_GCTS) $(STUBS:%.grace=js/%.gct) js/grace $(LIBRARY_MODULES:%.grace=modules/%.gct)  $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) gracelib.o
 	install -d $(PREFIX)/bin $(MODULE_PATH) $(OBJECT_PATH) $(INCLUDE_PATH)
 	install -m 755 minigrace $(PREFIX)/bin/minigrace
@@ -207,8 +205,10 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
-js/collectionsPrelude%js, js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
-	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
+js/collectionsPrelude.gct: js/collectionsPrelude.js
+
+js/collectionsPrelude.js: collectionsPrelude.grace minigrace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
 	@echo Generating index.html from index.in.html...
@@ -235,8 +235,10 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
-	./minigrace --target js --dir js --make $(VERBOSITY) $<
+js/StandardPrelude.gct: js/StandardPrelude.js
+
+js/StandardPrelude.js: StandardPrelude.grace js/collectionsPrelude.gct minigrace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
 
@@ -301,6 +303,8 @@ $(MGSOURCEFILES:%.grace=l1/%.gct): l1/%.gct: %.grace l1/StandardPrelude.gct $(KG
 	GRACE_MODULE_PATH=modules/: $(KG)/minigrace  $(VERBOSITY) --make --noexec --dir l1 $<
 
 $(MGSOURCEFILES:%.grace=%.gct) $(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
+
+$(MGSOURCEFILES:%.grace=%.gcn): $(MGSOURCEFILES:%.grace=%.gso)
 
 $(MGSOURCEFILES:%.grace=%.gso): %.gso: %.grace StandardPrelude.gct l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec $<
