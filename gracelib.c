@@ -605,7 +605,7 @@ Object identity_function(Object receiver, int nparts, int *argcv,
 Object Object_asString(Object receiver, int nparts, int *argcv,
         Object* params, int flags) {
     char buf[255];
-    sprintf(buf, "%s[0x%p]", receiver->class->name, receiver);
+    sprintf(buf, "a %s", receiver->class->name);
     return alloc_String(buf);
 }
 Object Object_asDebugString(Object receiver, int nparts, int *argcv,
