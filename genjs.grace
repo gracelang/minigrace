@@ -360,7 +360,7 @@ method compileblock(o) {
         out "block{myc}.pattern = {pat};"
     }
     var paramList := ""
-    var paramTypes := emptyList
+    var paramTypes :=  [ ]
     var paramsAreTyped := false
     var first := true
     for (o.params) do { each ->
@@ -423,8 +423,8 @@ method compiletypeliteral(o) {
 method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
-    def paramCounts = emptyList
-    def variableArities = emptyList
+    def paramCounts =  [ ]
+    def variableArities =  [ ]
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)
@@ -616,8 +616,8 @@ method compilemethod(o, selfobj) {
     }
 }
 method compilefreshmethod(o, selfobj) {
-    def paramCounts = emptyList
-    def variableArities = emptyList
+    def paramCounts =  [ ]
+    def variableArities =  [ ]
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
         variableArities.push(part.vararg != false)

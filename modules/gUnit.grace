@@ -351,7 +351,7 @@ def testSuite is public = object {
     class withAll(initialContents) {
         inherits collections.enumerable.TRAIT
         var name is public := ""
-        def tests = emptyList
+        def tests = [ ]
         for (initialContents) do { each -> self.add(each) }
                 
         method add(e) { tests.push(e) }

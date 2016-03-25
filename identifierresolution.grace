@@ -321,7 +321,7 @@ factory method newScopeIn(parent') kind(variety') {
             }
         }
         if (newKind == k.vardec) then {
-            def suggs = emptyList
+            def suggs = [ ]
             def sugg = errormessages.suggestion.new
             if (sugg.replaceUntil("=")with("{name} :=")
                     onLine(ident.line)
@@ -461,7 +461,7 @@ method rewritematchblockterm(arg) {
 method rewritematchblock(blk) {
     def arg = blk.params[1]
     var pattern := false
-    var newparams := emptyList
+    var newparams := [ ]
     for (blk.params) do { p ->
         newparams.push(p)
     }

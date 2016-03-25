@@ -15,7 +15,7 @@ import "identifierKinds" as k
 def lineLength is public = 80
 
 method listMap(l, b) ancestors(as) is confidential {
-    def newList = emptyList
+    def newList = [ ]
     l.do { nd -> newList.addLast(nd.map(b) ancestors(as)) }
     newList
 }
@@ -734,7 +734,7 @@ def typeDecNode is public = object {
     var name is public := name'
     var value is public := typeValue
     def nameString:String is public = name.value
-    var annotations is public := emptyList
+    var annotations is public := [ ]
     var typeParams is public := false
 
     method isLegalInTrait { true }
@@ -836,7 +836,7 @@ def methodNode = object {
         var typeParams is public := false
         var selfclosure is public := false
         def nameString:String is public = value.value
-        var annotations is public := emptyList
+        var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var usesClassSyntax is public := false
 
@@ -1192,7 +1192,7 @@ def moduleNode = object {
         def kind is public = "module"
         line := 0       // because the module is always implicit
         linePos := 0
-        var imports is public := emptyList
+        var imports is public := [ ]
 
         method isModule { true }
         method returnsObject { false }
@@ -1237,12 +1237,12 @@ def objectNode is public = object {
         def kind is public = "object"
         var value is public := b
         var superclass is public := superclass'
-        var usedTraits is public := emptyList
+        var usedTraits is public := [ ]
         var name:String is public := "object"
         var inClass is public := false
         var inTrait is public := false
         var myLocalNames := false
-        var annotations is public := emptyList
+        var annotations is public := [ ]
         
         method description -> String { 
             if (isTrait) then { 
@@ -1984,7 +1984,7 @@ def defDecNode = object {
         var value is public := val
         var dtype is public := dtype'
         def nameString:String is public = name.nameString
-        var annotations is public := emptyList
+        var annotations is public := [ ]
         var startToken is public := false
 
         method isPublic {
@@ -2095,7 +2095,7 @@ def varDecNode is public = object {
     var value is public := val'
     var dtype is public := dtype'
     def nameString:String is public = name.value
-    var annotations is public := emptyList
+    var annotations is public := [ ]
 
     method isPublic {
         // vars are confidential by default
@@ -2201,7 +2201,7 @@ def importNode is public = object {
     def kind is public = "import"
     var value is public := name'
     var path is public := path'
-    var annotations is public := emptyList
+    var annotations is public := [ ]
     var dtype is public := dtype'
     method isImport { true }
     method isExternal { true }
@@ -2366,8 +2366,8 @@ def inheritsNode = object {
         def kind is public = "inherits"
         var value is public := expr
         var providedNames is public := emptySet
-        var aliases is public := emptyList
-        var exclusions is public := emptyList
+        var aliases is public := [ ]
+        var exclusions is public := [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherits
         
         method isLegalInTrait { isUse }

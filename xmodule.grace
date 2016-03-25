@@ -345,7 +345,7 @@ method parseGCT(moduleName) sourceDir(dir) is confidential {
         if (line.size > 0) then {
             if (line.at(1) != " ") then {
                 key := line.substringFrom 1 to(line.size-1)
-                gctData.at(key) put(emptyList)
+                gctData.at(key) put [ ]
             } else {
                 gctData.at(key).addLast(line.substringFrom 2 to(line.size))
             }
@@ -383,7 +383,7 @@ method gctAsString(gctDict) {
     return ret
 }
 
-var methodtypes := emptyList
+var methodtypes := [ ]
 def typeVisitor = object {
     inherits ast.baseVisitor
     var literalCount := 1
@@ -493,7 +493,7 @@ method buildGctFor(module) {
             if (v.isPublic) then {
                 meths.push(v.nameString)
                 types.push(v.name.value)
-                methodtypes := emptyList
+                methodtypes := [ ]
                 v.accept(typeVisitor)
                 var typename := v.name.toGrace(0)
                 if (v.typeParams != false) then {
@@ -512,7 +512,7 @@ method buildGctFor(module) {
             }
             if (v.returnsObject) then {
                 def ob = v.value
-                def obConstructors = emptyList
+                def obConstructors = [ ]
                 for (ob.value) do {nd->
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
@@ -548,7 +548,7 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
     // TODO: doesn't this just duplicate what's in 'classes' ?
-    def freshmeths = emptyList
+    def freshmeths = [ ]
     for (moduleObject.value) do { val->
         if (val.isClass) then {
             addFreshMethod (val) to (freshmeths) for (gct)
