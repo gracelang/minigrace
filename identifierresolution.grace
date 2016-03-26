@@ -1,4 +1,3 @@
-#pragma DefaultVisibility=public
 import "io" as io
 import "sys" as sys
 import "ast" as ast
@@ -31,15 +30,15 @@ def keyOrdering = { a, b -> a.key.compare(b.key) }
 type DeclKind = k.T
 
 factory method newScopeIn(parent') kind(variety') {
-    def elements = map.new
-    def elementScopes = map.new
-    def elementLines = map.new
-    def elementTokens = map.new
-    def parent = parent'
-    var hasParent := true
-    def variety = variety'
-    var node := ast.nullNode        // the outermost ast node that I'm in
-    var inheritedNames := undiscovered
+    def elements is public = map.new
+    def elementScopes is public = map.new
+    def elementLines is public = map.new
+    def elementTokens is public = map.new
+    def parent is public = parent'
+    var hasParent is public := true
+    def variety is public = variety'
+    var node is public := ast.nullNode      // the outermost ast node that I'm in
+    var inheritedNames is public := undiscovered
     stSerial := stSerial + 1
     def serialNumber is public = stSerial
     def hash is public = serialNumber.hash

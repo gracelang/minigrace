@@ -1,4 +1,3 @@
-#pragma DefaultVisibility=public
 import "io" as io
 import "sys" as sys
 import "util" as util

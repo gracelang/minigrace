@@ -1,4 +1,3 @@
-#pragma DefaultVisibility=public
 import "ast" as ast
 import "errormessages" as errormessages
 import "io" as io
