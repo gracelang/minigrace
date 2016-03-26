@@ -893,6 +893,14 @@ PrimitiveGraceList.prototype = {
             this._value.unshift(val);
             return this;
         },
+        "addAll": function(argcv, other) {
+            var iter = callmethod(other, "iterator", [0]);
+            while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
+                var val = callmethod(iter, "next", [0]);
+                this._value.push(val);
+            }
+            return this;
+        },
         "addLast": function(argcv, val) {
             this._value.push(val);
             return this;
@@ -1078,13 +1086,6 @@ PrimitiveGraceList.prototype = {
         "/=": function(argcv, other) {
             var t = callmethod(this, "==", [1], other);
             return callmethod(t, "not", [0]);
-        },
-        "prepended": function(argcv, item) {
-            var self = this._value;
-            var l = [item];
-            for (var i=0; i<self.length; i++)
-                l.push(self[i]);
-            return new PrimitiveGraceList(l);
         },
         "iterator": function(argcv) {
             return new GraceListIterator(this._value);

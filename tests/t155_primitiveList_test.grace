@@ -349,6 +349,17 @@ def primitiveListTest = object {
             assert (s) hasType (Sequence)
             assert (s) shouldBe (sequence [1, 2, 3, 4, 5])
         }
+        method testAddAll {
+            assert (evens.addAll(oneToFive)) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+            assert (evens) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+        }
+        method testAddFirst {
+            def l = [ 5 ]
+            assert (l.addFirst 4) shouldBe [4, 5]
+            assert (l.addFirst 3) shouldBe [3, 4, 5]
+            assert (l.addFirst 2) shouldBe [2, 3, 4, 5]
+            assert (l.addFirst 1) shouldBe [1, 2, 3, 4, 5]
+        }
     }
 }
 

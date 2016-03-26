@@ -141,11 +141,16 @@ def primitiveListTest = object {
             assert (empty.add(9)) shouldBe [9]
             assert (evens.add(10)) shouldBe [2, 4, 6, 8, 10]
         }
-        method testListAddFirst {
-            assert (evens.addFirst(0)) shouldBe [0, 2, 4, 6, 8]
-            assert (evens.size) shouldBe (5)
-            assert (evens.first) shouldBe (0)
-            assert (evens.second) shouldBe (2)
+        method testAddAll {
+            assert (evens.addAll(oneToFive)) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+            assert (evens) shouldBe [2, 4, 6, 8, 1, 2, 3, 4, 5]
+        }
+        method testAddFirst {
+            def l = [ 5 ]
+            assert (l.addFirst 4) shouldBe [4, 5]
+            assert (l.addFirst 3) shouldBe [3, 4, 5]
+            assert (l.addFirst 2) shouldBe [2, 3, 4, 5]
+            assert (l.addFirst 1) shouldBe [1, 2, 3, 4, 5]
         }
         method testListRemoveFirst {
             def removed = oneToFive.removeFirst

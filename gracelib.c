@@ -1173,6 +1173,19 @@ Object BuiltinList_push(Object self, int nparts, int *argcv,
     sself->size++;
     return self;
 }
+
+Object BuiltinList_addAll(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    int i;
+    int partcv[] = {1};
+    Object iter = callmethod(args[0], "iterator", 0, NULL, NULL);
+    gc_frame_newslot(iter);
+    while (istrue(callmethod(iter, "hasNext", 0, NULL, NULL))) {
+        Object val = callmethod(iter, "next", 0, NULL, NULL);
+        BuiltinList_push(self, 1, partcv, &val, 0);
+    }
+    return self;
+}
 Object BuiltinList_indexAssign(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1430,17 +1443,18 @@ Object BuiltinList_last(Object self, int nparts, int *argcv,
         graceRaise(BoundsError(), "empty list has no last element");
     return sself->items[sself->size-1];
 }
-Object BuiltinList_prepended(Object self, int nparts, int *argcv,
+Object BuiltinList_addFirst(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
-    int i;
-    Object nl = alloc_BuiltinList();
     int partcv[] = {1};
-    callmethod(nl, "push", 1, partcv, args);
-    for (i = 0; i < sself->size; i++) {
-        BuiltinList_push(nl, 1, partcv, sself->items + i, 0);
+    BuiltinList_push(self, 1, partcv, args, 0);
+        // make room for new element by putting it at end
+    int i;
+    for (i = sself->size-1; i > 0; i--) {
+        sself->items[i] = sself->items[i-1];
     }
-    return nl;
+    sself->items[0] = args[0];
+    return self;
 }
 Object BuiltinList_concat(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -1521,9 +1535,9 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "push", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
         add_Method(BuiltinList, "add", &BuiltinList_push);
+        add_Method(BuiltinList, "addAll", &BuiltinList_addAll);
         add_Method(BuiltinList, "addLast", &BuiltinList_push);
         add_Method(BuiltinList, "removeLast", &BuiltinList_pop);
-        add_Method(BuiltinList, "length", &BuiltinList_length);
         add_Method(BuiltinList, "size", &BuiltinList_length);
         add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
@@ -1539,7 +1553,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "fourth", &BuiltinList_fourth);
         add_Method(BuiltinList, "fifth", &BuiltinList_fifth);
         add_Method(BuiltinList, "last", &BuiltinList_last);
-        add_Method(BuiltinList, "prepended", &BuiltinList_prepended);
+        add_Method(BuiltinList, "addFirst", &BuiltinList_addFirst);
         add_Method(BuiltinList, "++", &BuiltinList_concat);
         add_Method(BuiltinList, "reduce", &BuiltinList_reduce);
         add_Method(BuiltinList, "map", &BuiltinList_map);
