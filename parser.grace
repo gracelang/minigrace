@@ -17,9 +17,6 @@ var auto_count := 0
 def noBlocks = false
 def blocksOK = true
 var braceIsType := false
-var defaultDefVisibility := "confidential"
-var defaultVarVisibility := "confidential"
-var defaultMethodVisibility := "public"
 
 // sym is a module-level field containing the current token
 var sym := object {
@@ -277,22 +274,6 @@ method pushidentifier {
     next
 }
 
-method adjustVisibilityOf(node) withSpecialDefault(sd) overriding(nd) {
-    // If a compiler directive has set a special default visibility, then
-    // translate this into an annotation.  The normal defaults are dealt with
-    // by methods on the ast nodes.
-    if (sd == nd) then { return done }
-    for (node.annotations) do {a->
-        if (a.kind == "identifier") then
-        {   if (a.value == "public") then { return done }
-            if (a.value == "readable") then { return done }
-            if (a.value == "confidential") then { return done }
-            if (a.value == "writable") then { return done }
-        }
-    }
-    def newAnn = ast.identifierNode.new(sd, false)
-    node.annotations.push(newAnn)
-}
 method checkAnnotation(ann) {
     if (ann.kind == "call") then {
         for (ann.with) do {p->
@@ -2162,7 +2143,6 @@ method defdec {
         util.setPosition(defTok.line, defTok.linePos)
         var o := ast.defDecNode.new(name, val, dtype)
         if (anns != false) then { o.annotations.addAll(anns) }
-        adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         o.startToken := defTok
         values.push(o)
         reconcileComments
@@ -2233,7 +2213,6 @@ method vardec {
         util.setPosition(line, pos)
         def o = ast.varDecNode.new(name, val, dtype)
         if (anns != false) then { o.annotations.addAll(anns) }
-        adjustVisibilityOf(o) withSpecialDefault(defaultVarVisibility) overriding("confidential")
         values.push(o)
         reconcileComments
     }
@@ -3041,7 +3020,6 @@ method doimport {
         def o = ast.importNode.new(p.value, name, dtype)
         def anns = doannotation
         if (anns != false) then { o.annotations.addAll(anns) }
-        adjustVisibilityOf(o) withSpecialDefault(defaultDefVisibility) overriding("confidential")
         values.push(o)
         reconcileComments
     }
@@ -3510,18 +3488,8 @@ method parse(toks) {
     util.log_verbose "parsing."
     moduleObject := ast.moduleNode.body(values) named (util.modname)
 
-    if (util.extensions.contains("DefaultVisibility")) then {
-        defaultDefVisibility := util.extensions.get("DefaultVisibility")
-        defaultVarVisibility := util.extensions.get("DefaultVisibility")
-    }
-    if (util.extensions.contains("DefaultDefVisibility")) then {
-        defaultDefVisibility := util.extensions.get("DefaultDefVisibility")
-    }
-    if (util.extensions.contains("DefaultVarVisibility")) then {
-        defaultVarVisibility := util.extensions.get("DefaultVarVisibility")
-    }
     if (toks.size == 0) then {
-        return [ ]
+        return moduleObject
     }
     tokens := toks
     next
