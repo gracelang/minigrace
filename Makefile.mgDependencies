@@ -12,20 +12,6 @@ l1/symbolTable.gct: l1/ast.gct l1/errormessages.gct
 l1/util.gct: l1/io.gct l1/sys.gct l1/stringMap.gct l1/unixFilePath.gct
 l1/xmodule.gct: l1/io.gct l1/sys.gct l1/util.gct l1/ast.gct l1/mirrors.gct l1/mirrors.gso l1/errormessages.gct l1/unixFilePath.gct
 
-l2/StandardPrelude.gct: l2/collectionsPrelude.gct
-l2/ast.gct: l2/util.gct l2/identifierKinds.gct
-l2/errormessages.gct: l2/io.gct l2/sys.gct l2/util.gct
-l2/gUnit.gct: l2/mirrors.gct modules/mirrors.gso
-l2/genc.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/stringMap.gct l2/xmodule.gct l2/mirrors.gct  modules/mirrors.gso l2/errormessages.gct l2/stringMap.gct
-l2/genjs.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/xmodule.gct l2/mirrors.gct modules/mirrors.gso l2/errormessages.gct
-l2/identifierresolution.gct: l2/io.gct l2/sys.gct l2/ast.gct l2/util.gct l2/xmodule.gct l2/stringMap.gct l2/mirrors.gct mirrors.gso l2/errormessages.gct l2/identifierKinds.gct
-l2/lexer.gct: l2/util.gct l2/unicode.gso l2/unicode.gct l2/errormessages.gct
-l2/minigrace: l2/io.gct l2/sys.gct l2/unicode.gct l2/util.gct l2/lexer.gct l2/ast.gct l2/parser.gct l2/genc.gct l2/genjs.gct l2/buildinfo.gct l2/identifierresolution.gct l2/mirrors.gct l2/mirrors.gso
-l2/parser.gct: l2/io.gct l2/ast.gct l2/util.gct l2/errormessages.gct
-l2/symbolTable.gct: l2/ast.gct l2/errormessages.gct
-l2/util.gct: l2/io.gct l2/sys.gct l2/stringMap.gct modules/unixFilePath.gct
-l2/xmodule.gct: l2/io.gct l2/sys.gct l2/util.gct l2/ast.gct l2/mirrors.gct modules/mirrors.gso l2/errormessages.gct l2/unixFilePath.gct
-
 # had to remove all: js/unicode.js js/io.js js/sys.js js/mirrors.js and js/minigrace/compiler.js/ !
 ## TODO: add --js to make-depend that does the above!
 js/StandardPrelude.gct: js/collectionsPrelude.gct
@@ -45,12 +31,12 @@ StandardPrelude.gct: collectionsPrelude.gct
 ast.gct: util.gct identifierKinds.gct
 errormessages.gct: io.gct sys.gct util.gct
 modules/gUnit.gct: modules/mirrors.gct  modules/mirrors.gso modules/math.gct modules/math.gcn
-genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct modules/mirrors.gso errormessages.gct
-genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct modules/mirrors.gso errormessages.gct
-identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct modules/mirrors.gso errormessages.gct  identifierKinds.gct
+genc.gct: io.gct sys.gct ast.gct util.gct stringMap.gct xmodule.gct l1/mirrors.gso errormessages.gct
+genjs.gct: io.gct sys.gct ast.gct util.gct xmodule.gct l1/mirrors.gso errormessages.gct
+identifierresolution.gct: io.gct sys.gct ast.gct util.gct xmodule.gct stringMap.gct l1/mirrors.gso errormessages.gct  identifierKinds.gct
 lexer.gct: util.gct unicode.gso unicode.gct errormessages.gct
-minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct modules/mirrors.gso
+minigrace: io.gct sys.gct unicode.gct util.gct lexer.gct ast.gct parser.gct genc.gct genjs.gct buildinfo.gct identifierresolution.gct l1/mirrors.gso
 parser.gct: io.gct ast.gct util.gct errormessages.gct
 symbolTable.gct: ast.gct errormessages.gct
-util.gct: io.gct sys.gct stringMap.gct modules/unixFilePath.gct
-xmodule.gct: io.gct sys.gct util.gct ast.gct modules/mirrors.gso modules/unixFilePath.gso errormessages.gct
+util.gct: io.gct sys.gct stringMap.gct l1/unixFilePath.gct
+xmodule.gct: io.gct sys.gct util.gct ast.gct l1/mirrors.gso l1/unixFilePath.gso errormessages.gct

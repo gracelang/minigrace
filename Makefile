@@ -130,8 +130,8 @@ then l1/minigrace --dir js --target js --verbose ast.grace ; fi
 # collectionsPrelude%gct collectionsPrelude%gcn: collectionsPrelude.grace l1/minigrace
 #	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-collectionsPrelude.gct: collectionsPrelude.grace minigrace
-	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
+	GRACE_MODULE_PATH=".:modules:js" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
@@ -266,6 +266,8 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 # The following 2 rules ought to be pattern rules, to get the "sumiltaneous build"
 # behaviour, but that seems to induce fake curcular dependencies.
 
+l1/%.gct: l1/%.gso
+
 l1/StandardPrelude.gct l1/StandardPrelude.gcn: StandardPrelude.grace l1/collectionsPrelude.gct l1/collectionsPrelude.gcn $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
@@ -275,7 +277,7 @@ l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: collectionsPrelude.grace $(
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
-l1/unicode.gso: unicode.c unicodedata.h gracelib.h
+l1/unicode%gso: unicode.c unicodedata.h gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 l1/unixFilePath.gct: modules/unixFilePath.grace $(KG)/minigrace
@@ -285,6 +287,9 @@ $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 	cd modules && ln -sf ../$< .
 
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
+
+$(LIBRARY_MODULES:%.grace=%.gct): %.gct: modules/%.grace l1/minigrace
+	l1/minigrace  $(VERBOSITY) --make --dir . --noexec $<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
@@ -321,8 +326,8 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) gracelib.o modules/mirrors.gct modules/unicode.gct modules/unixFilePath.gct
-	l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
+minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) gracelib.o l1/mirrors.gct l1/unicode.gct l1/unixFilePath.gct
+	GRACE_MODULE_PATH=l1 l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
 
@@ -414,8 +419,8 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
-StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct minigrace
-	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
+	GRACE_MODULE_PATH=".:modules:js" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
