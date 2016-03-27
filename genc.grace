@@ -39,6 +39,7 @@ var bottomOutput := output
 var compilationDepth := 0
 def topLevelTypes = map.new
 def imports = util.requiredModules
+var bracketConstructor := "alloc_Lineup()"
 
 method out(s) {
     output.push(s)
@@ -155,14 +156,14 @@ method compilearray(o) {
     var myc := auto_count
     auto_count := auto_count + 1
     var r
-    out("  Object array" ++ myc ++ " = alloc_BuiltinList();")
-    out("  gc_pause();")
+    out "  Object array{myc} = {bracketConstructor};"
+    out "  gc_pause();"
     var i := 0
     for (o.value) do {a ->
         r := compilenode(a)
         out("  params[0] = {r};")
         out("  partcv[0] = 1;")
-        out("  callmethod(array{myc}, \"push\", 1, partcv, params);")
+        out("  callmethodflags(array{myc}, \"push\", 1, partcv, params, CFLAG_SELF);")
         i := i + 1
     }
     out("  gc_unpause();")
@@ -622,9 +623,9 @@ method compilemethod(o, selfobj, pos) {
         }
         if (part.vararg != false) then { // part has vararg
             var van := escapeident(part.vararg.value)
-            out("  Object var_init_{van} = alloc_BuiltinList();")
+            out("  Object var_init_{van} = {bracketConstructor};")
             out("  for (i = {part.params.size}; i < argcv[{partnr - 1}]; i++) \{")
-            out("    callmethod(var_init_{van}, \"push\", 1, pushcv, &args[curarg]);")
+            out("    callmethodflags(var_init_{van}, \"push\", 1, pushcv, &args[curarg], CFLAG_SELF);")
             out("    curarg++;")
             out("  \}")
             out("  Object *var_{van} = &(stackframe->slots[{slot}]);")
@@ -1739,6 +1740,9 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
     var argv := sys.argv
     var cmd
     values := moduleObject.value
+    if (util.extensions.contains "ExtendedLineups") then {
+        bracketConstructor := "alloc_BuiltinList()"
+    }
     var nummethods := 2 + countbindings(values)
     for (values) do { v->
         if (v.kind == "vardec") then {
@@ -1947,12 +1951,12 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         out("  Object params[1];")
         out("  undefined = alloc_Undefined();")
         out("  done = alloc_done();")
-        out("  Object tmp_argv = alloc_BuiltinList();")
+        out("  Object tmp_argv = {bracketConstructor};")
         out("  gc_root(tmp_argv);")
         out("  int partcv_push[] = \{1\};")
         out("  int i; for (i=0; i<argc; i++) \{")
         out("    params[0] = alloc_String(argv[i]);")
-        out("    callmethod(tmp_argv, \"push\", 1, partcv_push, params);")
+        out("    callmethodflags(tmp_argv, \"push\", 1, partcv_push, params, CFLAG_SELF);")
         out("  \}")
         out("  module_sys_init_argv(tmp_argv);")
         out("  module_{escmodname}_init();")

@@ -87,6 +87,7 @@ struct OctetsObject {
 };
 
 Object alloc_Float64(double);
+Object alloc_Lineup();
 Object alloc_List();
 Object alloc_BuiltinList();
 Object alloc_String(const char*);

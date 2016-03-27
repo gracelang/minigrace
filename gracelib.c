@@ -1578,7 +1578,7 @@ Object alloc_BuiltinList() {
 }
 Object alloc_Lineup() {
     if (Lineup == NULL) {
-        Lineup = alloc_class3("lineup", 21, (void*)&BuiltinList_mark,
+        Lineup = alloc_class3("lineup", 22, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(Lineup, "asString", &BuiltinList_asString);
         add_Method(Lineup, "asDebugString", &BuiltinList_asString);
@@ -1601,6 +1601,7 @@ Object alloc_Lineup() {
         add_Method(Lineup, "fold()startingWith", &BuiltinList_fold_startingWith);
         add_Method(Lineup, "do", &BuiltinList_do);
         add_Method(Lineup, "do()separatedBy", &BuiltinList_do_separatedBy);
+        add_Method(Lineup, "push", &BuiltinList_push) -> flags = MFLAG_CONFIDENTIAL;
     }
     Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, Lineup);
     struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
