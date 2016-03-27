@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "ast" as ast
 import "errormessages" as errormessages
 import "io" as io

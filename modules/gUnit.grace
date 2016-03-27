@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 // GUnit.grace
 // GUnit project
 //

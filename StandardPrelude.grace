@@ -1,4 +1,5 @@
 #pragma NativePrelude
+#pragma ExtendedLineups
 
 var isStandardPrelude := true
 

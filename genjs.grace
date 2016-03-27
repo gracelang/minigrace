@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "ast" as ast
@@ -36,6 +37,7 @@ var emitUndefinedChecks := true
 var emitArgChecks := true
 var emitPositions := true
 var requestCall := "callmethodChecked"
+var bracketConstructor := "Lineup"
 
 method increaseindent() {
     indent := indent ++ "  "
@@ -146,7 +148,7 @@ method compilearray(o) {
         r := compilenode(a)
         vals.push(r)
     }
-    out "var array{myc} = new PrimitiveGraceList({vals});"
+    out "var array{myc} = new {bracketConstructor}({vals});"
     o.register := "array" ++ myc
 }
 method compilemember(o) {
@@ -474,7 +476,7 @@ method compilemethod(o, selfobj) {
             }
         }
         if (part.vararg != false) then {
-            out("var {varf(part.vararg.value)} = new PrimitiveGraceList("
+            out("var {varf(part.vararg.value)} = new {bracketConstructor}("
                 ++ "Array.prototype.slice.call(arguments, curarg, "
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("curarg += argcv[{partnr - 1}] - {part.params.size};")
@@ -534,7 +536,7 @@ method compilemethod(o, selfobj) {
             }
             if (part.vararg != false) then {
                 def pName = varf(part.vararg.value)
-                out("var {pName} = new PrimitiveGraceList("
+                out("var {pName} = new {bracketConstructor}("
                     ++ "Array.prototype.slice.call(arguments, curarg, "
                     ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
                 out "curarg += argcv[{partnr - 1}] - {part.params.size};"
@@ -658,7 +660,7 @@ method compilefreshmethod(o, selfobj) {
         }
         if (part.vararg != false) then {
             def pName = varf(part.vararg.value)
-            out("var {pName} = new PrimitiveGraceList("
+            out("var {pName} = new {bracketConstructor}("
                 ++ "Array.prototype.slice.call(arguments, curarg, "
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("curarg += argcv[{partnr - 1}] - {part.params.size};")
@@ -704,7 +706,7 @@ method compilefreshmethod(o, selfobj) {
         }
         if (part.vararg != false) then {
             def pName = varf(part.vararg.value)
-            out("var {pName} = new PrimitiveGraceList("
+            out("var {pName} = new {bracketConstructor}("
                 ++ "Array.prototype.slice.call(arguments, curarg, "
                 ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
             out("curarg += argcv[{partnr - 1}] - {part.params.size};")
@@ -1290,6 +1292,9 @@ method compilenode(o) {
 method compile(moduleObject, of, rm, bt, glPath) {
     var argv := sys.argv
     def isPrelude = util.extensions.contains("NativePrelude")
+    if (util.extensions.contains "ExtendedLineups") then {
+        bracketConstructor := "PrimitiveGraceList"
+    }
     if (util.extensions.contains "noChecks") then {
         emitTypeChecks := false
         emitUndefinedChecks := false

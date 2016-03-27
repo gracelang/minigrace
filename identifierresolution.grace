@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "io" as io
 import "sys" as sys
 import "ast" as ast

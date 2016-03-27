@@ -1179,6 +1179,177 @@ PrimitiveGraceList.prototype = {
     superobj: new GraceObject()
 };
 
+function Lineup(jsList) {
+    this._value = jsList;
+}
+
+
+Lineup.prototype = {
+    methods: {
+        "isEmpty": function list_isEmpty (argcv) {
+            return (this._value.length === 0) ? GraceTrue : GraceFalse;
+        },
+        "size": function list_size (argcv) {
+            //dbg("called size: " + this._value.length);
+            return new GraceNum(this._value.length);
+        },
+        "first": function list_first(argcv) {
+            if (this._value.length < 1)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('[] has no first element'));
+            return this._value[0];
+        },
+        "second": function list_first(argcv) {
+            if (this._value.length < 2)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('list of length ' + this._value.length +
+                                        ' has no second element'));
+            return this._value[1];
+        },
+        "third": function list_first(argcv) {
+            if (this._value.length < 3)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('list of length ' + this._value.length +
+                                        ' has no third element'));
+            return this._value[2];
+        },
+        "fourth": function list_first(argcv) {
+            if (this._value.length < 4)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('list of length ' + this._value.length +
+                                        ' has no fourth element'));
+            return this._value[3];
+        },
+        "fifth": function list_first(argcv) {
+            if (this._value.length < 5)
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString('list of length ' + this._value.length +
+                                        ' has no fifth element'));
+            return this._value[4];
+        },
+        "asString": function(argcv) {
+            var s = "[";
+            var isFirst = true;
+            for (var i=0; i<this._value.length; i++) {
+                var obj = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
+                try {
+                    var m = findMethod(obj, "asString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(obj, 2) + "›";
+                }
+            }
+            s += "]";
+            return new GraceString(s);
+        },
+        "asDebugString": function(argcv) {
+            var s = "[";
+            var isFirst = true;
+            for (var i=0; i<this._value.length; i++) {
+                var obj = this._value[i];
+                if (isFirst) {
+                    isFirst = false;
+                } else {
+                    s += ", ";
+                }
+                try {
+                    var m = findMethod(obj, "asDebugString");
+                    s += m.call(obj, [0])._value;
+                } catch (e) {
+                    s += "‹" + dbgp(obj, 2) + "›";
+                }
+            }
+            s += "]";
+            return new GraceString(s);
+        },
+        "debugValue": function(argcv) {
+            return new GraceString("List");
+        },
+        "debugIterator": function(argcv) {
+            return new GraceListIterator(this._value);
+        },
+        "==": function(argcv, other) {
+            if (argcv[0] !== 1)
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("wrong number of arguments for ==(1)"));
+            var collections = callmethod(var___95__prelude, "collections", [0]);
+            onSelf = true;
+            return callmethod(collections,
+                        "isEqual()toIterable", [1, 1], this, other);
+        },
+        "!=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "/=": function(argcv, other) {
+            var t = callmethod(this, "==", [1], other);
+            return callmethod(t, "not", [0]);
+        },
+        "iterator": function(argcv) {
+            return new GraceListIterator(this._value);
+        },
+        "do": function list_do(argcv, action1) {
+            if (argcv[0] !== 1)
+                callmethod(ProgrammingErrorObject, "raise", [1],
+                    new GraceString("wrong number of arguments for do(1)" +
+                    "\n argcv[0] = " + argcv[0]));
+            var self = this._value;
+            var size = self.length;
+            for (var ix = 0; ix < size; ix ++) {
+                callmethod(action1, "apply", [1], self[ix]);
+            }
+            return GraceDone;
+        },
+        "do()separatedBy": function list_do_sepBy(argcv, action1, separatorAction) {
+            var self = this._value;
+            var size = self.length;
+            var firstTime = true;
+            for (var ix = 0; ix < size; ix ++) {
+                if (! firstTime)
+                    callmethod(separatorAction, "apply", [0]);
+                else
+                    firstTime = false;
+                callmethod(action1, "apply", [1], self[ix]);
+            }
+            return GraceDone;
+        },
+        "map": function list_map(argcv, function1) {
+            var collections = callmethod(var___95__prelude, "collections", [0]);
+            onSelf = true;
+            return callmethod(collections,
+                        "lazySequenceOver()mappedBy", [1, 1], this, function1);
+        },
+        "filter": function list_filter(argcv, predicate1) {
+            var collections = callmethod(var___95__prelude, "collections", [0]);
+            onSelf = true;
+            return callmethod(collections,
+                        "lazySequenceOver()filteredBy", [1, 1], this, predicate1);
+        },
+        "fold()startingWith": function(argcv, block, initial) {
+            var self = this._value;
+            var res = initial;
+            for (var i=0; i<self.length; i++) {
+                var v = self[i];
+                res = callmethod(block, "apply", [2], res, v);
+            }
+            return res;
+        },
+        "++": function(argcv, other) {
+            var l = this._value.concat(other._value);
+            return new PrimitiveGraceList(l);
+        }
+    },
+    className: "lineup",
+    definitionModule: "unknown",
+    definitionLine: 0,
+    superobj: new GraceObject()
+};
+
 function GracePrimitiveArray(len) {
     this._value = new Array(len);
 //    this._value.fill(undefined);
@@ -3387,6 +3558,7 @@ if (typeof global !== "undefined") {
     global.GraceType = GraceType;
     global.GraceUnicodePattern = GraceUnicodePattern;
     global.ImportErrorObject = ImportErrorObject;
+    global.Lineup = Lineup;
     global.loadDate = loadDate;
     global.matchCase = matchCase;
     global.NoSuchMethodErrorObject = NoSuchMethodErrorObject;

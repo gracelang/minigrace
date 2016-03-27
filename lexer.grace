@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "util" as util
 import "unicode" as unicode
 import "errormessages" as errormessages

@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "util" as util
 import "identifierKinds" as k
 

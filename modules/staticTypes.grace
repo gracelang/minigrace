@@ -1,5 +1,5 @@
 #pragma noTypeChecks
-// until [] means a real list, it won't match type List
+#pragma ExtendedLineups
 dialect "dialect"
 
 import "ast" as ast
