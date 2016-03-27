@@ -1309,7 +1309,7 @@ class set<T> {
             var candidate
             while {
                 candidate := inner.at(t)
-                (candidate != unused).andAlso{candidate != removed}
+                (unused != candidate) && (removed != candidate)
             } do {
                 if (candidate == x) then {
                     return t
@@ -1341,7 +1341,7 @@ class set<T> {
             var candidate
             while {found < size} do {
                 candidate := inner.at(i)
-                if ((candidate != unused).andAlso{candidate != removed}) then {
+                if ((unused != candidate) && (removed != candidate)) then {
                     found := found + 1
                     block1.apply(candidate)
                 }
@@ -1385,7 +1385,7 @@ class set<T> {
                 inner.at(i)put(unused)
             }
             for (0..(oldInner.size-1)) do {i->
-                if ((oldInner.at(i) != unused).andAlso{oldInner.at(i) != removed}) then {
+                if ((unused != oldInner.at(i)) && (removed != oldInner.at(i))) then {
                     add(oldInner.at(i))
                 }
             }
