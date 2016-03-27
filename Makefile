@@ -130,8 +130,8 @@ then l1/minigrace --dir js --target js --verbose ast.grace ; fi
 # collectionsPrelude%gct collectionsPrelude%gcn: collectionsPrelude.grace l1/minigrace
 #	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
-collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+collectionsPrelude.gct: collectionsPrelude.grace minigrace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
@@ -286,12 +286,12 @@ $(C_MODULES_GSO:%.gso=%.gct): modules/%.gct: stubs/%.gct
 
 $(LIBRARY_MODULES:%.grace=modules/%.gcn): modules/%.gcn: modules/%.gso
 
-$(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace l1/minigrace
-	GRACE_MODULE_PATH="./:modules/:" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+$(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso): modules/%.gso: modules/%.grace minigrace
+	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gct): modules/%.gct: modules/%.gso
 
-$(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace l1/minigrace
+$(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.js): js/%.js: modules/%.grace minigrace
 	GRACE_MODULE_PATH="./:modules/:" ./minigrace $(VERBOSITY) --make --target js --dir js $<
 
 $(LIBRARY_WO_OBJECTDRAW:%.grace=js/%.gct): js/%.gct: js/%.js
@@ -402,7 +402,7 @@ selftest: minigrace-environment
 	rm -rf selftest
 	mkdir -p selftest
 	( cd selftest; ln -sf $(C_MODULES_GSO:%=../%) $(C_MODULES_GSO:%.gso=../%.gct) . )
-	./minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest --module minigrace compiler.grace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --native --module minigrace --dir selftest --module minigrace compiler.grace
 	tests/harness selftest/minigrace tests
 
 selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
@@ -410,12 +410,12 @@ selftest-js: minigrace-js-env $(ALL_LIBRARY_MODULES:%.grace=../js/%.js)
 	mkdir -p selftest-js
 	( cd selftest-js; ln -sf $(ALL_LIBRARY_MODULES:%.grace=../js/%.js) . )
 	( cd selftest-js; ln -sf ../js/gracelib.js . )
-	./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace && \
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace-js $(VERBOSITY) --make --native --module minigrace --dir selftest-js --module minigrace compiler.grace && \
 	tests/harness selftest-js/minigrace tests
 
 # must be a pattern rule to get the "simultaneous build" semantics.
-StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct l1/minigrace
-	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelude.gct minigrace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --noexec -XNoMain $<
 
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
@@ -485,7 +485,7 @@ togracetest: minigrace
 	tests/harness minigrace tests tograce $(TESTS)
 
 tools/gracedoc: ./minigrace modules/gracedoc.grace ast.grace io.gct lexer.grace parser.grace sys.gct
-	./minigrace --verbose --make modules/gracedoc.grace
+	GRACE_MODULE_PATH=".:modules:js" ./minigrace --verbose --make modules/gracedoc.grace
 
 # The dependency on unicodedata.h isn't captured by the pattern rule
 unicode.gso: unicode.c unicodedata.h gracelib.h
