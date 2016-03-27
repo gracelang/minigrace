@@ -103,6 +103,7 @@ ClassData Block;
 ClassData Octets;
 ClassData BuiltinList;
 ClassData BuiltinListIter;
+ClassData Lineup;
 ClassData PrimitiveArray;
 ClassData Undefined;
 ClassData Done;
@@ -1575,8 +1576,38 @@ Object alloc_BuiltinList() {
     lo->items = glmalloc(sizeof(Object) * 8);
     return o;
 }
-Object alloc_List() {
-    return alloc_BuiltinList();
+Object alloc_Lineup() {
+    if (Lineup == NULL) {
+        Lineup = alloc_class3("lineup", 21, (void*)&BuiltinList_mark,
+                (void*)&BuiltinList__release);
+        add_Method(Lineup, "asString", &BuiltinList_asString);
+        add_Method(Lineup, "asDebugString", &BuiltinList_asString);
+        add_Method(Lineup, "basicAsString", &BuiltinList_asString);
+        add_Method(Lineup, "::", &Object_bind);
+        add_Method(Lineup, "size", &BuiltinList_length);
+        add_Method(Lineup, "isEmpty", &BuiltinList_isEmpty);
+        add_Method(Lineup, "iterator", &BuiltinList_iter);
+        add_Method(Lineup, "==", &BuiltinList_equals);
+        add_Method(Lineup, "!=", &Object_NotEquals);
+        add_Method(Lineup, "≠", &Object_NotEquals);
+        add_Method(Lineup, "first", &BuiltinList_first);
+        add_Method(Lineup, "second", &BuiltinList_second);
+        add_Method(Lineup, "third", &BuiltinList_third);
+        add_Method(Lineup, "fourth", &BuiltinList_fourth);
+        add_Method(Lineup, "fifth", &BuiltinList_fifth);
+        add_Method(Lineup, "++", &BuiltinList_concat);
+        add_Method(Lineup, "map", &BuiltinList_map);
+        add_Method(Lineup, "filter", &BuiltinList_filter);
+        add_Method(Lineup, "fold()startingWith", &BuiltinList_fold_startingWith);
+        add_Method(Lineup, "do", &BuiltinList_do);
+        add_Method(Lineup, "do()separatedBy", &BuiltinList_do_separatedBy);
+    }
+    Object o = alloc_obj(sizeof(Object*) + sizeof(int) * 2, Lineup);
+    struct BuiltinListObject *lo = (struct BuiltinListObject*)o;
+    lo->size = 0;
+    lo->space = 8;
+    lo->items = glmalloc(sizeof(Object) * 8);
+    return o;
 }
 Object PrimitiveArray_indexAssign(Object self, int nparts, int *argcv,
         Object *args, int flags) {
