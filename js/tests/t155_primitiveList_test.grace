@@ -13,9 +13,9 @@ def primitiveListTest = object {
             def witness = [1, 2, 3, 4, 5, 6]
             assert (witness) hasType (Collection<Number>)
         }
-        method testListTypeLineup {
+        method testListTypeIterable {
             def witness = [1, 2, 3, 4, 5, 6]
-            assert (witness) hasType (Lineup<Number>)
+            assert (witness) hasType (Iterable<Number>)
         }
         method testListSize {
             assert(oneToFive.size) shouldBe 5

@@ -32,6 +32,11 @@ type Iterable<T> = Object & type {
         // the iterator on which I am based
     isEmpty -> Boolean
         // true if I have no elements
+    size -> Number
+        // my size (the number of elements that I contain);
+        // may raise SizeUnknown.
+    sizeIfUnknown(action: Block0<Number>)
+        // my size; if not known, then the result of applying action
     first -> T
         // my first element; raises BoundsError if I have none.
     do(block1: Block1<T, Done>) -> Done
@@ -238,7 +243,12 @@ class lazyConcatenation<T>(left, right) -> Enumerable<T>{
 class collection.TRAIT<T> {
     
     method asString { "a collection TRAIT" }
-
+    method sizeIfUnknown(action) {
+        action.apply
+    }
+    method size {
+        SizeUnknown.raise "this collection does not know its size"
+    }
     method do { abstract }
     method iterator { abstract }
     method isEmpty {
@@ -454,19 +464,22 @@ class sequence<T> {
     }
 
     method withAll(arg: Iterable<T>) {
-        var forecastSize := 0
-        var sizeUncertain := false
-        // size might be uncertain if one of the arguments is a lazy collection.
-        try {
-            forecastSize := arg.size
-        } catch { _:SizeUnknown ->
-            forecastSize := 8
-            sizeUncertain := true
+        var sizeCertain := true
+        // size might be uncertain if arg is a lazy collection.
+        def forecastSize = arg.sizeIfUnknown {
+            sizeCertain := false
+            8
         }
         var inner := _prelude.PrimitiveArray.new(forecastSize)
         var innerSize := inner.size
         var ix := 0
-        if (sizeUncertain) then {
+        if (sizeCertain) then {
+            // common, fast path
+            for (arg) do { elt ->
+                inner.at(ix)put(elt)
+                ix := ix + 1
+            }
+        } else {
             // less-than-optimal path
             for (arg) do { elt ->
                 if (innerSize <= ix) then {
@@ -477,12 +490,6 @@ class sequence<T> {
                     inner := newInner
                     innerSize := inner.size
                 }
-                inner.at(ix)put(elt)
-                ix := ix + 1
-            }
-        } else {
-            // common, fast path
-            for (arg) do { elt ->
                 inner.at(ix)put(elt)
                 ix := ix + 1
             }
@@ -894,14 +901,32 @@ class list<T> {
             inherits indexable.TRAIT<T>
 
             var mods is readable := 0
-            var initialSize
-            try { initialSize := a.size * 2 + 1 }
-                catch { _ex:SizeUnknown -> initialSize := 9 }
+            var sizeCertain := true
+            // size might be uncertain if a is a lazy collection.
+            def initialSize = a.sizeIfUnknown{ sizeCertain := false ; 4 } * 2 + 1
             var inner := _prelude.PrimitiveArray.new(initialSize)
             var size is readable := 0
-            for (a) do {x->
-                inner.at(size)put(x)
-                size := size + 1
+            if (sizeCertain) then {
+                // common, fast path
+                for (a) do { x ->
+                    inner.at(size)put(x)
+                    size := size + 1
+                }
+            } else {
+                // less-than-optimal path
+                var innerSize := initialSize
+                for (a) do { x ->
+                    if (innerSize <= size) then {
+                        def newInner = _prelude.PrimitiveArray.new(innerSize * 2)
+                        for (0..(innerSize-1)) do { i ->
+                            newInner.at (i) put (inner.at(i) )
+                        }
+                        inner := newInner
+                        innerSize := inner.size
+                    }
+                    inner.at(size)put(x)
+                    size := size + 1
+                }
             }
             method boundsCheck(n) is confidential {
                 if ( !(n >= 1) || !(n <= size)) then {
@@ -1165,9 +1190,7 @@ class set<T> {
     method asString { "a set factory" }
 
     method withAll(a: Iterable<T>) -> Set<T> {
-        def cap = try { max (a.size * 3 + 1, 8) }
-                        catch { _:SizeUnknown -> 8 }
-                        catch { _:NoSuchMethod -> 8 }
+        def cap = max (a.sizeIfUnknown{2} * 3 + 1, 8)
         def result = ofCapacity (cap)
         a.do { x -> result.add(x) }
         result

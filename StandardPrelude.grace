@@ -389,7 +389,6 @@ type Sequence<T> = collections.Sequence<T>
 type List<T> = collections.List<T>
 type Set<T> = collections.Set<T>
 type Dictionary<K,T> = collections.Dictionary<K,T>
-type Lineup<T> = collections.Lineup<T>
 
 def BoundsError is public = collections.BoundsError
 def IteratorExhausted is public = collections.IteratorExhausted
