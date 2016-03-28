@@ -1523,7 +1523,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("builtinList", 43, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("builtinList", 44, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
@@ -1540,6 +1540,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "addLast", &BuiltinList_push);
         add_Method(BuiltinList, "removeLast", &BuiltinList_pop);
         add_Method(BuiltinList, "size", &BuiltinList_length);
+        add_Method(BuiltinList, "sizeIfUnknown", &BuiltinList_length);
         add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
         add_Method(BuiltinList, "contains", &BuiltinList_contains);
@@ -1578,13 +1579,14 @@ Object alloc_BuiltinList() {
 }
 Object alloc_Lineup() {
     if (Lineup == NULL) {
-        Lineup = alloc_class3("lineup", 22, (void*)&BuiltinList_mark,
+        Lineup = alloc_class3("lineup", 23, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(Lineup, "asString", &BuiltinList_asString);
         add_Method(Lineup, "asDebugString", &BuiltinList_asString);
         add_Method(Lineup, "basicAsString", &BuiltinList_asString);
         add_Method(Lineup, "::", &Object_bind);
         add_Method(Lineup, "size", &BuiltinList_length);
+        add_Method(Lineup, "sizeIfUnknown", &BuiltinList_length);
         add_Method(Lineup, "isEmpty", &BuiltinList_isEmpty);
         add_Method(Lineup, "iterator", &BuiltinList_iter);
         add_Method(Lineup, "==", &BuiltinList_equals);
@@ -1725,7 +1727,7 @@ Object PrimitiveArray_sort(Object self, int nparts, int *argcv,
 }
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("primitiveArray", 11, (void*)&BuiltinList_mark,
+        PrimitiveArray = alloc_class3("primitiveArray", 12, (void*)&BuiltinList_mark,
                                       (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
@@ -1735,6 +1737,7 @@ Object alloc_PrimitiveArray(int size) {
         add_Method(PrimitiveArray, "asDebugString", &PrimitiveArray_asDebugString);
         add_Method(PrimitiveArray, "::", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
+        add_Method(PrimitiveArray, "sizeIfUnknown", &BuiltinList_length);
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
         add_Method(PrimitiveArray, "sortInitial()by", &PrimitiveArray_sort);
@@ -2155,7 +2158,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("concatString", 37,
+        ConcatString = alloc_class3("concatString", 38,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -2163,6 +2166,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "::", &Object_bind);
         add_Method(ConcatString, "++", &String_concat);
         add_Method(ConcatString, "size", &String_size);
+        add_Method(ConcatString, "sizeIfUnknown", &String_size);
         add_Method(ConcatString, "at", &ConcatString_at);
         add_Method(ConcatString, "[]", &ConcatString_at);
         add_Method(ConcatString, "contains", &ConcatString_Contains);
@@ -2403,12 +2407,13 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 37);
+        String = alloc_class("String", 38);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
         add_Method(String, "++", &String_concat);
         add_Method(String, "size", &String_size);
+        add_Method(String, "sizeIfUnknown", &String_size);
         add_Method(String, "at", &String_at);
         add_Method(String, "[]", &String_at);
         add_Method(String, "contains", &String_Contains);

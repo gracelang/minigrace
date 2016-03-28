@@ -214,6 +214,9 @@ GraceString.prototype = {
         "size": function(argcv) {
             return new GraceNum(this._value.length);
         },
+        "sizeIfUnknown": function(argcv) {
+            return new GraceNum(this._value.length);
+        },
         "isEmpty": function(argcv) {
             return (this._value.length === 0) ? GraceTrue : GraceFalse;
         },
@@ -948,6 +951,9 @@ PrimitiveGraceList.prototype = {
             //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
         },
+        "sizeIfUnknown": function list_size (argcv) {
+            return new GraceNum(this._value.length);
+        },
         "pop": function(argcv) {
             var result = this._value.pop();
             if (result === undefined)
@@ -1193,6 +1199,9 @@ Lineup.prototype = {
             //dbg("called size: " + this._value.length);
             return new GraceNum(this._value.length);
         },
+        "sizeIfUnknown": function list_size (argcv) {
+            return new GraceNum(this._value.length);
+        },
         "first": function list_first(argcv) {
             if (this._value.length < 1)
                 throw new GraceExceptionPacket(BoundsErrorObject,
@@ -1359,6 +1368,9 @@ function GracePrimitiveArray(len) {
 GracePrimitiveArray.prototype = {
     methods: {
         "size": function(argcv) {
+            return new GraceNum(this._value.length);
+        },
+        "sizeIfUnknown": function(argcv) {
             return new GraceNum(this._value.length);
         },
         "at": function(argcv, where) {
