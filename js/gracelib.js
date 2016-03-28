@@ -2727,12 +2727,14 @@ GraceMirrorMethod.prototype.methods['request'] = function(argcv, argList) {
                    new GraceString("wrong number of argument lists in 'request'" ));
     }
     var allArgs = [this.obj, this.name, []];
-    for (var outerIx = 1; outerIx <= providedLen; outerIx++) {
-        var innerArray = callmethod(argList, "at", [1], new GraceNum(outerIx));
+    var outerIter = callmethod(argList, "iterator", [0]);
+    while (Grace_isTrue(callmethod(outerIter, "hasNext", [0]))) {
+        var innerArray = callmethod(outerIter, "next", [0]);
         var innerSize = callmethod(innerArray, "size", [0])._value;
         allArgs[2].push(innerSize);    // incrementally build list of argument list lengths
-        for (var innerIx = 1; innerIx <= innerSize; innerIx++) {
-            allArgs.push(callmethod(innerArray, "at", [1], new GraceNum(innerIx)));
+        var innerIter = callmethod(innerArray, "iterator", [0]);
+        while (Grace_isTrue(callmethod(innerIter, "hasNext", [0]))) {
+            allArgs.push(callmethod(innerIter, "next"));
         }
     }
     return callmethod.apply(null, allArgs);
@@ -2754,15 +2756,16 @@ GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList
         for (var ix = 0; ix < l; ix++) {
             if (vararg[ix]) {
                     throw new GraceExceptionPacket(ProgrammingErrorObject,
-                        new GraceString("'requestWithArgs' cannot be used to request a method with multiple  argument lists if one has variable arity."));
+                        new GraceString("'requestWithArgs' cannot be used to request a method with multiple argument lists if one has variable arity."));
             }
         }
     } else {
         paramcv = [providedLen];
     }
     var allArgs = [this.obj, this.name, paramcv];
-    for (var jx = 1; jx <= providedLen; jx++) {
-        var arg = callmethod(argList, "at", [1], new GraceNum(jx));
+    var argsIter = callmethod(argList, "iterator", [0]);
+    while (Grace_isTrue(callmethod(argsIter, "hasNext", [0]))) {
+        var arg = callmethod(argsIter, "next", [0]);
         allArgs.push(arg);
     }
     return callmethod.apply(null, allArgs);
