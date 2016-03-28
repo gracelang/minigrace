@@ -345,9 +345,9 @@ def aGraceLangTest = object {
             def a = t096_objcreator(3, 4)
             def b = t096_objcreator(6, 7)
             def ae = a.extract
-            out "{ae[1]} {ae[2]}"
+            out "{ae.first} {ae.second}"
             def be = b.extract
-            out "{be[1]} {be[2]}"
+            out "{be.first} {be.second}"
             
             assert(str)shouldBe("3 4\n6 7\n")
         }

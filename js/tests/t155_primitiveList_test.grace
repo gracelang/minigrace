@@ -1,3 +1,4 @@
+#pragma ExtendedLineups
 import "gUnit" as gU
 
 def primitiveListTest = object {

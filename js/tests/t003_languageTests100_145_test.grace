@@ -761,11 +761,7 @@ def aGraceLangTest = object {
         }
         
         method test_145_builtInListDo {
-            def l = []
-            l.push(1)
-            l.push(2)
-            l.push(3)
-            l.push(4)
+            def l = [1, 2, 3, 4]
             out(l)
             l.do { each -> out(each) }
             assert (str) shouldBe "[1, 2, 3, 4]\n1\n2\n3\n4\n"

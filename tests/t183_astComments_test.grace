@@ -5,9 +5,7 @@ import "ast" as ast
 import "util" as util
 import "io" as io
 
-
-
-def input = [
+def input = sequence [
     "import \"stuff\" as stuff",
     "",
     "//Pre-comment def x",
