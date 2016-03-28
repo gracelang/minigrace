@@ -472,7 +472,7 @@ GraceString.prototype = {
         "hash": string_hash,
         "indices": function string_indices(argcv) {
             var size = this._value.length;
-            return callmethod(GraceRangeClass(), "from()to", [1, 1], new GraceNum(1), new GraceNum(size));
+            return callmethod(GraceRangeClass(), "uncheckedFrom()to", [1, 1], new GraceNum(1), new GraceNum(size));
         },
         "asNumber": function string_asNumber(argcv) {
             return new GraceNum(+this._value);
@@ -631,7 +631,13 @@ GraceNum.prototype = {
             return callmethod(t, "++", [1], other);
         },
         "..": function(argcv, other) {
-            return callmethod(GraceRangeClass(), "from()to", [1, 1], this, other);
+            if (other.className === "number" && Number.isInteger(other._value)) {
+                return callmethod(GraceRangeClass(),
+                    "uncheckedFrom()to", [1, 1], this, other);
+            } else {
+                throw new GraceExceptionPacket(TypeError(),
+                    new GraceString("upper bound of range not an integer."))
+            }
         },
         "compare": function(argcv, that) {
             var self = this._value;
@@ -883,7 +889,7 @@ function prim_list_update(argcv, where, val) {
 }
 function list_indices(argcv) {
     var size = this._value.length;
-    return callmethod(GraceRangeClass(), "from()to", [1, 1],
+    return callmethod(GraceRangeClass(), "uncheckedFrom()to", [1, 1],
                   new GraceNum(1), new GraceNum(size));
 }
 PrimitiveGraceList.prototype = {

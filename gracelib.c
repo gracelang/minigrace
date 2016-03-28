@@ -1398,7 +1398,7 @@ Object BuiltinList_indices(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = alloc_Float64(1);
     params[1] = upperBound;
-    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    Object res = callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
     gc_unpause();
     return res;
 }
@@ -1929,7 +1929,7 @@ Object String_indices(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = alloc_Float64(1);
     params[1] = upperBound;
-    Object res = callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    Object res = callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
     gc_unpause();
     return res;
 }
@@ -2666,11 +2666,12 @@ Object alloc_Octets(const char *data, int len) {
 Object Float64_Range(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     Object other = args[0];
+    assertClass(other, Number);
     Object params[2];
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
+    return callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
 }
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
