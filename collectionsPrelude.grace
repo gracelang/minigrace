@@ -45,12 +45,7 @@ type Iterable<T> = Object & type {
     map<U>(function:Block1<T, U>) -> Iterator<U>
         // returns a new iterator that yields my elements mapped by function
     filter(condition:Block1<T,Boolean>) -> Iterator<T>
-        // returns a new iterator that yields those of my elements for which condition holds 
-}
-
-type Lineup<T> = Iterable<T> & type {
-    size -> Number
-        // the number of elements in the lineup
+        // returns a new iterator that yields those of my elements for which condition holds
 }
 
 type Expandable<T> = Iterable<T> & type {
@@ -1841,27 +1836,33 @@ class dictionary<K,T> {
 
 class range {
     method from(lower)to(upper) -> Sequence<Number> {
+        match (lower)
+            case {_:Number -> }
+            case {_ -> RequestError.raise ("lower bound {lower}" ++
+                " in range.from({lower})to({upper}) is not an integer") }
+        def start = lower.truncated
+        if (start != lower) then {
+            RequestError.raise ("lower bound {lower}" ++
+                " in range.from({lower})to({upper}) is not an integer") }
+
+        match (upper)
+            case {_:Number -> }
+            case {_ -> RequestError.raise ("upper bound {upper}" ++
+                " in range.from({lower})to({upper}) is not an integer") }
+        def stop = upper.truncated
+        if (stop != upper) then {
+            RequestError.raise ("upper bound {upper}" ++
+                " in range.from()to() is not an integer")
+        }
+
+        uncheckedFrom (lower) to (upper)
+    }
+
+    method uncheckedFrom (lower) to (upper) -> Sequence<Number> {
         object {
             inherits indexable.TRAIT<Number>
-            match (lower)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("lower bound {lower}" ++
-                    " in range.from({lower})to({upper}) is not an integer") }
-            def start = lower.truncated
-            if (start != lower) then {
-                RequestError.raise ("lower bound {lower}" ++
-                    " in range.from({lower})to({upper}) is not an integer") }
-
-            match (upper)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("upper bound {upper}" ++
-                    " in range.from({lower})to({upper}) is not an integer") }
-            def stop = upper.truncated
-            if (stop != upper) then {
-                RequestError.raise ("upper bound {upper}" ++
-                    " in range.from()to() is not an integer")
-            }
-
+            def start = lower
+            def stop = upper
             def size is public =
                 if ((upper-lower+1) < 0) then { 0 } else {upper-lower+1}
 
