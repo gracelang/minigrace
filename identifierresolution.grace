@@ -1080,6 +1080,9 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             def myParent = as.parent
             o.scope := newScopeIn(myParent.scope) kind "object"
             if (o.inTrait) then { checkTraitBody(o) }
+            if (myParent.kind == "defdec") then {
+                o.name := myParent.nameString
+            }
             true
         }
         method visitModule(o) up (as) {
@@ -1134,9 +1137,13 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             true
         }
         method visitMethod (o) up (as) {
+            def myParent = as.parent
             if (o.returnsObject) then {
-                as.parent.scope.at(o.nameString)
-                    putScope(o.returnedObjectScope)
+                myParent.scope.at(o.nameString) putScope(o.returnedObjectScope)
+                def objectName = myParent.name
+                if ((objectName != "object") && (o.body.last.isObject)) then {
+                    o.body.last.name := objectName ++ "." ++ o.body.last.name
+                }
             }
             true
         }
