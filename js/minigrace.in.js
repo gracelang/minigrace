@@ -180,22 +180,20 @@ MiniGrace.prototype.run = function() {
     importedModules = {};
     callStack = [];
     stackFrames = [];
-    var code = minigrace.generated_output;
     lineNumber = 1;
     moduleName = this.modname;
-    eval(code);     // defines a global gracecode_‹moduleName›
-    var theModule = window['gracecode_' + this.modname];
+    eval(minigrace.generated_output);   // defines a global gracecode_‹moduleName›
+    var theModuleFunc = window[graceModuleName(this.modname)];
     testpass = false;    // not used anywhere else ?
-    var modname = this.modname;
     if (Grace_prelude.methods["while()do"])
         Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
             GraceDebugger.cache.start();
-            GraceDebugger.that = {methods:{}, data: {}, className: modname};
-            GraceDebugger.run(theModule, GraceDebugger.that);
+            GraceDebugger.that = do_import(moduleName, theModuleFunc);
+            GraceDebugger.run(theModuleFunc, GraceDebugger.that);
         } else {
-            theModule.call({methods:{}, data: {}, className: modname});
+            theModuleFunc.call(do_import(moduleName, theModuleFunc));
         }
     });
 }

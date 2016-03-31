@@ -2939,7 +2939,7 @@ function callmethod(obj, methname, argcv) {
     if (typeof(meth) !== "function") {
         var s = obj;
         isSuper = true;
-        while (s.superobj !== null) {
+        while (s.superobj) {
             s = s.superobj;
             meth = s.methods[methname];
             if (typeof(meth) === "function") {
@@ -3006,7 +3006,7 @@ function callmethodChecked(obj, methname, argcv) {
     if (typeof(meth) !== "function") {
         var s = obj;
         isSuper = true;
-        while (s.superobj !== null) {
+        while (s.superobj) {
             s = s.superobj;
             meth = s.methods[methname];
             if (typeof(meth) === "function") {
