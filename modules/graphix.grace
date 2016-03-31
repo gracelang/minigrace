@@ -130,8 +130,8 @@ factory method shape {
 }
 
 factory method create(canvasWidth, canvasHeight) {
-  var shapes := list.empty
-  var inputs := list.empty
+  var shapes := emptyList
+  var inputs := emptyList
   var stage := gr.stage(canvasHeight, canvasWidth)
   var timeoutIsSet := false
 
