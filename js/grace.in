@@ -304,3 +304,7 @@ try {
     console.error(e.stack);
     process.exit(1);
 }
+
+if (typeof global !== "undefined") {
+    global.path = path;
+}

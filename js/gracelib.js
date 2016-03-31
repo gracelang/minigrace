@@ -636,7 +636,7 @@ GraceNum.prototype = {
                     "uncheckedFrom()to", [1, 1], this, other);
             } else {
                 throw new GraceExceptionPacket(TypeError(),
-                    new GraceString("upper bound of range not an integer."))
+                    new GraceString("upper bound of range not an integer."));
             }
         },
         "compare": function(argcv, that) {
@@ -2854,26 +2854,24 @@ GraceMirror.prototype = {
 
 function gracecode_mirrors() {
     this.methods['loadDynamicModule'] = function(argcv, v) {
-        var modName = v._value;
+        var name = v._value;
         var moduleFunc;
         if (typeof process === "undefined") {
-            var slash = modName.lastIndexOf("/");
-            if (slash >= 0) modName = modName.substring(slash+1);
             try {
-                moduleFunc = eval("gracecode_" + modName);
+                moduleFunc = eval(graceModuleName(name));
             } catch (e) {
                 throw new GraceExceptionPacket(ImportErrorObject,
                            new GraceString("Can't find module " + v._value));
             }
         } else {
-            minigrace.loadModule(modName, "./");try {
-            moduleFunc = eval("gracecode_" + modName);
+            minigrace.loadModule(name, "./");try {
+            moduleFunc = eval(graceModuleName(name));
             } catch (e) {
                 throw new GraceExceptionPacket(ImportErrorObject,
                     new GraceString("error initializing module " + v._value));
             }
         }
-        return do_import(modName, moduleFunc);
+        return do_import(name, moduleFunc);
     };
     this.methods['reflect'] = function(argcv, o) {
         return new GraceMirror(o);
@@ -3518,6 +3516,37 @@ function GraceEmptySequence() {
     return _emptySequence;
 }
 
+if (typeof(path) === "undefined") {
+    var path = { basename: function(n, ex) {
+                              var slash = n.lastIndexOf("/");
+                              if (slash >= 0) n = n.substring(slash+1);
+                              if (n.endsWith(ex)) n = n.substring(0, n.length-ex.length);
+                              return n;
+                          }
+               };
+}
+
+function graceModuleName(fileName) {
+    var prefix = "gracecode_";
+    var base = path.basename(fileName, ".js");
+    return prefix + escapeident(base);
+}
+
+function escapeident(id) {
+        // must correspond to escapeident(_) in genjs.grace
+    var nm = "";
+    for (var ix = 0; ix < id.length; ix++) {
+        var o = id.charCodeAt(ix);
+        if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
+            ((o >= 48) && (o <= 57))) {
+            nm = nm + id.charAt(ix);
+        } else {
+            nm = nm + "__" + o + "__";
+        }
+    }
+    return nm;
+}
+
 
 // these names are used in the generated code.
 // __95__ is the escape for _
@@ -3540,6 +3569,7 @@ if (typeof global !== "undefined") {
     global.findMethod = findMethod;
     global.getLineNumber = getLineNumber;
     global.getModuleName = getModuleName;
+    global.graceModuleName = graceModuleName;
     global.Grace_allocObject = Grace_allocObject;
     global.Grace_errorPrint = Grace_errorPrint;
     global.Grace_prelude = Grace_prelude;

@@ -34,9 +34,31 @@ onmessage = function(ev) {
     } else if (cmd.action == "import") {
         var theModule;
         eval(cmd.code);
-        eval("theModule = gracecode_" + cmd.modname.replace('/', '$') + ";");
-        self['gracecode_' + cmd.modname.replace('/', '$')] = theModule;
+        var escaped = graceModuleName(cmd.modname);
+        eval("theModule = gracecode_" + escaped + ";");
+        self[escaped] = theModule;
     } else if (cmd.action == "importGCT") {
         gctCache[cmd.modname] = cmd.gct;
     }
+}
+
+function graceModuleName(fileName) {
+    var prefix = "gracecode_";
+    var base = fileName;    // remove leading/components/ and trailing .js
+    return prefix + escapeident(base);
+}
+
+function escapeident(id) {
+    // must correspond to escapeident(_) in genjs.grace
+    var nm = "";
+    for (var ix = 0; ix < id.length; ix++) {
+        var o = id.charCodeAt(ix);
+        if (((o >= 97) && (o <= 122)) || ((o >= 65) && (o <= 90)) ||
+            ((o >= 48) && (o <= 57))) {
+            nm = nm + id.charAt(ix);
+        } else {
+            nm = nm + "__" + o + "__";
+        }
+    }
+    return nm;
 }
