@@ -620,7 +620,6 @@ factory method line {
     self.start := start'
     self.end := end'
     native "js" code ‹
-      console.log("start");
       var startX = this.data.start.data.x._value;
       var startY = this.data.start.data.y._value;
       var endX = this.data.end.data.x._value;
