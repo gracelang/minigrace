@@ -2991,10 +2991,9 @@ function callmethod(obj, methname, argcv) {
 }
 
 function callmethodChecked(obj, methname, argcv) {
-    if (typeof obj === 'undefined')
+    if (! obj)
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("Requested method '" + methname + "' on uninitialised value."));
-    if (! obj.methods) debugger;
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
