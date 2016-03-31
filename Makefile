@@ -51,7 +51,7 @@ WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js
 
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
-.PHONY: all c clean dialects echo fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
+.PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects echo expWebBuild expWebDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
 
 # clear out the default rules: produces far less --debug output
 .SUFFIXES:
@@ -120,18 +120,16 @@ checkjs:
 
 checkgenjs: l1/minigrace
 	if [ ! -e js/ast.js ] ;\
-then l1/minigrace --dir js --target js --verbose ast.grace ; fi
+        then l1/minigrace --dir js --target js --verbose ast.grace ; fi
 	jsl -nologo -conf tools/jsl.genjs.conf -process js/ast.js
 
-# must be a pattern rule to get the "simultaneous build" semantics.  But the
-# pattern rule seems to induce a bogus circular depencency of l1/collectionsPrelude
-# on l1/minigrace.  So we must omit this rule, and incldue just the one for .gct
-#
-# collectionsPrelude%gct collectionsPrelude%gcn: collectionsPrelude.grace l1/minigrace
-#	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
-
+# This should be a pattern rule for .gct and .gcn to get the "simultaneous
+# build" semantics.  However, doing so induces bogus circular dependencies.
+# Perhaps this is a bug in gnu make?
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
-	GRACE_MODULE_PATH=".:modules:js" l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
+    
+collectionsPrelude.gcn: collectionsPrelude.gct
 
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
 
@@ -205,9 +203,7 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js
 
-js/collectionsPrelude.gct: js/collectionsPrelude.js
-
-js/collectionsPrelude.js: collectionsPrelude.grace minigrace
+js/collectionsPrelude%js js/collectionsPrelude%gct: collectionsPrelude.grace minigrace
 	GRACE_MODULE_PATH=".:modules:js" ./minigrace $(VERBOSITY) --make --target js --dir js $(<F)
 
 js/index.html: js/index.in.html js/ace js/minigrace.js js/tests
@@ -235,9 +231,7 @@ js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sa
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
 #	$(MAKE) -C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)
 
-js/StandardPrelude.gct: js/StandardPrelude.js
-
-js/StandardPrelude.js: StandardPrelude.grace js/collectionsPrelude.gct minigrace
+js/StandardPrelude%js js/StandardPrelude%gct: StandardPrelude.grace js/collectionsPrelude.gct minigrace
 	GRACE_MODULE_PATH=".:modules:js" ./minigrace --target js --dir js --make $(VERBOSITY) $<
 
 js/animation%gct js/animation%js: js/timer.gct objectdraw/animation.grace
@@ -268,10 +262,10 @@ l1/minigrace: $(KG)/minigrace $(STUBS:%.grace=l1/%.gct) $(DYNAMIC_STUBS:%.grace=
 
 l1/%.gct: l1/%.gso
 
-l1/StandardPrelude.gct l1/StandardPrelude.gcn: StandardPrelude.grace l1/collectionsPrelude.gct l1/collectionsPrelude.gcn $(KG)/minigrace
+l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collectionsPrelude.gct $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
-l1/collectionsPrelude.gct l1/collectionsPrelude.gcn: collectionsPrelude.grace $(KG)/minigrace
+l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
 l1/mirrors.gso: mirrors.c gracelib.h
