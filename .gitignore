@@ -41,6 +41,7 @@ js/index.html
 js/lexer.js
 js/math.js
 js/math_test.js
+js/random.js
 js/minigrace.js
 js/minitest.js
 js/minitest_test.js
