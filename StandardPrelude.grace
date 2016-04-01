@@ -59,6 +59,10 @@ method max(a, b) {
     if (a > b) then { a } else { b }
 }
 
+method valueOf (nullaryBlock) {
+    nullaryBlock.apply
+}
+
 class BasicPattern.new {
     method &(o) {
         AndPattern.new(self, o)
