@@ -189,11 +189,12 @@ MiniGrace.prototype.run = function() {
         Grace_prelude.methods["while()do"].safe = this.breakLoops;
     this.trapErrors(function() {
         if(document.getElementById("debugtoggle").checked) {
+            superDepth = new graceModule(moduleName);
             GraceDebugger.cache.start();
-            GraceDebugger.that = do_import(moduleName, theModuleFunc);
+            GraceDebugger.that = superDepth;
             GraceDebugger.run(theModuleFunc, GraceDebugger.that);
         } else {
-            theModuleFunc.call(do_import(moduleName, theModuleFunc));
+            do_import(moduleName, theModuleFunc);
         }
     });
 }
