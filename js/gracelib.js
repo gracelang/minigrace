@@ -1387,7 +1387,7 @@ GracePrimitiveArray.prototype = {
                 throw new GraceExceptionPacket(BoundsErrorObject,
                     new GraceString("index " + idx +
                         " in primitive array of size " + this._value.length));
-            throw new GraceExceptionPacket(ProgrammingErrorObject,
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
                     new GraceString("error in 'at' " +
                         " on primitive array of size " + this._value.length));
         },
@@ -2992,8 +2992,8 @@ function callmethod(obj, methname, argcv) {
 
 function callmethodChecked(obj, methname, argcv) {
     if (! obj)
-        throw new GraceExceptionPacket(ProgrammingErrorObject,
-                new GraceString("Requested method '" + methname + "' on uninitialised value."));
+        throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("requested method '" + methname + "' on uninitialised variable."));
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
     var isSuper = false;
@@ -3053,8 +3053,8 @@ function callmethodChecked(obj, methname, argcv) {
         for (var i=0; i<args.length; i++) {
             if (typeof args[i] === 'undefined')
                 throw new GraceExceptionPacket(
-                       ProgrammingErrorObject,
-                       new GraceString("Uninitialised value used as argument to '" +
+                       UninitializedVariableObject,
+                       new GraceString("uninitialised variable used as argument to '" +
                                        methname + "' on " + obj.className +
                                        " " + safeJsString(obj) + "."));
         }
@@ -3334,6 +3334,7 @@ var ImportErrorObject = new GraceException("ImportError", EnvironmentExceptionOb
 var TypeErrorObject = new GraceException("TypeError", ProgrammingErrorObject);
 var NoSuchMethodErrorObject = new GraceException("NoSuchMethod", ProgrammingErrorObject);
 var BoundsErrorObject = new GraceException("BoundsError", ProgrammingErrorObject);
+var UninitializedVariableObject = new GraceException("UninitializedVariable", ProgrammingErrorObject);
 
 //
 // Define "Grace_prelude" as a Grace object to which some methods are added here,
@@ -3372,6 +3373,9 @@ Grace_prelude.methods['NoSuchMethod'] = function prelude_NoSuchMethod (argcv) {
 };
 Grace_prelude.methods['BoundsError'] = function prelude_BoundsError (argcv) {
     return BoundsErrorObject;
+};
+Grace_prelude.methods['UninitializedVariable'] = function prelude_UninitializedVariable (argcv) {
+    return UninitializedVariableObject;
 };
 Grace_prelude.methods['infinity'] = function prelude_infinity (argcv) {
     return new GraceNum(Infinity);
