@@ -1383,25 +1383,37 @@ GracePrimitiveArray.prototype = {
             var idx = where._value;
             var result = this._value[idx];
             if (result) return result;
-            if (Number.isInteger(idx))
-                throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString("index " + idx +
-                        " in primitive array of size " + this._value.length));
+            if (! Number.isInteger(idx)) {
                 throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("error in 'at' " +
-                        " on primitive array of size " + this._value.length));
+                    new GraceString("error in 'at(" + idx +
+                        ")' on primitive array of size " + this._value.length));
+            }
+            if ((idx < 0) || (idx >= this._value.length)) {
+                throw new GraceExceptionPacket(BoundsErrorObject,
+                    new GraceString("requested 'at(" + idx +
+                        ")' on primitive array of size " + this._value.length));
+            }
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("primitive array at(" + idx +
+                    ") has not been initialized"));
         },
         "[]": function(argcv, where) {
             var idx = where._value;
             var result = this._value[idx];
             if (result) return result;
-            if (Number.isInteger(idx))
+            if (! Number.isInteger(idx)) {
+                throw new GraceExceptionPacket(ProgrammingErrorObject,
+                    new GraceString("error in 'at(" + idx +
+                        ")' on primitive array of size " + this._value.length));
+            }
+            if ((idx < 0) || (idx >= this._value.length)) {
                 throw new GraceExceptionPacket(BoundsErrorObject,
-                    new GraceString('index ' + idx +
-                        ' in primitive array of size ' + this._value.length));
-            throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("error in '[ ]' " +
-                        " on primitive array of size " + this._value.length));
+                    new GraceString("requested 'at(" + idx +
+                        ")' on primitive array of size " + this._value.length));
+            }
+            throw new GraceExceptionPacket(UninitializedVariableObject,
+                new GraceString("primitive array at(" + idx +
+                    ") has not been initialized"));
         },
         "at()put": function(argcv, idx, val) {
             this._value[idx._value] = val;
@@ -3259,7 +3271,7 @@ function do_import(modname, moduleCodeFunc) {
     }
     if (moduleCodeFunc === undefined)
         throw new GraceExceptionPacket(ImportErrorObject,
-            new GraceString("Could not find code for module '" + modname + "'"));
+            new GraceString("could not find code for module '" + modname + "'"));
     var origSuperDepth = superDepth;
     superDepth = (modname === "StandardPrelude") ? Grace_prelude : new GraceModule(modname);
     // importing "StandardPrelude" adds to the built-in prelude.
