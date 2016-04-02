@@ -1069,7 +1069,7 @@ PrimitiveGraceList.prototype = {
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
-            return new GraceString("List");
+            return new GraceString("builtinList");
         },
         "debugIterator": function(argcv) {
             return new GraceListIterator(this._value);
@@ -1283,7 +1283,7 @@ Lineup.prototype = {
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
-            return new GraceString("List");
+            return new GraceString("lineup");
         },
         "debugIterator": function(argcv) {
             return new GraceListIterator(this._value);
@@ -1456,7 +1456,7 @@ GracePrimitiveArray.prototype = {
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
-            return new GraceString("PrimArray");
+            return new GraceString("primArray");
         },
         "debugIterator": function(argcv) {
             return new GraceIterator(this._value);
@@ -1754,7 +1754,7 @@ function GraceBlock_match(argcv, o) {
     if (!this.pattern) {
         if (argcv.length !== 1 || argcv[0] !== 1) {
             throw new GraceExceptionPacket(ProgrammingErrorObject,
-                    new GraceString("Block is not a matching block"));
+                    new GraceString("block is not a matching block"));
         }
         var rv1 = callmethod(this, "apply", [1], o);
         return new GraceSuccessfulMatch(rv1);
@@ -1836,7 +1836,7 @@ GraceHashMap.prototype.methods.get = function(argcv, k) {
         hc++;
     }
     throw new GraceExceptionPacket(RuntimeErrorObject,
-            new GraceString("Key not found in HashMap"));
+            new GraceString("key not found in HashMap"));
 };
 GraceHashMap.prototype.methods.contains = function(argcv, k) {
     var hc = callmethod(k, "hashcode", [0]);
@@ -2088,7 +2088,7 @@ function gracecode_io() {
                 var f = fs.openSync(path, m);
             } catch(e) {
                 throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                    new GraceString("Can't open file '" + path + "' for '" + m + "'."));
+                    new GraceString("can't open file '" + path + "' for '" + m + "'."));
             }
             if (fs.existsSync(path)) {
                 var c = fs.readFileSync(path);
@@ -2115,7 +2115,7 @@ function gracecode_io() {
             else if (mode._value === "r") {
                 if (typeof gctCache[gctpath] === "undefined")
                     throw new GraceExceptionPacket(EnvironmentExceptionObject,
-                           new GraceString("Can't open file '" + gctpath +
+                           new GraceString("can't open file '" + gctpath +
                                            ".gct' for 'r'.  File does not exist."));
                 else {
                     o2._lines = gctCache[gctpath].split("\n");
@@ -2873,7 +2873,7 @@ function gracecode_mirrors() {
                 moduleFunc = eval(graceModuleName(name));
             } catch (e) {
                 throw new GraceExceptionPacket(ImportErrorObject,
-                           new GraceString("Can't find module " + v._value));
+                           new GraceString("can't find module " + v._value));
             }
         } else {
             minigrace.loadModule(name, "./");try {
@@ -2978,7 +2978,7 @@ function callmethod(obj, methname, argcv) {
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
+                new GraceString("requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
@@ -3044,7 +3044,7 @@ function callmethodChecked(obj, methname, argcv) {
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("Requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
+                new GraceString("requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
