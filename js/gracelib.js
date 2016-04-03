@@ -2022,7 +2022,7 @@ function fileExists(path) {
         return typeof(gctCache[gctpath]) !== "undefined";
     }
     if (extn === ".js") {
-        return eval("typeof(gracecode_" + baseName + ")") !== "undefined";
+        return eval("typeof(" + graceModuleName(baseName) + ")") !== "undefined";
     }
     return false;
 }
