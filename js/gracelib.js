@@ -3386,9 +3386,6 @@ Grace_prelude.methods['NoSuchMethod'] = function prelude_NoSuchMethod (argcv) {
 Grace_prelude.methods['BoundsError'] = function prelude_BoundsError (argcv) {
     return BoundsErrorObject;
 };
-Grace_prelude.methods['UninitializedVariable'] = function prelude_UninitializedVariable (argcv) {
-    return UninitializedVariableObject;
-};
 Grace_prelude.methods['infinity'] = function prelude_infinity (argcv) {
     return new GraceNum(Infinity);
 };

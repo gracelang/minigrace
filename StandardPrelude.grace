@@ -379,8 +379,10 @@ import "collectionsPrelude" as coll
 def collections is public = coll
 
 type Block0<R> = collections.Block0<R>
+type Cmd = collections.Block0<Done>
 type Block1<T,R> = collections.Block1<T,R>
 type Fun<T,R> = collections.Block1<T,R>
+type Proc<T> = collections.Block1<T,Done>
 type Block2<S,T,R> = collections.Block2<S,T,R>
 
 type Collection<T> = collections.Collection<T>
@@ -400,6 +402,7 @@ def NoSuchObject is public = collections.NoSuchObject
 def RequestError is public = collections.RequestError
 def SubobjectResponsibility is public = collections.SubobjectResponsibility
 def ConcurrentModification is public = collections.ConcurrentModification
+def UninitializedVariable is public = ProgrammingError.refine "UninitializedVariable"
 
 def collection is public = collections.collection
 def enumerable is public = collections.enumerable
