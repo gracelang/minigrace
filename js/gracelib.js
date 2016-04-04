@@ -1538,7 +1538,7 @@ function Grace_isTrue(o) {
 }
 
 function Grace_print(obj) {
-    var s = callmethod(obj, "asString", [0]);
+    var s = callmethodChecked(obj, "asString", [0]);
     minigrace.stdout_write(s._value + "\n");
     return GraceDone;
 }
