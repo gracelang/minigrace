@@ -1,6 +1,6 @@
 import "createJsGraphicsWrapper" as gr
 
-factory method shape {
+class shape {
   var color is public := "black"
   var fill is public := false
   var location is public := 0@0
@@ -136,7 +136,7 @@ factory method shape {
   }
 }
 
-factory method create(canvasWidth, canvasHeight) {
+class create(canvasWidth, canvasHeight) {
   var shapes := emptyList
   var inputs := emptyList
   var stage := gr.stage(canvasHeight, canvasWidth)
@@ -220,7 +220,7 @@ factory method create(canvasWidth, canvasHeight) {
     stage.clearTicker
   }
 
-  factory method addCircle {
+  class addCircle {
     inherits shape
     var radius is public := 15
     jsShapeObject := gr.circle
@@ -239,7 +239,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addRectangle {
+  class addRectangle {
     inherits shape
     jsShapeObject := gr.rectangle
     var width is public := 15
@@ -280,7 +280,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addPolyStar {
+  class addPolyStar {
     inherits shape
 
     var sz := 20
@@ -330,7 +330,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addRoundRect {
+  class addRoundRect {
     inherits shape
     var width is public := 15
     var height is public := 15
@@ -376,7 +376,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addEllipse {
+  class addEllipse {
     inherits shape
     var width is public := 15
     var height is public := 15
@@ -417,7 +417,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addArc {
+  class addArc {
     inherits shape
     var radius is public := 15
     var startAngle is public := 0
@@ -456,7 +456,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addText {
+  class addText {
     var location is public := 0@0
     var color is public := "black"
     var jsText is public := 0
@@ -510,7 +510,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self)
   }
 
-  factory method addLine {
+  class addLine {
     inherits shape
     var start is public := 0@0
     var end is public := 50@50
@@ -536,7 +536,7 @@ factory method create(canvasWidth, canvasHeight) {
     self
   }
 
-  factory method addCustomShape {
+  class addCustomShape {
     inherits shape
     jsShapeObject := gr.customShape
     myStage := stage
@@ -558,7 +558,7 @@ factory method create(canvasWidth, canvasHeight) {
     shapes.add(self);
   }
 
-  factory method addButton {
+  class addButton {
     inherits shape
     var width is public := 40
     var height is public := 20
@@ -650,7 +650,7 @@ factory method create(canvasWidth, canvasHeight) {
     }
   }
 
-  factory method addInputBox {
+  class addInputBox {
     var width is public := 50
     var height is public := 20
     var location is public := 0@0
