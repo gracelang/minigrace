@@ -1747,6 +1747,7 @@ function GraceBlock_apply(argcv) {
             }
         }
     }
+    setModuleName(this.definitionModule);
     return this.real.apply(this.receiver, args);
 }
 
