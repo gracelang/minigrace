@@ -32,6 +32,13 @@ factory method shape {
     myStage.update
   }
 
+  method moveTo(p) {
+    location := p
+    jsShapeObject.setLocation(location)
+    jsShapeObject.move(location.x, location.y)
+    myStage.update
+  }
+
   method visible := (v) {
     visible' := v
     jsShapeObject.setVisible(v)
