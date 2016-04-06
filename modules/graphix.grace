@@ -32,11 +32,9 @@ class shape {
         myStage.update
     }
 
-    method moveTo(p) {
+    method drawAt(p) {
         location := p
-        jsShapeObject.setLocation(location)
-        jsShapeObject.move(location.x, location.y)
-        myStage.update
+        draw
     }
 
     method visible := (v) {
