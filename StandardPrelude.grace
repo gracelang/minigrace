@@ -25,6 +25,11 @@ method abstract {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
+
+method required {
+    SubobjectResponsibility.raise "required method not overriden by subobject"
+}
+
 method do(action)while(condition) {
     while {
         action.apply
