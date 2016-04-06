@@ -342,6 +342,9 @@ type Point =  {
 
     - (other:Point) -> Point
     // the Point that is the vector difference of self and other, i.e. (self.x-other.x) @ (self.y-other.y)
+
+    prefix- -> Point
+    // the negation of self
     
     * (factor:Number) -> Point
     // this point scaled by factor, i.e. (self.x*factor) @ (self.y*factor)
