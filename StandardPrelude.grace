@@ -357,6 +357,10 @@ type Point =  {
 
     distanceTo(other:Point) -> Number
     // distance from self to other
+
+    dot (other:Point) -> Number
+    ⋅ (other:Point) -> Number
+    // dot product
 }
 
 class point2Dx (x') y (y') {
@@ -376,6 +380,14 @@ class point2Dx (x') y (y') {
             case {_ -> false}
     }
     method prefix- { point2Dx (-x) y (-y) }
+    method dot (other:Point) -> Number {
+        // dot product
+        (x * other.x) + (y * other.y)
+    }
+    method ⋅ (other:Point) -> Number {
+        // dot product
+        (x * other.x) + (y * other.y)
+    }
 }
 
 import "collectionsPrelude" as coll
