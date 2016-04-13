@@ -27,7 +27,7 @@ function GraceObject() {       // constructor function
     this.data = {};
     this.className = "graceObject";
     this.mutable = false;
-    this.definitionModule = "unknown";
+    this.definitionModule = "basic library";
     this.definitionLine = 0;
 }
 
@@ -94,7 +94,7 @@ function GraceTrait() {       // constructor function
     this.data = {};
     this.className = "graceTrait";
     this.mutable = false;
-    this.definitionModule = "unknown";
+    this.definitionModule = "basic library";
     this.definitionLine = 0;
 }
 
@@ -132,7 +132,7 @@ function Grace_allocObject(superConstructor, givenName) {
         data: {},
         className: givenName || "object",
         mutable: false,
-        definitionModule: "unknown",
+        definitionModule: "basic library",
         definitionLine: 0
     };
     return resultObj;
@@ -556,7 +556,7 @@ GraceString.prototype = {
         }
     },
     className: "string",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -730,15 +730,38 @@ GraceNum.prototype = {
             // This is correct!  NaN is the only value not equal to itself.
             return GraceTrue;
         },
-        "truncate": function(argcv) {
-            if (this._value < 0)
-                return new GraceNum(Math.ceil(this._value));
-            return new GraceNum(Math.floor(this._value));
+        "sin": function(argv) {
+            return new GraceNum(Math.sin(this._value));
+        },
+        "cos": function(argv) {
+            return new GraceNum(Math.cos(this._value));
+        },
+        "tan": function(argv) {
+            return new GraceNum(Math.tan(this._value));
+        },
+        "asin": function(argv) {
+            return new GraceNum(Math.asin(this._value));
+        },
+        "acos": function(argv) {
+            return new GraceNum(Math.acos(this._value));
+        },
+        "atan": function(argv) {
+            return new GraceNum(Math.atan(this._value));
+        },
+        lg: function(argv) {
+            return new GraceNum(Math.log(this._value) / Math.LN2);
+        },
+        ln: function(argv) {
+            return new GraceNum(Math.log(this._value));
+        },
+        exp: function(argv) {
+            return new GraceNum(Math.exp(this._value));
+        },
+        log10: function(argv) {
+            return new GraceNum(Math.log(this._value) / Math.LN10);
         },
         "truncated": function(argcv) {
-            if (this._value < 0)
-                return new GraceNum(Math.ceil(this._value));
-            return new GraceNum(Math.floor(this._value));
+            return new GraceNum(Math.trunc(this._value));
         },
         "floor": function(argcv) {
             return new GraceNum(Math.floor(this._value));
@@ -768,7 +791,7 @@ GraceNum.prototype = {
         }
     },
     className: "number",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -846,7 +869,7 @@ GraceBoolean.prototype = {
         }
     },
     className: "boolean",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -1186,7 +1209,7 @@ PrimitiveGraceList.prototype = {
         }
     },
     className: "builtinList",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -1360,7 +1383,7 @@ Lineup.prototype = {
         }
     },
     className: "lineup",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -1513,7 +1536,7 @@ GracePrimitiveArray.prototype = {
         }
     },
     className: "primitiveArray",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -1674,7 +1697,7 @@ GraceType.prototype = {
         }
     },
     className: "type",
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };
@@ -3259,7 +3282,7 @@ GraceException.prototype = {
         }
     },
     className: 'Exception',
-    definitionModule: "unknown",
+    definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
 };

@@ -28,7 +28,7 @@ method cos(a:Number) -> Number {
 method tan(a:Number) -> Number {
     // tangent of a (assumed to be radians)
     native "c" code ‹    return alloc_Float64(tan(*(double*) args[0]->data));›
-    native "js" code ‹    return new GraceNum(Math.tan(var_a._value));;›
+    native "js" code ‹    return new GraceNum(Math.tan(var_a._value));›
 }
 
 method asin(a:Number) -> Number {
