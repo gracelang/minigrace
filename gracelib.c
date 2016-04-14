@@ -3059,18 +3059,6 @@ Object Boolean_OrOr(Object self, int nparts, int *argcv,
         return callmethod(args[0], "apply", 0, NULL, NULL);
     return alloc_Boolean(istrue(args[0]));
 }
-Object Boolean_andAlso(Object self, int nparts, int *argcv,
-        Object *argv, int flags) {
-    if (self == BOOLEAN_TRUE)
-        return callmethod(argv[0], "apply", 0, NULL, NULL);
-    return self;
-}
-Object Boolean_orElse(Object self, int nparts, int *argcv,
-        Object *argv, int flags) {
-    if (self == BOOLEAN_FALSE)
-        return callmethod(argv[0], "apply", 0, NULL, NULL);
-    return self;
-}
 Object Boolean_not(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     if (self == BOOLEAN_TRUE)
@@ -3091,7 +3079,7 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 14);
+        Boolean = alloc_class("Boolean", 12);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "asDebugString", &Object_asDebugString);
         add_Method(Boolean, "::", &Object_bind);
@@ -3101,10 +3089,8 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "||", &Boolean_OrOr);
         add_Method(Boolean, "prefix!", &Boolean_not);
         add_Method(Boolean, "not", &Boolean_not);
-        add_Method(Boolean, "andAlso", &Boolean_andAlso);
         add_Method(Boolean, "==", &Boolean_Equals);
         add_Method(Boolean, "!=", &Boolean_NotEquals);
-        add_Method(Boolean, "orElse", &Boolean_orElse);
         add_Method(Boolean, "match", &literal_match);
     }
     Object o = alloc_obj(sizeof(int8_t), Boolean);

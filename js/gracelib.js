@@ -833,18 +833,6 @@ GraceBoolean.prototype = {
             var o = callmethod(other, "apply", [0]);
             return o;
         },
-        "andAlso": function(argcv, other) {
-            if (this._value) {
-                return callmethod(other, "apply", [0]);
-            }
-            return this;
-        },
-        "orElse": function(argcv, other) {
-            if (!this._value) {
-                return callmethod(other, "apply", [0]);
-            }
-            return this;
-        },
         "asString": function(argcv) {
             return new GraceString("" + this._value);
         },

@@ -522,8 +522,6 @@ def anObjectType = object {
     addTo(boolean) name("||") params(boolean) returns(boolean)
     addTo(boolean) name("prefix!") returns(boolean)
     addTo(boolean) name("not") returns(boolean)
-    addTo(boolean) name("andAlso") params(shortCircuit) returns(dynamic)
-    addTo(boolean) name("orElse") params(shortCircuit) returns(dynamic)
 
     extend(number) with(base)
     addTo(number) name("+") params(number) returns(number)

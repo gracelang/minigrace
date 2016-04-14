@@ -904,8 +904,6 @@ method setupContext(moduleObject) {
     booleanScope.addName "prefix!"
     booleanScope.addName "&&"
     booleanScope.addName "||"
-    booleanScope.addName "andAlso"
-    booleanScope.addName "orElse"
     booleanScope.addName "not"
 
     builtInsScope.addName "graceObject"
