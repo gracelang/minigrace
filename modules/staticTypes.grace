@@ -393,7 +393,7 @@ def anObjectType = object {
                 meths.push(aMethodType.fromNode(mType))
             }
 
-            if((lit.value != false).andAlso { lit.value.at(1) != "<" }) then {
+            if((lit.value != false) && { lit.value.at(1) != "<" }) then {
                 anObjectType.fromMethods(meths) withName(lit.value)
             } else {
                 anObjectType.fromMethods(meths)
@@ -1131,7 +1131,7 @@ method processBody(body : List) -> ObjectType is confidential {
     collectTypes(body)
 
     // Inheritance typing.
-    def hasInherits = (body.size > 0).andAlso { Inherits.match(body.first) }
+    def hasInherits = (body.size > 0) && { Inherits.match(body.first) }
     def superType = if(hasInherits) then {
         def inheriting = body.first.value
         inheriting.accept(object {
@@ -1265,7 +1265,7 @@ method isPublic(node : Method | Def | Var) -> Boolean is confidential {
 
 // Determines if a method will be accessed as a member.
 method isMember(mType : MethodType) -> Boolean is confidential {
-    (mType.signature.size == 1).andAlso {
+    (mType.signature.size == 1) && {
         mType.signature.first.parameters.size == 0
     }
 }

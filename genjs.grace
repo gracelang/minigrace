@@ -186,7 +186,7 @@ method compileobjtype(o, selfr, pos) {
     out("  reader_{emod}_{nmi}{myc}.def = true;")
     var isReadable := false
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso
+        if ((ann.kind == "identifier") && 
             {ann.value == "confidential"}) then {
             out "  reader_{emod}_{nmi}{myc}.confidential = true;"
         }
@@ -552,7 +552,7 @@ method compilemethod(o, selfobj) {
     if (debugMode) then {
         out "stackFrames.push(myframe);"
     }
-    def isSimpleAccessor = (o.body.size == 1).andAlso{o.body.at(1).kind == "identifier"}
+    def isSimpleAccessor = (o.body.size == 1) && {o.body.at(1).kind == "identifier"}
     if (isSimpleAccessor) then {
         out "// {textualSignature} is a simple accessor - elide try ... catch"
         def ret = compilenode(o.body.at(1))
@@ -726,7 +726,7 @@ method compilefreshmethod(o, selfobj) {
     out("try \{")
     increaseindent
     var tailObject := false
-    if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
+    if ((o.body.size > 0) && {o.body.last.kind == "object"}) then {
         tailObject := o.body.pop    // remove tail object
         tailObject.name := o.nameString
     }
@@ -754,7 +754,7 @@ method compilefreshmethod(o, selfobj) {
         compilemethodtypes("func{myc}", o)
     }
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso
+        if ((ann.kind == "identifier") && 
             {ann.value == "confidential"}) then {
             out("func{myc}.confidential = true;")
         }
@@ -769,7 +769,7 @@ method compilemethodtypes(func, o) {
             // We store information for static top-level types only:
             // absent information is treated as Unknown (and unchecked).
             if (false != p.dtype) then {
-                if ((p.dtype.kind == "identifier").andAlso{p.dtype.value != "Unknown"}
+                if (((p.dtype.kind == "identifier") && {p.dtype.value != "Unknown"})
                     || (p.dtype.kind == "typeliteral")) then {
                     def typeid = escapeident(p.dtype.value)
                     if (topLevelTypes.contains(typeid)) then {
@@ -1053,8 +1053,8 @@ method compilecall(o) {
         }
         call := call ++ ");"
         out(call)
-    } elseif { (o.value.kind == "member").andAlso {
-        o.value.in.kind == "member"}.andAlso {
+    } elseif { (o.value.kind == "member") && {
+        o.value.in.kind == "member"} && {
             o.value.in.value == "outer"} } then {
         def ot = compilenode(o.value.in)
         var call := "var call" ++ auto_count ++ " = " ++ requestCall ++ "({ot}"
@@ -1271,7 +1271,7 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
+        if (o.value.isMember && {o.value.in.value == "prelude"}) then {
             if (o.nameString == "print") then {
                 compilePrint(o)
             } elseif {o.nameString == "native()code"} then {

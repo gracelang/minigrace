@@ -152,7 +152,7 @@ method fail(message)from(startPos)to(endPos) {
 method fail(msg)when(pat) {
     rule { x ->
         def mat = pat.match(x)
-        if (mat.andAlso {mat.result}) then {
+        if (mat && {mat.result}) then {
             fail(msg)
         }
     }
@@ -307,7 +307,7 @@ class patternMatchingRequestOf(name : String) -> Pattern {
     method match(obj : Object) {
         match(obj) 
           case { node : AstNode ->
-            if((node.kind == "call").andAlso {
+            if((node.kind == "call") && {
                 node.value.value == name
             }) then {
                 SuccessfulMatch.new(node, makeBindings(node))

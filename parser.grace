@@ -69,7 +69,7 @@ method findNextToken(tokenMatcher) {
     }
     var nextTok := false
     var n := sym
-    while {(n != false).andAlso { nextTok == false }.andAlso { n.indent >= lastToken.indent }} do {
+    while {(n != false) && { nextTok == false } && { n.indent >= lastToken.indent }} do {
         if(tokenMatcher.apply(n)) then {
             nextTok := n
         }
@@ -84,7 +84,7 @@ method findNextTokenIndentedAt(tok) {
     }
     var nextTok := false
     var n := sym
-    while {(n != false).andAlso { nextTok == false }} do {
+    while {(n != false) && { nextTok == false }} do {
         if(((n.line > tok.line) && (n.indent <= tok.indent)) || (sym.kind == "eof")) then {
             nextTok := n
         }
@@ -279,7 +279,7 @@ method checkAnnotation(ann) {
     if (ann.kind == "call") then {
         for (ann.with) do {p->
             for (p.args) do {a->
-                if ((a.kind == "identifier").andAlso {a.dtype != false}) then {
+                if ((a.kind == "identifier") && {a.dtype != false}) then {
                     var tok := sym
                     // Look back from the current token to try and find the tokens that cause this error.
                     while {tok.value != ":"} do { tok := tok.prev }
@@ -346,7 +346,7 @@ method blank {
     }
     pushComments
     if ((values.size == 0) || 
-            ((values.size > 0).andAlso { values.last.kind != "blank" })) then {
+            ((values.size > 0) && { values.last.kind != "blank" })) then {
         if (blankLocation > 0) then {
             util.setPosition(blankLocation, 0)
             blankLocation := 0
@@ -588,7 +588,7 @@ method doif {
     if (accept("identifier") && (sym.value == "if")) then {
         def btok = sym
         next
-        def opener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"})
+        def opener = if ((sym.kind == "lparen") || {sym.kind == "lbrace"})
                         then { sym.value } else { "-missing-" }
         def closer = if (opener == "(") then { ")" }
                         else { if (opener == "\{") then { "\}" } else { "-nothing-" } }
@@ -737,7 +737,7 @@ method doif {
                 // TODO: allow blocks after elseif to contain a sequence of expressions.
                 statementToken := sym
                 next
-                def elopener = if ((sym.kind == "lparen").orElse{sym.kind == "lbrace"})
+                def elopener = if ((sym.kind == "lparen") || {sym.kind == "lbrace"})
                                 then { sym.value } else { "-missing-" }
                 def elcloser = if (elopener == "(") then { ")" }
                                 else { if (elopener == "\{") then { "\}" } else { "-nothing-" } }
@@ -1550,7 +1550,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
     var allarith := true // Consists only of arithmetic operators
     var opcount := 0
     var opdtype := "" // The single operator being used in this expression
-    while {accept("op")onLineOfLastOr(statementToken).andAlso
+    while {accept("op")onLineOfLastOr(statementToken) && 
             {sym.value != "="}} do {
         opcount := opcount + 1
         o := sym.value
@@ -2161,7 +2161,7 @@ method vardec {
             def suggestion = errormessages.suggestion.new
             def nextToken = findNextToken({ t -> (t.kind == "bind")
                 && (t.line == sym.line)})
-            if((nextToken == false).orElse({nextToken == sym})) then {
+            if((nextToken == false) || ({nextToken == sym})) then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
                 suggestion.replaceTokenRange(sym, nextToken.prev)
@@ -2405,7 +2405,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     var superObject := false
     def usedTraits = []
     var inPreamble := true  // => processing inherit and use statements
-    while {(accept("rbrace")).not.andAlso{sym.kind != "eof"}} do {
+    while {(accept("rbrace")).not && {sym.kind != "eof"}} do {
         if (didConsume {inheritsOrUses}) then {
             def parentNode = values.pop
             if (inPreamble) then {
@@ -2541,8 +2541,8 @@ method doclass {
 
 method dofactoryMethod {
     // Accept a factory method declaration
-    if ((acceptKeyword "factory").andAlso{
-            tokens.first.kind == "keyword"}.andAlso{
+    if ((acceptKeyword "factory") && {
+            tokens.first.kind == "keyword"} && {
             tokens.first.value == "method"}) then {
         def btok = sym
         next
@@ -2798,7 +2798,7 @@ method methodsignature(sameline) {
     signature.push(part)
     if (meth.value == "[") then {
         if(sym.kind != "rsquare") then {
-            if((sym.kind == "identifier") && ((tokens.size == 0).orElse
+            if((sym.kind == "identifier") && ((tokens.size == 0) || 
                 {tokens.first.kind == "rsquare"})) then {
                 def suggestions = [ ]
                 def suggestion = errormessages.suggestion.new
@@ -3032,7 +3032,7 @@ method doreturn {
         def retTok = sym
         next
         var retval
-        if ((tokenOnSameLine).andAlso{accept("rbrace").not}) then {
+        if ((tokenOnSameLine) && {accept("rbrace").not}) then {
             if(didConsume({expression(blocksOK)}).not) then {
                 def suggestions = [ ]
                 var suggestion := errormessages.suggestion.new
@@ -3150,7 +3150,7 @@ method typedec {
         if((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextToken({ t -> t.kind == "lbrace" })
-            if((nextTok == false).orElse({nextTok == sym})) then {
+            if ((nextTok == false) || ({nextTok == sym})) then {
                 suggestion.insert(" =")afterToken(lastToken)
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)with("=")
@@ -3438,13 +3438,7 @@ method checkUnexpectedTokenAfterStatement {
         if (sym.kind != "rbrace") then {
             def suggestions = [ ]
             var suggestion
-            if ((values.size > 0).andAlso {
-                    (values.last.kind == "identifier").orElse {
-                        values.last.kind == "member"
-                    }.andAlso {
-                        sym.kind == "identifier"
-                    }
-                }) then {
+            if ( (values.size > 0) && { (values.last.kind == "identifier") || { values.last.kind == "member" }} && { sym.kind == "identifier" } ) then {
                 suggestion := errormessages.suggestion.new
                 suggestion.replaceToken(sym)leading(true)trailing(false)with("({sym.value})")
                 suggestions.push(suggestion)

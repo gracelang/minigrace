@@ -91,13 +91,13 @@ def suggestion is public = object {
         var start := token.linePos
         // Include leading whitespace.
         if(includeLeading == true) then {
-            if((token.prev != false).andAlso({token.prev.line == token.line})) then {
+            if((token.prev != false) && ({token.prev.line == token.line})) then {
                 start := token.prev.linePos + token.prev.size
             }
         }
         // Include indentation if this is the only token on the line.
         if(token.linePos == (token.indent + 1)) then {
-            if((token.next == false).orElse({token.next.line != token.line})) then {
+            if ((token.next == false) || {token.next.line != token.line}) then {
                 start := 1
             }
         }
@@ -108,7 +108,7 @@ def suggestion is public = object {
         var end := token.linePos + token.size - 1
         // Include trailing space.
         if(includeTrailing == true) then {
-            if((token.next != false).andAlso({token.next.line == token.line})) then {
+            if((token.next != false) && ({token.next.line == token.line})) then {
                 end := token.next.linePos - 1;
             } else {
                 end := getLine(token.line).size
@@ -224,7 +224,7 @@ def suggestion is public = object {
             if(lines.size > 1) then {
                 // Re-order the list.
                 i := lines.size
-                while {(i > 1).andAlso({lineNumber < lineNumbers[i - 1]})} do {
+                while {(i > 1) && ({lineNumber < lineNumbers[i - 1]})} do {
                     lineNumbers[i] := lineNumbers[i - 1]
                     lines[i] := lines[i - 1]
                     i := i - 1
@@ -259,7 +259,7 @@ def suggestion is public = object {
 
     method print() {
         for(1..lines.size) do { i ->
-            if((i > 1).andAlso {(lineNumbers[i] > (lineNumbers[i-1] + 1))}) then {
+            if((i > 1) && {(lineNumbers[i] > (lineNumbers[i-1] + 1))}) then {
                 var s := ""
                 for(1..lineNumbers[i-1].asString.size) do {
                     s := s ++ " "
@@ -318,7 +318,7 @@ method name (p:String) matches (t:String) within (k:Number) {
                 c := h[i+1]
                 h[i+1] := e
             }
-            while { (top >= 0).andAlso {h[top+1] > k'} } do { top := top - 1 }
+            while { (top >= 0) && {h[top+1] > k'} } do { top := top - 1 }
             if (top == m) then {
                 return j    // the last character of t that was used in the match
             } else {

@@ -283,7 +283,7 @@ class new {
                 tokens.push(tok)
                 isDone := true
             } elseif { mode == "m" } then {
-                if ((tokens.size > 1).andAlso {tokens.last.kind == "dot"}) then {
+                if ((tokens.size > 1) && {tokens.last.kind == "dot"}) then {
                     def dot = tokens.pop
                     if (tokens.last.kind == "num") then {
                         if (tokens.last.base == 10) then {
@@ -366,7 +366,7 @@ class new {
             } elseif { mode == "c" } then {
                 var firstNonSpace := 3      // skip the leading "//"
                 def accumSize = accum.size
-                while { (firstNonSpace <= accum.size).andAlso {
+                while { (firstNonSpace <= accum.size) && {
                         accum.at(firstNonSpace) == " " } } do {
                     firstNonSpace := firstNonSpace + 1 
                 }
@@ -677,7 +677,7 @@ class new {
         def mainBlock = { c ->
             var ct := ""
             var ordval := c.ord // String.ord gives the codepoint
-            if (badSeparator.match(ordval).andAlso { mode != "q" }) then {
+            if (badSeparator.match(ordval) && { mode != "q" }) then {
                 // Character is whitespace, but not an ASCII space or
                 // Unicode NO-BREAK SPACE.  For example, a tab
                 def suggestion = errormessages.suggestion.new
@@ -716,7 +716,7 @@ class new {
                         ++ "is not a valid whitespace character; use spaces instead.")atRange(lineNumber,
                         linePosition, linePosition)withSuggestion(suggestion)
                 }
-            } elseif {badControl.match(ordval).andAlso { mode != "q" }} then {
+            } elseif {badControl.match(ordval) && { mode != "q" }} then {
                 // Character is a control character other than
                 // carriage return or line feed.
                 def suggestion = errormessages.suggestion.new

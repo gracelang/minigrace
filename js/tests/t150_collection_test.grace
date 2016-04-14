@@ -1306,7 +1306,7 @@ def dictionaryTest = object {
         method testAsString {
             def dict2 = dictionary ["one"::1, "two"::2]
             def dStr = dict2.asString
-            assert((dStr == "dict⟬one::1, two::2⟭").orElse{dStr == "dict⟬two::2, one::1⟭"})
+            assert((dStr == "dict⟬one::1, two::2⟭") || {dStr == "dict⟬two::2, one::1⟭"})
                 description "\"{dStr}\" should be \"dict⟬one::1, two::2⟭\""
         }
 

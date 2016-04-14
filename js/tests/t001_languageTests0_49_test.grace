@@ -124,6 +124,15 @@ def aGraceLangTest = object {
             out(true && false)
             
             assert(str)shouldBe("true\nfalse\ntrue\nfalse\n")
+            str := ""
+
+            assert(false && {out "*"; true}) shouldBe (false)
+            assert(true || {out "*"; false}) shouldBe (true)
+            assert(str) shouldBe ""
+
+            assert(true && {out "*"; true}) shouldBe (true)
+            assert(false || {out "*"; false}) shouldBe (false)
+            assert(str) shouldBe "*\n*\n"
         }
 
         method test_006_dotcall {

@@ -179,8 +179,8 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
     if (util.target == "c") then {
         def moduleFileGso = moduleFileGct.copy.setExtension ".gso"
         def moduleFileGcn = moduleFileGct.copy.setExtension ".gcn"
-        def needsDynamic = (isDialect || util.importDynamic || util.dynamicModule)
-            .orElse { dynamicCModules.contains(nm) }
+        def needsDynamic = isDialect || util.importDynamic ||
+            util.dynamicModule || { dynamicCModules.contains(nm) }
         util.log 100 verbose "needsDynamic for {nm} is {needsDynamic}."
         var binaryFile
         var importsSet
@@ -209,9 +209,9 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
             imports.linkfiles.add(binaryFile.asString)
         }
         util.log 100 verbose "linkfiles is {imports.linkfiles}."
-        if (binaryFile.exists.andAlso {
-            moduleFileGct.exists }.andAlso {
-                noSource.orElse { binaryFile.newer(moduleFileGrace) }
+        if (binaryFile.exists && {
+            moduleFileGct.exists } && {
+                noSource || { binaryFile.newer(moduleFileGrace) }
             }
         ) then {
         } else {
@@ -226,9 +226,9 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
         importsSet.add(nm)
     } elseif { util.target == "js" } then {
         def moduleFileJs = moduleFileGct.copy.setExtension ".js"
-        if (moduleFileJs.exists.andAlso {
-            moduleFileGct.exists }.andAlso {
-                noSource.orElse {
+        if (moduleFileJs.exists && {
+            moduleFileGct.exists } && {
+                noSource || {
                     moduleFileJs.newer(moduleFileGrace)
                 }
             }
@@ -272,7 +272,7 @@ method addTransitiveImports(directory, isDialect, moduleName, line, linePos) is 
 
 method compileModule (nm) inFile (sourceFile)
         forDialect (isDialect) atRange (line, linePos) is confidential {
-    if ( prelude.inBrowser.orElse { util.recurse.not } ) then {
+    if ( prelude.inBrowser || { util.recurse.not } ) then {
         errormessages.error "Please compile module {nm} before importing it."
             atLine(line)
     }
@@ -568,7 +568,7 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
         // we know that freshMethResult.value.isMember and
         // freshMethResult.value.nameString == "clone"
         def receiver = freshMethResult.value.in
-        if ((receiver.nameString == "prelude").andAlso{
+        if ((receiver.nameString == "prelude") && {
           freshMethResult.with.first.args.first.nameString == "self"}) then {
             gct.at "fresh:{val.nameString}" put(gct.at "public")
         } elseif {(receiver.nameString == "self")} then {

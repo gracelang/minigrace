@@ -156,7 +156,7 @@ class baseNode {
         for (0..depth) do { i ->
             spc := spc ++ "  "
         }
-        if ((scope.node == self).andAlso{util.target == "symbols"}) then {
+        if ((scope.node == self) && {util.target == "symbols"}) then {
             "{line}:{linePos} {description}\n{spc}Symbols({scope.variety}): {scope}{scope.elementScopesAsString}"
         } elseif {scope.variety == "fake"} then {
             "{line}:{linePos} {description}"
@@ -309,7 +309,7 @@ def blockNode is public = object {
     method declarationKindWithAncestors(as) { k.parameter }
     method isMatchingBlock { params.size == 1 }
     method returnsObject {
-        (body.size > 0).andAlso { body.last.returnsObject }
+        (body.size > 0) && { body.last.returnsObject }
     }
     method returnedObjectScope {
         // precondition: returnsObject
@@ -855,7 +855,7 @@ def methodNode = object {
         method needsArgChecks {
             signature.do { part -> 
                 part.params.do { p ->
-                    if ((p.dtype != false).andAlso { 
+                    if ((p.dtype != false) && { 
                             p.dtype.nameString != "Unknown" }) then {
                         return true
                     }
@@ -881,7 +881,7 @@ def methodNode = object {
             aNode == dtype
         }
         method returnsObject {
-            body.isEmpty.not.andAlso {body.last.returnsObject}
+            body.isEmpty.not && {body.last.returnsObject}
         }
         method returnedObjectScope {
             // precondition: returnsObject
@@ -980,7 +980,7 @@ def methodNode = object {
             var firstPart := true
             for (self.signature) do { part ->
                 s := s ++ part.name
-                if (firstPart.andAlso{false != typeParams}) then {
+                if (firstPart && {false != typeParams}) then {
                     s := s ++ typeParams.toGrace(depth + 1)
                 }
                 firstPart := false
@@ -1142,7 +1142,7 @@ def callNode = object {
             var firstPart := true
             for (self.with) do { part ->
                 s := s ++ part.name
-                if (firstPart.andAlso{generics != false}) then {
+                if (firstPart && {generics != false}) then {
                     s := s ++ "<"
                     for (1..(generics.size - 1)) do {ix ->
                         s := s ++ generics.at(ix).toGrace(depth + 1)
@@ -2062,7 +2062,7 @@ def defDecNode = object {
                 spc := spc ++ "    "
             }
             var s := "def {self.name.toGrace(0)}"
-            if ( (self.dtype != false).andAlso{
+            if ( (self.dtype != false) && {
                     self.dtype.value != "Unknown" }) then {
                 s := s ++ " : " ++ self.dtype.toGrace(0)
             }
@@ -2174,7 +2174,7 @@ def varDecNode is public = object {
             spc := spc ++ "    "
         }
         var s := "var {self.name.toGrace(0)}"
-        if ( (self.dtype != false).andAlso{
+        if ( (self.dtype != false) && {
                 self.dtype.value != "Unknown" }) then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
         }
@@ -2710,11 +2710,11 @@ method wrap(str:String) to (l:Number) prefix (margin:String) {
             if (str.at(ix) == " ") then { currBreak := ix }
         }
         var end := currBreak
-        while {(end >= 1).andAlso{str.at(end) == " "}} do {
+        while {(end >= 1) && {str.at(end) == " "}} do {
             end := end - 1
         }
         var start := 1
-        while {(start <= str.size).andAlso{str.at(start) == " "}} do {
+        while {(start <= str.size) && {str.at(start) == " "}} do {
             start := start + 1
         }
         trimmedLine := str.substringFrom (start) to (end)
@@ -2875,7 +2875,7 @@ def patternMarkVisitor = object {
 
 method findAnnotation(node, annName) {
     for (node.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso {
+        if ((ann.kind == "identifier") && {
             ann.value == annName }) then {
             return object {
                 inherits true

@@ -129,7 +129,7 @@ testSuiteNamed "comment tests" with {
     
     test "method m" by {
         def methodMNode = nodes.filter { each -> (each.kind == "method")
-            .andAlso {each.nameString == "m"} }.first
+             && {each.nameString == "m"} }.first
         def mComments = methodMNode.comments.value
         assert (mComments.contains "post-comment (sameline) method m") 
             description "method m is missing the sameline comment"
@@ -141,7 +141,7 @@ testSuiteNamed "comment tests" with {
     
     test "class person" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod.andAlso { each.nameString == "person" } }.first
+            each.isMethod && { each.nameString == "person" } }.first
         def personComments = classPerson.comments
         def commentString = personComments.value
         assert (personComments.isPreceededByBlankLine)
@@ -156,7 +156,7 @@ testSuiteNamed "comment tests" with {
     
     test "person field name" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod.andAlso { each.nameString == "person" } }.first
+            each.isMethod && { each.nameString == "person" } }.first
         def classPersonBody = classPerson.body.first.value
         def classPersonDefs = classPersonBody.filter { each ->
             each.kind == "defdec" }
@@ -169,7 +169,7 @@ testSuiteNamed "comment tests" with {
     
     test "person field age" by {
         def classPerson = nodes.filter { each ->
-            each.isMethod.andAlso { each.nameString == "person" } }.first
+            each.isMethod && { each.nameString == "person" } }.first
         def classPersonBody = classPerson.body.first.value
         def classPersonDefs = classPersonBody.filter { each ->
             each.kind == "defdec" }

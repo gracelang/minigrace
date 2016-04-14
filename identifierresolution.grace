@@ -309,7 +309,7 @@ factory method newScopeIn(parent') kind(variety') {
                 "an enclosing {priorScope.variety}"
             }
         def priorKind = priorScope.kind(name)
-        if (priorScope.isObjectScope.andAlso{self.isObjectScope}) then {
+        if (priorScope.isObjectScope && {self.isObjectScope}) then {
             return
         }
         // new object attributes can shadow old, but other shadowing is illegal
@@ -382,7 +382,7 @@ method rewritematchblockterm(arg) {
     if (arg.kind == "boolean") then {
         return [arg, []]
     }
-    if ((arg.kind == "call").andAlso {arg.value.value.substringFrom(1)to(6)
+    if ((arg.kind == "call") && {arg.value.value.substringFrom(1)to(6)
         == "prefix"}) then {
         return [arg, []]
     }
@@ -619,7 +619,7 @@ method rewriteIdentifier(node) ancestors(as) {
         ) scope(nodeScope)
     }
     if (nodeScope.isObjectScope.not
-            .andAlso{nodeScope.isInSameObjectAs(definingScope)}) then {
+             && {nodeScope.isInSameObjectAs(definingScope)}) then {
         if (nodeKind == k.methdec) then { return node }
         if (nodeKind == k.defdec) then { return node }
         if (nodeKind == k.vardec) then { return node }
@@ -684,7 +684,7 @@ method reportUndeclaredIdentifier(node) {
                 util.log 100 verbose "matching {nm} to {v} within {thresh}"
                 def matchExtent = errormessages.name (nm) matches (v) within (thresh)
                 if (((matchExtent > 1) && (isSameIgnoringCase(v.first, startChar)) &&
-                      (nmSize <= v.size) && (v.size <= sizeLimit)).orElse {
+                      (nmSize <= v.size) && (v.size <= sizeLimit)) || {
                       (nmSize > 2) && (matchExtent == v.size) } ) then {
                     suggestion := errormessages.suggestion.new
                     suggestion.replaceRange(node.linePos, node.linePos +
@@ -1001,7 +1001,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             var scope := as.parent.scope
             o.scope := scope
             if (o.isBindingOccurrence) then {
-                if ((o.isDeclaredByParent.not).andAlso{o.wildcard.not}) then {
+                if ((o.isDeclaredByParent.not) && {o.wildcard.not}) then {
                     checkForReservedName(o)
                     def kind = o.declarationKindWithAncestors(as)
                     if (kind.isParameter) then {

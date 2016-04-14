@@ -1291,7 +1291,7 @@ class set<T> {
                 var candidate
                 while {
                     candidate := inner.at(t)
-                    (candidate != unused).andAlso{candidate != removed}
+                    (candidate != unused) && {candidate != removed}
                 } do {
                     if (candidate == x) then {
                         return t
@@ -1323,7 +1323,7 @@ class set<T> {
                 var candidate
                 while {found < size} do {
                     candidate := inner.at(i)
-                    if ((candidate != unused).andAlso{candidate != removed}) then {
+                    if ((candidate != unused) && {candidate != removed}) then {
                         found := found + 1
                         block1.apply(candidate)
                     }
@@ -1366,7 +1366,7 @@ class set<T> {
                     inner.at(i)put(unused)
                 }
                 for (0..(oldInner.size-1)) do {i->
-                    if ((oldInner.at(i) != unused).andAlso{oldInner.at(i) != removed}) then {
+                    if ((oldInner.at(i) != unused) && {oldInner.at(i) != removed}) then {
                         add(oldInner.at(i))
                     }
                 }
@@ -1615,7 +1615,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while {(inner.at(t) != unused).andAlso{inner.at(t) != removed}} do {
+            while {(inner.at(t) != unused) && {inner.at(t) != removed}} do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
@@ -1746,7 +1746,7 @@ class dictionary<K,T> {
             numBindings := 0
             for (0..(c - 1)) do {i->
                 def a = oldInner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if ((a != unused) && {a != removed}) then {
                     self.at(a.key)put(a.value)
                 }
             }
@@ -1754,7 +1754,7 @@ class dictionary<K,T> {
         method keysAndValuesDo(block2) {
              for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if ((a != unused) && {a != removed}) then {
                     block2.apply(a.key, a.value)
                 }
             }
@@ -1762,7 +1762,7 @@ class dictionary<K,T> {
         method keysDo(block1) {
              for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if ((a != unused) && {a != removed}) then {
                     block1.apply(a.key)
                 }
             }
@@ -1770,7 +1770,7 @@ class dictionary<K,T> {
         method valuesDo(block1) {
              for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if ((a != unused).andAlso{a != removed}) then {
+                if ((a != unused) && {a != removed}) then {
                     block1.apply(a.value)
                 }
             }

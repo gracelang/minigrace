@@ -140,7 +140,7 @@ method split(pathString) -> List<String> {
     var ox := 1
     def pss = pathString.size
     while { ox <= pss } do {
-        while { (ox <= pss).andAlso{pathString.at(ox) != ":"} } do {
+        while { (ox <= pss) && {pathString.at(ox) != ":"} } do {
             ox := ox + 1
         }
         var item := pathString.substringFrom(ix) to(ox-1)

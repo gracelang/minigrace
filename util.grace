@@ -191,7 +191,7 @@ method parseargs(buildinfo) {
             }
         }
     }
-    if ((false == vtagv).andAlso{outDirCache != ""}) then {
+    if ((false == vtagv) && {outDirCache != ""}) then {
         vtagv := outDirCache.substringFrom 1 to (outDirCache.size - 1)
     }
     if ((outfilev == io.output) && {!toStdout}) then {
@@ -449,7 +449,7 @@ method file(name) on(origin) orPath(pathString) otherwise(action) {
     if (locations.contains(execDir).not) then { locations.addLast(execDir) }
     def candidate = name.copy
     def originalDir = name.directory
-    if ((originalDir.size > 0).andAlso{originalDir.first == "/"}) then {
+    if ((originalDir.size > 0) && {originalDir.first == "/"}) then {
         if (candidate.exists) then {
             return candidate
         } else {

@@ -202,7 +202,7 @@ method compileobjtypemeth(o, selfr, pos) {
         ++ "Object* args, int flags) \{")
     var flags := "MFLAG_DEF"
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso{ann.value == "confidential"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "confidential"}) then {
             flags := "{flags} | MFLAG_CONFIDENTIAL"
         }
     }
@@ -240,10 +240,10 @@ method compileobjdefdecmeth(o, selfr, pos) {
     var flags := "MFLAG_DEF"
     var isPublic := false
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso{ann.value == "public"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "public"}) then {
             isPublic := true
         }
-        if ((ann.kind == "identifier").andAlso{ann.value == "readable"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "readable"}) then {
             isPublic := true
         }
     }
@@ -301,14 +301,14 @@ method compileobjvardecmeth(o, selfr, pos) {
     var rflags := "MFLAG_CONFIDENTIAL"
     var wflags := "MFLAG_CONFIDENTIAL"
     for (o.annotations) do {ann->
-        if ((ann.kind == "identifier").andAlso {ann.value == "public"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "public"}) then {
             rflags := "0"
             wflags := "0"
         }
-        if ((ann.kind == "identifier").andAlso {ann.value == "readable"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "readable"}) then {
             rflags := "0"
         }
-        if ((ann.kind == "identifier").andAlso {ann.value == "writable"}) then {
+        if ((ann.kind == "identifier") && {ann.value == "writable"}) then {
             wflags := "0"
         }
     }
@@ -680,7 +680,7 @@ method compilemethod(o, selfobj, pos) {
         && {util.extensions.contains("TailCall")}) then {
         tco := o.body.pop
     }
-    if ((o.body.size > 0).andAlso {o.body.last.kind == "object"}) then {
+    if ((o.body.size > 0) && {o.body.last.kind == "object"}) then {
         tailObject := o.body.pop       // remove tail object
         if (tailObject.name == "object") then {
             var selfName := selfobj
@@ -1227,7 +1227,7 @@ method compileop(o) {
     var right := compilenode(o.right)
     out("  int op_slot_right_{myc} = gc_frame_newslot({right});")
     auto_count := auto_count + 1
-    if ((o.left.kind == "identifier").andAlso {o.left.value == "super"}) then {
+    if ((o.left.kind == "identifier") && {o.left.value == "super"}) then {
         def evl = escapestring2(o.value)
         out("  params[0] = {right};")
         out("  partcv[0] = 1;")
@@ -1321,8 +1321,8 @@ method compilecall(o, tailcall) {
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
             ++ "CFLAG_SELF);")
-    } elseif {(o.value.kind == "member").andAlso {
-        o.value.in.kind == "member"}.andAlso {
+    } elseif {(o.value.kind == "member") && {
+        o.value.in.kind == "member"} && {
             o.value.in.value == "outer"} } then {
         out "// call case 2: outer request"
         def ot = compilenode(o.value.in)
@@ -1625,7 +1625,7 @@ method compilenode(o) {
     } elseif { oKind == "member" } then {
         compilemember(o)
     } elseif { oKind == "call" } then {
-        if (o.value.isMember.andAlso{o.value.in.value == "prelude"}) then {
+        if (o.value.isMember && {o.value.in.value == "prelude"}) then {
             if (o.nameString == "print") then {
                 compilePrint(o)
             } elseif {o.nameString == "native()code"} then {
@@ -1980,7 +1980,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         util.log_verbose "compiling C code."
         def ofpn = outfile.pathname
         var ix := ofpn.size
-        while { (ix > 1).andAlso {ofpn.at(ix) != "."} } do { ix := ix - 1 }
+        while { (ix > 1) && {ofpn.at(ix) != "."} } do { ix := ix - 1 }
         def ofpnBase = if (ix > 0) then { 
                 ofpn.substringFrom 1 to (ix-1)
             } else {
