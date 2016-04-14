@@ -3356,10 +3356,15 @@ GraceDone.methods = {
             asDebugString: done_asString };
 // The singleton object "done"; does *not* have GraceObject as its superObject
 
-var ellipsis = Grace_allocObject(GraceObject, "ellipsis");
-ellipsis.methods.asString = function ellipsis_asString() {
-    return new GraceString("...");
-};
+function ellipsisFun() {
+    throw new GraceExceptionPacket(ProgrammingErrorObject,
+         new GraceString("attempt to evaluate ellipsis (...)"));
+}
+if (typeof global === "undefined") {
+    Object.defineProperty(window, "ellipsis", { get: ellipsisFun });
+} else {
+    Object.defineProperty(global, "ellipsis", { get: ellipsisFun });
+}
 
 var ExceptionObject = new GraceException("Exception", false);
 var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
