@@ -2903,6 +2903,12 @@ Object Float64_abs(Object self, int nparams, int *argcv,
     double *d = (double*)self->data;
     return alloc_Float64(fabs(*d));
 }
+Object Float64_sgn(Object self, int nparams, int *argcv,
+                   Object *argv, int flags) {
+    double *d = (double*)self->data;
+    if (*d == 0.0) return alloc_Float64(*d);
+    return alloc_Float64(*d > 0 ? 1 : -1);
+}
 void Float64__mark(Object self) {
     Object *strp = (Object*)(self->data + sizeof(double));
     if (*strp != NULL)
@@ -2929,7 +2935,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 39, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 40, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -2964,6 +2970,7 @@ Object alloc_Float64(double num) {
         add_Method(Number, "floor", &Float64_floor);
         add_Method(Number, "ceiling", &Float64_ceiling);
         add_Method(Number, "abs", &Float64_abs);
+        add_Method(Number, "sgn", &Float64_sgn);
         add_Method(Number, "match", &literal_match);
         add_Method(Number, "|", &literal_or);
         add_Method(Number, "&", &literal_and);

@@ -775,6 +775,13 @@ GraceNum.prototype = {
         "abs": function(argcv) {
             return new GraceNum(Math.abs(this._value));
         },
+        "sgn": function(argcv) {
+            var n = this._value;
+            if (n != n) throw new GraceExceptionPacket(ProgrammingErrorObject,
+                            new GraceString("NaN.sgn is undefined"));
+            if (n === 0) return new GraceNum(0);
+            return new GraceNum(n > 0 ? 1 : -1);
+        },
         "sqrt": function(argcv) {
             return new GraceNum(Math.sqrt(this._value));
         },
