@@ -1245,7 +1245,7 @@ class set<T> {
             }
             self    // for chaining
         }
-        method removeAll(elements)ifAbsent(block) {
+        method removeAll(elements)ifAbsent(block:Block1<T,Done>) {
             mods := mods + 1
             for (elements) do { x ->
                 var t := findPosition(x)
@@ -1253,7 +1253,7 @@ class set<T> {
                     inner.at(t) put (removed)
                     size := size - 1
                 } else {
-                    block.apply
+                    block.apply(x)
                 }
             }
             self    // for chaining
