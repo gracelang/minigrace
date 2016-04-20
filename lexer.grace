@@ -167,8 +167,8 @@ class new {
     class arrowToken {
         inherits token
         def kind is public = "arrow"
-        def value is public = "->"
-        def size is public = 2
+        def value is public = "→"
+        def size is public = 1
     }
     class bindToken {
         inherits token
@@ -185,13 +185,13 @@ class new {
     class lGenericToken {
         inherits token
         def kind is public = "lgeneric"
-        def value is public = "<"
+        def value is public = "⟦"
         def size is public = 1
     }
     class rGenericToken {
         inherits token
         def kind is public = "rgeneric"
-        def value is public = ">"
+        def value is public = "⟧"
         def size is public = 1
     }
     class eofToken {
@@ -211,10 +211,10 @@ class new {
         //   "           Quoted string    q   extended string
         //   m           Number           o   Any operator
         //   p           Pragma           d   Indentation
-        //   c           Comment
-        //   ,.{}()[]<>; The corresponding literal character
+        //   c           Comment          e   empty
+        //   ,.{}()[]⟦⟧; The corresponding literal character
         //
-        // There are three special cases for mode o. If accum is "->",
+        // There are three special cases for mode o. If accum is "→",
         // ":=", or "=", the corresponding special token is created.
         // For mode i, a keyword token is created when the identifier
         // is a reserved keyword.
@@ -270,11 +270,11 @@ class new {
                 tok := rSquareToken
                 tokens.push(tok)
                 isDone := true
-            } elseif { mode == "<" } then {
+            } elseif { mode == "⟦" } then {
                 tok := lGenericToken
                 tokens.push(tok)
                 isDone := true
-            } elseif { mode == ">" } then {
+            } elseif { mode == "⟧" } then {
                 tok := rGenericToken
                 tokens.push(tok)
                 isDone := true
@@ -299,7 +299,7 @@ class new {
                                 suggestion := errormessages.suggestion.new
                                 suggestion.deleteRange(dot.linePos, linePosition - 1)onLine(lineNumber)
                                 suggestions.push(suggestion)
-                                errormessages.syntaxError("The fractional part of a number must be in base 10.")atRange(
+                                errormessages.syntaxError("the fractional part of a number must be in base 10.")atRange(
                                     lineNumber, dot.linePos + 1, linePosition - 1)withSuggestions(suggestions)
                             }
                         } else {
@@ -310,20 +310,20 @@ class new {
                             suggestion := errormessages.suggestion.new
                             suggestion.deleteChar(dot.linePos)onLine(lineNumber)
                             suggestions.push(suggestion)
-                            errormessages.syntaxError("A number in base {tokens.last.base} cannot have a fractional part.")atRange(
+                            errormessages.syntaxError("a number in base {tokens.last.base} cannot have a fractional part.")atRange(
                                 lineNumber, dot.linePos, linePosition - 1)withSuggestions(suggestions)
                         }
                     } else {
                         if(tokens.last.kind == "string") then {
                             def suggestion = errormessages.suggestion.new
                             suggestion.replaceChar(dot.linePos)with("++")onLine(dot.line)
-                            errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'. "
+                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'. "
                                 ++ "To join a number to a string, use '++'.")atRange(
                                 dot.line, dot.linePos, dot.linePos)withSuggestion(suggestion)
                         } elseif { (tokens.last.kind == "op" ) || (tokens.last.kind == "bind") } then {
                             def suggestion = errormessages.suggestion.new
                             suggestion.insert("0")atPosition(dot.linePos)onLine(dot.line)
-                            errormessages.syntaxError("A number must have a digit before the decimal point.")atPosition(
+                            errormessages.syntaxError("a number must have a digit before the decimal point.")atPosition(
                                 dot.line, dot.linePos)withSuggestion(suggestion)
                         } elseif { tokens.last.kind == "identifier" } then {
                             def suggestions = []
@@ -335,10 +335,10 @@ class new {
                             def suggestion = errormessages.suggestion.new
                             suggestion.replaceRange(dot.linePos, linePosition - 1)with("({accum})")onLine(tokens.last.line)
                             suggestions.push(suggestion)
-                            errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
+                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'.")atRange(
                                 dot.line, dot.linePos, dot.linePos)withSuggestions(suggestions)
                         } else {
-                            errormessages.syntaxError("A number may follow a '.' only if there is a number before the '.'.")atRange(
+                            errormessages.syntaxError("a number may follow a '.' only if there is a number before the '.'.")atRange(
                                 dot.line, dot.linePos, dot.linePos)
                         }
                     }
@@ -349,7 +349,7 @@ class new {
                 isDone := true
             } elseif { mode == "o" } then {
                 tok := opToken(accum)
-                if (accum == "->") then {
+                if (accum == "→") then {
                     tok := arrowToken
                 } elseif { accum == ":=" } then {
                     tok := bindToken
@@ -362,6 +362,8 @@ class new {
                 indentLevel := linePosition - 1
                 isDone := true
             } elseif { mode == "n" } then {
+                isDone := true
+            } elseif { mode == "e" } then {
                 isDone := true
             } elseif { mode == "c" } then {
                 var firstNonSpace := 3      // skip the leading "//"
@@ -381,8 +383,9 @@ class new {
             } elseif { isDone } then {
                 //print(mode, accum, tokens)
             } else {
-                errormessages.syntaxError "Lexing error: no handler for mode {mode} with accum ‹{accum}›"
-                    atPosition(lineNumber, linePosition)
+                ProgrammingError.raise("Internal error in lexer: " ++
+                    "no handler for mode {mode} with accum ‹{accum}› " ++
+                    "at position {lineNumber}:{linePosition}")
             }
         }
         startPosition := linePosition
@@ -406,7 +409,7 @@ class new {
                 if((str[1] == "0") && (inc < 16)) then {
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert("x")atPosition(linePosition - str.size + 1)onLine(lineNumber)
-                    errormessages.syntaxError("A number in base 16 must start with '0x'.")atPosition(
+                    errormessages.syntaxError("a number in base 16 must start with '0x'.")atPosition(
                         lineNumber, linePosition - str.size + 1)withSuggestion(suggestion)
                 } else {
                     def suggestion = errormessages.suggestion.new
@@ -443,7 +446,7 @@ class new {
         } elseif { (cOrd >= zeroOrd) && (cOrd <= "9".ord) } then {
             cOrd - zeroOrd
         } else {
-            errormessages.syntaxError("The character '{c}' must be a hexadecimal digit")
+            errormessages.syntaxError("the character '{c}' must be a hexadecimal digit")
                 atRange(lineNumber, linePosition, linePosition)
         }
     }
@@ -468,7 +471,7 @@ class new {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteRange(linePosition - accum.size, linePosition - accum.size + i)onLine(lineNumber)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("Base {base} is not a valid numerical base.")atRange(
+                    errormessages.syntaxError("base {base} is not a valid numerical base.")atRange(
                         lineNumber, linePosition - accum.size, linePosition - accum.size + i - 1)withSuggestions(suggestions)
                 }
                 sofar := ""
@@ -485,7 +488,7 @@ class new {
             suggestion := errormessages.suggestion.new
             suggestion.insert("0")atPosition(linePosition)onLine(lineNumber)
             suggestions.push(suggestion)
-            errormessages.syntaxError("At least one digit must follow the 'x' in a number.")atPosition(
+            errormessages.syntaxError("at least one digit must follow the 'x' in a number.")atPosition(
                 lineNumber, linePosition - accum.size + i)withSuggestions(suggestions)
         }
         numToken(fromBase(sofar, base).asString, base)
@@ -668,9 +671,9 @@ class new {
             // 32 is SPACE, and 160 NO-BREAK SPACE
         def badControl =  unicode.pattern("C")not(10, 13)
         def selfModes = unicode.pattern("(".ord, ")".ord, ",".ord,
-            ".".ord, "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord)
+            "\{".ord, "}".ord, "[".ord, "]".ord, ";".ord, "⟦".ord, "⟧".ord)
         def brackets = unicode.pattern("(".ord, ")".ord,
-            "\{".ord, "}".ord, "[".ord, "]".ord)
+            "\{".ord, "}".ord, "[".ord, "]".ord, "⟦".ord, "⟧".ord)
         def identifierChar = unicode.pattern("L", "N", 95, 39) // 95 = _, 39 = '
         def digit = unicode.pattern("0".ord, "1".ord, "2".ord, "3".ord,
             "4".ord, "5".ord, "6".ord, "7".ord, "8".ord, "9".ord)
@@ -695,7 +698,7 @@ class new {
                             atRange(lineNumber, linePosition, linePosition)
                             withSuggestion(suggestion)
                     }
-                    errormessages.syntaxError("Tabs are not allowed; use spaces instead.")atRange(lineNumber,
+                    errormessages.syntaxError("tabs are not allowed; use spaces instead.")atRange(lineNumber,
                         linePosition, linePosition)withSuggestion(suggestion)
                 } else {
                     if (mode == "\"") then {
@@ -787,22 +790,20 @@ class new {
                 }
                 if (c == "<") then {
                     if (mode == "i") then {
-                        newmode := "<"
+                        newmode := "⟦"
                     } elseif {(mode == "n") && (tokens.last.kind == "op")} then {
-                        newmode := "<"
+                        newmode := "⟧"
                     } else {
                         newmode := "o"
                     }
-                } elseif { (c == ">") && 
-                        ((mode == "i") || (mode == "<") || (mode == ">")) } then {
-                    if (mode == ">") then {
+                } elseif { (c == ">") && {(mode == "i") || (mode == "e")} } then {
+                    if (mode == "⟧") then {
                         modechange(tokens, mode, accum)
                     }
-                    newmode := ">"
+                    newmode := "⟧"
                 } elseif { isoperatorchar(c, ordval) } then {
                     newmode := "o"
-                }
-                if (selfModes.match(ordval)) then {
+                } elseif { selfModes.match(ordval) } then {
                     newmode := c
                 }
                 if (c == "#") then {
@@ -821,13 +822,14 @@ class new {
                         // Special handler for .. operator
                         mode := "o"
                         newmode := mode
-                    }
-                    if (accum == "..") then {
+                    } elseif { accum == ".." } then {
                         // Special handler for ... identifier
                         mode := "n"
                         newmode := mode
                         modechange(tokens, "i", "...")
                         accum := ""
+                    } else {
+                        newmode := "."
                     }
                 }
                 if (c == "/") then {
@@ -889,7 +891,7 @@ class new {
                         if (tokens.last.kind == "lbrace") then {
                             def suggestion = errormessages.suggestion.new
                             suggestion.deleteRange(linePosition - 1, linePosition)onLine(lineNumber)
-                            errormessages.syntaxError("A string interpolation cannot be empty.")atRange(
+                            errormessages.syntaxError("a string interpolation cannot be empty.")atRange(
                                 lineNumber, tokens.last.linePos, linePosition)withSuggestion(suggestion)
                         }
                         modechange(tokens, ")", ")")
@@ -910,8 +912,8 @@ class new {
                 }
                 if (brackets.match(mode)) then {
                     modechange(tokens, mode, accum)
-                    mode := "n"
-                    newmode := "n"
+                    mode := "e"
+                    newmode := mode
                     accum := ""
                 }
             } elseif { mode == "\"" } then {
@@ -932,13 +934,13 @@ class new {
                         suggestion.insert("\\")atPosition(i)onLine(line)
                         suggestions.push(suggestion)
                         if((line == lineNumber) && (i == (linePosition - 2))) then {
-                            errormessages.syntaxError("For a '\{' character in a string use '\\\{'.")atPosition(
+                            errormessages.syntaxError("for a '\{' character in a string use '\\\{'.")atPosition(
                                 line, i)withSuggestions(suggestions)
                         } else {
                             suggestion := errormessages.suggestion.new
                             suggestion.insert("}")atPosition(linePosition - accum.size - 1)onLine(lineNumber)
                             suggestions.push(suggestion)
-                            errormessages.syntaxError("A string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
+                            errormessages.syntaxError("a string interpolation must end with a '}'. For a '\{' character in a string use '\\\{'.")atPosition(
                                 lineNumber, linePosition - accum.size - 1)withSuggestions(suggestions)
                         }
                     } else {
@@ -970,14 +972,16 @@ class new {
                             suggestion.addLine(lineNumber, errorLine ++ "\\n" ++ nextLine)
                             suggestion.addLine(lineNumber + 1, "")
                             suggestions.push(suggestion)
-                            errormessages.syntaxError("A string must end with a '\"'. To insert a newline in a string use '\\n'. "
-                                ++ "To split a string over multiple lines use '++' to join strings together.")atRange(
-                                lineNumber, linePosition, linePosition)withSuggestions(suggestions)
+                            errormessages.syntaxError("a string must be terminated by a \" before the end of the line. To insert a newline in a string, use '\\n'. To split a string over multiple lines, use '++' to join strings together.")
+                                atRange(lineNumber, linePosition, linePosition)
+                                withSuggestions(suggestions)
                         } else {
                             def suggestion = errormessages.suggestion.new
                             suggestion.addLine(lineNumber, errorLine ++ "\"")
-                            errormessages.syntaxError("A string must end with a '\"'.")atPosition(
-                                lineNumber, linePosition)withSuggestion(suggestion)
+                            errormessages.syntaxError("a string must be terminated " ++
+                                "by a \" before the end of the line.")
+                                atPosition(lineNumber, linePosition)
+                                withSuggestion(suggestion)
                         }
                     }
                 }
@@ -1077,10 +1081,7 @@ class new {
                 }
             }
             if (newlineFound) then {
-                // Linebreaks increment the line counter and insert a
-                // special "line" token, which the parser can use to
-                // track the origin of AST nodes for later error
-                // reporting.
+                // Linebreaks increment the line counter.
                 newlineFound := false
                 lineNumber := lineNumber + 1
                 linePosition := 0
@@ -1088,16 +1089,28 @@ class new {
             }
         }
         for (inputLines) do { eachLine ->
-            for (eachLine) do { ch ->
+            def charS = eachLine.iterator
+            while {charS.hasNext} do {
+                def ch = charS.next
                 linePosition := linePosition + 1
-                if (ch == " ") then {
-                    if (mode == "d") then {
+                if (inStr.not && { "><![]-".contains(ch) } && charS.hasNext) then {
+                    // map to unicode equavalents
+                    def nextCh = charS.next
+                    linePosition := linePosition + 1
+                    def bigraph = ch ++ nextCh
+                    if (bigraph == ">=") then { mainBlock.apply "≥"
+                    } elseif { bigraph == "<=" } then { mainBlock.apply "≤"
+                    } elseif { bigraph == "!=" } then { mainBlock.apply "≠"
+                    } elseif { bigraph == "[[" } then { mainBlock.apply "⟦"
+                    } elseif { bigraph == "]]" } then { mainBlock.apply "⟧"
+                    } elseif { bigraph == "->" } then { mainBlock.apply "→"
                     } else {
-                        if (mode != "n") then {
-                            mainBlock.apply(ch)
-                        }
+                        linePosition := linePosition - 1
+                        mainBlock.apply(ch)
+                        linePosition := linePosition + 1
+                        mainBlock.apply(nextCh)
                     }
-                } else {
+                } elseif { ((ch == " ") && {"dn".contains(mode)}).not } then {
                     mainBlock.apply(ch)
                 }
             }
@@ -1108,10 +1121,10 @@ class new {
             if (mode == "\"") then {
                 def suggestion = errormessages.suggestion.new
                 suggestion.addLine(lineNumber, util.lines.at(lineNumber) ++ "\"")
-                errormessages.syntaxError("A string must end with a '\"'.")atPosition(
+                errormessages.syntaxError("a string must be terminated with a \" before the end of the line.")atPosition(
                     lineNumber, linePosition)withSuggestion(suggestion)
             } elseif {mode == "q"} then {
-                errormessages.syntaxError("A multi-line string must end with a '›'.\n" ++ 
+                errormessages.syntaxError("a multi-line string must end with a '›'.\n" ++
                     "String opened on line {startLine} and unclosed at end of input.")
                     atRange(startLine, stringStart, util.lines.at(startLine).size)
             }

@@ -340,6 +340,62 @@ def aGraceLangTest = object {
             
             assert(str)shouldBe("5\n1\n")
         }
+        
+        method test_089_generic2 {
+            type A⟦T⟧ = {
+                foo(_ : T) -> Number
+                bar(_ : Number) -> T
+            }
+            
+            var a : A⟦String⟧ := object {
+                method foo(x : String) -> Number { x.size }
+                method bar(y : Number) -> String { "{y}" }
+            }
+            
+            def b : A⟦Boolean⟧ = object {
+                method foo(x : Boolean) -> Number { 1 }
+                method bar(y : Number) -> Boolean { y < 0 }
+            }
+            
+            def c : A⟦String⟧ = object {
+                method foo(x : String) -> Number { x.size }
+                method bar(y : Number) -> String { "{y}" }
+            }
+            
+            a := c
+            out(a.foo("Hello"))
+            out(b.foo(true))
+            
+            assert(str)shouldBe("5\n1\n")
+        }
+
+        method test_089_generic3 {
+            type A[[T]] = {
+                foo(_ : T) -> Number
+                bar(_ : Number) -> T
+            }
+            
+            var a : A[[String]] := object {
+                method foo(x : String) -> Number { x.size }
+                method bar(y : Number) -> String { "{y}" }
+            }
+            
+            def b : A[[Boolean]] = object {
+                method foo(x : Boolean) -> Number { 1 }
+                method bar(y : Number) -> Boolean { y < 0 }
+            }
+            
+            def c : A[[String]] = object {
+                method foo(x : String) -> Number { x.size }
+                method bar(y : Number) -> String { "{y}" }
+            }
+            
+            a := c
+            out(a.foo("Hello"))
+            out(b.foo(true))
+            
+            assert(str)shouldBe("5\n1\n")
+        }
 
         method test_096_paramclosure {
             def a = t096_objcreator(3, 4)
