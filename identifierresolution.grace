@@ -374,20 +374,20 @@ def universalScope = object {
 method rewritematchblockterm(arg) {
     util.setPosition(arg.line, arg.linePos)
     if (arg.kind == "num") then {
-        return [arg, []]
+        return [arg, [] ]
     }
     if (arg.kind == "string") then {
-        return [arg, []]
+        return [arg, [] ]
     }
     if (arg.kind == "boolean") then {
-        return [arg, []]
+        return [arg, [] ]
     }
     if ((arg.kind == "call") && {arg.value.value.substringFrom(1)to(6)
         == "prefix"}) then {
-        return [arg, []]
+        return [arg, [] ]
     }
     if (arg.kind == "member") then {
-        return [arg, []]
+        return [arg, [] ]
     }
     if (arg.kind == "call") then {
         def bindings = []
@@ -432,7 +432,7 @@ method rewritematchblockterm(arg) {
                         )
                     ),
                     [ast.callWithPart.request "new" withArgs( [varpat, arg.dtype] )]
-                ), [arg]]
+                ), [arg] ]
             }
             def tmp = rewritematchblockterm(arg.dtype)
             def bindings = [arg]
@@ -446,14 +446,14 @@ method rewritematchblockterm(arg) {
                         ast.identifierNode.new("prelude", false)
                     )
                 ),
-                [ast.callWithPart.request "new" withArgs( [varpat, tmp[1]] )]
+                [ast.callWithPart.request "new" withArgs( [varpat, tmp[1] ] )]
             )
             return [bindingpat, bindings]
         }
-        return [varpat, [arg]]
+        return [varpat, [arg] ]
     }
     if (arg.kind == "typeliteral") then {
-        return [arg, []]
+        return [arg, [] ]
     }
     ProgrammingError.raise("Internal error in compiler: fell through when rewriting "
         ++ "match block of unexpected kind '{arg.kind}'.")
@@ -499,7 +499,7 @@ method rewritematchblock(blk) {
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, tmp[1]] )]
+                        [ast.callWithPart.request "new" withArgs( [varpat, tmp[1] ] )]
                     )
                     pattern := bindingpat
                     for (tmp[2]) do {p->
