@@ -211,7 +211,7 @@ method parseargs(buildinfo) {
             }
     }
     if ((target != "c") && (target != "js")) then {
-        buildtypev == "debug"
+        buildtypev := "debug"
     }
     if ((buildtype == "run") && (gracelibPathv == false)) then {
         def extension = if (target == "c") then { ".o" } else { "." ++ target }
