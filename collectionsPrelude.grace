@@ -128,6 +128,8 @@ type Set<T> = Collection<T> & type {
     ** (other:Set<T>) -> Set<T>
     -- (other:Set<T>) -> Set<T>
     ++ (other:Set<T>) -> Set<T>
+    isSubset(s2: Set<T>) -> Boolean
+    isSuperset(s2: Iterable<T>) -> Boolean
     removeAll(elems: Iterable<T>)
     removeAll(elems: Iterable<T>)ifAbsent(action:Block0<Done>) -> Set<T>
     into(existing: Expandable<Unknown>) -> Collection<Unknown>
