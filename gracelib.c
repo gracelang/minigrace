@@ -1028,7 +1028,7 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_Exception(char *name, Object parent) {
     if (!ExceptionClass) {
-        ExceptionClass = alloc_class("ExceptionClass", 12);
+        ExceptionClass = alloc_class("ExceptionClass", 13);
         add_Method(ExceptionClass, "match", &Exception_match);
         add_Method(ExceptionClass, "refine", &Exception_refine);
         add_Method(ExceptionClass, "raise", &Exception_raise);
@@ -1036,6 +1036,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(ExceptionClass, "parent", &Exception_parent);
         add_Method(ExceptionClass, "==", &Object_Equals);
         add_Method(ExceptionClass, "!=", &Object_NotEquals);
+        add_Method(ExceptionClass, "≠", &Object_NotEquals);
         add_Method(ExceptionClass, "asString", &Exception_asString);
         add_Method(ExceptionClass, "asDebugString", &Object_asDebugString);
         add_Method(ExceptionClass, "::", &Object_bind);
@@ -3086,7 +3087,7 @@ Object alloc_Boolean(int val) {
     if (!val && BOOLEAN_FALSE != NULL)
         return BOOLEAN_FALSE;
     if (Boolean == NULL) {
-        Boolean = alloc_class("Boolean", 12);
+        Boolean = alloc_class("Boolean", 13);
         add_Method(Boolean, "asString", &Boolean_asString);
         add_Method(Boolean, "asDebugString", &Object_asDebugString);
         add_Method(Boolean, "::", &Object_bind);
@@ -3098,6 +3099,7 @@ Object alloc_Boolean(int val) {
         add_Method(Boolean, "not", &Boolean_not);
         add_Method(Boolean, "==", &Boolean_Equals);
         add_Method(Boolean, "!=", &Boolean_NotEquals);
+        add_Method(Boolean, "≠", &Boolean_NotEquals);
         add_Method(Boolean, "match", &literal_match);
     }
     Object o = alloc_obj(sizeof(int8_t), Boolean);
@@ -3415,13 +3417,14 @@ Object Process_terminated(Object self, int nparts, int *argcv,
 }
 Object alloc_Process(pid_t pid) {
     if (Process == NULL) {
-        Process = alloc_class("Process", 6);
+        Process = alloc_class("Process", 7);
         add_Method(Process, "wait", &Process_wait);
         add_Method(Process, "success", &Process_success);
         add_Method(Process, "terminated", &Process_terminated);
         add_Method(Process, "status", &Process_status);
         add_Method(Process, "==", &Object_Equals);
         add_Method(Process, "!=", &Object_NotEquals);
+        add_Method(Process, "≠", &Object_NotEquals);
     }
     Object o = alloc_obj(sizeof(pid_t) + sizeof(int) * 2, Process);
     struct ProcessObject *p = (struct ProcessObject *)o;
@@ -4566,7 +4569,7 @@ Object alloc_Integer32(int i) {
         Integer32 = alloc_class("Integer32", 16);
         add_Method(Integer32, "==", &Integer32_Equals);
         add_Method(Integer32, "!=", &Integer32_NotEquals);
-        add_Method(Integer32, "/=", &Integer32_NotEquals);
+        add_Method(Integer32, "≠", &Integer32_NotEquals);
         add_Method(Integer32, "+", &Integer32_Plus);
         add_Method(Integer32, "*", &Integer32_Times);
         add_Method(Integer32, "-", &Integer32_Minus);
@@ -4649,7 +4652,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
         const char *modname, int line) {
     char buf[strlen(modname) + 15];
     sprintf(buf, "Block[%s:%i]", modname, line);
-    ClassData c = alloc_class3(buf, 10, (void*)&Block__mark,
+    ClassData c = alloc_class3(buf, 11, (void*)&Block__mark,
             (void*)&Block__release);
     if (!Block)
         Block = c;
@@ -4661,6 +4664,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "::", &Object_bind);
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
+    add_Method(c, "≠", &Object_NotEquals);
     add_Method(c, "pattern", &Block_pattern);
     if (self == NULL && line == -1)
         add_Method(c, "_apply", &identity_function);
