@@ -87,7 +87,7 @@ class assertion {
         assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
     }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
-        assert (math.abs(n1 - n2) <= epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
+        assert (math.abs(n1 - n2) ≤ epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
     }
     method assert(block0) shouldRaise (desiredException) {
         var completedNormally
@@ -340,10 +340,8 @@ factory method testRecordFor(testName)message(testMsg) {
     method hash {testName.hash}
     method compare(other) { testName.compare(other.name) }
     method < (other) { testName < other.name }
-    method <= (other) { testName <= other.name }
     method ≤ (other) { testName ≤ other.name }
     method > (other) { testName < other.name }
-    method >= (other) { testName >= other.name }
     method ≥ (other) { testName ≥ other.name }
 }
 
@@ -400,7 +398,7 @@ def testSuite is public = object {
             outer.withAll(tests).addAll(anotherSuite)
         }
         method rerunErrors(result) {
-            if (numberOfErrorsToRerun <= 0) then { return }
+            if (numberOfErrorsToRerun ≤ 0) then { return }
             var n := min(result.numberOfErrors, numberOfErrorsToRerun)
             if (n == 1) then {
                 print "\nRe-running 1 error."
