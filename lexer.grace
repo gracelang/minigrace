@@ -219,7 +219,6 @@ class new {
         // For mode i, a keyword token is created when the identifier
         // is a reserved keyword.
 
-        var isDone := false
         var tok := 0
         if ((mode != "n") || (accum.size > 0)) then {
             if (mode == "i") then {
@@ -229,59 +228,45 @@ class new {
                     identifierToken(accum)
                 }
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "\"" } then {
                 tok := stringToken(accum)
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "q" } then {
                 tok := multiLineStringToken(accum)
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "," } then {
                 tok := commaToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "." } then {
                 tok := dotToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "\{" } then {
                 tok := lBraceToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "}" } then {
                 tok := rBraceToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "(" } then {
                 tok := lParenToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == ")" } then {
                 tok := rParenToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "[" } then {
                 tok := lSquareToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "]" } then {
                 tok := rSquareToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "⟦" } then {
                 tok := lGenericToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "⟧" } then {
                 tok := rGenericToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == ";" } then {
                 tok := semicolonToken
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "m" } then {
                 if ((tokens.size > 1) && {tokens.last.kind == "dot"}) then {
                     def dot = tokens.pop
@@ -346,7 +331,6 @@ class new {
                     tok := makeNumToken(accum)
                 }
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "o" } then {
                 tok := opToken(accum)
                 if (accum == "→") then {
@@ -357,14 +341,10 @@ class new {
                     tok := colonToken
                 }
                 tokens.push(tok)
-                isDone := true
             } elseif { mode == "d" } then {
                 indentLevel := linePosition - 1
-                isDone := true
             } elseif { mode == "n" } then {
-                isDone := true
             } elseif { mode == "e" } then {
-                isDone := true
             } elseif { mode == "c" } then {
                 var firstNonSpace := 3      // skip the leading "//"
                 def accumSize = accum.size
@@ -374,14 +354,11 @@ class new {
                 }
                 def cmt = accum.substringFrom(firstNonSpace)to(accum.size)
                 tokens.push(commentToken(cmt))
-                isDone := true
             } elseif { mode == "p" } then {
                 if (accum.substringFrom(1)to(8) == "#pragma ") then {
                     util.processExtension(
                         accum.substringFrom(9)to(accum.size))
                 }
-            } elseif { isDone } then {
-                //print(mode, accum, tokens)
             } else {
                 ProgrammingError.raise("Internal error in lexer: " ++
                     "no handler for mode {mode} with accum ‹{accum}› " ++
