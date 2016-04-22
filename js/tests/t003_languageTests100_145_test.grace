@@ -513,45 +513,6 @@ def aGraceLangTest = object {
             assert(str)shouldBe("TWO\nFALLTHROUGH 1\n")
         }
 
-        method test_125_multivarargs {
-            type X = {
-                bar(a, *b)baz(c, *d)
-            }
-            
-            var x : X := object {
-                method bar(a, *b)baz(c, *d) {
-                    out(a)
-                    for (b) do { v ->
-                        out "In b: {v}"
-                    }
-                    out(c)
-                    for (d) do { v ->
-                        out "In d: {v}"
-                    }
-                }
-            }
-            x.bar("hello", 17, 42)baz("world", -1, 0, 1)
-            
-            def Foo = object {
-                class with(a, *b)varargs(c, *d) {
-                    method bar {
-                        out(a)
-                        for (b) do { e ->
-                            out("In b: {e}")
-                        }
-                        out(c)
-                        for (d) do { e ->
-                            out("In d: {e}")
-                        }
-                    }
-                }
-            }
-            var y := Foo.with("one", "two", "three")varargs("four", "five", "six")
-            y.bar
-            
-            assert(str)shouldBe("hello\nIn b: 17\nIn b: 42\nworld\nIn d: -1\nIn d: 0\nIn d: 1\none\nIn b: two\nIn b: three\nfour\nIn d: five\nIn d: six\n")
-        }
-
         method test_129_anontype {
             def y = object {
                 def bar is readable = "OK"

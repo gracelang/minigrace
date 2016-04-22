@@ -7,20 +7,6 @@ method out(s) {
 
 // space for methods
 
-method t051_foo(a,b,*c) {
-    out(a)
-    out(b)
-    for (c) do {v->
-        out "In c: {v}"
-    }
-}
-method t051_bar(a)baz(b,*c) {
-    out(a)
-    out(b)
-    for (c) do {v->
-        out "In c: {v}"
-    }
-}
 method t054_foo {
     6
 }
@@ -58,14 +44,6 @@ def aGraceLangTest = object {
         method setup {
             str := ""
         }
-
-        method test_051_varargs {
-            t051_foo(1,2,3,4,5)
-            t051_bar("hello")baz("world", -1, 0, 1)
-            
-            assert(str)shouldBe("1\n2\nIn c: 3\nIn c: 4\nIn c: 5\nhello\nworld\nIn c: -1\nIn c: 0\nIn c: 1\n")
-        }
-        
 
         method test_054_baremethod {
             
