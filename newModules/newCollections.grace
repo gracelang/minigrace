@@ -11,162 +11,162 @@ method abstract is confidential {
     SubobjectResponsibility.raise "abstract method not overriden by subobject"
 }
 
-type Block0<R> = type {
-    apply -> R
+type Block0⟦R⟧ = type {
+    apply → R
 }
 
-type Block1<T,R> = type {
-    apply(a:T) -> R
+type Block1⟦T,R⟧ = type {
+    apply(a:T) → R
 }
 
-type Block2<S,T,R> = type {
-    apply(a:S, b:T) -> R
+type Block2⟦S,T,R⟧ = type {
+    apply(a:S, b:T) → R
 }
 
 type SelfType = Unknown     // becuase it's not yet in the language
 
-type Iterable<T> = Object & type {
-    iterator -> Iterator<T>
+type Iterable⟦T⟧ = Object & type {
+    iterator → Iterator⟦T⟧
         // the iterator on which I am based
-    isEmpty -> Boolean
+    isEmpty → Boolean
         // true if I have no elements
-    first -> T
+    first → T
         // my first element; raises BoundsError if I have none.
-    do(block1: Block1<T, Done>) -> Done
+    do(block1: Block1⟦T, Done⟧) → Done
         // an internal iterator; applies block1 to each of my elements
-    do(body:Block1<T, Done>) separatedBy(separator:Block0<Done>) -> Done
+    do(body:Block1⟦T, Done⟧) separatedBy(separator:Block0⟦Done⟧) → Done
         // an internal iterator; ; applies block1 to each of my elements, and applies separator in between
-    ++(other: Iterable<T>) -> Iterable<T>
+    ++(other: Iterable⟦T⟧) → Iterable⟦T⟧
         // returns a new iterator over the concatenation of self and other
-    fold(binaryFunction:Block2<T, T, T>) startingWith(initial:T) -> Object
+    fold(binaryFunction:Block2⟦T, T, T⟧) startingWith(initial:T) → Object
         // the left-associative fold of binaryFunction over self, starting with initial
-    map<U>(function:Block1<T, U>) -> Iterator<U>
+    map⟦U⟧(function:Block1⟦T, U⟧) → Iterator⟦U⟧
         // returns a new iterator that yields my elements mapped by function
-    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+    filter(condition:Block1⟦T,Boolean⟧) → Iterator⟦T⟧
         // returns a new iterator that yields those of my elements for which condition holds 
 }
 
-type Expandable<T> = Iterable<T> & type {
-    add(x: T) -> SelfType
-    addAll(xs: Iterable<T>) -> SelfType
+type Expandable⟦T⟧ = Iterable⟦T⟧ & type {
+    add(x: T) → SelfType
+    addAll(xs: Iterable⟦T⟧) → SelfType
 }
 
-type Collection<T> = Iterable<T> & type {
-    asList -> List<T>
-    asSequence -> Sequence<T>
-    asSet -> Set<T>
+type Collection⟦T⟧ = Iterable⟦T⟧ & type {
+    asList → List⟦T⟧
+    asSequence → Sequence⟦T⟧
+    asSet → Set⟦T⟧
 }
 
-type Enumerable<T> = Collection<T> & type {
-    values -> Collection<T>
-    asDictionary -> Dictionary<Number,T>
-    keysAndValuesDo(action:Block2<Number,T,Object>) -> Done
-    into(existing: Expandable<Unknown>) -> Collection<Unknown>
-    sortedBy(comparison:Block2<T,T,Number>) -> SelfType
-    sorted -> SelfType
+type Enumerable⟦T⟧ = Collection⟦T⟧ & type {
+    values → Collection⟦T⟧
+    asDictionary → Dictionary⟦Number,T⟧
+    keysAndValuesDo(action:Block2⟦Number,T,Object⟧) → Done
+    into(existing: Expandable⟦Unknown⟧) → Collection⟦Unknown⟧
+    sortedBy(comparison:Block2⟦T,T,Number⟧) → SelfType
+    sorted → SelfType
 }
 
-type Sequence<T> = Enumerable<T> & type {
-    size -> Number
-    at(n:Number) -> T
-    [](n:Number) -> T
-    indices -> Sequence<Number>
-    keys -> Sequence<Number>
-    second -> T
-    third -> T
-    fourth -> T
-    fifth -> T
-    last -> T
-    indexOf<W>(elem:T)ifAbsent(action:Block0<W>) -> Number | W
-    indexOf(elem:T) -> Number
-    contains(elem:T) -> Boolean
-    reversed -> Sequence<T>
+type Sequence⟦T⟧ = Enumerable⟦T⟧ & type {
+    size → Number
+    at(n:Number) → T
+    [](n:Number) → T
+    indices → Sequence⟦Number⟧
+    keys → Sequence⟦Number⟧
+    second → T
+    third → T
+    fourth → T
+    fifth → T
+    last → T
+    indexOf⟦W⟧(elem:T)ifAbsent(action:Block0⟦W⟧) → Number | W
+    indexOf(elem:T) → Number
+    contains(elem:T) → Boolean
+    reversed → Sequence⟦T⟧
 }
 
-type List<T> = Sequence<T> & type {
-    add(x: T) -> List<T>
-    addAll(xs: Iterable<T>) -> List<T>
-    addFirst(x: T) -> List<T>
-    addAllFirst(xs: Iterable<T>) -> List<T>
-    addLast(x: T) -> List<T>    // same as add
-    at(ix:Number) put(v:T) -> List<T>
-    []:= (ix:Number, v:T) -> Done
-    removeFirst -> T
-    removeAt(n: Number) -> T
-    removeLast -> T
+type List⟦T⟧ = Sequence⟦T⟧ & type {
+    add(x: T) → List⟦T⟧
+    addAll(xs: Iterable⟦T⟧) → List⟦T⟧
+    addFirst(x: T) → List⟦T⟧
+    addAllFirst(xs: Iterable⟦T⟧) → List⟦T⟧
+    addLast(x: T) → List⟦T⟧    // same as add
+    at(ix:Number) put(v:T) → List⟦T⟧
+    []:= (ix:Number, v:T) → Done
+    removeFirst → T
+    removeAt(n: Number) → T
+    removeLast → T
     remove(v:T)
-    remove(v:T) ifAbsent(action:Block0<Done>)
-    removeAll(vs: Iterable<T>)
-    removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Unknown>)
-    pop -> T
-    ++(o: List<T>) -> List<T>
-    addAll(l: Iterable<T>) -> List<T>
-    copy -> List<T>
-    sort -> List<T>
-    sortBy(sortBlock:Block2<T,T,Number>) -> List<T>
-    reverse -> List<T>
-    reversed -> List<T>
+    remove(v:T) ifAbsent(action:Block0⟦Done⟧)
+    removeAll(vs: Iterable⟦T⟧)
+    removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)
+    pop → T
+    ++(o: List⟦T⟧) → List⟦T⟧
+    addAll(l: Iterable⟦T⟧) → List⟦T⟧
+    copy → List⟦T⟧
+    sort → List⟦T⟧
+    sortBy(sortBlock:Block2⟦T,T,Number⟧) → List⟦T⟧
+    reverse → List⟦T⟧
+    reversed → List⟦T⟧
 }
 
-type Set<T> = Collection<T> & type {
-    size -> Number
-    add(x:T) -> SelfType
-    addAll(elements: Iterable<T>) -> SelfType
-    remove(x: T) -> Set<T>
-    remove(x: T) ifAbsent(block: Block0<Done>) -> Set<T>
-    includes(booleanBlock: Block1<T,Boolean>) -> Boolean
-    find(booleanBlock: Block1<T,Boolean>) ifNone(notFoundBlock: Block0<T>) -> T
-    copy -> Set<T>
-    contains(elem:T) -> Boolean
-    ** (other:Set<T>) -> Set<T>
-    -- (other:Set<T>) -> Set<T>
-    ++ (other:Set<T>) -> Set<T>
-    removeAll(elems: Iterable<T>)
-    removeAll(elems: Iterable<T>)ifAbsent(action:Block0<Done>) -> Set<T>
-    into(existing: Expandable<Unknown>) -> Collection<Unknown>
+type Set⟦T⟧ = Collection⟦T⟧ & type {
+    size → Number
+    add(x:T) → SelfType
+    addAll(elements: Iterable⟦T⟧) → SelfType
+    remove(x: T) → Set⟦T⟧
+    remove(x: T) ifAbsent(block: Block0⟦Done⟧) → Set⟦T⟧
+    includes(booleanBlock: Block1⟦T,Boolean⟧) → Boolean
+    find(booleanBlock: Block1⟦T,Boolean⟧) ifNone(notFoundBlock: Block0⟦T⟧) → T
+    copy → Set⟦T⟧
+    contains(elem:T) → Boolean
+    ** (other:Set⟦T⟧) → Set⟦T⟧
+    -- (other:Set⟦T⟧) → Set⟦T⟧
+    ++ (other:Set⟦T⟧) → Set⟦T⟧
+    removeAll(elems: Iterable⟦T⟧)
+    removeAll(elems: Iterable⟦T⟧)ifAbsent(action:Block0⟦Done⟧) → Set⟦T⟧
+    into(existing: Expandable⟦Unknown⟧) → Collection⟦Unknown⟧
 }
 
-type Dictionary<K,T> = Collection<T> & type {
-    size -> Number
-    containsKey(k:K) -> Boolean
-    containsValue(v:T) -> Boolean
-    contains(elem:T) -> Boolean
-    at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
-    at(key:K)put(value:T) -> Dictionary<K,T>
-    []:= (k:K, v:T) -> Done
-    at(k:K) -> T
-    [] (k:K) -> T
-    removeAllKeys(keys: Iterable<K>) -> Dictionary<K,T>
-    removeKey(key:K) -> Dictionary<K,T>
-    removeAllValues(removals: Iterable<T>) -> Dictionary<K,T>
-    removeValue(v:T) -> Dictionary<K,T>
-    keys -> Enumerable<K>
-    values -> Enumerable<T>
-    bindings -> Enumerable<Binding<K,T>>
-    keysAndValuesDo(action:Block2<K,T,Done>) -> Done
-    keysDo(action:Block1<K,Done>) -> Done
-    valuesDo(action:Block1<T,Done>) -> Done
-    == (other:Object) -> Boolean
-    copy -> Dictionary<K,T>
-    ++ (other:Dictionary<K, T>) -> Dictionary<K, T>
-    -- (other:Dictionary<K, T>) -> Dictionary<K, T>
-    asDictionary -> Dictionary<K, T>
+type Dictionary⟦K,T⟧ = Collection⟦T⟧ & type {
+    size → Number
+    containsKey(k:K) → Boolean
+    containsValue(v:T) → Boolean
+    contains(elem:T) → Boolean
+    at(key:K)ifAbsent(action:Block0⟦Unknown⟧) → Unknown
+    at(key:K)put(value:T) → Dictionary⟦K,T⟧
+    []:= (k:K, v:T) → Done
+    at(k:K) → T
+    [] (k:K) → T
+    removeAllKeys(keys: Iterable⟦K⟧) → Dictionary⟦K,T⟧
+    removeKey(key:K) → Dictionary⟦K,T⟧
+    removeAllValues(removals: Iterable⟦T⟧) → Dictionary⟦K,T⟧
+    removeValue(v:T) → Dictionary⟦K,T⟧
+    keys → Enumerable⟦K⟧
+    values → Enumerable⟦T⟧
+    bindings → Enumerable⟦Binding⟦K,T⟧⟧
+    keysAndValuesDo(action:Block2⟦K,T,Done⟧) → Done
+    keysDo(action:Block1⟦K,Done⟧) → Done
+    valuesDo(action:Block1⟦T,Done⟧) → Done
+    == (other:Object) → Boolean
+    copy → Dictionary⟦K,T⟧
+    ++ (other:Dictionary⟦K, T⟧) → Dictionary⟦K, T⟧
+    -- (other:Dictionary⟦K, T⟧) → Dictionary⟦K, T⟧
+    asDictionary → Dictionary⟦K, T⟧
 }
 
-type Iterator<T> = type {
-    hasNext -> Boolean
-    next -> T
+type Iterator⟦T⟧ = type {
+    hasNext → Boolean
+    next → T
 }
 
-trait collectionFactory<T> {
-    method withAll(elts: Iterable<T>) -> Collection<T> { abstract }
-    method empty -> Unknown { withAll [] }
+trait collectionFactory⟦T⟧ {
+    method withAll(elts: Iterable⟦T⟧) → Collection⟦T⟧ { abstract }
+    method empty → Unknown { withAll [] }
 }
 
-class lazySequenceOver<T,R>(source: Iterable<T>)
-        mappedBy(function:Block1<T,R>) -> Enumerable<R> is confidential {
+class lazySequenceOver⟦T,R⟧(source: Iterable⟦T⟧)
+        mappedBy(function:Block1⟦T,R⟧) → Enumerable⟦R⟧ is confidential {
     inherits graceObject exclude == exclude asString
-    use enumerable<T>
+    use enumerable⟦T⟧
     class iterator {
         def sourceIterator = source.iterator
         method asString { "an iterator over a lazy map sequence" }
@@ -178,10 +178,10 @@ class lazySequenceOver<T,R>(source: Iterable<T>)
     method asDebugString { "a lazy sequence mapping over {source}" }
 }
 
-class lazySequenceOver<T>(source: Iterable<T>)
-        filteredBy(predicate:Block1<T,Boolean>) -> Enumerable<T> is confidential {
+class lazySequenceOver⟦T⟧(source: Iterable⟦T⟧)
+        filteredBy(predicate:Block1⟦T,Boolean⟧) → Enumerable⟦T⟧ is confidential {
     inherits graceObject exclude == exclude asString
-    use enumerable<T>
+    use enumerable⟦T⟧
     class iterator {
         var cache
         var cacheLoaded := false
@@ -194,7 +194,7 @@ class lazySequenceOver<T>(source: Iterable<T>)
             try {
                 cache := nextAcceptableElement
                 cacheLoaded := true
-            } catch { ex:IteratorExhausted -> return false }
+            } catch { ex:IteratorExhausted → return false }
             return true
         }
         method next {
@@ -215,7 +215,7 @@ class lazySequenceOver<T>(source: Iterable<T>)
     method asDebugString { "a lazy sequence filtering {source}" }
 }
 
-class iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
+class iteratorConcat⟦T⟧(left:Iterator⟦T⟧, right:Iterator⟦T⟧) {
     method next {
         if (left.hasNext) then {
             left.next
@@ -230,9 +230,9 @@ class iteratorConcat<T>(left:Iterator<T>, right:Iterator<T>) {
     method asDebugString { "iteratorConcat of {left} and {right}" }
     method asString { "an iterator over a concatenation" }
 }
-class lazyConcatenation<T>(left, right) -> Enumerable<T>{
+class lazyConcatenation⟦T⟧(left, right) → Enumerable⟦T⟧{
     inherit graceObject exclude ==
-    use enumerable<T>
+    use enumerable⟦T⟧
     method iterator {
         iteratorConcat(left.iterator, right.iterator)
     }
@@ -241,7 +241,7 @@ class lazyConcatenation<T>(left, right) -> Enumerable<T>{
     method size { left.size + right.size }  // may raise SizeUnknown
 }
 
-trait collection<T> {
+trait collection⟦T⟧ {
     method do { abstract }
     method iterator { abstract }
     method isEmpty {
@@ -259,7 +259,7 @@ trait collection<T> {
     method do(block1) separatedBy(block0) {
         var firstTime := true
         var i := 0
-        self.do { each ->
+        self.do { each →
             if (firstTime) then {
                 firstTime := false
             } else {
@@ -275,15 +275,15 @@ trait collection<T> {
     }
     method fold(blk)startingWith(initial) {
         var result := initial
-        self.do {it ->
+        self.do {it →
             result := blk.apply(result, it)
         }
         return result
     }
-    method map<R>(block1:Block1<T,R>) -> Enumerable<R> {
+    method map⟦R⟧(block1:Block1⟦T,R⟧) → Enumerable⟦R⟧ {
         lazySequenceOver(self) mappedBy(block1)
     }
-    method filter(selectionCondition:Block1<T,Boolean>) -> Enumerable<T> {
+    method filter(selectionCondition:Block1⟦T,Boolean⟧) → Enumerable⟦T⟧ {
         lazySequenceOver(self) filteredBy(selectionCondition)
     }
 
@@ -300,8 +300,8 @@ trait collection<T> {
     }
 }
 
-trait enumerable<T> {
-    use collection<T>
+trait enumerable⟦T⟧ {
+    use collection⟦T⟧
     method iterator { abstract }
     method size {
         // override if size is known
@@ -309,12 +309,12 @@ trait enumerable<T> {
     }
     method asDictionary {
         def result = dictionary.empty
-        keysAndValuesDo { k, v ->
+        keysAndValuesDo { k, v →
             result.at(k) put(v)
         }
         return result
     }
-    method into(existing: Expandable<T>) -> Collection<T> {
+    method into(existing: Expandable⟦T⟧) → Collection⟦T⟧ {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             existing.add(selfIterator.next)
@@ -324,13 +324,13 @@ trait enumerable<T> {
     method ==(other) {
         isEqual (self) toIterable (other)
     }
-    method do(block1:Block1<T,Done>) -> Done {
+    method do(block1:Block1⟦T,Done⟧) → Done {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             block1.apply(selfIterator.next)
         }
     }
-    method keysAndValuesDo(block2:Block2<Number,T,Done>) -> Done {
+    method keysAndValuesDo(block2:Block2⟦Number,T,Done⟧) → Done {
         var ix := 0
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
@@ -338,10 +338,10 @@ trait enumerable<T> {
             block2.apply(ix, selfIterator.next)
         }
     }
-    method values -> Collection<T> {
+    method values → Collection⟦T⟧ {
         self
     }
-    method fold<R>(block2)startingWith(initial) -> R {
+    method fold⟦R⟧(block2)startingWith(initial) → R {
         var res := initial
         def selfIterator = self.iterator
         while { selfIterator.hasNext } do {
@@ -349,31 +349,31 @@ trait enumerable<T> {
         }
         return res
     }
-    method ++ (other) -> Enumerable<T> {
+    method ++ (other) → Enumerable⟦T⟧ {
         lazyConcatenation(self, other)
     }
-    method sortedBy(sortBlock:Block2) -> List<T> {
+    method sortedBy(sortBlock:Block2) → List⟦T⟧ {
         self.asList.sortBy(sortBlock:Block2)
     }
-    method sorted -> List<T> {
+    method sorted → List⟦T⟧ {
         self.asList.sort
     }
     method asString {
         var s := "⟨"
-        do { each -> s := s ++ each.asString } separatedBy { s := s ++ ", " }
+        do { each → s := s ++ each.asString } separatedBy { s := s ++ ", " }
         s ++ "⟩"
     }
 }
 
-trait indexable<T> {
-    use collection<T>
+trait indexable⟦T⟧ {
+    use collection⟦T⟧
     method at { abstract }
     method size { abstract }
     method isEmpty { size == 0 }
-    method keysAndValuesDo(action:Block2<Number,T,Done>) -> Done {
+    method keysAndValuesDo(action:Block2⟦Number,T,Done⟧) → Done {
         def curSize = size
         var i := 1
-        while {i <= curSize} do {
+        while {i ≤ curSize} do {
             action.apply(i, self.at(i))
             i := i + 1
         }
@@ -390,19 +390,19 @@ trait indexable<T> {
         indexOf(sought) ifAbsent { NoSuchObject.raise "collection does not contain {sought}" }
     }
     method indexOf(sought:T) ifAbsent(action:Block0)  {
-        keysAndValuesDo { ix, v ->
+        keysAndValuesDo { ix, v →
             if (v == sought) then { return ix }
         }
         action.apply
     }
     method asDictionary {
         def result = dictionary.empty
-        keysAndValuesDo { k, v ->
+        keysAndValuesDo { k, v →
             result.at(k) put(v)
         }
         return result
     }
-    method into(existing: Expandable<T>) -> Collection<T> {
+    method into(existing: Expandable⟦T⟧) → Collection⟦T⟧ {
         def selfIterator = self.iterator
         while {selfIterator.hasNext} do {
             existing.add(selfIterator.next)
@@ -431,10 +431,10 @@ def emptySequence is confidential = object {
     method do(block1) { done }
     method ==(other) {
         match (other)
-            case {o: Iterable ->
+            case {o: Iterable →
                 o.isEmpty
             }
-            case {_ ->
+            case {_ →
                 false
             }
     }
@@ -447,8 +447,8 @@ def emptySequence is confidential = object {
     method sortedBy(sortBlock:Block2){ self }
 }
 
-class sequence<T> {
-    use collectionFactory<T>
+class sequence⟦T⟧ {
+    use collectionFactory⟦T⟧
 
     method asString { "a sequence factory" }
 
@@ -463,7 +463,7 @@ class sequence<T> {
         // size might be uncertain if one of the arguments is a lazy collection.
         try {
             forecastSize := arg.size
-        } catch { _:SizeUnknown ->
+        } catch { _:SizeUnknown →
             forecastSize := 8
             sizeUncertain := true
         }
@@ -472,10 +472,10 @@ class sequence<T> {
         var ix := 0
         if (sizeUncertain) then {
             // less-than-optimal path
-            for (arg) do { elt ->
-                if (innerSize <= ix) then {
+            for (arg) do { elt →
+                if (innerSize ≤ ix) then {
                     def newInner = _prelude.PrimitiveArray.new(innerSize*2)
-                    for (0..(innerSize-1)) do { i ->
+                    for (0..(innerSize-1)) do { i →
                         newInner.at(i)put(inner.at(i))
                     }
                     inner := newInner
@@ -486,7 +486,7 @@ class sequence<T> {
             }
         } else {
             // common, fast path
-            for (arg) do { elt ->
+            for (arg) do { elt →
                 inner.at(ix)put(elt)
                 ix := ix + 1
             }
@@ -498,12 +498,12 @@ class sequence<T> {
         // constructs a sequence from the first sz elements of pArray
 
         object {
-            use indexable<T>
+            use indexable⟦T⟧
             def size is public = sz
             def inner = pArray
 
             method boundsCheck(n) is confidential {
-                if (!(n >= 1) || !(n <= size)) then {
+                if (!(n ≥ 1) || !(n ≤ size)) then {
                     // the condition is written this way because NaN always
                     // compares false
                     BoundsError.raise "index {n} out of bounds 1..{size}"
@@ -533,7 +533,7 @@ class sequence<T> {
             method reversed {
                 def freshArray = _prelude.PrimitiveArray.new(size)
                 var ix := size - 1
-                do { each ->
+                do { each →
                     freshArray.at (ix) put(each)
                     ix := ix - 1
                 }
@@ -544,14 +544,14 @@ class sequence<T> {
             }
             method asString {
                 var s := "⟨"
-                for (0..(size-1)) do {i->
+                for (0..(size-1)) do {i→
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ ", " }
                 }
                 s ++ "⟩"
             }
             method contains(element) {
-                do { each -> if (each == element) then { return true } }
+                do { each → if (each == element) then { return true } }
                 return false
             }
             method do(block1) {
@@ -569,7 +569,7 @@ class sequence<T> {
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aSequenceIterator" }
-                    method hasNext { idx <= sz }
+                    method hasNext { idx ≤ sz }
                     method next {
                         if (idx > sz) then { IteratorExhausted.raise "on sequence {outer}⟪{idx}⟫" }
                         def ret = at(idx)
@@ -579,7 +579,7 @@ class sequence<T> {
                 }
             }
             method sorted {
-                asList.sortBy { l, r ->
+                asList.sortBy { l, r →
                     if (l == r) then {0}
                         elseif {l < r} then {-1}
                         else {1}
@@ -593,7 +593,7 @@ class sequence<T> {
 }
 
 type MinimalyIterable = type {
-    iterator -> Iterator
+    iterator → Iterator
 }
 
 method isEqual(left) toIterable(right) {
@@ -611,21 +611,21 @@ method isEqual(left) toIterable(right) {
     }
 }
 
-class list<T> {
-    use collectionFactory<T>
+class list⟦T⟧ {
+    use collectionFactory⟦T⟧
     
     method asString { "a list factory" }
 
-    method withAll(a: Iterable<T>) -> List<T> {
+    method withAll(a: Iterable⟦T⟧) → List⟦T⟧ {
         if (engine == "js") then {
           if (native "js" code ‹var result = (this === superDepth) ? GraceTrue : GraceFalse›) then {
             return object {
-                use indexable<T>
+                use indexable⟦T⟧
 
                 var mods is readable := 0
                 var sz := 0
                 var jsArray := native "js" code ‹var result = [];›
-                a.do { each ->
+                a.do { each →
                     native "js" code ‹superDepth.data.jsArray.push(var_each);›
                 }
 
@@ -646,7 +646,7 @@ class list<T> {
 
                 method [](n) {
                     native "js" code ‹var ix = var_n._value;
-                        if ( !(ix >= 1) || !(ix <= superDepth.data.jsArray.length)) {
+                        if ( !(ix >=  1) || !(ix <=  superDepth.data.jsArray.length)) {
                             var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
                             var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                             callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -657,7 +657,7 @@ class list<T> {
                 method at(n)put(x) {
                     mods := mods + 1
                     native "js" code ‹var  ix = var_n._value;
-                        if (!(ix >= 1) || !(ix <= superDepth.data.jsArray.length + 1)) {
+                        if (!(ix >=  1) || !(ix <=  superDepth.data.jsArray.length + 1)) {
                             var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
                             var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                             callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -669,7 +669,7 @@ class list<T> {
                 method []:=(n, x) {
                     mods := mods + 1
                     native "js" code ‹var ix = var_n._value;
-                        if (!(ix >= 1) || !(ix <= superDepth.data.jsArray.length + 1)) {
+                        if (!(ix >=  1) || !(ix <=  superDepth.data.jsArray.length + 1)) {
                             var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
                             var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
                             callmethod(BoundsError, "raise", [1], new GraceString(msg));
@@ -734,7 +734,7 @@ class list<T> {
 
                 method addLast(x) { push(x) }    // compatibility
                 method addAll(l) {
-                    for (l) do { each -> push(each) }
+                    for (l) do { each → push(each) }
                     self
                 }
 
@@ -758,7 +758,7 @@ class list<T> {
                 }
 
 
-                method remove(elt:T) ifAbsent(action:Block0<Done>) {
+                method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
                     def ix = self.indexOf(elt) ifAbsent {
                         return action.apply
                     }
@@ -766,13 +766,13 @@ class list<T> {
                     self
                 }
 
-                method removeAll(vs: Iterable<T>) {
+                method removeAll(vs: Iterable⟦T⟧) {
                     removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
                 }
 
 
-                method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Unknown>)  {
-                    for (vs) do { each ->
+                method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Unknown⟧)  {
+                    for (vs) do { each →
                         def ix = self.indexOf(each) ifAbsent { 0 }
                         if (ix ≠ 0) then {
                             removeAt(ix)
@@ -787,7 +787,7 @@ class list<T> {
 
                 method reversed {
                     def result = list.empty
-                    do { each -> result.addFirst(each) }
+                    do { each → result.addFirst(each) }
                     result
                 }
                 method reverse {
@@ -813,7 +813,7 @@ class list<T> {
                 method asString {
                     var s := "["
                     def curSize = self.size
-                    for (1..curSize) do { i ->
+                    for (1..curSize) do { i →
                         s := s ++ at(i).asString
                         if (i < curSize) then { s := s ++ ", " }
                     }
@@ -825,14 +825,14 @@ class list<T> {
 
 
                 method contains(element) {
-                    do { each -> if (each == element) then { return true } }
+                    do { each → if (each == element) then { return true } }
                     return false
                 }
 
                 method do(block1) {
                     var i := 1
                     def curSize = self.size
-                    while {i <= curSize} do {
+                    while {i ≤ curSize} do {
                         block1.apply(self.at(i))
                         i := i + 1
                     }
@@ -848,7 +848,7 @@ class list<T> {
                         var idx := 1
                         method asDebugString { "{asString}⟪{idx}⟫" }
                         method asString { "aListIterator" }
-                        method hasNext { idx <= size }
+                        method hasNext { idx ≤ size }
                         method next {
                             if (imods != mods) then {
                                 ConcurrentModification.raise (asDebugString)
@@ -871,7 +871,7 @@ class list<T> {
 
                 method sort {
                     mods := mods + 1
-                    sortBy { l, r ->
+                    sortBy { l, r →
                         if (l == r) then {0}
                             elseif {l < r} then {-1}
                             else {1}
@@ -892,20 +892,20 @@ class list<T> {
 
         object {
             // the new list object without native code
-            use indexable<T>
+            use indexable⟦T⟧
 
             var mods is readable := 0
             var initialSize
             try { initialSize := a.size * 2 + 1 }
-                catch { _ex:SizeUnknown -> initialSize := 9 }
+                catch { _ex:SizeUnknown → initialSize := 9 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
             var size is readable := 0
-            for (a) do {x->
+            for (a) do {x→
                 inner.at(size)put(x)
                 size := size + 1
             }
             method boundsCheck(n) is confidential {
-                if ( !(n >= 1) || !(n <= size)) then {
+                if ( !(n ≥ 1) || !(n ≤ size)) then {
                     BoundsError.raise "index {n} out of bounds 1..{size}"
                 }
             }
@@ -949,7 +949,7 @@ class list<T> {
                 if ((size + l.size) > inner.size) then {
                     expandTo(max(size + l.size, size * 2))
                 }
-                for (l) do {each ->
+                for (l) do {each →
                     inner.at(size)put(each)
                     size := size + 1
                 }
@@ -975,11 +975,11 @@ class list<T> {
                 if ((size + increase) > inner.size) then {
                     expandTo(max(size + increase, size * 2))
                 }
-                for (range.from(size-1)downTo(0)) do {i->
+                for (range.from(size-1)downTo(0)) do {i→
                     inner.at(i+increase)put(inner.at(i))
                 }
                 var insertionIndex := 0
-                for (l) do {each ->
+                for (l) do {each →
                     inner.at(insertionIndex)put(each)
                     insertionIndex := insertionIndex + 1
                 }
@@ -991,7 +991,7 @@ class list<T> {
                 if ((size + 1) > inner.size) then {
                     expandTo(size * 2)
                 }
-                for (range.from (size-1) downTo 0) do {i->
+                for (range.from (size-1) downTo 0) do {i→
                     inner.at (i+1) put (inner.at(i) )
                 }
                 inner.at(0)put(elt)
@@ -1005,7 +1005,7 @@ class list<T> {
                 mods := mods + 1
                 boundsCheck(n)
                 def removed = inner.at(n-1)
-                for (n..(size-1)) do {i->
+                for (n..(size-1)) do {i→
                     inner.at(i-1)put(inner.at(i))
                 }
                 size := size - 1
@@ -1020,7 +1020,7 @@ class list<T> {
                 self
             }
 
-            method remove(elt:T) ifAbsent(action:Block0<Done>) {
+            method remove(elt:T) ifAbsent(action:Block0⟦Done⟧) {
                 def ix = self.indexOf(elt) ifAbsent {
                     action.apply
                     return self
@@ -1029,12 +1029,12 @@ class list<T> {
                 self
             }
 
-            method removeAll(vs: Iterable<T>) {
+            method removeAll(vs: Iterable⟦T⟧) {
                 removeAll(vs) ifAbsent { NoSuchObject.raise "list does not contain object" }
                 self
             }
-            method removeAll(vs: Iterable<T>) ifAbsent(action:Block0<Done>)  {
-                for (vs) do { each ->
+            method removeAll(vs: Iterable⟦T⟧) ifAbsent(action:Block0⟦Done⟧)  {
+                for (vs) do { each →
                     def ix = indexOf(each) ifAbsent { 0 }
                     if (ix ≠ 0) then {
                         removeAt(ix)
@@ -1047,7 +1047,7 @@ class list<T> {
             method pop { removeLast }
             method reversed {
                 def result = list.empty
-                do { each -> result.addFirst(each) }
+                do { each → result.addFirst(each) }
                 result
             }
             method reverse {
@@ -1069,14 +1069,14 @@ class list<T> {
             }
             method asString {
                 var s := "["
-                for (0..(size-1)) do {i->
+                for (0..(size-1)) do {i→
                     s := s ++ inner.at(i).asString
                     if (i < (size-1)) then { s := s ++ ", " }
                 }
                 s ++ "]"
             }
             method contains(element) {
-                do { each -> if (each == element) then { return true } }
+                do { each → if (each == element) then { return true } }
                 return false
             }
             method do(block1) {
@@ -1096,7 +1096,7 @@ class list<T> {
                     var idx := 1
                     method asDebugString { "{asString}⟪{idx}⟫" }
                     method asString { "aListIterator" }
-                    method hasNext { idx <= size }
+                    method hasNext { idx ≤ size }
                     method next {
                         if (imods != mods) then {
                             ConcurrentModification.raise (asDebugString)
@@ -1116,7 +1116,7 @@ class list<T> {
             }
             method expandTo(newSize) is confidential {
                 def newInner = _prelude.PrimitiveArray.new(newSize)
-                for (0..(size-1)) do {i->
+                for (0..(size-1)) do {i→
                     newInner.at(i)put(inner.at(i))
                 }
                 inner := newInner
@@ -1127,7 +1127,7 @@ class list<T> {
                 self
             }
             method sort {
-                sortBy { l, r ->
+                sortBy { l, r →
                     if (l == r) then {0}
                         elseif {l < r} then {-1}
                         else {1}
@@ -1146,18 +1146,18 @@ class list<T> {
     }
 }
 
-class set<T> {
-    use collectionFactory<T>
+class set⟦T⟧ {
+    use collectionFactory⟦T⟧
 
     method asString { "a set factory" }
 
-    method withAll(a: Iterable<T>) -> Set<T> {
+    method withAll(a: Iterable⟦T⟧) → Set⟦T⟧ {
         object {
             use collection
             var mods is readable := 0
             var initialSize
             try { initialSize := max(a.size * 3 + 1, 8) }
-                catch { _:SizeUnknown -> initialSize := 8 }
+                catch { _:SizeUnknown → initialSize := 8 }
             var inner := _prelude.PrimitiveArray.new(initialSize)
             def unused = object {
                 var unused := true
@@ -1168,14 +1168,14 @@ class set<T> {
                 method asString { "removed" }
             }
             var size is readable := 0
-            for (0..(initialSize - 1)) do {i->
+            for (0..(initialSize - 1)) do {i→
                 inner.at(i)put(unused)
             }
-            for (a) do { x-> add(x) }
+            for (a) do { x→ add(x) }
 
             method addAll(elements) {
                 mods := mods + 1
-                for (elements) do { x ->
+                for (elements) do { x →
                     if (! contains(x)) then {
                         def t = findPositionForAdd(x)
                         inner.at(t)put(x)
@@ -1202,7 +1202,7 @@ class set<T> {
             }
 
             method removeAll(elements) {
-                for (elements) do { x ->
+                for (elements) do { x →
                     remove (x) ifAbsent {
                         NoSuchObject.raise "set does not contain {x}"
                     }
@@ -1211,7 +1211,7 @@ class set<T> {
             }
             method removeAll(elements)ifAbsent(block) {
                 mods := mods + 1
-                for (elements) do { x ->
+                for (elements) do { x →
                     var t := findPosition(x)
                     if (inner.at(t) == x) then {
                         inner.at(t) put (removed)
@@ -1250,13 +1250,13 @@ class set<T> {
                 return false
             }
             method includes(booleanBlock) {
-                self.do { each ->
+                self.do { each →
                     if (booleanBlock.apply(each)) then { return true }
                 }
                 return false
             }
             method find(booleanBlock)ifNone(notFoundBlock) {
-                self.do { each ->
+                self.do { each →
                     if (booleanBlock.apply(each)) then { return each }
                 }
                 return notFoundBlock.apply
@@ -1308,12 +1308,12 @@ class set<T> {
 
             method asString {
                 var s := "set\{"
-                do {each -> s := s ++ each.asString }
+                do {each → s := s ++ each.asString }
                     separatedBy { s := s ++ ", " }
                 s ++ "\}"
             }
             method extend(l) {
-                for (l) do {i->
+                for (l) do {i→
                     add(i)
                 }
             }
@@ -1335,7 +1335,7 @@ class set<T> {
                     var imods:Number := mods
                     var count := 1
                     var idx := -1
-                    method hasNext { size >= count }
+                    method hasNext { size ≥ count }
                     method next {
                         var candidate
                         def innerSize = inner.size
@@ -1344,7 +1344,7 @@ class set<T> {
                             if (imods != mods) then {
                                 ConcurrentModification.raise (outer.asString)
                             }
-                            if (idx >= innerSize) then {
+                            if (idx ≥ innerSize) then {
                                 IteratorExhausted.raise "iterator over {outer.asString}"
                             }
                             candidate := inner.at(idx)
@@ -1362,10 +1362,10 @@ class set<T> {
                 def oldInner = inner
                 size := 0
                 inner := _prelude.PrimitiveArray.new(n)
-                for (0..(inner.size-1)) do {i->
+                for (0..(inner.size-1)) do {i→
                     inner.at(i)put(unused)
                 }
-                for (0..(oldInner.size-1)) do {i->
+                for (0..(oldInner.size-1)) do {i→
                     if ((oldInner.at(i) != unused) && {oldInner.at(i) != removed}) then {
                         add(oldInner.at(i))
                     }
@@ -1374,7 +1374,7 @@ class set<T> {
             method ==(other) {
                 if (Iterable.match(other)) then {
                     var otherSize := 0
-                    other.do { each ->
+                    other.do { each →
                         otherSize := otherSize + 1
                         if (! self.contains(each)) then {
                             return false
@@ -1395,7 +1395,7 @@ class set<T> {
             method -- (other) {
             // set difference
                 def result = set.empty
-                for (self) do {v->
+                for (self) do {v→
                     if (!other.contains(v)) then {
                         result.add(v)
                     }
@@ -1404,34 +1404,34 @@ class set<T> {
             }
             method ** (other) {
             // set intersection
-                (filter {each -> other.contains(each)}).asSet
+                (filter {each → other.contains(each)}).asSet
             }
-            method isSubset(s2: Set<T>) {
-                self.do{ each ->
+            method isSubset(s2: Set⟦T⟧) {
+                self.do{ each →
                     if (s2.contains(each).not) then { return false }
                 }
                 return true
             }
 
-            method isSuperset(s2: Iterable<T>) {
-                s2.do{ each ->
+            method isSuperset(s2: Iterable⟦T⟧) {
+                s2.do{ each →
                     if (self.contains(each).not) then { return false }
                 }
                 return true
             }
-            method into(existing: Expandable<T>) -> Collection<T> {
-                do { each -> existing.add(each) }
+            method into(existing: Expandable⟦T⟧) → Collection⟦T⟧ {
+                do { each → existing.add(each) }
                 existing
             }
         }
     }
 }
 
-type Binding<K,T> = {
-    key -> K
-    value -> T
-    hash -> Number
-    == -> Boolean
+type Binding⟦K,T⟧ = {
+    key → K
+    value → T
+    hash → Number
+    == → Boolean
 }
 
 def binding = object {
@@ -1445,22 +1445,22 @@ def binding = object {
         method hash { (k.hash * 1021) + v.hash }
         method == (other) {
             match (other)
-                case {o:Binding -> (k == o.key) && (v == o.value) }
-                case {_ -> return false }
+                case {o:Binding → (k == o.key) && (v == o.value) }
+                case {_ → return false }
         }
     }
 }
 
-class dictionary<K,T> {
-    use collectionFactory<T>
+class dictionary⟦K,T⟧ {
+    use collectionFactory⟦T⟧
 
     method asString { "a dictionary factory" }
 
     method at(k:K)put(v:T) {
             self.empty.at(k)put(v)
     }
-    class withAll(initialBindings: Iterable<Binding<K,T>>) -> Dictionary<K,T> {
-        use collection<T>
+    class withAll(initialBindings: Iterable⟦Binding⟦K,T⟧⟧) → Dictionary⟦K,T⟧ {
+        use collection⟦T⟧
         var mods is readable := 0
         var numBindings := 0
         var inner := _prelude.PrimitiveArray.new(8)
@@ -1476,10 +1476,10 @@ class dictionary<K,T> {
             def value is public = self
             method asString { "removed" }
         }
-        for (0..(inner.size-1)) do {i->
+        for (0..(inner.size-1)) do {i→
             inner.at(i)put(unused)
         }
-        for (initialBindings) do { b -> at(b.key)put(b.value) }
+        for (initialBindings) do { b → at(b.key)put(b.value) }
         method size { numBindings }
         method at(key')put(value') {
             mods := mods + 1
@@ -1519,7 +1519,7 @@ class dictionary<K,T> {
         }
         method removeAllKeys(keys) {
             mods := mods + 1
-            for (keys) do { k ->
+            for (keys) do { k →
                 var t := findPosition(k)
                 if (inner.at(t).key == k) then {
                     inner.at(t)put(removed)
@@ -1543,7 +1543,7 @@ class dictionary<K,T> {
         }
         method removeAllValues(removals) {
             mods := mods + 1
-            for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if (removals.contains(a.value)) then {
                     inner.at(i)put(removed)
@@ -1556,7 +1556,7 @@ class dictionary<K,T> {
             // remove all bindings with value v
             mods := mods + 1
             def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if (v == a.value) then {
                     inner.at (i) put (removed)
@@ -1568,11 +1568,11 @@ class dictionary<K,T> {
             }
             self
         }
-        method removeValue(v) ifAbsent (action:Block0<Unknown>) {
+        method removeValue(v) ifAbsent (action:Block0⟦Unknown⟧) {
             // remove all bindings with value v
             mods := mods + 1
             def initialNumBindings = numBindings
-            for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if (v == a.value) then {
                     inner.at (i) put (removed)
@@ -1585,7 +1585,7 @@ class dictionary<K,T> {
             self
         }
         method containsValue(v) {
-            self.valuesDo{ each ->
+            self.valuesDo{ each →
                 if (v == each) then { return true }
             }
             false
@@ -1633,7 +1633,7 @@ class dictionary<K,T> {
             // and we need an iterator over bindings.
             var s := "dict⟬"
             var firstElement := true
-            for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if ((a != unused) && (a != removed)) then {
                     if (! firstElement) then {
@@ -1648,7 +1648,7 @@ class dictionary<K,T> {
         }
         method asDebugString {
             var s := "dict⟬"
-            for (0..(inner.size-1)) do {i->
+            for (0..(inner.size-1)) do {i→
                 if (i > 0) then { s := s ++ ", " }
                 def a = inner.at(i)
                 if ((a != unused) && (a != removed)) then {
@@ -1659,11 +1659,11 @@ class dictionary<K,T> {
             }
             s ++ "⟭"
         }
-        method keys -> Enumerable<K> {
+        method keys → Enumerable⟦K⟧ {
             def sourceDictionary = self
             object {
                 inherit graceObject exclude == exclude asString
-                use enumerable<K>
+                use enumerable⟦K⟧
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     method hasNext { sourceIterator.hasNext }
@@ -1678,11 +1678,11 @@ class dictionary<K,T> {
                 }
             }
         }
-        method values -> Enumerable<T> {
+        method values → Enumerable⟦T⟧ {
             def sourceDictionary = self
             object {
                 inherit graceObject exclude == exclude asString
-                use enumerable<T>
+                use enumerable⟦T⟧
                 class iterator {
                     def sourceIterator = sourceDictionary.bindingsIterator
                     // should be request on outer
@@ -1698,11 +1698,11 @@ class dictionary<K,T> {
                 }
             }
         }
-        method bindings -> Enumerable<T> {
+        method bindings → Enumerable⟦T⟧ {
             def sourceDictionary = self
             object {
                 inherit graceObject exclude == exclude asString
-                use enumerable<T>
+                use enumerable⟦T⟧
                 method iterator { sourceDictionary.bindingsIterator }
                 // should be request on outer
                 def size is public = sourceDictionary.size
@@ -1711,14 +1711,14 @@ class dictionary<K,T> {
                 }
             }
         }
-        method iterator -> Iterator<T> { values.iterator }
-        class bindingsIterator -> Iterator<Binding<K, T>> {
+        method iterator → Iterator⟦T⟧ { values.iterator }
+        class bindingsIterator → Iterator⟦Binding⟦K, T⟧⟧ {
             // this should be confidential, but can't be until `outer` is fixed.
             def imods:Number = mods
             var count := 1
             var idx := 0
             var elt
-            method hasNext { size >= count }
+            method hasNext { size ≥ count }
             method next {
                 if (imods != mods) then {
                     ConcurrentModification.raise (outer.asString)
@@ -1740,11 +1740,11 @@ class dictionary<K,T> {
             def n = c * 2
             def oldInner = inner
             inner := _prelude.PrimitiveArray.new(n)
-            for (0..(n - 1)) do {i->
+            for (0..(n - 1)) do {i→
                 inner.at(i)put(unused)
             }
             numBindings := 0
-            for (0..(c - 1)) do {i->
+            for (0..(c - 1)) do {i→
                 def a = oldInner.at(i)
                 if ((a != unused) && {a != removed}) then {
                     self.at(a.key)put(a.value)
@@ -1752,7 +1752,7 @@ class dictionary<K,T> {
             }
         }
         method keysAndValuesDo(block2) {
-             for (0..(inner.size-1)) do {i->
+             for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if ((a != unused) && {a != removed}) then {
                     block2.apply(a.key, a.value)
@@ -1760,7 +1760,7 @@ class dictionary<K,T> {
             }
         }
         method keysDo(block1) {
-             for (0..(inner.size-1)) do {i->
+             for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if ((a != unused) && {a != removed}) then {
                     block1.apply(a.key)
@@ -1768,7 +1768,7 @@ class dictionary<K,T> {
             }
         }
         method valuesDo(block1) {
-             for (0..(inner.size-1)) do {i->
+             for (0..(inner.size-1)) do {i→
                 def a = inner.at(i)
                 if ((a != unused) && {a != removed}) then {
                     block1.apply(a.value)
@@ -1779,23 +1779,23 @@ class dictionary<K,T> {
 
         method ==(other) {
             match (other)
-                case {o:Dictionary ->
+                case {o:Dictionary →
                     if (self.size != o.size) then {return false}
-                    self.keysAndValuesDo { k, v ->
+                    self.keysAndValuesDo { k, v →
                         if (o.at(k)ifAbsent{return false} != v) then {
                             return false
                         }
                     }
                     return true
                 }
-                case {_ ->
+                case {_ →
                     return false
                 }
         }
 
         method copy {
             def newCopy = dictionary.empty
-            self.keysAndValuesDo{ k, v ->
+            self.keysAndValuesDo{ k, v →
                 newCopy.at(k)put(v)
             }
             newCopy
@@ -1807,7 +1807,7 @@ class dictionary<K,T> {
 
         method ++(other) {
             def newDict = self.copy
-            other.keysAndValuesDo {k, v ->
+            other.keysAndValuesDo {k, v →
                 newDict.at(k) put(v)
             }
             return newDict
@@ -1815,7 +1815,7 @@ class dictionary<K,T> {
 
         method --(other) {
             def newDict = dictionary.empty
-            keysAndValuesDo { k, v ->
+            keysAndValuesDo { k, v →
                 if (! other.containsKey(k)) then {
                     newDict.at(k) put(v)
                 }
@@ -1826,12 +1826,12 @@ class dictionary<K,T> {
 }
 
 class range {
-    method from(lower)to(upper) -> Sequence<Number> {
+    method from(lower)to(upper) → Sequence⟦Number⟧ {
         object {
-            use indexable<Number>
+            use indexable⟦Number⟧
             match (lower)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("lower bound {lower}" ++
+                case {_:Number → }
+                case {_ → RequestError.raise ("lower bound {lower}" ++
                     " in range.from({lower})to({upper}) is not an integer") }
             def start = lower.truncated
             if (start != lower) then {
@@ -1839,8 +1839,8 @@ class range {
                     " in range.from({lower})to({upper}) is not an integer") }
 
             match (upper)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("upper bound {upper}" ++
+                case {_:Number → }
+                case {_ → RequestError.raise ("upper bound {upper}" ++
                     " in range.from({lower})to({upper}) is not an integer") }
             def stop = upper.truncated
             if (stop != upper) then {
@@ -1853,10 +1853,10 @@ class range {
 
             def hash is public = { ((start.hash * 1021) + stop.hash) * 3 }
 
-            method iterator -> Iterator {
+            method iterator → Iterator {
                 object {
                     var val := start
-                    method hasNext { val <= stop }
+                    method hasNext { val ≤ stop }
                     method next {
                         if (val > stop) then {
                             IteratorExhausted.raise "over {outer.asString}"
@@ -1868,26 +1868,26 @@ class range {
                 }
             }
             method at(ix:Number) {
-                if (!(ix <= self.size)) then {
+                if (!(ix ≤ self.size)) then {
                     BoundsError.raise "requested range.at({ix}), but upper bound is {size}"
                 }
-                if (!(ix >= 1)) then {
+                if (!(ix ≥ 1)) then {
                     BoundsError.raise "requested range.at({ix}), but lower bound is 1"
                 }
                 return start + (ix - 1)
             }
-            method contains(elem) -> Boolean {
+            method contains(elem) → Boolean {
                 try {
                     def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem < start) then {return false}
                     if (intElem > stop) then {return false}
-                } catch { ex:_prelude.Exception -> return false }
+                } catch { ex:_prelude.Exception → return false }
                 return true
             }
             method do(block1) {
                 var val := start
-                while {val <= stop} do {
+                while {val ≤ stop} do {
                     block1.apply(val)
                     val := val + 1
                 }
@@ -1895,7 +1895,7 @@ class range {
             method keysAndValuesDo(block2) {
                 var key := 1
                 var val := start
-                while {val <= stop} do {
+                while {val ≤ stop} do {
                     block2.apply(key, val)
                     key := key + 1
                     val := val + 1
@@ -1918,7 +1918,7 @@ class range {
 
             method values { self }
 
-            method asString -> String{
+            method asString → String{
                 "range.from({lower})to({upper})"
             }
 
@@ -1927,12 +1927,12 @@ class range {
             }
         }
     }
-    method from(upper)downTo(lower) -> Sequence<Number> {
+    method from(upper)downTo(lower) → Sequence⟦Number⟧ {
         object {
-            use indexable<Number>
+            use indexable⟦Number⟧
             match (upper)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("upper bound {upper}" ++
+                case {_:Number → }
+                case {_ → RequestError.raise ("upper bound {upper}" ++
                     " in range.from({upper})downTo({lower}) is not an integer") }
             def start = upper.truncated
             if (start != upper) then {
@@ -1940,8 +1940,8 @@ class range {
                     " in range.from({upper})downTo({lower}) is not an integer")
             }
             match (lower)
-                case {_:Number -> }
-                case {_ -> RequestError.raise ("lower bound {lower}" ++
+                case {_:Number → }
+                case {_ → RequestError.raise ("lower bound {lower}" ++
                     " in range.from({upper})downTo({lower}) is not an integer") }
             def stop = lower.truncated
             if (stop != lower) then {
@@ -1953,7 +1953,7 @@ class range {
             method iterator {
                 object {
                     var val := start
-                    method hasNext { val >= stop }
+                    method hasNext { val ≥ stop }
                     method next {
                         if (val < stop) then { IteratorExhausted.raise "over {outer.asString}" }
                         val := val - 1
@@ -1963,26 +1963,26 @@ class range {
                 }
             }
             method at(ix:Number) {
-                if (!(ix <= self.size)) then {
+                if (!(ix ≤ self.size)) then {
                     BoundsError.raise "requested range.at({ix}) but upper bound is {size}"
                 }
-                if (!(ix >= 1)) then {
+                if (!(ix ≥ 1)) then {
                     BoundsError.raise "requested range.at({ix}) but lower bound is 1"
                 }
                 return start - (ix - 1)
             }
-            method contains(elem) -> Boolean {
+            method contains(elem) → Boolean {
                 try {
                     def intElem = elem.truncated
                     if (intElem != elem) then {return false}
                     if (intElem > start) then {return false}
                     if (intElem < stop) then {return false}
-                } catch { ex:_prelude.Exception -> return false }
+                } catch { ex:_prelude.Exception → return false }
                 return true
             }
             method do(block1) {
                 var val := start
-                while {val >= stop} do {
+                while {val ≥ stop} do {
                     block1.apply(val)
                     val := val - 1
                 }
@@ -1990,7 +1990,7 @@ class range {
             method keysAndValuesDo(block2) {
                 var key := 1
                 var val := start
-                while {val >= stop} do {
+                while {val ≥ stop} do {
                     block2.apply(key, val)
                     key := key + 1
                     val := val - 1
@@ -2013,7 +2013,7 @@ class range {
 
             method values { self }
 
-            method asString -> String {
+            method asString → String {
                 "range.from {upper} downTo {lower}"
             }
             method asSequence {
