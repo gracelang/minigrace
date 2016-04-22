@@ -199,6 +199,11 @@ install: minigrace $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grac
 	install -m 644 $(COMPILER_MODULES) $(COMPILER_MODULES:%.grace=js/%.js) $(COMPILER_MODULES:%.grace=%.gct) $(MODULE_PATH)
 	install -m 644 $(LIBRARY_MODULES:%.grace=modules/%.grace) $(LIBRARY_MODULES:%.grace=modules/%.gct) $(LIBRARY_MODULES:%.grace=js/%.js) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gcn) $(LIBRARY_WO_OBJECTDRAW:%.grace=modules/%.gso) js/dom.js js/dom.gct $(MODULE_PATH)
 	install -m 644 StandardPrelude.gcn collectionsPrelude.gcn $(MODULE_PATH)
+	@if [[ `printenv GRACE_MODULE_PATH` != *$(MODULE_PATH)* ]] ; \
+	then echo "***********************************************************************";\
+         echo "Now set GRACE_MODULE_PATH to contain $(MODULE_PATH) in your environment.";\
+         echo "***********************************************************************"; \
+	fi
 
 js/ace/ace.js:
 	curl https://raw.githubusercontent.com/ajaxorg/ace-builds/master/src-min/ace.js > js/ace/ace.js

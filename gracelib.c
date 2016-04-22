@@ -4887,7 +4887,7 @@ Object dlmodule(const char *name) {
     char buf[blen];
     char nameCopy[PATH_MAX];
     if (!find_gso(name, buf)) {
-        gracedie("failed to find dynamic module '%s.gso'", name);
+        gracedie("failed to find dynamic module '%s.gso'.\nHave you set the environment variable GRACE_MODULE_PATH?", name);
     }
     void *handle = dlopen(buf, RTLD_LAZY | RTLD_GLOBAL);
     if (!handle)
