@@ -2852,25 +2852,8 @@ method methodsignature(sameline) {
             // annotations.
             if (accept "op") then {
                 next
-                if(sym.kind != "identifier") then {
-                    def suggestions = [ ]
-                    var suggestion := errormessages.suggestion.new
-                    suggestion.insert("«parameter name»")afterToken(lastToken)
-                    suggestions.push(suggestion)
-                    if(comma == false) then {
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteToken(lastToken)
-                        suggestions.push(suggestion)
-                    } else {
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteTokenRange(comma, lastToken)
-                        suggestions.push(suggestion)
-                    }
-                    errormessages.syntaxError("a variable length parameter (a parameter beginning with a '*') must have a name after the '*'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
-                }
-                vararg := true
-                varargs := true
+                errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} an Iterable.")
+                    atPosition(lastToken.line, lastToken.linePos)
             }
             pushidentifier
             id := values.pop
