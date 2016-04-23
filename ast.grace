@@ -530,21 +530,8 @@ def matchCaseNode is public = object {
 def methodTypeNode is public = object {
   class new(name', signature', rtype') {
     // Represents the signature of a method in a type literal
-    // [signature]
-    //     object {
-    //         name := ""
-    //         params := emptySequence
-    //         vararg := false/identifier
-    //     }
-    //     object {
-    //         name := ""
-    //         params := emptySequence
-    //         vararg := false/identifier
-    //     }
-    //     ...
-    //     object {
-    //         ...
-    //     }
+    // signature is an Iterable of callWithPart objects
+
     inherits baseNode
     def kind is public = "methodtype"
     var value is public := name'
@@ -619,17 +606,14 @@ def methodTypeNode is public = object {
                     typeParams.toGrace(depth + 1)
                 }
             }
-            if ((part.params.size > 0) || (part.vararg != false)) then {
+            if (part.params.size > 0) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
                     var p := part.params[pnr]
                     s := s ++ p.toGrace(depth + 1)
-                    if ((pnr < part.params.size) || (part.vararg != false)) then {
+                    if (pnr < part.params.size) then {
                         s := s ++ ", "
                     }
-                }
-                if (part.vararg != false) then {
-                    s := s ++ "*" ++ part.vararg.value
                 }
                 s := s ++ ")"
             }
@@ -833,7 +817,6 @@ def methodNode = object {
         var signature is public := signature'
         var body is public := body'
         var dtype is public := dtype'
-        var varargs is public := false
         var typeParams is public := false
         var selfclosure is public := false
         def nameString:String is public = value.value
@@ -898,9 +881,6 @@ def methodNode = object {
                     for (part.params) do { p ->
                         p.accept(visitor) from(newChain)
                     }
-                    if (part.vararg != false) then {
-                        part.vararg.accept(visitor) from(newChain)
-                    }
                 }
                 if (dtype != false) then {
                     dtype.accept(visitor) from(newChain)
@@ -943,9 +923,6 @@ def methodNode = object {
                 for (part.params) do { p ->
                     s := "{s}\n      {spc}{p.pretty(depth + 4)}"
                 }
-                if (part.vararg != false) then {
-                    s := "{s}\n    {spc}Vararg: {part.vararg.pretty(depth + 3)}"
-                }
             }
             s := s ++ "\n"
             if (false != typeParams) then {
@@ -984,17 +961,14 @@ def methodNode = object {
                     s := s ++ typeParams.toGrace(depth + 1)
                 }
                 firstPart := false
-                if ((part.params.size > 0) || (part.vararg != false)) then {
+                if (part.params.size > 0) then {
                     s := s ++ "("
                     for (part.params.indices) do { pnr ->
                         var p := part.params[pnr]
                         s := s ++ p.toGrace(depth + 1)
-                        if ((pnr < part.params.size) || (part.vararg != false)) then {
+                        if (pnr < part.params.size) then {
                             s := s ++ ", "
                         }
-                    }
-                    if (part.vararg != false) then {
-                        s := s ++ "*" ++ part.vararg.value
                     }
                     s := s ++ ")"
                 }
@@ -2503,35 +2477,26 @@ def blankNode is public = object {
 }
 def signaturePart = object {
     method new {
-        partName "" params( [] ) variableParam(false)
+        partName "" params []
     }
     method partName(n) scope(s) {
-        def result = partName(n) params([]) variableParam(false)
+        def result = partName(n) params []
         result.scope := s
         result
     }
     method partName(n) params(ps) scope(s) {
-        def result = partName(n) params(ps) variableParam(false)
-        result.scope := s
-        result
-    }
-    method partName(n) params(ps) variableParam(v) scope(s) {
-        def result = partName(n) params(ps) variableParam(v)
+        def result = partName(n) params(ps)
         result.scope := s
         result
     }
     method partName(n) {
-        partName(n) params([]) variableParam(false)
+        partName(n) params []
     }
-    method partName(n) params(ps) {
-        partName(n) params(ps) variableParam(false)
-    }
-    class partName(n) params(ps) variableParam(v) {
+    class partName(n) params(ps) {
         inherits baseNode
         def kind is public = "signaturepart"
         var name is public := n
         var params is public := ps
-        var vararg is public := v
         var typeParams is public := false
         var lineLength is public := 0
 
@@ -2539,9 +2504,6 @@ def signaturePart = object {
             if (visitor.visitSignaturePart(self) up(as)) then {
                 def newChain = as.extend(self)
                 params.do { p -> p.accept(visitor) from(newChain) }
-                if (false != vararg) then { 
-                    vararg.accept(visitor) from(newChain) 
-                }
                 if (false != typeParams) then {
                     typeParams.accept(visitor) from(newChain)
                 }
@@ -2552,7 +2514,6 @@ def signaturePart = object {
             var nd := shallowCopy
             def newChain = as.extend(nd)
             nd.params := listMap(params, blk) ancestors(newChain)
-            nd.vararg := maybeMap(vararg, blk) ancestors(newChain)
             nd.typeParams := maybeMap(typeParams, blk) ancestors(newChain)
             blk.apply(nd, as)
         }
@@ -2566,20 +2527,18 @@ def signaturePart = object {
             for (params) do { p ->
                 s := "{s}\n  {spc}{p.pretty(depth + 2)}"
             }
-            if (vararg != false) then {
-                s := "{s}\n  {spc}Vararg: {vararg.pretty(depth + 1)}"
-            }
             if (false != typeParams) then {
                 s := "{s}\n  {spc}TypeParams: {typeParams.pretty(depth + 1)}"
             }
             s
         }
         method shallowCopy {
-            signaturePart.partName(name) params(params) variableParam(vararg)
+            signaturePart.partName(name) params(params)
                 .shallowCopyFieldsFrom(self)
         }
         method shallowCopyFieldsFrom(other) {
             super.shallowCopyFieldsFrom(other)
+            typeParams := other.typeParams
             lineLength := other.lineLength
             self
         }

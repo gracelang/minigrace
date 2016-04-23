@@ -393,7 +393,7 @@ def typeVisitor = object {
             var mtstr := "{literalCount} "
             for (meth.signature) do { part ->
                 mtstr := mtstr ++ part.name
-                if ((part.params.size > 0) || (part.vararg != false)) then {
+                if (part.params.size > 0) then {
                     mtstr := mtstr ++ "("
                     for (part.params.indices) do { pnr ->
                         var p := part.params[pnr]
@@ -415,12 +415,9 @@ def typeVisitor = object {
                                 mtstr := mtstr ++ p.generics.last.toGrace(1) ++ ">"
                             }
                         }
-                        if ((pnr < part.params.size) || (part.vararg != false)) then {
+                        if (pnr < part.params.size) then {
                             mtstr := mtstr ++ ", "
                         }
-                    }
-                    if (part.vararg != false) then {
-                        mtstr := mtstr ++ "*" ++ part.vararg.toGrace(1)
                     }
                     mtstr := mtstr ++ ")"
                 }

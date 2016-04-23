@@ -2799,18 +2799,7 @@ GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList
     var providedLen = callmethod(argList, "size", [0])._value;
     // Don't check that providedLen is correct: the preamble
     // of the requested method will do that.
-    var l = theFunction.variableArities.length;
-    if (l > 1) {
-        var vararg = theFunction.variableArities;
-        for (var ix = 0; ix < l; ix++) {
-            if (vararg[ix]) {
-                    throw new GraceExceptionPacket(ProgrammingErrorObject,
-                        new GraceString("'requestWithArgs' cannot be used to request a method with multiple argument lists if one has variable arity."));
-            }
-        }
-    } else {
-        paramcv = [providedLen];
-    }
+    paramcv = [providedLen];
     var allArgs = [this.obj, this.name, paramcv];
     var argsIter = callmethod(argList, "iterator", [0]);
     while (Grace_isTrue(callmethod(argsIter, "hasNext", [0]))) {

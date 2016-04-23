@@ -621,23 +621,9 @@ method compilemethod(o, selfobj, pos) {
                 }
             }
         }
-        if (part.vararg != false) then { // part has vararg
-            var van := escapeident(part.vararg.value)
-            out("  Object var_init_{van} = {bracketConstructor};")
-            out("  for (i = {part.params.size}; i < argcv[{partnr - 1}]; i++) \{")
-            out("    callmethodflags(var_init_{van}, \"push\", 1, pushcv, &args[curarg], CFLAG_SELF);")
-            out("    curarg++;")
-            out("  \}")
-            out("  Object *var_{van} = &(stackframe->slots[{slot}]);")
-            out("  *var_{van} = var_init_{van};")
-            declaredvars.push(van)
-            slot := slot + 1
-            numslots := numslots + 1
-        } else {
-            if (!o.selfclosure) then {
-                out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
-                out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name.quoted}\");"
-            }
+        if (!o.selfclosure) then {
+            out "  if (argcv && argcv[{partnr - 1}] != {part.params.size})"
+            out "    graceRaise(RequestError(), \"wrong number of arguments for {part.name.quoted}\");"
         }
     }
     out("  Object *selfslot = &(stackframe->slots[{slot}]);")

@@ -425,19 +425,15 @@ method compilemethod(o, selfobj) {
     var oldusedvars := usedvars
     var olddeclaredvars := declaredvars
     def paramCounts =  [ ]
-    def variableArities =  [ ]
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
-        variableArities.push(part.vararg != false)
     }
     var textualSignature := ""
     for (o.signature) do { part ->
         def size = part.params.size
-        def isVar = part.vararg != false
-        def varChar = if (isVar) then {"+"} else {""}
         textualSignature := textualSignature ++ part.name
-        if ((size > 0) || (isVar)) then {
-            textualSignature := textualSignature ++ "({size}{varChar})"
+        if (size > 0) then {
+            textualSignature := textualSignature ++ "({size})"
         }
     }
     usedvars := []
@@ -475,16 +471,7 @@ method compilemethod(o, selfobj) {
                 out "  function() \{return {varf(p.value)};});"
             }
         }
-        if (part.vararg != false) then {
-            out("var {varf(part.vararg.value)} = new {bracketConstructor}("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out("curarg += argcv[{partnr - 1}] - {part.params.size};")
-            if (debugMode) then {
-                out "myframe.addVar(\"{escapestring(part.vararg.value)}\","
-                out "  function() \{return {varf(part.vararg.value)};});"
-            }
-        } elseif { emitArgChecks } then {
+        if { emitArgChecks } then {
             out "if (argcv[{partnr - 1}] !== {part.params.size})"
             def msgSuffix = if (o.signature.size < 2) then { 
                 textualSignature
@@ -533,13 +520,6 @@ method compilemethod(o, selfobj) {
                     out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
                 }
                 out("curarg++;")
-            }
-            if (part.vararg != false) then {
-                def pName = varf(part.vararg.value)
-                out("var {pName} = new {bracketConstructor}("
-                    ++ "Array.prototype.slice.call(arguments, curarg, "
-                    ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-                out "curarg += argcv[{partnr - 1}] - {part.params.size};"
             }
         }
         out "// End argument checking"
@@ -605,7 +585,6 @@ method compilemethod(o, selfobj) {
         out "func{myc}.confidential = true;"
     }
     out "func{myc}.paramCounts = {paramCounts};"
-    out "func{myc}.variableArities = {variableArities};"
     out("{selfobj}.methods[\"{name}\"] = func{myc};")
     out "func{myc}.definitionLine = {o.line};"
     out "func{myc}.definitionModule = \"{modname}\";"
@@ -618,19 +597,15 @@ method compilemethod(o, selfobj) {
 }
 method compilefreshmethod(o, selfobj) {
     def paramCounts =  [ ]
-    def variableArities =  [ ]
     for (o.signature) do { part ->
         paramCounts.push(part.params.size)
-        variableArities.push(part.vararg != false)
     }
     var textualSignature := ""
     for (o.signature) do { part ->
         def size = part.params.size
-        def isVar = part.vararg != false
-        def varChar = if (isVar) then {"+"} else {""}
         textualSignature := textualSignature ++ part.name
-        if ((size > 0) || (isVar)) then {
-            textualSignature := textualSignature ++ "({size}{varChar})"
+        if (size > 0) then {
+            textualSignature := textualSignature ++ "({size}     )"
         }
     }
     var myc := auto_count
@@ -657,13 +632,6 @@ method compilefreshmethod(o, selfobj) {
         for (part.params) do { p ->
             out("var {varf(p.value)} = arguments[curarg];")
             out("curarg++;")
-        }
-        if (part.vararg != false) then {
-            def pName = varf(part.vararg.value)
-            out("var {pName} = new {bracketConstructor}("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out("curarg += argcv[{partnr - 1}] - {part.params.size};")
         }
     }
     out "var inheritingObject = arguments[curarg++];"
@@ -703,13 +671,6 @@ method compilefreshmethod(o, selfobj) {
                 out "            callmethod({dtype}, \"asString\", [0])._value + \".\"));"
             }
             out("curarg++;")
-        }
-        if (part.vararg != false) then {
-            def pName = varf(part.vararg.value)
-            out("var {pName} = new {bracketConstructor}("
-                ++ "Array.prototype.slice.call(arguments, curarg, "
-                ++ "curarg + argcv[{partnr - 1}] - {part.params.size}));")
-            out("curarg += argcv[{partnr - 1}] - {part.params.size};")
         }
     }
     out "// End argument processing"

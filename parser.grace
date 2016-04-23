@@ -2605,7 +2605,6 @@ method methoddec {
         def meth = m.m
         def signature = m.sig
         def dtype = m.rtype
-        def varargs = m.v
         def body = []
         var localMin
         def anns = doannotation
@@ -2665,9 +2664,6 @@ method methoddec {
         }
         util.setline(btok.line)
         var o := ast.methodNode.new(meth, signature, body, dtype)
-        if (varargs) then {
-            o.varargs := true
-        }
         o.typeParams := m.typeParams
         if (anns != false) then { o.annotations.addAll(anns) }
         values.push(o)
@@ -2694,7 +2690,6 @@ method methodDecRest(tm, sameline) {
         nxt := values.pop
         methname := methname ++ nxt.value
         part.name := nxt.value
-        var vararg := false
         if ((accept("lparen")).not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("()")afterToken(lastToken)
@@ -2708,41 +2703,14 @@ method methodDecRest(tm, sameline) {
                 || (accept("op") && (sym.value == "*"))} do {
             if (accept "op") then {
                 next
-                vararg := true
-                if(sym.kind != "identifier") then {
-                    def suggestions = [ ]
-                    var suggestion := errormessages.suggestion.new
-                    suggestion.insert("«parameter name»")afterToken(lastToken)
-                    suggestions.push(suggestion)
-                    if(comma == false) then {
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteToken(lastToken)
-                        suggestions.push(suggestion)
-                    } else {
-                        suggestion := errormessages.suggestion.new
-                        suggestion.deleteTokenRange(comma, lastToken)
-                        suggestions.push(suggestion)
-                    }
-                    errormessages.syntaxError("a variable length parameter (a parameter beginning with '*') must have a name after the '*'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
-                }
+                errormessages.syntaxError("variable length parameters (parameters prefixed by '*') are no longer part of Grace.  Consider making {sym.value} an Iterable.")
+                    atPosition(lastToken.line, lastToken.linePos)
             }
             pushidentifier
             nxt := values.pop
             nxt.isBindingOccurrence := true
             nxt.dtype := optionalTypeAnnotation
-            if (vararg) then {
-                part.vararg := nxt
-                tm.varargs := true
-                if(sym.kind != "rparen") then {
-                    def suggestion = errormessages.suggestion.new
-                    suggestion.insert(")")afterToken(lastToken)
-                    errormessages.syntaxError("a part of a multi-part method beginning with a '(' must end with a ')'.")atPosition(
-                        lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-                }
-            } else {
-                part.params.push(nxt)
-            }
+            part.params.push(nxt)
             if (accept "comma") then {
                 comma := sym
                 next
@@ -2838,8 +2806,6 @@ method methodsignature(sameline) {
         next
     }
     var dtype := false
-    var varargs := false
-    var vararg := false
     if (accept "lparen") then {
         def lparen = sym
         part.linePos := sym.linePos
@@ -2860,25 +2826,7 @@ method methodsignature(sameline) {
             id.isBindingOccurrence := true
             dtype := optionalTypeAnnotation
             id.dtype := dtype
-            if (vararg) then {
-                part.vararg := id
-                if(sym.kind != "rparen") then {
-                    def suggestion = errormessages.suggestion.new
-                    def rparen = findNextToken({ t -> (t.kind == "rparen") && (t.line == sym.line) })
-                    if((sym.kind == "comma") && (rparen != false)) then {
-                        suggestion.insert(",*{id.value}")beforeToken(rparen)
-                        suggestion.deleteTokenRange(lparen.next, sym)leading(true)trailing(false)
-                        errormessages.syntaxError("a variable length parameter (a parameter beginning with a '*') cannot have any more parameters after it.")atRange(
-                            lastToken.line, sym.linePos, rparen.linePos - 1)withSuggestion(suggestion)
-                    } else {
-                        suggestion.insert(")")afterToken(lastToken)
-                        errormessages.syntaxError("a part of a method beginning with a '(' must end with a ')'.")atPosition(
-                            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-                    }
-                }
-            } else {
-                part.params.push(id)
-            }
+            part.params.push(id)
             if (accept "comma") then {
                 comma := sym
                 next
@@ -2912,7 +2860,6 @@ method methodsignature(sameline) {
             // a multi-part method name.
             var tm := ast.methodNode.new(meth, signature, [], false)
             meth := methodDecRest(tm, sameline)
-            varargs := varargs || tm.varargs
         }
     }
     if (accept "arrow") then {
@@ -2927,7 +2874,6 @@ method methodsignature(sameline) {
         def m is public = meth
         def sig is public  = signature
         def rtype is public = dtype
-        def v is public = varargs
         def typeParams is public = myTypeParams
     }
 }
@@ -3057,7 +3003,6 @@ method domethodtype {
     var meth := m.m
     var signature := m.sig
     var dtype := m.rtype
-    var varargs := m.v
     if (dtype == false) then {
         dtype := ast.identifierNode.new("Done", false)
     }
