@@ -2796,10 +2796,13 @@ GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList
     }
     var theFunction = this.obj.methods[this.name];
     var paramcv = theFunction.paramCounts;
+    var requiredLen = paramcv.reduce((a,b) => a+b, 0);
     var providedLen = callmethod(argList, "size", [0])._value;
-    // Don't check that providedLen is correct: the preamble
-    // of the requested method will do that.
-    paramcv = [providedLen];
+    if (providedLen !== requiredLen) {
+        throw new GraceExceptionPacket(ProgrammingErrorObject,
+                new GraceString("method '" + this.name + "' requires " +
+                requiredLen + " arguments, but was given " + providedLength + "."));
+    }
     var allArgs = [this.obj, this.name, paramcv];
     var argsIter = callmethod(argList, "iterator", [0]);
     while (Grace_isTrue(callmethod(argsIter, "hasNext", [0]))) {

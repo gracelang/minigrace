@@ -10,7 +10,7 @@ foo.example("a1", "a2")and("b1")
 foo.noParams
 
 method describe (methodMirror) {
-    print "method {methodMirror.name} has {methodMirror.paramcounts} parameters"
+    print "method {methodMirror.name} has {methodMirror.paramcounts} parameters."
 }
 
 def exampleMirror = mirror.reflect(foo).getMethod "example"
@@ -20,10 +20,16 @@ describe(exampleAndMirror)
 def noParamsMirror = mirror.reflect(foo).getMethod "noParams"
 describe(noParamsMirror)
 
+print "\nrequests using `request`"
+
+exampleMirror.request [ ["a"] ]
+exampleAndMirror.request [ ["a1", "a2"], ["b1"] ]
+noParamsMirror.request [ [] ]
+
 print "\nrequests using `requestWithArgs`"
 
-exampleMirror.requestWithArgs( ["a"] )
-exampleAndMirror.requestWithArgs( ["a1", "a2", "b1"] )
-noParamsMirror.requestWithArgs( [] )
+exampleMirror.requestWithArgs [1]
+exampleAndMirror.requestWithArgs ["a1", "a2", "b1"]
+noParamsMirror.requestWithArgs []
 
 print "\ndone"
