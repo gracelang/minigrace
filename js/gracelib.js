@@ -55,7 +55,7 @@ function object_basicAsString (argcv) {
 function object_asString (argcv) {
     if (!this.className || this.className.length === 0)
         return new GraceString("an object");
-    var firstChar = this.className[0];
+    var firstChar = this.className[0].toLowerCase();
     var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
     return new GraceString(article + this.className);
 }
@@ -101,7 +101,7 @@ function GraceTrait() {       // constructor function
 function trait_asString (argcv) {
     if (!this.className || this.className.length === 0)
         return new GraceString("a trait");
-    var firstChar = this.className[0];
+    var firstChar = this.className[0].toLowerCase();
     var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
     return new GraceString(article + this.className + " trait");
 }
