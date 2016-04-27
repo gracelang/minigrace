@@ -383,7 +383,7 @@ class new {
                 inc := n - 87 // 'a' - 10
             }
             if (inc >= base) then {
-                if((str[1] == "0") && (inc < 16)) then {
+                if((str.first == "0") && (inc < 16)) then {
                     def suggestion = errormessages.suggestion.new
                     suggestion.insert("x")atPosition(linePosition - str.size + 1)onLine(lineNumber)
                     errormessages.syntaxError("a number in base 16 must start with '0x'.")atPosition(
@@ -931,8 +931,8 @@ class new {
                         var i := 1
                         var count := 0
                         while { i <= nextLine.size } do {
-                            if(nextLine[i] == "\"") then { count := count + 1 }
-                            elseif { nextLine[i] == "\\" } then { i := i + 1 }
+                            if(nextLine.at(i) == "\"") then { count := count + 1 }
+                            elseif { nextLine.at(i) == "\\" } then { i := i + 1 }
                             i := i + 1
                         }
                         if ((count % 2) == 1) then {

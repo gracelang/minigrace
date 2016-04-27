@@ -24,7 +24,7 @@ def stringMapTest = object {
 
         method testAsString {
             def m12Str = m12.asString
-            assert ((m12Str == "map.new[two::2, one::1]")  || (m12Str == "map.new[one::1, two::2]"))
+            assert ((m12Str == "map.new [two::2, one::1]")  || (m12Str == "map.new [one::1, two::2]"))
                 description "m12.asString == {m12Str}"
         }
         method testAsList {

@@ -78,7 +78,7 @@ def primitiveListTest = object {
             def naN = (-1)^(1/2)
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
-            assert (oneToFive[1]) shouldBe (1)
+            assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
@@ -99,7 +99,7 @@ def primitiveListTest = object {
             oneToFive.at(1) put (11)
             assert (oneToFive.at(1)) shouldBe (11)
             oneToFive.at(2) put (12)
-            assert (oneToFive[2]) shouldBe (12)
+            assert (oneToFive.at(2)) shouldBe (12)
             assert (oneToFive.at(3)) shouldBe (3)
             assert {evens.at 6 put 10} shouldRaise (BoundsError)
             assert {evens.at 0 put 0} shouldRaise (BoundsError)
@@ -109,25 +109,26 @@ def primitiveListTest = object {
 
         method testElementAssign {
             def naN = "foo".asNumber
-            oneToFive[1] := 11
-            assert (oneToFive[1]) shouldBe 11
-            oneToFive[2] := 12
-            assert (oneToFive[2]) shouldBe 12
-            assert (oneToFive[3]) shouldBe 3
-            assert {evens[6] := 10} shouldRaise (BoundsError)
-            assert {evens[0] := 0} shouldRaise (BoundsError)
-            assert {evens[naN] := 0} shouldRaise (BoundsError)
-            assert (assign21at2.asString) shouldBe (done.asString)
+            oneToFive.at(1) put 11
+            assert (oneToFive.at(1)) shouldBe 11
+            oneToFive.at(2) put 12
+            assert (oneToFive.at(2)) shouldBe 12
+            assert (oneToFive.at(3)) shouldBe 3
+            assert {evens.at(6) put 10} shouldRaise (BoundsError)
+            assert {evens.at(0) put 0} shouldRaise (BoundsError)
+            assert {evens.at(naN) put 0} shouldRaise (BoundsError)
+            assert (assign21at2.asString) shouldBe ([11, 21, 3, 4, 5].asString)
+                //  equality on primitive lists is object identity, so we compare strings
         }
         
-        method assign21at2 { oneToFive[2] := 21 }
+        method assign21at2 { oneToFive.at(2) put 21 }
 
         method testListAtPutExtend {
             assert (empty.at 1 put 99) shouldBe (list [99])
             oneToFive.at(6) put 6
             assert (oneToFive.at 6) shouldBe 6
             oneToFive.at(7) put 7
-            assert (oneToFive[7]) shouldBe 7
+            assert (oneToFive.at(7)) shouldBe 7
             assert (oneToFive) shouldBe (1..7)
         }
         method testListPop {

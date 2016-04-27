@@ -53,7 +53,7 @@ def suggestion is public = object {
             // Check for removing the whole line, then remove the indent also.
             var indent := true
             for(1..(start'-1)) do { i ->
-                if(line[i] != " ") then {
+                if(line.at(i) != " ") then {
                     indent := false
                 }
             }
@@ -221,16 +221,16 @@ def suggestion is public = object {
             // Add new lines to make the list big enough.
             lineNumbers.push(lineNumber)
             lines.push(line)
-            if(lines.size > 1) then {
+            if (lines.size > 1) then {
                 // Re-order the list.
                 i := lines.size
-                while {(i > 1) && ({lineNumber < lineNumbers[i - 1]})} do {
-                    lineNumbers[i] := lineNumbers[i - 1]
-                    lines[i] := lines[i - 1]
+                while {(i > 1) && {lineNumber < lineNumbers.at(i - 1)}} do {
+                    lineNumbers.at(i) put(lineNumbers.at(i - 1))
+                    lines.at(i) put (lines.at(i - 1))
                     i := i - 1
                 }
-                lineNumbers[i] := lineNumber
-                lines[i] := line
+                lineNumbers.at(i) put (lineNumber)
+                lines.at(i) put (line)
             }
         }
     }
@@ -239,7 +239,7 @@ def suggestion is public = object {
     // Returns false if the line is not found.
     method findLine(lineNumber) is confidential {
         for(lineNumbers.indices) do { i ->
-            if(lineNumbers[i] == lineNumber) then {
+            if(lineNumbers.at(i) == lineNumber) then {
                 return i
             }
         }
@@ -251,26 +251,26 @@ def suggestion is public = object {
     method getLine(lineNumber) is confidential {
         def i = findLine(lineNumber)
         if(i == false) then {
-            util.lines[lineNumber]
+            util.lines.at(lineNumber)
         } else {
-            lines[i]
+            lines.at(i)
         }
     }
 
     method print() {
         for(1..lines.size) do { i ->
-            if((i > 1) && {(lineNumbers[i] > (lineNumbers[i-1] + 1))}) then {
+            if((i > 1) && {(lineNumbers.at(i) > (lineNumbers.at(i-1) + 1))}) then {
                 var s := ""
-                for(1..lineNumbers[i-1].asString.size) do {
+                for(1..lineNumbers.at(i-1).asString.size) do {
                     s := s ++ " "
                 }
                 io.error.write("    {s}...\n")
             }
             // Handle insertion of new lines.
-            if(lineNumbers[i].truncated != lineNumbers[i]) then {
-                io.error.write(" *{lineNumbers[i].truncated}: {lines[i]}\n")
+            if(lineNumbers.at(i).truncated != lineNumbers.at(i)) then {
+                io.error.write(" *{lineNumbers.at(i).truncated}: {lines.at(i)}\n")
             } else {
-                io.error.write("  {lineNumbers[i]}: {lines[i]}\n")
+                io.error.write("  {lineNumbers.at(i)}: {lines.at(i)}\n")
             }
         }
     }
@@ -305,20 +305,20 @@ method name (p:String) matches (t:String) within (k:Number) {
     var top := k' + 1  // the location where the topmost diagonal under
                        // threshold intersects the current column
     def h = emptyList
-    for (0..m) do { i -> h[i+1] := i+1 }
+    for (0..m) do { i -> h.at(i+1) put(i+1) }
     try {
         for (1..n) do { j ->
             var c := 0
             for (1..top) do { i ->
-                def e = if (p[i] == t[j]) then {
+                def e = if (p.at(i) == t.at(j)) then {
                     c
                 } else {
-                    min3(h[i], h[i+1], c) + 1
+                    min3(h.at(i), h.at(i+1), c) + 1
                 }
-                c := h[i+1]
-                h[i+1] := e
+                c := h.at(i+1)
+                h.at(i+1) put (e)
             }
-            while { (top >= 0) && {h[top+1] > k'} } do { top := top - 1 }
+            while { (top >= 0) && {h.at(top+1) > k'} } do { top := top - 1 }
             if (top == m) then {
                 return j    // the last character of t that was used in the match
             } else {

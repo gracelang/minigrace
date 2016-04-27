@@ -326,7 +326,7 @@ def While is public = object {
 
     method makeBindings(node) -> List is override {
         def sig = node.with
-        [node.with[1].args[1], node.with[2].args[1] ]
+        [node.with.first.args.first, node.with.second.args.first ]
     }
 }
 
@@ -334,7 +334,7 @@ def For is public = object {
     inherits patternMatchingRequestOf "for()do"
 
     method makeBindings(node) -> List is override {
-        [node.with[1].args[1], node.with[2].args[1] ]
+        [node.with.first.args.first, node.with.second.args.first ]
     }
 }
 

@@ -396,7 +396,7 @@ def typeVisitor = object {
                 if (part.params.size > 0) then {
                     mtstr := mtstr ++ "("
                     for (part.params.indices) do { pnr ->
-                        var p := part.params[pnr]
+                        var p := part.params.at(pnr)
                         if (p.dtype != false) then {
                             mtstr := mtstr ++ p.toGrace(1)
                         } else {

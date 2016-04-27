@@ -604,7 +604,7 @@ method compilemethod(o, selfobj, pos) {
             ++ "{o.signature.size}.\", nparts);")
     }
     for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
+        var part := o.signature.at(partnr)
         for (part.params) do { param ->
             var pn := escapeident(param.value)
             out("  Object *var_{pn} = &(stackframe->slots[{slot}]);")
@@ -942,7 +942,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
 method compilemethodtypes(litname, o) {
     var argcv := "  int argcv_{litname}[] = \{"
     for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
+        var part := o.signature.at(partnr)
         argcv := argcv ++ part.params.size
         if (partnr < o.signature.size) then {
             argcv := argcv ++ ", "
@@ -1164,8 +1164,8 @@ method compiletrycatch(o) {
         out("  gc_frame_newslot({finally});")
     }
     for (params) do {ie->
-        def idx = ie[1]
-        def e = ie[2]
+        def idx = ie.first
+        def e = ie.second
         out("  params[{idx}] = {e};")
     }
     out "  setline({o.line});"
@@ -1198,8 +1198,8 @@ method compilematchcase(o) {
         out("  gc_frame_newslot({elsecase});")
     }
     for (params) do {ie->
-        def idx = ie[1]
-        def e = ie[2]
+        def idx = ie.first
+        def e = ie.second
         out("  params[{idx}] = {e};")
     }
     out("  Object matchres{myc} = matchCase({matchee}, params, {cases.size},"
@@ -1979,7 +1979,7 @@ method compile(moduleObject, outfile, rm, bt, buildinfo) {
         }
         util.log_verbose "done."
         if (buildtype == "run") then {
-            if (ofpnBase[1] != "/") then {
+            if (ofpnBase.first != "/") then {
                 cmd := "./" ++ ofpnBase
             } else {
                 cmd := ofpnBase

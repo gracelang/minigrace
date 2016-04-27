@@ -19,7 +19,7 @@ method reportWhile(req) {
     // Get a reference to the entire condition 'part' of the request.
     // We will use this to generate the suggestion of replacing the
     // parentheses with braces, if applicable.
-    def whilePart = req.with[1]
+    def whilePart = req.with.first
     print "whilePart = {whilePart.pretty(0)}"
     print "util.lines = {util.lines}"
     // Ignore certain degenerate cases where there is no condition, and

@@ -372,7 +372,7 @@ def sequenceTest = object {
             def naN = "fff".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
-            assert (oneToFive[1]) shouldBe (1)
+            assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
@@ -664,7 +664,7 @@ def listTest = object {
             def naN = "foo".asNumber
             assert {empty.at(1)} shouldRaise (BoundsError)
             assert (oneToFive.at(1)) shouldBe (1)
-            assert (oneToFive[1]) shouldBe (1)
+            assert (oneToFive.at(1)) shouldBe (1)
             assert (oneToFive.at(5)) shouldBe (5)
             assert (evens.at(4)) shouldBe (8)
             assert {evens.at(5)} shouldRaise (BoundsError)
@@ -685,7 +685,7 @@ def listTest = object {
             oneToFive.at(1) put (11)
             assert (oneToFive.at(1)) shouldBe (11)
             oneToFive.at(2) put (12)
-            assert (oneToFive[2]) shouldBe (12)
+            assert (oneToFive.at(2)) shouldBe (12)
             assert (oneToFive.at(3)) shouldBe (3)
             assert {evens.at 6 put 10} shouldRaise (BoundsError)
             assert {evens.at 0 put 0} shouldRaise (BoundsError)
@@ -697,7 +697,7 @@ def listTest = object {
             oneToFive.at(6) put 6
             assert (oneToFive.at 6) shouldBe 6
             oneToFive.at(7) put 7
-            assert (oneToFive[7]) shouldBe 7
+            assert (oneToFive.at(7)) shouldBe 7
             assert (oneToFive) shouldBe (1..7)
         }
 

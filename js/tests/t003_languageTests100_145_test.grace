@@ -145,9 +145,9 @@ def aGraceLangTest = object {
         method test_100_squarebracket {
             def aString = "test"
             
-            out(aString[1])
-            out(aString[2])
-            out(aString[3].size)
+            out(aString.at(1))
+            out(aString.at(2))
+            out(aString.at(3).size)
             
             assert(str)shouldBe("t\ne\n1\n")
         }

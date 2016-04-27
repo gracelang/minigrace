@@ -93,7 +93,7 @@ class MatchAndDestructuringPattern.new(pat, items') {
                 }
             }
             for (items.indices) do {i->
-                def b = items[i].match(mbindings[i])
+                def b = items.at(i).match(mbindings.at(i))
                 if (!b) then {
                     return FailedMatch.new(o)
                 }

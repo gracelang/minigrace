@@ -1632,7 +1632,7 @@ method expressionrest(name) recursingWith (recurse) blocks (acceptBlocks) {
                 suggestion.insert(" «{name}»")afterToken(lastToken)
                 suggestions.push(suggestion)
                 suggestion := errormessages.suggestion.new
-                suggestion.insert(" " ++ util.lines[sym.line])afterToken(lastToken)
+                suggestion.insert(" " ++ util.lines.at(sym.line))afterToken(lastToken)
                 suggestion.deleteLine(sym.line)
                 suggestions.push(suggestion)
                 errormessages.syntaxError("a valid expression must follow '{lastToken.value}'. This is often caused by a new line in the middle of an expression.")atPosition(
@@ -3017,7 +3017,7 @@ method domethodtype {
         if (!accept("rbrace")) then {
             if (lastToken.line == sym.line) then {
                 def suggestion = errormessages.suggestion.new
-                def newLine = util.lines[sym.line].substringFrom(1)to(lastToken.linePos - 1) ++ sym.value
+                def newLine = util.lines.at(sym.line).substringFrom(1)to(lastToken.linePos - 1) ++ sym.value
                 suggestion.addLine(sym.line + 0.1, newLine)
                 suggestion.deleteToken(sym)leading(true)trailing(true)
                 errormessages.syntaxError("methods in a type literal must be on separate lines, or separated by semicolons.")atPosition(
@@ -3393,8 +3393,8 @@ method checkUnexpectedTokenAfterStatement {
             def nextTok = findNextValidToken( ["rbrace"] )
             if(nextTok == sym) then {
                 suggestion := errormessages.suggestion.new
-                suggestion.addLine(lastToken.line, util.lines[lastToken.line].substringFrom(1)to(lastToken.linePos + lastToken.size - 1))
-                def newLine = util.lines[sym.line].substringFrom(sym.linePos)to(util.lines[sym.line].size)
+                suggestion.addLine(lastToken.line, util.lines.at(lastToken.line).substringFrom(1)to(lastToken.linePos + lastToken.size - 1))
+                def newLine = util.lines.at(sym.line).substringFrom(sym.linePos)to(util.lines.at(sym.line).size)
                 suggestion.addLine(lastToken.line + 0.1, newLine)
                 suggestions.push(suggestion)
             } else {

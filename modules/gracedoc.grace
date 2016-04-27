@@ -115,8 +115,8 @@ class section.withTemplate(html')andCursorAt(idx) -> Section {
 method trim(c:String) -> String {
     var start := 1
     var end := c.size
-    while { c[start] == " " } do { start := start + 1 }
-    while { c[end] == " " } do { end := end - 1 }
+    while { c.at(start) == " " } do { start := start + 1 }
+    while { c.at(end) == " " } do { end := end - 1 }
     return c.substringFrom(start)to(end)
 }
 

@@ -462,7 +462,7 @@ method compilemethod(o, selfobj) {
         out "var myframe = new StackFrame(\"{name}\");"
     }
     for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
+        var part := o.signature.at(partnr)
         for (part.params) do { p ->
             out "var {varf(p.value)} = arguments[curarg];"
             out "curarg++;"
@@ -506,7 +506,7 @@ method compilemethod(o, selfobj) {
         out "// Start argument checking"
         out "curarg = 1;"
         for (o.signature.indices) do { partnr ->
-            var part := o.signature[partnr]
+            var part := o.signature.at(partnr)
             var paramnr := 0
             for (part.params) do { p ->
                 paramnr := paramnr + 1
@@ -628,7 +628,7 @@ method compilefreshmethod(o, selfobj) {
     increaseindent
     out("var curarg = 1;")
     for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
+        var part := o.signature.at(partnr)
         for (part.params) do { p ->
             out("var {varf(p.value)} = arguments[curarg];")
             out("curarg++;")
@@ -657,7 +657,7 @@ method compilefreshmethod(o, selfobj) {
     out "// Start argument processing"
     out "curarg = 1;"
     for (o.signature.indices) do { partnr ->
-        var part := o.signature[partnr]
+        var part := o.signature.at(partnr)
         var paramnr := 0
         for (part.params) do { p ->
             paramnr := paramnr + 1
@@ -991,7 +991,7 @@ method compilecall(o) {
     }
     var partl := ""
     for (o.with.indices) do { partnr ->
-        partl := partl ++ o.with[partnr].args.size
+        partl := partl ++ o.with.at(partnr).args.size
         if (partnr < o.with.size) then {
             partl := partl ++ ", "
         }

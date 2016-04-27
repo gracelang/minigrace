@@ -371,7 +371,7 @@ def blockNode is public = object {
         if (self.params.size > 0) then {
             s := s ++ " "
             for (self.params.indices) do { i ->
-                var p := self.params[i]
+                var p := self.params.at(i)
                 if (self.matchingPattern != false) then {
                     s := s ++ "(" ++ p.toGrace(0) ++ ")"
                 } else {
@@ -609,7 +609,7 @@ def methodTypeNode is public = object {
             if (part.params.size > 0) then {
                 s := s ++ "("
                 for (part.params.indices) do { pnr ->
-                    var p := part.params[pnr]
+                    var p := part.params.at(pnr)
                     s := s ++ p.toGrace(depth + 1)
                     if (pnr < part.params.size) then {
                         s := s ++ ", "
@@ -964,7 +964,7 @@ def methodNode = object {
                 if (part.params.size > 0) then {
                     s := s ++ "("
                     for (part.params.indices) do { pnr ->
-                        var p := part.params[pnr]
+                        var p := part.params.at(pnr)
                         s := s ++ p.toGrace(depth + 1)
                         if (pnr < part.params.size) then {
                             s := s ++ ", "
@@ -1127,7 +1127,7 @@ def callNode = object {
                 if (part.args.size > 0) then {
                     s := s ++ "("
                     for (part.args.indices) do { anr ->
-                        var arg := part.args[anr]
+                        var arg := part.args.at(anr)
                         s := s ++ arg.toGrace(depth + 1)
                         if (anr < part.args.size) then {
                             s := s ++ ", "
@@ -1406,7 +1406,7 @@ def arrayNode is public = object {
     method toGrace(depth : Number) -> String {
         var s := "["
         for (self.value.indices) do { i ->
-            s := s ++ self.value[i].toGrace(0)
+            s := s ++ self.value.at(i).toGrace(0)
             if (i < self.value.size) then {
                 s := s ++ ", "
             }

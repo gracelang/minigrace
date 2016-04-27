@@ -395,8 +395,8 @@ method rewritematchblockterm(arg) {
         for (arg.with) do { part ->
             for (part.args) do { a ->
                 def tmp = rewritematchblockterm(a)
-                subpats.push(tmp[1])
-                for (tmp[2]) do {b->
+                subpats.push(tmp.first)
+                for (tmp.second) do {b->
                     bindings.push(b)
                 }
             }
@@ -436,7 +436,7 @@ method rewritematchblockterm(arg) {
             }
             def tmp = rewritematchblockterm(arg.dtype)
             def bindings = [arg]
-            for (tmp[2]) do {b->
+            for (tmp.second) do {b->
                 bindings.push(b)
             }
             def bindingpat = ast.callNode.new(
@@ -446,7 +446,7 @@ method rewritematchblockterm(arg) {
                         ast.identifierNode.new("prelude", false)
                     )
                 ),
-                [ast.callWithPart.request "new" withArgs( [varpat, tmp[1] ] )]
+                [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
             )
             return [bindingpat, bindings]
         }
@@ -459,7 +459,7 @@ method rewritematchblockterm(arg) {
         ++ "match block of unexpected kind '{arg.kind}'.")
 }
 method rewritematchblock(blk) {
-    def arg = blk.params[1]
+    def arg = blk.params.first
     var pattern := false
     var newparams := [ ]
     for (blk.params) do { p ->
@@ -468,8 +468,8 @@ method rewritematchblock(blk) {
     if ((arg.kind == "num") || (arg.kind == "string") ||
         (arg.kind == "boolean")) then {
         def tmp = rewritematchblockterm(arg)
-        pattern := tmp[1]
-        newparams := tmp[2]
+        pattern := tmp.first
+        newparams := tmp.second
     }
     if (arg.kind == "identifier") then {
         def varpat = ast.callNode.new(
@@ -499,10 +499,10 @@ method rewritematchblock(blk) {
                                 ast.identifierNode.new("prelude", false)
                                 )
                             ),
-                        [ast.callWithPart.request "new" withArgs( [varpat, tmp[1] ] )]
+                        [ast.callWithPart.request "new" withArgs( [varpat, tmp.first ] )]
                     )
                     pattern := bindingpat
-                    for (tmp[2]) do {p->
+                    for (tmp.second) do {p->
                         // We can't name both p and the extra param binding
                         // occurences, because then there would be shadowing.
                         if (p.wildcard) then {
