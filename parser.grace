@@ -1468,8 +1468,9 @@ method expression(acceptBlocks) {
 // preceding expression with an index node into itself.
 method postfixsquare {
     if (acceptWithoutSpaces("lsquare")) then {
+        def opening = sym
         next
-        var expr := values.pop
+        def expr = values.pop
         if(didConsume({expression(blocksOK)}).not) then {
             def suggestions = [ ]
             var suggestion := errormessages.suggestion.new
@@ -1488,15 +1489,18 @@ method postfixsquare {
             errormessages.syntaxError("a '[' in an expression must be followed by another expression and a ']'.")atPosition(
                 sym.line, sym.linePos)withSuggestions(suggestions)
         }
-        var index := values.pop
         if(sym.kind != "rsquare") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("]")afterToken(lastToken)
             errormessages.syntaxError("a '[' in an expression must be followed by another expression and a ']'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
+        errormessages.syntaxError("'[ ... ]' without preceeding space is no longer part of Grace. " ++
+            "For a Lineup, add a space.  For an indexing operation, use `at(_)` or `at(_)put(_)`.")
+                atPosition(opening.line, opening.linePos)
+        def index = values.pop
         next
-        var o := ast.indexNode.new(expr, index)
+        def o = ast.indexNode.new(expr, index)
         values.push(o)
         dotrest(blocksOK)
         callrest(blocksOK)
@@ -2248,8 +2252,8 @@ method doarray {
                     suggestion := errormessages.suggestion.new
                     suggestion.deleteTokenRange(lastToken, nextTok.prev)leading(true)trailing(false)
                     suggestions.push(suggestion)
-                    errormessages.syntaxError("a list must contain zero or more valid expressions separated by commas.")atPosition(
-                        sym.line, sym.linePos)withSuggestions(suggestions)
+                    errormessages.syntaxError("a Lineup must contain zero or more expressions separated by commas.")
+                        atPosition(sym.line, sym.linePos) withSuggestions(suggestions)
                 }
             }
             tmp := values.pop
@@ -2258,7 +2262,7 @@ method doarray {
         if(sym.kind != "rsquare") then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("]")afterToken(lastToken)
-            errormessages.syntaxError("a list beginning with a '[' must end with a ']'.")atPosition(
+            errormessages.syntaxError("a Lineup beginning with a '[' must end with a ']'.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
         var o := ast.arrayNode.new(params)
