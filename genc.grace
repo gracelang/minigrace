@@ -749,7 +749,7 @@ method compilemethod(o, selfobj, pos) {
     out("  gc_frame_newslot((Object)stackframe);")
     out "  Object methodInheritingObject = NULL;"
     for (o.signature.indices) do { partnr ->
-        def part = o.signature[partnr]
+        def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
             out("    graceRaise(RequestError(), \"insufficient arguments to method {name.quoted}\");")
@@ -889,7 +889,7 @@ method compilefreshmethod(o, nm, body, closurevars, selfobj, pos, numslots,
     }
     out "  Object methodInheritingObject = args[{sumAccum}];"
     for (o.signature.indices) do { partnr ->
-        def part = o.signature[partnr]
+        def part = o.signature.at(partnr)
         if (part.params.size > 0) then {
             out("  if (nparts > 0 && argcv[{partnr - 1}] < {part.params.size})")
             out("    graceRaise(RequestError(), \"insufficient arguments to method {name}\");")
@@ -1302,7 +1302,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         out("  Object call{auto_count} = callmethod4(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, ((flags >> 24) & 0xff) + 1, "
@@ -1317,7 +1317,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         out("  Object call{auto_count} = callmethodflags({ot}, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
@@ -1334,7 +1334,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         out("  Object call{auto_count} = callmethodflags(self, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
@@ -1346,7 +1346,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         out("  Object call{auto_count} = callmethodflags(prelude, \"{evl}\", "
             ++ "{nparts}, partcv, params, CFLAG_SELF);")
@@ -1358,7 +1358,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall({obj}, \"{evl}\",")
@@ -1375,7 +1375,7 @@ method compilecall(o, tailcall) {
             i := i + 1
         }
         for (o.with.indices) do { partnr ->
-            out("  partcv[{partnr - 1}] = {o.with[partnr].args.size};")
+            out("  partcv[{partnr - 1}] = {o.with.at(partnr).args.size};")
         }
         if (tailcall) then {
             out("  Object call{auto_count} = tailcall(self, \"{evl}\",")

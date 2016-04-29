@@ -1,11 +1,1 @@
-def a = primitiveArray.new(4)
-print(a)
-print(a.asDebugString)
-a.at 2 put 1
-print(a[2])
-a.at 1 put "Hello"
-a.at 3 put "is \"foo\\bar\" a word?"
-a[0] := true
-print(a)
-print(a.asDebugString)
-print "a.size = {a.size}"
+../js/tests/t153_primitiveArray_test.grace

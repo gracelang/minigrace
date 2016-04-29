@@ -899,7 +899,7 @@ class new {
                         // Find closest {.
                         var line := lineNumber
                         var i := util.lines.at(line).size
-                        while { util.lines.at(line)[i] != "\{" } do {
+                        while { util.lines.at(line).at(i) != "\{" } do {
                             i := i - 1
                             if(i == 0) then {
                                 lineNumber := line - 1
