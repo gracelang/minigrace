@@ -2071,6 +2071,11 @@ Object ConcatString_length(Object self, int nparts, int *argcv,
     struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
     return alloc_Float64(sself->blen);
 }
+Object ConcatString_isEmpty(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct ConcatStringObject *sself = (struct ConcatStringObject*)self;
+    return alloc_Boolean(sself->blen == 0);
+}
 Object ConcatString_iter(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     char *c = ConcatString__Flatten(self);
@@ -2159,7 +2164,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("concatString", 38,
+        ConcatString = alloc_class3("concatString", 39,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -2187,6 +2192,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "quoted", &ConcatString_quoted);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
+        add_Method(ConcatString, "isEmpty", &ConcatString_isEmpty);
         add_Method(ConcatString, "iter", &ConcatString_iter);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
         add_Method(ConcatString, "ord", &ConcatString_ord);
@@ -2237,6 +2243,7 @@ Object String_quoted(Object, int, int*, Object*, int flags);
 Object String__escape(Object, int, int*, Object*, int flags);
 Object String_QuotedString(Object, int, int*, Object*, int flags);
 Object String_length(Object, int, int*, Object*, int flags);
+Object String_isEmpty(Object, int, int*, Object*, int flags);
 Object String_iter(Object receiver, int nparts, int *argcv,
         Object* args, int flags) {
     return alloc_StringIter(receiver);
@@ -2408,7 +2415,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 38);
+        String = alloc_class("String", 39);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2433,6 +2440,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
+        add_Method(String, "isEmpty", &String_isEmpty);
         add_Method(String, "do", &String_do);
         add_Method(String, "iter", &String_iter);
         add_Method(String, "iterator", &String_iter);
@@ -2572,6 +2580,11 @@ Object String_length(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct StringObject* sself = (struct StringObject*)self;
     return alloc_Float64(sself->blen);
+}
+Object String_isEmpty(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    struct StringObject* sself = (struct StringObject*)self;
+    return alloc_Boolean(sself->blen == 0);
 }
 Object String_concat(Object self, int nparts, int *argcv,
         Object *args, int flags) {
