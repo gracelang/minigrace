@@ -828,6 +828,15 @@ class list<T> {
                     s ++ "]"
                 }
 
+                method asDebugString {
+                    var s := "["
+                    def curSize = self.size
+                    for (1..curSize) do { i ->
+                        s := s ++ at(i).asDebugString
+                        if (i < curSize) then { s := s ++ ", " }
+                    }
+                    s ++ "]"
+                }
 
                 method extend(l) { addAll(l); done }    // compatibility
 
@@ -1101,6 +1110,14 @@ class list<T> {
                 }
                 s ++ "]"
             }
+            method asDebugString {
+                var s := "["
+                for (0..(size-1)) do {i->
+                    s := s ++ inner.at(i).asDebugString
+                    if (i < (size-1)) then { s := s ++ ", " }
+                }
+                s ++ "]"
+            }
             method contains(element) {
                 do { each -> if (each == element) then { return true } }
                 return false
@@ -1347,6 +1364,12 @@ class set<T> {
         method asString {
             var s := "set\{"
             do {each -> s := s ++ each.asString }
+                separatedBy { s := s ++ ", " }
+            s ++ "\}"
+        }
+        method asDebugString {
+            var s := "set\{"
+            do {each -> s := s ++ each.asDebugString }
                 separatedBy { s := s ++ ", " }
             s ++ "\}"
         }
