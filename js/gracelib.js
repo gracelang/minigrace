@@ -21,6 +21,10 @@ function getModuleName() {
     return moduleName;
 }
 
+Array.prototype.sum = function () {
+    return this.reduce(function(a,b) {return a+b;}, 0);
+};
+
 function GraceObject() {       // constructor function
     // gets its methods from the prototype.  Don't add to them!
     this.superobj = null;
@@ -2795,12 +2799,12 @@ GraceMirrorMethod.prototype.methods['requestWithArgs'] = function(argcv, argList
     }
     var theFunction = this.obj.methods[this.name];
     var paramcv = theFunction.paramCounts;
-    var requiredLen = paramcv.reduce((a,b) => a+b, 0);
+    var requiredLen = paramcv.sum();
     var providedLen = callmethod(argList, "size", [0])._value;
     if (providedLen !== requiredLen) {
         throw new GraceExceptionPacket(ProgrammingErrorObject,
                 new GraceString("method '" + this.name + "' requires " +
-                requiredLen + " arguments, but was given " + providedLength + "."));
+                requiredLen + " arguments, but was given " + providedLen + "."));
     }
     var allArgs = [this.obj, this.name, paramcv];
     var argsIter = callmethod(argList, "iterator", [0]);
