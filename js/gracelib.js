@@ -679,8 +679,7 @@ GraceNum.prototype = {
             return new GraceString("" + this._value);
         },
         "==": function(argcv, other) {
-            if (this === other)
-                return GraceTrue;
+            // Do NOT test for identity, because then NaN == NaN !
             if (this.className === other.className &&
                   this._value === other._value)
                 return GraceTrue;
