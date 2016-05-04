@@ -9,6 +9,7 @@ var currentTestSuiteForDialect := nullSuite
 var currentSetupBlockForTesting := nullBlock
 var currentTestBlockForTesting := 0
 var currentTestInThisEvaluation := 0
+var errorsToBeRerun := true
 
 method numberOfErrorsToRerun -> Number { gu.numberOfErrorsToRerun }
 method numberOfErrorsToRerun:=(n:Number) {
@@ -90,10 +91,13 @@ method testSuiteNamed (name:String) with (block:Block) {
     currentTestInThisEvaluation := 0
     block.apply()
     currentSetupBlockForTesting := nullBlock
-    currentTestSuiteForDialect.runAndPrintResults()
+    currentTestSuiteForDialect.runAndPrintResults
     currentTestSuiteForDialect := nullSuite
     currentTestBlockForTesting := 0
 }
+
+method doNotRerunErrors { errorsToBeRerun := false }
+method doRerunErrors { errorsToBeRerun := true }
 
 method testSuite (block:Block) {
     testSuiteNamed "" with (block)

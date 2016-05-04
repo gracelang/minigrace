@@ -48,6 +48,8 @@ type TestResult =  {
     numberOfFailures -> Number
     failures -> List<TestRecord>
     numberRun -> Number
+    doNotRerunErrors -> Done
+    doRerunErrors -> Done
 }
 
 type TestSuite = TestCase & type {
@@ -78,16 +80,16 @@ class assertion {
         assert (! bb)
     }
     method assert(s1:Object) shouldBe (s2:Object) {
-        assert (s1 == s2) description "‹{s1}› should be ‹{s2}›"
+        assert (s1 == s2) description "‹{s1.asDebugString}› should be ‹{s2.asDebugString}›"
     }
     method assert(s1:Object) shouldntBe (s2:Object) {
-        assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
+        assert ((s1 == s2).not) description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
     }
     method deny(s1:Object) shouldBe (s2:Object) {
-        assert ((s1 == s2).not) description "‹{s1}› should not be ‹{s2}›"
+        assert ((s1 == s2).not) description "‹{s1.asDebugString}› should not be ‹{s2.asDebugString}›"
     }
     method assert(n1:Number) shouldEqual (n2:Number) within (epsilon:Number) {
-        assert (math.abs(n1 - n2) ≤ epsilon) description "‹{n1}› should be approximatly ‹{n2}›"
+        assert (math.abs(n1 - n2) ≤ epsilon) description "‹{n1.asDebugString}› should be approximately ‹{n2.asDebugString}›"
     }
     method assert(block0) shouldRaise (desiredException) {
         var completedNormally
@@ -118,7 +120,7 @@ class assertion {
             case { _:Desired -> countOneAssertion }
             case { _ -> 
                 def m = methodsIn(Desired) missingFrom (value)
-                failBecause "{value} does not have type {Desired}; it's missing methods {m}." }
+                failBecause "{value.asDebugString} does not have type {Desired}; it's missing methods {m}." }
     }
     method assertType(T:Type) describes (value) {
         def missingFromT = protocolOf(value) notCoveredBy(T)
@@ -130,7 +132,7 @@ class assertion {
         def tMethods = DesiredType.methodNames
         def missing = tMethods -- vMethods
         if (missing.size == 0) then {
-            ProgrammingError.raise "{value} seems to have all the methods of {DesiredType}"
+            ProgrammingError.raise "{value.asDebugString} seems to have all the methods of {DesiredType}"
         } else {
             var s := ""
             missing.do { each -> s := s ++ each } 
@@ -154,7 +156,7 @@ class assertion {
     method deny(value) hasType (Undesired:Type) {
         match (value)
             case { _:Undesired ->
-                failBecause "{value} has type {Undesired}"
+                failBecause "{value.asDebugString} has type {Undesired}"
             }
             case { _ -> 
                 countOneAssertion 
@@ -162,7 +164,7 @@ class assertion {
     }
 }
 
-factory method testCaseNamed(name') -> TestCase {
+class testCaseNamed(name') -> TestCase {
     inherits assertion
 
     def size is public = 1
@@ -252,7 +254,7 @@ factory method testCaseNamed(name') -> TestCase {
 }
 
 
-factory method testResult {
+class testResult {
     var failSet := emptySet
     var errorSet := emptySet
     var runCount := 0
@@ -333,7 +335,7 @@ factory method testResult {
     }
 }
 
-factory method testRecordFor(testName)message(testMsg) {
+class testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
     method asString {"{testName}: {testMsg}"}
@@ -351,9 +353,22 @@ def testSuite is public = object {
         inherits collections.enumerable.TRAIT
         var name is public := ""
         def tests = [ ]
+        def testNames = emptySet
+        var errorsToBeRerun := true
+
+        method doNotRerunErrors { errorsToBeRerun := false }
+        method doRerunErrors { errorsToBeRerun := true }
         for (initialContents) do { each -> self.add(each) }
                 
-        method add(e) { tests.push(e) }
+        method add(e) {
+            def eName = e.name
+            if (testNames.contains (eName)) then {
+                print "Warning: more than one test named \"{eName}\""
+            } else {
+                testNames.add(eName)
+            }
+            tests.push(e)
+        }
         
         method run(result) {
             for (tests) do { each -> each.run(result) }
@@ -373,7 +388,7 @@ def testSuite is public = object {
             } else {
                 print "{self.name}: {result.detailedSummary}"
             }
-            if (result.numberOfErrors > 0) then {
+            if ((result.numberOfErrors > 0) && errorsToBeRerun) then {
                 rerunErrors(result)
             }
         }
