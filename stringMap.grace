@@ -137,7 +137,7 @@ class new {
             var keys = Object.keys(inner);
             for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
-                callmethod(var_action, "apply", [2], new GraceString(key), inner[key])
+                callmethod(var_action, "apply", [2], new GraceString(key), inner[key]);
             }
             return GraceDone;›
         var count := 1
@@ -219,7 +219,7 @@ class new {
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix = 0; ix < keys.length; ix++)
+            for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 var keyStr = new GraceString(key);
                 var binding = callmethod(GraceBindingClass(), "key()value", 
