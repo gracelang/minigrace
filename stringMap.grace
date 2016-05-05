@@ -103,7 +103,7 @@ class new {
         native "js" code ‹var s = "";
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix in keys) {
+            for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 if (s === "") {
                     s = key + "::";
@@ -135,7 +135,7 @@ class new {
         native "js" code ‹var s = "";
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix in keys) {
+            for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 callmethod(var_action, "apply", [2], new GraceString(key), inner[key])
             }
@@ -157,7 +157,7 @@ class new {
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix in keys) {
+            for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 callmethod(var_action, "apply", [1], inner[key]);
             }
@@ -178,7 +178,7 @@ class new {
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix in keys) {
+            for (var ix = 0; ix < keys.length; ix++) {
                 var key = keys[ix];
                 callmethod(var_action, "apply", [1], new GraceString(key));
             }
@@ -219,7 +219,7 @@ class new {
         native "js" code ‹
             var inner = this.data.inner;
             var keys = Object.keys(inner);
-            for (var ix in keys) {
+            for (var ix = 0; ix < keys.length; ix++)
                 var key = keys[ix];
                 var keyStr = new GraceString(key);
                 var binding = callmethod(GraceBindingClass(), "key()value", 
