@@ -49,10 +49,12 @@ def input = sequence [
     "\}"                                                
 ]
 
-util.lines := input
+util.lines.addAll(input)
+
 //input.keysAndValuesDo { linenum, code -> 
 //    print "{linenum}    {code}"
 //}
+
 def tokens = lexer.new.lexinput(input)
 def module = parser.parse(tokens)
 def nodes = module.value

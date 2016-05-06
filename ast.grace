@@ -1165,6 +1165,7 @@ def moduleNode = object {
     class body(b) {
         inherits objectNode.new(b, false)
         def kind is public = "module"
+        def sourceLines = util.lines
         line := 0       // because the module is always implicit
         linePos := 0
         var imports is public := [ ]

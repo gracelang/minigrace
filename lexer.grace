@@ -499,8 +499,8 @@ class new {
     // Read the program text from util.infile and return a list of
     // tokens.
     method lexfile(file) {
-        def lines = []
-        def cLines = []
+        def lines = util.lines
+        def cLines = util.cLines
         var line := ""
         var cLine := ""
         var wasCR := false
@@ -547,8 +547,6 @@ class new {
             lines.push(line)
             cLines.push(cLine)
         }
-        util.lines := lines
-        util.cLines := cLines
         lexinput(lines)
     }
 

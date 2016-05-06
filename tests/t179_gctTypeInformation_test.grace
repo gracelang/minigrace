@@ -23,7 +23,8 @@ def input = list [
     "\}"
 ]
 
-util.lines := input
+
+util.lines.addAll(input)
 def tokens = lexer.new.lexinput(input)
 def module = parser.parse(tokens)
 module.name := "test_179_output"

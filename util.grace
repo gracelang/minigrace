@@ -22,8 +22,8 @@ var recurse is readable := true
 var dynamicModule := false
 var importDynamic := false
 var jobs := 2
-var cLines := [ ]
-var lines := [ ]
+def cLines is readable = [ ]
+def lines is readable = [ ]
 def nullFile = filePath.null        // don't modify this one
 var filename is readable := nullFile
 var commandLineExtensions is readable := ""
@@ -303,12 +303,11 @@ method generalError(message, errlinenum, position, arr, spacePos, suggestions) {
         io.error.write("[" ++ vtagv ++ "]")
     }
     io.error.write("{modnamev}.grace[{errlinenum}{position}]: {message}\n")
-    if ((errlinenum > 1) && (lines.size > 1)) then {
+    if ((errlinenum > 1) && (lines.size >= (errlinenum - 1))) then {
         io.error.write("  {errlinenum - 1}: {lines.at(errlinenum - 1)}\n")
     }
-    if ((lines.size >= errlinenum) && (errlinenum > 0)) then {
-        var line := lines.at(errlinenum)
-        io.error.write "  {errlinenum}: {line}\n"
+    if ((errlinenum > 0) && (lines.size >= errlinenum)) then {
+        io.error.write "  {errlinenum}: {lines.at(errlinenum)}\n"
         io.error.write "{arr}\n"
     }
     if (suggestions.size > 0) then {
