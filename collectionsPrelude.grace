@@ -76,7 +76,6 @@ type Enumerable<T> = Collection<T> & type {
 type Sequence<T> = Enumerable<T> & type {
     size -> Number
     at(n:Number) -> T
-    [](n:Number) -> T
     indices -> Sequence<Number>
     keys -> Sequence<Number>
     second -> T
@@ -97,7 +96,6 @@ type List<T> = Sequence<T> & type {
     addAllFirst(xs: Iterable<T>) -> List<T>
     addLast(x: T) -> List<T>    // same as add
     at(ix:Number) put(v:T) -> List<T>
-    []:= (ix:Number, v:T) -> Done
     removeFirst -> T
     removeAt(n: Number) -> T
     removeLast -> T
@@ -142,9 +140,7 @@ type Dictionary<K,T> = Collection<T> & type {
     contains(elem:T) -> Boolean
     at(key:K)ifAbsent(action:Block0<Unknown>) -> Unknown
     at(key:K)put(value:T) -> Dictionary<K,T>
-    []:= (k:K, v:T) -> Done
     at(k:K) -> T
-    [] (k:K) -> T
     removeAllKeys(keys: Iterable<K>) -> Dictionary<K,T>
     removeKey(key:K) -> Dictionary<K,T>
     removeAllValues(removals: Iterable<T>) -> Dictionary<K,T>
@@ -393,7 +389,6 @@ class indexable.TRAIT<T> {
     method fourth { at(4) }
     method fifth { at(5) }
     method last { at(size) }
-    method [](ix) { at(ix) }
     method indices { range.from 1 to(size) }
     method indexOf(sought:T)  {
         indexOf(sought) ifAbsent { NoSuchObject.raise "collection does not contain {sought}" }
@@ -429,7 +424,6 @@ def emptySequence is confidential = object {
     method size { 0 }
     method isEmpty { true }
     method at(n) { BoundsError.raise "index {n} of empty sequence" }
-    method [](n) { BoundsError.raise "index {n} of empty sequence" }
     method keys { self }
     method values { self }
     method keysAndValuesDo(block2) { done }
@@ -515,10 +509,6 @@ class sequence<T> {
                 }
             }
             method at(n) {
-                boundsCheck(n)
-                inner.at(n-1)
-            }
-            method [](n) {
                 boundsCheck(n)
                 inner.at(n-1)
             }
@@ -652,16 +642,6 @@ class list<T> {
                         return superDepth.data.jsArray[ix - 1];›
                 }
 
-                method [](n) {
-                    native "js" code ‹var ix = var_n._value;
-                        if ( !(ix >= 1) || !(ix <= superDepth.data.jsArray.length)) {
-                            var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
-                            var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                            callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                        }
-                        return superDepth.data.jsArray[ix - 1];›
-                }
-
                 method at(n)put(x) {
                     mods := mods + 1
                     native "js" code ‹var  ix = var_n._value;
@@ -672,18 +652,6 @@ class list<T> {
                         }
                         superDepth.data.jsArray[ix-1] = var_x;
                         return this;›
-                }
-
-                method []:=(n, x) {
-                    mods := mods + 1
-                    native "js" code ‹var ix = var_n._value;
-                        if (!(ix >= 1) || !(ix <= superDepth.data.jsArray.length + 1)) {
-                            var msg = "index " + ix + " out of bounds 1.." + superDepth.data.jsArray.length;
-                            var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                            callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                        }
-                        superDepth.data.jsArray[ix-1] = var_x;
-                        return GraceDone;›
                 }
 
                 method add(x:T) {
@@ -948,10 +916,6 @@ class list<T> {
                 boundsCheck(n)
                 inner.at(n-1)
             }
-            method [](n) {
-                boundsCheck(n)
-                inner.at(n-1)
-            }
             method at(n)put(x) {
                 mods := mods + 1
                 if (n == (size+1)) then {
@@ -961,16 +925,6 @@ class list<T> {
                     inner.at(n-1)put(x)
                 }
                 self
-            }
-            method []:=(n,x) {
-                mods := mods + 1
-                if (n == (size+1)) then {
-                    addLast(x)
-                } else {
-                    boundsCheck(n)
-                    inner.at(n-1)put(x)
-                }
-                done
             }
             method add(x) {
                 mods := mods + 1
@@ -1551,10 +1505,6 @@ class dictionary<K,T> {
             if ((size * 2) > inner.size) then { expand }
             self    // for chaining
         }
-        method []:=(k, v) {
-            at(k)put(v)
-            done
-        }
         method at(k) {
             var b := inner.at(findPosition(k))
             if (b.key == k) then {
@@ -1569,7 +1519,6 @@ class dictionary<K,T> {
             }
             action.apply
         }
-        method [](k) { at(k) }
         method containsKey(k) {
             var t := findPosition(k)
             if (inner.at(t).key == k) then {

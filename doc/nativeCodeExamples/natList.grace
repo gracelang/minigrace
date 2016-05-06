@@ -47,17 +47,6 @@ class list<T> {
         }
         
 
-        method [](n) {
-            native "js" code ‹var ix = var_n._value;
-                    if ((ix < 1) || (ix > this.data.jsArray.length)) {
-                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                    }
-                    return this.data.jsArray[ix - 1];›
-        }
-        
-
         method at(n)put(x) {
             native "js" code ‹var  ix = var_n._value;
                     if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
@@ -67,17 +56,6 @@ class list<T> {
                     }
                     this.data.jsArray[ix-1] = var_x;
                     return this;›
-        }
-
-        method []:=(n, x) {
-            native "js" code ‹var ix = var_n._value;
-                    if ((ix < 1) || (ix > this.data.jsArray.length + 1)) {
-                        var msg = "index " + ix + " out of bounds 1.." + this.data.jsArray.length;
-                        var BoundsError = callmethod(Grace_prelude, "BoundsError", [0]);
-                        callmethod(BoundsError, "raise", [1], new GraceString(msg));
-                    }
-                    this.data.jsArray[ix-1] = var_x;
-                    return GraceDone;›
         }
 
         method add(*x) {
