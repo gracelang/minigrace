@@ -36,30 +36,30 @@ class subp {
 
 testSuite {
     def o = sub
-    test "alias" by {
+    test "alias o" by {
         assert (o.foo2) shouldBe "foo"
     }
-    test "override" by {
+    test "override o" by {
         assert (o.foo) shouldBe "override"
     }
-    test "exclusion" by {
+    test "exclusion o" by {
         assert {o.bar} shouldRaise (NoSuchMethod)
     }
-    test "used exclusion" by {
+    test "used exclusion o" by {
         assert {o.bad} shouldRaise (NoSuchMethod)
     }
     
     def p = subp
-    test "alias" by {
+    test "alias p" by {
         assert (p.foo2) shouldBe "not foo"
     }
-    test "override" by {
+    test "override p" by {
         assert (p.foo) shouldBe "override"
     }
-    test "exclusion" by {
+    test "exclusion p" by {
         assert {p.bar} shouldRaise (NoSuchMethod)
     }
-    test "used exclusion" by {
+    test "used exclusion p" by {
         assert {p.bad} shouldRaise (NoSuchMethod)
     }
 }
