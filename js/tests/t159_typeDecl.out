@@ -5,7 +5,6 @@ type B has methods [b]
 (type A & type B) has methods [a, b]
 ⟨2, 3, 4⟩ is a sequence
 The following list methods are not in sequence:
-    []:=
     add
     addAll
     addAllFirst
