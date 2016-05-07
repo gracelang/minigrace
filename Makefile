@@ -64,7 +64,7 @@ include Makefile.mgDependencies
 
 ace-code: js/ace/ace.js
 
-alltests: test test.js module-test-js
+alltests: test test.js module-test-js js/sample-dialects
 
 blackWeb:
 	$(MAKE) WEB_SERVER=black@cs.pdx.edu expWeb
@@ -230,7 +230,7 @@ js/minigrace.js: js/minigrace.in.js buildinfo.grace
 	@echo "MiniGrace.revision = '$$(git rev-parse HEAD|cut -b1-7)';" >> js/minigrace.js
 
 js/sample-dialects js/sample-graphics: js/sample-%: js
-#	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
+	$(MAKE) -C js/sample/$* VERBOSITY=$(VERBOSITY)
 
 js/sample/dialects/%.js js/sample/dialects/%.gct js/sample/dialects/%.gso: js/sample/dialects/%.grace minigrace
 	@echo "MAKE C js/sample/dialects VERBOSITY=$(VERBOSITY) $(@F)"
