@@ -4,11 +4,11 @@ DIALECT_DIALECTS = whileLiteral ../../staticTypes ../../requireTypes
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample staticTypesExample
 
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
-VERBOSITY = --verbose
+VERBOSITY =
 
 GM = ../../
 
-MG := ../../../minigrace
+MG := ../../../minigrace-js
 UPPATH := ../../../modules/:../../:../../../:
 # ../../ to get the js files for running, and ../../../ for the .gso for compiling
 
@@ -29,15 +29,18 @@ js: $(DIALECTS_JS) run.js
 	$(MAKE) -C ../../.. js/dialect.js
 
 whileLiteral.js: whileLiteral.grace  ../../../modules/dialect.gso ../../dialect.js
-	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ whileLiteral.grace
+	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js whileLiteral.grace
 
 ../../../modules/dialect.gso:
 	$(MAKE) -C ../../.. modules/dialect.gso
 
+staticTypes.js: ../../staticTypes.js
+	ln -s $< $(<:%.js=%.gct) .
+
 $(GM)%.js: 
 	$(MAKE) -C ../$(GM) VERBOSITY=$(VERBOSITY) js/$(@F)
 
-%Example.js: %Example.grace ../../%.js ../../../modules/%.gso
+%Example.js: %Example.grace %.js
 	GRACE_MODULE_PATH=$(UPPATH) $(MG) $(VERBOSITY) --target js --dir . -o $@ $<
 
 $(addsuffix .js, $(filter-out ../..%, $(DIALECTS))): %.js: %.grace
@@ -50,7 +53,7 @@ clean:
 	rm -fR *.gct *.gso *.c *.gcn $(DIALECTS) *.gso.dSYM *.js $(SAMPLES) $(DIALECTS_JS)
 
 run.js: $(SAMPLES:%=%.js)
-	for f in $(SAMPLES:%=%.js) ; do GRACE_MODULE_PATH=$(UPPATH) ../../tests/grace-node $$f ; done
+	for f in $(SAMPLES:%=%.js) ; do GRACE_MODULE_PATH=$(UPPATH) ../../grace $$f ; done
 
 $(DIALECT_DEPENDENCIES:%=../../../modules/%.gso): ../../../modules/%.gso:
 	$(MAKE) -C ../../.. modules/$*.gso

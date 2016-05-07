@@ -5,12 +5,12 @@ type Vector = {
     <-
 }
 class vector {
-    var data is readable := []
+    var data is readable := list []
     method <-(v) {
         match(v)
-            case {n : Number -> data := [v]}
+            case {n : Number -> data := list [v]}
             case {v' : Vector -> data := v'.data }
-            case {_ -> data := v}
+            case {_ -> data := list (v)}
         self
     }
     method ←(v) {
@@ -83,7 +83,7 @@ class vector {
         }
         tmp
     }
-    method [](o) {
+    method ⇊(o) {   // indexing
         def tmp = vector
         for (o.data) do {d->
             tmp.data.push(data.at(d))
@@ -93,7 +93,7 @@ class vector {
     method prefix⍋ {
         def ret = vector
         def indices = ret.data
-        def used = set.empty
+        def used = set []
         var minsIndex := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
@@ -116,7 +116,7 @@ class vector {
     method prefix⍒ {
         def ret = vector
         def indices = ret.data
-        def used = set.empty
+        def used = set []
         var maxsIndex := 1
         for (1..data.size) do {_->
             for (data.indices) do {i->
@@ -238,7 +238,7 @@ method n(n') {
     object {
         method ?(o) {
             def ret = vector
-            def used = set.empty
+            def used = set []
             for (1..n') do {i->
                 var num := 1 + (math.random * o).truncated
                 while {used.contains(num)} do {

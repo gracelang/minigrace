@@ -530,7 +530,6 @@ def anObjectType = object {
     addTo (number) name "/" params [number] returns (number)
     addTo (number) name "^" params [number] returns (number)
     addTo (number) name "%" params [number] returns (number)
-    addTo (number) name "hashcode" returns (string)
     addTo (number) name "hash" returns (string)
     addTo (number) name "++" params [base] returns (string)
     addTo (number) name "<" params [number] returns (boolean)
@@ -567,9 +566,7 @@ def anObjectType = object {
         returning (dynamic)
     extend (list) with (base)
     addTo (list) name "at" params [number] returns (dynamic)
-    addTo (list) name "[]" params [number] returns (dynamic)
     addTo (list) name "at ()put" params [number, dynamic] returns (done)
-    addTo (list) name "[]:=" params [number, dynamic] returns (done)
     addTo (list) name "push" params [dynamic] returns (done)
     addTo (list) name "pop" returns (dynamic)
     addTo (list) name "length" returns (number)
@@ -583,7 +580,6 @@ def anObjectType = object {
     addTo (list) name "addFirst" params [dynamic] returns (list)
     addTo (list) name "addAll" params [dynamic] returns (list)
     addTo (list) name "++" params [list] returns (list)
-    addTo (list) name "reduce" params [dynamic, fold] returns (dynamic)
     addTo (list) name "fold ()startingWith" params [fold, dynamic] returns (dynamic)
 
     scope.types.at "Unknown" put (dynamic)
@@ -660,12 +656,13 @@ rule { req: Request ->
         } else {
             def name = memb.value
 
-            match (rType.getMethod (name)) case { (noSuchMethod) ->
-                RequestError.raise ("no such method '{name}' in " ++
-                    "`{rec.toGrace (0)}` of type '{rType}'") with (memb)
-            } case { meth: MethodType ->
-                check (req) against (meth)
-            }
+            match (rType.getMethod (name))
+                case { (noSuchMethod) ->
+                    RequestError.raise ("no method `{name}` in " ++
+                        "`{rec.toGrace (0)}` of type `{rType}`") with (memb)
+                } case { meth: MethodType ->
+                    check (req) against (meth)
+                }
         }
     } case { ident: Identifier ->
         find (req) atScope (scope.methods.stack.size)

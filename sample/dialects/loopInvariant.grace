@@ -2,7 +2,7 @@
 
 inherits prelude.methods
 
-def InvariantFailure = Error.refine "InvariantFailure"
+def InvariantFailure = Exception.refine "InvariantFailure"
 
 method for(it)invariant(inv)do(blk) {
     for (it) do {i->

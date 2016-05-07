@@ -6,12 +6,27 @@ dialect "dialect"
 import "util" as util
 inherits prelude.methods
 
-// The dialect dialect provides a shortcut While pattern which
-// matches while()do requests and destructures the AST node into
-// the condition and the body.
-rule { req : While(cond, _) ->
-    if (cond.kind != "block") then {
-        reportWhile(req)
+print "loading whileLiteral dialect; util.lines = {util.lines}"
+
+method atModuleStart(modname) {
+    print "at start of {modname}: util.lines = {util.lines}"
+}
+
+method atModuleEnd(mod) {
+    print "at end of {mod}: util.lines = {util.lines}"
+}
+
+rule { req: WhileRequest ->
+    // The dialect dialect provides a `WhileRequest` pattern which
+    // matches while()do requests.  It also provides an accessor
+    // `whileCond` that extracts the condition from the AST node.
+    if (whileCond(req).kind != "block") then {
+        try {
+            reportWhile(req)
+        } catch { e:Exception ->
+            print "reportWhile raised {e}"
+            e.printBacktrace
+        }
     }
 }
 
@@ -22,6 +37,7 @@ method reportWhile(req) {
     def whilePart = req.with.first
     print "whilePart = {whilePart.pretty(0)}"
     print "util.lines = {util.lines}"
+    print "whilePart.lineLength = {whilePart.lineLength}"
     // Ignore certain degenerate cases where there is no condition, and
     // situations where the condition spanned multiple lines since they
     // are likely to be a different kind of mistake. In all of these

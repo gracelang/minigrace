@@ -2,15 +2,15 @@ inherits prelude.methods
 
 method Relationship<From, To> {
     object {
-        def map = dictionary.empty
+        def map = dictionary []
         method add(f : From, t : To) is public {
             if (!map.containsKey(f)) then {
-                map.at(f) put(set.empty)
+                map.at(f) put(set [])
             }
             map.at(f).add(t)
         }
         method to(t) is public {
-            def res = list.empty
+            def res = list []
             map.keysDo {k->
                 if (map.at(k).contains(t)) then {
                     res.add(k)

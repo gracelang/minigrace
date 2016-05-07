@@ -301,14 +301,15 @@ def Inherits is public = aPatternMatchingNode "inherits"
 
 // Special requests patterns.
 
-class patternMatchingRequestOf(name : String) -> Pattern {
+class RequestOf(methodName:String) -> Pattern {
+
     inherits prelude.BasicPattern.new
 
     method match(obj : Object) {
         match(obj) 
           case { node : AstNode ->
             if((node.kind == "call") && {
-                node.value.value == name
+                node.value.value == methodName
             }) then {
                 SuccessfulMatch.new(node, makeBindings(node))
             } else {
@@ -321,21 +322,35 @@ class patternMatchingRequestOf(name : String) -> Pattern {
     method makeBindings(node) { [] }
 }
 
-def While is public = object {
-    inherits patternMatchingRequestOf("while()do")
+def WhileRequest is public = RequestOf "while()do"
+def ForRequest is public = RequestOf "for()do"
 
-    method makeBindings(node) -> List is override {
-        def sig = node.with
-        [node.with.first.args.first, node.with.second.args.first ]
-    }
+method whileCond(node) {
+    // answers the condition expression from node, which must be a
+    // a callNode calling "while(_)do(_)"
+    def sig = node.with
+    sig.first.args.first
 }
 
-def For is public = object {
-    inherits patternMatchingRequestOf "for()do"
+method whileBody(node) {
+    // answers the body expression from node, which must be a
+    // a callNode calling "while(_)do(_)"
+    def sig = node.with
+    sig.second.args.first
+}
 
-    method makeBindings(node) -> List is override {
-        [node.with.first.args.first, node.with.second.args.first ]
-    }
+method forCollection(node) {
+    // answers the collection expression from node, which must be a
+    // a callNode calling "for(_)do(_)"
+    def sig = node.with
+    sig.first.args.first
+}
+
+method forBody(node) {
+    // answers the body expression from node, which must be a
+    // a callNode calling "for(_)do(_)"
+    def sig = node.with
+    sig.second.args.first
 }
 
 def astVisitor = object {

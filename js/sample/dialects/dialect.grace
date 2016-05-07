@@ -1,1 +1,1 @@
-../../../sample/dialects/dialect.grace
+../../../modules/dialect.grace

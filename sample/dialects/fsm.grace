@@ -5,7 +5,7 @@ method state(b : Block) is public {
         method do is public {
             b.apply
         }
-        def transitions is public = dictionary.empty
+        def transitions is public = dictionary []
     }
     if (false == current) then {
         current := st
@@ -34,7 +34,7 @@ method in(src) on(input1) goto(dest1) on(input2) goto(dest2)
     src.transitions.at(input4) put(dest4)
 }
 
-def FSMCrash = Error.refine "FSMCrash"
+def FSMCrash = Exception.refine "FSMCrash"
 
 method signal(input) is public {
     current := current.transitions.at(input) ifAbsent {
