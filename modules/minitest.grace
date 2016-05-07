@@ -89,7 +89,7 @@ method testSuiteNamed (name:String) with (block:Block) {
     currentTestSuiteForDialect.name := name
     currentSetupBlockForTesting := block
     currentTestInThisEvaluation := 0
-    block.apply()
+    block.apply
     currentSetupBlockForTesting := nullBlock
     currentTestSuiteForDialect.runAndPrintResults
     currentTestSuiteForDialect := nullSuite
@@ -113,7 +113,7 @@ method test(name:String) by(block:Block) {
             setupIn(currentSetupBlockForTesting)
             asTestNumber(currentTestInThisEvaluation))
     } elseif { currentTestInThisEvaluation == currentTestBlockForTesting } then {
-            block.apply()
+            block.apply
     }
 }
 

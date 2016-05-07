@@ -257,7 +257,7 @@ def suggestion is public = object {
         }
     }
 
-    method print() {
+    method print {
         for(1..lines.size) do { i ->
             if((i > 1) && {(lineNumbers.at(i) > (lineNumbers.at(i-1) + 1))}) then {
                 var s := ""

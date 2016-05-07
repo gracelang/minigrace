@@ -251,6 +251,11 @@ class new {
                 tokens.push(tok)
             } elseif { mode == ")" } then {
                 tok := rParenToken
+                if (tokens.last.kind == "lparen") then {
+                    errormessages.syntaxError("empty parenthesis are not allowed. " ++
+                        "Remove them, or put something between them.")
+                        atRange(tok.line, tokens.last.linePos, tok.linePos)
+                }
                 tokens.push(tok)
             } elseif { mode == "[" } then {
                 tok := lSquareToken

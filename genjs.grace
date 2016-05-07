@@ -39,11 +39,11 @@ var emitPositions := true
 var requestCall := "callmethodChecked"
 var bracketConstructor := "Lineup"
 
-method increaseindent() {
+method increaseindent {
     indent := indent ++ "  "
 }
 
-method decreaseindent() {
+method decreaseindent {
     if(indent.size <= 2) then {
         indent := ""
     } else {
@@ -301,7 +301,7 @@ method compileobject(o, outerRef, inheritingObject) {
         out "    {selfr}._value = inheritingObject._value;"
     }
     compileobjouter(selfr, outerRef)
-    out("var obj_init_{myc} = function () \{")
+    out("var obj_init_{myc} = function() \{")
     increaseindent
     out("var origSuperDepth = superDepth;")
     out("superDepth = {selfr};")
@@ -1300,7 +1300,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         out "var___95__prelude = do_import(\"StandardPrelude\", gracecode_StandardPrelude);"
     }
     util.setline(1)
-    out("function {formatModname(modname)} () \{")
+    out("function {formatModname(modname)}() \{")
     increaseindent
     out("setModuleName(\"{modname}\");")
     out("if (callStack.length === 0)")
