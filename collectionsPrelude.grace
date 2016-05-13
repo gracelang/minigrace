@@ -1149,6 +1149,7 @@ def unused = object {
     def key is public = self
     def value is public = self
     method asString { "unused" }
+    method == (other) { self.isMe(other) }
 }
 
 def removed = object {
@@ -1156,6 +1157,7 @@ def removed = object {
     def key is public = self
     def value is public = self
     method asString { "removed" }
+    method == (other) { self.isMe(other) }
 }
 
 class set<T> {
@@ -1278,7 +1280,7 @@ class set<T> {
             var candidate
             while {
                 candidate := inner.at(t)
-                candidate != unused
+                unused ≠ candidate
             } do {
                 if (candidate == x) then {
                     return t
@@ -1363,8 +1365,7 @@ class set<T> {
                             IteratorExhausted.raise "iterator over {outer.asString}"
                         }
                         candidate := inner.at(idx)
-                        (identical (candidate, unused) || 
-                            (identical(candidate,  removed)))
+                        (unused == candidate) || (removed == candidate)
                     } do { }
                     count := count + 1
                     candidate
@@ -1488,7 +1489,7 @@ class dictionary<K,T> {
         method at(key')put(value') {
             mods := mods + 1
             var t := findPositionForAdd(key')
-            if ((identical(inner.at(t), unused)) || (identical(inner.at(t), removed))) then {
+            if ((unused == inner.at(t)) || (removed == inner.at(t))) then {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(binding.key(key')value(value'))
@@ -1498,7 +1499,7 @@ class dictionary<K,T> {
         method add(aBinding) {
             mods := mods + 1
             var t := findPositionForAdd (aBinding.key)
-            if ((identical(inner.at(t), unused)) || (identical(inner.at(t), removed))) then {
+            if ((unused == inner.at(t)) || (removed == inner.at(t))) then {
                 numBindings := numBindings + 1
             }
             inner.at(t)put(aBinding)
@@ -1606,7 +1607,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while { different(inner.at(t), unused) } do {
+            while { unused ≠ inner.at(t) } do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
@@ -1624,7 +1625,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while {(different(inner.at(t), unused)) && (different(inner.at(t), removed))} do {
+            while { (unused ≠ inner.at(t)) && (removed ≠ inner.at(t)) } do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
@@ -1644,7 +1645,7 @@ class dictionary<K,T> {
             var firstElement := true
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if (different(a, unused) && different(a, removed)) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     if (! firstElement) then {
                         s := s ++ ", "
                     } else {
@@ -1660,7 +1661,7 @@ class dictionary<K,T> {
             for (0..(inner.size-1)) do {i->
                 if (i > 0) then { s := s ++ ", " }
                 def a = inner.at(i)
-                if (different(a, unused) && different(a, removed)) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     s := s ++ "{i}→{a.key}::{a.value}"
                 } else {
                     s := s ++ "{i}→{a.asDebugString}"
@@ -1732,7 +1733,7 @@ class dictionary<K,T> {
                 if (size < count) then { IteratorExhausted.raise "over {outer.asString}" }
                 while {
                     elt := inner.at(idx)
-                    (identical(elt, unused) || identical(elt, removed))
+                    (unused == elt) || (removed == elt)
                 } do {
                     idx := idx + 1
                 }
@@ -1752,7 +1753,7 @@ class dictionary<K,T> {
             numBindings := 0
             for (0..(c - 1)) do {i->
                 def a = oldInner.at(i)
-                if (different(a, unused) && (different(a, removed))) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     self.at(a.key)put(a.value)
                 }
             }
@@ -1760,7 +1761,7 @@ class dictionary<K,T> {
         method keysAndValuesDo(block2) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if (different(a, unused) && (different(a, removed))) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     block2.apply(a.key, a.value)
                 }
             }
@@ -1768,7 +1769,7 @@ class dictionary<K,T> {
         method keysDo(block1) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if (different(a, unused) && (different(a, removed))) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     block1.apply(a.key)
                 }
             }
@@ -1776,7 +1777,7 @@ class dictionary<K,T> {
         method valuesDo(block1) {
             for (0..(inner.size-1)) do {i->
                 def a = inner.at(i)
-                if (different(a, unused) && (different(a, removed))) then {
+                if ((unused ≠ a) && (removed ≠ a)) then {
                     block1.apply(a.value)
                 }
             }

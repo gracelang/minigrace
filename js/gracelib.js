@@ -1,6 +1,6 @@
 "use strict";
 
-if(typeof(process) !== "undefined") {
+if (typeof(process) !== "undefined") {  // if we are in Node.js
     var fs = require("fs");
     var child_process = require('child_process');
 }
@@ -40,9 +40,11 @@ function object_notEquals (argcv, o) {
     return callmethod(b, "not", [0]);
 }
 
-function object_equals (argcv, o) {
-    return callmethod(Grace_prelude, "identical", [2], this, o);
+function object_isMe (argcv, o) {
+    return Object.is(this, o) ? GraceTrue : GraceFalse;
 }
+object_isMe.confidential = true;
+
 function object_basicAsString (argcv) {
     var s = "object {";
     var firstTime = true;
@@ -78,7 +80,7 @@ function object_colonColon (argcv, other) {
 
 GraceObject.prototype = {
     methods: {
-        "==":               object_equals,
+        "isMe":             object_isMe,
         "!=":               object_notEquals,
         "≠":                object_notEquals,
         "basicAsString":    object_basicAsString,
@@ -112,7 +114,7 @@ function trait_asString (argcv) {
 
 GraceTrait.prototype = {
     methods: {
-        "==":               object_equals,
+        "isMe":             object_isMe,
         "!=":               object_notEquals,
         "≠":                object_notEquals,
         "basicAsString":    object_basicAsString,
@@ -3453,12 +3455,6 @@ Grace_prelude.methods['while()do'] = function(argcv, c, b) {
 Grace_prelude.methods['for()do'] = function(argcv, c, b) {
     callmethod(c, "do", [1], b);
     return GraceDone;
-};
-Grace_prelude.methods['identical'] = function prelude_identical (argcv, a, b) {
-    if (a === b) return GraceTrue; else return GraceFalse;
-};
-Grace_prelude.methods['different'] = function prelude_different (argcv, a, b) {
-    if (a !== b) return GraceTrue; else return GraceFalse;
 };
 Grace_prelude.methods['_methods'] = function() {
     var meths = [];

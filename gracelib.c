@@ -592,6 +592,11 @@ void addmethod2(Object o, char *name,
     Method *m = add_Method(o->class, name, func);
     m->flags &= ~MFLAG_REALSELFONLY;
 }
+void addmethod2flags(Object o, char *name,
+        Object (*func)(Object, int, int*, Object*, int), int flags) {
+    Method *m = add_Method(o->class, name, func);
+    m->flags &= ~MFLAG_REALSELFONLY | flags;
+}
 Method *addmethod2pos(Object o, char *name,
         Object (*func)(Object, int, int*, Object*, int), int pos) {
     Method *m = add_Method(o->class, name, func);
@@ -1764,7 +1769,7 @@ Object alloc_PrimitiveArrayClassObject() {
     if (PrimitiveArrayClassObject)
         return PrimitiveArrayClassObject;
     ClassData c = alloc_class("Class<PrimitiveArray>", 3);
-    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "new", &PrimitiveArrayClassObject_new);
     Object o = alloc_obj(0, c);
@@ -3659,7 +3664,7 @@ Object alloc_ObjectType() {
         return ObjectType;
     ObjectType = alloc_Type("Object", 7);
     gc_root(ObjectType);
-    add_Method((ClassData)ObjectType, "==", NULL);
+    add_Method((ClassData)ObjectType, "isMe", NULL) -> flags = MFLAG_CONFIDENTIAL;
     add_Method((ClassData)ObjectType, "!=", NULL);
     add_Method((ClassData)ObjectType, "≠", NULL);
     add_Method((ClassData)ObjectType, "::", NULL);
@@ -4366,7 +4371,7 @@ Object Type_plus(Object self, int nparts, int *argcv,
 Object alloc_Type(const char *name, int nummethods) {
     if (Type == NULL) {
         Type = alloc_class("Type", 10);
-        add_Method(Type, "==", &Object_Equals);
+        add_Method(Type, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(Type, "!=", &Object_NotEquals);
         add_Method(Type, "≠", &Object_NotEquals);
         add_Method(Type, "asString", &Type_asString);
@@ -4675,7 +4680,7 @@ Object alloc_Block(Object self, Object(*body)(Object, int, Object*, int),
     add_Method(c, "asString", &Object_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
-    add_Method(c, "==", &Object_Equals);
+    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "≠", &Object_NotEquals);
     add_Method(c, "pattern", &Block_pattern);
@@ -4712,55 +4717,6 @@ void UserObj__mark(struct UserObject *o) {
     if (o->super)
         gc_mark(o->super);
 }
-Object UserObj_Equals(Object self, int nparts, int *argcv,
-        Object *args, int flags) {
-    Object other = args[0];
-    if (self == other)
-        return alloc_Boolean(1);
-    if (self->flags & FLAG_MUTABLE)
-        return alloc_Boolean(0);
-    if (other->flags & FLAG_MUTABLE)
-        return alloc_Boolean(0);
-    if (!(other->flags & FLAG_USEROBJ))
-        return alloc_Boolean(0);
-    ClassData myclass = self->class;
-    ClassData otclass = other->class;
-    int i, j;
-    for (i=0; i<myclass->nummethods; i++) {
-        struct Method *m = &myclass->methods[i];
-        if (strcmp(m->name, "outer") == 0) {
-        } else if (m->flags & MFLAG_DEF) {
-            Method *om = findmethodsimple(other, m->name);
-            if (!om || !(om->flags & MFLAG_DEF))
-                return alloc_Boolean(0);
-            Object myval = callmethodself(self, m->name, 0, NULL, NULL);
-            Object otval = callmethodself(other, m->name, 0, NULL, NULL);
-            int partcv[] = {1};
-            if (!istrue(callmethod(myval, "==", 1, partcv, &otval)))
-                return alloc_Boolean(0);
-        } else {
-            Object realself = other;
-            Object tmpself = other;
-            int cflags = 0;
-            Method *om = findmethod(&tmpself, &realself, m->name, 0, &cflags);
-            if (!om)
-                return alloc_Boolean(0);
-            if (m->func != om->func)
-                return alloc_Boolean(0);
-            struct ClosureEnvObject *myclosure = (struct ClosureEnvObject *)(((struct UserObject*)self)->data[m->pos]);
-            struct ClosureEnvObject *otclosure = (struct ClosureEnvObject *)(((struct UserObject*)realself)->data[om->pos]);
-            if (myclosure->frame != otclosure->frame)
-                return alloc_Boolean(0);
-        }
-    }
-    for (i=0; i<otclass->nummethods; i++) {
-        struct Method *m = &otclass->methods[i];
-        Method *mm = findmethodsimple(self, m->name);
-        if (!mm)
-            return alloc_Boolean(0);
-    }
-    return alloc_Boolean(1);
-}
 void UserObj__release(struct UserObject *o) {
     int i;
     glfree(o->data);
@@ -4780,7 +4736,7 @@ Object alloc_userobj2(int numMethods, int numFields, ClassData c) {
         duo->data[0] = NULL;
         addmethod2(GraceDefaultObject, "asString", &Object_asString);
         addmethod2(GraceDefaultObject, "++", &Object_concat);
-        addmethod2(GraceDefaultObject, "==", &UserObj_Equals);
+        addmethod2flags(GraceDefaultObject, "isMe", &Object_Equals, MFLAG_CONFIDENTIAL);
         addmethod2(GraceDefaultObject, "!=", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "≠", &Object_NotEquals);
         addmethod2(GraceDefaultObject, "asDebugString", &Object_asDebugString);
@@ -5318,14 +5274,6 @@ Object prelude_clone(Object self, int argc, int *argcv, Object *argv,
         uret->super = prelude_clone(self, argc, argcv, &uo->super, flags);
     return ret;
 }
-Object prelude_identical(Object self, int argc, int *argcv, Object *argv,
-                      int flags) {
-    return alloc_Boolean(argv[0] == argv[1]);
-}
-Object prelude_different(Object self, int argc, int *argcv, Object *argv,
-                      int flags) {
-    return alloc_Boolean(argv[0] != argv[1]);
-}
 Object prelude_engine(Object self, int argc, int *argcv, Object *argv,
                             int flags) {
     return alloc_String("c");
@@ -5350,7 +5298,7 @@ Object prelude_pi_object(Object self, int argc, int *argcv, Object *argv,
 Object grace_prelude() {
     if (_prelude != NULL)
         return _prelude;
-    ClassData c = alloc_class2("StandardPrelude", 33, (void*)&UserObj__mark);
+    ClassData c = alloc_class2("StandardPrelude", 31, (void*)&UserObj__mark);
     add_Method(c, "asString", &Module_asString);
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
@@ -5376,8 +5324,6 @@ Object grace_prelude() {
     add_Method(c, "unbecome", &prelude_unbecome);
     add_Method(c, "inBrowser", &prelude_inBrowser);
     add_Method(c, "clone", &prelude_clone);
-    add_Method(c, "identical", &prelude_identical);
-    add_Method(c, "different", &prelude_different);
     add_Method(c, "engine", &prelude_engine);
     add_Method(c, "true()object", &prelude_true_object);
     add_Method(c, "false()object", &prelude_false_object);
