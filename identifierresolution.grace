@@ -883,17 +883,14 @@ method setupContext(moduleObject) {
     preludeScope.addName "infinity" as(k.defdec)
     preludeScope.addName "minigrace"
     preludeScope.addName "_methods"
-    preludeScope.addName "PrimitiveArray"
     preludeScope.addName "primitiveArray"
     preludeScope.addName "become"
     preludeScope.addName "unbecome"
     preludeScope.addName "clone"
     preludeScope.addName "inBrowser"
-    preludeScope.addName "identical"
-    preludeScope.addName "different"
     preludeScope.addName "engine"
 
-    graceObjectScope.addName "==" as (k.graceObjectMethod)
+    graceObjectScope.addName "isMe" as (k.graceObjectMethod)
     graceObjectScope.addName "!=" as (k.graceObjectMethod)
     graceObjectScope.addName "≠" as (k.graceObjectMethod)
     graceObjectScope.addName "basicAsString" as (k.graceObjectMethod)
