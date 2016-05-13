@@ -16,6 +16,7 @@ class kindConstant(name) {
     method isImplicit { false }
     method forUsers { true }
     method fromParent { false }
+    method forGct { true }
 }
 
 def undefined = kindConstant "undefined"
@@ -26,6 +27,7 @@ def selfDef = object {
     inherits kindConstant "selfDef"
     method isImplicit { true }
     method forUsers { false }
+    method forGct { false }
 }
 def fromTrait = object {
     inherits kindConstant "from a trait"
@@ -50,8 +52,9 @@ def typeparam = object {
     method isParameter { true }
 }
 def graceObjectMethod = object {
-    inherits kindConstant "inherited from graceObject"
+    inherits kindConstant "from graceObject"
     method isImplicit { true }
     method forUsers { false }
     method fromParent { true }
+    method forGct { false }
 }

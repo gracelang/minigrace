@@ -190,6 +190,7 @@ def nullNode is public = object {
     method toGrace(depth) {
         "// null"
     }
+    method asString { "the nullNode" }
 }
 
 def fakeSymbolTable = object {
@@ -2404,6 +2405,9 @@ def inheritsNode = object {
                 s := "{s} exclude {e.nameString} "
             }
             s
+        }
+        method asString {
+            if (isUse) then { "use " } else { "inherit " } ++ value.toGrace 0
         }
         method nameString { value.toGrace(0) }
         method addAlias (newName) for (oldName) {

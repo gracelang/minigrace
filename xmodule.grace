@@ -515,8 +515,12 @@ method buildGctFor(module) {
                     if (nd.isClass) then {
                         def factMethNm = nd.nameString
                         obConstructors.push(factMethNm)
+                        def exportedMethods = emptyList
+                        ob.scope.getScope(factMethNm).keysAndKindsDo { key, knd ->
+                            if (knd.forGct) then { exportedMethods.add(key) }
+                        }
                         gct.at "methods-of:{v.name.value}.{factMethNm}"
-                            put(ob.scope.getScope(factMethNm).keysAsList.sort)
+                            put(exportedMethods.sort)
                     }
                 }
                 if (obConstructors.size > 0) then {
@@ -545,7 +549,8 @@ method addFreshMethodsOf (moduleObject) to (gct) is confidential {
     // adds information about the methods made available via fresh methods.
     // This is done in a separate pass after public information is in the gct,
     // because of the special treatment of prelude.clone
-    // TODO: doesn't this just duplicate what's in 'classes' ?
+    // TODO: doesn't this just duplicate what's in 'classes' ? No: 'classes'
+    // lists only classes declared inside a def'd object constructer.
     def freshmeths = [ ]
     for (moduleObject.value) do { val->
         if (val.isClass) then {
@@ -559,8 +564,11 @@ method addFreshMethod (val) to (freshlist) for (gct) is confidential {
     freshlist.push(val.nameString)
     def freshMethResult = val.body.last
     if (freshMethResult.isObject) then {
-        def subScope = freshMethResult.scope
-        gct.at "fresh:{val.nameString}" put (subScope.keysAsList)
+        def exportedMethods = emptyList
+        freshMethResult.scope.keysAndKindsDo { key, knd ->
+            if (knd.forGct) then { exportedMethods.add(key) }
+        }
+        gct.at "fresh:{val.nameString}" put (exportedMethods.sort)
     } elseif {freshMethResult.isCall} then {
         // we know that freshMethResult.value.isMember and
         // freshMethResult.value.nameString == "clone"

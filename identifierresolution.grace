@@ -1027,6 +1027,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
             xmodule.checkExternalModule(o)
             def gct = xmodule.parseGCT(o.path)
             def otherModule = newScopeIn(as.parent.scope) kind "module"
+            otherModule.node := o
             processGCT(gct, otherModule)
             o.scope.at(o.nameString) putScope(otherModule)
             true
@@ -1179,14 +1180,12 @@ method collectParentNames(node) {
             atRange(node.line, node.linePos, node.linePos)
     }
     nodeScope.inheritedNames := inProgress
-    def reusedMethods = map.new
-    gatherInheritedNames(node) into (reusedMethods)
-    gatherUsedNames(node) into (reusedMethods)
-    checkForConflicts(node, reusedMethods)
+    gatherInheritedNames(node)
+    gatherUsedNames(node)
     nodeScope.inheritedNames := completed
 }
 
-method gatherInheritedNames(node) into (superMethods) is confidential {
+method gatherInheritedNames(node) is confidential {
     var inhNode := node.superclass
     def objScope = node.scope
     var superScope
@@ -1237,23 +1236,26 @@ method gatherInheritedNames(node) into (superMethods) is confidential {
                         exId.linePos + exId.nameString.size - 1)
         }
     }
-    inhNode.providedNames.do { methName ->
-        def definingTraits = superMethods.get(methName) ifAbsent { [] }
-        definingTraits.push(inhNode)
-        superMethods.put(methName, definingTraits)
-    }
 }
 
-method gatherUsedNames(objNode) into (traitMethods) is confidential {
-    // for each of objNodes's used traits, gather the names
-    // introduced by that trait, as modified by alias and exclude. 
+method gatherUsedNames(objNode) is confidential {
+    // For each of objNodes's used traits, gather the names
+    // introduced by that trait, as modified by alias and exclude.
 
+    def traitMethods = map.new
     def objScope = objNode.scope
     objNode.usedTraits.do { t ->
         def traitScope = objScope.scopeReferencedBy(t.value)
-        collectParentNames(traitScope.node)
+        def traitNode = traitScope.node
+        util.log 70 verbose "examining parents of trait {t} which has scope {traitScope}\ndefined in node {traitNode}"
+        if (traitNode.isObject) then {
+            collectParentNames(traitScope.node)
+        } else {
+            util.log 70 verbose "traitNode {traitNode} is not an object.\n{traitNode.pretty 1}"
+        }
         traitScope.keysAndKindsDo { nm, kd ->
             if (kd.forUsers) then {
+                util.log 70 verbose "meth {nm} is forUsers; (kind = {kd})"
                 objScope.addName(nm) as(k.fromTrait)
                 t.providedNames.add(nm)
             }
@@ -1289,6 +1291,7 @@ method checkForConflicts(objNode, traitMethods) {
     // traitMethods is a dictionary with methodNames as keys, and
     // a list of sources as values.  Multiple sources indicate a conflict,
     // unless there is a local definition too.
+    def conflicts = emptyList
 
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
@@ -1296,15 +1299,49 @@ method checkForConflicts(objNode, traitMethods) {
             util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
             util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
             if (objNode.localNames.contains(methName).not) then {
-                def sourceList = sources.map { s -> s.nameString }
-                // TODO:  clean up these names for the error message
-                def minSourceLine = sources.fold {a, s -> min(a,s.line) }
-                      startingWith(infinity)
-                errormessages.error("Trait conflict: method `{methName}` is defined " ++
-                      "in multiple traits {sourceList}.") atLine (minSourceLine)
+                conflicts.addLast (conflictForMethodName(methName) from(sources))
             }
         }
     }
+
+    if (conflicts.isEmpty) then { return }
+
+    var maxSourceLine := 0
+    var message := if (conflicts.size > 1) then {
+        "Trait conflicts found:\n    "
+    } else {
+        "Trait conflict found: "
+    }
+    conflicts.do { each ->
+        def sourceList = each.sources.map { s -> s.nameString }
+        maxSourceLine := each.sources.fold {a, s -> max(a, s.line) }
+              startingWith(maxSourceLine)
+        message := message ++ "method `{each.methodName}` is defined in " ++
+              readableStringFrom(sourceList) ++ ".\n    "
+    }
+    if (maxSourceLine == 0) then {
+        errormessages.error(message)
+    } else {
+        errormessages.error(message) atLine (maxSourceLine)
+    }
+}
+
+class conflictForMethodName(nm) from(srcs) {
+    def methodName is public = nm
+    def sources is public = srcs
+}
+
+method readableStringFrom(xs:Sequence) {
+    var result := ""
+    xs.keysAndValuesDo { ix, v ->
+        result := result ++ v.asString
+        if (ix == (xs.size - 1)) then {
+            result := result ++ " and "
+        } elseif { ix < (xs.size - 1) } then {
+            result := result ++ ", "
+        }
+    }
+    result
 }
 
 method transformBind(bindNode) ancestors(as) {
