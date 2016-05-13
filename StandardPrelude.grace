@@ -176,12 +176,13 @@ def Singleton is public = object {
     factory method new {
         inherits BasicPattern.new
         method match(other) {
-            if (self == other) then {
+            if (self.isMe(other)) then {
                 SuccessfulMatch.new(other, [])
             } else {
                 FailedMatch.new(other)
             }
         }
+        method ==(other) { self.isMe(other) }
     }
     factory method named(printString) {
         inherits Singleton.new
@@ -361,6 +362,12 @@ type Point =  {
     dot (other:Point) -> Number
     ⋅ (other:Point) -> Number
     // dot product
+}
+
+class alwaysEqual {     // a trait
+    method == (other) {
+        self.isMe(other)
+    }
 }
 
 class point2Dx (x') y (y') {
