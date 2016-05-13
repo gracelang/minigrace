@@ -1285,6 +1285,7 @@ method gatherUsedNames(objNode) is confidential {
             traitMethods.put(methName, definingTraits)
         }
     }
+    checkForConflicts(objNode, traitMethods)
 }
 
 method checkForConflicts(objNode, traitMethods) {
@@ -1296,8 +1297,8 @@ method checkForConflicts(objNode, traitMethods) {
     traitMethods.keysDo { methName ->
         def sources = traitMethods.get(methName)
         if (sources.size > 1) then {    // a method has more than one source trait
-            util.log 70 verbose "{objNode.nameString}'s scope = {objNode.scope}"
-            util.log 70 verbose "{objNode.nameString}'s localNames = {objNode.localNames}"
+            util.log 70 verbose("{objNode.nameString}'s scope = {objNode.scope}" ++
+                  "\n and {objNode.nameString}'s localNames = {objNode.localNames}")
             if (objNode.localNames.contains(methName).not) then {
                 conflicts.addLast (conflictForMethodName(methName) from(sources))
             }
