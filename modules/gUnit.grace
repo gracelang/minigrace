@@ -338,13 +338,14 @@ class testResult {
 class testRecordFor(testName)message(testMsg) {
     method name {testName}
     method message {testMsg}
-    method asString {"{testName}: {testMsg}"}
-    method hash {testName.hash}
-    method compare(other) { testName.compare(other.name) }
-    method < (other) { testName < other.name }
-    method ≤ (other) { testName ≤ other.name }
-    method > (other) { testName < other.name }
-    method ≥ (other) { testName ≥ other.name }
+    method asString {"{name}: {testMsg}"}
+    method hash {name.hash}
+    method compare(other) { name.compare(other.name) }
+    method < (other) { name < other.name }
+    method ≤ (other) { name ≤ other.name }
+    method == (other) { name == other.name }
+    method > (other) { name < other.name }
+    method ≥ (other) { name ≥ other.name }
 }
 
 def testSuite is public = object {
