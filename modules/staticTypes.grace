@@ -170,7 +170,7 @@ def noSuchMethod = Singleton.named "noSuchMethod"
 type ObjectType = {
     methods -> List<MethodType>
     getMethod (name: String) -> MethodType | noSuchMethod
-    isDynamic -> Boolean
+    isUnknown -> Boolean
     isSubtypeOf (other: ObjectType) -> Boolean
     |(other: ObjectType) -> ObjectType
     &(other: ObjectType) -> ObjectType
@@ -179,7 +179,7 @@ type ObjectType = {
 def objectType = object {
 
     class fromMethods (methods': List<MethodType>) -> ObjectType {
-        def methods: List<MethodType> is public = if (base == dynamic)
+        def methods: List<MethodType> is public = if (base == unknown)
             then { [] } else { base.methods } ++ methods'
 
         method getMethod (name: String) -> MethodType | noSuchMethod {
@@ -192,7 +192,7 @@ def objectType = object {
             return noSuchMethod
         }
 
-        def isDynamic: Boolean is public = false
+        def isUnknown: Boolean is public = false
 
         // Necessary to prevent infinite loops of subtype testing.
         def currentlyTesting = []
@@ -202,7 +202,7 @@ def objectType = object {
                 return true
             }
 
-            if (other.isDynamic) then {
+            if (other.isUnknown) then {
                 return true
             }
 
@@ -230,7 +230,7 @@ def objectType = object {
 
         method |(other: ObjectType) -> ObjectType {
             if (self.isMe(other)) then { return self }
-            if (other.isDynamic) then { return dynamic }
+            if (other.isUnknown) then { return unknown }
 
             def combine = []
 
@@ -263,7 +263,7 @@ def objectType = object {
 
         method &(other: ObjectType) -> ObjectType {
             if (self.isMe(other)) then { return self }
-            if (other.isDynamic) then { return dynamic }
+            if (other.isUnknown) then { return unknown }
 
             def combine = []
             def twice = []
@@ -334,11 +334,11 @@ def objectType = object {
 
     method fromDType (dtype) -> ObjectType {
         match (dtype) case { (false) ->
-            dynamic
+            unknown
         } case { lit: TypeDeclaration ->
 //        TODO: re-write this code to understand the syntax of type expressions
 //          and type declarations, which are not the same!
-            return dynamic
+            return unknown
             def intersection = lit.intersectionTypes
             if (intersection.size > 1) then {
                 var oType:= fromDType (intersection.first)
@@ -400,13 +400,13 @@ def objectType = object {
     }
 
     method fromIdentifier (ident: Identifier) -> ObjectType {
-        scope.types.find (ident.value) butIfMissing { dynamic }
+        scope.types.find (ident.value) butIfMissing { unknown }
     }
 
     method fromBlock (block) -> ObjectType {
         def bType = typeOf (block)
 
-        if (bType.isDynamic) then { return dynamic }
+        if (bType.isUnknown) then { return unknown }
 
         def apply = bType.getMethod "apply"
 
@@ -426,13 +426,13 @@ def objectType = object {
         }
     }
 
-    def dynamic:ObjectType is public = object {
+    def unknown:ObjectType is public = object {
         def methods is public = []
         method getMethod (_: String) -> noSuchMethod { noSuchMethod }
-        def isDynamic: Boolean is public = true
+        def isUnknown: Boolean is public = true
         method isSubtypeOf (_: ObjectType) -> Boolean { true }
-        method |(_: ObjectType) -> dynamic { dynamic }
-        method &(_: ObjectType) -> dynamic { dynamic }
+        method |(_: ObjectType) -> unknown { unknown }
+        method &(_: ObjectType) -> unknown { unknown }
         def asString: String is public, override = "Unknown"
         method ==(other) { self.isMe(other) }
     }
@@ -475,7 +475,7 @@ def objectType = object {
         }
     }
 
-    var base: ObjectType is readable := dynamic     // to avoid a circularity
+    var base: ObjectType is readable := unknown     // to avoid a circularity
     def done: ObjectType is public = fromMethods [ ] withName "Done"
     base := fromMethods [ ] withName "Object"
 
@@ -496,15 +496,15 @@ def objectType = object {
     addTo (base) name "::" returns (binding)
 
     extend (pattern) with (base)
-    addTo (pattern) name "match" params [base] returns (dynamic)
+    addTo (pattern) name "match" params [base] returns (unknown)
     addTo (pattern) name "|" params [pattern] returns (pattern)
     addTo (pattern) name "&" params [pattern] returns (pattern)
 
     extend (iterator) with (base)
     addTo (iterator) name "hasNext" returns (boolean)
-    addTo (iterator) name "next" returns (dynamic)
+    addTo (iterator) name "next" returns (unknown)
 
-    def shortCircuit = blockTaking ([aParam.ofType (blockReturning (dynamic))])
+    def shortCircuit = blockTaking ([aParam.ofType (blockReturning (unknown))])
         returning (base)
     extend (boolean) with (base)
     addTo (boolean) name "&&" params [boolean] returns (boolean)
@@ -549,25 +549,25 @@ def objectType = object {
     addTo (string) name "indices" returns (list)
     addTo (string) name "asNumber" returns (number)
 
-    def fold = blockTaking ([aParam.ofType (dynamic), aParam.ofType (dynamic)])
-        returning (dynamic)
+    def fold = blockTaking ([aParam.ofType (unknown), aParam.ofType (unknown)])
+        returning (unknown)
     extend (list) with (base)
-    addTo (list) name "at" params [number] returns (dynamic)
-    addTo (list) name "at ()put" params [number, dynamic] returns (done)
-    addTo (list) name "push" params [dynamic] returns (done)
-    addTo (list) name "pop" returns (dynamic)
+    addTo (list) name "at" params [number] returns (unknown)
+    addTo (list) name "at ()put" params [number, unknown] returns (done)
+    addTo (list) name "push" params [unknown] returns (done)
+    addTo (list) name "pop" returns (unknown)
     addTo (list) name "size" returns (number)
     addTo (list) name "iterator" returns (iterator)
-    addTo (list) name "contains" params [dynamic] returns (boolean)
+    addTo (list) name "contains" params [unknown] returns (boolean)
     addTo (list) name "indices" returns (list)
-    addTo (list) name "first" returns (dynamic)
-    addTo (list) name "last" returns (dynamic)
-    addTo (list) name "addFirst" params [dynamic] returns (list)
-    addTo (list) name "addAll" params [dynamic] returns (list)
+    addTo (list) name "first" returns (unknown)
+    addTo (list) name "last" returns (unknown)
+    addTo (list) name "addFirst" params [unknown] returns (list)
+    addTo (list) name "addAll" params [unknown] returns (list)
     addTo (list) name "++" params [list] returns (list)
-    addTo (list) name "fold()startingWith" params [fold, dynamic] returns (dynamic)
+    addTo (list) name "fold()startingWith" params [fold, unknown] returns (unknown)
 
-    scope.types.at "Unknown" put (dynamic)
+    scope.types.at "Unknown" put (unknown)
     scope.types.at "Done" put (done)
     scope.types.at "Object" put (base)
     scope.types.at "Pattern" put (pattern)
@@ -636,8 +636,8 @@ rule { req: Request ->
             typeOf (rec)
         }
 
-        if (rType.isDynamic) then {
-            objectType.dynamic
+        if (rType.isUnknown) then {
+            objectType.unknown
         } else {
             def name = memb.value
 
@@ -698,7 +698,7 @@ method check (req: Request)
 
 method find (req: Request) atScope (i: Number) -> ObjectType is confidential {
     if (i == 0) then {
-        return objectType.dynamic
+        return objectType.unknown
     }
 
     def sType = objectType.fromMethods (scope.methods.stack.at (i).values)
@@ -721,8 +721,8 @@ rule { op: Operator ->
     def rec = op.left
     def rType = typeOf (rec)
 
-    if (rType.isDynamic) then {
-        objectType.dynamic
+    if (rType.isUnknown) then {
+        objectType.unknown
     } else {
         def name = op.value
 
@@ -946,8 +946,8 @@ rule { cls: Class ->
         }
 
         def aType = processBody (cls.value)
-        if (aType.isDynamic) then {
-            objectType.dynamic
+        if (aType.isUnknown) then {
+            objectType.unknown
         } else {
             if (aType.isSubtypeOf (dType).not) then {
                 ClassError.raiseWith ("the class '{name}' declares a result " ++
@@ -962,7 +962,7 @@ rule { cls: Class ->
     scope.variables.at (name)
         put (objectType.fromMethods ([aMethodType.fromNode (cls)]))
 
-    if (dType.isDynamic) then {
+    if (dType.isUnknown) then {
         // Class type inference.
         cType
     } else {
@@ -983,7 +983,7 @@ rule { defd: Def | Var ->
     if (value != false) then {
         def vType = typeOf (value)
 
-        if (defType.isDynamic && (defd.kind == "defdec")) then {
+        if (defType.isUnknown && (defd.kind == "defdec")) then {
             defType:= vType
         }
 
@@ -1033,7 +1033,7 @@ rule { bind: Bind ->
 // Import declarations.
 
 rule { imp: Import ->
-    scope.variables.at (imp.nameString) put (objectType.dynamic)
+    scope.variables.at (imp.nameString) put (objectType.unknown)
 }
 
 
@@ -1072,14 +1072,14 @@ rule { ident: Identifier ->
     match (ident.value) case { "outer" ->
         outerAt (scope.size)
     } case { _ ->
-        scope.variables.find (ident.value) butIfMissing { objectType.dynamic }
+        scope.variables.find (ident.value) butIfMissing { objectType.unknown }
     }
 }
 
 method outerAt (i: Number) -> ObjectType is confidential {
     // Required to cope with not knowing the prelude.
     if (i <= 1) then {
-        return objectType.dynamic
+        return objectType.unknown
     }
 
     def vStack = scope.variables.stack
@@ -1134,10 +1134,10 @@ method processBody (body: List) -> ObjectType is confidential {
 
     scope.variables.at "super" put (superType)
 
-    // If the super type is dynamic, then we can't know anything about the
+    // If the super type is unknown, then we can't know anything about the
     // self type.  TODO We actually can, because an object cannot have two
     // methods with the same name.
-    def publicType = if (superType.isDynamic) then {
+    def publicType = if (superType.isUnknown) then {
         scope.types.at "Self" put (superType)
         superType
     } else {
@@ -1207,7 +1207,7 @@ method collectTypes (nodes: List) -> Done is confidential {
 
             // In order to allow the types to be declarative, the scope needs
             // to be populated by placeholder types first.
-            def placeholder = objectType.dynamic
+            def placeholder = objectType.unknown
             types.push (td)
             placeholders.push (placeholder)
             scope.types.at (td.nameString) put (placeholder)
