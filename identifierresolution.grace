@@ -48,6 +48,7 @@ factory method newScopeIn(parent') kind(variety') {
         addName "self" as(k.selfDef)
         at "self" putScope(self)
     }
+    method == (other) { self.isMe(other) }
     method isEmpty { elements.size == 0 }
     method addName(n) {
         elements.put(n, k.methdec)
@@ -422,7 +423,7 @@ method rewritematchblockterm(arg) {
             ),
             [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
-        if (arg.dtype != false) then {
+        if (false != arg.dtype) then {
             if (arg.dtype.kind == "identifier") then {
                 return [ast.callNode.new(
                     ast.memberNode.new(
@@ -481,7 +482,7 @@ method rewritematchblock(blk) {
             ),
             [ast.callWithPart.request "new" withArgs( [ast.stringNode.new(arg.value)] )]
         )
-        if (arg.dtype != false) then {
+        if (false != arg.dtype) then {
             match (arg.dtype.kind)
                 case { "identifier" | "op" ->
                     pattern := ast.callNode.new(
@@ -1187,7 +1188,7 @@ method gatherInheritedNames(node) is confidential {
     def objScope = node.scope
     var superScope
     var inheritedKind := k.inherited
-    if (inhNode == false) then {
+    if (false == inhNode) then {
         def gO = ast.identifierNode.new("graceObject", false) scope(objScope)
         inhNode := ast.inheritsNode.new(gO) scope(objScope)
         superScope := graceObjectScope
@@ -1197,7 +1198,7 @@ method gatherInheritedNames(node) is confidential {
         // If superScope is the universal scope, then we have no information
         // about the inherited attributes
         if (superScope.isUniversal.not) then {
-            if (superScope.node != ast.nullNode) then {
+            if (ast.nullNode != superScope.node) then {
                 // superScope.node == nullNode when superScope describes
                 // an imported module.
                 collectParentNames(superScope.node)

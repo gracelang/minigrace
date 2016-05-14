@@ -69,7 +69,7 @@ method findNextToken(tokenMatcher) {
     }
     var nextTok := false
     var n := sym
-    while {(n != false) && { nextTok == false } && { n.indent >= lastToken.indent }} do {
+    while {(false != n) && { false == nextTok } && { n.indent >= lastToken.indent }} do {
         if(tokenMatcher.apply(n)) then {
             nextTok := n
         }
@@ -84,7 +84,7 @@ method findNextTokenIndentedAt(tok) {
     }
     var nextTok := false
     var n := sym
-    while {(n != false) && { nextTok == false }} do {
+    while {(false != n) && { false == nextTok }} do {
         if(((n.line > tok.line) && (n.indent <= tok.indent)) || (sym.kind == "eof")) then {
             nextTok := n
         }
@@ -279,7 +279,7 @@ method checkAnnotation(ann) {
     if (ann.kind == "call") then {
         for (ann.with) do {p->
             for (p.args) do {a->
-                if ((a.kind == "identifier") && {a.dtype != false}) then {
+                if ((a.kind == "identifier") && {false != a.dtype}) then {
                     var tok := sym
                     // Look back from the current token to try and find the tokens that cause this error.
                     while {tok.value != ":"} do { tok := tok.prev }
@@ -477,7 +477,7 @@ method block {
                     def suggestions = [ ]
                     var suggestion
                     def arrow = findNextToken({ t -> t.kind == "arrow" })
-                    if(arrow != false) then {
+                    if(false != arrow) then {
                         suggestion := errormessages.suggestion.new
                         suggestion.deleteTokenRange(sym, arrow.prev)
                         suggestions.push(suggestion)
@@ -603,7 +603,7 @@ method doif {
             def nextTok = findNextToken({ t -> (t.line == btok.line)
                 && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
                 || ((t.kind == "identifier") && (t.value == "then"))) })
-            if (nextTok == false) then {
+            if (false == nextTok) then {
                 suggestion.insert(" («condition») then \{")afterToken(btok)
             } elseif { nextTok.kind == "rparen" } then {
                 if(nextTok == sym) then {
@@ -635,7 +635,7 @@ method doif {
             def suggestion = errormessages.suggestion.new
             // Look ahead for a rparen.
             var nextTok := findNextToken({ t -> (t.line == lastToken.line) && (t.kind == "rparen") })
-            if(nextTok == false) then {
+            if (false == nextTok) then {
                 nextTok := findNextValidToken( ["rparen"] )
                 if(nextTok == sym) then {
                     suggestion.insert("«expression») then \{")afterToken(lastToken)
@@ -694,7 +694,7 @@ method doif {
             if(sym.kind != "lbrace") then {
                 def suggestion = errormessages.suggestion.new
                 def closingBrace = findClosingBrace(btok, true)
-                if(closingBrace.found == false) then {
+                if (closingBrace.found.not) then {
                     if(closingBrace.tok == lastToken) then {
                         suggestion.replaceToken(lastToken)leading(false)trailing(true)with("then \{}")
                     } else {
@@ -717,7 +717,7 @@ method doif {
                 if(didConsume({statement}).not) then {
                     def suggestion = errormessages.suggestion.new
                     def closingBrace = findClosingBrace(btok, false)
-                    if(closingBrace.found == false) then {
+                    if (closingBrace.found.not) then {
                         if(closingBrace.tok == lastToken) then {
                             suggestion.insert("}")afterToken(lastToken)
                         } else {
@@ -752,7 +752,7 @@ method doif {
                     def nextTok = findNextToken({ t -> (t.line == statementToken.line)
                         && ((t.kind == "rparen") || (t.kind == "rbrace") || (t.kind == "lbrace")
                         || ((t.kind == "identifier") && (t.value == "then"))) })
-                    if(nextTok == false) then {
+                    if(false == nextTok) then {
                         suggestion.insert(" («expression») then \{")afterToken(statementToken)
                     } elseif { nextTok.kind == "rparen" } then {
                         if(nextTok == sym) then {
@@ -786,7 +786,7 @@ method doif {
                     // Look ahead for a rparen or then.
                     var nextTok := findNextToken({ t -> (t.line == lastToken.line) && 
                         ((t.kind == "rparen") || (t.kind == "rbrace"))})
-                    if(nextTok == false) then {
+                    if(false == nextTok) then {
                         nextTok := findNextValidToken( ["rparen"] )
                         if(nextTok == sym) then {
                             suggestion.insert("«expression») then \{")afterToken(lastToken)
@@ -827,7 +827,7 @@ method doif {
                     def suggestion = errormessages.suggestion.new
                     if(sym.kind == "lbrace") then {
                         def closingBrace = findClosingBrace(statementToken, false)
-                        if(closingBrace.found == false) then {
+                        if(closingBrace.found.not) then {
                             if(closingBrace.tok == sym) then {
                                 suggestion.replaceToken(sym)leading(true)trailing(false)with(" then \{}")
                             } else {
@@ -839,7 +839,7 @@ method doif {
                         }
                     } else {
                         def closingBrace = findClosingBrace(statementToken, true)
-                        if(closingBrace.found == false) then {
+                        if(closingBrace.found.not) then {
                             if(closingBrace.tok == lastToken) then {
                                 suggestion.insert(" then \{}")afterToken(lastToken)
                             } else {
@@ -856,7 +856,7 @@ method doif {
                 if(sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
                     def closingBrace = findClosingBrace(btok, true)
-                    if(closingBrace.found == false) then {
+                    if(closingBrace.found.not) then {
                         if(closingBrace.tok == lastToken) then {
                             suggestion.replaceToken(lastToken)leading(false)trailing(true)with("then \{}")
                         } else {
@@ -879,7 +879,7 @@ method doif {
                     if(didConsume({statement}).not) then {
                         def suggestion = errormessages.suggestion.new
                         def closingBrace = findClosingBrace(btok, false)
-                        if(closingBrace.found == false) then {
+                        if(closingBrace.found.not) then {
                             if(closingBrace.tok == lastToken) then {
                                 suggestion.insert("}")afterToken(lastToken)
                             } else {
@@ -908,7 +908,7 @@ method doif {
                 if(sym.kind != "lbrace") then {
                     def suggestion = errormessages.suggestion.new
                     def closingBrace = findClosingBrace(btok, true)
-                    if(closingBrace.found == false) then {
+                    if(closingBrace.found.not) then {
                         if(closingBrace.tok == lastToken) then {
                             suggestion.replaceToken(lastToken)leading(false)trailing(true)with("else \{}")
                         } else {
@@ -933,7 +933,7 @@ method doif {
                     if(didConsume({statement}).not) then {
                         def suggestion = errormessages.suggestion.new
                         def closingBrace = findClosingBrace(btok, false)
-                        if(closingBrace.found == false) then {
+                        if(closingBrace.found.not) then {
                             if(closingBrace.tok == lastToken) then {
                                 suggestion.insert("}")afterToken(lastToken)
                             } else {
@@ -957,7 +957,7 @@ method doif {
             def suggestion = errormessages.suggestion.new
             if(sym.kind == "lbrace") then {
                 def closingBrace = findClosingBrace(btok, false)
-                if(closingBrace.found == false) then {
+                if(closingBrace.found.not) then {
                     if(closingBrace.tok == sym) then {
                         suggestion.replaceToken(sym)leading(true)trailing(false)with(" then \{}")
                     } else {
@@ -969,7 +969,7 @@ method doif {
                 }
             } else {
                 def closingBrace = findClosingBrace(btok, true)
-                if(closingBrace.found == false) then {
+                if(closingBrace.found.not) then {
                     if(closingBrace.tok == lastToken) then {
                         suggestion.insert(" then \{}")afterToken(lastToken)
                     } else {
@@ -1134,7 +1134,7 @@ method trycatch {
             def nextTok = findNextToken({ t -> (t.kind == "rbrace")
                 || ((t.kind == "rparen") && (t.line == catchTok.line))
                 || ((t.kind == "identifier") && (t.value == "catch")) })
-            if(nextTok == false) then {
+            if(false == nextTok) then {
                 suggestion.insert(" \{}")afterToken(catchTok)
             } elseif { nextTok.kind == "rbrace" } then {
                 suggestion.insert(" \{")afterToken(catchTok)
@@ -1204,7 +1204,7 @@ method trycatch {
             def suggestions = [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
-            if(nextTok == false) then {
+            if(false == nextTok) then {
                 suggestion.insert(" }")afterToken(tokens.last)
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
@@ -1262,7 +1262,7 @@ method trycatch {
             def suggestions = [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
-            if(nextTok == false) then {
+            if(false == nextTok) then {
                 suggestion.insert(" }")afterToken(tokens.first)
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
@@ -1298,7 +1298,7 @@ method matchcase {
         // Look ahead for a rparen or case.
         def nextTok = findNextToken({ t -> ((t.kind == "rparen") && (t.line == matchTok.line))
             || ((t.kind == "identifier") && (t.value == "case")) })
-        if(nextTok == false) then {
+        if(false == nextTok) then {
             suggestion.insert("(«expression»)")afterToken(matchTok)
         } elseif { nextTok.kind == "rparen" } then {
             if(nextTok == sym) then {
@@ -1365,7 +1365,7 @@ method matchcase {
             def suggestions = [ ]
             def nextTok = findNextTokenIndentedAt(lastToken)
             var suggestion := errormessages.suggestion.new
-            if(nextTok == false) then {
+            if(false == nextTok) then {
                 suggestion.insert(" }")afterToken(tokens.last)
                 suggestion.insert(" \{")afterToken(lastToken)
                 suggestions.push(suggestion)
@@ -1803,7 +1803,7 @@ method callrest(acceptBlocks) {
         def call = ast.callNode.new(meth, signature)
         call.generics := genericIdents
         values.push(call)
-    } elseif {genericIdents != false} then {
+    } elseif {false != genericIdents} then {
         meth.generics := genericIdents
     }
     minIndentLevel := startInd
@@ -2093,7 +2093,7 @@ method defdec {
             def suggestion = errormessages.suggestion.new
             def nextToken = findNextToken({ t -> (t.kind == "op")
                 && (t.value == "=") && (t.line == sym.line)})
-            if (nextToken == false) then {
+            if (false == nextToken) then {
                 suggestion.insert(" «name» =")afterToken(lastToken)
             } elseif { nextToken == sym } then {
                 suggestion.insert(" «name»")afterToken(lastToken)
@@ -2152,7 +2152,7 @@ method defdec {
         }
         util.setPosition(defTok.line, defTok.linePos)
         var o := ast.defDecNode.new(name, val, dtype)
-        if (anns != false) then { o.annotations.addAll(anns) }
+        if (false != anns) then { o.annotations.addAll(anns) }
         o.startToken := defTok
         values.push(o)
         reconcileComments
@@ -2170,7 +2170,7 @@ method vardec {
             def suggestion = errormessages.suggestion.new
             def nextToken = findNextToken({ t -> (t.kind == "bind")
                 && (t.line == sym.line)})
-            if((nextToken == false) || ({nextToken == sym})) then {
+            if ((false == nextToken) || {nextToken == sym}) then {
                 suggestion.insert(" «name»")afterToken(lastToken)
             } else {
                 suggestion.replaceTokenRange(sym, nextToken.prev)
@@ -2222,7 +2222,7 @@ method vardec {
         }
         util.setPosition(line, pos)
         def o = ast.varDecNode.new(name, val, dtype)
-        if (anns != false) then { o.annotations.addAll(anns) }
+        if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
         reconcileComments
     }
@@ -2395,7 +2395,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     if (sym.kind != "lbrace") then {
         def suggestion = errormessages.suggestion.new
         def nextTok = findNextToken { t -> t.kind == "rbrace" }
-        if(nextTok == false) then {
+        if (false == nextTok) then {
             suggestion.insert(" \{}")afterToken(lastToken)
         } else {
             suggestion.insert(" \{")afterToken(lastToken)
@@ -2449,7 +2449,7 @@ method parseObjectConstructorBody(constructName) startingWith (btok) after (prev
     next
     util.setPosition(btok.line, btok.linePos)
     def objNode = ast.objectNode.new(body, superObject)
-    if (anns != false) then { objNode.annotations.addAll(anns) }
+    if (false != anns) then { objNode.annotations.addAll(anns) }
     objNode.usedTraits := usedTraits
     values.push(objNode)
     minIndentLevel := localMinIndentLevel
@@ -2637,7 +2637,7 @@ method methoddec {
             if(sym.kind != "rbrace") then {
                 def suggestion = errormessages.suggestion.new
                 def closingBrace = findClosingBrace(btok, false)
-                if(closingBrace.found == false) then {
+                if(closingBrace.found.not) then {
                     if(closingBrace.tok == sym) then {
                         suggestion.insert("}")afterToken(lastToken)
                     } else {
@@ -2653,7 +2653,7 @@ method methoddec {
         } else {
             def suggestion = errormessages.suggestion.new
             def closingBrace = findClosingBrace(btok, true)
-            if(closingBrace.found == false) then {
+            if(closingBrace.found.not) then {
                 if(closingBrace.tok == lastToken) then {
                     suggestion.insert(" \{}")afterToken(lastToken)andTrailingSpace(true)
                 } else {
@@ -2669,7 +2669,7 @@ method methoddec {
         util.setline(btok.line)
         var o := ast.methodNode.new(meth, signature, body, dtype)
         o.typeParams := m.typeParams
-        if (anns != false) then { o.annotations.addAll(anns) }
+        if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
         reconcileComments
     }
@@ -2846,7 +2846,7 @@ method methodsignature(sameline) {
         if(sym.kind != "rparen") then {
             def suggestion = errormessages.suggestion.new
             def rparen = findNextToken({ t -> (t.kind == "rparen") && (t.line == lastToken.line) })
-            if(rparen == false) then {
+            if(false == rparen) then {
                 suggestion.replaceToken(lastToken)with(")")
             } else {
                 suggestion.deleteToken(sym)
@@ -2958,7 +2958,7 @@ method doimport {
         util.setline(importline)
         def o = ast.importNode.new(p.value, name, dtype)
         def anns = doannotation
-        if (anns != false) then { o.annotations.addAll(anns) }
+        if (false != anns) then { o.annotations.addAll(anns) }
         values.push(o)
         reconcileComments
     }
@@ -3007,7 +3007,7 @@ method domethodtype {
     var meth := m.m
     var signature := m.sig
     var dtype := m.rtype
-    if (dtype == false) then {
+    if (false == dtype) then {
         dtype := ast.identifierNode.new("Done", false)
     }
     util.setPosition(methodTypeTok.line, methodTypeTok.linePos)
@@ -3087,7 +3087,7 @@ method typedec {
         if((sym.kind != "op") || (sym.value != "=")) then {
             var suggestion := errormessages.suggestion.new
             def nextTok = findNextToken({ t -> t.kind == "lbrace" })
-            if ((nextTok == false) || ({nextTok == sym})) then {
+            if ((false == nextTok) || {nextTok == sym}) then {
                 suggestion.insert(" =")afterToken(lastToken)
             } else {
                 suggestion.replaceTokenRange(sym, nextTok.prev)with("=")

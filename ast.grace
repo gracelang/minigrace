@@ -21,14 +21,14 @@ method listMap(l, b) ancestors(as) is confidential {
     newList
 }
 method maybeMap(n, b) ancestors(as) is confidential {
-    if (n != false) then {
+    if (false != n) then {
         n.map(b) ancestors(as)
     } else {
         n
     }
 }
 method maybeListMap(n, b) ancestors(as) is confidential {
-    if (n != false) then {
+    if (false != n) then {
         listMap(n, b) ancestors(as)
     } else {
         n
@@ -125,7 +125,7 @@ class baseNode {
     method isPublic { true }
     method isConfidential { isPublic.not }
     method decType {
-        if (self.dtype == false) then {
+        if (false == self.dtype) then {
             return unknownType
         }
         return self.dtype
@@ -172,7 +172,7 @@ class baseNode {
         obj
     }
     method addComment(cmtNode) {
-        if (comments == false) then {
+        if (false == comments) then {
             comments := cmtNode
         } else {
             comments.extendCommentUsing(cmtNode)
@@ -191,6 +191,7 @@ def nullNode is public = object {
         "// null"
     }
     method asString { "the nullNode" }
+    method == (other) { self.isMe(other) }
 }
 
 def fakeSymbolTable = object {
@@ -328,7 +329,7 @@ def blockNode is public = object {
             for (self.body) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
-            if (self.matchingPattern != false) then {
+            if (false != self.matchingPattern) then {
                 self.matchingPattern.accept(visitor) from(newChain)
             }
         }
@@ -356,7 +357,7 @@ def blockNode is public = object {
         for (self.body) do { mx ->
             s := s ++ "\n  "++ spc ++ mx.pretty(depth+2)
         }
-        if (self.matchingPattern != false) then {
+        if (false != self.matchingPattern) then {
             s := s ++ "\n"
             s := s ++ spc ++ "Pattern:"
             s := s ++ "\n  "++ spc ++ self.matchingPattern.pretty(depth+2)
@@ -373,7 +374,7 @@ def blockNode is public = object {
             s := s ++ " "
             for (self.params.indices) do { i ->
                 var p := self.params.at(i)
-                if (self.matchingPattern != false) then {
+                if (false != self.matchingPattern) then {
                     s := s ++ "(" ++ p.toGrace(0) ++ ")"
                 } else {
                     s := s ++ p.toGrace(0)
@@ -418,7 +419,7 @@ def tryCatchNode is public = object {
             for (self.cases) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
-            if (self.finally != false) then {
+            if (false != self.finally) then {
                 self.finally.accept(visitor) from(newChain)
             }
         }
@@ -455,7 +456,7 @@ def tryCatchNode is public = object {
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "catch " ++ case.toGrace(depth + 1)
         }
-        if (self.finally != false) then {
+        if (false != self.finally) then {
             s := s ++ "\n" ++ spc ++ "    " ++ "finally " ++ self.finally.toGrace(depth + 1)
         }
         s
@@ -481,7 +482,7 @@ def matchCaseNode is public = object {
             for (self.cases) do { mx ->
                 mx.accept(visitor) from(newChain)
             }
-            if (self.elsecase != false) then {
+            if (false != self.elsecase) then {
                 self.elsecase.accept(visitor) from(newChain)
             }
         }
@@ -518,7 +519,7 @@ def matchCaseNode is public = object {
         for (self.cases) do { case ->
             s := s ++ "\n" ++ spc ++ "    " ++ "case " ++ case.toGrace(depth + 2)
         }
-        if (self.elsecase != false) then {
+        if (false != self.elsecase) then {
             s := s ++ "\n" ++ spc ++ "    " ++ "else " ++ self.elsecase.toGrace(depth + 2)
         }
         s
@@ -560,7 +561,7 @@ def methodTypeNode is public = object {
             if (false != typeParams) then {
                 typeParams.accept(visitor) from(newChain)
             }
-            if (rtype != false) then {
+            if (false != rtype) then {
                 rtype.accept(visitor) from(newChain)
             }
             for (signature) do { part ->
@@ -583,7 +584,7 @@ def methodTypeNode is public = object {
         }
         var s := super.pretty(depth) ++ "\n"
         s := "{s}{spc}Name: {value}\n"
-        if (rtype != false) then {
+        if (false != rtype) then {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
         if (false != typeParams) then {
@@ -619,7 +620,7 @@ def methodTypeNode is public = object {
                 s := s ++ ")"
             }
         }
-        if (self.rtype != false) then {
+        if (false != self.rtype) then {
             s := s ++ " -> " ++ self.rtype.toGrace(depth + 1)
         }
         s
@@ -746,7 +747,7 @@ def typeDecNode is public = object {
         if (visitor.visitTypeDec(self) up(as)) then {
             def newChain = as.extend(self)
             name.accept(visitor) from(newChain)
-            if (typeParams != false) then {
+            if (false != typeParams) then {
                 typeParams.accept(visitor) from(newChain)
             }
             annotations.do { each -> each.accept(visitor) from(newChain) }
@@ -839,7 +840,7 @@ def methodNode = object {
         method needsArgChecks {
             signature.do { part -> 
                 part.params.do { p ->
-                    if ((p.dtype != false) && { 
+                    if ((false != p.dtype) && { 
                             p.dtype.nameString != "Unknown" }) then {
                         return true
                     }
@@ -883,7 +884,7 @@ def methodNode = object {
                         p.accept(visitor) from(newChain)
                     }
                 }
-                if (dtype != false) then {
+                if (false != dtype) then {
                     dtype.accept(visitor) from(newChain)
                 }
                 for (self.annotations) do { ann ->
@@ -974,7 +975,7 @@ def methodNode = object {
                     s := s ++ ")"
                 }
             }
-            if (self.dtype != false) then {
+            if (false != self.dtype) then {
                 s := s ++ " -> {self.dtype.toGrace(0)}"
             }
             if (self.annotations.size > 0) then {
@@ -984,7 +985,7 @@ def methodNode = object {
                         startingWith ""
             }
             s := s ++ " \{"
-            if (comments != false) then {
+            if (false != comments) then {
                 s := s ++ comments.toGrace(depth + 1)
             }
             for (self.body) do { mx ->
@@ -1117,7 +1118,7 @@ def callNode = object {
             var firstPart := true
             for (self.with) do { part ->
                 s := s ++ part.name
-                if (firstPart && {generics != false}) then {
+                if (firstPart && {false != generics}) then {
                     s := s ++ "<"
                     for (1..(generics.size - 1)) do {ix ->
                         s := s ++ generics.at(ix).toGrace(depth + 1)
@@ -1181,7 +1182,7 @@ def moduleNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitModule(self) up(as)) then {
                 def newChain = as.extend(self)
-                if (self.superclass != false) then {
+                if (false != self.superclass) then {
                     self.superclass.accept(visitor) from(newChain)
                 }
                 for (self.value) do { x ->
@@ -1293,7 +1294,7 @@ def objectNode is public = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitObject(self) up(as)) then {
                 def newChain = as.extend(self)
-                if (superclass != false) then {
+                if (false != superclass) then {
                     superclass.accept(visitor) from(newChain)
                 }
                 usedTraits.do { t -> t.accept(visitor) from(newChain) }
@@ -1323,7 +1324,7 @@ def objectNode is public = object {
             }
             var s := super.pretty(depth)
             s := "{s}\n{spc}Name: {self.name}"
-            if (self.superclass != false) then {
+            if (false != self.superclass) then {
                 s := s ++ "\n" ++ spc ++ "Superclass: " ++ 
                         self.superclass.pretty(depth + 1)
             }
@@ -1441,7 +1442,7 @@ def memberNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitMember(self) up(as)) then {
                 def newChain = as.extend(self)
-                if (generics != false) then {
+                if (false != generics) then {
                     generics.do { each -> each.accept(visitor) from(newChain) }
                 }
                 in.accept(visitor) from(newChain)
@@ -1461,7 +1462,7 @@ def memberNode = object {
             }
             var s := "{super.pretty(depth)}‹" ++ self.value ++ "›\n"
             s := s ++ spc ++ in.pretty(depth)
-            if (generics != false) then {
+            if (false != generics) then {
                 s := s ++ "\n" ++ spc ++ "  Generics:"
                 for (generics) do {g->
                     s := s ++ "\n" ++ spc ++ "    " ++ g.pretty(0)
@@ -1477,7 +1478,7 @@ def memberNode = object {
             } else {
                 s := self.in.toGrace(depth) ++ "." ++ self.value
             }
-            if (generics != false) then {
+            if (false != generics) then {
                 s := s ++ "<"
                 for (1..(generics.size - 1)) do {ix ->
                     s := s ++ generics.at(ix).toGrace(depth + 1)
@@ -1643,7 +1644,7 @@ def identifierNode = object {
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitIdentifier(self) up(as)) then {
                 def newChain = as.extend(self)
-                if (self.dtype != false) then {
+                if (false != self.dtype) then {
                     self.dtype.accept(visitor) from(newChain)
                 }
             }
@@ -1667,7 +1668,7 @@ def identifierNode = object {
             } else {
                 s := s ++ "‹{value}›"
             }
-            if (self.dtype != false) then {
+            if (false != self.dtype) then {
                 s := s ++ "\n" ++ spc ++ "  Type: "
                 s := s ++ self.dtype.pretty(depth + 2)
             }
@@ -1686,7 +1687,7 @@ def identifierNode = object {
             } else {
                 s := self.value
             }
-            if (self.dtype != false) then {
+            if (false != self.dtype) then {
                 s := s ++ " : " ++ self.dtype.toGrace(depth + 1)
             }
             if (false != generics) then {
@@ -1990,7 +1991,7 @@ def defDecNode = object {
             if (visitor.visitDefDec(self) up(as)) then {
                 def newChain = as.extend(self)
                 self.name.accept(visitor) from(newChain)
-                if (self.dtype != false) then {
+                if (false != self.dtype) then {
                     self.dtype.accept(visitor) from(newChain)
                 }
                 for (self.annotations) do { ann ->
@@ -2015,7 +2016,7 @@ def defDecNode = object {
             }
             var s := super.pretty(depth) ++ "\n"
             s := s ++ spc ++ self.name.pretty(depth)
-            if (dtype != false) then {
+            if (false != dtype) then {
                 s := s ++ "\n" ++ spc ++ "Type: " ++ self.dtype.pretty(depth + 2)
             }
             if (false != value) then {
@@ -2038,7 +2039,7 @@ def defDecNode = object {
                 spc := spc ++ "    "
             }
             var s := "def {self.name.toGrace(0)}"
-            if ( (self.dtype != false) && {
+            if ( (false != self.dtype) && {
                     self.dtype.value != "Unknown" }) then {
                 s := s ++ " : " ++ self.dtype.toGrace(0)
             }
@@ -2048,7 +2049,7 @@ def defDecNode = object {
                     if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
                         startingWith ""
             }
-            if (self.value != false) then {
+            if (false != self.value) then {
                 s := s ++ " = " ++ self.value.toGrace(depth)
             }
             s
@@ -2104,13 +2105,13 @@ def varDecNode is public = object {
         if (visitor.visitVarDec(self) up(as)) then {
             def newChain = as.extend(self)
             self.name.accept(visitor) from(newChain)
-            if (self.dtype != false) then {
+            if (false != self.dtype) then {
                 self.dtype.accept(visitor) from(newChain)
             }
             for (self.annotations) do { ann ->
                 ann.accept(visitor) from(newChain)
             }
-            if (self.value != false) then {
+            if (false != self.value) then {
                 self.value.accept(visitor) from(newChain)
             }
         }
@@ -2131,7 +2132,7 @@ def varDecNode is public = object {
         }
         var s := super.pretty(depth) ++ "\n"
         s := s ++ spc ++ self.name.pretty(depth + 1)
-        if (self.dtype != false) then {
+        if (false != self.dtype) then {
             s := s ++ "\n" ++ spc ++ "Type: "
             s := s ++ self.dtype.pretty(depth + 2)
         }
@@ -2150,7 +2151,7 @@ def varDecNode is public = object {
             spc := spc ++ "    "
         }
         var s := "var {self.name.toGrace(0)}"
-        if ( (self.dtype != false) && {
+        if ( (false != self.dtype) && {
                 self.dtype.value != "Unknown" }) then {
             s := s ++ " : " ++ self.dtype.toGrace(0)
         }
@@ -2160,7 +2161,7 @@ def varDecNode is public = object {
                 if (a != "") then { a ++ ", " } else { "" } ++ b.toGrace(0) }
                     startingWith ""
         }
-        if (self.value != false) then {
+        if (false != self.value) then {
             s := s ++ " := " ++ self.value.toGrace(depth)
         }
         s
@@ -2215,7 +2216,7 @@ def importNode is public = object {
                 ann.accept(visitor) from(newChain)
             }
             self.value.accept(visitor) from(newChain)
-            if (self.dtype != false) then {
+            if (false != self.dtype) then {
                 self.dtype.accept(visitor) from(newChain)
             }
         }
