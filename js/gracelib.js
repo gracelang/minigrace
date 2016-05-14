@@ -1797,7 +1797,9 @@ function classType(obj) {
     var o = obj;
     while (o !== null) {
         for (var m in o.methods)
-            t.typeMethods.push(m);
+            if (! o.methods[m].confidential) {
+                t.typeMethods.push(m);
+            }
         o = o.superobj;
     }
     return t;
