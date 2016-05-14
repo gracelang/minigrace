@@ -3668,9 +3668,8 @@ Object alloc_done() {
 Object alloc_ObjectType() {
     if (ObjectType != NULL)
         return ObjectType;
-    ObjectType = alloc_Type("Object", 7);
+    ObjectType = alloc_Type("Object", 6);
     gc_root(ObjectType);
-    add_Method((ClassData)ObjectType, "isMe", NULL) -> flags = MFLAG_CONFIDENTIAL;
     add_Method((ClassData)ObjectType, "!=", NULL);
     add_Method((ClassData)ObjectType, "≠", NULL);
     add_Method((ClassData)ObjectType, "::", NULL);
