@@ -7,6 +7,7 @@ type T = type {
     isImplicit -> Boolean
     forUsers -> Boolean
     fromParent -> Boolean
+    ==(o:T) -> Boolean
 }
 
 class kindConstant(name) {
@@ -17,6 +18,7 @@ class kindConstant(name) {
     method forUsers { true }
     method fromParent { false }
     method forGct { true }
+    method ==(other) { self.isMe(other) }
 }
 
 def undefined = kindConstant "undefined"
