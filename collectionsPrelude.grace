@@ -1625,7 +1625,7 @@ class dictionary<K,T> {
             def s = inner.size
             var t := h % s
             var jump := 5
-            while { (unused ≠ inner.at(t)) && (removed ≠ inner.at(t)) } do {
+            while { (unused ≠ inner.at(t)) && (removed ≠ inner.at(t)) } do {
                 if (inner.at(t).key == x) then {
                     return t
                 }
