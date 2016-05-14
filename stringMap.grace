@@ -14,12 +14,12 @@ def unused = object {
 
 class new {
     var elems := 0
-    var inner := PrimitiveArray.new(4)
+    var inner := primitiveArray.new(4)
     for (0..(inner.size-1)) do {i->
         inner.at(i)put(unused)
     }
     native "js" code ‹this.data.inner = { };›  
-        // override the PrimitiveArray with an empty object
+        // override the primitiveArray with an empty object
 
     method size {
         // The number of bindings that I contain.
@@ -201,7 +201,7 @@ class new {
         def c = inner.size
         def n = c * 2
         def oldInner = inner
-        inner := PrimitiveArray.new(n)
+        inner := primitiveArray.new(n)
         for (0..(inner.size-1)) do {i->
             inner.at(i)put(unused)
         }

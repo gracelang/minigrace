@@ -461,14 +461,14 @@ class sequence⟦T⟧ {
             forecastSize := 8
             sizeUncertain := true
         }
-        var inner := _prelude.PrimitiveArray.new(forecastSize)
+        var inner := _prelude.primitiveArray.new(forecastSize)
         var innerSize := inner.size
         var ix := 0
         if (sizeUncertain) then {
             // less-than-optimal path
             for (arg) do { elt →
                 if (innerSize ≤ ix) then {
-                    def newInner = _prelude.PrimitiveArray.new(innerSize*2)
+                    def newInner = _prelude.primitiveArray.new(innerSize*2)
                     for (0..(innerSize-1)) do { i →
                         newInner.at(i)put(inner.at(i))
                     }
@@ -486,9 +486,9 @@ class sequence⟦T⟧ {
             }
         }
         if (ix == 0) then { return emptySequence }
-        self.fromPrimitiveArray(inner, ix)
+        self.fromprimitiveArray(inner, ix)
     }
-    method fromPrimitiveArray(pArray, sz) is confidential {
+    method fromprimitiveArray(pArray, sz) is confidential {
         // constructs a sequence from the first sz elements of pArray
 
         object {
@@ -521,13 +521,13 @@ class sequence⟦T⟧ {
                 }
             }
             method reversed {
-                def freshArray = _prelude.PrimitiveArray.new(size)
+                def freshArray = _prelude.primitiveArray.new(size)
                 var ix := size - 1
                 do { each →
                     freshArray.at (ix) put(each)
                     ix := ix - 1
                 }
-                outer.fromPrimitiveArray(freshArray, size)
+                outer.fromprimitiveArray(freshArray, size)
             }
             method ++(other: Iterable) {
                 sequence.withAll(lazyConcatenation(self, other))
@@ -866,7 +866,7 @@ class list⟦T⟧ {
             var initialSize
             try { initialSize := a.size * 2 + 1 }
                 catch { _ex:SizeUnknown → initialSize := 9 }
-            var inner := _prelude.PrimitiveArray.new(initialSize)
+            var inner := _prelude.primitiveArray.new(initialSize)
             var size is readable := 0
             for (a) do {x→
                 inner.at(size)put(x)
@@ -1069,7 +1069,7 @@ class list⟦T⟧ {
                 self.indices
             }
             method expandTo(newSize) is confidential {
-                def newInner = _prelude.PrimitiveArray.new(newSize)
+                def newInner = _prelude.primitiveArray.new(newSize)
                 for (0..(size-1)) do {i→
                     newInner.at(i)put(inner.at(i))
                 }
@@ -1112,7 +1112,7 @@ class set⟦T⟧ {
             var initialSize
             try { initialSize := max(a.size * 3 + 1, 8) }
                 catch { _:SizeUnknown → initialSize := 8 }
-            var inner := _prelude.PrimitiveArray.new(initialSize)
+            var inner := _prelude.primitiveArray.new(initialSize)
             def unused = object {
                 var unused := true
                 method asString { "unused" }
@@ -1315,7 +1315,7 @@ class set⟦T⟧ {
                 def n = c * 2
                 def oldInner = inner
                 size := 0
-                inner := _prelude.PrimitiveArray.new(n)
+                inner := _prelude.primitiveArray.new(n)
                 for (0..(inner.size-1)) do {i→
                     inner.at(i)put(unused)
                 }
@@ -1417,7 +1417,7 @@ class dictionary⟦K,T⟧ {
         use collection⟦T⟧
         var mods is readable := 0
         var numBindings := 0
-        var inner := _prelude.PrimitiveArray.new(8)
+        var inner := _prelude.primitiveArray.new(8)
         def unused = object {
             var unused := true
             def key is public = self
@@ -1688,7 +1688,7 @@ class dictionary⟦K,T⟧ {
             def c = inner.size
             def n = c * 2
             def oldInner = inner
-            inner := _prelude.PrimitiveArray.new(n)
+            inner := _prelude.primitiveArray.new(n)
             for (0..(n - 1)) do {i→
                 inner.at(i)put(unused)
             }
