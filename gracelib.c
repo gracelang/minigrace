@@ -1042,6 +1042,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(ExceptionClass, "==", &Object_Equals);
         add_Method(ExceptionClass, "!=", &Object_NotEquals);
         add_Method(ExceptionClass, "≠", &Object_NotEquals);
+        add_Method(ExceptionClass, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ExceptionClass, "asString", &Exception_asString);
         add_Method(ExceptionClass, "asDebugString", &Object_asDebugString);
         add_Method(ExceptionClass, "::", &Object_bind);
@@ -1529,7 +1530,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("builtinList", 44, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("builtinList", 45, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
@@ -1547,6 +1548,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "removeLast", &BuiltinList_pop);
         add_Method(BuiltinList, "size", &BuiltinList_length);
         add_Method(BuiltinList, "sizeIfUnknown", &BuiltinList_length);
+        add_Method(BuiltinList, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(BuiltinList, "isEmpty", &BuiltinList_isEmpty);
         add_Method(BuiltinList, "iterator", &BuiltinList_iter);
         add_Method(BuiltinList, "contains", &BuiltinList_contains);
@@ -1585,7 +1587,7 @@ Object alloc_BuiltinList() {
 }
 Object alloc_Lineup() {
     if (Lineup == NULL) {
-        Lineup = alloc_class3("lineup", 23, (void*)&BuiltinList_mark,
+        Lineup = alloc_class3("lineup", 24, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(Lineup, "asString", &BuiltinList_asString);
         add_Method(Lineup, "asDebugString", &BuiltinList_asString);
@@ -1594,6 +1596,7 @@ Object alloc_Lineup() {
         add_Method(Lineup, "size", &BuiltinList_length);
         add_Method(Lineup, "sizeIfUnknown", &BuiltinList_length);
         add_Method(Lineup, "isEmpty", &BuiltinList_isEmpty);
+        add_Method(Lineup, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(Lineup, "iterator", &BuiltinList_iter);
         add_Method(Lineup, "==", &BuiltinList_equals);
         add_Method(Lineup, "!=", &Object_NotEquals);
@@ -1733,7 +1736,7 @@ Object PrimitiveArray_sort(Object self, int nparts, int *argcv,
 }
 Object alloc_PrimitiveArray(int size) {
     if (PrimitiveArray == NULL) {
-        PrimitiveArray = alloc_class3("primitiveArray", 12, (void*)&BuiltinList_mark,
+        PrimitiveArray = alloc_class3("primitiveArray", 13, (void*)&BuiltinList_mark,
                                       (void*)&BuiltinList__release);
         add_Method(PrimitiveArray, "at", &PrimitiveArray_index);
         add_Method(PrimitiveArray, "[]", &PrimitiveArray_index);
@@ -1744,6 +1747,7 @@ Object alloc_PrimitiveArray(int size) {
         add_Method(PrimitiveArray, "::", &Object_bind);
         add_Method(PrimitiveArray, "size", &BuiltinList_length);
         add_Method(PrimitiveArray, "sizeIfUnknown", &BuiltinList_length);
+        add_Method(PrimitiveArray, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(PrimitiveArray, "==", &Object_Equals);
         add_Method(PrimitiveArray, "!=", &Object_NotEquals);
         add_Method(PrimitiveArray, "sortInitial()by", &PrimitiveArray_sort);
@@ -1768,7 +1772,7 @@ Object PrimitiveArrayClassObject;
 Object alloc_PrimitiveArrayClassObject() {
     if (PrimitiveArrayClassObject)
         return PrimitiveArrayClassObject;
-    ClassData c = alloc_class("Class<PrimitiveArray>", 3);
+    ClassData c = alloc_class("Class<primitiveArray>", 3);
     add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "new", &PrimitiveArrayClassObject_new);
@@ -2169,7 +2173,7 @@ Object String_encode(Object self, int nparts, int *argcv,
 }
 Object alloc_ConcatString(Object left, Object right) {
     if (ConcatString == NULL) {
-        ConcatString = alloc_class3("concatString", 39,
+        ConcatString = alloc_class3("concatString", 40,
                 (void*)&ConcatString__mark,
                 (void*)&ConcatString__release);
         add_Method(ConcatString, "asString", &identity_function);
@@ -2197,6 +2201,7 @@ Object alloc_ConcatString(Object left, Object right) {
         add_Method(ConcatString, "quoted", &ConcatString_quoted);
         add_Method(ConcatString, "_escape", &ConcatString__escape);
         add_Method(ConcatString, "length", &ConcatString_length);
+        add_Method(ConcatString, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(ConcatString, "isEmpty", &ConcatString_isEmpty);
         add_Method(ConcatString, "iter", &ConcatString_iter);
         add_Method(ConcatString, "iterator", &ConcatString_iter);
@@ -2420,7 +2425,7 @@ Object String_replace_with(Object self,
 Object alloc_String(const char *data) {
     int blen = strlen(data);
     if (String == NULL) {
-        String = alloc_class("String", 39);
+        String = alloc_class("String", 40);
         add_Method(String, "asString", &identity_function);
         add_Method(String, "asDebugString", &String_QuotedString);
         add_Method(String, "::", &Object_bind);
@@ -2445,6 +2450,7 @@ Object alloc_String(const char *data) {
         add_Method(String, "quoted", &String_quoted);
         add_Method(String, "_escape", &String__escape);
         add_Method(String, "length", &String_length);
+        add_Method(String, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
         add_Method(String, "isEmpty", &String_isEmpty);
         add_Method(String, "do", &String_do);
         add_Method(String, "iter", &String_iter);
@@ -5303,6 +5309,7 @@ Object grace_prelude() {
     add_Method(c, "asDebugString", &Object_asDebugString);
     add_Method(c, "::", &Object_bind);
     add_Method(c, "++", &Object_concat);
+    add_Method(c, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
     add_Method(c, "==", &Object_Equals);
     add_Method(c, "!=", &Object_NotEquals);
     add_Method(c, "≠", &Object_NotEquals);
@@ -5318,7 +5325,6 @@ Object grace_prelude() {
     add_Method(c, "octets", &grace_octets);
     add_Method(c, "minigrace", &grace_minigrace);
     add_Method(c, "_methods", &prelude__methods)->flags ^= MFLAG_REALSELFONLY;
-    add_Method(c, "PrimitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "primitiveArray", &prelude_PrimitiveArray);
     add_Method(c, "become", &prelude_become);
     add_Method(c, "unbecome", &prelude_unbecome);
