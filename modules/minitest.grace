@@ -82,7 +82,7 @@ method failBecause(reason) {
 }
 
 method testSuiteNamed (name:String) with (block:Block) {
-    if(currentTestSuiteForDialect != nullSuite) then {
+    if (nullSuite ≠ currentTestSuiteForDialect) then {
         Exception.raise("a testSuite cannot be created inside a testSuite")
     }
     currentTestSuiteForDialect := gu.testSuite.empty
@@ -104,16 +104,16 @@ method testSuite (block:Block) {
 }
 
 method test(name:String) by(block:Block) {
-    if(currentTestSuiteForDialect == nullSuite) then {
+    if (nullSuite == currentTestSuiteForDialect) then {
         Exception.raise("a test can be created only within a testSuite")
     }
     currentTestInThisEvaluation := currentTestInThisEvaluation + 1
-    if (currentSetupBlockForTesting != nullBlock) then {
+    if (nullBlock ≠ currentSetupBlockForTesting) then {
         currentTestSuiteForDialect.add(testCaseNamed(name)
             setupIn(currentSetupBlockForTesting)
             asTestNumber(currentTestInThisEvaluation))
     } elseif { currentTestInThisEvaluation == currentTestBlockForTesting } then {
-            block.apply
+        block.apply
     }
 }
 
