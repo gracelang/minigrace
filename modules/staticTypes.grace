@@ -26,14 +26,10 @@ type Param = {
 }
 
 def aParam = object {
-    method withName (name': String) ofType (type': ObjectType) -> Param {
-        object {
-            def name: String is public = name'
-            def typeAnnotation: ObjectType is public = type'
-
-            def asString: String is public, override =
-                "{name}: {typeAnnotation}"
-        }
+    class withName (name': String) ofType (type': ObjectType) -> Param {
+        def name: String is public = name'
+        def typeAnnotation: ObjectType is public = type'
+        method asString is override { "{name}:{typeAnnotation}" }
     }
 
     method ofType (type': Object) -> Param {
@@ -53,75 +49,73 @@ class mixPartNamed (name': String)
 }
 
 def aMethodType = object {
-    method signature (signature': List<MixPart>)
-            returnType (rType: ObjectType)-> MethodType {
-        object {
-            def signature: List<MixPart> is public = signature'
-            def returnType: ObjectType is public = rType
+    class signature (signature': List<MixPart>)
+          returnType (rType: ObjectType)-> MethodType {
+        def signature: List<MixPart> is public = signature'
+        def returnType: ObjectType is public = rType
 
-            var name: String is readable:= ""
-            var show: String:= ""
+        var name: String is readable:= ""
+        var show: String:= ""
 
-            def fst = signature.at (1)
+        def fst = signature.at (1)
 
-            if (fst.parameters.size == 0) then {
-                name:= fst.name
-                show:= name
-            } else {
-                for (signature) do { part ->
-                    name:= "{name}{part.name}()"
-                    show:= "{show}{part.name}("
-                    var once:= false
-                    for (part.parameters) do { param ->
-                        if (once) then {
-                            show:= "{show}, "
-                        }
-                        show:= "{show}{param}"
-                        once:= true
+        if (fst.parameters.size == 0) then {
+            name:= fst.name
+            show:= name
+        } else {
+            for (signature) do { part ->
+                name:= "{name}{part.name}()"
+                show:= "{show}{part.name}("
+                var once:= false
+                for (part.parameters) do { param ->
+                    if (once) then {
+                        show:= "{show}, "
                     }
-                    show:= "{show})"
+                    show:= "{show}{param}"
+                    once:= true
                 }
-
-                name:= name.substringFrom (1) to (name.size - 2)
+                show:= "{show})"
             }
 
-            show:= "{show} -> {returnType}"
+            name:= name.substringFrom (1) to (name.size - 2)
+        }
 
-            // Determines if this method is a specialisation of the given one.
-            method isSpecialisationOf (other: MethodType) -> Boolean {
-                if (self == other) then {
-                    return true
-                }
+        show:= "{show} -> {returnType}"
 
-                if (name != other.name) then {
+        // Determines if this method is a specialisation of the given one.
+        method isSpecialisationOf (other: MethodType) -> Boolean {
+            if (self == other) then {
+                return true
+            }
+
+            if (name != other.name) then {
+                return false
+            }
+
+            if (other.signature.size != signature.size) then {
+                return false
+            }
+
+            for (signature) and (other.signature) do { part, part' ->
+                if (part.name != part'.name) then {
                     return false
                 }
 
-                if (other.signature.size != signature.size) then {
-                    return false
-                }
+                for (part.parameters) and (part'.parameters) do { p, p' ->
+                    def pt = p.typeAnnotation
+                    def pt' = p'.typeAnnotation
 
-                for (signature) and (other.signature) do { part, part' ->
-                    if (part.name != part'.name) then {
+                    // Contravariant in parameter types.
+                    if (pt'.isSubtypeOf (pt).not) then {
                         return false
                     }
-
-                    for (part.parameters) and (part'.parameters) do { p, p' ->
-                        def pt = p.typeAnnotation
-                        def pt' = p'.typeAnnotation
-
-                        // Contravariant in parameter types.
-                        if (pt'.isSubtypeOf (pt).not) then {
-                            return false
-                        }
-                    }
                 }
-
-                return returnType.isSubtypeOf (other.returnType)
             }
 
-            def asString: String is public, override = show
+            return returnType.isSubtypeOf (other.returnType)
         }
+
+        def asString: String is public, override = show
     }
 
     method member (name: String) ofType (rType: ObjectType) -> MethodType {
@@ -322,14 +316,12 @@ def objectType = object {
         }
     }
 
-    method fromMethods (methods': List<MethodType>)
+    class fromMethods (methods': List<MethodType>)
             withName (name: String) -> ObjectType {
-        object {
-            inherits fromMethods (methods')
+        inherits fromMethods (methods')
 
-            def asString: String is public, override = name
-            method ==(other) { self.isMe(other) }
-        }
+        method asString is override { name }
+        method ==(other) { self.isMe(other) }
     }
 
     method fromDType (dtype) -> ObjectType {
@@ -347,12 +339,12 @@ def objectType = object {
                     oType:= oType & fromDType (intersection.at (i))
                 }
 
-                return if (lit.value != false) then {
+                return if (false ≠ lit.value) then {
                     object {
 //                        inherits oType & fromDType (intersection.last)
                         inherits TypeIntersection.new (oType, fromDType (intersection.last))
 
-                        def asString: String is public, override = lit.value
+                        method asString is override { lit.value }
                     }
                 } else {
                     oType & fromDType (intersection.last)
@@ -367,7 +359,7 @@ def objectType = object {
                     oType:= oType | fromDType (union.at (i))
                 }
 
-                return if (lit.value != false) then {
+                return if (false ≠ lit.value) then {
                     object {
 //                        inherits oType | fromDType (union.last)
                         inherits TypeUnion.new (oType, fromDType (union.last))
@@ -734,17 +726,17 @@ rule { op: Operator ->
             def params = meth.signature.first.parameters
 
             if (params.size == 0) then {
-                RequestError.raiseWith ("the definition of operator method " ++
-                    "{name} is missing parameters", op)
+                RequestError.raise ("the definition of operator " ++
+                    "`{name}` is missing its parameter") with (op)
             }
 
             def param = params.first
             def pType = param.typeAnnotation
 
             if (typeOf (arg).isSubtypeOf (pType).not) then {
-                RequestError.raiseWith ("the expression " ++
-                    "`{arg.toGrace (0)}` does not satisfy the type of " ++
-                    "parameter '{param}' in the method '{name}'", arg)
+                RequestError.raise ("the expression " ++
+                    "`{arg.toGrace 0}` does not satisfy the type of " ++
+                    "parameter `{param}` in the method `{name}`") with (arg)
             }
 
             meth.returnType
@@ -765,8 +757,8 @@ rule { index: Index ->
     }
 
     if (meth == false) then {
-        RequestError.raiseWith ("no such method '[]' in `{rec.toGrace (0)}` " ++
-            "of type '{rType}'", index)
+        RequestError.raise ("no such method '[]' in `{rec.toGrace 0}` " ++
+            "of type `{rType}`") with (index)
     }
 
     def ind = index.index
@@ -774,8 +766,8 @@ rule { index: Index ->
     def param = meth.signature.first.parameters.first
 
     if (iType.isSubtypeOf (param.typeAnnotation).not) then {
-        RequestError.raiseWith ("the expression `{ind.toGrace (0)}` does not " ++
-            "satisfy the type of parameter '{param}' in the method '[]'", ind)
+        RequestError.raise ("the expression `{ind.toGrace 0}` does not " ++
+            "satisfy the type of parameter `{param}` in the method '[]'") with (ind)
     }
 
     meth.returnType
@@ -786,8 +778,8 @@ rule { index: Index ->
 rule { req: If ->
     def cond = req.value
     if (typeOf (cond).isSubtypeOf (objectType.boolean).not) then {
-        RequestError.raiseWith ("the expression `{cond.toGrace (0)}` does not " ++
-            "satisfy the type 'Boolean' for an 'if' condition'", cond)
+        RequestError.raise ("the condition `{cond.toGrace 0}` does not " ++
+            "conform to type `Boolean`.") with (cond)
     }
 
     def then = objectType.fromBlock (req.thenblock)
@@ -798,58 +790,45 @@ rule { req: If ->
 }
 
 rule { req: MatchCase ->
-    def hasElse = req.elsecase != false
-    def else = if (hasElse) then {
-        objectType.fromBlock (req.elsecase)
-    } else {
-        objectType.done
-    }
-
     def cases = req.cases
-    if (cases.size == 0) then {
-        else
-    } else {
-        var union := done
+    var union := done
 
-        for (cases) do { case ->
-            def cType = objectType.fromBlock (case)
-            union := if (done == union) then {
-                cType
-            } else {
-                union | cType
-            }
+    for (cases) do { case ->
+        def cType = objectType.fromBlock (case)
+        union := if (done == union) then {
+            cType
+        } else {
+            union | cType
         }
-
-        if (hasElse) then { union | else } else { union }
     }
+    union
 }
 
 rule { req: TryCatch ->
     match (req.value) case { bl: BlockLiteral ->
         def params = bl.params
         if (params.size > 0) then {
-            RequestError.raiseWith ("Too many parameters to catch", bl)
+            RequestError.raise "too many parameters for try block" with (bl)
         }
     } case { _ -> }
 
-    for (req.cases) do { case ->
-        match (case) case { bl: BlockLiteral ->
+    for (req.cases) do { eachCase ->
+        match (eachCase) case { bl: BlockLiteral ->
             def params = bl.params
             if (params.size != 1) then {
                 def which = if (params.size == 0)
-                    then { "Not enough" } else { "Too many" }
+                    then { "not enough" } else { "too many" }
 
-                RequestError.raiseWith ("{which} parameters to case of catch",
-                    bl)
+                RequestError.raise "{which} parameters for catch block" with (bl)
             }
         } case { _ -> }
     }
 
-    if (req.finally != false) then {
+    if (false ≠ req.finally) then {
         match (req.finally) case { bl: BlockLiteral ->
             def params = bl.params
             if (params.size > 0) then {
-                RequestError.raiseWith ("Too many parameters to finally", bl)
+                RequestError.raise "too many parameters to finally" with (bl)
             }
         } case { _ -> }
     }
@@ -896,17 +875,17 @@ rule { meth: Method ->
 
         if (meth.body.size == 0) then {
             if (objectType.done.isSubtypeOf (returnType).not) then {
-                MethodError.raiseWith ("the method '{name}' declares a " ++
-                    "result of type '{returnType}', but has no body", meth)
+                MethodError.raise ("method `{name}` declares a " ++
+                    "result of type '{returnType}', but has no body") with (meth)
             }
         } else {
             def lastNode = meth.body.last
             if (Return.match (lastNode).not) then {
                 def lastType = typeOf (lastNode)
                 if (lastType.isSubtypeOf (returnType).not) then {
-                    MethodError.raiseWith ("the method '{name}' declares a " ++
-                        "result of type '{returnType}', but returns an " ++
-                        "expression of type '{lastType}'", lastNode)
+                    MethodError.raise ("method `{name}` declares a " ++
+                        "result of type `{returnType}`, but returns an " ++
+                        "expression of type `{lastType}`") with (lastNode)
                 }
             }
         }
@@ -923,9 +902,9 @@ method check (node) matches (eType: ObjectType)
         inMethod (name: String) -> Done is confidential {
     def aType = typeOf (node)
     if (aType.isSubtypeOf (eType).not) then {
-        MethodError.raiseWith ("the method '{name}' declares a result of " ++
-            "type '{eType}', but returns an expression of type " ++
-            "'{aType}'", node)
+        MethodError.raise ("method `{name}` declares a result of " ++
+            "type `{eType}`, but returns an expression of type " ++
+            "`{aType}`") with (node)
     }
 }
 
@@ -950,9 +929,9 @@ rule { cls: Class ->
             objectType.unknown
         } else {
             if (aType.isSubtypeOf (dType).not) then {
-                ClassError.raiseWith ("the class '{name}' declares a result " ++
-                    "of type '{dType}', but constructs an object of type " ++
-                    "'{aType}'", cls)
+                ClassError.raise ("class `{name}` declares a result " ++
+                    "of type `{dType}`, but constructs an object of type " ++
+                    "`{aType}`") with (cls)
             }
 
             aType
@@ -988,9 +967,9 @@ rule { defd: Def | Var ->
         }
 
         if (vType.isSubtypeOf (defType).not) then {
-            DefError.raiseWith ("the expression `{value.toGrace (0)}` of type " ++
-                "'{vType}' does not satisfy the type of {defd.kind} " ++
-                "annotation '{defType}'", value)
+            DefError.raise ("the expression `{value.toGrace 0}` of type " ++
+                "`{vType}` does not satisfy the type of {defd.kind} " ++
+                "annotation `{defType}`") with (value)
         }
     }
 
@@ -1023,9 +1002,9 @@ rule { bind: Bind ->
     def vType = typeOf (value)
 
     if (vType.isSubtypeOf (dType).not) then {
-        DefError.raiseWith ("the expression `{value.toGrace (0)}` of type " ++
-            "'{vType}' does not satisfy the type '{dType}' of " ++
-            "`{dest.toGrace (0)}`", value)
+        DefError.raise ("the expression `{value.toGrace 0}` of type " ++
+            "`{vType}` does not satisfy the type `{dType}` of " ++
+            "`{dest.toGrace 0}`") with (value)
     }
 }
 
@@ -1121,8 +1100,8 @@ method processBody (body: List) -> ObjectType is confidential {
 
             method visitIdentifier (ident) {
                 if (illegal.contains (ident.value)) then {
-                    ObjectError.raiseWith ("reference to '{ident.value}' " ++
-                        "in inheritance clause", ident)
+                    ObjectError.raise ("reference to `{ident.value}` " ++
+                        "in inheritance clause") with (ident)
                 }
             }
         })
