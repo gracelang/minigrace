@@ -92,6 +92,7 @@ class baseNode {
     var comments is public := false
 
     method kind { abstract }
+    method ==(other) { self.isMe(other) }       // for usesAsType
     method isAppliedOccurenceOfIdentifier { false }
     method isMatchingBlock { false }
     method isFieldDec { false }
