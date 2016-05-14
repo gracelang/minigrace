@@ -137,7 +137,7 @@ def aMethodType = object {
 
                 for (part.params) do { param ->
                     params.push (aParam.withName (param.value)
-                        ofType (anObjectType.fromDType (param.dtype)))
+                        ofType (objectType.fromDType (param.dtype)))
                 }
 
                 signature.push (mixPartNamed (part.name) parameters (params))
@@ -150,10 +150,10 @@ def aMethodType = object {
                         } case { _ -> }
 
             return signature (signature)
-                returnType (anObjectType.fromDType (rType))
+                returnType (objectType.fromDType (rType))
         } case { defd: Def | Var ->
             def signature = [mixPartNamed (defd.name.value) parameters [ ] ]
-            def dtype = anObjectType.fromDType (defd.dtype)
+            def dtype = objectType.fromDType (defd.dtype)
             return signature (signature) returnType (dtype)
         } case { _ ->
             prelude.Exception.raise "unrecognised method node" with (node)
@@ -165,17 +165,7 @@ def aMethodType = object {
 
 // Object type information.
 
-def noSuchMethod = object {
-    inherits prelude.BasicPattern.new
-
-    method match (obj: Object) {
-        if (self == obj) then {
-            prelude.SuccessfulMatch.new (self, [])
-        } else {
-            prelude.FailedMatch.new (obj)
-        }
-    }
-}
+def noSuchMethod = Singleton.named "noSuchMethod"
 
 type ObjectType = {
     methods -> List<MethodType>
@@ -186,9 +176,9 @@ type ObjectType = {
     &(other: ObjectType) -> ObjectType
 }
 
-def anObjectType = object {
+def objectType = object {
 
-    method fromMethods (methods': List<MethodType>) -> ObjectType { object {
+    class fromMethods (methods': List<MethodType>) -> ObjectType {
         def methods: List<MethodType> is public = if (base == dynamic)
             then { [] } else { base.methods } ++ methods'
 
@@ -208,7 +198,7 @@ def anObjectType = object {
         def currentlyTesting = []
 
         method isSubtypeOf (other: ObjectType) -> Boolean {
-            if (self == other) then {
+            if (self.isMe(other)) then {
                 return true
             }
 
@@ -239,7 +229,7 @@ def anObjectType = object {
         }
 
         method |(other: ObjectType) -> ObjectType {
-            if (self == other) then { return self }
+            if (self.isMe(other)) then { return self }
             if (other.isDynamic) then { return dynamic }
 
             def combine = []
@@ -261,7 +251,7 @@ def anObjectType = object {
                 }
             }
 
-            def hack = anObjectType
+            def hack = objectType
             return object {
                 inherits hack.fromMethods (combine)
 
@@ -272,7 +262,7 @@ def anObjectType = object {
         }
 
         method &(other: ObjectType) -> ObjectType {
-            if (self == other) then { return self }
+            if (self.isMe(other)) then { return self }
             if (other.isDynamic) then { return dynamic }
 
             def combine = []
@@ -305,7 +295,7 @@ def anObjectType = object {
                 }
             }
 
-            def hack = anObjectType
+            def hack = objectType
             object {
                 inherits hack.fromMethods (combine)
 
@@ -323,14 +313,14 @@ def anObjectType = object {
             var out:= "\{ "
 
             for (methods) do { mtype ->
-                if (["==", "!=", "asString"].contains (mtype.name).not) then {
+                if (["!=", "≠", "asString", "asDebugString", "::"].contains (mtype.name).not) then {
                     out:= "{out}{mtype}; "
                 }
             }
 
             return "{out}\}"
         }
-    }}
+    }
 
     method fromMethods (methods': List<MethodType>)
             withName (name: String) -> ObjectType {
@@ -338,6 +328,7 @@ def anObjectType = object {
             inherits fromMethods (methods')
 
             def asString: String is public, override = name
+            method ==(other) { self.isMe(other) }
         }
     }
 
@@ -394,15 +385,15 @@ def anObjectType = object {
             }
 
             if ((lit.value != false) && { lit.value.at (1) != "<" }) then {
-                anObjectType.fromMethods (meths) withName (lit.value)
+                objectType.fromMethods (meths) withName (lit.value)
             } else {
-                anObjectType.fromMethods (meths)
+                objectType.fromMethods (meths)
             }
         } case { ident: Identifier ->
-            anObjectType.fromIdentifier (ident)
+            objectType.fromIdentifier (ident)
         } case { generic: Generic ->
 //            TODO: figure out what to do here!
-            anObjectType.fromIdentifier (generic.value)
+            objectType.fromIdentifier (generic.value)
         } case { _ ->
             ProgrammingError.raise "No case for node of kind {dtype.kind}" with (dtype)
         }
@@ -429,28 +420,21 @@ def anObjectType = object {
 
     method fromBlockBody (body) -> ObjectType {
         if (body.size == 0) then {
-            anObjectType.done
+            objectType.done
         } else {
             typeOf (body.last)
         }
     }
 
-    method dynamic -> ObjectType {
-        object {
-            def methods is public = []
-
-            method getMethod (_: String) -> noSuchMethod { noSuchMethod }
-
-            def isDynamic: Boolean is public = true
-
-            method isSubtypeOf (_: ObjectType) -> Boolean { true }
-
-            method |(_: ObjectType) -> dynamic { dynamic }
-
-            method &(_: ObjectType) -> dynamic { dynamic }
-
-            def asString: String is public, override = "Unknown"
-        }
+    def dynamic:ObjectType is public = object {
+        def methods is public = []
+        method getMethod (_: String) -> noSuchMethod { noSuchMethod }
+        def isDynamic: Boolean is public = true
+        method isSubtypeOf (_: ObjectType) -> Boolean { true }
+        method |(_: ObjectType) -> dynamic { dynamic }
+        method &(_: ObjectType) -> dynamic { dynamic }
+        def asString: String is public, override = "Unknown"
+        method ==(other) { self.isMe(other) }
     }
 
     method blockTaking (params: List<Parameter>)
@@ -491,20 +475,25 @@ def anObjectType = object {
         }
     }
 
-    var base: ObjectType is readable:= dynamic
+    var base: ObjectType is readable := dynamic     // to avoid a circularity
     def done: ObjectType is public = fromMethods [ ] withName "Done"
-    base:= fromMethods [ ] withName "Object"
+    base := fromMethods [ ] withName "Object"
 
     def pattern: ObjectType is public = fromMethods [ ] withName "Pattern"
     def iterator: ObjectType is public = fromMethods [ ] withName "Iterator"
+    def binding: ObjectType is public = fromMethods [ ] withName "Binding"
     def boolean: ObjectType is public = fromMethods [ ] withName "Boolean"
     def number: ObjectType is public = fromMethods [ ] withName "Number"
     def string: ObjectType is public = fromMethods [ ] withName "String"
     def list: ObjectType is public = fromMethods [ ] withName "List"
 
-    addTo (base) name "==" params [base] returns (boolean)
-    addTo (base) name "!=" params [base] returns (boolean)
+    addTo (binding) name "key" returns (base)
+    addTo (binding) name "value" returns (base)
+
+    addTo (base) name "≠" params [base] returns (boolean)
+    addTo (base) name "asDebugString" returns (string)
     addTo (base) name "asString" returns (string)
+    addTo (base) name "::" returns (binding)
 
     extend (pattern) with (base)
     addTo (pattern) name "match" params [base] returns (dynamic)
@@ -512,7 +501,7 @@ def anObjectType = object {
     addTo (pattern) name "&" params [pattern] returns (pattern)
 
     extend (iterator) with (base)
-    addTo (iterator) name "havemore" returns (boolean)
+    addTo (iterator) name "hasNext" returns (boolean)
     addTo (iterator) name "next" returns (dynamic)
 
     def shortCircuit = blockTaking ([aParam.ofType (blockReturning (dynamic))])
@@ -530,12 +519,13 @@ def anObjectType = object {
     addTo (number) name "/" params [number] returns (number)
     addTo (number) name "^" params [number] returns (number)
     addTo (number) name "%" params [number] returns (number)
+    addTo (number) name "÷" params [number] returns (number)
     addTo (number) name "hash" returns (string)
     addTo (number) name "++" params [base] returns (string)
     addTo (number) name "<" params [number] returns (boolean)
     addTo (number) name ">" params [number] returns (boolean)
-    addTo (number) name "<=" params [number] returns (boolean)
-    addTo (number) name ">=" params [number] returns (boolean)
+    addTo (number) name "≤" params [number] returns (boolean)
+    addTo (number) name "≥" params [number] returns (boolean)
     addTo (number) name ".." params [number] returns (list)
     addTo (number) name "asInteger32" returns (number)
     addTo (number) name "prefix-" returns (number)
@@ -548,16 +538,13 @@ def anObjectType = object {
     extend (string) with (base)
     addTo (string) name "++" params [base] returns (string)
     addTo (string) name "at" params [number] returns (string)
-    addTo (string) name "[]" params [number] returns (string)
     addTo (string) name "iterator" returns (base)
     addTo (string) name "quoted" returns (string)
-    addTo (string) name "length" returns (number)
     addTo (string) name "size" returns (number)
-    addTo (string) name "iter" returns (iterator)
+    addTo (string) name "iterator" returns (iterator)
     addTo (string) name "ord" returns (number)
-    addTo (string) name "substringFrom ()to" params [number, number] returns (string)
-    addTo (string) name "replace ()with" params [string, string] returns (string)
-    addTo (string) name "hashcode" returns (string)
+    addTo (string) name "substringFrom()to" params [number, number] returns (string)
+    addTo (string) name "replace()with" params [string, string] returns (string)
     addTo (string) name "hash" returns (string)
     addTo (string) name "indices" returns (list)
     addTo (string) name "asNumber" returns (number)
@@ -569,9 +556,7 @@ def anObjectType = object {
     addTo (list) name "at ()put" params [number, dynamic] returns (done)
     addTo (list) name "push" params [dynamic] returns (done)
     addTo (list) name "pop" returns (dynamic)
-    addTo (list) name "length" returns (number)
     addTo (list) name "size" returns (number)
-    addTo (list) name "iter" returns (iterator)
     addTo (list) name "iterator" returns (iterator)
     addTo (list) name "contains" params [dynamic] returns (boolean)
     addTo (list) name "indices" returns (list)
@@ -580,7 +565,7 @@ def anObjectType = object {
     addTo (list) name "addFirst" params [dynamic] returns (list)
     addTo (list) name "addAll" params [dynamic] returns (list)
     addTo (list) name "++" params [list] returns (list)
-    addTo (list) name "fold ()startingWith" params [fold, dynamic] returns (dynamic)
+    addTo (list) name "fold()startingWith" params [fold, dynamic] returns (dynamic)
 
     scope.types.at "Unknown" put (dynamic)
     scope.types.at "Done" put (done)
@@ -624,15 +609,15 @@ rule { obj: ObjectLiteral ->
 // Simple literals.
 
 rule { _: NumberLiteral | OctetsLiteral ->
-    anObjectType.number
+    objectType.number
 }
 
 rule { _: StringLiteral ->
-    anObjectType.string
+    objectType.string
 }
 
 rule { _: ArrayLiteral ->
-    anObjectType.list
+    objectType.list
 }
 
 
@@ -652,7 +637,7 @@ rule { req: Request ->
         }
 
         if (rType.isDynamic) then {
-            anObjectType.dynamic
+            objectType.dynamic
         } else {
             def name = memb.value
 
@@ -713,10 +698,10 @@ method check (req: Request)
 
 method find (req: Request) atScope (i: Number) -> ObjectType is confidential {
     if (i == 0) then {
-        return anObjectType.dynamic
+        return objectType.dynamic
     }
 
-    def sType = anObjectType.fromMethods (scope.methods.stack.at (i).values)
+    def sType = objectType.fromMethods (scope.methods.stack.at (i).values)
 
     return match (sType.getMethod (req.value.value)) case { (noSuchMethod) ->
         find (req) atScope (i - 1)
@@ -737,7 +722,7 @@ rule { op: Operator ->
     def rType = typeOf (rec)
 
     if (rType.isDynamic) then {
-        anObjectType.dynamic
+        objectType.dynamic
     } else {
         def name = op.value
 
@@ -800,14 +785,14 @@ rule { index: Index ->
 
 rule { req: If ->
     def cond = req.value
-    if (typeOf (cond).isSubtypeOf (anObjectType.boolean).not) then {
+    if (typeOf (cond).isSubtypeOf (objectType.boolean).not) then {
         RequestError.raiseWith ("the expression `{cond.toGrace (0)}` does not " ++
             "satisfy the type 'Boolean' for an 'if' condition'", cond)
     }
 
-    def then = anObjectType.fromBlock (req.thenblock)
+    def then = objectType.fromBlock (req.thenblock)
 
-    def else = anObjectType.fromBlock (req.elseblock)
+    def else = objectType.fromBlock (req.elseblock)
 
     then | else
 }
@@ -815,20 +800,20 @@ rule { req: If ->
 rule { req: MatchCase ->
     def hasElse = req.elsecase != false
     def else = if (hasElse) then {
-        anObjectType.fromBlock (req.elsecase)
+        objectType.fromBlock (req.elsecase)
     } else {
-        anObjectType.done
+        objectType.done
     }
 
     def cases = req.cases
     if (cases.size == 0) then {
         else
     } else {
-        var union:= done
+        var union := done
 
         for (cases) do { case ->
-            def cType = anObjectType.fromBlock (case)
-            union:= if (union == done) then {
+            def cType = objectType.fromBlock (case)
+            union := if (done == union) then {
                 cType
             } else {
                 union | cType
@@ -869,7 +854,7 @@ rule { req: TryCatch ->
         } case { _ -> }
     }
 
-    anObjectType.done
+    objectType.done
 }
 
 
@@ -886,7 +871,7 @@ rule { meth: Method ->
         for (meth.signature) do { part ->
             for (part.params) do { param ->
                 scope.variables.at (param.value)
-                    put (anObjectType.fromDType (param.dtype))
+                    put (objectType.fromDType (param.dtype))
             }
         }
 
@@ -910,7 +895,7 @@ rule { meth: Method ->
         }
 
         if (meth.body.size == 0) then {
-            if (anObjectType.done.isSubtypeOf (returnType).not) then {
+            if (objectType.done.isSubtypeOf (returnType).not) then {
                 MethodError.raiseWith ("the method '{name}' declares a " ++
                     "result of type '{returnType}', but has no body", meth)
             }
@@ -951,18 +936,18 @@ def ClassError = TypeError.refine "Class TypeError"
 
 rule { cls: Class ->
     def name = cls.name.value
-    def dType = anObjectType.fromDType (cls.dtype)
+    def dType = objectType.fromDType (cls.dtype)
     def cType = scope.enter {
         for (cls.signature) do { part ->
             for (part.params) do { param ->
                 scope.variables.at (param.value)
-                    put (anObjectType.fromDType (param.dtype))
+                    put (objectType.fromDType (param.dtype))
             }
         }
 
         def aType = processBody (cls.value)
         if (aType.isDynamic) then {
-            anObjectType.dynamic
+            objectType.dynamic
         } else {
             if (aType.isSubtypeOf (dType).not) then {
                 ClassError.raiseWith ("the class '{name}' declares a result " ++
@@ -975,7 +960,7 @@ rule { cls: Class ->
     }
 
     scope.variables.at (name)
-        put (anObjectType.fromMethods ([aMethodType.fromNode (cls)]))
+        put (objectType.fromMethods ([aMethodType.fromNode (cls)]))
 
     if (dType.isDynamic) then {
         // Class type inference.
@@ -991,7 +976,7 @@ rule { cls: Class ->
 def DefError = TypeError.refine "Def TypeError"
 
 rule { defd: Def | Var ->
-    var defType:= anObjectType.fromDType (defd.dtype)
+    var defType:= objectType.fromDType (defd.dtype)
 
     def value = defd.value
 
@@ -1022,7 +1007,7 @@ rule { defd: Def | Var ->
                 def sig = [mixPartNamed (name') parameters ([param])]
 
                 scope.methods.at (name')
-                    put (aMethodType.signature (sig) returnType (anObjectType.done))
+                    put (aMethodType.signature (sig) returnType (objectType.done))
             }
 
             return
@@ -1048,7 +1033,7 @@ rule { bind: Bind ->
 // Import declarations.
 
 rule { imp: Import ->
-    scope.variables.at (imp.nameString) put (anObjectType.dynamic)
+    scope.variables.at (imp.nameString) put (objectType.dynamic)
 }
 
 
@@ -1060,7 +1045,7 @@ rule { block: BlockLiteral ->
     scope.enter {
         for (block.params) do { param ->
             scope.variables.at (param.value)
-                put (anObjectType.fromDType (param.dtype))
+                put (objectType.fromDType (param.dtype))
         }
 
         collectTypes (body)
@@ -1073,11 +1058,11 @@ rule { block: BlockLiteral ->
     def parameters = []
     for (block.params) do { param ->
         parameters.push (aParam.withName (param.value)
-            ofType (anObjectType.fromDType (param.dtype)))
+            ofType (objectType.fromDType (param.dtype)))
     }
 
-    anObjectType.blockTaking (parameters)
-        returning (anObjectType.fromBlockBody (body))
+    objectType.blockTaking (parameters)
+        returning (objectType.fromBlockBody (body))
 }
 
 
@@ -1087,14 +1072,14 @@ rule { ident: Identifier ->
     match (ident.value) case { "outer" ->
         outerAt (scope.size)
     } case { _ ->
-        scope.variables.find (ident.value) butIfMissing { anObjectType.dynamic }
+        scope.variables.find (ident.value) butIfMissing { objectType.dynamic }
     }
 }
 
 method outerAt (i: Number) -> ObjectType is confidential {
     // Required to cope with not knowing the prelude.
     if (i <= 1) then {
-        return anObjectType.dynamic
+        return objectType.dynamic
     }
 
     def vStack = scope.variables.stack
@@ -1108,7 +1093,7 @@ method outerAt (i: Number) -> ObjectType is confidential {
         def vars = vStack.at (i - 1)
         def meths = mStack.at (i - 1).values
 
-        def oType = anObjectType.fromMethods (meths)
+        def oType = objectType.fromMethods (meths)
         def mType = aMethodType.member "outer" ofType (oType)
 
         curr.at "outer" put (oType)
@@ -1144,7 +1129,7 @@ method processBody (body: List) -> ObjectType is confidential {
 
         typeOf (inheriting)
     } else {
-        anObjectType.base
+        objectType.base
     }
 
     scope.variables.at "super" put (superType)
@@ -1181,8 +1166,8 @@ method processBody (body: List) -> ObjectType is confidential {
             } case { _ -> }
         }
 
-        scope.types.at "Self" put (anObjectType.fromMethods (allMethods))
-        anObjectType.fromMethods (publicMethods)
+        scope.types.at "Self" put (objectType.fromMethods (allMethods))
+        objectType.fromMethods (publicMethods)
     }
 
     scope.variables.at "self" put (publicType)
@@ -1222,7 +1207,7 @@ method collectTypes (nodes: List) -> Done is confidential {
 
             // In order to allow the types to be declarative, the scope needs
             // to be populated by placeholder types first.
-            def placeholder = anObjectType.dynamic
+            def placeholder = objectType.dynamic
             types.push (td)
             placeholders.push (placeholder)
             scope.types.at (td.nameString) put (placeholder)
@@ -1230,7 +1215,7 @@ method collectTypes (nodes: List) -> Done is confidential {
     }
 
     for (types) and (placeholders) do { td, ph ->
-        def oType = anObjectType.fromDType (td)
+        def oType = objectType.fromDType (td)
         prelude.become (ph, oType)
     }
 }
