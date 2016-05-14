@@ -6,16 +6,6 @@ class stringTest.forMethod(m) {
     method test_concat {
         assert ("abc" ++ "def") shouldBe "abcdef"
     }
-    
-    method test_identity {
-        def s = "abcd" ++ "ef"
-        assert (identical(s, s)) description "identical strings are not!"
-    }
-    
-    method test_different {
-        def s = "abcd" ++ "ef"
-        deny (different(s, s)) description "identical strings are different!"
-    }
 
     method test_compare_identity_concat {
         def s = "abcd" ++ "ef"

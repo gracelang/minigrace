@@ -203,18 +203,16 @@ def primitiveListTest = object {
 
         method testListReverseOneToFive {
             def ofr = oneToFive.reverse
-            assert (identical(ofr, oneToFive)) description "reverse does not return self"
             assert (ofr) shouldBe [5, 4, 3, 2, 1]
-            assert (oneToFive) shouldBe [5, 4, 3, 2, 1]
+            assert (oneToFive == ofr) description "reverse does not return self"
             oneToFive.reverse
             assert (oneToFive) shouldBe [1, 2, 3, 4, 5]
         }
 
         method testListReverseEvens {
             def er = evens.reverse
-            assert (identical(er, evens)) description "reverse does not return self"
             assert (er) shouldBe [8, 6, 4, 2]
-            assert (evens) shouldBe [8, 6, 4, 2]
+            assert (evens == er) description "reverse does not return self"
             assert (er.reversed) shouldBe [2, 4, 6, 8]
         }
 

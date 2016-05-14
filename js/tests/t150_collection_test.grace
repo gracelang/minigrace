@@ -823,18 +823,16 @@ def listTest = object {
 
         method testListReverseOneToFive {
             def ofr = oneToFive.reverse
-            assert (identical(ofr, oneToFive)) description "reverse does not return self"
             assert (ofr) shouldBe (list [5, 4, 3, 2, 1])
-            assert (oneToFive) shouldBe (list [5, 4, 3, 2, 1])
+            assert (oneToFive == list [5, 4, 3, 2, 1]) description "reverse does not return self"
             oneToFive.reverse
             assert (oneToFive) shouldBe (list [1, 2, 3, 4, 5])
         }
 
         method testListReverseEvens {
             def er = evens.reverse
-            assert (identical(er, evens)) description "reverse does not return self"
             assert (er) shouldBe (list [8, 6, 4, 2])
-            assert (evens) shouldBe (list [8, 6, 4, 2])
+            assert (evens == er) description "reverse does not return self"
             assert (er.reversed) shouldBe (list [2, 4, 6, 8])
         }
 

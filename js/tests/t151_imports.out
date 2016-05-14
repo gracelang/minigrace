@@ -1,7 +1,6 @@
 math's methods are: 
     !=
     ::
-    ==
     abs
     acos
     asDebugString
@@ -13,6 +12,7 @@ math's methods are:
     debugIterator
     debugValue
     exp
+    isMe
     lg
     ln
     log10

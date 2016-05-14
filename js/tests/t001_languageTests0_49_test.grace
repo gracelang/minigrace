@@ -299,6 +299,7 @@ def aGraceLangTest = object {
             assert("Hello" == "Hello") description "Hello ≠ Hello"
             var x := object {
                 var v := 1
+                method ==(other) { self.isMe(other) }
             }
             var y := object {
                 var v := 1
@@ -307,29 +308,35 @@ def aGraceLangTest = object {
             assert(x == x) description "object x ≠ object x"
             deny("17" == 17) description "\"17\" = 17"
             deny(17 == "17") description "17 = \"17\""
+            def NaN = 0/0
+            deny(NaN == NaN) description "NaN == NaN"
         }
         
         method test_020_inequality {
-            out(1 != 1)
-            out(1 != 2)
-            out (2 != (1 + 1))
-            out(true != false)
-            out(true != true)
-            out(false != true)
-            out(false != false)
-            out("Hello" != "world")
-            out("Hello" != "Hello")
+            deny(1 != 1) description "1 ≠ 1"
+            assert(1 != 2) description "1 = 2"
+            deny(2 != (1 + 1)) description "2 ≠ (1 + 1)"
+            assert(true != false) description "true = false"
+            deny(true != true) description "true ≠ true"
+            assert(false != true) description "false = true"
+            deny(false != false) description "false ≠ false"
+            assert("Hello" != "world") description "Hello = world"
+            deny("Hello" != "Hello") description "Hello ≠ Hello"
             var x := object {
                 var v := 1
+                method ==(other) { self.isMe(other) }
             }
             var y := object {
                 var v := 1
             }
-            out(x != y)
-            out(x != x)
-            
-            assert(str)shouldBe("false\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\ntrue\nfalse\n")
+            assert(x != y) description "object x = object y"
+            deny(x != x) description "object x ≠ object x"
+            assert("17" != 17) description "\"17\" = 17"
+            assert(17 != "17") description "17 = \"17\""
+            def NaN = 0/0
+            assert(NaN != NaN) description "NaN == NaN"
         }
+
         
         method h021_identity (x) { x }
         method h021_sum (x) and (y) { x + y }
