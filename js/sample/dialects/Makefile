@@ -35,7 +35,7 @@ whileLiteral.js: whileLiteral.grace  ../../../modules/dialect.gso ../../dialect.
 	$(MAKE) -C ../../.. modules/dialect.gso
 
 staticTypes.js: ../../staticTypes.js
-	ln -s $< $(<:%.js=%.gct) .
+	ln -sf $< $(<:%.js=%.gct) .
 
 $(GM)%.js: 
 	$(MAKE) -C ../$(GM) VERBOSITY=$(VERBOSITY) js/$(@F)
