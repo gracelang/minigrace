@@ -3275,7 +3275,6 @@ GraceException.prototype = {
                                               // also to avoid infinite regress
             if (o.className !== 'Exception') return GraceFalse;
             if (o.name !== this.name) return GraceFalse;
-            if (o.parent !== this.parent) return GraceFalse;
             return GraceTrue;
         },
         "&": function(argcv, o) {
