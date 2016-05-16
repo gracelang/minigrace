@@ -1026,6 +1026,19 @@ Object Exception_match(Object self, int argc, int *argcv, Object *argv,
         return alloc_SuccessfulMatch(packet, NULL);
     return alloc_FailedMatch(packet, NULL);
 }
+Object Exception_equals(Object self, int argc, int *argcv, Object *argv,
+                        int flags) {
+    struct ExceptionObject *e = (struct ExceptionObject *)self;
+    Object other = argv[0];
+    struct ExceptionObject *o = (struct ExceptionObject *)other;
+    if (e == o)
+        return alloc_Boolean(1);
+    if (other->class != ExceptionClass)
+        return alloc_Boolean(0);
+    if (strcmp(e->name, o->name) == 0)
+        return alloc_Boolean(1);
+    return alloc_Boolean(0);
+}
 Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
         int flags) {
     struct ExceptionObject *e = (struct ExceptionObject *)self;
@@ -1039,7 +1052,7 @@ Object alloc_Exception(char *name, Object parent) {
         add_Method(ExceptionClass, "raise", &Exception_raise);
         add_Method(ExceptionClass, "raiseWith", &Exception_raiseWith);
         add_Method(ExceptionClass, "parent", &Exception_parent);
-        add_Method(ExceptionClass, "==", &Object_Equals);
+        add_Method(ExceptionClass, "==", &Exception_equals);
         add_Method(ExceptionClass, "!=", &Object_NotEquals);
         add_Method(ExceptionClass, "≠", &Object_NotEquals);
         add_Method(ExceptionClass, "isMe", &Object_Equals) -> flags = MFLAG_CONFIDENTIAL;
