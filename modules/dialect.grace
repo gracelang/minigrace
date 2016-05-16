@@ -123,13 +123,13 @@ method rule(block) -> Done {
 // Will be updated with each node examined
 var currentLine := 0
 method fail(message) {
-    CheckerFailure.raiseWith(message, object {
+    CheckerFailure.raise (message) with (object {
         def line is public = currentLine
         def linePos is public = 1
     })
 }
 method fail(message)at(p) {
-    CheckerFailure.raiseWith(message, p)
+    CheckerFailure.raise (message) with (p)
 }
 method fail(message)from(startPos)to(endPos)suggest(sugg) {
     def o = object {
@@ -138,7 +138,7 @@ method fail(message)from(startPos)to(endPos)suggest(sugg) {
         def posEnd is public = endPos
         def suggestions is public = [sugg]
     }
-    CheckerFailure.raiseWith(message, o)
+    CheckerFailure.raise (message) with (o)
 }
 method fail(message)from(startPos)to(endPos) {
     def o = object {
@@ -147,7 +147,7 @@ method fail(message)from(startPos)to(endPos) {
         def posEnd is public = endPos
         def suggestions is public = []
     }
-    CheckerFailure.raiseWith(message, o)
+    CheckerFailure.raise (message) with (o)
 }
 method fail(msg)when(pat) {
     rule { x ->
@@ -223,7 +223,7 @@ method checkTypes(node) {
 method typeOf(node) {
     checkTypes(node)
     cache.atKey(node) do { value -> return value }
-    CheckerFailure.raiseWith("cannot type non-expression", node)
+    CheckerFailure.raise "cannot type non-expression" with (node)
 }
 
 method runRules(node) {

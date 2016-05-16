@@ -615,7 +615,7 @@ rule { _: ArrayLiteral ->
 
 // Method requests.
 
-def RequestError = TypeError.refine "Request TypeError"
+def RequestError = TypeError.refine "RequestError"
 
 rule { req: Request ->
     match (req.value) case { memb: Member ->
@@ -839,7 +839,7 @@ rule { req: TryCatch ->
 
 // Method declaration.
 
-def MethodError = TypeError.refine "Method TypeError"
+def MethodError = TypeError.refine "MethodError"
 
 rule { meth: Method ->
     def name = meth.value.value
@@ -911,7 +911,7 @@ method check (node) matches (eType: ObjectType)
 
 // Class declaration.
 
-def ClassError = TypeError.refine "Class TypeError"
+def ClassError = TypeError.refine "ClassError"
 
 rule { cls: Class ->
     def name = cls.name.value
@@ -952,7 +952,7 @@ rule { cls: Class ->
 
 // Def and var declarations.
 
-def DefError = TypeError.refine "Def TypeError"
+def DefError = TypeError.refine "DefError"
 
 rule { defd: Def | Var ->
     var defType:= objectType.fromDType (defd.dtype)
