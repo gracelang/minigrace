@@ -241,7 +241,8 @@ method checkimport(nm, pathname, line, linePos, isDialect) is confidential {
                 compileModule (nm) inFile (moduleFileGrace.asString) 
                     forDialect (isDialect) atRange (line, linePos)
             } else {
-                errormessages.error "Can't find dialect {nm}"
+                def thing = if (isDialect) then {"dialect"} else {"module"}
+                errormessages.error "Can't find {thing} {nm}"
                     atLine(line)
             }
         }
