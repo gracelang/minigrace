@@ -2224,8 +2224,12 @@ function gracecode_sys() {
     this.methods.elapsedTime = function() {
         return new GraceNum(((new Date).getTime()/1000)-startTime);
     };
-    this.methods.exit = function() {
-        throw "SystemExit";
+    this.methods.exit = function(argcv, code) {
+        if (typeof process === "undefined") {
+            throw "SystemExit" + code;
+        } else {
+            process.exit(code);
+        }
     };
     this.methods.execPath = function() {
         return new GraceString(".");
