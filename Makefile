@@ -328,7 +328,7 @@ minigrace-dynamic: l1/minigrace $(SOURCEFILES)
 	ld -o gracelib.o -r gracelib-basic.o StandardPrelude.gcn debugger.o
 	l1/minigrace $(VERBOSITY) --make --import-dynamic $(VERBOSITY) --module minigrace-dynamic compiler.grace
 
-minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) gracelib.o l1/mirrors.gct l1/unicode.gct l1/unixFilePath.gct
+minigrace: l1/minigrace $(STUBS:%.grace=%.gct) $(SOURCEFILES) $(C_MODULES_GSO) $(C_MODULES_GSO:%.gso=%.gct) gracelib.o
 	GRACE_MODULE_PATH=l1 l1/minigrace --make --native --module minigrace $(VERBOSITY) --gracelib . compiler.grace
 
 minigrace-environment: minigrace-c-env minigrace-js-env
