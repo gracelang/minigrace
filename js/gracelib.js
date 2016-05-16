@@ -1970,6 +1970,9 @@ stdout.methods.isatty = function() {
         }
 };
 stdout.methods.close = function() {};
+stdout.methods["=="] = function (argcv, other) {
+    return (this===other) ? GraceTrue : GraceFalse;
+};
 
 var stdin = Grace_allocObject(GraceObject, "stdin");
 stdin.methods.getline = function() {
@@ -1989,6 +1992,10 @@ stdin.methods.isatty = function() {
         }
 };
 stdin.methods.close = function() {};
+stdin.methods["=="] = function (argcv, other) {
+    return (this===other) ? GraceTrue : GraceFalse;
+};
+
 
 var stderr = Grace_allocObject(GraceObject, "stderr");
 stderr.methods.write = function(junk, s) {
@@ -1996,13 +2003,17 @@ stderr.methods.write = function(junk, s) {
     return GraceDone;
 };
 stderr.methods.isatty = function() {
-        if(typeof(process) !== "undefined") {
-            return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
-        } else {
-            return GraceFalse;
-        }
+    if(typeof(process) !== "undefined") {
+        return Boolean(process.stderr.isTTY) ? GraceTrue : GraceFalse;
+    } else {
+        return GraceFalse;
+    }
 };
 stderr.methods.close = function() {};
+stderr.methods["=="] = function (argcv, other) {
+    return (this===other) ? GraceTrue : GraceFalse;
+};
+
 
 function StackFrame(methodName) {
     this.methodName = methodName;
@@ -2101,6 +2112,8 @@ function gracecode_io() {
             o.methods['wait'] = function () { return new GraceNum(result.status); };
             o.methods['status'] = function () { return new GraceNum(result.status); };
             o.methods['success'] = function () { return result.status === 0 ? GraceTrue : GraceFalse; };
+            o.methods['=='] = function (argcv, other) {
+                return (this===other) ? GraceTrue : GraceFalse; };
             return o;
         }
         return GraceFalse;
@@ -2127,6 +2140,8 @@ function gracecode_io() {
             o.methods['eof'] = function () { return (i === a.length) ? GraceTrue : GraceFalse; };
             o.methods['read'] = function () { return new GraceString(c.toString()); };
             o.methods['pathname'] = function () { return new GraceString(path); };
+            o.methods['=='] = function (argcv, other) {
+                  return (this===other) ? GraceTrue : GraceFalse; };
             return o;
         }
         var o2 = Grace_allocObject(GraceObject, "fileStream");
