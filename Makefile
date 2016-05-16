@@ -276,6 +276,9 @@ l1/StandardPrelude%gct l1/StandardPrelude%gcn: StandardPrelude.grace l1/collecti
 l1/collectionsPrelude%gct l1/collectionsPrelude%gcn: collectionsPrelude.grace $(KG)/minigrace
 	$(KG)/minigrace $(VERBOSITY) --make --noexec --dir l1 $<
 
+l1/curl.gso: curl.c gracelib.h
+	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC curl.c -lcurl
+
 l1/mirrors.gso: mirrors.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
@@ -427,7 +430,7 @@ StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelud
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
+$(filter-out modules/curl.gso,DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
