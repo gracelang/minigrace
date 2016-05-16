@@ -53,7 +53,10 @@ function MiniGrace() {
 MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
     callStack = [];
-    
+    if (util_module && util_module._lines) {
+        util_module._lines = new GraceList([ ]);
+    }
+
     // Change stdin to read from code.
     var old_stdin_read = this.stdin_read;
     this.stdin_read = function() {
