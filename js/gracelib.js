@@ -1796,10 +1796,11 @@ function classType(obj) {
     var t = new GraceType(capitalize(obj.className));
     var o = obj;
     while (o !== null) {
-        for (var m in o.methods)
+        for (var m in o.methods) {
             if (! o.methods[m].confidential) {
                 t.typeMethods.push(m);
             }
+        }
         o = o.superobj;
     }
     return t;
