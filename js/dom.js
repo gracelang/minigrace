@@ -1,4 +1,7 @@
 var domNoObject = Grace_allocObject(GraceObject, "noObject");
+domNoObject.methods["=="] = function(argcv, other) {
+    return (this === other) ? GraceTrue : GraceFalse;
+};
 
 function unwrapDOMObject(obj) {
   if (obj.hasOwnProperty("_wrappedDOMObject")) {
@@ -46,6 +49,9 @@ function wrapDOMObject(obj) {
     o._wrappedDOMObject = obj;
     o.methods.asString = function() {
         return new GraceString("DOMObject(" + obj + ")");
+    };
+    o.methods["=="] = function(argcv, other) {
+        return (this === other) ? GraceTrue : GraceFalse;
     };
     for (var k in obj) {
         switch(typeof obj[k]) {
