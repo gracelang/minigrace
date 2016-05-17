@@ -1467,6 +1467,11 @@ def binding = object {
     }
 }
 
+type ComparableToDictionary<K,T> = type {
+    size -> Number
+    at(_:K)ifAbsent(_) -> T
+}
+
 class dictionary<K,T> {
 
     method asString { "a dictionary factory" }
@@ -1786,7 +1791,7 @@ class dictionary<K,T> {
 
         method ==(other) {
             match (other)
-                case {o:Dictionary ->
+                case {o:ComparableToDictionary<K,V> ->
                     if (self.size != o.size) then {return false}
                     self.keysAndValuesDo { k, v ->
                         if (o.at(k)ifAbsent{return false} != v) then {
