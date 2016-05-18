@@ -44,12 +44,12 @@ type Iterable<T> = Object & type {
     do(body:Block1<T, Done>) separatedBy(separator:Block0<Done>) -> Done
         // an internal iterator; ; applies block1 to each of my elements, and applies separator in between
     ++(other: Iterable<T>) -> Iterable<T>
-        // returns a new iterator over the concatenation of self and other
+        // returns a new Iterable over the concatenation of self and other
     fold(binaryFunction:Block2<T, T, T>) startingWith(initial:T) -> Object
         // the left-associative fold of binaryFunction over self, starting with initial
-    map<U>(function:Block1<T, U>) -> Iterator<U>
+    map<U>(function:Block1<T, U>) -> Iterable<U>
         // returns a new iterator that yields my elements mapped by function
-    filter(condition:Block1<T,Boolean>) -> Iterator<T>
+    filter(condition:Block1<T,Boolean>) -> Iterable<T>
         // returns a new iterator that yields those of my elements for which condition holds
 }
 
