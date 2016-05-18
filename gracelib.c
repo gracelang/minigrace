@@ -1046,7 +1046,7 @@ Object Exception_asString(Object self, int argc, int *argcv, Object *argv,
 }
 Object alloc_Exception(char *name, Object parent) {
     if (!ExceptionClass) {
-        ExceptionClass = alloc_class("ExceptionClass", 13);
+        ExceptionClass = alloc_class("ExceptionClass", 14);
         add_Method(ExceptionClass, "match", &Exception_match);
         add_Method(ExceptionClass, "refine", &Exception_refine);
         add_Method(ExceptionClass, "raise", &Exception_raise);
