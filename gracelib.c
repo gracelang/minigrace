@@ -2878,7 +2878,10 @@ Object Float64_asInteger32(Object self, int nparts, int *argcv,
 Object Float64_hashcode(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     double d = *(double*)self->data;
-    if (d == -0.0) d = 0.0;
+    if (isnan(d))
+        graceRaise(RequestError(), "attempting to hash NaN");
+    if (d == -0.0)
+        d = 0.0;
     uint32_t *w = (uint32_t*) &d;
     uint32_t hc = w[0] ^ w[1];  // ^ is bitwise exclusive OR !!
     return alloc_Float64(hc);

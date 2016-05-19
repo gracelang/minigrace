@@ -704,7 +704,12 @@ GraceNum.prototype = {
             return callmethod(t, "not", [0]);
         },
         "hash": function num_hash (argcv) {
-            var raw = this._value * 13;
+            var self = this._value;
+            if (isNaN(self)) {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                    new GraceString("attempting to hash NaN"));
+            }
+            var raw = self * 13;
             return new GraceNum(Math.abs(raw & raw));  // & converts to 32-bit int
         },
         "hashcode": function num_hashcode (argcv) {
@@ -3381,6 +3386,7 @@ if (typeof global === "undefined") {
 
 var ExceptionObject = new GraceException("Exception", false);
 var ProgrammingErrorObject = new GraceException("ProgrammingError", ExceptionObject);
+var RequestErrorObject = new GraceException("RequestError", ProgrammingErrorObject);
 var EnvironmentExceptionObject = new GraceException("EnvironmentException", ExceptionObject);
 var ResourceExceptionObject = new GraceException("ResourceException", ExceptionObject);
 var RuntimeErrorObject = new GraceException("RuntimeError", ExceptionObject);
