@@ -1130,16 +1130,6 @@ method compilevardec(o) {
     }
     o.register := "done"
 }
-method compileindex(o) {
-    var of := compilenode(o.value)
-    var index := compilenode(o.index)
-    out("  params[0] = {index};")
-    out("  gc_frame_newslot(params[0]);")
-    out("  partcv[0] = 1;")
-    out("  Object idxres{auto_count} = callmethod({of}, \"[]\", 1, partcv, params);")
-    o.register := "idxres" ++ auto_count
-    auto_count := auto_count + 1
-}
 method compiletrycatch(o) {
     def myc = auto_count
     auto_count := auto_count + 1
@@ -1561,8 +1551,6 @@ method compilenode(o) {
         globals.push("static Object strlit{auto_count};")
         o.register := "strlit" ++ auto_count
         auto_count := auto_count + 1
-    } elseif { oKind == "index" } then {
-        compileindex(o)
     } elseif { oKind == "dialect" } then {
         compiledialect(o)
     } elseif { oKind == "import" } then {

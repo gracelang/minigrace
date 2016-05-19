@@ -890,17 +890,6 @@ method compilevardec(o) {
     }
     o.register := "GraceDone"
 }
-method compileindex(o) {
-    def of = compilenode(o.value)
-    def index = compilenode(o.index)
-    o.register := "idxres" ++ auto_count
-    auto_count := auto_count + 1
-    if (emitArgChecks) then {
-        out "var {o.register} = callmethodChecked({of}, \"[]\", [1], {index});"
-    } else {
-        out "var {o.register} = callmethod({of}, \"[]\", [1], {index});"
-    }
-}
 method compiletrycatch(o) {
     def myc = auto_count
     auto_count := auto_count + 1
@@ -1193,8 +1182,6 @@ method compilenode(o) {
             ++ os ++ "\");")
         o.register := "string" ++ auto_count
         auto_count := auto_count + 1
-    } elseif { oKind == "index" } then {
-        compileindex(o)
     } elseif { oKind == "dialect" } then {
         compiledialect(o)
     } elseif { oKind == "import" } then {
