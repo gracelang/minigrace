@@ -1111,7 +1111,6 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
         method visitString(o) up (as) { o.scope := as.parent.scope ; true }
         method visitNum(o) up (as) { o.scope := as.parent.scope ; true }
         method visitOp(o) up (as) { o.scope := as.parent.scope ; true }
-        method visitIndex(o) up (as) { o.scope := as.parent.scope ; true }
         method visitVarDec(o) up (as) { o.scope := as.parent.scope ; true }
         method visitReturn(o) up (as) { o.scope := as.parent.scope ; true }
         method visitDialect(o) up (as) { o.scope := as.parent.scope ; true }
@@ -1354,10 +1353,6 @@ method transformBind(bindNode) ancestors(as) {
         ast.callNode.new(dest,
             ( [ast.callWithPart.request(dest.value) withArgs ( [bindNode.value] ) ] ) )
             scope(currentScope)
-    } elseif { dest.kind == "index" } then {
-        def imem = ast.memberNode.new("[]:=", dest.value) scope(currentScope)
-        ast.callNode.new(imem, [ast.callWithPart.request(imem.value) withArgs( [dest.index, bindNode.value] )  scope(currentScope)])
-                        scope(currentScope)
     } else {
         bindNode
     }

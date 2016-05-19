@@ -1498,13 +1498,6 @@ method postfixsquare {
         errormessages.syntaxError("'[ ... ]' without preceeding space is no longer part of Grace. " ++
             "For a Lineup, add a space.  For an indexing operation, use `at(_)` or `at(_)put(_)`.")
                 atPosition(opening.line, opening.linePos)
-        def index = values.pop
-        next
-        def o = ast.indexNode.new(expr, index)
-        values.push(o)
-        dotrest(blocksOK)
-        callrest(blocksOK)
-        postfixsquare
     }
 }
 
@@ -2762,8 +2755,9 @@ method methodsignature(sameline) {
     if((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
         def suggestion = errormessages.suggestion.new
         suggestion.insert(" «method name»")afterToken(lastToken)
-        errormessages.syntaxError("a method name must start with an identifier, or be an operator or '[]'.")atPosition(
-            lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
+        errormessages.syntaxError("a method name must start with an identifier, or be an operator.")
+            atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
+                withSuggestion(suggestion)
     }
     pushidentifier
     var meth := values.pop
@@ -2773,30 +2767,9 @@ method methodsignature(sameline) {
     part.line := meth.line
     part.linePos := meth.linePos
     signature.push(part)
-    if (meth.value == "[") then {
-        if(sym.kind != "rsquare") then {
-            if((sym.kind == "identifier") && ((tokens.size == 0) || 
-                {tokens.first.kind == "rsquare"})) then {
-                def suggestions = [ ]
-                def suggestion = errormessages.suggestion.new
-                if(tokens.size == 0) then {
-                    suggestion.replaceToken(sym)with("]({sym.value})")
-                    suggestions.push(suggestion)
-                } elseif { tokens.first.line == meth.line } then {
-                    suggestion.replaceTokenRange(sym, tokens.first)with("]({sym.value})")
-                    suggestions.push(suggestion)
-                }
-                errormessages.syntaxError("a method named '[]' must have a single parameter in parentheses after the '[]'.")atPosition(
-                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestions(suggestions)
-            } else {
-                def suggestion = errormessages.suggestion.new
-                suggestion.insert("]")afterToken(lastToken)
-                errormessages.syntaxError("a method name must start with either an identifier or '[]'.")atPosition(
-                    lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
-            }
-        }
-        next
-        meth.value := "[]"
+    if ((meth.value == "[") && {sym.kind == "rsquare"}) then {
+        errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
+            atRange(lastToken.line, lastToken.linePos, sym.linePos)
     }
     var myTypeParams := false
     if (accept "lgeneric") then { myTypeParams := typeparameters }

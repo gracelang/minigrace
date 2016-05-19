@@ -744,34 +744,6 @@ rule { op: Operator ->
     }
 }
 
-rule { index: Index ->
-    def rec = index.value
-    def rType = typeOf (rec)
-
-    var meth:= false
-
-    for (rType.methods) do { meth' ->
-        if (meth'.name == "[]") then {
-            meth:= meth'
-        }
-    }
-
-    if (meth == false) then {
-        RequestError.raise ("no such method '[]' in `{rec.toGrace 0}` " ++
-            "of type `{rType}`") with (index)
-    }
-
-    def ind = index.index
-    def iType = typeOf (ind)
-    def param = meth.signature.first.parameters.first
-
-    if (iType.isSubtypeOf (param.typeAnnotation).not) then {
-        RequestError.raise ("the expression `{ind.toGrace 0}` does not " ++
-            "satisfy the type of parameter `{param}` in the method '[]'") with (ind)
-    }
-
-    meth.returnType
-}
 
 // Special cases.
 

@@ -1852,53 +1852,6 @@ def opNode is public = object {
     }
   }
 }
-def indexNode is public = object {
-  class new(expr, index') {
-    // an expression in square brackets
-    inherits baseNode
-    def kind is public = "index"
-    var value is public := expr
-    var index is public := index'
-    
-    method accept(visitor : ASTVisitor) from(as) {
-        if (visitor.visitIndex(self) up(as)) then {
-            def newChain = as.extend(self)
-            self.value.accept(visitor) from(newChain)
-            self.index.accept(visitor) from(newChain)
-        }
-    }
-    method map(blk) ancestors(as) {
-        var n := shallowCopy
-        def newChain = as.extend(n)
-        n.value := value.map(blk) ancestors(newChain)
-        n.index := index.map(blk) ancestors(newChain)
-        blk.apply(n, as)
-    }
-    method pretty(depth) {
-        var spc := ""
-        for (0..depth) do { i ->
-            spc := spc ++ "  "
-        }
-        var s := super.pretty(depth) ++ "\n"
-        s := s ++ spc ++ self.value.pretty(depth + 1)
-        s := s ++ "\n"
-        s := s ++ spc ++ self.index.pretty(depth + 1)
-        s
-    }
-    method toGrace(depth : Number) -> String {
-        var spc := ""
-        for (0..(depth - 1)) do { i ->
-            spc := spc ++ "    "
-        }
-        var s := self.value.toGrace(depth + 1)
-        s := s ++ "[" ++ self.index.toGrace(depth + 1) ++ "]"
-        s
-    }
-    method shallowCopy {
-        indexNode.new(nullNode, nullNode).shallowCopyFieldsFrom(self)
-    }
-  }
-}
 def bindNode is public = object {
   class new(dest', val') {
     // an assignment, or a request of a setter-method
@@ -2712,7 +2665,6 @@ type ASTVisitor = {
      visitString(o) up(as) -> Boolean
      visitNum(o) up(as) -> Boolean
      visitOp(o) up(as) -> Boolean
-     visitIndex(o) up(as) -> Boolean 
      visitBind(o) up(as) -> Boolean
      visitDefDec(o) up(as) -> Boolean
      visitVarDec(o) up(as) -> Boolean
@@ -2745,7 +2697,6 @@ class baseVisitor -> ASTVisitor {
     method visitString(o) up(as) { visitString(o) }
     method visitNum(o) up(as) { visitNum(o) }
     method visitOp(o) up(as) { visitOp(o) }
-    method visitIndex(o) up(as) { visitIndex(o) }
     method visitBind(o) up(as) { visitBind(o) }
     method visitDefDec(o) up(as) { visitDefDec(o) }
     method visitVarDec(o) up(as) { visitVarDec(o) }
@@ -2776,7 +2727,6 @@ class baseVisitor -> ASTVisitor {
     method visitString(o) -> Boolean { true }
     method visitNum(o) -> Boolean { true }
     method visitOp(o) -> Boolean { true }
-    method visitIndex(o) -> Boolean { true }
     method visitBind(o) -> Boolean { true }
     method visitDefDec(o) -> Boolean { true }
     method visitVarDec(o) -> Boolean { true }
@@ -2816,7 +2766,6 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitString(o) up(as) { visitation.apply (o, as) }
     method visitNum(o) up(as) { visitation.apply (o, as) }
     method visitOp(o) up(as) { visitation.apply (o, as) }
-    method visitIndex(o) up(as) { visitation.apply (o, as) }
     method visitBind(o) up(as) { visitation.apply (o, as) }
     method visitDefDec(o) up(as) { visitation.apply (o, as) }
     method visitVarDec(o) up(as) { visitation.apply (o, as) }

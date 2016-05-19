@@ -290,7 +290,6 @@ def OctetsLiteral is public = aPatternMatchingNode "octets"
 def StringLiteral is public = aPatternMatchingNode "string"
 def NumberLiteral is public = aPatternMatchingNode "num"
 def Operator is public = aPatternMatchingNode "op"
-def Index is public = aPatternMatchingNode "index"
 def Bind is public = aPatternMatchingNode "bind"
 def Def is public = aPatternMatchingNode "defdec"
 def Var is public = aPatternMatchingNode "vardec"
@@ -468,10 +467,6 @@ def astVisitor = object {
     }
 
     method visitOp(node) -> Boolean {
-        checkMatch(node)
-    }
-
-    method visitIndex(node) -> Boolean {
         checkMatch(node)
     }
 
