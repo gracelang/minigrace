@@ -3603,7 +3603,7 @@ Object sys_exit(Object self, int nparts, int *argcv,
     return NULL;
 }
 
-char *execDir(){
+Object execDir() {
     char *ep = ARGV[0];
     if (ep[0] == '/') {
         // Absolute path - needs no work
@@ -3630,13 +3630,12 @@ char *execDir(){
     }
     char epm[strlen(ep) + 1];
     strcpy(epm, ep);
-    char *dn = dirname(epm);
-    return dn;
+    return alloc_String(dirname(epm));
 }
 
 Object sys_execPath(Object self, int nparts, int *argcv,
         Object *args, int flags) {
-    return alloc_String(execDir());
+    return execDir();
 }
 Object sys_environ(Object self, int nparts, int *argcv,
         Object *args, int flags) {
@@ -4854,7 +4853,7 @@ int find_resource(const char *name, char *buf) {
     }
 
     // finally try execdir
-    char *execPath = execDir();
+    char *execPath = grcstring(execDir());
     strncpy(buf, execPath, PATH_MAX);
     strcat(buf, "/");
     strcat(buf, name);
