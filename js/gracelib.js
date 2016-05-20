@@ -3016,12 +3016,13 @@ function callmethod(obj, methname, argcv) {
                   " at " + moduleName +
                   ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + methname + "' in " +
-                    obj.className + " " + safeJsString(obj) + "."));
+                new GraceString("no method '" + methname + "' on " +
+                    describe(obj) + "."));
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
+                new GraceString("requested confidential method '" + methname +
+                                "' of " + describe(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
@@ -3082,12 +3083,13 @@ function callmethodChecked(obj, methname, argcv) {
                   " at " + moduleName +
                   ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + methname + "' in " +
-                    obj.className + " " + safeJsString(obj) + "."));
+                new GraceString("no method '" + methname + "' on " +
+                    describe(obj) + "."));
     }
     if (meth.confidential && !onSelf) {
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("requested confidential method '" + methname + "' on " + obj.className + " " + safeJsString(obj) + " from outside."));
+                new GraceString("requested confidential method '" + methname +
+                    "' of " + describe(obj) + " from outside."));
     }
     onSelf = false;
     onOuter = false;
@@ -3110,8 +3112,7 @@ function callmethodChecked(obj, methname, argcv) {
                 throw new GraceExceptionPacket(
                        UninitializedVariableObject,
                        new GraceString("uninitialised variable used as argument to '" +
-                                       methname + "' on " + obj.className +
-                                       " " + safeJsString(obj) + "."));
+                                       methname + "' of " + describe(obj) + "."));
         }
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
@@ -3123,6 +3124,31 @@ function callmethodChecked(obj, methname, argcv) {
         setLineNumber(origLineNumber);
     }
     return ret;
+}
+
+function describe(obj) {
+    // Generates a string describing obj, using its "class" and its
+    // own asString method, if the latter works.  Avoid duplicating
+    // information, as in "done done".
+    // Because this method is used within callmethod, it's important that the
+    // implementation doesn't use callmethod, or infinite recursion may result.
+    var objString;
+    try {
+        var m = findMethod(obj, "asString");
+        objString = m.call(obj, [0])._value;
+    } catch (e) {
+        objString = "";
+    }
+    var classString = obj.className;
+    var dotIx = classString.lastIndexOf(".");
+    var shortClassString = (dotIx == -1) ? classString : classString.substring(dotIx+1);
+    if ((classString == "object") || (objString.includes(shortClassString))) {
+        return objString;
+    }
+    if (objString === "") {
+        return classString + " (without working asString method)";
+    }
+    return classString + " " + objString;
 }
 
 function tryCatch(obj, cases, finallyblock) {
