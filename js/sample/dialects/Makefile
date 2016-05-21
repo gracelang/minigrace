@@ -1,6 +1,6 @@
 .PHONY: compile js run.js
-DIALECTS = dbc fsm objectAssociations ../../dialect grapl loopInvariant
-DIALECT_DIALECTS = whileLiteral ../../staticTypes ../../requireTypes
+DIALECTS = dbc fsm objectAssociations grapl loopInvariant
+DIALECT_DIALECTS = whileLiteral ../../../modules/staticTypes ../../../modules/requireTypes
 SAMPLES = fsmExample objectAssociationsExample dialectExample graplExample loopInvariantExample staticTypesExample
 
 DIALECTS_JS = $(addsuffix .js,$(DIALECTS)) $(addsuffix .js,$(DIALECT_DIALECTS))
@@ -24,7 +24,7 @@ js: $(DIALECTS_JS) run.js
 
 ../../requireTypes.js: ../../../modules/requireTypes.grace ../../../modules/dialect.gso ../../dialect.js
 	$(MAKE) -C ../../.. js/requireTypes.js
-    
+
 ../../dialect.js: ../../../modules/dialect.grace
 	$(MAKE) -C ../../.. js/dialect.js
 
@@ -37,7 +37,7 @@ whileLiteral.js: whileLiteral.grace  ../../../modules/dialect.gso ../../dialect.
 staticTypes.js: ../../staticTypes.js
 	ln -sf $< $(<:%.js=%.gct) .
 
-$(GM)%.js: 
+$(GM)%.js:
 	$(MAKE) -C ../$(GM) VERBOSITY=$(VERBOSITY) js/$(@F)
 
 %Example.js: %Example.grace %.js
@@ -57,3 +57,5 @@ run.js: $(SAMPLES:%=%.js)
 
 $(DIALECT_DEPENDENCIES:%=../../../modules/%.gso): ../../../modules/%.gso:
 	$(MAKE) -C ../../.. modules/$*.gso
+
+$(DIALECTS_JS): %.js: %.grace ../../../minigrace
