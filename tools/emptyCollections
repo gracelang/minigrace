@@ -1,0 +1,5 @@
+#! /bin/bash
+for f in "$@"
+do
+    sed -e "s/list\.empty/emptyList/g" -e "s/sequence\.empty/emptySequence/g" -e "s/set\.empty/emptySet/g" -e "s/dictionary.empty/emptyDictionary/g" $f > $f.$$ && mv $f.$$ $f
+done
