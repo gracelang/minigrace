@@ -1290,8 +1290,6 @@ method compile(moduleObject, of, rm, bt, glPath) {
     out("function {formatModname(modname)}() \{")
     increaseindent
     out("setModuleName(\"{modname}\");")
-    out("if (callStack.length === 0)")
-    out("  callStack = [\"execution environment\"];")
     out "this.definitionModule = \"{modname}\";"
     out "this.definitionLine = 0;"
     out "var var_prelude = var___95__prelude;"

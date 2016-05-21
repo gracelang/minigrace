@@ -3010,11 +3010,6 @@ function callmethod(obj, methname, argcv) {
                 ":" + obj.definitionLine;
         else if (obj.definitionModule !== "unknown")
             objDesc = " in " + obj.definitionModule + " module";
-        callStack.push(obj.className + "." + methname +
-                  " (defined nowhere" +
-                  objDesc + ")" +
-                  " at " + moduleName +
-                  ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + methname + "' on " +
                     describe(obj) + "."));
@@ -3030,16 +3025,23 @@ function callmethod(obj, methname, argcv) {
         obj = overrideReceiver;
         overrideReceiver = null;
     }
-    var beforeSize = callStack.length;
-    callStack.push({className: obj.className, methname: methname, moduleName: moduleName, lineNumber: lineNumber, toString: GraceCallStackToString});
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
+    } catch(e) {
+        if (e.exctype === 'graceexception') {
+            e.exitStack.unshift({
+                className: obj.className,
+                methname: methname,
+                moduleName: origModuleName,
+                lineNumber: origLineNumber,
+                toString: GraceCallStackToString
+            });
+        }
+        throw e;
     } finally {
         superDepth = origSuperDepth;
-        while (callStack.length > beforeSize)
-            callStack.pop();
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
@@ -3077,11 +3079,6 @@ function callmethodChecked(obj, methname, argcv) {
                   ":" + obj.definitionLine;
         else if (obj.definitionModule !== "unknown")
             objDesc = " in " + obj.definitionModule + " module";
-        callStack.push(obj.className + "." + methname +
-                  " (defined nowhere" +
-                  objDesc + ")" +
-                  " at " + moduleName +
-                  ":" + lineNumber);
         throw new GraceExceptionPacket(NoSuchMethodErrorObject,
                 new GraceString("no method '" + methname + "' on " +
                     describe(obj) + "."));
@@ -3097,14 +3094,6 @@ function callmethodChecked(obj, methname, argcv) {
         obj = overrideReceiver;
         overrideReceiver = null;
     }
-    var beforeSize = callStack.length;
-    callStack.push({
-        className: obj.className,
-        methname: methname,
-        moduleName: moduleName,
-        lineNumber: lineNumber,
-        toString: GraceCallStackToString
-    });
     try {
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++) {
@@ -3116,10 +3105,19 @@ function callmethodChecked(obj, methname, argcv) {
         }
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
+    } catch(e) {
+        if (e.exctype === 'graceexception') {
+            e.exitStack.unshift({
+                className: obj.className,
+                methname: methname,
+                moduleName: origModuleName,
+                lineNumber: origLineNumber,
+                toString: GraceCallStackToString
+            });
+        }
+        throw e;
     } finally {
         superDepth = origSuperDepth;
-        while (callStack.length > beforeSize)
-            callStack.pop();
         setModuleName(origModuleName);
         setLineNumber(origLineNumber);
     }
@@ -3204,10 +3202,8 @@ function GraceExceptionPacket(exception, message, data) {
     this.data = data;
     this.lineNumber = lineNumber;
     this.moduleName = moduleName;
-    this.callStack = [];
     this.stackFrames = [];
-    for (var i=0; i < callStack.length; i++)
-        this.callStack.push(callStack[i].toString());
+    this.exitStack = [];
     for (var j=0; j < stackFrames.length; j++)
         this.stackFrames.push(stackFrames[j]);
     this.superobj = new GraceObject();
@@ -3234,10 +3230,10 @@ GraceExceptionPacket.prototype = {
             return new GraceString(this.moduleName);
         },
         "backtrace": function(argcv) {
-            var bt = new GraceList([]);
-            for (var i=0; i<this.callStack.length; i++)
-                callmethod(bt, "push", [1], new GraceString(this.callStack[i].toString()));
-            return bt;
+            var es = new GraceList([]);
+            for (var i=0; i<this.exitStack.length; i++)
+                callmethod(es, "push", [1], new GraceString(this.exitStack[i].toString()));
+            return es;
         },
         "printBacktrace": function(argcv) {
             var exceptionName = callmethod(callmethod(this, "exception", [0]), "asString", [0]);
@@ -3249,10 +3245,15 @@ GraceExceptionPacket.prototype = {
             errMsg = callmethod(errMsg, "++", [1], callmethod(this, "message", [0]));
             Grace_errorPrint(errMsg);
             var bt = callmethod(this, "backtrace", [0]);
+            var prefix = new GraceString("  raised at ");
             var cf = new GraceString("  called from ");
             while (callmethod(bt, "size", [0])._value > 0) {
-                Grace_errorPrint(callmethod(cf, "++", [1], callmethod(bt, "pop", [0])));
+                Grace_errorPrint(callmethod(prefix, "++", [1],
+                        callmethod(bt, "pop", [0])));
+                prefix = cf;
             }
+            Grace_errorPrint(callmethod(prefix, "++", [1],
+                        new GraceString("execution environment.")));
         },
         "reraise": function exception_reraise(argcv) {
             throw this;
@@ -3639,7 +3640,6 @@ if (typeof global !== "undefined") {
     global.callmethod = callmethod;
     global.callmethodChecked = callmethodChecked;
     global.callmethodsuper = callmethodsuper;
-    global.callStack = callStack;
     global.classType = classType;
     global.dbg = dbg;
     global.dbgp = dbgp;

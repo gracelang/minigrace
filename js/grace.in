@@ -12,7 +12,6 @@ global.superDepth = {methods:{}, data: {}, className: process.argv[1]};
 global.invocationCount = 0;
 global.onOuter = false;
 global.onSelf = false;
-global.callStack = [];
 global.gctCache = {};
 global.originalSourceLines = {};
 global.stackFrames = [];
@@ -45,8 +44,7 @@ function MiniGrace() {
 }
 
 MiniGrace.prototype.compile = function(grace_code) {
-    callStack = [];
-    
+
     // Change stdin to read from code.
     var old_stdin_read = this.stdin_read;
     this.stdin_read = function() {
@@ -62,11 +60,7 @@ MiniGrace.prototype.compile = function(grace_code) {
     
     this.compileError = false;
     extensionsMap = callmethod(var_HashMap, "new", [0]);
-    if (this.vis == "standard") {
-        // Do nothing
-    } else {
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
-    }
+
     if (this.debugMode) {
         callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
     }
@@ -82,9 +76,7 @@ MiniGrace.prototype.compile = function(grace_code) {
             this.stderr_write("Internal compiler error at line " + 
                 e.lineNumber + " of " + e.moduleName + ": " + 
                 e.exception.name + ": " + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from " + e.callStack[i] + "\n");
-            }
+            callmethod(e, "printBacktrace", [0]);
         } else {
             throw e;
         }
@@ -104,15 +96,10 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("" + e.exception.name + " at line " +
-                e.lineNumber + " of " + e.moduleName + ": " +
-                e.message._value + "\n");
-            for (var i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from " + e.callStack[i] + "\n");
-            }
+            callmethod(e, "printBacktrace", [0]);
             if (originalSourceLines[e.moduleName]) {
                 var lines = originalSourceLines[e.moduleName];
-                for (i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
+                for (let i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
                     if (lines[i-1] != undefined) {
                         for (var j=0; j<4-i.toString().length; j++)
                             this.stderr_write(" ");
@@ -160,7 +147,6 @@ MiniGrace.prototype.trapErrors = function(func) {
 };
 
 MiniGrace.prototype.run = function(fileName) {
-    callStack = [];
     stackFrames = [];
     var code = minigrace.generated_output;
     minigrace.stdout_write = function(value) {
