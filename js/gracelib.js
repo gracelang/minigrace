@@ -1914,7 +1914,8 @@ GraceListIterator.prototype.methods.next = function() {
         return rv;
     }
     var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-        throw new GraceExceptionPacket(ie, "on built-in list " + this._value);
+        throw new GraceExceptionPacket(ie,
+            new GraceString("on built-in list " + this._value));
 };
 
 function GraceStringIterator(s) {
@@ -1932,7 +1933,8 @@ GraceStringIterator.prototype = {
         next: function() {
             if (this._index >= this._max) {
                 var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-                throw new GraceExceptionPacket(ie, "on string " + this._value);
+                throw new GraceExceptionPacket(ie,
+                    new GraceString("on string " + this._value));
             }
             var rv = new GraceString(this._value.charAt(this._index));
             this._index++;
@@ -1961,7 +1963,8 @@ GraceIterator.prototype.methods.next = function() {
         return result;
     }
     var ie = callmethod(var___95__prelude, "IteratorExhausted", [0]);
-    throw new GraceExceptionPacket(ie, "on primitiveArray " + this._value);
+    throw new GraceExceptionPacket(ie,
+        new GraceString("on primitiveArray " + this._value));
 };
 
 var stdout = Grace_allocObject(GraceObject, "stdout");
