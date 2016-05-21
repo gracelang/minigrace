@@ -5,7 +5,6 @@ window.superDepth = null;
 window.invocationCount = 0;
 window.onOuter = false;
 window.onSelf = false;
-window.callStack = [];
 window.gctCache = {};
 window.originalSourceLines = {};
 window.stackFrames = [];
@@ -52,7 +51,6 @@ function MiniGrace() {
 
 MiniGrace.prototype.compile = function(grace_code) {
     importedModules = {};
-    callStack = [];
     if (util_module && util_module._lines) {
         util_module._lines = new GraceList([ ]);
     }
@@ -104,9 +102,7 @@ MiniGrace.prototype.compile = function(grace_code) {
                     + e.message._value + "\n";
                 }
                 this.stderr_write(message);
-                for (i=e.callStack.length-1; i>=0; i--) {
-                    this.stderr_write("  called from " + e.callStack[i] + "\n");
-                }
+                callmethod(e, "printBacktrace", [0]);
             }
         } else {
             throw e;
@@ -125,12 +121,7 @@ MiniGrace.prototype.trapErrors = function(func) {
     } catch (e) {
         if (e.exctype == 'graceexception') {
             this.exception = e;
-            this.stderr_write("" + e.exception.name + " at line "
-                + e.lineNumber + " of " + e.moduleName + ": "
-                + e.message._value + "\n");
-            for (i=e.callStack.length-1; i>=0; i--) {
-                this.stderr_write("  called from " + e.callStack[i] + "\n");
-            }
+            callmethod(e, "printBacktrace", [0]);
             if (originalSourceLines[e.moduleName]) {
                 var lines = originalSourceLines[e.moduleName];
                 for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
@@ -181,7 +172,6 @@ MiniGrace.prototype.trapErrors = function(func) {
 
 MiniGrace.prototype.run = function() {
     importedModules = {};
-    callStack = [];
     stackFrames = [];
     lineNumber = 1;
     moduleName = this.modname;
