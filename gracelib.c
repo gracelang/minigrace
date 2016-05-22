@@ -1177,6 +1177,12 @@ Object BuiltinList_removeLast(Object self, int nparts, int *argcv,
                 ++sself->size);
     return sself->items[sself->size];
 }
+Object BuiltinList_makeEmpty(Object self, int nparts, int *argcv,
+                        Object *args, int flags) {
+    struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
+    sself->size = 0;
+    return self;
+}
 Object BuiltinList_push(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     struct BuiltinListObject *sself = (struct BuiltinListObject*)self;
@@ -1543,7 +1549,7 @@ void BuiltinList_mark(Object o) {
 }
 Object alloc_BuiltinList() {
     if (BuiltinList == NULL) {
-        BuiltinList = alloc_class3("builtinList", 45, (void*)&BuiltinList_mark,
+        BuiltinList = alloc_class3("builtinList", 46, (void*)&BuiltinList_mark,
                 (void*)&BuiltinList__release);
         add_Method(BuiltinList, "asString", &BuiltinList_asString);
         add_Method(BuiltinList, "asDebugString", &BuiltinList_asString);
@@ -1555,6 +1561,7 @@ Object alloc_BuiltinList() {
         add_Method(BuiltinList, "[]:=", &BuiltinList_indexAssignReturnsDone);
         add_Method(BuiltinList, "push", &BuiltinList_push);
         add_Method(BuiltinList, "pop", &BuiltinList_pop);
+        add_Method(BuiltinList, "makeEmpty", &BuiltinList_makeEmpty);
         add_Method(BuiltinList, "add", &BuiltinList_push);
         add_Method(BuiltinList, "addAll", &BuiltinList_addAll);
         add_Method(BuiltinList, "addLast", &BuiltinList_push);
