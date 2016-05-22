@@ -30,11 +30,11 @@ function MiniGrace() {
         if(typeof(process) != "undefined") {
             process.stdout.write(value);
         }
-    }
+    };
     
     this.stderr_write = function(value) {
         if(typeof(process) != "undefined") {
-            process.stderr.write(value);
+            process.stderr.write(value + "\n");
         } else {
             console.log(value);
         }
@@ -46,7 +46,7 @@ function MiniGrace() {
         } else {
             return "";
         }
-    }
+    };
 }
 
 MiniGrace.prototype.compile = function(grace_code) {
@@ -59,21 +59,20 @@ MiniGrace.prototype.compile = function(grace_code) {
     var old_stdin_read = this.stdin_read;
     this.stdin_read = function() {
         return grace_code;
-    }
+    };
     
     // Change stdout to store generated output.
     var old_stdout_write = this.stdout_write;
     this.stdout_write = function(value) {
         this.generated_output += value;
-    }
+    };
     this.generated_output = "";
     
     this.compileError = false;
-    extensionsMap = callmethod(var_HashMap, "new", [0])
-    if (this.vis == "standard") {
-        // Do nothing
-    } else {
-        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"), new GraceString(this.vis));
+    extensionsMap = callmethod(var_HashMap, "new", [0]);
+    if (this.vis !== "standard") {
+        callmethod(extensionsMap, "put", [2], new GraceString("DefaultVisibility"),
+                   new GraceString(this.vis));
     }
     if (this.debugMode) {
         callmethod(extensionsMap, "put", [2], new GraceString("Debug"), new GraceString("yes"));
@@ -96,10 +95,9 @@ MiniGrace.prototype.compile = function(grace_code) {
                 if (e.exception.name == 'DialectError') {
                     message = "Dialect " + e.message._value;
                 } else {
-                    message = "Internal compiler error at line " + e.lineNumber
-                    + " of " + e.moduleName
-                    + ". " + e.exception.name + ": "
-                    + e.message._value + "\n";
+                    message = "Internal compiler error at line " +
+                    e.lineNumber + " of " + e.moduleName +
+                    ". " + e.exception.name + ": " + e.message._value + "\n";
                 }
                 this.stderr_write(message);
                 callmethod(e, "printBacktrace", [0]);
@@ -112,6 +110,10 @@ MiniGrace.prototype.compile = function(grace_code) {
         this.stdin_read = old_stdin_read;
         this.stdout_write = old_stdout_write;
     }
+};
+
+function padToFour(num) {
+    return num <= 9999 ? ("   "+num).slice(-4) : num;
 }
 
 MiniGrace.prototype.trapErrors = function(func) {
@@ -120,55 +122,53 @@ MiniGrace.prototype.trapErrors = function(func) {
         func();
     } catch (e) {
         if (e.exctype == 'graceexception') {
+            var stderr_write = this.stderr_write;
+            var i;
             this.exception = e;
             callmethod(e, "printBacktrace", [0]);
             if (originalSourceLines[e.moduleName]) {
                 var lines = originalSourceLines[e.moduleName];
-                for (var i = e.lineNumber - 1; i <= e.lineNumber + 1; i++)
+                for (i = e.lineNumber - 1; i <= e.lineNumber + 1; i++) {
                     if (lines[i-1] != undefined) {
-                        for (var j=0; j<4-i.toString().length; j++)
-                            this.stderr_write(" ");
-                        this.stderr_write("" + i + ": " + lines[i-1] + "\n");
+                        stderr_write(padToFour(i) + ": " + lines[i-1]);
                     }
+                }
+                stderr_write("");
             }
             if (e.stackFrames.length > 0 && this.printStackFrames) {
-                this.stderr_write("Stack frames:\n");
-                for (var i=0; i<e.stackFrames.length; i++) {
-                    this.stderr_write("  " + e.stackFrames[i].methodName + "\n");
-                    var stderr_write = this.stderr_write;
+                stderr_write("Stack frames:\n");
+                for (i=0; i<e.stackFrames.length; i++) {
+                    stderr_write("  " + e.stackFrames[i].methodName);
                     e.stackFrames[i].forEach(function(name, value) {
-                        stderr_write("    " + name);
                         var debugString = "unknown";
                         try {
-                            if (typeof value == "undefined") {
+                            if (value === undefined) {
                                 debugString = "‹undefined›";
                             } else {
-                                var debugString = callmethod(value,
+                                debugString = callmethod(value,
                                     "asDebugString", [0])._value;
                             }
                         } catch(e) {
-                            debugger
-                            debugString = "<[Error calling asDebugString"
-                                + ": " + e.message._value + "]>";
+                            debugger;
+                            debugString = "[Error calling asDebugString:" +
+                                e.message._value + "]";
                         }
-                        debugString = debugString.replace("\\", "\\\\");
-                        debugString = debugString.replace("\n", "\\n");
                         if (debugString.length > 60)
                             debugString = debugString.substring(0,57) + "...";
-                        stderr_write(" = " + debugString + "\n");
+                        stderr_write("    " + name + " = " + debugString);
                     });
                 }
             }
         } else if (e != "SystemExit") {
-            this.stderr_write("Internal error around line "
-                + lineNumber + " of " + moduleName + ": " + e + "\n");
+            this.stderr_write("Internal error around line " +
+                lineNumber + " of " + moduleName + ": " + e);
             throw e;
         }
     } finally {
         if (Grace_prelude.methods["while()do"])
             Grace_prelude.methods["while()do"].safe = false;
     }
-}
+};
 
 MiniGrace.prototype.run = function() {
     importedModules = {};
@@ -190,7 +190,7 @@ MiniGrace.prototype.run = function() {
             do_import(this.moduleName, theModuleFunc);
         }
     });
-}
+};
 
 // Returns true if the program was compiled, or false if the program has not been modified.
 MiniGrace.prototype.compilerun = function(grace_code) {
@@ -211,6 +211,6 @@ MiniGrace.prototype.compilerun = function(grace_code) {
         this.run();
     }
     return compiled;
-}
+};
 
 var minigrace = new MiniGrace();
