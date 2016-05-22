@@ -2037,8 +2037,11 @@ StackFrame.prototype = {
         return this.variables[name]();
     },
     forEach: function(f) {
-        for (var v in this.variables)
-            f(v, this.getVar(v));
+        for (var v in this.variables) {
+            if (this.variables.hasOwnProperty(v)) {
+                f(v, this.getVar(v));
+            }
+        }
         return GraceDone;
     }
 };
@@ -2988,15 +2991,12 @@ function GraceCallStackToString() {
 function callmethod(obj, methname, argcv) {
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
-    var isSuper = false;
-    if (overrideReceiver !== null)
-        isSuper = true;
     superDepth = obj;
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
+    var returnTarget = invocationCount;  // will be incremented by invoked method
     if (typeof(meth) !== "function") {
         var s = obj;
-        isSuper = true;
         while (s.superobj) {
             s = s.superobj;
             meth = s.methods[methname];
@@ -3006,34 +3006,28 @@ function callmethod(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) !== "function") {
-        var objDesc = "";
-        if (obj.definitionLine && obj.definitionModule !== "unknown")
-            objDesc = " in object at " + obj.definitionModule +
-                ":" + obj.definitionLine;
-        else if (obj.definitionModule !== "unknown")
-            objDesc = " in " + obj.definitionModule + " module";
-        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + methname + "' on " +
-                    describe(obj) + "."));
-    }
-    if (meth.confidential && !onSelf) {
-        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("requested confidential method '" + methname +
-                                "' of " + describe(obj) + " from outside."));
-    }
-    onSelf = false;
-    onOuter = false;
-    if (overrideReceiver !== null) {
-        obj = overrideReceiver;
-        overrideReceiver = null;
-    }
     try {
+        if (typeof(meth) !== "function") {
+            raiseNoSuchMethod(methname, obj);
+        }
+        if (meth.confidential && !onSelf) {
+            raiseConfidentialMethod(methname, obj);
+        }
+        onSelf = false;
+        onOuter = false;
+        if (overrideReceiver !== null) {
+            obj = overrideReceiver;
+            overrideReceiver = null;
+        }
         var args = Array.prototype.slice.call(arguments, 3);
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
     } catch(e) {
-        if (e.exctype === 'graceexception') {
+        if (e.exctype === 'return') {
+            if (e.target == returnTarget) {
+                return e.returnvalue;
+            }
+        } else if (e.exctype === 'graceexception') {
             e.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
@@ -3057,15 +3051,12 @@ function callmethodChecked(obj, methname, argcv) {
                 new GraceString("requested method '" + methname + "' on uninitialised variable."));
     var meth = obj.methods[methname];
     var origSuperDepth = superDepth;
-    var isSuper = false;
-    if (overrideReceiver !== null)
-        isSuper = true;
     superDepth = obj;
     var origModuleName = moduleName;
     var origLineNumber = lineNumber;
+    var returnTarget = invocationCount;  // will be incremented by invoked method
     if (typeof(meth) !== "function") {
         var s = obj;
-        isSuper = true;
         while (s.superobj) {
             s = s.superobj;
             meth = s.methods[methname];
@@ -3075,41 +3066,33 @@ function callmethodChecked(obj, methname, argcv) {
             }
         }
     }
-    if (typeof(meth) !== "function") {
-        var objDesc = "";
-        if (obj.definitionLine && obj.definitionModule !== "unknown")
-            objDesc = " in object at " + obj.definitionModule +
-                  ":" + obj.definitionLine;
-        else if (obj.definitionModule !== "unknown")
-            objDesc = " in " + obj.definitionModule + " module";
-        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("no method '" + methname + "' on " +
-                    describe(obj) + "."));
-    }
-    if (meth.confidential && !onSelf) {
-        throw new GraceExceptionPacket(NoSuchMethodErrorObject,
-                new GraceString("requested confidential method '" + methname +
-                    "' of " + describe(obj) + " from outside."));
-    }
-    onSelf = false;
-    onOuter = false;
-    if (overrideReceiver !== null) {
-        obj = overrideReceiver;
-        overrideReceiver = null;
-    }
     try {
+        if (typeof(meth) !== "function") {
+            raiseNoSuchMethod(methname, obj);
+        }
+        if (meth.confidential && !onSelf) {
+            raiseConfidentialMethod(methname, obj);
+        }
+        onSelf = false;
+        onOuter = false;
+        if (overrideReceiver !== null) {
+            obj = overrideReceiver;
+            overrideReceiver = null;
+        }
         var args = Array.prototype.slice.call(arguments, 3);
         for (var i=0; i<args.length; i++) {
-            if (typeof args[i] === 'undefined')
-                throw new GraceExceptionPacket(
-                       UninitializedVariableObject,
-                       new GraceString("uninitialised variable used as argument to '" +
-                                       methname + "' of " + describe(obj) + "."));
+            if (typeof args[i] === 'undefined') {
+                raiseUninitializedVariable(methname, obj);
+            }
         }
         args.unshift(argcv);
         var ret = meth.apply(obj, args);
     } catch(e) {
-        if (e.exctype === 'graceexception') {
+        if (e.exctype === 'return') {
+            if (e.target == returnTarget) {
+                return e.returnvalue;
+            }
+        } else if (e.exctype === 'graceexception') {
             e.exitStack.unshift({
                 className: obj.className,
                 methname: methname,
@@ -3125,6 +3108,31 @@ function callmethodChecked(obj, methname, argcv) {
         setLineNumber(origLineNumber);
     }
     return ret;
+}
+
+function raiseNoSuchMethod(name, target) {
+    var targetDesc = "";
+    if (target.definitionLine && target.definitionModule !== "unknown") {
+        targetDesc = " in object at " + target.definitionModule +
+            ":" + target.definitionLine;
+    } else if (target.definitionModule !== "unknown") {
+        targetDesc = " in " + target.definitionModule + " module";
+    }
+    throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+            new GraceString("no method '" + name + "' on " +
+                describe(target) + "."));
+}
+
+function raiseConfidentialMethod(name, target) {
+    throw new GraceExceptionPacket(NoSuchMethodErrorObject,
+            new GraceString("requested confidential method '" + name +
+                "' of " + describe(target) + " from outside."));
+}
+
+function raiseUninitializedVariable(name, target) {
+    throw new GraceExceptionPacket(UninitializedVariableObject,
+           new GraceString("uninitialised variable used as argument to '" +
+                           name + "' of " + describe(target) + "."));
 }
 
 function describe(obj) {

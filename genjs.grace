@@ -298,7 +298,7 @@ method compileobject(o, outerRef, inheritingObject) {
         out "inho{myc}.superobj = {selfr};"
         out "{selfr}.data = inheritingObject.data;"
         out "if (inheritingObject.hasOwnProperty('_value'))"
-        out "    {selfr}._value = inheritingObject._value;"
+        out "  {selfr}._value = inheritingObject._value;"
     }
     compileobjouter(selfr, outerRef)
     out("var obj_init_{myc} = function() \{")
@@ -436,6 +436,7 @@ method compilemethod(o, selfobj) {
             textualSignature := textualSignature ++ "({size})"
         }
     }
+    def isSimpleAccessor = (o.body.size == 1) && {o.body.first.isIdentifier}
     usedvars := []
     declaredvars := []
     var myc := auto_count
@@ -458,7 +459,7 @@ method compilemethod(o, selfobj) {
     out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     increaseindent
     out("var curarg = 1;")
-    if (debugMode) then {
+    if (debugMode && isSimpleAccessor.not) then {
         out "var myframe = new StackFrame(\"{name}\");"
     }
     for (o.signature.indices) do { partnr ->
@@ -466,7 +467,7 @@ method compilemethod(o, selfobj) {
         for (part.params) do { p ->
             out "var {varf(p.value)} = arguments[curarg];"
             out "curarg++;"
-            if (debugMode) then {
+            if (debugMode && isSimpleAccessor.not) then {
                 out "myframe.addVar(\"{escapestring(p.value)}\","
                 out "  function() \{return {varf(p.value)};});"
             }
@@ -529,10 +530,6 @@ method compilemethod(o, selfobj) {
     // argument checking errors are reported as errors at the request site
     // --- which is where the error happens.
     out("setModuleName(\"{modname}\");")
-    if (debugMode) then {
-        out "stackFrames.push(myframe);"
-    }
-    def isSimpleAccessor = (o.body.size == 1) && {o.body.at(1).kind == "identifier"}
     if (isSimpleAccessor) then {
         out "// {textualSignature} is a simple accessor - elide try ... catch"
         def ret = compilenode(o.body.at(1))
@@ -540,16 +537,16 @@ method compilemethod(o, selfobj) {
     } else {
         out("var returnTarget = invocationCount;")
         out("invocationCount++;")
-        out("try \{")
-        increaseindent
+        if (debugMode) then {
+            out "stackFrames.push(myframe);"
+            out("try \{")
+            increaseindent
+        }
         var ret := "GraceDone"
         var lastLine := o.line
         for (o.body) do { l ->
             ret := compilenode(l)
             lastLine := l.line
-        }
-        if (debugMode) then {
-            out "stackFrames.pop();"
         }
         if (ret != "undefined") then {
             if (emitTypeChecks && (o.dtype != false)) then {
@@ -562,17 +559,12 @@ method compilemethod(o, selfobj) {
             }
             out("return " ++ ret ++ ";")
         }
-        decreaseindent
-        out("\} catch(e) \{")
         if (debugMode) then {
-            out "stackFrames.pop();"
+            decreaseindent
+            out "\} finally \{"
+            out "    stackFrames.pop();"
+            out "\}"
         }
-        out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
-        out("    return e.returnvalue;")
-        out("  \} else \{")
-        out("    throw e;")
-        out("  \}")
-        out("\}")
     }
     decreaseindent
     out "\};"
@@ -684,8 +676,10 @@ method compilefreshmethod(o, selfobj) {
     }
     out("var returnTarget = invocationCount;")
     out("invocationCount++;")
-    out("try \{")
-    increaseindent
+    if (debugMode) then {
+        out("try \{")
+        increaseindent
+    }
     var tailObject := false
     if ((o.body.size > 0) && {o.body.last.kind == "object"}) then {
         tailObject := o.body.pop    // remove tail object
@@ -701,15 +695,12 @@ method compilefreshmethod(o, selfobj) {
         ret := tailObject.register
     }
     out("return " ++ ret ++ ";")
-    decreaseindent
-    out("\} catch(e) \{")
-    out("  if ((e.exctype == 'return') && (e.target == returnTarget)) \{")
-    out("    return e.returnvalue;")
-    out("  \} else \{")
-    out("    throw e;")
-    out("  \}")
-    out("\}")
-    decreaseindent
+    if (debugMode) then {
+        decreaseindent
+        out "\} finally \{"
+        out "    stackFrames.pop();"
+        out "\}"
+    }
     out "\};"
     if (haveTypedParams) then {
         compilemethodtypes("func{myc}", o)
@@ -1297,7 +1288,7 @@ method compile(moduleObject, of, rm, bt, glPath) {
         // varies from module to modules.
 
     if (debugMode) then {
-        out "myframe = new StackFrame(\"{modname} module\");"
+        out "var myframe = new StackFrame(\"{modname} module\");"
         out "stackFrames.push(myframe);"
     }
     compileobjouter("this", "var_prelude")
