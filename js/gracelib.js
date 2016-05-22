@@ -58,12 +58,18 @@ function object_basicAsString (argcv) {
     }
     return new GraceString(s + "}");
 }
+function articleFor(str) {
+    var noun = str.toLowerCase();
+    if (noun.startsWith("one")) return "a";
+    if (noun.startsWith("un")) return "an";
+    if ("aeio".indexOf(noun[0]) >= 0) return "an";
+    return "a";
+}
 function object_asString (argcv) {
     if (!this.className || this.className.length === 0)
         return new GraceString("an object");
-    var firstChar = this.className[0].toLowerCase();
-    var article = ("aeio".indexOf(firstChar) >= 0)? "an " : "a ";
-    return new GraceString(article + this.className);
+    var clNm = this.className;
+    return new GraceString(articleFor(clNm) + " " + clNm);
 }
 function object_asDebugString (argcv) {
     return callmethod(this, "asString", [0]);
