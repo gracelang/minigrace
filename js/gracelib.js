@@ -928,6 +928,10 @@ function list_indices(argcv) {
 }
 PrimitiveGraceList.prototype = {
     methods: {
+        "makeEmpty": function(argcv) {
+            this._value = [ ];
+            return this;
+        },
         "push": function(argcv, val) {
             this._value.push(val);
             return this;

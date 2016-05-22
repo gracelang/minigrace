@@ -504,8 +504,11 @@ class new {
     // Read the program text from util.infile and return a list of
     // tokens.
     method lexfile(file) {
-        def lines = util.lines
-        def cLines = util.cLines
+        def lines = util.lines.makeEmpty
+        def cLines = util.cLines.makeEmpty
+            // making them empty is necessary for the browser,
+            // where these variables persist from one compilation
+            // to the next
         var line := ""
         var cLine := ""
         var wasCR := false
