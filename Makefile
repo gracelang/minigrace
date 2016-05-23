@@ -430,7 +430,7 @@ StandardPrelude%gct StandardPrelude%gcn: StandardPrelude.grace collectionsPrelud
 # The next few rules are Static Pattern Rules.  Each is like an implicit rule
 # for making %.gct from stubs/%.grace, but applies only to the targets in $(STUBS:*)
 
-$(filter-out modules/curl.gso,DYNAMIC_STUBS:%.grace=modules/%.gso): modules/%.gso: %.c gracelib.h
+$(filter-out modules/curl.gso,$(DYNAMIC_STUBS:%.grace=modules/%.gso)): modules/%.gso: %.c gracelib.h
 	gcc -g -std=c99 $(UNICODE_LDFLAGS) -o $@ -shared -fPIC $<
 
 $(STUBS:%.grace=stubs/%.gct): stubs/%.gct: stubs/%.grace l1/StandardPrelude.gct $(KG)/minigrace
