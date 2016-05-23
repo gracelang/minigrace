@@ -197,7 +197,7 @@ def nullNode is public = object {
 
 def fakeSymbolTable = object {
     var node is public := nullNode
-    method asString { "fake Symbol Table" }
+    method asString { "the fakeSymbolTable" }
     method addNode (n) as (kind) {
         ProgrammingError.raise "fakeSymbolTable(on node {node}).addNode({n}) as \"{kind}\" requested"
     }
@@ -208,6 +208,7 @@ def fakeSymbolTable = object {
         ProgrammingError.raise "fakeSymbolTable.enclosingObjectScope on node {node}"
     }
     method variety { "fake" }
+    method ==(other) { self.isMe(other) }
 }
 
 def ifNode is public = object {
@@ -1491,7 +1492,7 @@ def memberNode = object {
         method asString { "{in}.{value}" }
         method asIdentifier {
             // make and return an identifiderNode for my request
-            if (scope == fakeSymbolTable) then {
+            if (fakeSymbolTable == scope) then {
                 ProgrammingError.raise "asIdentifier requested on {pretty 0} when scope was fake"
             }
             def resultNode = identifierNode.new (value, false) scope (scope)

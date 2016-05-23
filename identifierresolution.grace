@@ -1166,7 +1166,7 @@ method collectParentNames(node) {
     // node is an object or class; put the names that it inherits into its scope.
     // In the process, checks for a cycle in the inheritance chain.
     def nodeScope = node.scope
-    if (nodeScope == ast.fakeSymbolTable) then {
+    if (ast.fakeSymbolTable == nodeScope) then {
         util.log 20 verbose "node {node} has no scope.\n{node.pretty 0}"
     }
     if (nodeScope.inheritedNames == completed) then {
