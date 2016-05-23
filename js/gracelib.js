@@ -1107,7 +1107,7 @@ PrimitiveGraceList.prototype = {
             return new GraceString(s);
         },
         "debugValue": function(argcv) {
-            return new GraceString("builtinList");
+            return new GraceString("extendedLineup");
         },
         "debugIterator": function(argcv) {
             return new GraceListIterator(this._value);
@@ -1223,7 +1223,7 @@ PrimitiveGraceList.prototype = {
             return callmethod(var___95__prelude, "sequence", [1], this);
         }
     },
-    className: "builtinList",
+    className: "extendedLineup",
     definitionModule: "basic library",
     definitionLine: 0,
     superobj: new GraceObject()
@@ -1730,7 +1730,7 @@ GraceBlock.prototype = {
         "applyIndirectly": function GraceBlock_applyIndirectly (argcv, a) {
             var argList = a._value || a.data.jsArray ;
             // APB: 2015 09 08.  This is a horrible hack.
-            // a._value          => a is a PrimitiveGraceList
+            // a._value          => a is a PrimitiveGraceList or Lineup
             // a.data.jsArray    => a is a native code list from collectionsPrelude
             // in these cases, extract the JS Array burried in the object.
             if (! argList) {
@@ -2430,6 +2430,9 @@ function gracecode_util() {
     if (util_module !== false)
         return util_module;
 
+    this.methods.asString = function(argcv) {
+        return new GraceString('the "util" module');
+    };
     this.methods.vtag = function(argcv) {
         return new GraceBoolean(false);
     };
@@ -2740,8 +2743,8 @@ function gracecode_util() {
     };
     this._linenum = new GraceNum(1);
     this._linepos = new GraceNum(1);
-    this._lines = new GraceList([]);
-    this._cLines = new GraceList([]);
+    this._lines = new PrimitiveGraceList([]);
+    this._cLines = new PrimitiveGraceList([]);
     this._suggestion = Grace_allocObject(GraceObject, "class suggestion");
 
     this._suggestion.methods['new'] = function(argcv, line, code) {
