@@ -1,5 +1,3 @@
-dialect "minitest"
-
 type Date = type {
     year -> Number
         // the year, e.g., 2016
