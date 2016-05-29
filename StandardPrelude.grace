@@ -406,11 +406,18 @@ import "collectionsPrelude" as coll
 def collections is public = coll
 
 type Block0<R> = collections.Block0<R>
-type Cmd = collections.Block0<Done>
 type Block1<T,R> = collections.Block1<T,R>
-type Fun<T,R> = collections.Block1<T,R>
-type Proc<T> = collections.Block1<T,Done>
 type Block2<S,T,R> = collections.Block2<S,T,R>
+type Block3<S,T,U,R> = type {
+    apply(a:S, b:T, c:U) -> R
+}
+type Cmd = Block0<Done>
+type Fun<T,R> = Block1<T,R>
+type Fun2<T,U,R> = Block2<T,U,R>
+type Fun3<T,U,W,R> = Block3<T,U,W,R>
+type Proc<T> = Block1<T,Done>
+type Proc2<T,U> = Block2<T,U,Done>
+type Proc3<T,U,W> = Block3<T,U,W,Done>
 
 type Collection<T> = collections.Collection<T>
 type Iterable<T> = collections.Iterable<T>
