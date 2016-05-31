@@ -458,6 +458,8 @@ method compilemethod(o, selfobj) {
     }
     out("var func" ++ myc ++ " = function(argcv) \{    // method " ++ textualSignature)
     increaseindent
+    out("var returnTarget = invocationCount;")
+    out("invocationCount++;")
     out("var curarg = 1;")
     if (debugMode && isSimpleAccessor.not) then {
         out "var myframe = new StackFrame(\"{name}\");"
@@ -535,8 +537,6 @@ method compilemethod(o, selfobj) {
         def ret = compilenode(o.body.at(1))
         out("return " ++ ret ++ ";")
     } else {
-        out("var returnTarget = invocationCount;")
-        out("invocationCount++;")
         if (debugMode) then {
             out "stackFrames.push(myframe);"
             out("try \{")
