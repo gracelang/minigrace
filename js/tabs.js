@@ -236,12 +236,12 @@ tabs.lostSelected = function (index) {
     if (this.length > 0 && index >= 0) {
         if (index < this.length) {
             // select tab to the right of closed tab
-            this[index].select(); 
+            this[index].select();
         } else {
             // select tab furthest to the right
             this[this.length-1].select();
         }
-        
+
     } else { // create new tab and select it
         addCodeTab();
         this[0].select();
@@ -284,14 +284,14 @@ function addCodeTab(name, code, file) {
             points : [],
             enabled : [],
             lineCount : 0,
-        }, 
+        },
     };
-    
+
     if (typeof name == "string")
         tab.name = name;
     if (code)
         tab.code = code;
-    
+
     tab.tabObject = {
         body : document.createElement("div"),
         close : document.createElement("div"),
@@ -309,7 +309,7 @@ function addCodeTab(name, code, file) {
     tab.tabObject.body.appendChild(tab.tabObject.close);
     tab.tabObject.body.appendChild(tab.tabObject.span);
     tab.tabObject.body.appendChild(tab.tabObject.input);
-    
+
     tab.changeName = function(name) {
         if (typeof name == "string") {
             this.name = name;
@@ -342,9 +342,9 @@ function addCodeTab(name, code, file) {
 
         // check debugger exists and works like we think it does
         if (GraceDebugger
-        && GraceDebugger.currentRunCount > -1 
-        && GraceDebugger.breakpoints 
-        && GraceDebugger.breakpoints.points 
+        && GraceDebugger.currentRunCount > -1
+        && GraceDebugger.breakpoints
+        && GraceDebugger.breakpoints.points
         && GraceDebugger.breakpoints.enabled) {
         // set breakpoints, object view, linecount
         // refresh breakpoints, variable list
@@ -363,12 +363,12 @@ function addCodeTab(name, code, file) {
             tab.tabObject.body.className = "tab";
             tab.isSelected = false;
             tab.code = getCode();
-            
+
             // check debugger exists and works like we think it does
-            if (GraceDebugger 
-            && GraceDebugger.currentRunCount > -1  
-            && GraceDebugger.breakpoints  
-            && GraceDebugger.breakpoints.points  
+            if (GraceDebugger
+            && GraceDebugger.currentRunCount > -1
+            && GraceDebugger.breakpoints
+            && GraceDebugger.breakpoints.points
             && GraceDebugger.breakpoints.enabled) {
                 // save breakpoins, that, and linecount,
                 if (document.getElementById("debugger_vars_display").that)
@@ -417,19 +417,19 @@ function addCodeTab(name, code, file) {
     tab.tabObject.close.addEventListener("click", tab.close, false);
     tab.tabObject.span.addEventListener("dblclick", tab.nameEditStart, false);
     tab.tabObject.input.addEventListener("keydown", tab.nameEditFinish, false);
-    
-    
+
+
     document.getElementById("tabs").appendChild(tab.tabObject.body);
     document.getElementById("tabs").appendChild(document.getElementById("plus"));
-    
+
     tabs.push(tab);
     tabCount++;
     tab.select();
-    
+
     if (file) {
         tab.file = file;
     }
-    
+
     return tab;
 }
 /***************************************/
@@ -454,18 +454,18 @@ function startup() {
         editor.getSession().setUseSoftTabs(true);
         editor.getSession().setTabSize(4);
         editor.commands.bindKeys({"ctrl-l":null, "ctrl-shift-r":null, "ctrl-r":null, "ctrl-t":null})
-        
+
         document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
         document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
         document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
-        
+
         // resize ace on window resize
         window.onresize = function(event) {
             document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
             document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
             document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
         }
-        
+
         // Get code from ace editor.
         getCode = function() {
             if(document.getElementById("acetoggle").checked) {
@@ -474,7 +474,7 @@ function startup() {
                 return document.getElementById("code_txt").value;
             }
         }
-        
+
         // debugger stuff
         editor.on("guttermousedown", function(e){
             if (document.getElementById("debugtoggle").checked) {
@@ -485,7 +485,7 @@ function startup() {
                     return;
                 if (e.clientX > 25 + target.getBoundingClientRect().left)
                     return;
-                  
+
                 var row = e.getDocumentPosition().row;
                 if (e.editor.session.$breakpoints[row]) {
                     //e.editor.session.clearBreakpoint(row);
@@ -506,11 +506,11 @@ function startup() {
         }
     }
     GraceDebugger.cache.init();
-    
+
     addCodeTab("main","print \"Hello, world!\"");
     document.getElementById("code_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
     document.getElementById("stdout_options").style.height = (document.getElementById("tab_0").clientHeight + 5) + "px";
-    
+
     // get samples to work
     if (typeof samples != "undefined") {
         var sm = document.getElementById('sample');
@@ -536,7 +536,7 @@ function toggleAce() {
         document.getElementById('code_txt_real').style.display = 'none';
         document.getElementById('code_txt').style.display = 'inline';
         document.getElementById('code_area').style.paddingBottom = "0px";
-        
+
     }
 }
 
@@ -546,17 +546,17 @@ function addFileLine() {
     var newFileLine = document.createElement("div");
     var text = document.createTextNode("Select a file to load: ");
     newFileLine.appendChild(text);
-    
+
     var input = document.createElement("input");
     input.type="file";
-    
+
     var button = document.createElement("button");
     var label = document.createTextNode("Reload");
     button.appendChild(label);
-    
+
     newFileLine.appendChild(input);
     newFileLine.appendChild(button);
-    
+
     var file = {
         "body" : newFileLine,
         "input" : input,
@@ -571,7 +571,7 @@ function addFileLine() {
     }
     file.load = function() {
         var fileToLoad = file.input.files[0];
-        
+
         var fileReader = new FileReader();
         fileReader.onload = function(fileLoadedEvent) {
             file.tab.changeName(file.name());
@@ -579,12 +579,12 @@ function addFileLine() {
         }
         fileReader.readAsText(fileToLoad, "UTF-8");
     }
-    
+
     file.tab = addCodeTab("newFile", "", file);
     file.input.addEventListener("change", file.load, false);
     file.button.addEventListener("click", file.load, false);
-    
-    
+
+
     document.getElementById("files").appendChild(newFileLine);
 }
 
@@ -596,7 +596,7 @@ function saveCurrentTab() {
     var textFileAsBlob = new Blob([textToWrite], {type:'text/plain'});
     var fileNameToSaveAs = document.getElementById("modname").value + ".grace";
     var downloadLink = document.createElement("a");
-    
+
     downloadLink.download = fileNameToSaveAs;
     downloadLink.innerHTML = "<br />Download " + fileNameToSaveAs;
     downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
