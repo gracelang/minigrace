@@ -440,6 +440,9 @@ function addCodeTab(name, code, file) {
 function startup() {
     document.getElementById("acetoggle").checked = true;
     document.getElementById("debugtoggle").checked = false;
+
+    document.getElementById('code_area').style.paddingBottom = "0px";
+
     if (ace) {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
@@ -457,13 +460,11 @@ function startup() {
 
         document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
         document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
-        document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
 
         // resize ace on window resize
         window.onresize = function(event) {
             document.getElementById('code_txt_real').style.height = document.getElementById('stdout_txt').clientHeight + 'px';
             document.getElementById('code_txt_real').style.width = (document.getElementById('stdout_txt').clientWidth - 30) + 'px';
-            document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
         }
 
         // Get code from ace editor.
@@ -530,12 +531,10 @@ function toggleAce() {
         document.getElementById('code_txt_real').style.display = 'block';
         document.getElementById('code_txt').style.display = 'none';
         editor.setValue(document.getElementById("code_txt").value, -1);
-        document.getElementById('code_area').style.paddingBottom = document.getElementById('code_txt_real').style.height;
     } else {
         document.getElementById("code_txt").value = editor.getValue();
         document.getElementById('code_txt_real').style.display = 'none';
         document.getElementById('code_txt').style.display = 'inline';
-        document.getElementById('code_area').style.paddingBottom = "0px";
 
     }
 }
