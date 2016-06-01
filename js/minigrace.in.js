@@ -184,7 +184,7 @@ MiniGrace.prototype.run = function() {
             GraceDebugger.that = superDepth;
             GraceDebugger.run(theModuleFunc, GraceDebugger.that);
         } else {
-            do_import(this.moduleName, theModuleFunc);
+            do_import(this.modname, theModuleFunc);
         }
     });
 };
