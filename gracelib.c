@@ -46,6 +46,11 @@ Object String_do(Object self, int nparts, int *argcv,
 FILE *debugfp;
 int debug_enabled = 0;
 
+FILE *callgraph;
+int track_callgraph = 0;
+int callcount = 0;
+int tailcount = 0;
+
 Object String_size(Object, int, int*, Object*, int flags);
 Object String_at(Object, int, int*, Object*, int flags);
 Object String_replace_with(Object, int, int*, Object*, int flags);
@@ -3636,7 +3641,10 @@ Object sys_exit(Object self, int nparts, int *argcv,
     exit(i);
     return NULL;
 }
-
+Object sys_requestCount(Object self, int nparts, int *argcv,
+                   Object *args, int flags) {
+    return alloc_Float64(callcount);
+}
 Object execDir() {
     char *ep = ARGV[0];
     if (ep[0] == '/') {
@@ -3683,13 +3691,14 @@ void sys__mark(struct SysModule *o) {
 Object module_sys_init() {
     if (sysmodule != NULL)
         return sysmodule;
-    SysModule = alloc_class2("sys", 9, (void*)*sys__mark);
+    SysModule = alloc_class2("sys", 10, (void*)*sys__mark);
     add_Method(SysModule, "argv", &sys_argv);
     add_Method(SysModule, "elapsed", &sys_elapsed);
     add_Method(SysModule, "elapsedTime", &sys_elapsed);
     add_Method(SysModule, "exit", &sys_exit);
     add_Method(SysModule, "execPath", &sys_execPath);
     add_Method(SysModule, "environ", &sys_environ);
+    add_Method(SysModule, "requestCount", &sys_requestCount);
     add_Method(SysModule, "asString", &Module_asString);
     add_Method(SysModule, "asDebugString", &Object_asString);
     Object o = alloc_obj(sizeof(Object), SysModule);
@@ -3904,10 +3913,6 @@ int checkmethodcall(Method *m, int nparts, int *argcv, Object *argv) {
     }
     return 1;
 }
-FILE *callgraph;
-int track_callgraph = 0;
-int callcount = 0;
-int tailcount = 0;
 Object callmethod4(Object self, const char *name,
         int partc, int *argcv, Object *argv, int superdepth, int callflags) {
     debug("callmethod %s on %p (%s)", name, self, self->class->name);
