@@ -17,7 +17,7 @@ lineColor := blue
 forward(diagonal)
 
 method square(len) {
-    for(1..4) do {
+    repeat 4 times {
         forward(len)
         turnRight(90)
     }
