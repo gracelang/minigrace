@@ -2247,7 +2247,7 @@ function gracecode_sys() {
     };
     this.methods.exit = function(argcv, code) {
         if (typeof process === "undefined") {
-            throw "SystemExit" + code;
+            throw "SystemExit";
         } else {
             process.exit(code);
         }
