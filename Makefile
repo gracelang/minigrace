@@ -128,7 +128,7 @@ checkgenjs: l1/minigrace
 # Perhaps this is a bug in gnu make?
 collectionsPrelude.gct: collectionsPrelude.grace l1/minigrace
 	l1/minigrace $(VERBOSITY) --make --noexec -XNoMain $<
-    
+
 collectionsPrelude.gcn: collectionsPrelude.gct
 
 dialects: gracelib.o js js/minitest.js js/gUnit.js $(DIALECT_DEPENDENCIES)
@@ -373,7 +373,8 @@ $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z --delete sample $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z --delete js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
