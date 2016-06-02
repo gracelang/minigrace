@@ -2287,6 +2287,9 @@ function gracecode_sys() {
     this.methods.asString = function(argcv) {
         return new GraceString('the "sys" module');
     };
+    this.methods.requestCount = function(argcv) {
+        return new GraceNum(invocationCount);
+    };
     return this;
 }
 
