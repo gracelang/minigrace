@@ -102,7 +102,7 @@ method turnRight(ang) {
     def startX = x
     def startY = y
     def startAngle = turtleAngle
-    for (0..ang) do {i->
+    for (0..ang.floor) do {i->
         steps.push {
             x := startX
             y := startY
@@ -121,7 +121,7 @@ method turnLeft(ang) {
     def startX = x
     def startY = y
     def startAngle = turtleAngle
-    for (0..ang) do {i->
+    for (0..ang.floor) do {i->
         steps.push {
             x := startX
             y := startY

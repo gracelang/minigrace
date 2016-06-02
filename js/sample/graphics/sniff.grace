@@ -16,8 +16,8 @@ def π = math.π
 var stopRunning := false
 var initialised := false
 var backgroundColour := "white"
-def registeredObjects = prelude.list.empty
-def stepBlocks = prelude.list.empty
+def registeredObjects = prelude.list []
+def stepBlocks = prelude.list []
 
 var canvasWidth
 var canvasHeight
@@ -47,7 +47,7 @@ class drawable {
     registeredObjects.push(self)
     above := self
     Δ := self
-    def alwaysBlocks = prelude.list.empty
+    def alwaysBlocks = prelude.list []
     var x is readable := canvasWidth / 2
     var y is readable := canvasHeight / 2
     var destX := x
@@ -394,4 +394,3 @@ method stop {
 method atModuleEnd(module) {
     start
 }
-

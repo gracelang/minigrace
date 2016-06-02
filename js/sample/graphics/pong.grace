@@ -6,13 +6,14 @@ import "dom" as dom
 def document = dom.document
 
 // Activate the canvas tab if it isn't already
-def ts = document.getElementById("output-select")
-for (0..(ts.options.length-1)) do {i->
-    if (ts.options.item(i).value == "canvas") then {
-        ts.selectedIndex := i
-        dom.window.outputswitch
-    }
-}
+//  def ts = document.getElementById("output-select")
+//  for (0..(ts.options.length-1)) do {i->
+//      if (ts.options.item(i).value == "canvas") then {
+//          ts.selectedIndex := i
+//          dom.window.outputswitch
+//      }
+//  }
+document.getElementById("tab_canvas").click
 
 def canvas = dom.document.getElementById("standard-canvas")
 def ctx = canvas.getContext("2d")

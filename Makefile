@@ -374,7 +374,8 @@ $(OBJECTDRAW_REAL:%.grace=modules/%.grace): modules/%.grace: pull-objectdraw
 oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z --delete $(WEBFILES) $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
-	rsync -a -l -z --delete js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
+	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
