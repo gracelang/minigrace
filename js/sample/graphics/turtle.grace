@@ -25,9 +25,9 @@ var delay := 1
 var turtleAngle := 0
 
 // Each frame of the image is a step
-def steps = list.empty
+def steps = list []
 // Each discrete movement command is a stage
-def stages = list.empty
+def stages = list []
 
 method drawTurtle(angle) {
     initialise
@@ -64,7 +64,7 @@ method move(dist, lineCol, lineWidth) {
     def stageN = stages.size - 1
     def mctx = canvas.getContext("2d")
     // One frame for each unit of distance
-    for (1..dist) do {i->
+    for (1..dist.floor) do {i->
         steps.push {
             def y'' = trig.cos(angle / 180 * π) * i
             def x'' = trig.sin(angle / 180 * π) * i
@@ -194,4 +194,3 @@ method start {
         drawTurtle(turtleAngle)
     }
 }
-
