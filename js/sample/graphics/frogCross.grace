@@ -234,8 +234,3 @@ def froggerGame: GraphicApplication = object {
     }
     startGraphics
 }
-
-
-
-
-

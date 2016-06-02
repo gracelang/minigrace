@@ -35,13 +35,8 @@ def black = Colour.r 0 g 0 b 0
 
 method initialise {
     document := dom.document
-    def ts = document.getElementById("output-select")
-    for (0..(ts.options.length-1)) do {i->
-        if (ts.options.item(i).value == "canvas") then {
-            ts.selectedIndex := i
-            dom.window.outputswitch
-        }
-    }
+    document.getElementById("tab_canvas").click
+
     canvas := document.getElementById("standard-canvas")
     ctx := canvas.getContext("2d")
     ctx.lineWidth := 1
