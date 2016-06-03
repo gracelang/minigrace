@@ -2716,7 +2716,7 @@ Object Float64_Range(Object self, int nparts, int *argcv,
     int partcv[] = {1, 1};
     params[0] = self;
     params[1] = other;
-    return callmethod(grace_rangeClass(), "uncheckedFrom()to", 2, partcv, params);
+    return callmethod(grace_rangeClass(), "from()to", 2, partcv, params);
 }
 Object Float64_Add(Object self, int nparts, int *argcv,
         Object *args, int flags) {
