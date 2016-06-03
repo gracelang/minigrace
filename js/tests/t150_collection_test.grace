@@ -54,8 +54,17 @@ def rangeTest = object {
             def witness = range.from 1 to 6
             deny (witness) hasType (Collection<Number> & type { wombat })
         }
+        method testDotDotPreconditionUp1 {
+            assert {4.5 .. 5} shouldRaise (RequestError)
+        }
 
+        method testDotDotPreconditionUp2 {
+            assert {4 .. 9.5} shouldRaise (RequestError)
+        }
 
+        method testDotDotPreconditionUp3 {
+            assert {4 .. "foo"} shouldRaise (TypeError)
+        }
         method testRangePreconditionUp1 {
             assert {range.from 4.5 to 5} shouldRaise (RequestError)
         }

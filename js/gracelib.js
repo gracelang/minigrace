@@ -645,13 +645,20 @@ GraceNum.prototype = {
             return callmethod(t, "++", [1], other);
         },
         "..": function(argcv, other) {
-            if (other.className === "number" && Number.isInteger(other._value)) {
+            if (! Number.isInteger(this._value)) {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                    new GraceString("lower bound of range (" + this._value +
+                                    ") not an integer."));
+            } else if (other.className !== "number") {
+                throw new GraceExceptionPacket(TypeErrorObject,
+                    new GraceString("upper bound of range not a Number."));
+            } else if (! Number.isInteger(other._value)) {
+                throw new GraceExceptionPacket(RequestErrorObject,
+                    new GraceString("upper bound of range (" + other._value +
+                                    ") not an integer."));
+            }
             return callmethod(GraceRangeClass(),
                     "uncheckedFrom()to", [1, 1], this, other);
-            } else {
-                throw new GraceExceptionPacket(TypeError(),
-                    new GraceString("upper bound of range not an integer."));
-            }
         },
         "compare": function(argcv, that) {
             var self = this._value;
