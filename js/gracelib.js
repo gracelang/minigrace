@@ -685,6 +685,15 @@ GraceNum.prototype = {
         "≥": function(argcv, other) {
             if (this._value >= other._value) return GraceTrue; else return GraceFalse;
         },
+        "isInteger": function(argcv, other) {
+            if (Number.isInteger(this._value)) return GraceTrue; else return GraceFalse;
+        },
+        "isEven": function(argcv, other) {
+            if (this._value % 2 === 0) return GraceTrue; else return GraceFalse;
+        },
+        "isOdd": function(argcv, other) {
+            if (this._value % 2 === 1) return GraceTrue; else return GraceFalse;
+        },
         "prefix-": function(argcv) {
             return new GraceNum(-this._value);
         },
@@ -751,9 +760,7 @@ GraceNum.prototype = {
             return new GraceString(str);
         },
         "isNaN": function Num_isNaN(argcv) {
-            if (this._value === this._value) return GraceFalse;
-            // This is correct!  NaN is the only value not equal to itself.
-            return GraceTrue;
+            return (isNaN(this._value)) ? GraceTrue : GraceFalse;
         },
         "sin": function(argv) {
             return new GraceNum(Math.sin(this._value));

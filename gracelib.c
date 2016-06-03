@@ -2872,6 +2872,26 @@ Object Float64_GreaterOrEqual(Object self, int nparts, int *argcv,
         b = integerfromAny(other);
     return alloc_Boolean(a >= b);
 }
+Object Float64_IsEven(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    double a = *(double*)self->data;
+    return alloc_Boolean(fmod(a, 2.0) == 0.0);
+}
+Object Float64_IsOdd(Object self, int nparts, int *argcv,
+        Object *args, int flags) {
+    double a = *(double*)self->data;
+    return alloc_Boolean(fmod(a, 2.0) == 1.0);
+}
+Object Float64_IsInteger(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    double a = *(double*)self->data;
+    return alloc_Boolean((a - (double)(int64_t)a) == 0.0);
+}
+Object Float64_IsNaN(Object self, int nparts, int *argcv,
+         Object *args, int flags) {
+    double a = *(double*)self->data;
+    return alloc_Boolean(isnan(a));
+}
 Object Float64_Negate(Object self, int nparts, int *argcv,
         Object *args, int flags) {
     double a = *(double*)self->data;
@@ -2983,7 +3003,7 @@ Object alloc_Float64(double num) {
             && Float64_Interned[ival-FLOAT64_INTERN_MIN] != NULL)
         return Float64_Interned[ival-FLOAT64_INTERN_MIN];
     if (Number == NULL) {
-        Number = alloc_class2("Number", 40, (void*)&Float64__mark);
+        Number = alloc_class2("Number", 44, (void*)&Float64__mark);
         add_Method(Number, "+", &Float64_Add);
         add_Method(Number, "*", &Float64_Mul);
         add_Method(Number, "-", &Float64_Sub);
@@ -3005,6 +3025,10 @@ Object alloc_Float64(double num) {
         add_Method(Number, "≤", &Float64_LessOrEqual);
         add_Method(Number, ">=", &Float64_GreaterOrEqual);
         add_Method(Number, "≥", &Float64_GreaterOrEqual);
+        add_Method(Number, "isEven", &Float64_IsEven);
+        add_Method(Number, "isOdd", &Float64_IsOdd);
+        add_Method(Number, "isInteger", &Float64_IsInteger);
+        add_Method(Number, "isNaN", &Float64_IsNaN);
         add_Method(Number, "..", &Float64_Range);
         add_Method(Number, "asString", &Float64_asString);
         add_Method(Number, "asDebugString", &Object_asDebugString);
