@@ -25,6 +25,8 @@ Array.prototype.sum = function () {
     return this.reduce(function(a,b) {return a+b;}, 0);
 };
 
+var inBrowser = (typeof global === "undefined")
+
 function GraceObject() {       // constructor function
     // gets its methods from the prototype.  Don't add to them!
     this.superobj = null;
@@ -644,7 +646,7 @@ GraceNum.prototype = {
         },
         "..": function(argcv, other) {
             if (other.className === "number" && Number.isInteger(other._value)) {
-                return callmethod(GraceRangeClass(),
+            return callmethod(GraceRangeClass(),
                     "uncheckedFrom()to", [1, 1], this, other);
             } else {
                 throw new GraceExceptionPacket(TypeError(),
@@ -1585,11 +1587,12 @@ function Grace_errorPrint(obj) {
     try {
         try {
             var s = callmethod(obj, "asString", [0]);
-            minigrace.stderr_write(s._value + "\n");
+            minigrace.stderr_write(s._value);
         } catch (e) {
-            minigrace.stderr_write("can't stringify object " + obj + "\n");
+            minigrace.stderr_write("can't stringify object " + obj);
         }
     } finally {
+        if (! inBrowser) minigrace.stderr_write("\n");
         return GraceDone;
     }
 }
@@ -2491,7 +2494,7 @@ function gracecode_util() {
             minigrace.stderr_write("minigrace: " + minigrace.modname + ': ' +
                                      elapsed + " (+" +
                                      (elapsed - previousElapsed).toFixed(2) +
-                                     "): " + s._value + "\n");
+                                     "): " + s._value);
             previousElapsed = elapsed;
         }
         return GraceDone;

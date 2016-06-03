@@ -4,8 +4,9 @@ var goldenOutputOffset = 0;
 
 // Setup stderr.
 minigrace.stderr_write = function(value) {
+    // this function is used only in the oldWeb interface. 
     var stderr = document.getElementById("stderr_txt");
-    stderr.value += value;
+    stderr.value += value + "\n";
     stderr.scrollTop = stderr.scrollHeight;
 };
 

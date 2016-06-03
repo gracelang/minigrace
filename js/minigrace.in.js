@@ -33,10 +33,14 @@ function MiniGrace() {
     };
     
     this.stderr_write = function(value) {
+        // This function is used only in the oldWeb interface.  The exp interface
+        // replaces it with a different method in editor.js around line 138.
+        // There, each error writ eis turned into an html div, and is thus a line
+        // of its own.  For compatibility, we make each stderr_write a separate line.
         if(typeof(process) != "undefined") {
             process.stderr.write(value + "\n");
         } else {
-            console.log(value);
+            console.log(value + "\n");
         }
     };
     
