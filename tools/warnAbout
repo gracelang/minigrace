@@ -1,0 +1,9 @@
+#!/bin/bash
+PATH_VAR_NAME=$1
+INSTALL_PATH=$2
+if [[ `printenv ${PATH_VAR_NAME}` != *${INSTALL_PATH}* ]]
+then
+    echo "***********************************************************************"
+    echo "Now set ${PATH_VAR_NAME} to contain ${INSTALL_PATH} in your environment.";\
+    echo "***********************************************************************"; \
+fi
