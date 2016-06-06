@@ -24,6 +24,7 @@ keywords.put("use", true)
 keywords.put("var", true)
 
 def operatorChars = "-&|:$#\\%^@?*/+!~"
+def spaceChars = " \u00A0"    // ASCII space + non-breaking space
 
 method padl(s, l, w) {
     if (s.size >= l) then {
@@ -738,7 +739,7 @@ class new {
 
             } elseif { (mode != "c") && (mode != "p") } then {
                 // Not in a comment or pragma, so look for a mode.
-                if ((c == " ") && (mode != "d")) then {
+                if (spaceChars.contains(c) && (mode != "d")) then {
                     newmode := "n"
                 }
                 if (c == "\"") then {
