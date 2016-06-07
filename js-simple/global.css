@@ -1,0 +1,181 @@
+.tabbox {
+    width: 100%;
+}
+.tab {
+    float: left;
+    border: 1px solid #888;
+    background: #eee;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    padding: 0px 5px;
+    cursor: default;
+}
+.tab:hover {
+    background: #e0e0e0;
+}
+.selected {
+    background: #fff;
+    border: 1px solid #bbb;
+}
+.selected:hover {
+    background: #fff;
+    border: 1px solid #bbb;
+}
+
+.tab input {
+    display: none;
+}
+
+.close {
+    font-weight: bold;
+    font-family: arial;
+    font-size: 8pt;
+    color: #aaa;
+    border: 1px solid transparent;
+    display: block;
+    border-radius: 3px;
+    background: transparent;
+    text-align: center;
+    margin: 2px 0px 0px 5px;
+    width: 12px;
+    float: right;
+}
+
+.close:hover {
+    color: #fff;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background: #bbb;
+    text-align: center;
+    margin: 2px 0px 0px 5px;
+    width: 12px;
+    float: right;
+}
+.selected .close {
+}
+#plus {
+    float: left;
+    border: 1px solid #888;
+    background: #eee;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    padding: 0px 5px;
+    cursor: default;
+    color: #666;
+}
+
+#code_tabs textarea {
+    display: none;
+}
+
+canvas {border: 1px solid black;}
+
+#output {
+    float: right;
+    margin-top: 1px;
+    width: 50%;
+}
+
+#output textarea {
+    width: 100%;
+}
+
+#code_area {
+    float: left;
+    width: 50%;
+}
+#code_area textarea {
+    width: 99%;
+}
+
+#stderr_txt{
+    position: relative;
+    float: left;
+    width: 100%;
+    font-family: Monospace;
+    margin-right: 1px;
+}
+
+#stdout_options {
+    float: right;
+}
+
+#code_options {
+    float: right;
+    margin-right: 30px;
+}
+
+a:visited {
+    color: blue;
+}
+
+#debugger {
+	border: 1px outset #aaa;
+	margin-top: 1px;
+	position: relative;
+	display: none;
+	width: 49%;}
+
+#debugger_line_number {
+	text-align: right;
+	padding-right: 5px;}
+
+.debugger_td_border {
+	border: 1px solid #aaa;
+	width: 50%;}
+
+#debugger td {
+	vertical-align: top;}
+
+#debugger_buttons {
+	border-bottom: 1px solid #aaa;
+	padding: 3px;}
+
+#breakpoints {
+	overflow: auto;
+	height: 70px;}
+
+#add_break {
+	width: 2cm;}
+
+.debugger_vars_display	{
+	padding: 3px 5px 3px 5px;}
+
+.debugger_vars_display	{
+	border-collapse: collapse;
+	width: 100%;}
+
+.debugger_vars_display td {
+	border: 1px solid #aaa;
+	padding: 0px 5px 0px 5px}
+
+#debugger_status {
+	padding-left: 5px;}
+
+#debugger_vars_display>ul{
+	overflow: auto;
+	height: 120px;}
+
+#debugger_vars_display ul{
+	margin: 0;
+	padding: 0;}
+
+#debugger_vars_display li{
+	background: white url("list.png") no-repeat left center;
+	list-style-type: none;
+	padding-left: 22px;
+	margin-bottom: 3px;}
+
+#debugger_vars_display li.submenu{
+	background: white url(closed.png) no-repeat left 1px;
+	cursor: pointer;}
+
+#debugger_vars_display li.submenu ul{
+	display: none;}
+
+#debugger_vars_display .submenu ul li{
+	cursor: default;}
+.ace_gutter-cell.ace_breakpoint{
+    border-radius: 20px 0px 0px 20px;
+    box-shadow: 0px 0px 1px 1px red inset;
+}

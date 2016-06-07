@@ -1,0 +1,198 @@
+#!/bin/bash
+
+absolutePath(){
+    [[ -d $1 ]] && { cd "$1"; echo "$(pwd -P)"; } ||
+    ( cd "$(dirname "$1")" || exit 1; echo "$(pwd -P)/$(basename "$1")"; )
+}
+
+TESTDIR=`absolutePath $0`
+TESTDIR=`dirname $TESTDIR`
+# echo TESTDIR = $TESTDIR
+# echo num args = $#
+
+# somewhat hacky way to make the tograce target work without too many changes
+
+TYPE="normal"
+if [ "$3" ]
+then
+    if [ "$3" = "tograce" ]
+    then
+        EXECUTOR="./"
+        TYPE="tograce"
+    else
+        EXECUTOR="$3 "
+    fi
+else
+    EXECUTOR="../grace "
+fi
+
+if [ $# -lt 1 ]
+then
+    echo "Error: $0 requires one or more arguments:" >&2
+    echo "  - compiler to test" >&2
+    echo "  - directory containing tests (defaults to $TESTDIR)" >&2
+    echo "  - command to execute compiled code (defaults to $EXECUTOR)" >&2
+    echo '  - <test file name prefix>*  ; if omitted, all tests in directory'
+    exit 1
+fi
+
+if [ "$2" ]
+then
+    TESTDIR="$2"
+fi
+
+COMPILER=`absolutePath $1`
+# echo COMPILER = $COMPILER
+shift
+shift
+shift
+cd "$TESTDIR"
+# echo "now in `pwd`"
+
+
+if [ $# -gt 0 ]
+then
+    tests=( "$@" )
+else
+    tests=( *_test.grace )
+fi
+
+set +e
+
+pass() {
+    echo "!PASS" >> test-$$.log
+    FAILED="false"
+}
+fail() {
+    echo "!FAIL $*" >> test-$$.log
+    FAILED="true"
+}
+
+NUM_TESTS=0
+NUM_PASS=0
+NUM_UNEXPECTED_SUCCESS=0
+NUM_WRONG_OUTPUT=0
+NUM_COMPILE_ERROR=0
+echo "Beginning test run at $(date)" > test.js.log
+for tcase in "${tests[@]}"
+do
+    if ! [ -e "$tcase" ]
+    then
+        tcase=$(echo $tcase*_test.grace)
+    fi
+    if [ "$TYPE" = "tograce" ]
+    then
+        # hack to allow tests that test for compilation failure
+        if ! $COMPILER --target grace --dir .. $tcase > tg_$tcase 2>/dev/null
+        then
+            if echo $tcase | grep -q _fail
+            then
+                cp $tcase tg_$tcase
+            else
+                echo "print \"failed to print\"" > tg_$tcase
+            fi
+        else
+            if [ -e "${tcase%_test.grace}.out" ]
+            then
+                cp ${tcase%_test.grace}.out tg_${tcase%_test.grace}.out
+            fi
+        fi
+        tcase=tg_$tcase
+    fi
+    echo ================================================== >> test-$$.log
+    echo Beginning case "$tcase"... >>test-$$.log
+    NUM_TESTS=$((NUM_TESTS + 1))
+    FAILED="true"
+    if [ "${tcase%fail_test.grace}" = "$tcase" ]
+#   the %fail_test.grace DELETES a trailing fail_test.grace, so we get here
+#   if the test name does NOT end with fail_test
+    then
+        COMMAND="GRACE_MODULE_PATH=../:../../modules/: $COMPILER --verbose 60 --target js --dir .. $tcase"
+#        echo COMMAND = $COMMAND
+        if eval "$COMMAND" > test-$$.log 2>&1
+        then
+            execname="${tcase%%.*}"
+#   The %%.* _deletes_ the longest . extension.
+            GRACE_MODULE_PATH=../:../../modules/: $EXECUTOR"./$execname" > test-$$.out 2> test-$$.err
+            if [ ! -s test-$$.err ]
+            then
+                /bin/rm -f test-$$.err
+            else
+                cat test-$$.err
+            fi
+            if diff test-$$.out ${tcase%_test.grace}.out
+            then
+                NUM_PASS=$((NUM_PASS + 1))
+#                echo "${NUM_TESTS} PASS: $tcase"
+                printf %s .
+                pass ${tcase}
+                rm -f test-$$.out
+            else
+                NUM_WRONG_OUTPUT=$((NUM_WRONG_OUTPUT + 1))
+                echo ""
+                echo "${NUM_TESTS} ERROR: $tcase produced wrong output"
+                fail "${tcase}: wrong output"
+            fi
+        else
+            NUM_COMPILE_ERROR=$((NUM_COMPILE_ERROR + 1))
+            echo ""
+            echo "${NUM_TESTS} ERROR: $tcase failed to compile"
+            fail "${tcase}: compile error"
+        fi
+    else
+#   this is a _fail_test
+        COMMAND="$COMPILER --make --target js --noexec --dir .. $tcase"
+        if eval "$COMMAND" > test-$$.log 2>&1
+        then
+            echo "${NUM_TESTS} ERROR: $tcase should have failed to compile"
+            NUM_UNEXPECTED_SUCCESS=$((NUM_UNEXPECTED_SUCCESS + 1))
+            fail "${tcase} compiled"
+        else
+            NUM_PASS=$((NUM_PASS + 1))
+#            echo "${NUM_TESTS} PASS: $tcase"
+            printf %s .
+            pass ${tcase}
+        fi
+    fi
+    if [ "$FAILED" = "true" ]
+    then
+        cat test-$$.log >> test.js.log
+        if [ -e test-$$.err ]
+        then
+            echo "Errors:" >> test.js.log
+            cat test-$$.err >> test.js.log
+        fi
+        if [ -e test-$$.out ]
+        then
+            echo "Got output:" >> test.js.log
+            cat test-$$.out >> test.js.log
+            echo "Expected output:" >> test.js.log
+            cat ${tcase%_test.grace}.out >> test.js.log
+        fi
+    fi
+    rm -f test-$$.log test-$$.out test-$$.err ${tcase%%.*}.{js,gct} ../${tcase%%.*}.{js,gct} *_test.gct
+    if [ "$TYPE" = "tograce" ]
+    then
+        rm -f tg_t*
+    fi
+done
+
+echo
+echo $NUM_PASS/$NUM_TESTS passed. | tee -a test.js.log
+if [ $NUM_UNEXPECTED_SUCCESS -ne "0" ]
+then
+    echo "$NUM_UNEXPECTED_SUCCESS tests compiled that shouldn't have." | tee -a test.js.log
+fi
+if [ $NUM_WRONG_OUTPUT -ne "0" ]
+then
+    echo "$NUM_WRONG_OUTPUT tests compiled but produced the wrong output." | tee -a test.js.log
+fi
+if [ $NUM_COMPILE_ERROR -ne "0" ]
+then
+    echo "$NUM_COMPILE_ERROR tests did not compile but should have." | tee -a test.js.log
+fi
+NUM_FAIL=$((NUM_TESTS - NUM_PASS))
+if [ $NUM_FAIL -gt 0 ]
+then
+    exit 1
+fi
