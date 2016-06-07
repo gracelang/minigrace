@@ -47,7 +47,9 @@ TYPE_DIALECTS = staticTypes requireTypes
 VER = $(shell ./tools/calculate-version $(STABLE))
 VERBOSITY =
 WEB_DIRECTORY = public_html/minigrace/js/
+WEB_DIRECTORY_SIMPLE = public_html/minigrace/js-simple/
 WEBFILES = $(filter-out js/sample,$(sort js/index.html js/global.css js/tests js/minigrace.js js/tabs.js js/gracelib.js js/dom.js js/gtk.js js/debugger.js js/timer.js js/ace  js/debugger.html  js/*.png js/unicodedata.js js/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
+WEBFILES_SIMPLE = $(filter-out js-simple/sample,$(sort js-simple/index.html js-simple/global.css js-simple/tests js-simple/minigrace.js js-simple/tabs-simple.js js-simple/gracelib.js js-simple/dom.js js-simple/gtk.js js-simple/debugger.js js-simple/timer.js js-simple/ace  js-simple/debugger.html  js-simple/*.png js-simple/unicodedata.js js-simple/importStandardPrelude.js $(ALL_LIBRARY_MODULES:%.grace=js/%.js) $(filter-out js/util.js,$(JSSOURCEFILES))))
 all: minigrace-environment $(C_MODULES_GSO) $(WEBFILES)
 
 .PHONY: ace-code all alltests blackWeb bruceWeb c checkjs checkgenjs clean dialects echo expWebBuild expWebDeploy fullclean install js just-minigrace minigrace-environment minigrace-c-env minigrace-js-env pull-web-editor pull-objectdraw selfhost-stats selftest selftest-js samples sample-% test test.js test.js.compile uninstall
@@ -373,6 +375,10 @@ oldWeb: $(WEBFILES) js/sample
 	rsync -a -l -z js/samples.js $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z js/sample $(WEB_SERVER):$(WEB_DIRECTORY)
 	rsync -a -l -z sample $(WEB_SERVER):$(WEB_DIRECTORY)
+
+oldWeb-simple: $(WEBFILES_SIMPLE) js/sample
+	rsync -a -l -z --delete $(WEBFILES_SIMPLE) $(WEB_SERVER):$(WEB_DIRECTORY_SIMPLE)
+	rsync -a -l -z js-simple/examples $(WEB_SERVER):$(WEB_DIRECTORY_SIMPLE)
 
 pull-web-editor:
 	@if [ -e grace-web-editor ] ; \
