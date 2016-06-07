@@ -1,0 +1,68 @@
+math's methods are: 
+    !=
+    ::
+    abs
+    acos
+    asDebugString
+    asString
+    asin
+    atan
+    basicAsString
+    cos
+    debugIterator
+    debugValue
+    exp
+    isMe
+    lg
+    ln
+    log10
+    outer
+    pi
+    random
+    sin
+    sqrt
+    tan
+    π
+    ≠
+
+asString = the "math" module
+asDebugString = the "math" module
+sin(90°) = 1
+cos(0°) = 1
+tan(45°) = 1
+asin(-1/2) = -30°
+acos(1/2) = 60°
+atan(1) = 45°
+pi = 3.141593
+π = 3.141593
+sqrt(16) = 4
+abs(-21.34) = 21.34
+lg(128) = 7
+ln(exp(2)) = 2
+exp(ln(15)) = 15
+log10(1000) = 3
+
+sin(90°) = 1
+cos(0°) = 1
+tan(45°) = 1
+asin(-1/2) = -30°
+acos(1/2) = 50.281777°
+atan(1) = 45°
+π = 3.141593
+sqrt(16) = 4
+abs(-21.34) = 21.34
+lg(128) = 7
+ln(exp(2)) = 2
+exp(ln(15)) = 15
+log10(1000) = 3
+(34.56).truncated = 34
+(34.56).rounded = 35
+(34.56).floor = 34
+(34.56).ceiling = 35
+(-34.56).truncated = -34
+(-34.56).rounded = -35
+(-34.56).floor = -35
+(-34.56).ceiling = -34
+(-34.56).sgn = -1
+(0).sgn = 0
+(34.56).sgn = 1
