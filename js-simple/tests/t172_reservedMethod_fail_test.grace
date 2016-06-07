@@ -1,0 +1,2 @@
+method true { ... }
+print(true)
