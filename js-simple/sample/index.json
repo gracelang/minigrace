@@ -1,0 +1,177 @@
+{
+    "minitest": {
+        "name": "minitest dialect for writing tests",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "Allows writing of testsuites without inheritance or classes."
+    },
+    "testExample": {
+        "name": "minitest example",
+        "dir": "dialects",
+        "requires": ["minitest"],
+        "categories": ["Dialect examples"],
+        "description": "Example using minitest for two trivial tests."
+    },
+    "loopInvariant": {
+        "name": "Loop invariants dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "A small sample dialect enforcing loop invariants."
+    },
+    "loopInvariantExample": {
+        "name": "Loop invariant example",
+        "dir": "dialects",
+        "requires": ["loopinvariant"],
+        "categories": ["Dialect examples"],
+        "description": "Example using loop invariants dialect."
+    },
+    "fsm": {
+        "name": "Finite state machine dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "A dialect for implementing finite state machines as modules."
+    },
+    "fsmExample": {
+        "name": "FSM client code",
+        "requires": ["fsm"],
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "description": "Example using finite state machine dialect."
+    },
+    "whileLiteral": {
+        "name": "While: literal block dialect",
+        "dir": "dialects",
+        "requires": ["dialect"],
+        "categories": ["Dialects"],
+        "description": "A dialect enforcing that while loops are written with literal blocks, and offering errors and suggestions when they are not."
+    },
+    "whileLiteralExample": {
+        "name": "Example for literal block dialect",
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "requires": ["literalblock"],
+        "description": "Example code producing an error using the literal block dialect"
+    },
+    "objectAssociations": {
+        "name": "Object associations dialect",
+        "dir": "dialects",
+        "description": "A dialect for using object associations/relations in your program.",
+        "categories": ["Dialects"]
+    },
+    "objectAssociationsExample": {
+        "name": "OA client code",
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "requires": ["ObjectAssociations"],
+        "description": "Example using the object associations dialect."
+    },
+    "requireTypes": {
+        "name": "Static Grace dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "A dialect that requires static type annotations on all declarations."
+    },
+    "dialect": {
+        "name": "Dialect dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "A dialect to assist in writing other dialects and checkers."
+    },
+    "dialectExample": {
+        "name": "Dialect client code",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": ["dialect"],
+        "description": "Example using the Dialect dialect to implement the requireTypes dialect in a more concise way."
+    },
+    "grapl": {
+        "name": "GrAPL dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "description": "A Grace rendition of parts of APL, showing the use of operator definitions and other language features."
+    },
+    "graplExample": {
+        "name": "GrAPL example",
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "requires": ["grapl"],
+        "description": "Example using simple APL programs with the GrAPL dialect."
+    },
+    "simplegraphics": {
+        "name": "Simple graphics module",
+        "dir": "js",
+        "categories": ["Dialects", "Graphics"],
+        "requires": [],
+        "description": "Cross-platform graphics library."
+    },
+    "simplegraphicsExample": {
+        "name": "Simple graphics demo",
+        "dir": "graphics",
+        "categories": ["Dialect examples", "Graphics"],
+        "requires": ["simplegraphics"],
+        "description": "Example using the cross-platform simple graphics library."
+    },
+    "turtle": {
+        "name": "Turtle graphics module",
+        "dir": "js",
+        "categories": ["Graphics"],
+        "requires": [],
+        "description": "Library to draw a turtle on the screen and allow it to be moved around by code."
+    },
+    "logo": {
+        "name": "Logo-like dialect",
+        "dir": "graphics",
+        "requires": ["turtle"],
+        "categories": ["Dialects", "Graphics"],
+        "description": "A dialect providing procedural turtle graphics access."
+    },
+    "logo_example": {
+        "name": "Logo-like client code",
+        "dir": "graphics",
+        "requires": ["turtle", "logo"],
+        "categories": ["Dialect examples", "Graphics"],
+        "description": "Example using the Logo-like turtle graphics dialect to draw a picture."
+    },
+    "pong": {
+        "name": "DOM Pong",
+        "dir": "js",
+        "categories": ["Graphics"],
+        "requires": [],
+        "description": "Pong implemented on top of the HTML document object model directly."
+    },
+    "sniff": {
+        "name": "Sniff graphics dialect",
+        "dir": "js",
+        "categories": ["Dialects", "Graphics"],
+        "requires": [],
+        "description": "A dialect giving Scratch-like graphics."
+    },
+    "sniffpong": {
+        "name": "Sniff-based pong",
+        "dir": "js",
+        "categories": ["Dialect examples", "Graphics"],
+        "requires": ["sniff"],
+        "description": "Example code in the Sniff dialect, implementing Pong."
+    },
+    "staticTypes": {
+        "name": "Static structural typechecking",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": ["dialect"],
+        "description": "A typechecking dialect enforcing structural subtyping."
+    },
+    "staticTypesExample": {
+        "name": "Static typing example",
+        "description": "Sample code for the staticTypes dialect.",
+        "dir": "dialects",
+        "categories": ["Dialect examples"],
+        "requires": ["staticTypes"]
+    },
+    "dbc": {
+        "name": "Design-by-contract dialect",
+        "dir": "dialects",
+        "categories": ["Dialects"],
+        "requires": [],
+        "description": "A simple dialect including loop invariants and preconditions."
+    }
+}

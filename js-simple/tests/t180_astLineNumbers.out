@@ -1,0 +1,54 @@
+0:0 module
+  Name: standardInput
+  1:1 typedec
+    1:6 identifierBinding‹Person›
+    Value:1:15 typeliteral
+        Types:
+        Methods:
+          2:3 methodtype
+            Name: age
+            Returns:
+              2:10 identifier‹Number›
+            Signature:
+              2:3 signaturepart: age
+          3:3 methodtype
+            Name: name
+            Returns:
+              3:11 identifier‹String›
+            Signature:
+              3:3 signaturepart: name
+
+
+  5:0 blank
+  6:1 method
+    Name: 6:7 identifierBinding‹person›
+    Signature:
+      Part: person
+        Parameters:
+          6:14 identifierBinding‹name'›
+          6:21 identifierBinding‹age'›
+    Body:
+      6:1 object (class)
+        Name: person
+        7:3 defdec
+          7:7 identifierBinding‹name›
+          Value: 7:24 identifier‹name'›
+          Annotations: 7:15 identifier‹public›
+        8:3 defdec
+          8:7 identifierBinding‹age›
+          Value: 8:23 identifier‹age'›
+          Annotations: 8:14 identifier‹public›
+        9:1 method
+          Name: 9:10 identifierBinding‹getShoeSize›
+          Signature:
+            Part: getShoeSize
+              Parameters:
+          Body:
+            10:5 return
+              10:19 op‹+›
+                10:19 op‹*›
+                  10:19 member‹size›
+                    10:14 identifier‹name›
+                  10:31 member‹size›
+                    10:26 identifier‹name›
+                10:39 identifier‹age›
