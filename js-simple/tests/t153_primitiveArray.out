@@ -1,0 +1,6 @@
+[4: ‹undefined›, ‹undefined›, ‹undefined›, ‹undefined›]
+primArray(4: ‹undefined›, ‹undefined›, ‹undefined›, ‹undefined›)
+1
+[4: true, Hello, 1, is "foo\bar" a word?]
+primArray(4: true, "Hello", 1, "is \"foo\\bar\" a word?")
+a.size = 4

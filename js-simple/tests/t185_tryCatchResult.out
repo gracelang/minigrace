@@ -1,0 +1,16 @@
+tryOK = 5
+tryExceptional = 4
+tryReturnOK = 5
+tryReturnExceptional = 4
+OK
+tryOKFinally = 5
+OK
+tryExceptionalFinally = 4
+OK
+tryReturnOKFinally = 5
+OK
+tryReturnExceptionalFinally = 4
+tryOKFinallyReturns = OK
+tryExceptionalFinallyReturns = OK
+tryReturnOKFinallyReturns = OK
+tryReturnExceptionalFinallyReturns = OK

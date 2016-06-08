@@ -1,0 +1,7 @@
+[6: 17, 20, 10, 5, 1, 0]
+[6: 5, 10, 17, 20, ‹undefined›, ‹undefined›]
+[0: ]
+[0: ]
+[9: a, w, q, b, d, z, t, ‹undefined›, ‹undefined›]
+[9: a, b, d, q, t, w, z, ‹undefined›, ‹undefined›]
+Correctly raised TypeError

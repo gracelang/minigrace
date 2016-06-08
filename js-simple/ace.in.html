@@ -1,0 +1,25 @@
+ <script src="ace/ace.js"></script>
+ <script src="ace/mode-grace.js" type="text/javascript" charset="utf-8"></script>
+ <script>
+     if (ace) {
+        document.getElementById('code_txt_real').style.display = 'block';
+        document.getElementById('code_txt').style.display = 'none';
+        var editor = ace.edit("code_txt_real");
+        var GraceMode = require("ace/mode/grace").Mode;
+        editor.getSession().setMode(new GraceMode());
+        editor.setBehavioursEnabled(false);
+        editor.setHighlightActiveLine(true);
+        editor.setShowFoldWidgets(false);
+        editor.setShowPrintMargin(false);
+        editor.getSession().setUseSoftTabs(true);
+        editor.getSession().setTabSize(4);
+        editor.commands.bindKeys({"ctrl-l":null, "ctrl-shift-r":null, "ctrl-r":null, "ctrl-t":null})
+
+        document.getElementById('code_txt_real').style.height = document.getElementById('tabbox').clientHeight + 'px';
+        document.getElementById('code_txt_real').style.width = (document.getElementById('tabbox').clientWidth - 30) + 'px';
+        // Get code from ace editor.
+        var getCode = function() {
+            return editor.getValue();
+        }        
+     }
+ </script>

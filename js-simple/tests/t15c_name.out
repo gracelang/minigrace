@@ -1,0 +1,15 @@
+Hello, world!
+Built-in: EnvironmentException = EnvironmentException
+StdPrel: BasicPattern = class BasicPattern
+Built-in module: unicode = the "unicode" module
+Built-in module: mirrors = the "mirrors" module
+Collections: (factory) list = a list factory
+StdPrel: 5@6 = (5@6)
+StdPrel: Object = type Object
+StdPrel: Type = type Type
+a custom object
+a custom object
+a t15c_name_test.koala
+a t15c_name_test.koala
+an african.elephant
+an african.elephant
