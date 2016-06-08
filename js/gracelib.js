@@ -635,7 +635,7 @@ GraceNum.prototype = {
                 if (other._value < 0) return new GraceNum(q + 1);
                 return new GraceNum(q - 1);
             }
-            return callmethod(other, "reverseDivideNumber", [1], this);
+            return callmethod(other, "reverseQuotientNumber", [1], this);
         },
         "@": function(argcv, other) {
             return callmethod(Grace_prelude, "point2Dx()y", [1, 1], this, other);
