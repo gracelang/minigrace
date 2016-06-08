@@ -361,7 +361,10 @@ type Point =  {
 
     dot (other:Point) -> Number
     ⋅ (other:Point) -> Number
-    // dot product
+    // dot product of self and other
+
+    norm (other:Point) -> Point
+    // the unit vector (vecor of length 1) in same direction as self
 }
 
 class alwaysEqual {     // a trait
@@ -395,6 +398,11 @@ class point2Dx (x') y (y') {
         // dot product
         (x * other.x) + (y * other.y)
     }
+    method reverseTimesNumber(n) { point2Dx (n * x) y (n * x) }
+    method reversePlusNumber(n) { point2Dx (n + x) y (n + x) }
+    method reverseDivideNumber(n) { point2Dx (n / x) y (n / x) }
+    method reverseMinusNumber(n) { point2Dx (n - x) y (n - x) }
+    method norm { self / self.length }
 }
 
 import "collectionsPrelude" as coll
