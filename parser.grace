@@ -1729,7 +1729,7 @@ method callrest(acceptBlocks) {
     }
     def lnum = meth.line
     def lpos = meth.linePos
-    var methn := meth.value
+    var methn := meth.nameString
     def btok = sym
     util.setPosition(sym.line, sym.linePos)
     var signature := []
@@ -2344,11 +2344,11 @@ method inheritsModifier(node) onLineOf(startToken) {
 method parseAlias(node) {
     next    // skip the alias keyword
     def newSig = methodsignature(true)
-    def newMeth = newSig.m
+    def newMeth = newSig.nameString
     if (accept "op" && (sym.value == "=")) then {
         next
         def oldSig = methodsignature(true)
-        def oldMeth = oldSig.m
+        def oldMeth = oldSig.nameString
         oldMeth.isBindingOccurrence := false
         node.addAlias (newMeth) for (oldMeth)
     } else {
@@ -2361,7 +2361,7 @@ method parseAlias(node) {
 method parseExclude(node) {
     next    // skip the exclude keyword
     def exSig = methodsignature(true)
-    def excludedMeth = exSig.m
+    def excludedMeth = exSig.nameString
     excludedMeth.isBindingOccurrence := false
     node.addExclusion (excludedMeth)
     return true
@@ -2504,24 +2504,18 @@ method doclass {
         objName.isBindingOccurrence := true
         next    // skip over the dot
     }
-    def s = methodsignature(false)
-    def csig = s.sig
-    def methodName = s.m
-    methodName.isBindingOccurrence := true
-    def dtype = s.rtype
+    def meth = methodsignature(false)
     parseObjectConstructorBody "a class" startingWith (btok) after "method header"
     def objNode = values.pop
-    util.setPosition(btok.line, btok.linePos)
-    def meth = ast.methodNode.new(methodName, csig, [objNode], dtype)
-    meth.typeParams := s.typeParams
+    meth.body := [objNode]
     meth.usesClassSyntax := true
     meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
     // see comment in dofactoryMethod
     if (false != objName) then {   // deal with (deprecated) dotted class
-        objNode.name := objName.nameString ++ "." ++ methodName.nameString
+        objNode.name := objName.nameString ++ "." ++ meth.canonicalName
         def asStringBody = [ ast.stringNode.new("class {objName.nameString}") ]
-        def asStringMeth = ast.methodNode.new(
-            ast.identifierNode.new("asString", false), [], asStringBody, false)
+        def signature = [ ast.signaturePart.partName "asString" ]
+        def asStringMeth = ast.methodNode.new(false, signature, asStringBody, false)
         def metaBody = [meth, asStringMeth]
         def metaObj = ast.objectNode.body (metaBody) named "class {objName.nameString}"
         def defDec = ast.defDecNode.new(objName, metaObj, ast.unknownType)
@@ -2529,7 +2523,7 @@ method doclass {
         defDec.annotations.add(ast.identifierNode.new("public", false))
         values.push(defDec)
     } else {
-        objNode.name := methodName.nameString
+        objNode.name := meth.nameString
         if (btok.value == "class") then {
             objNode.inClass := true
         } elseif { btok.value == "trait" } then {
@@ -2568,17 +2562,12 @@ method dofactoryMethod {
                 atPosition (lastToken.line, lastToken.linePos + lastToken.size + 1)
                 withSuggestions (suggestions)
         }
-        var s := methodsignature(false)
-        def csig = s.sig
-        var methodName := s.m
-        methodName.isBindingOccurrence := true
-        def dtype = s.rtype
+        var meth := methodsignature(false)
         parseObjectConstructorBody "a factory method" startingWith (btok) after "method header"
         def objNode = values.pop
-        objNode.name := methodName
+        objNode.name := meth.nameString
         util.setPosition(btok.line, btok.linePos)
-        def meth = ast.methodNode.new(methodName, csig, [objNode], dtype)
-        meth.typeParams := s.typeParams
+        meth.body := [objNode]
         meth.annotations.addAll(objNode.annotations)  // TODO: sort this out!
         // In a class or factory method declaration, there is just one place
         // for annotations.  These might include annotations on the method (such
@@ -2598,10 +2587,7 @@ method methoddec {
         statementToken := sym
         var stok := sym
         next
-        def m = methodsignature(false)
-        def meth = m.m
-        def signature = m.sig
-        def dtype = m.rtype
+        def methNode = methodsignature(false).setPositionFrom(btok)
         def body = []
         var localMin
         def anns = doannotation
@@ -2659,11 +2645,10 @@ method methoddec {
             errormessages.syntaxError("a method must have a '\{' after the name.")atPosition(
                 lastToken.line, lastToken.linePos + lastToken.size)withSuggestion(suggestion)
         }
+        methNode.body := body
         util.setline(btok.line)
-        var o := ast.methodNode.new(meth, signature, body, dtype)
-        o.typeParams := m.typeParams
-        if (false != anns) then { o.annotations.addAll(anns) }
-        values.push(o)
+        if (false != anns) then { methNode.annotations.addAll(anns) }
+        values.push(methNode)
         reconcileComments
     }
 }
@@ -2674,19 +2659,12 @@ method methodDecRest(tm, sameline) {
     // mostly the same rules as calls, but aren't strictly enforced to be on
     // a single line (because they are ended by "{"). 
     //
-    // tm is a methodNode.  This method returns a replacement method name 
-    // identifier, and modifies tm.params in place.
+    // tm is a methodNode.  This method modifies tm.params in place.
 
-    var methname := tm.value.value
     var signature := tm.signature
-    var nxt
     while {(!sameline && accept("identifier")) || acceptSameLine("identifier")} do {
-        methname := methname ++ "()"
-        var part := ast.signaturePart.new
         pushidentifier
-        nxt := values.pop
-        methname := methname ++ nxt.value
-        part.name := nxt.value
+        def part = ast.signaturePart.partName(values.pop.nameString)
         if ((accept("lparen")).not) then {
             def suggestion = errormessages.suggestion.new
             suggestion.insert("()")afterToken(lastToken)
@@ -2704,7 +2682,7 @@ method methodDecRest(tm, sameline) {
                     atPosition(lastToken.line, lastToken.linePos)
             }
             pushidentifier
-            nxt := values.pop
+            def nxt = values.pop
             nxt.isBindingOccurrence := true
             nxt.dtype := optionalTypeAnnotation
             part.params.push(nxt)
@@ -2722,9 +2700,6 @@ method methodDecRest(tm, sameline) {
         next
         signature.push(part)
     }
-    def newName = ast.identifierNode.new(methname, false)
-    newName.isBindingOccurrence := true
-    newName
 }
 
 method optionalTypeAnnotation {
@@ -2750,6 +2725,7 @@ method optionalTypeAnnotation {
         false
     }
 }
+
 method methodsignature(sameline) {
     // Accept a method signature
     if((sym.kind != "identifier") && (sym.kind != "op") && (sym.kind != "lsquare")) then {
@@ -2759,33 +2735,24 @@ method methodsignature(sameline) {
             atPosition(lastToken.line, lastToken.linePos + lastToken.size + 1)
                 withSuggestion(suggestion)
     }
-    pushidentifier
-    var meth := values.pop
-    meth.isBindingOccurrence := true
-    var signature := [ ]
-    def part = ast.signaturePart.partName(meth.value)
-    part.line := meth.line
-    part.linePos := meth.linePos
-    signature.push(part)
-    if ((meth.value == "[") && {sym.kind == "rsquare"}) then {
+    def startToken = sym
+    def part = ast.signaturePart.partName(startToken.value)
+    next
+    def result = ast.methodNode.new(false, [ part ], [], false)
+    if ((startToken.value == "[") && {sym.kind == "rsquare"}) then {
         errormessages.syntaxError("methods named '[]' and '[]:=' are no longer part of Grace.")
             atRange(lastToken.line, lastToken.linePos, sym.linePos)
     }
-    var myTypeParams := false
-    if (accept "lgeneric") then { myTypeParams := typeparameters }
+    if (accept "lgeneric") then { result.typeParams := typeparameters }
     if (accept "bind") then {
-        next
-        meth.value := meth.value ++ ":="
         part.name := part.name ++ ":="
-    } elseif { accept "op"  && (meth.value == "prefix") } then {
-        meth.value := meth.value ++ sym.value
+        next
+    } elseif { accept "op"  && (startToken.value == "prefix") } then {
         part.name := part.name ++ sym.value
         next
     }
-    var dtype := false
     if (accept "lparen") then {
         def lparen = sym
-        part.linePos := sym.linePos
         next
         var id
         var comma := false
@@ -2801,8 +2768,7 @@ method methodsignature(sameline) {
             pushidentifier
             id := values.pop
             id.isBindingOccurrence := true
-            dtype := optionalTypeAnnotation
-            id.dtype := dtype
+            id.dtype := optionalTypeAnnotation
             part.params.push(id)
             if (accept "comma") then {
                 comma := sym
@@ -2835,24 +2801,16 @@ method methodsignature(sameline) {
             acceptSameLine("identifier")) then {
             // The presence of an identifier here means
             // a multi-part method name.
-            var tm := ast.methodNode.new(meth, signature, [], false)
-            meth := methodDecRest(tm, sameline)
+            methodDecRest(result, sameline)
         }
     }
     if (accept "arrow") then {
         // Return dtype
         next
         typeexpression
-        dtype := values.pop
-    } else {
-        dtype := false
+        result.dtype := values.pop
     }
-    object {
-        def m is public = meth
-        def sig is public  = signature
-        def rtype is public = dtype
-        def typeParams is public = myTypeParams
-    }
+    result
 }
 
 method typeparameters {
@@ -2976,16 +2934,15 @@ method doreturn {
 method domethodtype {
     // parses a method in a type literal
     def methodTypeTok = sym
-    var m := methodsignature(true)
-    var meth := m.m
-    var signature := m.sig
-    var dtype := m.rtype
-    if (false == dtype) then {
+    var methNode := methodsignature(true)
+    var dtype := methNode.dtype
+    if (false == methNode.dtype) then {
         dtype := ast.identifierNode.new("Done", false)
     }
-    util.setPosition(methodTypeTok.line, methodTypeTok.linePos)
-    def o = ast.methodTypeNode.new(meth.value, signature, dtype)
-    o.typeParams := m.typeParams
+    def o = ast.methodTypeNode
+        .new(methNode.nameString, methNode.signature, dtype)
+            .setPositionFrom(methodTypeTok)
+    o.typeParams := methNode.typeParams
     values.push(o)
     reconcileComments
     if (accept "semicolon") then {

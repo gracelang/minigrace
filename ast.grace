@@ -6,7 +6,7 @@ import "identifierKinds" as k
 // in the parser. Because of the limitations of the class syntax, classes that
 // need more than one method are written as object literals containing methods.
 // Each node has a different signature according to its function, but the
-// common interface is given by type ASTNode 
+// common interface is given by type ASTNode
 //
 // Most nodes also contain a "value" field, with varied type, holding the `main value`
 // in the node.  This field is confusing and should be appropriately re-named in
@@ -47,7 +47,7 @@ def ancestorChain = object {
         method isEmpty { false }
         method parent { p }
         method grandparent { forebears.parent }
-        
+
         method asString {
             var a := self
             var s := "ancestorChain "
@@ -64,7 +64,7 @@ def ancestorChain = object {
 def emptySeq = emptySequence
 
 type AstNode = type {
-    kind -> String 
+    kind -> String
         // Used for pseudo-instanceof tests.
     register -> String
         // Used in the code generator on to name the resulting object
@@ -75,7 +75,7 @@ type AstNode = type {
     linePos:=(lp:Number)
     scope -> SymbolTable
         // The symbolTable for names defined in this node and its sub-nodes
-    pretty(n:Number) -> String 
+    pretty(n:Number) -> String
         // Pretty-print-string of node at depth n
     comments -> AstNode
         // Comments associated with this node
@@ -91,6 +91,16 @@ class baseNode {
     var symbolTable := fakeSymbolTable
     var comments is public := false
 
+    method setLine (l) col (c) {
+        line := l
+        linePos := c
+        self
+    }
+    method setPositionFrom (token) {
+        line := token.line
+        linePos := token.linePos
+        self
+    }
     method kind { abstract }
     method ==(other) { self.isMe(other) }       // for usesAsType
     method isAppliedOccurenceOfIdentifier { false }
@@ -546,7 +556,7 @@ def methodTypeNode is public = object {
 
     method isExecutable { false }
     method parametersDo(b) {
-        signature.do { part -> 
+        signature.do { part ->
             part.params.do { each -> b.apply(each) }
         }
     }
@@ -590,7 +600,7 @@ def methodTypeNode is public = object {
             s := "{s}{spc}Returns:\n  {spc}{rtype.pretty(depth + 2)}"
         }
         if (false != typeParams) then {
-            s := "{s}\n{spc}TypeParams:\n" 
+            s := "{s}\n{spc}TypeParams:\n"
             s := s ++ typeParams.pretty(depth + 2)
         }
         s := "{s}\n{spc}Signature:"
@@ -641,7 +651,7 @@ def typeLiteralNode is public = object {
     var nominal is public := false
     var anonymous is public := true
     var value is public := "‹anon›"
-    
+
     method name { value }
     method name:=(n) {
         value := n
@@ -734,7 +744,7 @@ def typeDecNode is public = object {
         symbolTable := st
         st.node := self
     }
-    
+
     method isExecutable { true }
     method declarationKindWithAncestors(as) { k.typeparam }
     method isConfidential {
@@ -807,7 +817,7 @@ def methodNode = object {
         result.scope := s
         result
     }
-    
+
     class new(name', signature', body', dtype') {
         // Represents a method declaration
         // name' is the name of the method (an identifierNode),
@@ -817,17 +827,30 @@ def methodNode = object {
 
         inherits baseNode
         def kind is public = "method"
-        var value is public := name'
         var signature is public := signature'
         var body is public := body'
         var dtype is public := dtype'
         var typeParams is public := false
         var selfclosure is public := false
-        def nameString:String is public = value.value
         var annotations is public := [ ]
         var isFresh is public := false      // a method is 'fresh' if it answers a new object
         var usesClassSyntax is public := false
 
+        method nameString {
+            signature.fold { acc, each -> acc ++ each.nameString }
+                startingWith ""
+        }
+        method value {
+            def id = identifierNode.new(nameString, false)
+            id.line := signature.first.line
+            id.linePos := signature.first.linePos
+            id.isBindingOccurrence := true
+            id
+        }
+        method canonicalName {
+            signature.fold { acc, each -> acc ++ each.canonicalName }
+                startingWith ""
+        }
         method isMethod { true }
         method isExecutable { false }
         method isLegalInTrait { true }
@@ -840,9 +863,9 @@ def methodNode = object {
             }
         }
         method needsArgChecks {
-            signature.do { part -> 
+            signature.do { part ->
                 part.params.do { p ->
-                    if ((false != p.dtype) && { 
+                    if ((false != p.dtype) && {
                             p.dtype.nameString != "Unknown" }) then {
                         return true
                     }
@@ -913,8 +936,7 @@ def methodNode = object {
                 spc := spc ++ "  "
             }
             var s := super.pretty(depth) ++ "\n"
-            s := s ++ spc ++ "Name: " ++ self.value.pretty(depth+1)
-            s := s ++ "\n"
+            s := s ++ spc ++ "Name: " ++ value.pretty(depth+1) ++ "\n"
             if (false != self.dtype) then {
                 s := s ++ spc ++ "Returns:\n" ++ spc ++ "  "
                 s := s ++ self.dtype.pretty(depth + 2) ++ "\n"
@@ -1038,7 +1060,7 @@ def callNode = object {
         var generics is public := false
         var isPattern is public := false
         def nameString:String is public = value.nameString
-        
+
         method target { value }
         method isCall { true }
         method returnsObject {
@@ -1177,7 +1199,7 @@ def moduleNode = object {
         method isModule { true }
         method returnsObject { false }
         method externalsDo(action) {
-            value.do { o -> 
+            value.do { o ->
                 if (o.isExternal) then { action.apply(o) }
             }
         }
@@ -1223,10 +1245,10 @@ def objectNode is public = object {
         var inTrait is public := false
         var myLocalNames := false
         var annotations is public := [ ]
-        
-        method description -> String { 
-            if (isTrait) then { 
-                "{kind} (trait)" 
+
+        method description -> String {
+            if (isTrait) then {
+                "{kind} (trait)"
             } elseif { inClass } then {
                 "{kind} (class)"
             } else {
@@ -1238,13 +1260,13 @@ def objectNode is public = object {
             // or not it was declared with the trait syntax
             if (inTrait) then { return true }
             if (false != superclass) then { return false }
-            value.do { each -> 
+            value.do { each ->
                 if (each.isLegalInTrait.not) then { return false }
             }
             return true
         }
-                
-        method localNames -> Set<String> { 
+
+        method localNames -> Set<String> {
             // answers the names of all of the methods defined directly in
             // this object.  Inherited names are _not_ included.
             if (false == myLocalNames) then {
@@ -1257,22 +1279,22 @@ def objectNode is public = object {
             }
             myLocalNames
         }
-        
+
         method parentsDo(action) {
             // iterate over my superclass and my used traits
 
             if (false != superclass) then { action.apply(superclass) }
             usedTraits.do { t -> action.apply(t) }
         }
-        
+
         method methodsDo(action) {
             // iterate over my method declarations
-            
+
             value.do { o ->
                 if (o.isMethod) then { action.apply(o) }
             }
         }
-        
+
         method executableComponentsDo(action) {
             // iterate over my executable code, including
             // field declarations (since they may have initializers)
@@ -1303,7 +1325,7 @@ def objectNode is public = object {
                 value.do { x -> x.accept(visitor) from(newChain) }
             }
         }
-        method nameString { 
+        method nameString {
             if (name == "object") then {
                 "object_on_line_{line}"
             } else {
@@ -1327,12 +1349,12 @@ def objectNode is public = object {
             var s := super.pretty(depth)
             s := "{s}\n{spc}Name: {self.name}"
             if (false != self.superclass) then {
-                s := s ++ "\n" ++ spc ++ "Superclass: " ++ 
+                s := s ++ "\n" ++ spc ++ "Superclass: " ++
                         self.superclass.pretty(depth + 1)
             }
             if (usedTraits.isEmpty.not) then {
                 s := s ++ "\n" ++ spc ++ "Traits:"
-                usedTraits.do { t -> 
+                usedTraits.do { t ->
                     s := "{s}\n{spc}  {t.pretty(depth + 1)}"
                 }
             }
@@ -1349,7 +1371,7 @@ def objectNode is public = object {
             var s := "object \{"
             if (inTrait) then { s := s ++ "   // trait" }
             if (inClass) then { s := s ++ "   // class" }
-            if (false != superclass) then { 
+            if (false != superclass) then {
                 s := s ++ "\n" ++ superclass.toGrace(depth + 1)
             }
             usedTraits.do { t -> s := s ++ "\n" ++ t.toGrace(depth + 1) }
@@ -1512,7 +1534,7 @@ def genericNode is public = object {
     // represents an application of a parameterized type to some arguments.
     inherits baseNode
     def kind is public = "generic"
-    var value is public := base        
+    var value is public := base
         // in a generic application, `value` is the applied type
         // e.g. in List<Number>, value is Identifier‹List›
     var args is public := arguments
@@ -1624,8 +1646,8 @@ def identifierNode = object {
         method isIdentifier { true }
 
         method isAppliedOccurenceOfIdentifier {
-            if (wildcard) then { 
-                false 
+            if (wildcard) then {
+                false
             } else {
                 isBindingOccurrence.not
             }
@@ -1702,10 +1724,10 @@ def identifierNode = object {
             s
         }
 
-        method asString { 
+        method asString {
             if (isBindingOccurrence) then {
                 "identifierBinding‹{value}›"
-            } else { 
+            } else {
                 "identifier‹{value}›"
             }
         }
@@ -1860,7 +1882,7 @@ def bindNode is public = object {
     def kind is public = "bind"
     var dest is public := dest'
     var value is public := val'
-    
+
     method isBind { true }
     method asString { "bind {value}" }
     method accept(visitor : ASTVisitor) from(as) {
@@ -2210,7 +2232,7 @@ def dialectNode is public = object {
     inherits baseNode
     def kind is public = "dialect"
     var value is public := path'
-    
+
     method isDialect { true }
     method isExternal { true }
     method isExecutable { false }
@@ -2302,7 +2324,7 @@ def inheritsNode = object {
         var aliases is public := [ ]
         var exclusions is public := [ ]
         var isUse is public := false  // this is a `use trait` clause, not an inherits
-        
+
         method isLegalInTrait { isUse }
         method isInherits { true }
         method inheritsFromMember { value.isMember }
@@ -2319,8 +2341,8 @@ def inheritsNode = object {
                 exclusions.do { e -> e.accept(visitor) from(newChain) }
             }
         }
-        method declarationKindWithAncestors(as) { 
-            // identifiers declared in an inherits statement are aliases for 
+        method declarationKindWithAncestors(as) {
+            // identifiers declared in an inherits statement are aliases for
             // methods.  We treat them as methods, because (unlike inherited names)
             // they can't be overridden by local methods.
             k.methdec
@@ -2383,7 +2405,7 @@ def inheritsNode = object {
             isUse := other.isUse
             self
         }
-        method statementName { 
+        method statementName {
             if (isUse) then { "use" } else { "inherit" }
         }
     }
@@ -2440,26 +2462,39 @@ def signaturePart = object {
     method new {
         partName "" params []
     }
-    method partName(n) scope(s) {
+    method partName(n:String) scope(s) {
         def result = partName(n) params []
         result.scope := s
         result
     }
-    method partName(n) params(ps) scope(s) {
+    method partName(n:String) params(ps) scope(s) {
         def result = partName(n) params(ps)
         result.scope := s
         result
     }
-    method partName(n) {
+    method partName(n:String) {
         partName(n) params []
     }
-    class partName(n) params(ps) {
+    class partName(n:String) params(ps) {
         inherits baseNode
         def kind is public = "signaturepart"
         var name is public := n
         var params is public := ps
         var typeParams is public := false
         var lineLength is public := 0
+
+        method nameString {
+            if (params.size == 0) then {return name}
+            name ++ "(" ++ params.size ++ ")"
+        }
+
+        method canonicalName {
+            if (params.size == 0) then {return name}
+            var underScores := ""
+            params.do { _ -> underScores := underScores ++ "_" }
+                separatedBy { underScores := underScores ++ "," }
+            name ++ "(" ++ underScores ++ ")"
+        }
 
         method accept(visitor : ASTVisitor) from(as) {
             if (visitor.visitSignaturePart(self) up(as)) then {
@@ -2504,7 +2539,7 @@ def signaturePart = object {
             self
         }
         method asString {
-            "part: {name}"
+            "part: {nameString}"
         }
     }
 }
@@ -2617,7 +2652,7 @@ method wrap(str:String) to (l:Number) prefix (margin:String) {
     if ((ind + str.size) <= len) then {
         return "\n" ++ margin ++ str
     }
-    var currBreak 
+    var currBreak
     var trimmedLine
 
     try {
@@ -2737,7 +2772,7 @@ class baseVisitor -> ASTVisitor {
     method visitDialect(o) -> Boolean { true }
     method visitBlank(o) -> Boolean { true }
     method visitComment(o) -> Boolean { true }
-    
+
     method asString { "an AST visitor" }
 }
 
@@ -2776,7 +2811,7 @@ class pluggableVisitor(visitation:Block2) -> ASTVisitor {
     method visitDialect(o) up(as) { visitation.apply (o, as) }
     method visitBlank(o) up(as) { visitation.apply (o, as) }
     method visitComment(o) up(as) { visitation.apply (o, as) }
-    
+
     method asString { "a pluggable AST visitor" }
 }
 
