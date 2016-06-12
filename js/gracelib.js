@@ -2370,14 +2370,11 @@ function gracecode_unicode() {
     this.methods.create = function unicode_create(argcv, n) {
         return new GraceString(String.fromCharCode(n._value));
     };
-    this.methods.pattern = function unicode_pattern(argcv) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return new GraceUnicodePattern(args);
+    this.methods.pattern = function unicode_pattern(argcv, patterns) {
+        return new GraceUnicodePattern(patterns);
     };
-    this.methods['pattern()not'] = function unicode_pattern_not(argcv) {
-        var args = Array.prototype.slice.call(arguments, 1, argcv[0] + 1);
-        var args2 = Array.prototype.slice.call(arguments, argcv[0] + 1);
-        return new GraceUnicodePattern(args, args2);
+    this.methods['pattern()not'] = function unicode_pattern_not(argcv, patterns, excludes) {
+        return new GraceUnicodePattern(patterns, excludes);
     };
     return this;
 }
@@ -2387,8 +2384,29 @@ if (typeof gctCache !== "undefined")
 
 
 function GraceUnicodePattern(pos, neg) {
-    this.pos = pos;
-    this.neg = neg;
+    // this.pos and this.neg are Iterables of positive and negative items
+    this.pos = pos._value
+        // APB: 2016 06 11     This is a horrible hack.
+        // pos._value          => pos is a PrimitiveGraceList or Lineup
+    if (! this.pos) {
+        this.pos = [];
+        var iter = callmethod(pos, "iterator", [0]);
+        while (Grace_isTrue(callmethod(iter, "hasNext", [0]))) {
+            var p = callmethod(iter, "next", [0]);
+            this.pos.push(p);
+        }
+    }
+    if (neg) {
+        this.neg = neg._value;
+        if (! this.neg) {
+            this.neg = [];
+            var niter = callmethod(pos, "iterator", [0]);
+            while (Grace_isTrue(callmethod(niter, "hasNext", [0]))) {
+                var n = callmethod(niter, "next", [0]);
+                this.neg.push(n);
+            }
+        }
+    }
 }
 
 GraceUnicodePattern.prototype = {

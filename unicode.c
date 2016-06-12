@@ -328,15 +328,21 @@ Object unicode_pattern_not(Object self, int nparts, int *argcv,
         UnicodePattern = alloc_class("UnicodePattern", 1);
         add_Method(UnicodePattern, "match", &UnicodePattern_match);
     }
-    int size = argcv[0];
-    int size2 = argcv[1];
-    Object me = alloc_obj(sizeof(struct UnicodePattern) - sizeof(struct Object)
-            + sizeof(struct UnicodePatternElement) * (size + size2),
-            UnicodePattern);
+    if ((argcv[0] != 1) || (argcv[1] > 1)) {
+        graceRaise(RequestError(), "unicode.pattern requested with too many arguments.");
+    }
+    int size = (int) *(double*)callmethod(args[0], "size", 0, NULL, NULL)->data;
+    int size2 = (argcv[1] == 0) ? 0.0 :
+        (int) *(double*)callmethod(args[1], "size", 0, NULL, NULL)->data;
+    Object me = alloc_obj(sizeof(struct UnicodePattern) -
+          sizeof(struct Object) +
+          sizeof(struct UnicodePatternElement) * (size + size2),
+        UnicodePattern);
     struct UnicodePattern *pat = (struct UnicodePattern *)me;
     pat->size = size + size2;
+    Object pIter = callmethod(args[0], "iterator", 0, NULL, NULL);
     for (int j=0; j<size; j++) {
-        Object o = args[j];
+        Object o = callmethod(pIter, "next", 0, NULL, NULL);
         if (o->class == Number) {
             pat->elements[j].type = UNICODEPATTERN_CODEPOINT;
             int n = integerfromAny(o);
@@ -348,17 +354,20 @@ Object unicode_pattern_not(Object self, int nparts, int *argcv,
             strcpy(bf, cc);
         }
     }
-    for (int j=size; j<size+size2; j++) {
-        Object o = args[j];
-        if (o->class == Number) {
-            pat->elements[j].type = UNICODEPATTERN_CODEPOINT_NOT;
-            int n = integerfromAny(o);
-            pat->elements[j].data.codepoint = n;
-        } else {
-            pat->elements[j].type = UNICODEPATTERN_CLASS_NOT;
-            const char *cc = grcstring(o);
-            char *bf = pat->elements[j].data.class;
-            strcpy(bf, cc);
+    if (size2 > 0) {
+        Object nIter = callmethod(args[1], "iterator", 0, NULL, NULL);
+        for (int j=size; j<size+size2; j++) {
+            Object o = callmethod(nIter, "next", 0, NULL, NULL);
+            if (o->class == Number) {
+                pat->elements[j].type = UNICODEPATTERN_CODEPOINT_NOT;
+                int n = integerfromAny(o);
+                pat->elements[j].data.codepoint = n;
+            } else {
+                pat->elements[j].type = UNICODEPATTERN_CLASS_NOT;
+                const char *cc = grcstring(o);
+                char *bf = pat->elements[j].data.class;
+                strcpy(bf, cc);
+            }
         }
     }
     return me;
