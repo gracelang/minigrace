@@ -1,4 +1,4 @@
-factory method eventListener {
+class eventListener {
     var clickBlock := { }
     var mouseUpBlock := { }
     var mouseDownBlock := { }
@@ -168,7 +168,7 @@ factory method eventListener {
     }
 }
 
-factory method stage(width', height') {
+class stage(width', height') {
     var mystage := new (width', height')
     createClearButton(self)
     var createJsGraphics
@@ -319,7 +319,7 @@ factory method stage(width', height') {
     }
 }
 
-factory method commonGraphics{
+class commonGraphics{
     var createJsGraphics is public
     var color
     var location :=0@0
@@ -384,7 +384,7 @@ factory method commonGraphics{
     }
 }
 
-factory method shape {
+class shape {
     inherits commonGraphics
 
     createJsGraphics := new
@@ -416,7 +416,7 @@ factory method shape {
     }
 }
 
-factory method container {
+class container {
     inherits commonGraphics
 
     createJsGraphics := new
@@ -441,7 +441,7 @@ factory method container {
     }
 }
 
-factory method circle {
+class circle {
     inherits shape
     var radius
     method draw(radius') {
@@ -458,7 +458,7 @@ factory method circle {
     }
 }
 
-factory method rectangle {
+class rectangle {
     inherits shape
     var height
     var width
@@ -475,7 +475,7 @@ factory method rectangle {
     }
 }
 
-factory method polyStar {
+class polyStar {
     inherits shape
     var size is public := 20
     var sides is public := 5
@@ -498,7 +498,7 @@ factory method polyStar {
     }
 }
 
-factory method roundRect {
+class roundRect {
     inherits shape
     var height
     var width
@@ -519,7 +519,7 @@ factory method roundRect {
     }
 }
 
-factory method ellipse {
+class ellipse {
     inherits shape
     var height
     var width
@@ -536,7 +536,7 @@ factory method ellipse {
     }
 }
 
-factory method arc {
+class arc {
     inherits shape
     var radius
     var startAngle
@@ -563,7 +563,7 @@ factory method arc {
     }
 }
 
-factory method text {
+class text {
     inherits commonGraphics
 
     var content is public := "Did you forget to set text.content?"
@@ -610,7 +610,7 @@ factory method text {
     }
 }
 
-factory method line {
+class line {
     inherits shape
     var start is public := 0@0
     var end is public := 50@50
@@ -629,7 +629,7 @@ factory method line {
     }
 }
 
-factory method customShape {
+class customShape {
     inherits shape
     var points := list.empty
     var stroke;
@@ -691,7 +691,7 @@ factory method customShape {
     }
 }
 
-factory method tween(jsGraphicsObj, myStage) {
+class tween(jsGraphicsObj, myStage) {
     var jsTween
     native "js" code ‹var stage = var_myStage.data.mystage;
           createjs.Ticker.setFPS(60);
@@ -710,7 +710,7 @@ factory method tween(jsGraphicsObj, myStage) {
     }
 }
 
-factory method inputBox(mystage) {
+class inputBox(mystage) {
     var location is public
     var width is public
     var height is public

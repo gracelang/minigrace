@@ -1,4 +1,4 @@
-factory method node {
+class node {
     var left is public := self
     var right is public := self
     var parent is public := self

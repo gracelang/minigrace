@@ -55,7 +55,7 @@ type Process = Object & type {
 // The remainder of this module consists of dummy classes that
 // allow this file to be compiled to produce a .gct
 
-factory method input ->  FileStream {
+class input ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
     method write -> Object { }
@@ -72,7 +72,7 @@ factory method input ->  FileStream {
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
-factory method output ->  FileStream {
+class output ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
     method write -> Object { }
@@ -89,7 +89,7 @@ factory method output ->  FileStream {
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
-factory method error ->  FileStream {
+class error ->  FileStream {
     method read -> Object { }
     method getline -> Object { }
     method write -> Object { }
@@ -106,7 +106,7 @@ factory method error ->  FileStream {
     method eof -> Boolean { }
     method isatty -> Boolean { }
 }
-factory method open (fileName:String, mode:String) -> FileStream {
+class open (fileName:String, mode:String) -> FileStream {
     method read -> Object { }
     method getline -> Object { }
     method write -> Object { }

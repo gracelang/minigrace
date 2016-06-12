@@ -30,7 +30,7 @@ def keyOrdering = { a, b -> a.key.compare(b.key) }
 
 type DeclKind = k.T
 
-factory method newScopeIn(parent') kind(variety') {
+class newScopeIn(parent') kind(variety') {
     def elements is public = map.new
     def elementScopes is public = map.new
     def elementLines is public = map.new
@@ -1003,7 +1003,7 @@ method buildSymbolTableFor(topNode) ancestors(topChain) {
                     if (kind.isParameter) then {
                         if (scope.variety == "object") then {
                             // this is a hack for declaring the parameters of the factory
-                            // method of a class.  The class's symbol table is that of the
+                            // method of a dotted class.  The class's symbol table is that of the
                             // fresh object; the factory method's parameters need to go in
                             // the _enclosing_ scope.
                             scope := scope.parent

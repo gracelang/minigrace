@@ -1,6 +1,6 @@
 import "gUnit" as gU
 
-factory method objWithX {
+class objWithX {
     var x is public := 2
 }
 

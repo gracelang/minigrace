@@ -1,8 +1,8 @@
-factory method nameTrait(n) {
+class nameTrait(n) {
     method asString { "my name is {n}" }
 }
 
-factory method boxNamed(n) {
+class boxNamed(n) {
     inherits nameTrait(n)
 }
 

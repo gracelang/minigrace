@@ -173,7 +173,7 @@ class OrPattern.new(p1, p2) {
 }
 
 def Singleton is public = object {
-    factory method new {
+    class new {
         inherits BasicPattern.new
         method match(other) {
             if (self.isMe(other)) then {
@@ -184,7 +184,7 @@ def Singleton is public = object {
         }
         method ==(other) { self.isMe(other) }
     }
-    factory method named(printString) {
+    class named(printString) {
         inherits Singleton.new
         method asString { printString }
     }

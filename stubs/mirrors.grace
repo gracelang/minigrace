@@ -18,10 +18,10 @@ type MethodMirror = Object & type {
 type ArgList = List<Object>
 
 method loadDynamicModule(name:String) -> Done { }
-factory method reflect(obj:Unknown) -> Mirror {
+class reflect(obj:Unknown) -> Mirror {
     method methods -> List<MethodMirror>  { }
     method methodNames -> List<String> { }
-    factory method getMethod(nm:String) -> MethodMirror { 
+    class getMethod(nm:String) -> MethodMirror { 
         method name -> String { }
         method partcount -> Number { }
         method paramcounts -> List<Number>  { }

@@ -1,16 +1,16 @@
 def labeled = object {
-  factory method fromElement(element') {
+  class fromElement(element') {
     method labelElement is confidential {
       self.element
     }
   }
 
-  factory method ofElementType(elementType : String) {
+  class ofElementType(elementType : String) {
     inherits fromElement("some element")
     var label := "foo"
   }
 
-  factory method ofElementType(elementType : String) labeled(label' : String) {
+  class ofElementType(elementType : String) labeled(label' : String) {
     inherits ofElementType(elementType)
     self.label := label'
   }

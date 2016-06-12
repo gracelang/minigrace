@@ -6,14 +6,14 @@
 //  minigrace: Program superException exited with error 11.
 //The exit 11 (a segmentation fault) occurs when the exception is raised
 
-factory method emptyness {
+class emptyness {
     method size { abstract }
     // method isEmpty { { return size <= 0 }.apply }  this version is OK!
     method isEmpty { try {return size <= 0} catch {_ -> true} }
     // the return from inside the try is essential to cause the segfault.
 }
 
-factory method holder(val) {
+class holder(val) {
     inherits emptyness
     method size { 1 }
     method value { val }
