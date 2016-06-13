@@ -1059,7 +1059,15 @@ def callNode = object {
         var with is public := with'        // arguments
         var generics is public := false
         var isPattern is public := false
-        def nameString:String is public = value.nameString
+
+        method nameString {
+            with.fold { acc, each -> acc + each.nameString } startingWith ""
+        }
+
+        method canonicalName {
+            with.fold { acc, each -> acc ++ each.canonicalName }
+                startingWith ""
+        }
 
         method target { value }
         method isCall { true }
@@ -2559,6 +2567,19 @@ def callWithPart = object {
         var name is public := rPart
         var args is public := xs
         var lineLength is public := 0
+
+        method nameString {
+            if (args.size == 0) then {return name}
+            name ++ "(" ++ args.size ++ ")"
+        }
+
+        method canonicalName {
+            if (args.size == 0) then {return name}
+            var underScores := ""
+            args.do { _ -> underScores := underScores ++ "_" }
+                separatedBy { underScores := underScores ++ "," }
+            name ++ "(" ++ underScores ++ ")"
+        }
 
         method map(blk) ancestors(as) {
             var n := shallowCopy
