@@ -2505,6 +2505,7 @@ method doclass {
         next    // skip over the dot
     }
     def meth = methodsignature(false)
+    meth.setPositionFrom(btok)
     parseObjectConstructorBody "a class" startingWith (btok) after "method header"
     def objNode = values.pop
     meth.body := [objNode]
